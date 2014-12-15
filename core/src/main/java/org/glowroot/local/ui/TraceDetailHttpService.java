@@ -69,8 +69,6 @@ class TraceDetailHttpService implements HttpService {
                 charSource = traceCommonService.getEntries(traceId);
             } else if (traceComponent.equals("profile")) {
                 charSource = traceCommonService.getProfile(traceId);
-            } else if (traceComponent.equals("outlier-profile")) {
-                charSource = traceCommonService.getOutlierProfile(traceId);
             } else {
                 throw new IllegalStateException("Unexpected uri: " + request.getUri());
             }
@@ -81,7 +79,7 @@ class TraceDetailHttpService implements HttpService {
         response.setChunked(true);
         channel.write(response);
         if (charSource == null) {
-            // UI checks entriesExistence/outlierProfileExistence/traceProfileExistence so should
+            // UI checks entriesExistence/profileExistence so should
             // not end up here, but tests don't, send json null value to them
             channel.write(ChunkedInputs.fromReader(new StringReader("null")));
         } else {

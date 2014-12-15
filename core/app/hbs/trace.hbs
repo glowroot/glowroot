@@ -207,28 +207,3 @@
     <em>(see Glowroot > Configuration &gt; Storage &gt; Trace entries/profiles capped db)</em>
   </div>
 {{/ifExistenceExpired}}
-{{#ifExistenceYes outlierProfileExistence}}
-  <div>
-    <button class="flat-btn flat-btn-big-pad1aligned outlier-profile-toggle">
-      <span class="glowroot-link-color">Outlier profile</span>
-    </button>
-    {{! spinner is not used in export file }}
-    <div>
-      <div class="hide trace-detail-spinner"></div>
-    </div>
-  </div>
-  <div class="nowrap hide" id="outlierProfileOuter">
-    <select class="form-control profile-filter input-xlarge hide" onchange="this.blur()"
-            style="margin: 4px;">
-    </select>
-    <div class="profile indent1"></div>
-  </div>
-{{/ifExistenceYes}}
-{{#ifExistenceExpired outlierProfileExistence}}
-  <div>
-    <strong>
-      Outlier profile no longer exists for this trace
-    </strong>
-    <em>(see Glowroot > Configuration &gt; Storage &gt; Spans/profiles capped db)</em>
-  </div>
-{{/ifExistenceExpired}}

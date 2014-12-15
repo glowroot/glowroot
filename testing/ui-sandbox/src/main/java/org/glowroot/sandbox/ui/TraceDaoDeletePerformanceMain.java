@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.config.TraceConfig;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -37,11 +36,6 @@ public class TraceDaoDeletePerformanceMain {
 
     public static void main(String... args) throws Exception {
         Container container = Containers.createWithFileDb(new File("target"));
-        // set thresholds low so there will be lots of data to view
-        TraceConfig traceConfig = container.getConfigService().getTraceConfig();
-        traceConfig.setOutlierProfilingInitialDelayMillis(100);
-        traceConfig.setOutlierProfilingIntervalMillis(10);
-        container.getConfigService().updateTraceConfig(traceConfig);
         container.executeAppUnderTest(GenerateTraces.class);
         int pendingWrites = container.getTraceService().getNumPendingCompleteTransactions();
         while (pendingWrites > 0) {

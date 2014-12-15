@@ -124,14 +124,11 @@ class TraceExportHttpService implements HttpService {
         String tracePlaceholder = "<script type=\"text/json\" id=\"traceJson\"></script>";
         String entriesPlaceholder = "<script type=\"text/json\" id=\"entriesJson\"></script>";
         String profilePlaceholder = "<script type=\"text/json\" id=\"profileJson\"></script>";
-        String outlierProfilePlaceholder =
-                "<script type=\"text/json\" id=\"outlierProfileJson\"></script>";
 
         String templateContent = asCharSource("trace-export.html").read();
         Pattern pattern = Pattern.compile("(" + htmlStartTag + "|" + exportCssPlaceholder + "|"
                 + exportComponentsJsPlaceholder + "|" + exportJsPlaceholder + "|"
-                + tracePlaceholder + "|" + entriesPlaceholder + "|" + profilePlaceholder + "|"
-                + outlierProfilePlaceholder + ")");
+                + tracePlaceholder + "|" + entriesPlaceholder + "|" + profilePlaceholder + ")");
         Matcher matcher = pattern.matcher(templateContent);
         int curr = 0;
         List<CharSource> charSources = Lists.newArrayList();
@@ -173,14 +170,6 @@ class TraceExportHttpService implements HttpService {
                 CharSource profile = traceExport.getProfile();
                 if (profile != null) {
                     charSources.add(profile);
-                }
-                charSources.add(CharSource.wrap("</script>"));
-            } else if (match.equals(outlierProfilePlaceholder)) {
-                charSources.add(CharSource.wrap(
-                        "<script type=\"text/json\" id=\"outlierProfileJson\">"));
-                CharSource outlierProfile = traceExport.getOutlierProfile();
-                if (outlierProfile != null) {
-                    charSources.add(outlierProfile);
                 }
                 charSources.add(CharSource.wrap("</script>"));
             } else {

@@ -220,8 +220,6 @@ public class LocalUiModule {
         uriMappings.put(Pattern.compile("^/export/trace/.*$"), traceExportHttpService);
         uriMappings.put(Pattern.compile("^/backend/trace/entries$"), traceDetailHttpService);
         uriMappings.put(Pattern.compile("^/backend/trace/profile$"), traceDetailHttpService);
-        uriMappings.put(Pattern.compile("^/backend/trace/outlier-profile$"),
-                traceDetailHttpService);
         try {
             return new HttpServer(bindAddress, port, numWorkerThreads, layoutJsonService,
                     uriMappings.build(), httpSessionManager, jsonServices);

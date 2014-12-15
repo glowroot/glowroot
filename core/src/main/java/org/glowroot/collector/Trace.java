@@ -44,7 +44,6 @@ public abstract class Trace {
     public abstract @Nullable String threadInfo(); // json data
     public abstract @Nullable String gcInfos(); // json data
     abstract Existence entriesExistence();
-    abstract Existence outlierProfileExistence();
     abstract Existence profileExistence();
     @Value.Default
     public ImmutableSetMultimap<String, String> customAttributesForIndexing() {

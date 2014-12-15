@@ -67,8 +67,7 @@ public class TraceDao implements TraceRepository {
             ImmutableColumn.of("thread_info", Types.VARCHAR), // json data
             ImmutableColumn.of("gc_infos", Types.VARCHAR), // json data
             ImmutableColumn.of("entries_id", Types.VARCHAR), // capped database id
-            ImmutableColumn.of("profile_id", Types.VARCHAR), // capped database id
-            ImmutableColumn.of("outlier_profile_id", Types.VARCHAR)); // capped database id
+            ImmutableColumn.of("profile_id", Types.VARCHAR)); // capped database id
 
     // capture_time column is used for expiring records without using FK with on delete cascade
     private static final ImmutableList<Column> transactionCustomAttributeColumns =
@@ -106,28 +105,22 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public void store(final Trace trace, CharSource entries, @Nullable CharSource profile,
-            @Nullable CharSource outlierProfile) {
+    public void store(final Trace trace, CharSource entries, @Nullable CharSource profile) {
         String entriesId = cappedDatabase.write(entries).getId();
         String profileId = null;
         if (profile != null) {
             profileId = cappedDatabase.write(profile).getId();
         }
-        String outlierProfileId = null;
-        if (outlierProfile != null) {
-            outlierProfileId = cappedDatabase.write(outlierProfile).getId();
-        }
         try {
             dataSource.update("merge into trace (id, partial, start_time, capture_time, duration,"
                     + " transaction_type, transaction_name, headline, error, profiled,"
                     + " error_message, user, custom_attributes, metrics, thread_info, gc_infos,"
-                    + " entries_id, profile_id, outlier_profile_id) values (?, ?, ?, ?, ?, ?, ?,"
-                    + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", trace.id(), trace.partial(),
-                    trace.startTime(), trace.captureTime(), trace.duration(),
-                    trace.transactionType(), trace.transactionName(), trace.headline(),
-                    trace.error() != null, profileId != null, trace.error(), trace.user(),
-                    trace.customAttributes(), trace.metrics(), trace.threadInfo(),
-                    trace.gcInfos(), entriesId, profileId, outlierProfileId);
+                    + " entries_id, profile_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
+                    + " ?, ?, ?, ?, ?)", trace.id(), trace.partial(), trace.startTime(),
+                    trace.captureTime(), trace.duration(), trace.transactionType(),
+                    trace.transactionName(), trace.headline(), trace.error() != null,
+                    profileId != null, trace.error(), trace.user(), trace.customAttributes(),
+                    trace.metrics(), trace.threadInfo(), trace.gcInfos(), entriesId, profileId);
             final ImmutableSetMultimap<String, String> customAttributesForIndexing =
                     trace.customAttributesForIndexing();
             if (customAttributesForIndexing == null) {
@@ -196,8 +189,8 @@ public class TraceDao implements TraceRepository {
     public @Nullable Trace readTrace(String traceId) throws SQLException {
         List<Trace> traces = dataSource.query("select id, partial, start_time, capture_time,"
                 + " duration, transaction_type, transaction_name, headline, error_message, user,"
-                + " custom_attributes, metrics, thread_info, gc_infos, entries_id, profile_id,"
-                + " outlier_profile_id from trace where id = ?", new TraceRowMapper(), traceId);
+                + " custom_attributes, metrics, thread_info, gc_infos, entries_id, profile_id"
+                + " from trace where id = ?", new TraceRowMapper(), traceId);
         if (traces.isEmpty()) {
             return null;
         }
@@ -213,10 +206,6 @@ public class TraceDao implements TraceRepository {
 
     public @Nullable CharSource readProfile(String traceId) throws SQLException {
         return readFromCappedDatabase("profile_id", traceId);
-    }
-
-    public @Nullable CharSource readOutlierProfile(String traceId) throws SQLException {
-        return readFromCappedDatabase("outlier_profile_id", traceId);
     }
 
     public void deleteAll() {
@@ -438,17 +427,9 @@ public class TraceDao implements TraceRepository {
             return;
         }
         for (Column column : dataSource.getColumns("trace")) {
-            if (column.name().equals("grouping")) {
-                dataSource.execute("alter table trace alter column grouping rename to"
-                        + " transaction_name");
-                dataSource.execute("alter table trace add column headline varchar");
-                dataSource.execute("update trace set headline = transaction_name");
+            if (column.name().equals("outlier_profile_id")) {
+                dataSource.execute("alter table trace drop column outlier_profile_id");
                 break;
-            }
-            if (column.name().equals("bucket")) {
-                // first grouping was renamed to bucket, then to transaction_name
-                dataSource.execute("alter table trace alter column bucket rename to"
-                        + " transaction_name");
             }
         }
     }
@@ -496,8 +477,6 @@ public class TraceDao implements TraceRepository {
                             RowMappers.getExistence(resultSet.getString(15), cappedDatabase))
                     .profileExistence(
                             RowMappers.getExistence(resultSet.getString(16), cappedDatabase))
-                    .outlierProfileExistence(
-                            RowMappers.getExistence(resultSet.getString(17), cappedDatabase))
                     .build();
         }
     }

@@ -58,7 +58,5 @@ public abstract class TraceService {
 
     public abstract @Nullable ProfileNode getProfile(String traceId) throws Exception;
 
-    public abstract @Nullable ProfileNode getOutlierProfile(String traceId) throws Exception;
-
     public abstract void deleteAll() throws Exception;
 }

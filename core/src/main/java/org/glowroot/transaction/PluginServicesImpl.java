@@ -458,7 +458,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             transaction.popEntry(traceEntry, endTick, errorMessage);
             if (transaction.isCompleted()) {
                 // the root entry has been popped off
-                safeCancel(transaction.getOutlierProfileRunnable());
                 safeCancel(transaction.getImmedateTraceStoreRunnable());
                 safeCancel(transaction.getUserProfileRunnable());
                 // send to trace collector before removing from trace registry so that trace

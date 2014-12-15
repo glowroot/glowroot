@@ -112,12 +112,6 @@ class HttpTraceService extends TraceService {
     }
 
     @Override
-    public @Nullable ProfileNode getOutlierProfile(String traceId) throws Exception {
-        String content = httpClient.get("/backend/trace/outlier-profile?trace-id=" + traceId);
-        return mapper.readValue(content, ProfileNode.class);
-    }
-
-    @Override
     public void deleteAll() throws Exception {
         httpClient.post("/backend/admin/delete-all-aggregates", "");
         httpClient.post("/backend/admin/delete-all-traces", "");

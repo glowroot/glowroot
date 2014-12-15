@@ -28,13 +28,10 @@ import org.glowroot.transaction.model.Transaction;
 class TransactionProfileRunnable extends ScheduledRunnable {
 
     private final Transaction transaction;
-    private final boolean outlier;
     private final ConfigService configService;
 
-    TransactionProfileRunnable(Transaction transaction, boolean outlier,
-            ConfigService configService) {
+    TransactionProfileRunnable(Transaction transaction, ConfigService configService) {
         this.transaction = transaction;
-        this.outlier = outlier;
         this.configService = configService;
     }
 
@@ -51,7 +48,7 @@ class TransactionProfileRunnable extends ScheduledRunnable {
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
         ThreadInfo threadInfo =
                 threadBean.getThreadInfo(transaction.getThreadId(), Integer.MAX_VALUE);
-        transaction.captureStackTrace(threadInfo, outlier,
+        transaction.captureStackTrace(threadInfo,
                 configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction());
     }
 
@@ -59,7 +56,6 @@ class TransactionProfileRunnable extends ScheduledRunnable {
     public String toString() {
         return MoreObjects.toStringHelper(this)
                 .add("transaction", transaction)
-                .add("outlier", outlier)
                 .toString();
     }
 }

@@ -373,18 +373,12 @@ class ConfigJsonService {
 
         abstract boolean enabled();
         abstract int storeThresholdMillis();
-        abstract boolean outlierProfilingEnabled();
-        abstract int outlierProfilingInitialDelayMillis();
-        abstract int outlierProfilingIntervalMillis();
         abstract String version();
 
         private static TraceConfigDto fromConfig(TraceConfig config) {
             return ImmutableTraceConfigDto.builder()
                     .enabled(config.enabled())
                     .storeThresholdMillis(config.storeThresholdMillis())
-                    .outlierProfilingEnabled(config.outlierProfilingEnabled())
-                    .outlierProfilingInitialDelayMillis(config.outlierProfilingInitialDelayMillis())
-                    .outlierProfilingIntervalMillis(config.outlierProfilingIntervalMillis())
                     .version(config.version())
                     .build();
         }
@@ -393,9 +387,6 @@ class ConfigJsonService {
             return ImmutableTraceConfig.builder()
                     .enabled(enabled())
                     .storeThresholdMillis(storeThresholdMillis())
-                    .outlierProfilingEnabled(outlierProfilingEnabled())
-                    .outlierProfilingInitialDelayMillis(outlierProfilingInitialDelayMillis())
-                    .outlierProfilingIntervalMillis(outlierProfilingIntervalMillis())
                     .build();
         }
     }
@@ -514,7 +505,8 @@ class ConfigJsonService {
         abstract String version();
 
         private static AdvancedConfigDto fromConfig(AdvancedConfig config) {
-            return ImmutableAdvancedConfigDto.builder()
+            return ImmutableAdvancedConfigDto
+                    .builder()
                     .metricWrapperMethods(config.metricWrapperMethods())
                     .immediatePartialStoreThresholdSeconds(
                             config.immediatePartialStoreThresholdSeconds())

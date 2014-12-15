@@ -285,10 +285,6 @@ public class ConfigTest {
     private static void updateAllFields(TraceConfig config) {
         config.setEnabled(!config.isEnabled());
         config.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
-        config.setOutlierProfilingEnabled(!config.isOutlierProfilingEnabled());
-        config.setOutlierProfilingInitialDelayMillis(
-                config.getOutlierProfilingInitialDelayMillis() + 10);
-        config.setOutlierProfilingIntervalMillis(config.getOutlierProfilingIntervalMillis() + 100);
     }
 
     private static void updateAllFields(ProfilingConfig config) {

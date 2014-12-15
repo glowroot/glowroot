@@ -364,16 +364,6 @@ HandlebarsRendering = (function () {
     }
     profileToggle($button, '#profileOuter', profile, url);
   });
-  $(document).on('click', '.outlier-profile-toggle', function () {
-    var $traceParent = $(this).parents('.trace-parent');
-    var $button = $(this);
-    var outlierProfile = $traceParent.data('outlierProfile');
-    var url;
-    if (!outlierProfile) {
-      url = 'backend/trace/outlier-profile' + '?trace-id=' + $traceParent.data('traceId');
-    }
-    profileToggle($button, '#outlierProfileOuter', outlierProfile, url);
-  });
 
   function profileToggle($button, selector, profile, url) {
     var $selector = $(selector);
@@ -667,10 +657,9 @@ HandlebarsRendering = (function () {
       $selector.addClass('trace-parent');
       $selector.data('traceId', trace.id);
     },
-    renderTraceFromExport: function (trace, $selector, traceEntries, profile, outlierProfile) {
+    renderTraceFromExport: function (trace, $selector, traceEntries, profile) {
       $selector.data('traceEntries', traceEntries);
       $selector.data('profile', profile);
-      $selector.data('outlierProfile', outlierProfile);
       this.renderTrace(trace, $selector);
     },
     profileToggle: profileToggle

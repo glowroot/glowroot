@@ -24,10 +24,5 @@ $(document).ready(function () {
   if (profileJson) {
     profile = JSON.parse(profileJson);
   }
-  var outlierProfileJson = $('#outlierProfileJson').html();
-  var outlierProfile;
-  if (outlierProfileJson) {
-    outlierProfile = JSON.parse(outlierProfileJson);
-  }
-  HandlebarsRendering.renderTraceFromExport(trace, $('#tracePlaceholder'), entries, profile, outlierProfile);
+  HandlebarsRendering.renderTraceFromExport(trace, $('#tracePlaceholder'), entries, profile);
 });

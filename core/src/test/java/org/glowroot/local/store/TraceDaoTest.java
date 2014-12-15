@@ -64,7 +64,7 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
-        traceDao.store(trace, entries, null, null);
+        traceDao.store(trace, entries, null);
         TracePointQuery query = ImmutableTracePointQuery.builder()
                 .from(0)
                 .to(100)
@@ -94,7 +94,7 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
-        traceDao.store(trace, entries, null, null);
+        traceDao.store(trace, entries, null);
         TracePointQuery query = ImmutableTracePointQuery.builder()
                 .from(0)
                 .to(100)
@@ -115,7 +115,7 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
-        traceDao.store(trace, entries, null, null);
+        traceDao.store(trace, entries, null);
         TracePointQuery query = ImmutableTracePointQuery.builder()
                 .from(0)
                 .to(0)
@@ -136,7 +136,7 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
-        traceDao.store(trace, entries, null, null);
+        traceDao.store(trace, entries, null);
         TracePointQuery query = ImmutableTracePointQuery.builder()
                 .from(0)
                 .to(0)
@@ -157,7 +157,7 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
-        traceDao.store(trace, entries, null, null);
+        traceDao.store(trace, entries, null);
         TracePointQuery query = ImmutableTracePointQuery.builder()
                 .from(0)
                 .to(100)
@@ -181,7 +181,7 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
-        traceDao.store(trace, entries, null, null);
+        traceDao.store(trace, entries, null);
         TracePointQuery query = ImmutableTracePointQuery.builder()
                 .from(0)
                 .to(100)
@@ -205,7 +205,7 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
-        traceDao.store(trace, entries, null, null);
+        traceDao.store(trace, entries, null);
         TracePointQuery query = ImmutableTracePointQuery.builder()
                 .from(0)
                 .to(100)
@@ -229,7 +229,7 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
-        traceDao.store(trace, entries, null, null);
+        traceDao.store(trace, entries, null);
         TracePointQuery query = ImmutableTracePointQuery.builder()
                 .from(0)
                 .to(100)
@@ -253,7 +253,7 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
-        traceDao.store(trace, entries, null, null);
+        traceDao.store(trace, entries, null);
         TracePointQuery query = ImmutableTracePointQuery.builder()
                 .from(0)
                 .to(100)
@@ -277,7 +277,7 @@ public class TraceDaoTest {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
-        traceDao.store(trace, entries, null, null);
+        traceDao.store(trace, entries, null);
         // when
         traceDao.deleteBefore(100);
         // then

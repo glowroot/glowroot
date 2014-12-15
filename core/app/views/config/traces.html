@@ -44,46 +44,6 @@
           an active trace and the trace will be stored to disk at its completion.
         </div>
       </div>
-      <fieldset>
-        <legend>Outlier profiling</legend>
-        <div gt-form-group
-             gt-label="Enabled"
-             gt-model="config.outlierProfilingEnabled"
-             gt-type="switch"
-             class="gt-form-group-without-help-block">
-        </div>
-        <div gt-form-group
-             gt-label="Initial delay"
-             gt-model="config.outlierProfilingInitialDelayMillis"
-             gt-number="true"
-             gt-pattern="pattern.integer"
-             gt-required="loaded"
-             gt-width="7em"
-             gt-addon="milliseconds">
-          <div class="help-block">
-            Once a transaction exceeds this amount of time, the outlier profiler
-            captures stack traces periodically.
-            The interval between successive stack trace captures is defined by the
-            property directly below.
-            The stack traces captured for an individual trace are merged into a tree
-            view and provide a profile of the time spent in various portions of the
-            code.
-          </div>
-        </div>
-        <div gt-form-group
-             gt-label="Interval"
-             gt-model="config.outlierProfilingIntervalMillis"
-             gt-number="true"
-             gt-pattern="pattern.integer"
-             gt-required="loaded"
-             gt-width="7em"
-             gt-addon="milliseconds">
-          <div class="help-block">
-            The interval at which the outlier profiler captures stack traces
-            (once a transaction exceeds the initial delay above).
-          </div>
-        </div>
-      </fieldset>
       <div class="form-group form-buttons">
         <div class="col-lg-offset-3 col-lg-9">
           <div gt-button

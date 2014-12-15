@@ -21,6 +21,5 @@ import com.google.common.io.CharSource;
 
 public interface TraceRepository {
 
-    void store(Trace trace, CharSource entries, @Nullable CharSource profile,
-            @Nullable CharSource outlierProfile);
+    void store(Trace trace, CharSource entries, @Nullable CharSource profile);
 }

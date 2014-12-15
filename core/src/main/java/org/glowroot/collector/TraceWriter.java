@@ -67,8 +67,6 @@ public class TraceWriter {
                 trace.entriesExistence().name().toLowerCase(Locale.ENGLISH));
         jg.writeStringField("profileExistence",
                 trace.profileExistence().name().toLowerCase(Locale.ENGLISH));
-        jg.writeStringField("outlierProfileExistence",
-                trace.outlierProfileExistence().name().toLowerCase(Locale.ENGLISH));
         jg.writeEndObject();
         jg.close();
         return sb.toString();

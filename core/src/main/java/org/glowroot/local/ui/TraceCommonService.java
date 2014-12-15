@@ -116,27 +116,6 @@ class TraceCommonService {
         return traceDao.readProfile(traceId);
     }
 
-    // overwritten profile will return {"overwritten":true}
-    // expired trace will return {"expired":true}
-    @Nullable
-    CharSource getOutlierProfile(String traceId) throws SQLException {
-        // check active traces first to make sure that the trace is not missed if it should complete
-        // after checking stored traces but before checking active traces
-        for (Transaction active : transactionRegistry.getTransactions()) {
-            if (active.getId().equals(traceId)) {
-                return createOutlierProfile(active);
-            }
-        }
-        // then check pending traces to make sure the trace is not missed if it is in between active
-        // and stored
-        for (Transaction pending : transactionCollectorImpl.getPendingTransactions()) {
-            if (pending.getId().equals(traceId)) {
-                return createOutlierProfile(pending);
-            }
-        }
-        return traceDao.readOutlierProfile(traceId);
-    }
-
     @Nullable
     TraceExport getExport(String traceId) throws Exception {
         // check active traces first to make sure that the trace is not missed if it should complete
@@ -145,7 +124,7 @@ class TraceCommonService {
             if (active.getId().equals(traceId)) {
                 Trace trace = createActiveTrace(active);
                 return new TraceExport(trace, TraceWriter.toString(trace), createEntries(active),
-                        createProfile(active), createOutlierProfile(active));
+                        createProfile(active));
             }
         }
         // then check pending traces to make sure the trace is not missed if it is in between active
@@ -154,7 +133,7 @@ class TraceCommonService {
             if (pending.getId().equals(traceId)) {
                 Trace trace = TraceCreator.createCompletedTrace(pending);
                 return new TraceExport(trace, TraceWriter.toString(trace), createEntries(pending),
-                        createProfile(pending), createOutlierProfile(pending));
+                        createProfile(pending));
             }
         }
         Trace trace = traceDao.readTrace(traceId);
@@ -163,8 +142,7 @@ class TraceCommonService {
         }
         try {
             return new TraceExport(trace, TraceWriter.toString(trace),
-                    traceDao.readEntries(traceId), traceDao.readProfile(traceId),
-                    traceDao.readOutlierProfile(traceId));
+                    traceDao.readEntries(traceId), traceDao.readProfile(traceId));
         } catch (SQLException e) {
             throw new IOException(e);
         }
@@ -180,11 +158,6 @@ class TraceCommonService {
                 active.getStartTick(), ticker.read());
     }
 
-    private @Nullable CharSource createOutlierProfile(Transaction active) {
-        return ProfileCharSourceCreator.createProfileCharSource(
-                active.getOutlierProfile());
-    }
-
     private @Nullable CharSource createProfile(Transaction active) {
         return ProfileCharSourceCreator.createProfileCharSource(
                 active.getProfile());
@@ -196,15 +169,13 @@ class TraceCommonService {
         private final String traceJson;
         private @Nullable final CharSource entries;
         private @Nullable final CharSource profile;
-        private @Nullable final CharSource outlierProfile;
 
         private TraceExport(Trace trace, String traceJson, @Nullable CharSource entries,
-                @Nullable CharSource profile, @Nullable CharSource outlierProfile) {
+                @Nullable CharSource profile) {
             this.trace = trace;
             this.traceJson = traceJson;
             this.entries = entries;
             this.profile = profile;
-            this.outlierProfile = outlierProfile;
         }
 
         Trace getTrace() {
@@ -224,11 +195,6 @@ class TraceCommonService {
         CharSource getProfile() {
             return profile;
         }
-
-        @Nullable
-        CharSource getOutlierProfile() {
-            return outlierProfile;
-        }
     }
 
     // this method exists because tests cannot use (sometimes) shaded guava CharSource
@@ -245,16 +211,6 @@ class TraceCommonService {
     @OnlyUsedByTests
     public @Nullable String getProfileString(String traceId) throws Exception {
         CharSource profile = getProfile(traceId);
-        if (profile == null) {
-            return null;
-        }
-        return profile.read();
-    }
-
-    // this method exists because tests cannot use (sometimes) shaded guava CharSource
-    @OnlyUsedByTests
-    public @Nullable String getOutlierProfileString(String traceId) throws Exception {
-        CharSource profile = getOutlierProfile(traceId);
         if (profile == null) {
             return null;
         }

@@ -90,8 +90,6 @@ public class Transaction {
 
     // stack trace data constructed from profiling
     private volatile @MonotonicNonNull Profile profile;
-    // stack trace data constructed from outlier profiling
-    private volatile @MonotonicNonNull Profile outlierProfile;
 
     private final long threadId;
 
@@ -102,7 +100,6 @@ public class Transaction {
     // these are stored in the trace so they are only scheduled a single time, and also so they can
     // be canceled at trace completion
     private volatile @Nullable ScheduledRunnable userProfileRunnable;
-    private volatile @Nullable ScheduledRunnable outlierProfileRunnable;
     private volatile @Nullable ScheduledRunnable immedateTraceStoreRunnable;
 
     private long captureTime;
@@ -269,20 +266,12 @@ public class Transaction {
         return profile;
     }
 
-    public @Nullable Profile getOutlierProfile() {
-        return outlierProfile;
-    }
-
     public int getStoreThresholdMillisOverride() {
         return storeThresholdMillisOverride;
     }
 
     public @Nullable ScheduledRunnable getUserProfileRunnable() {
         return userProfileRunnable;
-    }
-
-    public @Nullable ScheduledRunnable getOutlierProfileRunnable() {
-        return outlierProfileRunnable;
     }
 
     public @Nullable ScheduledRunnable getImmedateTraceStoreRunnable() {
@@ -356,13 +345,6 @@ public class Transaction {
         this.userProfileRunnable = scheduledRunnable;
     }
 
-    public void setOutlierProfileRunnable(ScheduledRunnable scheduledRunnable) {
-        if (outlierProfileRunnable != null) {
-            logger.warn("setOutlierProfileRunnable(): overwriting non-null outlierProfileRunnable");
-        }
-        this.outlierProfileRunnable = scheduledRunnable;
-    }
-
     public void setImmediateTraceStoreRunnable(ScheduledRunnable scheduledRunnable) {
         if (immedateTraceStoreRunnable != null) {
             logger.warn("setImmediateTraceStoreRunnable(): overwriting non-null"
@@ -402,7 +384,7 @@ public class Transaction {
         memoryBarrier = true;
     }
 
-    public void captureStackTrace(@Nullable ThreadInfo threadInfo, boolean outlier, int limit) {
+    public void captureStackTrace(@Nullable ThreadInfo threadInfo, int limit) {
         if (threadInfo == null) {
             // thread is no longer alive
             return;
@@ -410,23 +392,14 @@ public class Transaction {
         if (traceEntryComponent.isCompleted()) {
             return;
         }
-        if (outlier) {
-            if (outlierProfile == null) {
-                // initialization possible race condition is ok, worst case scenario it misses
-                // an almost simultaneously captured stack trace
-                outlierProfile = new Profile();
-            }
-            outlierProfile.addStackTrace(threadInfo, limit);
-        } else {
-            if (profile == null) {
-                // initialization possible race condition is ok, worst case scenario it misses
-                // an almost simultaneously captured stack trace
-                profile = new Profile();
-            }
-            // TODO make sure that when reading profile it is not in-between instantiation
-            // and having its first stack trace here, maybe pass threadInfo to constructor????
-            profile.addStackTrace(threadInfo, limit);
+        if (profile == null) {
+            // initialization possible race condition is ok, worst case scenario it misses
+            // an almost simultaneously captured stack trace
+            profile = new Profile();
         }
+        // TODO make sure that when reading profile it is not in-between instantiation
+        // and having its first stack trace here, maybe pass threadInfo to constructor????
+        profile.addStackTrace(threadInfo, limit);
     }
 
     // called by the transaction thread
@@ -462,9 +435,7 @@ public class Transaction {
                 .add("gcInfoComponent", gcInfoComponent)
                 .add("traceEntryComponent", traceEntryComponent)
                 .add("profile", profile)
-                .add("outlierProfile", outlierProfile)
                 .add("userProfileRunnable", userProfileRunnable)
-                .add("outlierProfileRunnable", outlierProfileRunnable)
                 .add("immedateTraceStoreRunnable", immedateTraceStoreRunnable)
                 .toString();
     }

@@ -23,11 +23,8 @@ import com.google.common.io.CharSource;
 import org.junit.Test;
 
 import org.glowroot.transaction.model.Profile;
-import org.glowroot.transaction.model.Transaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class TraceCreatorTest {
 
@@ -35,8 +32,6 @@ public class TraceCreatorTest {
     public void shouldStoreVeryLargeProfile() throws IOException {
         // given
         Profile profile = new Profile();
-        Transaction transaction = mock(Transaction.class);
-        when(transaction.getOutlierProfile()).thenReturn(profile);
         // StackOverflowError was previously occurring somewhere around 1300 stack trace elements
         // using a 1mb thread stack size so testing with 10,000 here just to be sure
         StackTraceElement[] stackTrace = new StackTraceElement[10000];
@@ -48,7 +43,7 @@ public class TraceCreatorTest {
                 State.RUNNABLE);
         // when
         CharSource profileCharSource =
-                ProfileCharSourceCreator.createProfileCharSource(transaction.getOutlierProfile());
+                ProfileCharSourceCreator.createProfileCharSource(profile);
         assertThat(profileCharSource).isNotNull();
         // then don't blow up with StackOverflowError
         // (and an extra verification just to make sure the test was valid)

@@ -51,15 +51,13 @@ public class Trace {
     private final ImmutableList<TraceGcInfo> gcInfos;
     private final Existence entriesExistence;
     private final Existence profileExistence;
-    private final Existence outlierProfileExistence;
 
     private Trace(String id, boolean active, boolean partial, long startTime, long captureTime,
             long duration, String transactionType, String transactionName, String headline,
             @Nullable String error, @Nullable String user,
             ImmutableSetMultimap<String, String> customAttributes, TraceMetric rootMetric,
             @Nullable TraceThreadInfo threadInfo, List<TraceGcInfo> gcInfos,
-            Existence entriesExistence, Existence profileExistence,
-            Existence outlierProfileExistence) {
+            Existence entriesExistence, Existence profileExistence) {
         this.id = id;
         this.active = active;
         this.partial = partial;
@@ -77,7 +75,6 @@ public class Trace {
         this.gcInfos = ImmutableList.copyOf(gcInfos);
         this.entriesExistence = entriesExistence;
         this.profileExistence = profileExistence;
-        this.outlierProfileExistence = outlierProfileExistence;
     }
 
     public String getId() {
@@ -148,10 +145,6 @@ public class Trace {
         return profileExistence;
     }
 
-    public Existence getOutlierProfileExistence() {
-        return outlierProfileExistence;
-    }
-
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
@@ -172,7 +165,6 @@ public class Trace {
                 .add("gcInfos", gcInfos)
                 .add("entriesExistence", entriesExistence)
                 .add("profileExistence", profileExistence)
-                .add("outlierProfileExistence", outlierProfileExistence)
                 .toString();
     }
 
@@ -194,8 +186,7 @@ public class Trace {
             @JsonProperty("threadInfo") @Nullable TraceThreadInfo threadInfo,
             @JsonProperty("gcInfos") @Nullable List</*@Nullable*/TraceGcInfo> gcInfosUnchecked,
             @JsonProperty("entriesExistence") @Nullable Existence entriesExistence,
-            @JsonProperty("profileExistence") @Nullable Existence profileExistence,
-            @JsonProperty("outlierProfileExistence") @Nullable Existence outlierProfileExistence)
+            @JsonProperty("profileExistence") @Nullable Existence profileExistence)
             throws JsonMappingException {
         List<TraceGcInfo> gcInfos = checkNotNullItemsForProperty(gcInfosUnchecked, "gcInfos");
         checkRequiredProperty(id, "id");
@@ -210,7 +201,6 @@ public class Trace {
         checkRequiredProperty(rootMetric, "metrics");
         checkRequiredProperty(entriesExistence, "entriesExistence");
         checkRequiredProperty(profileExistence, "profileExistence");
-        checkRequiredProperty(outlierProfileExistence, "outlierProfileExistence");
         ImmutableSetMultimap.Builder<String, String> theCustomAttributes =
                 ImmutableSetMultimap.builder();
         if (customAttributes != null) {
@@ -228,8 +218,7 @@ public class Trace {
         }
         return new Trace(id, active, partial, startTime, captureTime, duration, transactionType,
                 transactionName, headline, error, user, theCustomAttributes.build(), rootMetric,
-                threadInfo, nullToEmpty(gcInfos), entriesExistence, profileExistence,
-                outlierProfileExistence);
+                threadInfo, nullToEmpty(gcInfos), entriesExistence, profileExistence);
     }
 
     public enum Existence {

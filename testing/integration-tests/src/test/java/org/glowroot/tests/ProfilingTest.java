@@ -32,7 +32,6 @@ import org.glowroot.container.Container;
 import org.glowroot.container.Threads;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.ProfilingConfig;
-import org.glowroot.container.config.TraceConfig;
 import org.glowroot.container.config.UserRecordingConfig;
 import org.glowroot.container.trace.ProfileNode;
 import org.glowroot.container.trace.Trace;
@@ -50,11 +49,7 @@ public class ProfilingTest {
         container = Containers.getSharedContainer();
         // capture one trace to warm up the system, otherwise sometimes there are delays in class
         // loading and the profiler captures too many or too few samples
-        TraceConfig traceConfig = container.getConfigService().getTraceConfig();
-        traceConfig.setOutlierProfilingInitialDelayMillis(60);
-        traceConfig.setOutlierProfilingIntervalMillis(10);
-        container.getConfigService().updateTraceConfig(traceConfig);
-        container.executeAppUnderTest(ShouldGenerateOutlierTraceWithProfile.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
     }
 
     @AfterClass
@@ -78,7 +73,6 @@ public class ProfilingTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getProfileExistence()).isEqualTo(Existence.YES);
-        assertThat(trace.getOutlierProfileExistence()).isEqualTo(Existence.NO);
         // profiler should have captured about 10 stack traces
         ProfileNode rootProfileNode = container.getTraceService().getProfile(trace.getId());
         assertThat(rootProfileNode.getSampleCount()).isBetween(5, 15);
@@ -101,7 +95,6 @@ public class ProfilingTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getProfileExistence()).isEqualTo(Existence.YES);
-        assertThat(trace.getOutlierProfileExistence()).isEqualTo(Existence.NO);
         // profiler should have captured about 10 stack traces
         ProfileNode rootProfileNode = container.getTraceService().getProfile(trace.getId());
         assertThat(rootProfileNode.getSampleCount()).isBetween(5, 15);
@@ -137,62 +130,6 @@ public class ProfilingTest {
         executorService.shutdown();
     }
 
-    @Test
-    public void shouldReadOutlierProfile() throws Exception {
-        // given
-        TraceConfig traceConfig = container.getConfigService().getTraceConfig();
-        traceConfig.setOutlierProfilingEnabled(true);
-        traceConfig.setOutlierProfilingInitialDelayMillis(100);
-        traceConfig.setOutlierProfilingIntervalMillis(20);
-        container.getConfigService().updateTraceConfig(traceConfig);
-        ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
-        profilingConfig.setEnabled(false);
-        container.getConfigService().updateProfilingConfig(profilingConfig);
-        // when
-        container.executeAppUnderTest(ShouldGenerateOutlierTraceWithProfile.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        ProfileNode rootProfileNode = container.getTraceService().getOutlierProfile(trace.getId());
-        assertThat(trace.getProfileExistence()).isEqualTo(Existence.NO);
-        assertThat(trace.getOutlierProfileExistence()).isEqualTo(Existence.YES);
-        // outlier profiler should have captured around 10 stack traces
-        int sampleCount = rootProfileNode.getSampleCount();
-        assertThat(sampleCount).isBetween(5, 15);
-        assertThatTreeDoesNotContainSyntheticMetricWrapperMethods(rootProfileNode);
-    }
-
-    @Test
-    public void shouldNotReadOutlierProfileWhenDisabled() throws Exception {
-        // given
-        TraceConfig traceConfig = container.getConfigService().getTraceConfig();
-        traceConfig.setOutlierProfilingEnabled(false);
-        traceConfig.setOutlierProfilingInitialDelayMillis(100);
-        traceConfig.setOutlierProfilingIntervalMillis(20);
-        container.getConfigService().updateTraceConfig(traceConfig);
-        ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
-        profilingConfig.setEnabled(false);
-        container.getConfigService().updateProfilingConfig(profilingConfig);
-        // when
-        container.executeAppUnderTest(ShouldGenerateOutlierTraceWithProfile.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getProfileExistence()).isEqualTo(Existence.NO);
-        assertThat(trace.getOutlierProfileExistence()).isEqualTo(Existence.NO);
-    }
-
-    private static void assertThatTreeDoesNotContainSyntheticMetricWrapperMethods(
-            ProfileNode profileNode) {
-        if (profileNode.getStackTraceElement().contains("$glowroot$metric$")) {
-            throw new AssertionError("Not expecting synthetic metric methods but found: "
-                    + profileNode.getStackTraceElement());
-        }
-        if (profileNode.getChildNodes() != null) {
-            for (ProfileNode child : profileNode.getChildNodes()) {
-                assertThatTreeDoesNotContainSyntheticMetricWrapperMethods(child);
-            }
-        }
-    }
-
     public static class ShouldWaitForInterrupt implements AppUnderTest, TraceMarker {
         @Override
         public void executeApp() throws InterruptedException {
@@ -218,17 +155,6 @@ public class ProfilingTest {
         @Override
         public void traceMarker() throws InterruptedException {
             Threads.moreAccurateSleep(200);
-        }
-    }
-
-    public static class ShouldGenerateOutlierTraceWithProfile implements AppUnderTest, TraceMarker {
-        @Override
-        public void executeApp() throws InterruptedException {
-            traceMarker();
-        }
-        @Override
-        public void traceMarker() throws InterruptedException {
-            Threads.moreAccurateSleep(300);
         }
     }
 

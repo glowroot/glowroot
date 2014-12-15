@@ -45,7 +45,6 @@ class TraceTestData {
                 .customAttributes("{\"abc\":\"xyz\", \"xyz\":\"abc\"}")
                 .customAttributesForIndexing(ImmutableSetMultimap.of("abc", "xyz", "xyz", "abc"))
                 .entriesExistence(Existence.NO)
-                .outlierProfileExistence(Existence.NO)
                 .profileExistence(Existence.NO)
                 .build();
     }

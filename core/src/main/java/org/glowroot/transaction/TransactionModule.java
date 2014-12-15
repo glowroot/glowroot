@@ -48,7 +48,6 @@ public class TransactionModule {
     private final @Nullable ThreadAllocatedBytes threadAllocatedBytes;
 
     private final ImmediateTraceStoreWatcher immedateTraceStoreWatcher;
-    private final OutlierProfileWatcher outlierProfileWatcher;
 
     private final boolean metricWrapperMethods;
     private final boolean jvmRetransformClassesSupported;
@@ -94,12 +93,8 @@ public class TransactionModule {
 
         immedateTraceStoreWatcher = new ImmediateTraceStoreWatcher(scheduledExecutor,
                 transactionRegistry, transactionCollector, configService, ticker);
-        outlierProfileWatcher = new OutlierProfileWatcher(scheduledExecutor,
-                transactionRegistry, configService, ticker);
         immedateTraceStoreWatcher.scheduleWithFixedDelay(scheduledExecutor, 0,
                 ImmediateTraceStoreWatcher.PERIOD_MILLIS, MILLISECONDS);
-        outlierProfileWatcher.scheduleWithFixedDelay(scheduledExecutor, 0,
-                OutlierProfileWatcher.PERIOD_MILLIS, MILLISECONDS);
         final UserProfileScheduler userProfileScheduler =
                 new UserProfileScheduler(scheduledExecutor, configService);
         // this assignment to local variable is just to make checker framework happy
@@ -150,7 +145,6 @@ public class TransactionModule {
     @OnlyUsedByTests
     public void close() {
         immedateTraceStoreWatcher.cancel();
-        outlierProfileWatcher.cancel();
         PluginServicesRegistry.clearStaticState();
     }
 }

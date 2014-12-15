@@ -189,8 +189,6 @@ public class TransactionCollectorImpl implements TransactionCollector {
                 transaction.getEntriesCopy(), transaction.getStartTick(), captureTick);
         CharSource profile =
                 ProfileCharSourceCreator.createProfileCharSource(transaction.getProfile());
-        CharSource outlierProfile =
-                ProfileCharSourceCreator.createProfileCharSource(transaction.getOutlierProfile());
-        traceRepository.store(trace, entries, profile, outlierProfile);
+        traceRepository.store(trace, entries, profile);
     }
 }

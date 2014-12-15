@@ -47,7 +47,7 @@ class UserProfileScheduler {
         // immediately, if trace duration already exceeds configured collection interval)
         int intervalMillis = userRecordingConfig.profileIntervalMillis();
         ScheduledRunnable profileRunnable =
-                new TransactionProfileRunnable(transaction, false, configService);
+                new TransactionProfileRunnable(transaction, configService);
         long initialDelay =
                 Math.max(0, intervalMillis - NANOSECONDS.toMillis(transaction.getDuration()));
         profileRunnable.scheduleWithFixedDelay(scheduledExecutor, initialDelay, intervalMillis,

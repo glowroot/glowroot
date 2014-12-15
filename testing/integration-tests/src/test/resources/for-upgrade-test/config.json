@@ -1,10 +1,7 @@
 {
   "trace": {
     "enabled": true,
-    "storeThresholdMillis": 0,
-    "outlierProfilingEnabled": true,
-    "outlierProfilingInitialDelayMillis": 10000,
-    "outlierProfilingIntervalMillis": 1000
+    "storeThresholdMillis": 0
   },
   "profiling": {
     "enabled": true,
@@ -23,8 +20,8 @@
   "ui": {
     "defaultTransactionType": "",
     "port": 0,
-    "sessionTimeoutMinutes": 30,
-    "passwordHash": ""
+    "passwordHash": "",
+    "sessionTimeoutMinutes": 30
   },
   "advanced": {
     "metricWrapperMethods": true,
@@ -52,6 +49,38 @@
     {
       "id": "glowroot-test-container",
       "enabled": true
+    }
+  ],
+  "gauges": [
+    {
+      "name": "java.lang/Memory",
+      "mbeanObjectName": "java.lang:type=Memory",
+      "mbeanAttributeNames": [
+        "HeapMemoryUsage.used"
+      ]
+    },
+    {
+      "name": "java.lang/MemoryPool/PS Old Gen",
+      "mbeanObjectName": "java.lang:type=MemoryPool,name=PS Old Gen",
+      "mbeanAttributeNames": [
+        "Usage.used"
+      ]
+    },
+    {
+      "name": "java.lang/MemoryPool/PS Eden Space",
+      "mbeanObjectName": "java.lang:type=MemoryPool,name=PS Eden Space",
+      "mbeanAttributeNames": [
+        "Usage.used"
+      ]
+    },
+    {
+      "name": "java.lang/OperatingSystem",
+      "mbeanObjectName": "java.lang:type=OperatingSystem",
+      "mbeanAttributeNames": [
+        "FreePhysicalMemorySize",
+        "ProcessCpuLoad",
+        "SystemCpuLoad"
+      ]
     }
   ]
 }

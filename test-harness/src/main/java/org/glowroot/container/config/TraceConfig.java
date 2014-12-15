@@ -29,9 +29,6 @@ public class TraceConfig {
 
     private boolean enabled;
     private int storeThresholdMillis;
-    private boolean outlierProfilingEnabled;
-    private int outlierProfilingInitialDelayMillis;
-    private int outlierProfilingIntervalMillis;
 
     private final String version;
 
@@ -55,30 +52,6 @@ public class TraceConfig {
         this.storeThresholdMillis = storeThresholdMillis;
     }
 
-    public boolean isOutlierProfilingEnabled() {
-        return outlierProfilingEnabled;
-    }
-
-    public void setOutlierProfilingEnabled(boolean outlierProfilingEnabled) {
-        this.outlierProfilingEnabled = outlierProfilingEnabled;
-    }
-
-    public int getOutlierProfilingInitialDelayMillis() {
-        return outlierProfilingInitialDelayMillis;
-    }
-
-    public void setOutlierProfilingInitialDelayMillis(int outlierProfilingInitialDelayMillis) {
-        this.outlierProfilingInitialDelayMillis = outlierProfilingInitialDelayMillis;
-    }
-
-    public int getOutlierProfilingIntervalMillis() {
-        return outlierProfilingIntervalMillis;
-    }
-
-    public void setOutlierProfilingIntervalMillis(int outlierProfilingIntervalMillis) {
-        this.outlierProfilingIntervalMillis = outlierProfilingIntervalMillis;
-    }
-
     public String getVersion() {
         return version;
     }
@@ -91,12 +64,7 @@ public class TraceConfig {
             // sending to the server, and represents the current version hash when receiving from
             // the server
             return Objects.equal(enabled, that.enabled)
-                    && Objects.equal(storeThresholdMillis, that.storeThresholdMillis)
-                    && Objects.equal(outlierProfilingEnabled, that.outlierProfilingEnabled)
-                    && Objects.equal(outlierProfilingInitialDelayMillis,
-                            that.outlierProfilingInitialDelayMillis)
-                    && Objects.equal(outlierProfilingIntervalMillis,
-                            that.outlierProfilingIntervalMillis);
+                    && Objects.equal(storeThresholdMillis, that.storeThresholdMillis);
         }
         return false;
     }
@@ -106,17 +74,13 @@ public class TraceConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(enabled, storeThresholdMillis, outlierProfilingEnabled,
-                outlierProfilingInitialDelayMillis, outlierProfilingIntervalMillis);
+        return Objects.hashCode(enabled, storeThresholdMillis);
     }
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
                 .add("enabled", enabled)
                 .add("storeThresholdMillis", storeThresholdMillis)
-                .add("outlierProfilingEnabled", outlierProfilingEnabled)
-                .add("outlierProfilingInitialDelayMillis", outlierProfilingInitialDelayMillis)
-                .add("outlierProfilingIntervalMillis", outlierProfilingIntervalMillis)
                 .add("version", version)
                 .toString();
     }
@@ -125,23 +89,13 @@ public class TraceConfig {
     static TraceConfig readValue(
             @JsonProperty("enabled") @Nullable Boolean enabled,
             @JsonProperty("storeThresholdMillis") @Nullable Integer storeThresholdMillis,
-            @JsonProperty("outlierProfilingEnabled") @Nullable Boolean outlierProfilingEnabled,
-            @JsonProperty("outlierProfilingInitialDelayMillis") @Nullable Integer outlierProfilingInitialDelayMillis,
-            @JsonProperty("outlierProfilingIntervalMillis") @Nullable Integer outlierProfilingIntervalMillis,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(enabled, "enabled");
         checkRequiredProperty(storeThresholdMillis, "storeThresholdMillis");
-        checkRequiredProperty(outlierProfilingEnabled, "outlierProfilingEnabled");
-        checkRequiredProperty(outlierProfilingInitialDelayMillis,
-                "outlierProfilingInitialDelayMillis");
-        checkRequiredProperty(outlierProfilingIntervalMillis, "outlierProfilingIntervalMillis");
         checkRequiredProperty(version, "version");
         TraceConfig config = new TraceConfig(version);
         config.setEnabled(enabled);
         config.setStoreThresholdMillis(storeThresholdMillis);
-        config.setOutlierProfilingEnabled(outlierProfilingEnabled);
-        config.setOutlierProfilingInitialDelayMillis(outlierProfilingInitialDelayMillis);
-        config.setOutlierProfilingIntervalMillis(outlierProfilingIntervalMillis);
         return config;
     }
 }

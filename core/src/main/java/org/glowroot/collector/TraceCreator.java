@@ -78,11 +78,6 @@ public class TraceCreator {
             builder.gcInfos(Marshaling2.toJson(gcInfos, GcInfo.class));
         }
         builder.entriesExistence(Existence.YES);
-        if (transaction.getOutlierProfile() == null) {
-            builder.outlierProfileExistence(Existence.NO);
-        } else {
-            builder.outlierProfileExistence(Existence.YES);
-        }
         if (transaction.getProfile() == null) {
             builder.profileExistence(Existence.NO);
         } else {
