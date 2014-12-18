@@ -60,6 +60,15 @@ glowroot.controller('JvmGaugesCtrl', [
           $scope.allShortGaugeNames = createShortGaugeNames($scope.allGaugeNames);
 
           var gaugeNames = $location.search()['gauge-name'];
+          if (!gaugeNames) {
+            gaugeNames = [];
+            if ($scope.allGaugeNames.indexOf('java.lang/Memory/HeapMemoryUsage.used') !== -1) {
+              gaugeNames.push('java.lang/Memory/HeapMemoryUsage.used');
+            }
+            if ($scope.allGaugeNames.indexOf('java.lang/MemoryPool/PS Old Gen/Usage.used') !== -1) {
+              gaugeNames.push('java.lang/MemoryPool/PS Old Gen/Usage.used');
+            }
+          }
           if (angular.isArray(gaugeNames)) {
             angular.forEach(gaugeNames, function (gaugeName) {
               if ($scope.allGaugeNames.indexOf(gaugeName) !== -1) {
@@ -107,8 +116,8 @@ glowroot.controller('JvmGaugesCtrl', [
     }
 
     function newRollupLevel(from, to) {
-      // 2 hours so that initial range will be rendered at fine-grained level (no rollup)
-      if (to - from <= 2 * 3600 * 1000) {
+      // over 1 hour rendered at fine-grained detail looks very jumpy
+      if (to - from <= 3600 * 1000) {
         return 0;
       } else {
         return 1;
