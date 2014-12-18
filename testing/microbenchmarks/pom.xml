@@ -60,7 +60,7 @@
               <goal>shade</goal>
             </goals>
             <configuration>
-              <finalName>microbenchmarks</finalName>
+              <finalName>benchmarks</finalName>
               <dependencyReducedPomLocation>
                 ${project.build.directory}/dependency-reduced-pom.xml
               </dependencyReducedPomLocation>

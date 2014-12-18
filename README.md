@@ -68,7 +68,7 @@ Thanks to [Sauce Labs](https://saucelabs.com), the WebDriver tests run against F
 Microbenchmarks are written using the excellent [JMH](http://openjdk.java.net/projects/code-tools/jmh/) benchmark harness, and can be built and run using
 
     mvn clean package
-    java -jar target/microbenchmarks.jar -jvmArgs -javaagent:path/to/glowroot.jar
+    java -jar target/benchmarks.jar -jvmArgs -javaagent:path/to/glowroot.jar
 
 from the following locations:
 
