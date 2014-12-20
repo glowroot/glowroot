@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter.Lf2SpacesIndenter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.base.StandardSystemProperty;
@@ -212,7 +212,7 @@ class ConfigFile {
 
     private static String writeValueAsString(Config config) throws IOException {
         CustomPrettyPrinter prettyPrinter = new CustomPrettyPrinter();
-        prettyPrinter.indentArraysWith(Lf2SpacesIndenter.instance);
+        prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))
                 .setPrettyPrinter(prettyPrinter);
