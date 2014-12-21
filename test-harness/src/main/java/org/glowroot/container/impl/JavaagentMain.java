@@ -132,8 +132,8 @@ public class JavaagentMain {
         List<String> jacocoArgs = Lists.newArrayList();
         for (String argument : arguments) {
             if (argument.startsWith("-javaagent:") && argument.contains("jacoco")) {
-                jacocoArgs.add(argument);
-                jacocoArgs.add("-Djacoco.inclBootstrapClasses=true");
+                jacocoArgs.add(argument + ",inclbootstrapclasses=true,includes=org.glowroot.*");
+                break;
             }
         }
         return jacocoArgs;
