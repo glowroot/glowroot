@@ -78,7 +78,7 @@ from the following locations:
 
 ## Overhead
 
-While acknowledging that overhead depends on many factors, see [glowroot-benchmark](https://github.com/glowroot/glowroot-benchmark) for a best effort to provide some concrete overhead numbers.
+Monitoring overhead depends on many factors, but is generally under 2 percent as a result of extensive microbenchmarking and microprofiling of the monitoring code. See the [glowroot-benchmark](https://github.com/glowroot/glowroot-benchmark) repository for a concrete benchmark and results.
 
 ## Code quality
 
