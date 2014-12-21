@@ -37,6 +37,8 @@ public interface Container {
     // resets Glowroot back to square one
     void checkAndReset() throws Exception;
 
+    void checkAndResetConfigOnly() throws Exception;
+
     void close() throws Exception;
 
     void close(boolean evenIfShared) throws Exception;

@@ -31,12 +31,36 @@ public class ConfigSidebar {
         this.driver = driver;
     }
 
-    public WebElement getGeneralLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("General"));
+    public WebElement getTracesLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("Traces"));
+    }
+
+    public WebElement getProfilingLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("Profiling"));
+    }
+
+    public WebElement getUserRecordingLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("User recording"));
     }
 
     public WebElement getCapturePointsLink() {
         return Utils.withWait(driver, getSidebar(), linkText("Capture points"));
+    }
+
+    public WebElement getGaugesLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("Gauges"));
+    }
+
+    public WebElement getStorageLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("Storage"));
+    }
+
+    public WebElement getUserInterfaceLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("User interface"));
+    }
+
+    public WebElement getAdvancedLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("Advanced"));
     }
 
     private WebElement getSidebar() {

@@ -15,136 +15,23 @@
  */
 package org.glowroot.tests.webdriver;
 
-import com.saucelabs.common.SauceOnDemandAuthentication;
-import com.saucelabs.common.SauceOnDemandSessionIdProvider;
-import com.saucelabs.junit.SauceOnDemandTestWatcher;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
-import org.junit.rules.TestWatcher;
-import org.openqa.selenium.Dimension;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.ie.InternetExplorerDriver;
-import org.openqa.selenium.remote.DesiredCapabilities;
-import org.openqa.selenium.remote.RemoteWebDriver;
-import org.openqa.selenium.server.SeleniumServer;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import org.glowroot.Containers;
-import org.glowroot.container.Container;
-import org.glowroot.container.config.UserInterfaceConfig;
+import org.glowroot.tests.webdriver.config.AdvancedConfigPage;
 import org.glowroot.tests.webdriver.config.CapturePointListPage;
 import org.glowroot.tests.webdriver.config.CapturePointSection;
 import org.glowroot.tests.webdriver.config.ConfigSidebar;
+import org.glowroot.tests.webdriver.config.ProfilingConfigPage;
+import org.glowroot.tests.webdriver.config.StorageConfigPage;
 import org.glowroot.tests.webdriver.config.TraceConfigPage;
+import org.glowroot.tests.webdriver.config.UserRecordingConfigPage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ConfigTest {
-
-    private static final boolean USE_LOCAL_IE = false;
-
-    private static final TestName testNameWatcher = new TestName();
-
-    private static Container container;
-    private static SeleniumServer seleniumServer;
-    private static WebDriver driver;
-
-    private String remoteWebDriverSessionId;
-
-    @Rule
-    public ScreenshotOnExceptionRule screenshotOnExceptionRule = new ScreenshotOnExceptionRule();
-
-    @BeforeClass
-    public static void setUp() throws Exception {
-        container = Containers.getSharedContainer();
-        if (SauceLabs.useSauceLabs()) {
-            // glowroot must listen on one of the ports that sauce connect proxies
-            // see https://saucelabs.com/docs/connect#localhost
-            UserInterfaceConfig userInterfaceConfig =
-                    container.getConfigService().getUserInterfaceConfig();
-            userInterfaceConfig.setPort(4000);
-            container.getConfigService().updateUserInterfaceConfig(userInterfaceConfig);
-        } else {
-            seleniumServer = new SeleniumServer();
-            seleniumServer.start();
-            // currently tests fail with default nativeEvents=true
-            // (can't select radio buttons on capture point page)
-            DesiredCapabilities capabilities = DesiredCapabilities.internetExplorer();
-            capabilities.setCapability("nativeEvents", false);
-            // single webdriver instance for much better performance
-            if (USE_LOCAL_IE) {
-                driver = new InternetExplorerDriver(capabilities);
-            } else {
-                driver = new FirefoxDriver(capabilities);
-            }
-            // 992 is bootstrap media query breakpoint for screen-md-min
-            // 1200 is bootstrap media query breakpoint for screen-lg-min
-            driver.manage().window().setSize(new Dimension(1200, 800));
-        }
-    }
-
-    @AfterClass
-    public static void tearDown() throws Exception {
-        if (!SauceLabs.useSauceLabs()) {
-            driver.quit();
-            seleniumServer.stop();
-        }
-        container.close();
-    }
-
-    @Before
-    public void beforeEachTest() throws Exception {
-        if (SauceLabs.useSauceLabs()) {
-            // need separate webdriver instance per test in order to report each test separately in
-            // saucelabs
-            String testName = getClass().getName() + '.' + testNameWatcher.getMethodName();
-            driver = SauceLabs.getWebDriver(testName);
-            // need to capture sessionId since it is needed in sauceLabsTestWatcher, after
-            // driver.quit() is called
-            remoteWebDriverSessionId = ((RemoteWebDriver) driver).getSessionId().toString();
-        }
-        screenshotOnExceptionRule.setDriver(driver);
-    }
-
-    @After
-    public void afterEachTest() throws Exception {
-        if (SauceLabs.useSauceLabs()) {
-            driver.quit();
-        }
-        container.checkAndReset();
-    }
-
-    @Rule
-    public TestWatcher getTestNameWatcher() {
-        return testNameWatcher;
-    }
-
-    @Rule
-    public TestWatcher getSauceLabsTestWatcher() {
-        if (!SauceLabs.useSauceLabs()) {
-            return new TestWatcher() {};
-        }
-        String sauceUsername = System.getenv("SAUCE_USERNAME");
-        String sauceAccessKey = System.getenv("SAUCE_ACCESS_KEY");
-        SauceOnDemandAuthentication authentication =
-                new SauceOnDemandAuthentication(sauceUsername, sauceAccessKey);
-        SauceOnDemandSessionIdProvider sessionIdProvider =
-                new SauceOnDemandSessionIdProvider() {
-                    @Override
-                    public String getSessionId() {
-                        return remoteWebDriverSessionId;
-                    }
-                };
-        return new SauceOnDemandTestWatcher(sessionIdProvider, authentication);
-    }
+public class ConfigTest extends WebdriverTest {
 
     @Test
     public void shouldUpdateTraceConfig() throws Exception {
@@ -172,11 +59,173 @@ public class ConfigTest {
         Thread.sleep(100);
         assertThat(page.getEnabledSwitchOn().getAttribute("class").split(" "))
                 .doesNotContain("active");
-        assertThat(page.getEnabledSwitchOff().getAttribute("class").split(" "))
-                .contains("active");
-        assertThat(page.getStoreThresholdTextField().getAttribute("value"))
-                .isEqualTo("2345");
+        assertThat(page.getEnabledSwitchOff().getAttribute("class").split(" ")).contains("active");
+        assertThat(page.getStoreThresholdTextField().getAttribute("value")).isEqualTo("2345");
     }
+
+    @Test
+    public void shouldUpdateProfilingConfig() throws Exception {
+        // given
+        App app = new App(driver, "http://localhost:" + container.getUiPort());
+        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+        ProfilingConfigPage page = new ProfilingConfigPage(driver);
+
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getProfilingLink().click();
+
+        // when
+        page.getEnabledSwitchOff().click();
+        page.getIntervalTextField().clear();
+        page.getIntervalTextField().sendKeys("2345");
+        page.getSaveButton().click();
+        // wait for save to complete
+        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
+                ExpectedConditions.elementToBeClickable(page.getSaveButton())));
+
+        // then
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getProfilingLink().click();
+        // need to give angular view a chance to render before assertions
+        Thread.sleep(100);
+        assertThat(page.getEnabledSwitchOn().getAttribute("class").split(" "))
+                .doesNotContain("active");
+        assertThat(page.getEnabledSwitchOff().getAttribute("class").split(" ")).contains("active");
+        assertThat(page.getIntervalTextField().getAttribute("value")).isEqualTo("2345");
+    }
+
+    @Test
+    public void shouldUpdateUserRecordingConfig() throws Exception {
+        // given
+        App app = new App(driver, "http://localhost:" + container.getUiPort());
+        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+        UserRecordingConfigPage page = new UserRecordingConfigPage(driver);
+
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getUserRecordingLink().click();
+
+        // when
+        page.getEnabledSwitchOff().click();
+        page.getUserTextField().clear();
+        page.getUserTextField().sendKeys("abc");
+        page.getProfileIntervalTextField().clear();
+        page.getProfileIntervalTextField().sendKeys("2345");
+        page.getSaveButton().click();
+        // wait for save to complete
+        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
+                ExpectedConditions.elementToBeClickable(page.getSaveButton())));
+
+        // then
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getUserRecordingLink().click();
+        // need to give angular view a chance to render before assertions
+        Thread.sleep(100);
+        assertThat(page.getEnabledSwitchOn().getAttribute("class").split(" "))
+                .doesNotContain("active");
+        assertThat(page.getEnabledSwitchOff().getAttribute("class").split(" ")).contains("active");
+        assertThat(page.getUserTextField().getAttribute("value")).isEqualTo("abc");
+        assertThat(page.getProfileIntervalTextField().getAttribute("value")).isEqualTo("2345");
+    }
+
+    @Test
+    public void shouldUpdateStorageConfig() throws Exception {
+        // given
+        App app = new App(driver, "http://localhost:" + container.getUiPort());
+        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+        StorageConfigPage page = new StorageConfigPage(driver);
+
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getStorageLink().click();
+
+        // when
+        page.getAggregateExpirationTextField().clear();
+        page.getAggregateExpirationTextField().sendKeys("44");
+        page.getTracesExpirationTextField().clear();
+        page.getTracesExpirationTextField().sendKeys("55");
+        page.getCappedDatabaseSizeTextField().clear();
+        page.getCappedDatabaseSizeTextField().sendKeys("678");
+        page.getSaveButton().click();
+        // wait for save to complete
+        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
+                ExpectedConditions.elementToBeClickable(page.getSaveButton())));
+
+        // then
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getStorageLink().click();
+        // need to give angular view a chance to render before assertions
+        Thread.sleep(100);
+        assertThat(page.getAggregateExpirationTextField().getAttribute("value"))
+                .isEqualTo("44");
+        assertThat(page.getTracesExpirationTextField().getAttribute("value")).isEqualTo("55");
+        assertThat(page.getCappedDatabaseSizeTextField().getAttribute("value"))
+                .isEqualTo("678");
+    }
+
+    // TODO test user interface config page
+
+    @Test
+    public void shouldUpdateAdvancedConfig() throws Exception {
+        // given
+        App app = new App(driver, "http://localhost:" + container.getUiPort());
+        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+        AdvancedConfigPage page = new AdvancedConfigPage(driver);
+
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getAdvancedLink().click();
+
+        // when
+        page.getMetricWrapperMethodsCheckBox().click();
+        page.getImmediatePartialStoreThresholdTextField().clear();
+        page.getImmediatePartialStoreThresholdTextField().sendKeys("1234");
+        page.getMaxTraceEntriesPerTransactionTextField().clear();
+        page.getMaxTraceEntriesPerTransactionTextField().sendKeys("2345");
+        page.getMaxStackTraceSamplesPerTransactionTextField().clear();
+        page.getMaxStackTraceSamplesPerTransactionTextField().sendKeys("3456");
+        page.getThreadInfoCheckBox().click();
+        page.getGcInfoCheckBox().click();
+        page.getMBeanGaugeNotFoundDelayTextField().clear();
+        page.getMBeanGaugeNotFoundDelayTextField().sendKeys("4567");
+        page.getInternalQueryTimeoutTextField().clear();
+        page.getInternalQueryTimeoutTextField().sendKeys("5678");
+        page.getSaveButton().click();
+        // wait for save to complete
+        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
+                ExpectedConditions.elementToBeClickable(page.getSaveButton())));
+
+        // then
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getAdvancedLink().click();
+        // need to give angular view a chance to render before assertions
+        Thread.sleep(100);
+        assertThat(page.getMetricWrapperMethodsCheckBox().isSelected()).isFalse();
+        assertThat(page.getImmediatePartialStoreThresholdTextField().getAttribute("value"))
+                .isEqualTo("1234");
+        assertThat(page.getMaxTraceEntriesPerTransactionTextField().getAttribute("value"))
+                .isEqualTo("2345");
+        assertThat(page.getMaxStackTraceSamplesPerTransactionTextField().getAttribute("value"))
+                .isEqualTo("3456");
+        assertThat(page.getThreadInfoCheckBox().isSelected()).isFalse();
+        assertThat(page.getGcInfoCheckBox().isSelected()).isFalse();
+        assertThat(page.getMBeanGaugeNotFoundDelayTextField().getAttribute("value"))
+                .isEqualTo("4567");
+        assertThat(page.getInternalQueryTimeoutTextField().getAttribute("value"))
+                .isEqualTo("5678");
+    }
+
+    // TODO test plugins config page
+
+    // TODO test gauges config page
 
     @Test
     public void shouldAddTraceCapturePoint() throws Exception {

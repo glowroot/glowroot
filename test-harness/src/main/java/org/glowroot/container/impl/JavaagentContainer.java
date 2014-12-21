@@ -182,6 +182,11 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
     public void checkAndReset() throws Exception {
         traceService.assertNoActiveTransactions();
         traceService.deleteAll();
+        checkAndResetConfigOnly();
+    }
+
+    @Override
+    public void checkAndResetConfigOnly() throws Exception {
         configService.resetAllConfig();
         // traceStoreThresholdMillis=0 is the default for testing
         configService.setTraceStoreThresholdMillis(0);
