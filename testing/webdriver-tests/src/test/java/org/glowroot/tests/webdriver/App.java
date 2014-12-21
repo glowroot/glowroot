@@ -17,11 +17,7 @@ package org.glowroot.tests.webdriver;
 
 import java.io.IOException;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Resources;
-import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.phantomjs.PhantomJSDriver;
 
 class App {
 
@@ -35,18 +31,5 @@ class App {
 
     void open() throws IOException {
         driver.get(baseUrl);
-        addBindPolyfillIfNecessary();
-    }
-
-    private void addBindPolyfillIfNecessary() throws IOException {
-        // currently not using phantomjs driver due to
-        // https://github.com/detro/ghostdriver/issues/140
-        if (driver instanceof PhantomJSDriver) {
-            // PhantomJS doesn't support bind yet, use polyfill in the meantime
-            // see https://github.com/ariya/phantomjs/issues/10522
-            String js =
-                    Resources.toString(Resources.getResource("bind-polyfill.js"), Charsets.UTF_8);
-            ((JavascriptExecutor) driver).executeScript(js);
-        }
     }
 }
