@@ -17,10 +17,8 @@ package org.glowroot.sandbox.ui;
 
 import java.io.File;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.Files;
 
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
@@ -46,13 +44,8 @@ public class UiSandboxMain {
     public static void main(String... args) throws Exception {
         Container container;
         File dataDir = new File("target");
-        // create stub config.json, otherwise glowroot container uses port 0 (any available)
         File configFile = new File(dataDir, "config.json");
-        boolean initConfig = false;
-        if (!configFile.exists()) {
-            Files.write("{}", configFile, Charsets.UTF_8);
-            initConfig = true;
-        }
+        boolean initConfig = !configFile.exists();
         if (useJavaagent) {
             container = new JavaagentContainer(dataDir, true, false, false,
                     ImmutableList.<String>of());
@@ -71,6 +64,7 @@ public class UiSandboxMain {
             }
             UserInterfaceConfig userInterfaceConfig =
                     container.getConfigService().getUserInterfaceConfig();
+            userInterfaceConfig.setPort(4000);
             userInterfaceConfig.setDefaultTransactionType("Sandbox");
             container.getConfigService().updateUserInterfaceConfig(userInterfaceConfig);
         }
