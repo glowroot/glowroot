@@ -98,6 +98,10 @@ glowroot.run([
   function ($rootScope, $http, $location, $modalStack, login) {
 
     $rootScope.signOut = function () {
+      // need to collapse the navbar in mobile view
+      var $navbarCollapse = $('.navbar-collapse');
+      $navbarCollapse.removeClass('in');
+      $navbarCollapse.addClass('collapse');
       $http.post('backend/sign-out')
           .success(function () {
             login.showLogin('You have been signed out');

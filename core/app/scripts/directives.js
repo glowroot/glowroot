@@ -253,10 +253,12 @@ glowroot.directive('gtNavbarItem', [
         gtDisplay: '@',
         gtItemName: '@',
         gtUrl: '@',
-        gtShow: '&'
+        gtShow: '&',
+        gtStyle: '@'
       },
       // replace is needed in order to not mess up bootstrap css hierarchical selectors
       replace: true,
+      transclude: true,
       templateUrl: 'template/gt-navbar-item.html',
       link: function (scope, iElement, iAttrs) {
         scope.ngShow = function () {

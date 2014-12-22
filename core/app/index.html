@@ -89,12 +89,13 @@
             </div>
           </ul>
           <ul class="nav navbar-nav navbar-right">
-            <li ng-class="{active: activeNavbarItem === 'config'}">
-              <a href="config/traces"
-                 style="padding-top: 14px; padding-bottom: 0; height: 50px;">
-                <i title="Configuration" class="fa fa-gears" style="font-size: 24px;"></i>
-              </a>
-            </li>
+            <div gt-navbar-item
+                 gt-display=""
+                 gt-item-name="config"
+                 gt-url="config/traces"
+                 gt-style="padding-top: 14px; padding-bottom: 0; height: 50px;">
+              <i title="Configuration" class="fa fa-gears" style="font-size: 24px;"></i>
+            </div>
             <li class="ng-cloak" ng-show="layout.passwordEnabled">
               <a href="#"
                  ng-click="signOut()"
