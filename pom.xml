@@ -445,9 +445,15 @@
               <verbose>true</verbose>
               <fork>true</fork>
               <executable>${checker.install.dir}/checker/bin/javac</executable>
+              <annotationProcessors>
+                <annotationProcessor>
+                  org.immutables.value.internal.processor.Processor
+                </annotationProcessor>
+                <annotationProcessor>
+                  org.checkerframework.checker.nullness.NullnessChecker
+                </annotationProcessor>
+              </annotationProcessors>
               <compilerArgs>
-                <arg>-processor</arg>
-                <arg>org.immutables.value.internal.processor.Processor,org.checkerframework.checker.nullness.NullnessChecker</arg>
                 <!-- checker.stubs.dir needs to be absolute path since relative path will be
                   interpreted from each module directory -->
                 <arg>-Astubs=${checker.stubs.dir}</arg>
