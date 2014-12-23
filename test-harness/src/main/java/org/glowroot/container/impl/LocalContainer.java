@@ -161,7 +161,7 @@ public class LocalContainer implements Container {
     }
 
     @Override
-    public int getUiPort() {
+    public int getUiPort() throws InterruptedException {
         return glowrootModule.getUiModule().getPort();
     }
 

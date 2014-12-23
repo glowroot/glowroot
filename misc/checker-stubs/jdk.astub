@@ -20,6 +20,10 @@ public interface ClassFileTransformer {
             byte[] classfileBuffer);
 }
 
+public interface Instrumentation {
+    Class[] getInitiatedClasses(@Nullable ClassLoader loader);
+}
+
 /* ========================================================================== */
 package java.net;
 

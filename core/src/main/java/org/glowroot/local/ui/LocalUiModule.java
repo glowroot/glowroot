@@ -19,20 +19,16 @@ import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import org.jboss.netty.channel.ChannelException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.CollectorModule;
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
+import org.glowroot.common.JavaVersion;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
@@ -49,16 +45,9 @@ import org.glowroot.transaction.TransactionModule;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.weaving.AnalyzedWorld;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class LocalUiModule {
-
-    private static final Logger logger = LoggerFactory.getLogger(LocalUiModule.class);
-
-    // default two http worker threads to keep # of threads down
-    private static final int numWorkerThreads =
-            Integer.getInteger("glowroot.internal.ui.workerThreads", 2);
-
-    // httpServer is only null if it could not even bind to port 0 (any available port)
-    private final @Nullable HttpServer httpServer;
 
     // only stored/exposed for tests
     private final AggregateCommonService aggregateCommonService;
@@ -66,6 +55,8 @@ public class LocalUiModule {
     private final TraceCommonService traceCommonService;
     // only stored/exposed for tests
     private final TraceExportHttpService traceExportHttpService;
+
+    private final LazyHttpServer lazyHttpServer;
 
     public LocalUiModule(Ticker ticker, Clock clock, File dataDir, JvmModule jvmModule,
             ConfigModule configModule, StorageModule storageModule,
@@ -112,8 +103,8 @@ public class LocalUiModule {
                 gaugePointDao, configService, jvmModule.getThreadAllocatedBytes(),
                 jvmModule.getHeapDumps(), collectorModule.getFixedGaugeIntervalSeconds(),
                 storageModule.getFixedGaugeRollupSeconds());
-        ConfigJsonService configJsonService = new ConfigJsonService(configService, cappedDatabase,
-                configModule.getPluginDescriptors(), dataDir, httpSessionManager,
+        ConfigJsonService configJsonService = new ConfigJsonService(configService,
+                cappedDatabase, configModule.getPluginDescriptors(), dataDir, httpSessionManager,
                 transactionModule);
         ClasspathCache classpathCache = new ClasspathCache(analyzedWorld, instrumentation);
         CapturePointJsonService capturePointJsonService = new CapturePointJsonService(
@@ -139,14 +130,20 @@ public class LocalUiModule {
 
         int port = configService.getUserInterfaceConfig().port();
         String bindAddress = getBindAddress(properties);
-        httpServer = buildHttpServer(bindAddress, port, httpSessionManager, indexHtmlHttpService,
-                layoutJsonService, traceDetailHttpService, traceExportHttpService, jsonServices);
-        if (httpServer != null) {
-            configJsonService.setHttpServer(httpServer);
+        lazyHttpServer = new LazyHttpServer(bindAddress, port, httpSessionManager,
+                indexHtmlHttpService, layoutJsonService, traceDetailHttpService,
+                traceExportHttpService, jsonServices);
+        if (instrumentation == null || JavaVersion.isJdk6()) {
+            lazyHttpServer.initNonLazy(configJsonService);
+        } else {
+            // this checkNotNull is safe because of above conditional
+            checkNotNull(instrumentation);
+            lazyHttpServer.init(instrumentation, configJsonService);
         }
     }
 
-    public int getPort() {
+    public int getPort() throws InterruptedException {
+        HttpServer httpServer = lazyHttpServer.get();
         if (httpServer == null) {
             return -1;
         } else {
@@ -155,7 +152,8 @@ public class LocalUiModule {
     }
 
     @OnlyUsedByTests
-    public void close() {
+    public void close() throws InterruptedException {
+        HttpServer httpServer = lazyHttpServer.get();
         if (httpServer != null) {
             httpServer.close();
         }
@@ -172,7 +170,9 @@ public class LocalUiModule {
     }
 
     @OnlyUsedByTests
-    public void changeHttpServerPort(int newPort) throws PortChangeFailedException {
+    public void changeHttpServerPort(int newPort) throws PortChangeFailedException,
+            InterruptedException {
+        HttpServer httpServer = lazyHttpServer.get();
         if (httpServer != null) {
             httpServer.changePort(newPort);
         }
@@ -185,48 +185,6 @@ public class LocalUiModule {
             return "0.0.0.0";
         } else {
             return bindAddress;
-        }
-    }
-
-    private static @Nullable HttpServer buildHttpServer(String bindAddress, int port,
-            HttpSessionManager httpSessionManager, IndexHtmlHttpService indexHtmlHttpService,
-            LayoutJsonService layoutJsonService, TraceDetailHttpService traceDetailHttpService,
-            TraceExportHttpService traceExportHttpService, List<Object> jsonServices) {
-
-        String resourceBase = "org/glowroot/local/ui/app-dist";
-
-        ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
-        // pages
-        uriMappings.put(Pattern.compile("^/$"), indexHtmlHttpService);
-        uriMappings.put(Pattern.compile("^/performance/transactions$"), indexHtmlHttpService);
-        uriMappings.put(Pattern.compile("^/performance/metrics$"), indexHtmlHttpService);
-        uriMappings.put(Pattern.compile("^/performance/flame-graph$"), indexHtmlHttpService);
-        uriMappings.put(Pattern.compile("^/errors/transactions$"), indexHtmlHttpService);
-        uriMappings.put(Pattern.compile("^/errors/messages$"), indexHtmlHttpService);
-        uriMappings.put(Pattern.compile("^/traces$"), indexHtmlHttpService);
-        uriMappings.put(Pattern.compile("^/jvm/.*$"), indexHtmlHttpService);
-        uriMappings.put(Pattern.compile("^/config/.*$"), indexHtmlHttpService);
-        uriMappings.put(Pattern.compile("^/login$"), indexHtmlHttpService);
-        // internal resources
-        uriMappings.put(Pattern.compile("^/scripts/(.*)$"), resourceBase + "/scripts/$1");
-        uriMappings.put(Pattern.compile("^/styles/(.*)$"), resourceBase + "/styles/$1");
-        uriMappings.put(Pattern.compile("^/fonts/(.*)$"), resourceBase + "/fonts/$1");
-        uriMappings.put(Pattern.compile("^/favicon\\.([0-9a-f]+)\\.ico$"),
-                resourceBase + "/favicon.$1.ico");
-        uriMappings.put(Pattern.compile("^/sources/(.*)$"), resourceBase + "/sources/$1");
-        // services
-        // export service is not bound under /backend since the export url is visible to users
-        // as the download url for the export file
-        uriMappings.put(Pattern.compile("^/export/trace/.*$"), traceExportHttpService);
-        uriMappings.put(Pattern.compile("^/backend/trace/entries$"), traceDetailHttpService);
-        uriMappings.put(Pattern.compile("^/backend/trace/profile$"), traceDetailHttpService);
-        try {
-            return new HttpServer(bindAddress, port, numWorkerThreads, layoutJsonService,
-                    uriMappings.build(), httpSessionManager, jsonServices);
-        } catch (ChannelException e) {
-            // binding to the specified port failed and binding to port 0 (any port) failed
-            logger.error("error binding to any port, the user interface will not be available", e);
-            return null;
         }
     }
 }

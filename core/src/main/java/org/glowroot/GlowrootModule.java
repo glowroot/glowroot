@@ -280,7 +280,7 @@ public class GlowrootModule {
     }
 
     @OnlyUsedByTests
-    public void close() throws IOException {
+    public void close() throws Exception {
         uiModule.close();
         collectorModule.close();
         transactionModule.close();

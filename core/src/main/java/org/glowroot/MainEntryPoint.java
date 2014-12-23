@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.GlowrootModule.DataDirLockedException;
 import org.glowroot.GlowrootModule.StartupFailedException;
+import org.glowroot.common.JavaVersion;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 import org.glowroot.markers.OnlyUsedByTests;
@@ -98,15 +99,13 @@ public class MainEntryPoint {
     @EnsuresNonNull("glowrootModule")
     private static void start(File dataDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile)
-            throws StartupFailedException {
+            throws StartupFailedException, InterruptedException {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion();
         glowrootModule = new GlowrootModule(dataDir, properties, instrumentation, glowrootJarFile,
                 version, false);
         startupLogger.info("Glowroot started (version {})", version);
-        startupLogger.info("Glowroot listening at http://localhost:{}",
-                glowrootModule.getUiModule().getPort());
         List<PluginDescriptor> pluginDescriptors =
                 glowrootModule.getConfigModule().getPluginDescriptors();
         List<String> pluginNames = Lists.newArrayList();
@@ -115,6 +114,11 @@ public class MainEntryPoint {
         }
         if (!pluginNames.isEmpty()) {
             startupLogger.info("Glowroot plugins loaded: {}", Joiner.on(", ").join(pluginNames));
+        }
+        if (instrumentation == null || JavaVersion.isJdk6()) {
+            // otherwise http server is lazy instantiated, see LocalUiModule
+            startupLogger.info("Glowroot listening at http://localhost:{}",
+                    glowrootModule.getUiModule().getPort());
         }
     }
 
@@ -155,7 +159,8 @@ public class MainEntryPoint {
 
     @OnlyUsedByTests
     @EnsuresNonNull("glowrootModule")
-    public static void start(Map<String, String> properties) throws StartupFailedException {
+    public static void start(Map<String, String> properties) throws StartupFailedException,
+            InterruptedException {
         File dataDir = DataDir.getDataDir(properties, null);
         start(dataDir, properties, null, null);
     }

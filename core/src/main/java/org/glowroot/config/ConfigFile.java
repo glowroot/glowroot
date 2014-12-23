@@ -35,6 +35,7 @@ import org.immutables.common.marshal.Marshaling;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.JavaVersion;
 import org.glowroot.markers.OnlyUsedByTests;
 
 class ConfigFile {
@@ -200,8 +201,7 @@ class ConfigFile {
                 .name("java.lang/OperatingSystem")
                 .mbeanObjectName("java.lang:type=OperatingSystem")
                 .addMbeanAttributeNames("FreePhysicalMemorySize");
-        String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
-        if (javaVersion != null && !javaVersion.startsWith("1.6")) {
+        if (!JavaVersion.isJdk6()) {
             // these are only available since 1.7
             operatingSystemMBean.addMbeanAttributeNames("ProcessCpuLoad");
             operatingSystemMBean.addMbeanAttributeNames("SystemCpuLoad");
