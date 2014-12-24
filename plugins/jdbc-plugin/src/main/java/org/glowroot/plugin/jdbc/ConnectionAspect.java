@@ -60,8 +60,8 @@ public class ConnectionAspect {
                         "captureTransactionLifecycleTraceEntries");
     }
 
-    @Pointcut(className = "java.sql.Connection", methodName = "commit", ignoreSelfNested = true,
-            metricName = "jdbc commit")
+    @Pointcut(className = "java.sql.Connection", methodName = "commit", methodParameterTypes = {},
+            ignoreSelfNested = true, metricName = "jdbc commit")
     public static class CommitAdvice {
         private static final MetricName metricName =
                 pluginServices.getMetricName(CommitAdvice.class);
@@ -85,8 +85,8 @@ public class ConnectionAspect {
         }
     }
 
-    @Pointcut(className = "java.sql.Connection", methodName = "rollback", ignoreSelfNested = true,
-            metricName = "jdbc rollback")
+    @Pointcut(className = "java.sql.Connection", methodName = "rollback", methodParameterTypes = {},
+            ignoreSelfNested = true, metricName = "jdbc rollback")
     public static class RollbackAdvice {
         private static final MetricName metricName =
                 pluginServices.getMetricName(RollbackAdvice.class);
@@ -111,8 +111,8 @@ public class ConnectionAspect {
         }
     }
 
-    @Pointcut(className = "java.sql.Connection", methodName = "close", ignoreSelfNested = true,
-            metricName = "jdbc connection close")
+    @Pointcut(className = "java.sql.Connection", methodName = "close", methodParameterTypes = {},
+            ignoreSelfNested = true, metricName = "jdbc connection close")
     public static class CloseAdvice {
         private static final MetricName metricName =
                 pluginServices.getMetricName(CloseAdvice.class);

@@ -34,7 +34,8 @@ public @interface Pointcut {
     // patterns never match constructors
     // static initializers ("<clinit>") are not supported
     String methodName();
-    String[] methodParameterTypes() default {};
+    // methodParameterTypes has no default since it's not obvious if default should be {} or {".."}
+    String[] methodParameterTypes();
     String methodReturnType() default "";
     MethodModifier[] methodModifiers() default {};
     // the default is false since it costs a thread local lookup to ignore self nested calls, and

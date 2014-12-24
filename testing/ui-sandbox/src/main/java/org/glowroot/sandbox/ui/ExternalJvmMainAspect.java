@@ -59,7 +59,7 @@ public class ExternalJvmMainAspect {
     }
 
     @Pointcut(className = "org.glowroot.container.javaagent.JavaagentContainer",
-            methodName = "metricMarkerOne", metricName = "metric one")
+            methodName = "metricMarkerOne", methodParameterTypes = {}, metricName = "metric one")
     public static class MetricMarkerOneAdvice {
 
         private static final MetricName metricName =
@@ -82,7 +82,7 @@ public class ExternalJvmMainAspect {
     }
 
     @Pointcut(className = "org.glowroot.container.javaagent.JavaagentContainer",
-            methodName = "metricMarkerTwo", metricName = "metric two")
+            methodName = "metricMarkerTwo", methodParameterTypes = {}, metricName = "metric two")
     public static class MetricMarkerTwoAdvice {
 
         private static final MetricName metricName =

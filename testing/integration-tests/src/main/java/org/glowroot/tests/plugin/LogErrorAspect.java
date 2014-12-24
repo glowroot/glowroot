@@ -57,7 +57,7 @@ public class LogErrorAspect {
     }
 
     @Pointcut(className = "org.glowroot.tests.LogError", methodName = "addNestedErrorEntry",
-            metricName = "add nested error entry")
+            methodParameterTypes = {}, metricName = "add nested error entry")
     public static class AddErrorEntryAdvice {
 
         private static final MetricName metricName =

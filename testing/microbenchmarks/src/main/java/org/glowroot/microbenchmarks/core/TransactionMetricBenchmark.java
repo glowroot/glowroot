@@ -28,9 +28,9 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.TraceEntry;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.microbenchmarks.core.support.MetricWorthy;
 
@@ -74,6 +74,7 @@ public class TransactionMetricBenchmark {
         }
     }
 
-    @Pointcut(className = "dummy", methodName = "dummy", metricName = "micro transaction")
+    @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {},
+            metricName = "micro transaction")
     private static class OnlyForTheMetricName {}
 }

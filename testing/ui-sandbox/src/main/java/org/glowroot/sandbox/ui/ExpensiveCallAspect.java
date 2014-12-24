@@ -49,7 +49,7 @@ public class ExpensiveCallAspect {
             "a cause with a different stack trace", nestedCause);
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute0",
-            metricName = "expensive 0")
+            methodParameterTypes = {}, metricName = "expensive 0")
     public static class ExpensiveCallAdvice0 {
         private static final MetricName metricName =
                 pluginServices.getMetricName(ExpensiveCallAdvice0.class);
@@ -80,7 +80,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute1",
-            metricName = "expensive 1")
+            methodParameterTypes = {}, metricName = "expensive 1")
     public static class ExpensiveCallAdvice1 {
         private static final MetricName metricName =
                 pluginServices.getMetricName(ExpensiveCallAdvice1.class);
@@ -107,7 +107,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute2",
-            metricName = "expensive 2")
+            methodParameterTypes = {}, metricName = "expensive 2")
     public static class ExpensiveCallAdvice2 {
         private static final MetricName metricName =
                 pluginServices.getMetricName(ExpensiveCallAdvice2.class);
@@ -134,7 +134,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute3",
-            metricName = "expensive 3")
+            methodParameterTypes = {}, metricName = "expensive 3")
     public static class ExpensiveCallAdvice3 {
         private static final MetricName metricName =
                 pluginServices.getMetricName(ExpensiveCallAdvice3.class);
@@ -161,7 +161,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute4",
-            metricName = "expensive 4")
+            methodParameterTypes = {}, metricName = "expensive 4")
     public static class ExpensiveCallAdvice4 {
         private static final MetricName metricName =
                 pluginServices.getMetricName(ExpensiveCallAdvice4.class);
@@ -188,7 +188,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute5",
-            metricName = "expensive 5")
+            methodParameterTypes = {}, metricName = "expensive 5")
     public static class ExpensiveCallAdvice5 {
         private static final MetricName metricName =
                 pluginServices.getMetricName(ExpensiveCallAdvice5.class);
@@ -215,7 +215,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute6",
-            metricName = "expensive 6")
+            methodParameterTypes = {}, metricName = "expensive 6")
     public static class ExpensiveCallAdvice6 {
         private static final MetricName metricName =
                 pluginServices.getMetricName(ExpensiveCallAdvice6.class);
@@ -242,7 +242,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute7",
-            metricName = "expensive 7")
+            methodParameterTypes = {}, metricName = "expensive 7")
     public static class ExpensiveCallAdvice7 {
         private static final MetricName metricName =
                 pluginServices.getMetricName(ExpensiveCallAdvice7.class);
@@ -269,7 +269,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute8",
-            metricName = "expensive 8")
+            methodParameterTypes = {}, metricName = "expensive 8")
     public static class ExpensiveCallAdvice8 {
         private static final MetricName metricName =
                 pluginServices.getMetricName(ExpensiveCallAdvice8.class);
@@ -296,7 +296,7 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute9",
-            metricName = "expensive 9 really long to test wrapping")
+            methodParameterTypes = {}, metricName = "expensive 9 really long to test wrapping")
     public static class ExpensiveCallAdvice9 {
         private static final MetricName metricName =
                 pluginServices.getMetricName(ExpensiveCallAdvice9.class);

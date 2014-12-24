@@ -20,6 +20,6 @@ import org.glowroot.api.weaving.Pointcut;
 // this forces a lot of extra weaving which can cause issues
 public class MatchAllTypesAspect {
 
-    @Pointcut(className = "*", methodName = "match_no_methods")
+    @Pointcut(className = "*", methodName = "match_no_methods", methodParameterTypes = {})
     public static class MatchAllTypesAdvice {}
 }

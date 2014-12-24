@@ -85,6 +85,7 @@ public class StoreBenchmark {
         rootTraceEntry.end();
     }
 
-    @Pointcut(className = "dummy", methodName = "dummy", metricName = "micro transaction")
+    @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {},
+            metricName = "micro transaction")
     private static class OnlyForTheMetricName {}
 }

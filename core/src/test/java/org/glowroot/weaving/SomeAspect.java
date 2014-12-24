@@ -41,7 +41,7 @@ import org.glowroot.api.weaving.Pointcut;
 public class SomeAspect {
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1|execute2",
-            metricName = "xyz")
+            methodParameterTypes = {}, metricName = "xyz")
     public static class BasicAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -73,7 +73,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.weaving.SuperBasicMisc", methodName = "superBasic",
-            metricName = "superbasic")
+            methodParameterTypes = {}, metricName = "superbasic")
     public static class SuperBasicAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -98,7 +98,7 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "java.lang.Throwable", methodName = "toString",
+    @Pointcut(className = "java.lang.Throwable", methodName = "toString", methodParameterTypes = {},
             metricName = "throwable to string")
     public static class ThrowableToStringAdvice {
         @IsEnabled
@@ -124,7 +124,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.BasicMisc", methodName = "<init>")
+    @Pointcut(className = "org.glowroot.weaving.BasicMisc", methodName = "<init>",
+            methodParameterTypes = {})
     public static class BasicMiscConstructorAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -206,7 +207,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.BasicMisc$InnerMisc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.BasicMisc$InnerMisc", methodName = "execute1",
+            methodParameterTypes = {})
     public static class BasicWithInnerClassAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -231,7 +233,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
+            methodParameterTypes = {})
     public static class BindReceiverAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver Misc receiver) {
@@ -308,7 +311,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
+            methodParameterTypes = {})
     public static class BindTravelerAdvice {
         @OnBefore
         public static String onBefore() {
@@ -328,7 +332,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
+            methodParameterTypes = {})
     public static class BindPrimitiveTravelerAdvice {
         @OnBefore
         public static int onBefore() {
@@ -348,7 +353,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
+            methodParameterTypes = {})
     public static class BindPrimitiveBooleanTravelerAdvice {
         @OnBefore
         public static boolean onBefore() {
@@ -368,7 +374,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
+            methodParameterTypes = {})
     public static class BindPrimitiveTravelerBadAdvice {
         @OnBefore
         public static void onBefore() {}
@@ -386,7 +393,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
+            methodParameterTypes = {})
     public static class BindPrimitiveBooleanTravelerBadAdvice {
         @OnBefore
         public static void onBefore() {}
@@ -404,7 +412,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
+            methodParameterTypes = {})
     public static class BindClassMetaAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindClassMeta TestClassMeta meta) {
@@ -507,7 +516,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn",
+            methodParameterTypes = {})
     public static class BindReturnAdvice {
         @OnReturn
         public static void onReturn(@BindReturn String value) {
@@ -515,8 +525,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.PrimitiveMisc",
-            methodName = "executeWithIntReturn")
+    @Pointcut(className = "org.glowroot.weaving.PrimitiveMisc", methodName = "executeWithIntReturn",
+            methodParameterTypes = {})
     public static class BindPrimitiveReturnAdvice {
         @OnReturn
         public static void onReturn(@BindReturn int value) {
@@ -524,8 +534,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.PrimitiveMisc",
-            methodName = "executeWithIntReturn")
+    @Pointcut(className = "org.glowroot.weaving.PrimitiveMisc", methodName = "executeWithIntReturn",
+            methodParameterTypes = {})
     public static class BindAutoboxedReturnAdvice {
         @OnReturn
         public static void onReturn(@BindReturn Object value) {
@@ -533,7 +543,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn",
+            methodParameterTypes = {})
     public static class BindOptionalReturnAdvice {
         @OnReturn
         public static void onReturn(@BindOptionalReturn OptionalReturn optionalReturn) {
@@ -541,7 +552,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
+            methodParameterTypes = {})
     public static class BindOptionalVoidReturnAdvice {
         @OnReturn
         public static void onReturn(@BindOptionalReturn OptionalReturn optionalReturn) {
@@ -549,8 +561,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.PrimitiveMisc",
-            methodName = "executeWithIntReturn")
+    @Pointcut(className = "org.glowroot.weaving.PrimitiveMisc", methodName = "executeWithIntReturn",
+            methodParameterTypes = {})
     public static class BindOptionalPrimitiveReturnAdvice {
         @OnReturn
         public static void onReturn(@BindOptionalReturn OptionalReturn optionalReturn) {
@@ -558,7 +570,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
+            methodParameterTypes = {})
     public static class BindThrowableAdvice {
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t) {
@@ -567,7 +580,7 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
-            metricName = "efg")
+            methodParameterTypes = {}, metricName = "efg")
     public static class BindMethodNameAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindMethodName String methodName) {
@@ -592,7 +605,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn",
+            methodParameterTypes = {})
     public static class ChangeReturnAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -692,11 +706,11 @@ public class SomeAspect {
     }
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
-            ignoreSelfNested = true)
+            methodParameterTypes = {}, ignoreSelfNested = true)
     public static class NotNestingAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
-            ignoreSelfNested = true)
+            methodParameterTypes = {}, ignoreSelfNested = true)
     public static class NotNestingWithNoIsEnabledAdvice {
         @OnBefore
         public static void onBefore() {
@@ -724,38 +738,40 @@ public class SomeAspect {
             methodParameterTypes = {".."}, ignoreSelfNested = true)
     public static class MultipleMethodsAdvice extends BasicAdvice {}
 
-    @Pointcut(className = "org.glowroot.weaving.StaticMisc", methodName = "executeStatic")
+    @Pointcut(className = "org.glowroot.weaving.StaticMisc", methodName = "executeStatic",
+            methodParameterTypes = {})
     public static class StaticAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
-            methodModifiers = MethodModifier.STATIC)
+            methodParameterTypes = {}, methodModifiers = MethodModifier.STATIC)
     public static class NonMatchingStaticAdvice extends BasicAdvice {}
 
-    @Pointcut(className = "org.glowroot.weaving.Mis*", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Mis*", methodName = "execute1",
+            methodParameterTypes = {})
     public static class ClassNamePatternAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
-            methodReturnType = "void")
+            methodParameterTypes = {}, methodReturnType = "void")
     public static class MethodReturnVoidAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn",
-            methodReturnType = "java.lang.CharSequence")
+            methodParameterTypes = {}, methodReturnType = "java.lang.CharSequence")
     public static class MethodReturnCharSequenceAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn",
-            methodReturnType = "java.lang.String")
+            methodParameterTypes = {}, methodReturnType = "java.lang.String")
     public static class MethodReturnStringAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
-            methodReturnType = "java.lang.String")
+            methodParameterTypes = {}, methodReturnType = "java.lang.String")
     public static class NonMatchingMethodReturnAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn",
-            methodReturnType = "java.lang.Number")
+            methodParameterTypes = {}, methodReturnType = "java.lang.Number")
     public static class NonMatchingMethodReturnAdvice2 extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn",
-            methodReturnType = "java.lang.")
+            methodParameterTypes = {}, methodReturnType = "java.lang.")
     public static class MethodReturnNarrowingAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "*",
@@ -846,7 +862,8 @@ public class SomeAspect {
     }
 
     // same as MoreVeryBadAdvice, but testing weaving a method with a non-void return type
-    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "executeWithReturn",
+            methodParameterTypes = {})
     public static class MoreVeryBadAdvice2 {
         @OnReturn
         public static void onReturn() {
@@ -874,7 +891,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1")
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
+            methodParameterTypes = {})
     public static class InterfaceAppearsTwiceInHierarchyAdvice {
         @OnBefore
         public static void onBefore() {

@@ -201,7 +201,8 @@ public class StatementAspect {
         }
     }
 
-    @Pointcut(className = "java.sql.PreparedStatement", methodName = "addBatch")
+    @Pointcut(className = "java.sql.PreparedStatement", methodName = "addBatch",
+            methodParameterTypes = {})
     public static class PreparedStatementAddBatchAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement) {
@@ -215,7 +216,8 @@ public class StatementAspect {
 
     // Statement.clearBatch() can be used to re-initiate a prepared statement
     // that has been cached from a previous usage
-    @Pointcut(className = "java.sql.Statement", methodName = "clearBatch")
+    @Pointcut(className = "java.sql.Statement", methodName = "clearBatch",
+            methodParameterTypes = {})
     public static class ClearBatchAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror statement) {
@@ -285,8 +287,8 @@ public class StatementAspect {
 
     // executeBatch is not included since it is handled separately (below)
     @Pointcut(className = "java.sql.PreparedStatement",
-            methodName = "execute|executeQuery|executeUpdate", ignoreSelfNested = true,
-            metricName = "jdbc execute")
+            methodName = "execute|executeQuery|executeUpdate", methodParameterTypes = {},
+            ignoreSelfNested = true, metricName = "jdbc execute")
     public static class PreparedStatementExecuteAdvice {
         private static final MetricName metricName =
                 pluginServices.getMetricName(PreparedStatementExecuteAdvice.class);
@@ -346,7 +348,7 @@ public class StatementAspect {
     }
 
     @Pointcut(className = "java.sql.Statement", methodName = "executeBatch",
-            ignoreSelfNested = true, metricName = "jdbc execute")
+            methodParameterTypes = {}, ignoreSelfNested = true, metricName = "jdbc execute")
     public static class StatementExecuteBatchAdvice {
         private static final MetricName metricName =
                 pluginServices.getMetricName(StatementExecuteBatchAdvice.class);
@@ -433,7 +435,7 @@ public class StatementAspect {
 
     // ================== Statement Closing ==================
 
-    @Pointcut(className = "java.sql.Statement", methodName = "close",
+    @Pointcut(className = "java.sql.Statement", methodName = "close", methodParameterTypes = {},
             metricName = "jdbc statement close")
     public static class CloseAdvice {
         private static final MetricName metricName =

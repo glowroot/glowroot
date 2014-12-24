@@ -32,7 +32,7 @@ public class TraceMarkerAspect {
             PluginServices.get("glowroot-test-container");
 
     @Pointcut(className = "org.glowroot.container.TraceMarker", methodName = "traceMarker",
-            metricName = "mock trace marker", ignoreSelfNested = true)
+            methodParameterTypes = {}, metricName = "mock trace marker", ignoreSelfNested = true)
     public static class TraceMarkerAdvice {
 
         private static final MetricName metricName =
