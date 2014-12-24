@@ -69,13 +69,13 @@ public class Slf4jMarkerAspect {
                 pluginServices.getMetricName(LogNoArgAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(
                 @SuppressWarnings("unused") @BindParameter @Nullable Object marker,
                 @BindParameter @Nullable String message, @BindMethodName String methodName) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
                 pluginServices.setTransactionError(message);
             }
@@ -87,7 +87,7 @@ public class Slf4jMarkerAspect {
         public static void onAfter(@BindTraveler TraceEntry traceEntry,
                 @SuppressWarnings("unused") @BindParameter @Nullable Object marker,
                 @BindParameter @Nullable String message) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             traceEntry.endWithError(ErrorMessage.from(message));
         }
     }
@@ -100,20 +100,20 @@ public class Slf4jMarkerAspect {
                 pluginServices.getMetricName(LogOneArgAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(
                 @SuppressWarnings("unused") @BindParameter @Nullable Object marker,
                 @BindParameter @Nullable String format, @BindParameter @Nullable Object arg,
                 @BindMethodName String methodName) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             FormattingTuple formattingTuple = MessageFormatter.format(format, arg);
             return Slf4jMarkerAspect.onBefore(formattingTuple, methodName, metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler LogAdviceTraveler traveler) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             Slf4jMarkerAspect.onAfter(traveler);
         }
     }
@@ -126,20 +126,20 @@ public class Slf4jMarkerAspect {
                 pluginServices.getMetricName(LogOneArgThrowableAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(
                 @SuppressWarnings("unused") @BindParameter @Nullable Object marker,
                 @BindParameter @Nullable String format, @BindParameter @Nullable Object arg,
                 @BindMethodName String methodName) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             FormattingTuple formattingTuple = MessageFormatter.format(format, arg);
             return Slf4jMarkerAspect.onBefore(formattingTuple, methodName, metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler LogAdviceTraveler traveler) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             Slf4jMarkerAspect.onAfter(traveler);
         }
     }
@@ -152,20 +152,20 @@ public class Slf4jMarkerAspect {
                 pluginServices.getMetricName(LogTwoArgsAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(
                 @SuppressWarnings("unused") @BindParameter @Nullable Object marker,
                 @BindParameter @Nullable String format, @BindParameter @Nullable Object arg1,
                 @BindParameter @Nullable Object arg2, @BindMethodName String methodName) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             FormattingTuple formattingTuple = MessageFormatter.format(format, arg1, arg2);
             return Slf4jMarkerAspect.onBefore(formattingTuple, methodName, metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler LogAdviceTraveler traveler) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             Slf4jMarkerAspect.onAfter(traveler);
         }
     }
@@ -178,7 +178,7 @@ public class Slf4jMarkerAspect {
                 pluginServices.getMetricName(LogAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(
@@ -186,13 +186,13 @@ public class Slf4jMarkerAspect {
                 @BindParameter @Nullable String format,
                 @BindParameter @Nullable Object/*@Nullable*/[] arguments,
                 @BindMethodName String methodName) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             FormattingTuple formattingTuple = MessageFormatter.arrayFormat(format, arguments);
             return Slf4jMarkerAspect.onBefore(formattingTuple, methodName, metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler LogAdviceTraveler traveler) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             Slf4jMarkerAspect.onAfter(traveler);
         }
     }

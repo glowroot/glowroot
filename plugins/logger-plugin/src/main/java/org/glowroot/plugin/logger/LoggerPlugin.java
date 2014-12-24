@@ -24,12 +24,20 @@ class LoggerPlugin {
     private LoggerPlugin() {}
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
-    static final ThreadLocal<Boolean> inAdvice = new ThreadLocal<Boolean>() {
+    private static final ThreadLocal<Boolean> inAdvice = new ThreadLocal<Boolean>() {
         @Override
         protected Boolean initialValue() {
             return false;
         }
     };
+
+    static boolean inAdvice() {
+        return inAdvice.get();
+    }
+
+    static void inAdvice(boolean inAdvice) {
+        LoggerPlugin.inAdvice.set(inAdvice);
+    }
 
     static boolean markTraceAsError(boolean warn, boolean throwable) {
         if (warn && throwable) {

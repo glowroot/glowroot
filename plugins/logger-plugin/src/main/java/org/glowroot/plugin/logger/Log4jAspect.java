@@ -46,12 +46,12 @@ public class Log4jAspect {
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter @Nullable Object message,
                 @BindMethodName String methodName) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
                 pluginServices.setTransactionError(String.valueOf(message));
             }
@@ -62,7 +62,7 @@ public class Log4jAspect {
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry,
                 @BindParameter @Nullable Object message) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
         }
     }
@@ -76,13 +76,13 @@ public class Log4jAspect {
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter @Nullable Object message,
                 @BindParameter @Nullable Throwable t,
                 @BindMethodName String methodName) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), t != null)) {
                 pluginServices.setTransactionError(String.valueOf(message));
             }
@@ -94,7 +94,7 @@ public class Log4jAspect {
         public static void onAfter(@BindParameter @Nullable Object message,
                 @BindParameter @Nullable Throwable t,
                 @BindTraveler TraceEntry traceEntry) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             if (t == null) {
                 traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
             } else {
@@ -112,7 +112,7 @@ public class Log4jAspect {
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindParameter Object priority) {
-            if (LoggerPlugin.inAdvice.get() || !pluginServices.isEnabled()) {
+            if (LoggerPlugin.inAdvice() || !pluginServices.isEnabled()) {
                 return false;
             }
             String level = priority.toString();
@@ -121,7 +121,7 @@ public class Log4jAspect {
         @OnBefore
         public static TraceEntry onBefore(@BindParameter Object priority,
                 @BindParameter @Nullable Object message) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), false)) {
                 pluginServices.setTransactionError(String.valueOf(message));
@@ -133,7 +133,7 @@ public class Log4jAspect {
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry,
                 @BindParameter @Nullable Object message) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
         }
     }
@@ -147,7 +147,7 @@ public class Log4jAspect {
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindParameter Object priority) {
-            if (LoggerPlugin.inAdvice.get() || !pluginServices.isEnabled()) {
+            if (LoggerPlugin.inAdvice() || !pluginServices.isEnabled()) {
                 return false;
             }
             String level = priority.toString();
@@ -157,7 +157,7 @@ public class Log4jAspect {
         public static TraceEntry onBefore(@BindParameter Object priority,
                 @BindParameter @Nullable Object message,
                 @BindParameter @Nullable Throwable t) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), t != null)) {
                 pluginServices.setTransactionError(String.valueOf(message));
@@ -171,7 +171,7 @@ public class Log4jAspect {
                 @SuppressWarnings("unused") @BindParameter Object priority,
                 @BindParameter @Nullable Object message, @BindParameter @Nullable Throwable t,
                 @BindTraveler TraceEntry traceEntry) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             if (t == null) {
                 traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
             } else {
@@ -189,7 +189,7 @@ public class Log4jAspect {
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindParameter Object priority) {
-            if (LoggerPlugin.inAdvice.get() || !pluginServices.isEnabled()) {
+            if (LoggerPlugin.inAdvice() || !pluginServices.isEnabled()) {
                 return false;
             }
             String level = priority.toString();
@@ -199,7 +199,7 @@ public class Log4jAspect {
         public static TraceEntry onBefore(@BindParameter Object priority,
                 @BindParameter @Nullable String key,
                 @BindParameter @Nullable Throwable t) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), t != null)) {
                 pluginServices.setTransactionError(key);
@@ -212,7 +212,7 @@ public class Log4jAspect {
                 @SuppressWarnings("unused") @BindParameter Object priority,
                 @BindParameter @Nullable String key, @BindParameter @Nullable Throwable t,
                 @BindTraveler TraceEntry traceEntry) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             if (t == null) {
                 traceEntry.endWithError(ErrorMessage.from(key));
             } else {
@@ -230,7 +230,7 @@ public class Log4jAspect {
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindParameter Object priority) {
-            if (LoggerPlugin.inAdvice.get() || !pluginServices.isEnabled()) {
+            if (LoggerPlugin.inAdvice() || !pluginServices.isEnabled()) {
                 return false;
             }
             String level = priority.toString();
@@ -241,7 +241,7 @@ public class Log4jAspect {
                 @BindParameter @Nullable String key,
                 @BindParameter @Nullable Object/*@Nullable*/[] params,
                 @BindParameter @Nullable Throwable t) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), t != null)) {
                 pluginServices.setTransactionError(key);
@@ -269,7 +269,7 @@ public class Log4jAspect {
                 @BindParameter @Nullable String key,
                 @BindParameter @Nullable Object/*@Nullable*/[] params,
                 @BindParameter @Nullable Throwable t, @BindTraveler TraceEntry traceEntry) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             StringBuilder sb = new StringBuilder();
             sb.append(key);
             if (params != null && params.length > 0) {

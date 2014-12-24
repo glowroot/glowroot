@@ -68,12 +68,12 @@ public class Slf4jAspect {
                 pluginServices.getMetricName(LogNoArgAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter @Nullable String message,
                 @BindMethodName String methodName) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
                 pluginServices.setTransactionError(message);
             }
@@ -84,7 +84,7 @@ public class Slf4jAspect {
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry,
                 @BindParameter @Nullable String message) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             traceEntry.endWithError(ErrorMessage.from(message));
         }
     }
@@ -97,18 +97,18 @@ public class Slf4jAspect {
                 pluginServices.getMetricName(LogOneArgAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(@BindParameter @Nullable String format,
                 @BindParameter @Nullable Object arg, @BindMethodName String methodName) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             FormattingTuple formattingTuple = MessageFormatter.format(format, arg);
             return Slf4jAspect.onBefore(formattingTuple, methodName, metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler LogAdviceTraveler traveler) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             Slf4jAspect.onAfter(traveler);
         }
     }
@@ -121,18 +121,18 @@ public class Slf4jAspect {
                 pluginServices.getMetricName(LogOneArgThrowableAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(@BindParameter @Nullable String format,
                 @BindParameter @Nullable Object arg, @BindMethodName String methodName) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             FormattingTuple formattingTuple = MessageFormatter.format(format, arg);
             return Slf4jAspect.onBefore(formattingTuple, methodName, metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler LogAdviceTraveler traveler) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             Slf4jAspect.onAfter(traveler);
         }
     }
@@ -145,19 +145,19 @@ public class Slf4jAspect {
                 pluginServices.getMetricName(LogTwoArgsAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(@BindParameter @Nullable String format,
                 @BindParameter @Nullable Object arg1, @BindParameter @Nullable Object arg2,
                 @BindMethodName String methodName) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             FormattingTuple formattingTuple = MessageFormatter.format(format, arg1, arg2);
             return Slf4jAspect.onBefore(formattingTuple, methodName, metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler LogAdviceTraveler traveler) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             Slf4jAspect.onAfter(traveler);
         }
     }
@@ -170,19 +170,19 @@ public class Slf4jAspect {
                 pluginServices.getMetricName(LogAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(@BindParameter @Nullable String format,
                 @BindParameter @Nullable Object/*@Nullable*/[] arguments,
                 @BindMethodName String methodName) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             FormattingTuple formattingTuple = MessageFormatter.arrayFormat(format, arguments);
             return Slf4jAspect.onBefore(formattingTuple, methodName, metricName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler LogAdviceTraveler traveler) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             Slf4jAspect.onAfter(traveler);
         }
     }

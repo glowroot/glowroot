@@ -43,12 +43,12 @@ public class CommonsLoggingAspect {
                 pluginServices.getMetricName(LogAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter @Nullable Object message,
                 @BindMethodName String methodName) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
                 pluginServices.setTransactionError(String.valueOf(message));
             }
@@ -59,7 +59,7 @@ public class CommonsLoggingAspect {
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry,
                 @BindParameter @Nullable Object message) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
         }
     }
@@ -72,13 +72,13 @@ public class CommonsLoggingAspect {
                 pluginServices.getMetricName(LogWithThrowableAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter @Nullable Object message,
                 @BindParameter @Nullable Throwable t,
                 @BindMethodName String methodName) {
-            LoggerPlugin.inAdvice.set(true);
+            LoggerPlugin.inAdvice(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), t != null)) {
                 pluginServices.setTransactionError(String.valueOf(message));
             }
@@ -89,7 +89,7 @@ public class CommonsLoggingAspect {
         @OnAfter
         public static void onAfter(@BindParameter @Nullable Object message,
                 @BindParameter @Nullable Throwable t, @BindTraveler TraceEntry traceEntry) {
-            LoggerPlugin.inAdvice.set(false);
+            LoggerPlugin.inAdvice(false);
             if (t == null) {
                 traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
             } else {
