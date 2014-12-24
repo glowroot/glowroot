@@ -68,12 +68,13 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
     private final HttpTraceService traceService;
     private final Thread shutdownHook;
 
-    public static JavaagentContainer createWithFileDb() throws Exception {
-        return new JavaagentContainer(null, true, false, false, ImmutableList.<String>of());
-    }
-
     public static JavaagentContainer createWithFileDb(File dataDir) throws Exception {
         return new JavaagentContainer(dataDir, true, false, false, ImmutableList.<String>of());
+    }
+
+    public static JavaagentContainer createWithExtraJvmArgs(List<String> extraJvmArgs)
+            throws Exception {
+        return new JavaagentContainer(null, false, false, false, extraJvmArgs);
     }
 
     public JavaagentContainer(@Nullable File dataDir, boolean useFileDb, boolean shared,

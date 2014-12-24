@@ -17,6 +17,7 @@ package org.glowroot.tests.javaagent;
 
 import java.util.logging.LogManager;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -45,7 +46,8 @@ public class LogManagerTest {
         Assume.assumeTrue(isShaded());
         // this test cannot use shared javaagent container since it needs to be first thing
         // that runs in JVM in order to test that java.util.logging.LogManager is not initialized
-        container = JavaagentContainer.createWithFileDb();
+        container = JavaagentContainer.createWithExtraJvmArgs(ImmutableList.of(
+                "-Djava.util.logging.manager=" + CustomLogManager.class.getName()));
     }
 
     @AfterClass
@@ -86,7 +88,6 @@ public class LogManagerTest {
                 PluginServices.get("glowroot-integration-tests");
         @Override
         public void executeApp() throws InterruptedException {
-            System.setProperty("java.util.logging.manager", CustomLogManager.class.getName());
             traceMarker();
         }
         @Override
