@@ -22,10 +22,10 @@ import javax.annotation.Nullable;
 import com.google.common.base.Objects;
 
 /**
- * This class is modeled after Guava's Optional class. It can be useful for plugins when returning a
- * {@link ConcurrentMap} from {@link Message#getDetail()}. {@link ConcurrentMap} does not accept
- * {@code null} values, but if values are wrapped in {@code Optional}, then Glowroot will unwrap the
- * values and treat {@link Optional#absent()} the same as {@code null}.
+ * This class is modeled after Guava's Optional class. It can be useful for plugins passing a
+ * {@link ConcurrentMap} to {@link Message#withDetail(String, java.util.Map)}. {@link ConcurrentMap}
+ * does not accept {@code null} values, but if values are wrapped in {@code Optional}, then Glowroot
+ * will unwrap the values and treat {@link Optional#absent()} the same as {@code null}.
  */
 public abstract class Optional</*@NonNull*/T> {
 
@@ -33,7 +33,6 @@ public abstract class Optional</*@NonNull*/T> {
      * Returns the contained instance, which must be present. If the instance might be absent, use
      * {@link #or(Object)} instead.
      * 
-     * @return the contained instance
      * @throws IllegalStateException
      *             if the instance is absent ({@link #isPresent} returns {@code false})
      */
@@ -41,8 +40,6 @@ public abstract class Optional</*@NonNull*/T> {
 
     /**
      * Returns {@code true} if this holder contains a (non-{@code null}) instance.
-     * 
-     * @return {@code true} if this holder contains a (non-{@code null}) instance
      */
     public abstract boolean isPresent();
 
@@ -50,24 +47,17 @@ public abstract class Optional</*@NonNull*/T> {
      * Returns the contained instance if it is present; {@code defaultValue} otherwise. If no
      * default value should be required because the instance is known to be present, use
      * {@link #get()} instead.
-     * 
-     * @param defaultValue
-     * @return
      */
     public abstract @Nullable T or(@Nullable T defaultValue);
 
     /**
      * Returns the contained instance if it is present; {@code null} otherwise. If the instance is
      * known to be present, use {@link #get()} instead.
-     * 
-     * @return
      */
     public abstract @Nullable T orNull();
 
     /**
      * Returns an {@code Optional} instance with no contained reference.
-     * 
-     * @return an {@code Optional} instance with no contained reference
      */
     @SuppressWarnings("unchecked")
     public static </*@NonNull*/T> Optional<T> absent() {
@@ -78,9 +68,6 @@ public abstract class Optional</*@NonNull*/T> {
      * Returns an {@code Optional} instance with no contained reference.
      * 
      * This version can be helpful to avoid unchecked casting.
-     * 
-     * @param clazz
-     * @return an {@code Optional} instance with no contained reference
      */
     @SuppressWarnings({"unchecked"})
     public static </*@NonNull*/T> Optional<T> absent(Class<T> clazz) {
@@ -89,9 +76,6 @@ public abstract class Optional</*@NonNull*/T> {
 
     /**
      * Returns an {@code Optional} instance containing the given non-{@code null} reference.
-     * 
-     * @param reference
-     * @return an {@code Optional} instance containing the given non-{@code null} reference
      */
     public static </*@NonNull*/T> Optional<T> of(T reference) {
         return new Present<T>(reference);
@@ -100,10 +84,6 @@ public abstract class Optional</*@NonNull*/T> {
     /**
      * If {@code nullableReference} is non-{@code null}, returns an {@code Optional} instance
      * containing that reference; otherwise returns {@link Optional#absent}.
-     * 
-     * @param nullableReference
-     * @return an {@code Optional} instance containing the reference, or {@link Optional#absent} if
-     *         {@code nullableReference} is {@code null}
      */
     public static <T> Optional</*@NonNull*/T> fromNullable(T nullableReference) {
         if (nullableReference == null) {

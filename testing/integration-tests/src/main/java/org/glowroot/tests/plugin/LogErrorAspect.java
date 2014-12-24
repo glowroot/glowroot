@@ -52,7 +52,7 @@ public class LogErrorAspect {
 
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
-            traceEntry.endWithError(ErrorMessage.from("test error message")).captureStackTrace();
+            traceEntry.endWithError(ErrorMessage.from("test error message"));
         }
     }
 
@@ -71,8 +71,7 @@ public class LogErrorAspect {
         @OnBefore
         public static TraceEntry onBefore() {
             TraceEntry traceEntry = pluginServices.startTraceEntry(
-                    MessageSupplier.from("outer entry to test nesting level"),
-                    metricName);
+                    MessageSupplier.from("outer entry to test nesting level"), metricName);
             pluginServices.addTraceEntry(ErrorMessage.from("test add nested error entry message"));
             return traceEntry;
         }

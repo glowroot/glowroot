@@ -29,7 +29,6 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.CompletedTraceEntry;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
@@ -37,6 +36,7 @@ import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.TransactionMetric;
+import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.common.Clock;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.common.Ticker;
@@ -256,36 +256,22 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public CompletedTraceEntry addTraceEntry(MessageSupplier messageSupplier) {
-        if (messageSupplier == null) {
-            logger.error("addEntry(): argument 'messageSupplier' must be non-null");
-            return NopCompletedEntry.INSTANCE;
-        }
-        Transaction transaction = transactionRegistry.getCurrentTransaction();
-        if (transaction != null && transaction.getEntryCount() < maxTraceEntriesPerTransaction) {
-            // the trace limit has not been exceeded
-            long currTick = ticker.read();
-            return new CompletedEntryImpl(transaction.addEntry(currTick, currTick, messageSupplier,
-                    null, false));
-        }
-        return NopCompletedEntry.INSTANCE;
-    }
-
-    @Override
-    public CompletedTraceEntry addTraceEntry(ErrorMessage errorMessage) {
+    public void addTraceEntry(ErrorMessage errorMessage) {
         if (errorMessage == null) {
             logger.error("addErrorEntry(): argument 'errorMessage' must be non-null");
-            return NopCompletedEntry.INSTANCE;
+            return;
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         // use higher entry limit when adding errors, but still need some kind of cap
         if (transaction != null
                 && transaction.getEntryCount() < 2 * maxTraceEntriesPerTransaction) {
             long currTick = ticker.read();
-            return new CompletedEntryImpl(
-                    transaction.addEntry(currTick, currTick, null, errorMessage, true));
+            org.glowroot.transaction.model.TraceEntry entry =
+                    transaction.addEntry(currTick, currTick, null, errorMessage, true);
+            if (((ReadableErrorMessage) errorMessage).getExceptionInfo() == null) {
+                entry.setStackTrace(PluginServicesImpl.captureStackTrace());
+            }
         }
-        return NopCompletedEntry.INSTANCE;
     }
 
     @Override
@@ -418,30 +404,31 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             this.transaction = transaction;
         }
         @Override
-        public CompletedTraceEntry end() {
-            return endInternal(ticker.read(), null);
+        public void end() {
+            endInternal(ticker.read(), null);
         }
         @Override
-        public CompletedTraceEntry endWithStackTrace(long threshold, TimeUnit unit) {
+        public void endWithStackTrace(long threshold, TimeUnit unit) {
             if (threshold < 0) {
                 logger.error("endWithStackTrace(): argument 'threshold' must be non-negative");
-                return end();
+                end();
+                return;
             }
             long endTick = ticker.read();
             if (endTick - traceEntry.getStartTick() >= unit.toNanos(threshold)) {
                 traceEntry.setStackTrace(captureStackTrace());
             }
-            return endInternal(endTick, null);
+            endInternal(endTick, null);
         }
         @Override
-        public CompletedTraceEntry endWithError(ErrorMessage errorMessage) {
+        public void endWithError(ErrorMessage errorMessage) {
             if (errorMessage == null) {
                 logger.error("endWithError(): argument 'errorMessage' must be non-null");
                 // fallback to end() without error
-                return end();
-            } else {
-                return endInternal(ticker.read(), errorMessage);
+                end();
+                return;
             }
+            endInternal(ticker.read(), errorMessage);
         }
         @Override
         public MessageSupplier getMessageSupplier() {
@@ -454,7 +441,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             }
             return messageSupplier;
         }
-        private CompletedTraceEntry endInternal(long endTick, @Nullable ErrorMessage errorMessage) {
+        private void endInternal(long endTick, @Nullable ErrorMessage errorMessage) {
             transaction.popEntry(traceEntry, endTick, errorMessage);
             if (transaction.isCompleted()) {
                 // the root entry has been popped off
@@ -467,7 +454,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 transactionCollector.onCompletedTransaction(transaction);
                 transactionRegistry.removeTransaction(transaction);
             }
-            return new CompletedEntryImpl(traceEntry);
         }
         private void safeCancel(@Nullable ScheduledRunnable scheduledRunnable) {
             if (scheduledRunnable == null) {
@@ -490,12 +476,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             this.messageSupplier = messageSupplier;
         }
         @Override
-        public CompletedTraceEntry end() {
+        public void end() {
             transactionMetric.stop();
-            return NopCompletedEntry.INSTANCE;
         }
         @Override
-        public CompletedTraceEntry endWithStackTrace(long threshold, TimeUnit unit) {
+        public void endWithStackTrace(long threshold, TimeUnit unit) {
             long endTick = ticker.read();
             transactionMetric.end(endTick);
             // use higher entry limit when adding slow entries, but still need some kind of cap
@@ -506,26 +491,23 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 org.glowroot.transaction.model.TraceEntry entry =
                         transaction.addEntry(startTick, endTick, messageSupplier, null, true);
                 entry.setStackTrace(captureStackTrace());
-                return new CompletedEntryImpl(entry);
             }
-            return NopCompletedEntry.INSTANCE;
         }
         @Override
-        public CompletedTraceEntry endWithError(ErrorMessage errorMessage) {
+        public void endWithError(ErrorMessage errorMessage) {
             if (errorMessage == null) {
                 logger.error("endWithError(): argument 'errorMessage' must be non-null");
                 // fallback to end() without error
-                return end();
+                end();
+                return;
             }
             long endTick = ticker.read();
             transactionMetric.end(endTick);
             // use higher entry limit when adding errors, but still need some kind of cap
             if (transaction.getEntryCount() < 2 * maxTraceEntriesPerTransaction) {
                 // entry won't be nested properly, but at least the error will get captured
-                return new CompletedEntryImpl(transaction.addEntry(startTick, endTick,
-                        messageSupplier, errorMessage, true));
+                transaction.addEntry(startTick, endTick, messageSupplier, errorMessage, true);
             }
-            return NopCompletedEntry.INSTANCE;
         }
         @Override
         public MessageSupplier getMessageSupplier() {
@@ -533,32 +515,15 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
     }
 
-    private static class CompletedEntryImpl implements CompletedTraceEntry {
-        private final org.glowroot.transaction.model.TraceEntry entry;
-        private CompletedEntryImpl(org.glowroot.transaction.model.TraceEntry entry) {
-            this.entry = entry;
-        }
-        @Override
-        public void captureStackTrace() {
-            entry.setStackTrace(PluginServicesImpl.captureStackTrace());
-        }
-    }
-
     private static class NopTraceEntry implements TraceEntry {
         private static final NopTraceEntry INSTANCE = new NopTraceEntry();
         private NopTraceEntry() {}
         @Override
-        public CompletedTraceEntry end() {
-            return NopCompletedEntry.INSTANCE;
-        }
+        public void end() {}
         @Override
-        public CompletedTraceEntry endWithStackTrace(long threshold, TimeUnit unit) {
-            return NopCompletedEntry.INSTANCE;
-        }
+        public void endWithStackTrace(long threshold, TimeUnit unit) {}
         @Override
-        public CompletedTraceEntry endWithError(ErrorMessage errorMessage) {
-            return NopCompletedEntry.INSTANCE;
-        }
+        public void endWithError(ErrorMessage errorMessage) {}
         @Override
         public @Nullable MessageSupplier getMessageSupplier() {
             return null;
@@ -577,11 +542,5 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         public void stop() {}
         @Override
         public void end(long endTick) {}
-    }
-
-    private static class NopCompletedEntry implements CompletedTraceEntry {
-        private static final NopCompletedEntry INSTANCE = new NopCompletedEntry();
-        @Override
-        public void captureStackTrace() {}
     }
 }

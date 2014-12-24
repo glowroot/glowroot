@@ -28,9 +28,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * {@literal @}{@link OnThrow}, {@literal @}{@link OnAfter}).
  * <p>
  * When the advice method is called, all of the parameters passed to the method matched by the
- * {@link Pointcut} are wrapped into a single {@link Object[]} and bound to this parameter.
+ * {@link Pointcut} are wrapped into a single {@link Object}[] and bound to this parameter.
  * <p>
- * Parameters annotated with {@literal @}{@link BindMethodName} must be of type {@link Object[]}.
+ * Parameters annotated with {@literal @}{@link BindMethodName} must be of type {@link Object}[].
  */
 @Target(PARAMETER)
 @Retention(RUNTIME)

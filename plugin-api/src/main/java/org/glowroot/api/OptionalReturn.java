@@ -25,15 +25,12 @@ public interface OptionalReturn {
 
     /**
      * Returns {@code true} if this instance represents a void return.
-     * 
-     * @return {@code true} if this instance represents a void return
      */
     boolean isVoid();
 
     /**
      * Returns the return value. Must check {@link #isVoid()} first.
      * 
-     * @return the return value
      * @throws IllegalStateException
      *             if the return is void ({@link #isVoid} returns {@code true})
      */

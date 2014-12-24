@@ -77,9 +77,6 @@ public abstract class PluginServices {
      * 
      * The return value can (and should) be cached by the plugin for the life of the jvm to avoid
      * looking it up every time it is needed (which is often).
-     * 
-     * @param pluginId
-     * @return the {@code PluginServices} instance for the specified {@code pluginId}
      */
     public static PluginServices get(String pluginId) {
         if (pluginId == null) {
@@ -99,8 +96,6 @@ public abstract class PluginServices {
      * {@link #getStringProperty(String)}, {@link #getBooleanProperty(String)}, and
      * {@link #getDoubleProperty(String)} as {@code volatile} fields, and updating the cached values
      * anytime {@link ConfigListener#onChange()} is called.
-     * 
-     * @param listener
      */
     public abstract void registerConfigListener(ConfigListener listener);
 
@@ -109,8 +104,6 @@ public abstract class PluginServices {
      * {@code false}.
      * 
      * Plugins can be individually disabled on the configuration page.
-     * 
-     * @return {@code true} if the plugin and Glowroot are both enabled
      */
     public abstract boolean isEnabled();
 
@@ -122,10 +115,6 @@ public abstract class PluginServices {
      * Plugin properties are scoped per plugin. The are defined in the plugin's
      * META-INF/glowroot.plugin.json file, and can be modified (assuming they are not marked as
      * hidden) on the configuration page under the plugin's configuration section.
-     * 
-     * @param name
-     * @return the value of the {@code String} plugin property, or {@code ""} if there is no
-     *         {@code String} plugin property with the specified {@code name}
      */
     public abstract String getStringProperty(String name);
 
@@ -137,10 +126,6 @@ public abstract class PluginServices {
      * Plugin properties are scoped per plugin. The are defined in the plugin's
      * META-INF/glowroot.plugin.json file, and can be modified (assuming they are not marked as
      * hidden) on the configuration page under the plugin's configuration section.
-     * 
-     * @param name
-     * @return the value of the {@code boolean} plugin property, or {@code false} if there is no
-     *         {@code boolean} plugin property with the specified {@code name}
      */
     public abstract boolean getBooleanProperty(String name);
 
@@ -152,10 +137,6 @@ public abstract class PluginServices {
      * Plugin properties are scoped per plugin. The are defined in the plugin's
      * META-INF/glowroot.plugin.json file, and can be modified (assuming they are not marked as
      * hidden) on the configuration page under the plugin's configuration section.
-     * 
-     * @param name
-     * @return the value of the {@code Double} plugin property, or {@code null} if there is no
-     *         {@code Double} plugin property with the specified {@code name}
      */
     public abstract @Nullable Double getDoubleProperty(String name);
 
@@ -169,9 +150,6 @@ public abstract class PluginServices {
      * 
      * The return value can (and should) be cached by the plugin for the life of the jvm to avoid
      * looking it up every time it is needed (which is often).
-     * 
-     * @param adviceClass
-     * @return the {@code MetricName} instance for the specified {@code adviceClass}
      */
     public abstract MetricName getMetricName(Class<?> adviceClass);
 
@@ -181,11 +159,6 @@ public abstract class PluginServices {
      * If there is already an active transaction, this method acts the same as
      * {@link #startTraceEntry(MessageSupplier, MetricName)} (the transaction name and type are not
      * modified on the existing transaction).
-     * 
-     * @param transactionName
-     * @param messageSupplier
-     * @param metricName
-     * @return
      */
     public abstract TraceEntry startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, MetricName metricName);
@@ -208,17 +181,13 @@ public abstract class PluginServices {
      * entry will be escalated to a real entry. If
      * {@link TraceEntry#endWithStackTrace(long, TimeUnit)} is called on the dummy entry and the
      * dummy entry duration exceeds the specified threshold, then the dummy entry will be escalated
-     * to a real entry. If {@link TraceEntry#captureStackTrace()} is called on the dummy entry, then
-     * the dummy entry will be escalated to a real entry. A hard cap (
+     * to a real entry. If {@link TraceEntry#endWithError(ErrorMessage)} is called on the dummy
+     * entry, then the dummy entry will be escalated to a real entry. A hard cap (
      * {@code maxTraceEntriesPerTransaction * 2}) on the total number of (real) entries is applied
      * when escalating dummy entries to real entries.
      * 
      * If there is no current transaction, this method does nothing, and returns a no-op instance of
      * {@link TraceEntry}.
-     * 
-     * @param messageSupplier
-     * @param metricName
-     * @return
      */
     public abstract TraceEntry startTraceEntry(MessageSupplier messageSupplier,
             MetricName metricName);
@@ -230,47 +199,29 @@ public abstract class PluginServices {
      * 
      * If there is no current transaction, this method does nothing, and returns a no-op instance of
      * {@link TransactionMetric}.
-     * 
-     * @param metricName
-     * @return the transaction metric for calling stop
      */
     public abstract TransactionMetric startTransactionMetric(MetricName metricName);
 
     /**
-     * Adds a trace entry with duration zero.
-     * 
-     * Once a trace has accumulated {@code maxTraceEntriesPerTransaction} entries, this method does
-     * nothing, and returns a no-op instance of {@link CompletedTraceEntry}.
-     * 
-     * If there is no current transaction, this method does nothing, and returns a no-op instance of
-     * {@link CompletedTraceEntry}.
-     * 
-     * @param messageSupplier
-     */
-    public abstract CompletedTraceEntry addTraceEntry(MessageSupplier messageSupplier);
-
-    /**
      * Adds a trace entry with duration zero. It does not set the error attribute on the trace,
      * which must be done with {@link TraceEntry#endWithError(ErrorMessage)} on the root entry.
+     * 
+     * If the error message has no throwable, a stack trace is captured and attached to the trace
+     * entry.
      * 
      * This method bypasses the regular {@code maxTraceEntriesPerTransaction} check so that errors
      * after {@code maxTraceEntriesPerTransaction} will still be included in the trace. A hard cap (
      * {@code maxTraceEntriesPerTransaction * 2}) on the total number of entries is still applied,
      * after which this method does nothing.
      * 
-     * If there is no current transaction, this method does nothing, and returns a no-op instance of
-     * {@link CompletedTraceEntry}.
-     * 
-     * @param errorMessage
+     * If there is no current transaction, this method does nothing.
      */
-    public abstract CompletedTraceEntry addTraceEntry(ErrorMessage errorMessage);
+    public abstract void addTraceEntry(ErrorMessage errorMessage);
 
     /**
      * Set the transaction type that is used for aggregation.
      * 
      * If there is no current transaction, this method does nothing.
-     * 
-     * @param transactionName
      */
     public abstract void setTransactionType(@Nullable String transactionType);
 
@@ -278,8 +229,6 @@ public abstract class PluginServices {
      * Set the transaction name that is used for aggregation.
      * 
      * If there is no current transaction, this method does nothing.
-     * 
-     * @param transactionName
      */
     public abstract void setTransactionName(@Nullable String transactionName);
 
@@ -324,8 +273,6 @@ public abstract class PluginServices {
      * transaction.
      * 
      * If there is no current transaction, this method does nothing.
-     * 
-     * @param user
      */
     public abstract void setTransactionUser(@Nullable String user);
 
@@ -340,10 +287,7 @@ public abstract class PluginServices {
      * 
      * If there is no current transaction, this method does nothing.
      * 
-     * @param name
-     *            name of the attribute
-     * @param value
-     *            value of the attribute, null values will be normalized to the empty string
+     * {@code null} values are normalized to the empty string.
      */
     public abstract void setTransactionCustomAttribute(String name, @Nullable String value);
 
@@ -356,9 +300,6 @@ public abstract class PluginServices {
      * be used.
      * 
      * If there is no current transaction, this method does nothing.
-     * 
-     * @param threshold
-     * @param unit
      */
     public abstract void setTraceStoreThreshold(long threshold, TimeUnit unit);
 
@@ -368,8 +309,6 @@ public abstract class PluginServices {
      * This method has very limited use. It should only be used by top-level pointcuts that define a
      * transaction, and that do not want to create a entry if they are already inside of an existing
      * transaction.
-     * 
-     * @return whether a transaction is already being captured
      */
     public abstract boolean isInTransaction();
 

@@ -593,15 +593,13 @@ public class AdviceGenerator {
         mv.visitVarInsn(ALOAD, travelerParamIndex);
         Long stackTraceThresholdMillis = capturePoint.traceEntryStackThresholdMillis();
         if (stackTraceThresholdMillis == null) {
-            mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/TraceEntry", "end",
-                    "()Lorg/glowroot/api/CompletedTraceEntry;", true);
+            mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/TraceEntry", "end", "()V", true);
         } else {
             mv.visitLdcInsn(stackTraceThresholdMillis);
             mv.visitFieldInsn(GETSTATIC, "java/util/concurrent/TimeUnit", "MILLISECONDS",
                     "Ljava/util/concurrent/TimeUnit;");
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/TraceEntry", "endWithStackTrace",
-                    "(JLjava/util/concurrent/TimeUnit;)Lorg/glowroot/api/CompletedTraceEntry;",
-                    true);
+                    "(JLjava/util/concurrent/TimeUnit;)V", true);
         }
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);
@@ -631,7 +629,7 @@ public class AdviceGenerator {
         mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/api/ErrorMessage", "from",
                 "(Ljava/lang/Throwable;)Lorg/glowroot/api/ErrorMessage;", false);
         mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/TraceEntry", "endWithError",
-                "(Lorg/glowroot/api/ErrorMessage;)Lorg/glowroot/api/CompletedTraceEntry;", true);
+                "(Lorg/glowroot/api/ErrorMessage;)V", true);
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();

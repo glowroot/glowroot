@@ -19,7 +19,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableMap;
 
-import org.glowroot.api.CompletedTraceEntry;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
@@ -192,10 +191,9 @@ public class ServletAspect {
         public static void onAfter(@BindParameter Integer statusCode) {
             // only capture 5xx server errors
             if (statusCode >= 500 && topLevel.get() != null) {
-                ErrorMessage errorMessage = ErrorMessage.from("sendError, HTTP status code "
-                        + statusCode);
-                CompletedTraceEntry traceEntry = pluginServices.addTraceEntry(errorMessage);
-                traceEntry.captureStackTrace();
+                ErrorMessage errorMessage =
+                        ErrorMessage.from("sendError, HTTP status code " + statusCode);
+                pluginServices.addTraceEntry(errorMessage);
                 sendError.set(errorMessage);
             }
         }
@@ -208,10 +206,9 @@ public class ServletAspect {
         public static void onAfter(@BindParameter Integer statusCode) {
             // only capture 5xx server errors
             if (statusCode >= 500 && topLevel.get() != null) {
-                ErrorMessage errorMessage = ErrorMessage.from("setStatus, HTTP status code "
-                        + statusCode);
-                CompletedTraceEntry traceEntry = pluginServices.addTraceEntry(errorMessage);
-                traceEntry.captureStackTrace();
+                ErrorMessage errorMessage =
+                        ErrorMessage.from("setStatus, HTTP status code " + statusCode);
+                pluginServices.addTraceEntry(errorMessage);
                 sendError.set(errorMessage);
             }
         }

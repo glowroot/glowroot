@@ -28,8 +28,6 @@ public abstract class MessageSupplier {
      * 
      * The {@code Message} does not need to be thread safe if it is instantiated by the
      * implementation of this method.
-     * 
-     * @return the {@code Message} for a {@link TraceEntry}
      */
     public abstract Message get();
 
@@ -37,9 +35,6 @@ public abstract class MessageSupplier {
 
     /**
      * Creates a {@code MessageSupplier} for the specified {@code message}.
-     * 
-     * @param message
-     * @return a {@code MessageSupplier} created for the specified {@code message}
      */
     public static MessageSupplier from(@Nullable final String message) {
         return new MessageSupplier() {
@@ -55,10 +50,6 @@ public abstract class MessageSupplier {
      * 
      * The {@code template} can contain one or more placeholders <code>{}</code> that will be
      * substituted if/when the message text is needed by the specified {@code args}.
-     * 
-     * @param template
-     * @param args
-     * @return a {@code MessageSupplier} created for the specified {@code template} and {@code args}
      */
     public static MessageSupplier from(final String template, final @Nullable String... args) {
         return new MessageSupplier() {

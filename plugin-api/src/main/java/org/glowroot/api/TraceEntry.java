@@ -19,10 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnReturn;
-import org.glowroot.api.weaving.OnThrow;
-import org.glowroot.api.weaving.Pointcut;
 
 /**
  * See {@link PluginServices#startTraceEntry(MessageSupplier, MetricName)} for how to create and use
@@ -33,26 +30,18 @@ public interface TraceEntry {
     /**
      * End the entry.
      */
-    CompletedTraceEntry end();
+    void end();
 
     /**
      * End the entry and capture a stack trace if its duration exceeds the specified
      * {@code threshold}.
      * 
-     * This method must be called directly from {@link OnReturn}, {@link OnThrow} or {@link OnAfter}
-     * so it can roll back the correct number of frames in the stack trace that it captures, making
-     * the stack trace point to the method execution picked out by the {@link Pointcut} instead of
-     * pointing to the Glowroot code that performs the stack trace capture.
-     * 
      * In case the trace has accumulated {@code maxTraceEntriesPerTransaction} entries and this is a
      * dummy entry and its duration exceeds the specified threshold, then this dummy entry is
      * escalated into a real entry. A hard cap ({@code maxTraceEntriesPerTransaction * 2}) on the
      * total number of (real) entries is applied when escalating dummy entries to real entries.
-     * 
-     * @param threshold
-     * @param unit
      */
-    CompletedTraceEntry endWithStackTrace(long threshold, TimeUnit unit);
+    void endWithStackTrace(long threshold, TimeUnit unit);
 
     /**
      * End the entry and add the specified {@code errorMessage} to the entry.
@@ -64,10 +53,8 @@ public interface TraceEntry {
      * dummy entry, then this dummy entry is escalated into a real entry. A hard cap (
      * {@code maxTraceEntriesPerTransaction * 2}) on the total number of (real) entries is applied
      * when escalating dummy entries to real entries.
-     * 
-     * @param errorMessage
      */
-    CompletedTraceEntry endWithError(ErrorMessage errorMessage);
+    void endWithError(ErrorMessage errorMessage);
 
     /**
      * Returns the {@code MessageSupplier} that was supplied when the {@code TraceEntry} was
@@ -81,8 +68,6 @@ public interface TraceEntry {
      * {@code maxTraceEntriesPerTransaction} entries and this is a dummy entry.
      * 
      * Under some error conditions this can return {@code null}.
-     * 
-     * @return the {@code MessageSupplier} that was supplied when the {@code TraceEntry} was created
      */
     @Nullable
     MessageSupplier getMessageSupplier();

@@ -89,11 +89,11 @@ public class ErrorCaptureTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getError()).isNull();
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(1).getError()).isNotNull();
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
-        List<String> stackTrace = entries.get(1).getStackTrace();
-        assertThat(stackTrace.get(0)).startsWith(LogError.class.getName() + ".log(");
+        assertThat(entries).hasSize(3);
+        assertThat(entries.get(2).getError()).isNotNull();
+        List<String> stackTrace = entries.get(2).getStackTrace();
+        assertThat(stackTrace.get(0))
+                .isEqualTo(LogError.class.getName() + ".addNestedErrorEntry(LogError.java)");
     }
 
     @Test
@@ -195,7 +195,7 @@ public class ErrorCaptureTest {
         }
         @Override
         public void traceMarker() throws Exception {
-            new LogError().log("abc");
+            new LogError().addNestedErrorEntry();
         }
     }
 
