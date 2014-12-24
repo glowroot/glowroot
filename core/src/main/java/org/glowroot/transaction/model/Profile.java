@@ -110,8 +110,7 @@ public class Profile {
                     // methods was executing in which case one of the metric names may be a
                     // subset of the other, in which case, the superset wins:
                     List<String> metricNames = element.getMetricNames();
-                    if (metricNames != null
-                            && metricNames.size() > childNode.getMetricNames().size()) {
+                    if (metricNames.size() > childNode.getMetricNames().size()) {
                         childNode.setMetricNames(metricNames);
                     }
                     lastMatchedNode = childNode;

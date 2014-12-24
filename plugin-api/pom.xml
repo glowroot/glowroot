@@ -22,11 +22,6 @@
     </dependency>
     <dependency>
       <groupId>org.immutables</groupId>
-      <artifactId>common</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.immutables</groupId>
       <artifactId>value-standalone</artifactId>
       <optional>true</optional>
     </dependency>
@@ -50,6 +45,8 @@
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
+      <!-- don't need this dependency at runtime since only annotations -->
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

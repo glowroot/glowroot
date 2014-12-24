@@ -17,6 +17,8 @@ package org.glowroot.plugin.logger;
 
 import java.util.Locale;
 
+import javax.annotation.Nullable;
+
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
@@ -47,7 +49,7 @@ public class Log4jAspect {
             return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
         }
         @OnBefore
-        public static TraceEntry onBefore(@BindParameter Object message,
+        public static TraceEntry onBefore(@BindParameter @Nullable Object message,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
@@ -59,7 +61,7 @@ public class Log4jAspect {
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry,
-                @BindParameter Object message) {
+                @BindParameter @Nullable Object message) {
             LoggerPlugin.inAdvice.set(false);
             traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
         }
@@ -77,8 +79,8 @@ public class Log4jAspect {
             return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
         }
         @OnBefore
-        public static TraceEntry onBefore(@BindParameter Object message,
-                @BindParameter Throwable t,
+        public static TraceEntry onBefore(@BindParameter @Nullable Object message,
+                @BindParameter @Nullable Throwable t,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), t != null)) {
@@ -89,7 +91,8 @@ public class Log4jAspect {
                     metricName);
         }
         @OnAfter
-        public static void onAfter(@BindParameter Object message, @BindParameter Throwable t,
+        public static void onAfter(@BindParameter @Nullable Object message,
+                @BindParameter @Nullable Throwable t,
                 @BindTraveler TraceEntry traceEntry) {
             LoggerPlugin.inAdvice.set(false);
             if (t == null) {
@@ -117,7 +120,7 @@ public class Log4jAspect {
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter Object priority,
-                @BindParameter Object message) {
+                @BindParameter @Nullable Object message) {
             LoggerPlugin.inAdvice.set(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), false)) {
@@ -129,7 +132,7 @@ public class Log4jAspect {
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry,
-                @BindParameter Object message) {
+                @BindParameter @Nullable Object message) {
             LoggerPlugin.inAdvice.set(false);
             traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
         }
@@ -152,8 +155,8 @@ public class Log4jAspect {
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter Object priority,
-                @BindParameter Object message,
-                @BindParameter Throwable t) {
+                @BindParameter @Nullable Object message,
+                @BindParameter @Nullable Throwable t) {
             LoggerPlugin.inAdvice.set(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), t != null)) {
@@ -164,8 +167,9 @@ public class Log4jAspect {
                     metricName);
         }
         @OnAfter
-        public static void onAfter(@SuppressWarnings("unused") @BindParameter Object priority,
-                @BindParameter Object message, @BindParameter Throwable t,
+        public static void onAfter(
+                @SuppressWarnings("unused") @BindParameter Object priority,
+                @BindParameter @Nullable Object message, @BindParameter @Nullable Throwable t,
                 @BindTraveler TraceEntry traceEntry) {
             LoggerPlugin.inAdvice.set(false);
             if (t == null) {
@@ -193,8 +197,8 @@ public class Log4jAspect {
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter Object priority,
-                @BindParameter String key,
-                @BindParameter Throwable t) {
+                @BindParameter @Nullable String key,
+                @BindParameter @Nullable Throwable t) {
             LoggerPlugin.inAdvice.set(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), t != null)) {
@@ -204,8 +208,9 @@ public class Log4jAspect {
                     MessageSupplier.from("log {} (localized): {}", level, key), metricName);
         }
         @OnAfter
-        public static void onAfter(@SuppressWarnings("unused") @BindParameter Object priority,
-                @BindParameter String key, @BindParameter Throwable t,
+        public static void onAfter(
+                @SuppressWarnings("unused") @BindParameter Object priority,
+                @BindParameter @Nullable String key, @BindParameter @Nullable Throwable t,
                 @BindTraveler TraceEntry traceEntry) {
             LoggerPlugin.inAdvice.set(false);
             if (t == null) {
@@ -233,14 +238,15 @@ public class Log4jAspect {
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter Object priority,
-                @BindParameter String key,
-                @BindParameter Object[] params, @BindParameter Throwable t) {
+                @BindParameter @Nullable String key,
+                @BindParameter @Nullable Object/*@Nullable*/[] params,
+                @BindParameter @Nullable Throwable t) {
             LoggerPlugin.inAdvice.set(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), t != null)) {
                 pluginServices.setTransactionError(key);
             }
-            if (params.length > 0) {
+            if (params != null && params.length > 0) {
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < params.length; i++) {
                     if (i > 0) {
@@ -258,13 +264,15 @@ public class Log4jAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@SuppressWarnings("unused") @BindParameter Object priority,
-                @BindParameter String key, @BindParameter Object[] params,
-                @BindParameter Throwable t, @BindTraveler TraceEntry traceEntry) {
+        public static void onAfter(
+                @SuppressWarnings("unused") @BindParameter Object priority,
+                @BindParameter @Nullable String key,
+                @BindParameter @Nullable Object/*@Nullable*/[] params,
+                @BindParameter @Nullable Throwable t, @BindTraveler TraceEntry traceEntry) {
             LoggerPlugin.inAdvice.set(false);
             StringBuilder sb = new StringBuilder();
             sb.append(key);
-            if (params.length > 0) {
+            if (params != null && params.length > 0) {
                 sb.append(" [");
                 for (int i = 0; i < params.length; i++) {
                     if (i > 0) {

@@ -146,9 +146,6 @@ class ClasspathCache {
         updateCache();
         Set<UiAnalyzedMethod> analyzedMethods = Sets.newHashSet();
         Collection<URI> uris = classNames.get(className);
-        if (uris == null) {
-            return ImmutableList.of();
-        }
         for (URI uri : uris) {
             try {
                 analyzedMethods.addAll(getAnalyzedMethods(uri));

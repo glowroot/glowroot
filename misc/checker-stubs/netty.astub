@@ -3,8 +3,8 @@ import org.checkerframework.checker.nullness.qual.*;
 /* ========================================================================== */
 package org.jboss.netty.handler.codec.http;
 
-public interface HttpMessage {
-    @Nullable String getHeader(String name);
+public interface HttpHeaders {
+    @Nullable String get(String name);
 }
 
 public class HttpContentEncoder {

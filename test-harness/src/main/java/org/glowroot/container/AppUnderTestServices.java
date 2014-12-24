@@ -22,6 +22,8 @@ import org.glowroot.config.ConfigService;
 import org.glowroot.config.ImmutablePluginConfig;
 import org.glowroot.config.PluginConfig;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class AppUnderTestServices {
 
     public static AppUnderTestServices get() {
@@ -42,6 +44,7 @@ public class AppUnderTestServices {
 
     private static ConfigService getConfigService() {
         GlowrootModule glowrootModule = MainEntryPoint.getGlowrootModule();
+        checkNotNull(glowrootModule);
         ConfigModule configModule = glowrootModule.getConfigModule();
         return configModule.getConfigService();
     }

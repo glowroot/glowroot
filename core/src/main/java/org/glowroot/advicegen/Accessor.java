@@ -79,8 +79,8 @@ class Accessor {
     Object evaluate(Object object) throws IllegalArgumentException, IllegalAccessException,
             InvocationTargetException {
         if (object instanceof Object[] && accessorType != AccessorType.ARRAY_LENGTH) {
-            Object[] array = (Object[]) object;
-            /*@Nullable*/Object[] values = new /*@Nullable*/Object[array.length];
+            /*@Nullable*/Object[] array = (Object[]) object;
+            /*@Nullable*/Object[] values = new Object[array.length];
             for (int i = 0; i < array.length; i++) {
                 Object item = array[i];
                 values[i] = item == null ? null : evaluate(item);

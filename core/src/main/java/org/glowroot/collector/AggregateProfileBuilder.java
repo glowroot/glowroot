@@ -59,7 +59,7 @@ class AggregateProfileBuilder {
         // executing in which case one of the metric names may be a subset of the other,
         // in which case, the superset wins:
         List<String> metricNames = toBeMergedNode.getMetricNames();
-        if (metricNames != null && metricNames.size() > node.getMetricNames().size()) {
+        if (metricNames.size() > node.getMetricNames().size()) {
             node.setMetricNames(metricNames);
         }
         for (ProfileNode toBeMergedChildNode : toBeMergedNode.getChildNodes()) {

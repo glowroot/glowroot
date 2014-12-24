@@ -367,9 +367,6 @@ class AggregateJsonService {
 
         private static StackedPoint create(Aggregate aggregate) throws IOException {
             String metrics = aggregate.metrics();
-            if (metrics == null) {
-                return new StackedPoint(aggregate, new MutableLongMap<String>());
-            }
             MutableLongMap<String> stackedMetrics = new MutableLongMap<String>();
             AggregateMetric syntheticRootMetric = mapper.readValue(metrics, AggregateMetric.class);
             // skip synthetic root metric

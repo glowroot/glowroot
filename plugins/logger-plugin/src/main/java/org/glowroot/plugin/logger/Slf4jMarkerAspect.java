@@ -72,8 +72,9 @@ public class Slf4jMarkerAspect {
             return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
         }
         @OnBefore
-        public static TraceEntry onBefore(@SuppressWarnings("unused") @BindParameter Object marker,
-                @BindParameter String message, @BindMethodName String methodName) {
+        public static TraceEntry onBefore(
+                @SuppressWarnings("unused") @BindParameter @Nullable Object marker,
+                @BindParameter @Nullable String message, @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
                 pluginServices.setTransactionError(message);
@@ -84,8 +85,8 @@ public class Slf4jMarkerAspect {
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry,
-                @SuppressWarnings("unused") @BindParameter Object marker,
-                @BindParameter String message) {
+                @SuppressWarnings("unused") @BindParameter @Nullable Object marker,
+                @BindParameter @Nullable String message) {
             LoggerPlugin.inAdvice.set(false);
             traceEntry.endWithError(ErrorMessage.from(message));
         }
@@ -103,8 +104,8 @@ public class Slf4jMarkerAspect {
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(
-                @SuppressWarnings("unused") @BindParameter Object marker,
-                @BindParameter String format, @BindParameter Object arg,
+                @SuppressWarnings("unused") @BindParameter @Nullable Object marker,
+                @BindParameter @Nullable String format, @BindParameter @Nullable Object arg,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             FormattingTuple formattingTuple = MessageFormatter.format(format, arg);
@@ -129,8 +130,8 @@ public class Slf4jMarkerAspect {
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(
-                @SuppressWarnings("unused") @BindParameter Object marker,
-                @BindParameter String format, @BindParameter Object arg,
+                @SuppressWarnings("unused") @BindParameter @Nullable Object marker,
+                @BindParameter @Nullable String format, @BindParameter @Nullable Object arg,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             FormattingTuple formattingTuple = MessageFormatter.format(format, arg);
@@ -155,9 +156,9 @@ public class Slf4jMarkerAspect {
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(
-                @SuppressWarnings("unused") @BindParameter Object marker,
-                @BindParameter String format, @BindParameter Object arg1,
-                @BindParameter Object arg2, @BindMethodName String methodName) {
+                @SuppressWarnings("unused") @BindParameter @Nullable Object marker,
+                @BindParameter @Nullable String format, @BindParameter @Nullable Object arg1,
+                @BindParameter @Nullable Object arg2, @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             FormattingTuple formattingTuple = MessageFormatter.format(format, arg1, arg2);
             return Slf4jMarkerAspect.onBefore(formattingTuple, methodName, metricName);
@@ -181,8 +182,9 @@ public class Slf4jMarkerAspect {
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(
-                @SuppressWarnings("unused") @BindParameter Object marker,
-                @BindParameter String format, @BindParameter Object[] arguments,
+                @SuppressWarnings("unused") @BindParameter @Nullable Object marker,
+                @BindParameter @Nullable String format,
+                @BindParameter @Nullable Object/*@Nullable*/[] arguments,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             FormattingTuple formattingTuple = MessageFormatter.arrayFormat(format, arguments);

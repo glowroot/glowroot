@@ -29,9 +29,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +94,6 @@ public class MainEntryPoint {
         Thread.sleep(Long.MAX_VALUE);
     }
 
-    @EnsuresNonNull("glowrootModule")
     private static void start(File dataDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile)
             throws StartupFailedException, InterruptedException {
@@ -158,7 +155,6 @@ public class MainEntryPoint {
     }
 
     @OnlyUsedByTests
-    @EnsuresNonNull("glowrootModule")
     public static void start(Map<String, String> properties) throws StartupFailedException,
             InterruptedException {
         File dataDir = DataDir.getDataDir(properties, null);
@@ -166,8 +162,7 @@ public class MainEntryPoint {
     }
 
     @OnlyUsedByTests
-    @RequiresNonNull("glowrootModule")
-    public static GlowrootModule getGlowrootModule() {
+    public static @Nullable GlowrootModule getGlowrootModule() {
         return glowrootModule;
     }
 

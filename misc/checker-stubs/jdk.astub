@@ -25,6 +25,24 @@ public interface Instrumentation {
 }
 
 /* ========================================================================== */
+package java.lang.management;
+
+public interface ThreadMXBean {
+    public @Nullable ThreadInfo getThreadInfo(long id, int maxDepth);
+}
+
+/* ========================================================================== */
+package java.lang.reflect;
+
+public class Method {
+    public @Nullable Object invoke(@Nullable Object obj, @Nullable Object... args);
+}
+
+public class InvocationTargetException {
+    public @Nullable Throwable getCause();
+}
+
+/* ========================================================================== */
 package java.net;
 
 public class URL {
@@ -33,9 +51,42 @@ public class URL {
 }
 
 /* ========================================================================== */
+package java.nio.channels;
+
+public class FileChannel {
+    public @Nullable FileLock tryLock();
+}
+
+/* ========================================================================== */
 package java.util;
 
 public class Arrays {
     // see https://code.google.com/p/checker-framework/issues/detail?id=370
     public static <T extends @Nullable Object> List<T> asList(T... a);
+}
+
+/* ========================================================================== */
+package java.util.concurrent;
+
+public class ConcurrentMap<K, V> {
+    @Nullable V putIfAbsent(K key, V value);
+}
+
+/* ========================================================================== */
+package java.util.jar;
+
+public class Attributes {
+    public @Nullable String getValue(String name);
+}
+
+public class JarInputStream {
+    public @Nullable Manifest getManifest();
+    public @Nullable JarEntry getNextJarEntry();
+}
+
+/* ========================================================================== */
+package javax.management.openmbean;
+
+public class CompositeType {
+    public @Nullable OpenType<?> getType(String itemName);
 }

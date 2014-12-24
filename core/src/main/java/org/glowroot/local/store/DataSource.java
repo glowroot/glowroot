@@ -130,13 +130,7 @@ public class DataSource {
                 @Override
                 public Long extractData(ResultSet resultSet) throws SQLException {
                     if (resultSet.next()) {
-                        Long value = resultSet.getLong(1);
-                        if (value == null) {
-                            logger.warn("query returned a null column value: {}", sql);
-                            return 0L;
-                        } else {
-                            return value;
-                        }
+                        return resultSet.getLong(1);
                     } else {
                         logger.warn("query didn't return any results: {}", sql);
                         return 0L;
@@ -176,7 +170,7 @@ public class DataSource {
         }
     }
 
-    </*@Nullable*/T> T query(String sql, ResultSetExtractor<T> rse, Object... args)
+    <T> /*@Nullable*/T query(String sql, ResultSetExtractor</*@NonNull*/T> rse, Object... args)
             throws SQLException {
         debug(sql, args);
         synchronized (lock) {
@@ -280,8 +274,8 @@ public class DataSource {
     }
 
     // lock must be acquired prior to calling this method
-    private </*@Nullable*/T> T queryUnderLock(String sql, Object[] args,
-            ResultSetExtractor<T> rse) throws SQLException {
+    private <T> T queryUnderLock(String sql, Object[] args, ResultSetExtractor</*@NonNull*/T> rse)
+            throws SQLException {
         PreparedStatement preparedStatement = prepareStatement(sql);
         for (int i = 0; i < args.length; i++) {
             preparedStatement.setObject(i + 1, args[i]);
@@ -339,7 +333,7 @@ public class DataSource {
         debug(sql, Arrays.asList(args));
     }
 
-    private static void debug(String sql, List<?> args) {
+    private static void debug(String sql, List<? extends /*@Nullable*/Object> args) {
         if (logger.isDebugEnabled()) {
             if (args.isEmpty()) {
                 logger.debug(sql);

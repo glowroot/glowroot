@@ -79,7 +79,7 @@ public class ObjectMappers {
     }
 
     @EnsuresNonNull("#1")
-    public static <T> void checkRequiredProperty(T reference, String fieldName)
+    public static <T> void checkRequiredProperty(final T reference, String fieldName)
             throws JsonMappingException {
         if (reference == null) {
             throw new JsonMappingException("Null value not allowed for field: " + fieldName);

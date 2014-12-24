@@ -42,6 +42,7 @@ import org.glowroot.transaction.AdviceCache;
 import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.IsolatedWeavingClassLoader;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LocalContainer implements Container {
@@ -89,6 +90,7 @@ public class LocalContainer implements Container {
         }
         JavaagentMain.setTraceStoreThresholdMillisToZero();
         final GlowrootModule glowrootModule = MainEntryPoint.getGlowrootModule();
+        checkNotNull(glowrootModule);
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         AdviceCache adviceCache = glowrootModule.getTransactionModule().getAdviceCache();
         loader.setMixinTypes(adviceCache.getMixinTypes());
@@ -111,6 +113,9 @@ public class LocalContainer implements Container {
         configService = new HttpConfigService(httpClient, new GetUiPortCommand() {
             @Override
             public int getUiPort() throws Exception {
+                // TODO report checker framework issue that checkNotNull needed here
+                // in addition to above
+                checkNotNull(glowrootModule);
                 return glowrootModule.getUiModule().getPort();
             }
         });

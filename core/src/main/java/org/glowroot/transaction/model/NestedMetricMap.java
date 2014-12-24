@@ -21,7 +21,7 @@ import javax.annotation.Nullable;
 class NestedMetricMap {
 
     // table length must always be a power of 2, see comment in get()
-    private final Entry[] table = new Entry[16];
+    private final @Nullable Entry[] table = new Entry[16];
 
     @Nullable
     TransactionMetricImpl get(MetricNameImpl metricName) {

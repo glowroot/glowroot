@@ -15,6 +15,10 @@ public class JsonDeserializer<T> {
     public @Nullable T deserialize(JsonParser jp, DeserializationContext ctxt);
 }
 
+public class JsonNode {
+    public @Nullable JsonNode get(String fieldName);
+}
+
 public class ObjectMapper {
     public <T extends @Nullable Object> T treeToValue(TreeNode n, Class<T> valueType);
     public <T extends @Nullable Object> T readValue(String content, Class<T> valueType);

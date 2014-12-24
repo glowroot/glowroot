@@ -40,3 +40,11 @@ public class FormattingTuple {
     public @Nullable Object @Nullable [] getArgArray();
     public @Nullable Throwable getThrowable();
 }
+
+public class MessageFormatter {
+    public static FormattingTuple format(@Nullable String messagePattern, @Nullable Object arg);
+    public static FormattingTuple format(@Nullable String messagePattern, @Nullable Object arg1,
+            @Nullable Object arg2);
+    public static FormattingTuple arrayFormat(@Nullable String messagePattern,
+            @Nullable Object @Nullable[] argArray);
+}

@@ -68,7 +68,7 @@ class ConfigFile {
     private Config readValue(String content) throws IOException {
         Config config = Marshaling.fromJson(content, Config.class);
         UserInterfaceConfig userInterfaceConfig = config.userInterfaceConfig();
-        if (userInterfaceConfig.defaultTransactionType() == null) {
+        if (userInterfaceConfig.defaultTransactionType().isEmpty()) {
             userInterfaceConfig = ((ImmutableUserInterfaceConfig) userInterfaceConfig)
                     .withDefaultTransactionType(getDefaultTransactionType(config.capturePoints()));
             config = ((ImmutableConfig) config).withUserInterfaceConfig(userInterfaceConfig);
@@ -152,7 +152,7 @@ class ConfigFile {
             }
         }
         for (CapturePoint capturePoint : capturePoints) {
-            if (capturePoint.transactionType() != null) {
+            if (!capturePoint.transactionType().isEmpty()) {
                 return capturePoint.transactionType();
             }
         }

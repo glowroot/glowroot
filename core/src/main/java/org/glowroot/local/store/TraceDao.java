@@ -123,16 +123,12 @@ public class TraceDao implements TraceRepository {
                     trace.metrics(), trace.threadInfo(), trace.gcInfos(), entriesId, profileId);
             final ImmutableSetMultimap<String, String> customAttributesForIndexing =
                     trace.customAttributesForIndexing();
-            if (customAttributesForIndexing == null) {
-                logger.warn("trace customAttributesForIndex was not provided");
-            } else if (!customAttributesForIndexing.isEmpty()) {
+            if (!customAttributesForIndexing.isEmpty()) {
                 dataSource.batchUpdate("insert into trace_custom_attribute (trace_id, name,"
                         + " value, capture_time) values (?, ?, ?, ?)", new BatchAdder() {
                     @Override
                     public void addBatches(PreparedStatement preparedStatement)
                             throws SQLException {
-                        // customAttributesForIndexing is final and null check performed above
-                        checkNotNull(customAttributesForIndexing);
                         for (Entry<String, String> entry : customAttributesForIndexing.entries()) {
                             preparedStatement.setString(1, trace.id());
                             preparedStatement.setString(2, entry.getKey());

@@ -84,9 +84,6 @@ class AggregateCommonService {
         }
         AggregateProfileNode syntheticRootNode = AggregateProfileNode.createSyntheticRootNode();
         for (CharSource profile : profiles) {
-            if (profile == null) {
-                continue;
-            }
             AggregateProfileNode toBeMergedRootNode = ObjectMappers.readRequiredValue(mapper,
                     profile.read(), AggregateProfileNode.class);
             if (toBeMergedRootNode.getStackTraceElement() == null) {
@@ -139,7 +136,7 @@ class AggregateCommonService {
         // executing in which case one of the metric names may be a subset of the other,
         // in which case, the superset wins:
         List<String> metricNames = toBeMergedNode.getMetricNames();
-        if (metricNames != null && metricNames.size() > node.getMetricNames().size()) {
+        if (metricNames.size() > node.getMetricNames().size()) {
             node.setMetricNames(metricNames);
         }
         for (AggregateProfileNode toBeMergedChildNode : toBeMergedNode.getChildNodes()) {

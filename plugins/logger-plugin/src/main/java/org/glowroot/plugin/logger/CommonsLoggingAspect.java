@@ -15,6 +15,8 @@
  */
 package org.glowroot.plugin.logger;
 
+import javax.annotation.Nullable;
+
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
@@ -44,7 +46,7 @@ public class CommonsLoggingAspect {
             return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
         }
         @OnBefore
-        public static TraceEntry onBefore(@BindParameter Object message,
+        public static TraceEntry onBefore(@BindParameter @Nullable Object message,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
@@ -56,7 +58,7 @@ public class CommonsLoggingAspect {
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry,
-                @BindParameter Object message) {
+                @BindParameter @Nullable Object message) {
             LoggerPlugin.inAdvice.set(false);
             traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
         }
@@ -73,8 +75,8 @@ public class CommonsLoggingAspect {
             return !LoggerPlugin.inAdvice.get() && pluginServices.isEnabled();
         }
         @OnBefore
-        public static TraceEntry onBefore(@BindParameter Object message,
-                @BindParameter Throwable t,
+        public static TraceEntry onBefore(@BindParameter @Nullable Object message,
+                @BindParameter @Nullable Throwable t,
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice.set(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), t != null)) {
@@ -85,8 +87,8 @@ public class CommonsLoggingAspect {
                     metricName);
         }
         @OnAfter
-        public static void onAfter(@BindParameter Object message, @BindParameter Throwable t,
-                @BindTraveler TraceEntry traceEntry) {
+        public static void onAfter(@BindParameter @Nullable Object message,
+                @BindParameter @Nullable Throwable t, @BindTraveler TraceEntry traceEntry) {
             LoggerPlugin.inAdvice.set(false);
             if (t == null) {
                 traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));

@@ -53,7 +53,7 @@ class Version {
         }
         if (version.endsWith("-SNAPSHOT")) {
             String commit = mainAttributes.getValue("Build-Commit");
-            if (!commit.isEmpty()) {
+            if (commit != null && !commit.isEmpty()) {
                 if (commit.length() == 40) {
                     version += ", commit " + commit.substring(0, 10);
                 } else {

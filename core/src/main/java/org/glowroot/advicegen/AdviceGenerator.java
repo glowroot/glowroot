@@ -190,7 +190,7 @@ public class AdviceGenerator {
         arrayAnnotationVisitor.visitEnd();
         String metricName = capturePoint.metricName();
         if (capturePoint.isMetricOrGreater()) {
-            if (metricName == null) {
+            if (metricName.isEmpty()) {
                 annotationVisitor.visit("metricName", "<no metric name provided>");
             } else {
                 annotationVisitor.visit("metricName", metricName);
@@ -322,7 +322,7 @@ public class AdviceGenerator {
                 "Lorg/glowroot/api/PluginServices;");
         if (capturePoint.isTransaction()) {
             String transactionType = capturePoint.transactionType();
-            if (transactionType == null) {
+            if (transactionType.isEmpty()) {
                 mv.visitLdcInsn("<no transaction type provided>");
             } else {
                 mv.visitLdcInsn(transactionType);
@@ -725,7 +725,7 @@ public class AdviceGenerator {
         mv.visitVarInsn(ALOAD, 0);
         if (capturePoint.isTraceEntryOrGreater()) {
             String traceEntryTemplate = capturePoint.traceEntryTemplate();
-            if (traceEntryTemplate == null) {
+            if (traceEntryTemplate.isEmpty()) {
                 mv.visitLdcInsn("<no message template provided>");
             } else {
                 mv.visitLdcInsn(traceEntryTemplate);
