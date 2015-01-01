@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -345,7 +345,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.ClassLoaders");
         types.add("org.glowroot.weaving.ClassNames");
         types.add("org.glowroot.weaving.ExtraBootResourceFinder");
-        types.add("org.glowroot.weaving.FrameDeduppingMethodVisitor");
         types.add("org.glowroot.weaving.GeneratedBytecodeUtil");
         types.add("org.glowroot.weaving.ImmutableAdvice");
         types.add("org.glowroot.weaving.ImmutableAdviceMatcher");
@@ -355,7 +354,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.ImmutableAnalyzedMethod$Builder");
         types.add("org.glowroot.weaving.MixinMatcher");
         types.add("org.glowroot.weaving.MixinType");
-        types.add("org.glowroot.weaving.PatchedAdviceAdapter");
         types.add("org.glowroot.weaving.PointcutClassVisitor");
         types.add("org.glowroot.weaving.Weaver");
         types.add("org.glowroot.weaving.Weaver$ComputeFramesClassWriter");
@@ -396,7 +394,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.Opcodes");
         types.add("org.objectweb.asm.Type");
         types.add("org.objectweb.asm.TypePath");
-        types.add("org.objectweb.asm.TypeReference");
         types.add("org.objectweb.asm.commons.AdviceAdapter");
         types.add("org.objectweb.asm.commons.GeneratorAdapter");
         types.add("org.objectweb.asm.commons.JSRInlinerAdapter");
@@ -440,27 +437,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.tree.TypeAnnotationNode");
         types.add("org.objectweb.asm.tree.TypeInsnNode");
         types.add("org.objectweb.asm.tree.VarInsnNode");
-        types.add("org.objectweb.asm.tree.analysis.Analyzer");
-        types.add("org.objectweb.asm.tree.analysis.AnalyzerException");
-        types.add("org.objectweb.asm.tree.analysis.BasicInterpreter");
-        types.add("org.objectweb.asm.tree.analysis.BasicValue");
-        types.add("org.objectweb.asm.tree.analysis.BasicVerifier");
-        types.add("org.objectweb.asm.tree.analysis.Frame");
-        types.add("org.objectweb.asm.tree.analysis.Interpreter");
-        types.add("org.objectweb.asm.tree.analysis.SimpleVerifier");
-        types.add("org.objectweb.asm.tree.analysis.Subroutine");
-        types.add("org.objectweb.asm.tree.analysis.Value");
-        types.add("org.objectweb.asm.util.CheckAnnotationAdapter");
-        types.add("org.objectweb.asm.util.CheckClassAdapter");
-        types.add("org.objectweb.asm.util.CheckFieldAdapter");
-        types.add("org.objectweb.asm.util.CheckMethodAdapter");
-        types.add("org.objectweb.asm.util.CheckMethodAdapter$1");
-        types.add("org.objectweb.asm.util.Printer");
-        types.add("org.objectweb.asm.util.Textifiable");
-        types.add("org.objectweb.asm.util.Textifier");
-        types.add("org.objectweb.asm.util.TraceAnnotationVisitor");
-        types.add("org.objectweb.asm.util.TraceMethodVisitor");
-        types.add("org.objectweb.asm.util.TraceSignatureVisitor");
         return types;
     }
 

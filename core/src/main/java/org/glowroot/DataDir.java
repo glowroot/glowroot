@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,38 +36,38 @@ class DataDir {
         String dataDirPath = properties.get("data.dir");
         // empty check to support parameterized script, e.g. -Dglowroot.data.dir=${somevar}
         if (Strings.isNullOrEmpty(dataDirPath)) {
-            return getBaseDir(glowrootJarFile);
+            File baseDir = getBaseDir(glowrootJarFile);
+            return baseDir == null ? new File(".") : baseDir;
         }
         File dataDir = new File(dataDirPath);
         File baseDir = null;
         if (!dataDir.isAbsolute()) {
             // resolve path relative to base dir instead of process current dir
             baseDir = getBaseDir(glowrootJarFile);
-            dataDir = new File(baseDir, dataDirPath);
+            dataDir = baseDir == null ? new File(dataDirPath) : new File(baseDir, dataDirPath);
         }
         try {
             Files.createParentDirs(dataDir);
+            return dataDir;
         } catch (IOException e) {
             if (baseDir == null) {
                 baseDir = getBaseDir(glowrootJarFile);
+                if (baseDir == null) {
+                    baseDir = new File(".");
+                }
             }
             logger.warn("error creating data directory: {} (using directory {} instead)",
                     dataDir.getAbsolutePath(), baseDir.getAbsolutePath(), e);
+            return baseDir;
         }
-        return dataDir;
     }
 
-    private static File getBaseDir(@Nullable File glowrootJarFile) {
+    private static @Nullable File getBaseDir(@Nullable File glowrootJarFile) {
         if (glowrootJarFile == null) {
             logWarning();
-            return new File(".");
+            return null;
         }
-        File baseDir = glowrootJarFile.getParentFile();
-        if (baseDir == null) {
-            logWarning();
-            return new File(".");
-        }
-        return baseDir;
+        return glowrootJarFile.getParentFile();
     }
 
     private static void logWarning() {

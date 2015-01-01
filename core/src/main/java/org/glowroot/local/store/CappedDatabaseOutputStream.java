@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,8 +136,7 @@ class CappedDatabaseOutputStream extends OutputStream {
             return;
         }
         long newSizeBytes = newSizeKb * 1024L;
-        if (newSizeKb < sizeKb
-                && currIndex - lastResizeBaseIndex < newSizeBytes) {
+        if (newSizeKb < sizeKb && currIndex - lastResizeBaseIndex < newSizeBytes) {
             // resizing smaller and on first "loop" after a resize and haven't written up to the
             // new smaller size yet
             out.seek(8);
@@ -145,8 +144,7 @@ class CappedDatabaseOutputStream extends OutputStream {
             sizeKb = newSizeKb;
             sizeBytes = newSizeBytes;
             return;
-        } else if (newSizeKb > sizeKb
-                && currIndex - lastResizeBaseIndex < sizeBytes) {
+        } else if (newSizeKb > sizeKb && currIndex - lastResizeBaseIndex < sizeBytes) {
             // resizing larger and on first "loop" after a resize
             out.seek(8);
             out.writeInt(newSizeKb);
@@ -167,13 +165,12 @@ class CappedDatabaseOutputStream extends OutputStream {
         tmpOut.writeInt(newSizeKb);
         tmpOut.writeLong(lastResizeBaseIndex);
         long remaining = sizeBytes - startPosition;
+        out.seek(HEADER_SKIP_BYTES + startPosition);
         if (numKeepBytes > remaining) {
-            out.seek(HEADER_SKIP_BYTES + startPosition);
             copy(out, tmpOut, remaining);
             out.seek(HEADER_SKIP_BYTES);
             copy(out, tmpOut, numKeepBytes - remaining);
         } else {
-            out.seek(HEADER_SKIP_BYTES + startPosition);
             copy(out, tmpOut, numKeepBytes);
         }
         out.close();

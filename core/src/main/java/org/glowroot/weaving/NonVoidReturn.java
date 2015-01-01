@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 package org.glowroot.weaving;
 
 import javax.annotation.Nullable;
-
-import com.google.common.base.Objects;
 
 import org.glowroot.api.OptionalReturn;
 import org.glowroot.markers.UsedByGeneratedBytecode;
@@ -43,19 +41,5 @@ public class NonVoidReturn implements OptionalReturn {
     @Override
     public boolean isVoid() {
         return false;
-    }
-
-    @Override
-    public boolean equals(@Nullable Object o) {
-        if (o instanceof NonVoidReturn) {
-            NonVoidReturn that = (NonVoidReturn) o;
-            return Objects.equal(returnValue, that.returnValue);
-        }
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(returnValue);
     }
 }

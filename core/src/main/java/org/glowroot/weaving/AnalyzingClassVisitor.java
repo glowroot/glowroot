@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,6 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -245,6 +243,10 @@ class AnalyzingClassVisitor extends ClassVisitor {
             }
         }
         // sort for consistency since the order affects metric nesting
+        return sortAdvisors(matchingAdvisors);
+    }
+
+    private List<Advice> sortAdvisors(Set<Advice> matchingAdvisors) {
         switch (matchingAdvisors.size()) {
             case 0:
                 return ImmutableList.of();
@@ -253,18 +255,5 @@ class AnalyzingClassVisitor extends ClassVisitor {
             default:
                 return Advice.orderingByMetricName.immutableSortedCopy(matchingAdvisors);
         }
-    }
-
-    @Override
-    public String toString() {
-        // not including fields that are just direct copies from Weaver
-        ToStringHelper toStringHelper = MoreObjects.toStringHelper(this)
-                .add("codeSource", codeSource)
-                .add("adviceMatchers", adviceMatchers)
-                .add("matchedMixinTypes", matchedMixinTypes);
-        if (analyzedClassBuilder != null) {
-            toStringHelper.add("analyzedClass", analyzedClassBuilder.build());
-        }
-        return toStringHelper.toString();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.glowroot.plugin.servlet;
 
+import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
@@ -133,6 +134,13 @@ public class SessionAspect {
             Object val = HttpSessions.getSessionAttribute(session, capturePathBase, sessionInvoker);
             if (val == null) {
                 messageSupplier.putSessionAttributeChangedValue(capturePathBase, null);
+            } else if (val instanceof Map<?, ?>) {
+                for (Entry<?, ?> entry : ((Map<?, ?>) val).entrySet()) {
+                    Object v = entry.getValue();
+                    messageSupplier.putSessionAttributeChangedValue(
+                            capturePathBase + "." + entry.getKey(),
+                            v == null ? null : v.toString());
+                }
             } else {
                 for (Entry<String, String> entry : Beans.propertiesAsText(val).entrySet()) {
                     messageSupplier.putSessionAttributeChangedValue(

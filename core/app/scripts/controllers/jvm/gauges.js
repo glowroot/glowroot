@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,10 +75,8 @@ glowroot.controller('JvmGaugesCtrl', [
                 keyedColorPool.add(gaugeName);
               }
             });
-          } else if (gaugeNames) {
-            if ($scope.allGaugeNames.indexOf(gaugeNames) !== -1) {
-              keyedColorPool.add(gaugeNames);
-            }
+          } else if (gaugeNames && $scope.allGaugeNames.indexOf(gaugeNames) !== -1) {
+            keyedColorPool.add(gaugeNames);
           }
           if (keyedColorPool.keys().length) {
             refreshChart();
@@ -95,15 +93,16 @@ glowroot.controller('JvmGaugesCtrl', [
       });
       var minRequiredForUniqueName;
       var shortNames = {};
-      for (var i = 0; i < gaugeNames.length; i++) {
+      var i, j, k;
+      for (i = 0; i < gaugeNames.length; i++) {
         var si = splitGaugeNames[i];
         minRequiredForUniqueName = 1;
-        for (var j = 0; j < gaugeNames.length; j++) {
+        for (j = 0; j < gaugeNames.length; j++) {
           if (j === i) {
             continue;
           }
           var sj = splitGaugeNames[j];
-          for (var k = 1; k <= Math.min(si.length, sj.length); k++) {
+          for (k = 1; k <= Math.min(si.length, sj.length); k++) {
             if (si[si.length - k] !== sj[sj.length - k]) {
               break;
             }
@@ -493,9 +492,7 @@ glowroot.controller('JvmGaugesCtrl', [
         }
       };
       // render chart with no data points
-      plot = $.plot($chart, [
-        []
-      ], options);
+      plot = $.plot($chart, [[]], options);
       plot.getAxes().xaxis.options.borderGridLock = 1;
     })();
 

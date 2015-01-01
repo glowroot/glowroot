@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,33 +15,37 @@
  */
 package org.glowroot.container.impl;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
 import java.net.Socket;
-import java.util.List;
+import java.util.concurrent.Executors;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
-import com.google.common.base.StandardSystemProperty;
-import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
+import com.google.common.base.Stopwatch;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import org.glowroot.Agent;
 import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
+import org.glowroot.Viewer;
 import org.glowroot.config.ConfigService.OptimisticLockException;
 import org.glowroot.config.ImmutableTraceConfig;
 import org.glowroot.config.TraceConfig;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class JavaagentMain {
 
+    private static final Logger logger = LoggerFactory.getLogger(JavaagentMain.class);
+
     public static void main(String... args) throws Exception {
-        // traceStoreThresholdMillis=0 is the default for testing
-        setTraceStoreThresholdMillisToZero();
+        boolean viewerMode = Boolean.getBoolean("glowroot.testHarness.viewerMode");
+        if (viewerMode) {
+            startViewer();
+        } else {
+            // traceStoreThresholdMillis=0 is the default for testing
+            setTraceStoreThresholdMillisToZero();
+        }
         int port = Integer.parseInt(args[0]);
         // socket is never closed since program is still running after main returns
         Socket socket = new Socket((String) null, port);
@@ -49,55 +53,16 @@ public class JavaagentMain {
         ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
         new Thread(new SocketHeartbeat(objectOut)).start();
         new Thread(new SocketCommandProcessor(objectIn, objectOut)).start();
-        // spin a bit to so that caller can capture a trace with <multiple root nodes> if desired
-        for (int i = 0; i < 1000; i++) {
-            metricMarkerOne();
-            metricMarkerTwo();
-            Thread.sleep(1);
-        }
-        // non-daemon threads started above keep jvm alive after main returns
-    }
-
-    static List<String> buildCommand(int containerPort, File dataDir, boolean useFileDb,
-            List<String> extraJvmArgs) throws Exception {
-        List<String> command = Lists.newArrayList();
-        String javaExecutable = StandardSystemProperty.JAVA_HOME.value() + File.separator + "bin"
-                + File.separator + "java";
-        command.add(javaExecutable);
-        command.addAll(extraJvmArgs);
-        String classpath = Strings.nullToEmpty(StandardSystemProperty.JAVA_CLASS_PATH.value());
-        List<String> paths = Lists.newArrayList();
-        File javaagentJarFile = null;
-        for (String path : Splitter.on(File.pathSeparatorChar).split(classpath)) {
-            File file = new File(path);
-            if (file.getName().matches("glowroot-core-[0-9.]+(-SNAPSHOT)?.jar")) {
-                javaagentJarFile = file;
-            } else {
-                paths.add(path);
+        if (!viewerMode) {
+            // spin a bit to so that caller can capture a trace with <multiple root nodes> if
+            // desired
+            for (int i = 0; i < 1000; i++) {
+                metricMarkerOne();
+                metricMarkerTwo();
+                Thread.sleep(1);
             }
+            // non-daemon threads started above keep jvm alive after main returns
         }
-        command.add("-Xbootclasspath/a:" + Joiner.on(File.pathSeparatorChar).join(paths));
-        command.addAll(getJacocoArgsFromCurrentJvm());
-        if (javaagentJarFile == null) {
-            // create jar file in data dir since that gets cleaned up at end of test already
-            javaagentJarFile = DelegatingJavaagent.createDelegatingJavaagentJarFile(dataDir);
-            command.add("-javaagent:" + javaagentJarFile);
-            command.add("-DdelegateJavaagent=" + Agent.class.getName());
-        } else {
-            command.add("-javaagent:" + javaagentJarFile);
-        }
-        command.add("-Dglowroot.data.dir=" + dataDir.getAbsolutePath());
-        command.add("-Dglowroot.internal.logging.spy=true");
-        if (!useFileDb) {
-            command.add("-Dglowroot.internal.h2.memdb=true");
-        }
-        Integer aggregateInterval = Integer.getInteger("glowroot.internal.aggregateInterval");
-        if (aggregateInterval != null) {
-            command.add("-Dglowroot.internal.aggregateInterval=" + aggregateInterval);
-        }
-        command.add(JavaagentMain.class.getName());
-        command.add(Integer.toString(containerPort));
-        return command;
     }
 
     static void setTraceStoreThresholdMillisToZero() throws OptimisticLockException,
@@ -118,24 +83,33 @@ public class JavaagentMain {
         }
     }
 
+    private static void startViewer() throws AssertionError {
+        Executors.newSingleThreadExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Viewer.main();
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+        });
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (stopwatch.elapsed(SECONDS) < 5) {
+            if (MainEntryPoint.getGlowrootModule() != null) {
+                break;
+            }
+        }
+        if (MainEntryPoint.getGlowrootModule() == null) {
+            throw new AssertionError("Timeout occurred waiting for glowroot to start");
+        }
+    }
+
     private static void metricMarkerOne() throws InterruptedException {
         Thread.sleep(1);
     }
 
     private static void metricMarkerTwo() throws InterruptedException {
         Thread.sleep(1);
-    }
-
-    private static List<String> getJacocoArgsFromCurrentJvm() {
-        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
-        List<String> arguments = runtimeMXBean.getInputArguments();
-        List<String> jacocoArgs = Lists.newArrayList();
-        for (String argument : arguments) {
-            if (argument.startsWith("-javaagent:") && argument.contains("jacoco")) {
-                jacocoArgs.add(argument + ",inclbootstrapclasses=true,includes=org.glowroot.*");
-                break;
-            }
-        }
-        return jacocoArgs;
     }
 }

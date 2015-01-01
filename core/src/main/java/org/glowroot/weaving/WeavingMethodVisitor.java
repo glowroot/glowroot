@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,17 +22,16 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +49,7 @@ import org.glowroot.weaving.AdviceFlowOuterHolder.AdviceFlowHolder;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-class WeavingMethodVisitor extends PatchedAdviceAdapter {
+class WeavingMethodVisitor extends AdviceAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingMethodVisitor.class);
 
@@ -84,13 +83,11 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     private @MonotonicNonNull Label onCatchStartLabel;
     private boolean visitedLocalVariableThis;
 
-    private Object /*@MonotonicNonNull*/[] implicitFrame;
-
     WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc, Type owner,
             Iterable<Advice> advisors, @Nullable String metaHolderInternalName,
             @Nullable Integer methodMetaGroupUniqueNum, boolean bootstrapClassLoader,
             @Nullable MethodVisitor outerMethodVisitor) {
-        super(ASM5, new FrameDeduppingMethodVisitor(mv), access, name, desc);
+        super(ASM5, mv, access, name, desc);
         this.access = access;
         this.name = name;
         this.owner = owner;
@@ -154,8 +151,6 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
 
     @Override
     public void visitInsn(int opcode) {
-        // TODO inside constructor need to call super for special constructor handling in
-        // AdviceAdapter
         if (needsOnReturn && (opcode == RETURN || opcode == IRETURN || opcode == FRETURN
                 || opcode == ARETURN || opcode == LRETURN || opcode == DRETURN)) {
             // ATHROW not included, instructions to catch throws will be written (if necessary) in
@@ -171,61 +166,61 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
     @Override
     public void visitLocalVariable(String name, String desc, @Nullable String signature,
             Label start, Label end, int index) {
-        checkNotNull(methodStartLabel, "Call to onMethodEnter() is required");
         // the JSRInlinerAdapter writes the local variable "this" across different label ranges
         // so visitedLocalVariableThis is checked and updated to ensure this block is only executed
         // once per method
         //
         // TODO handle static methods also
-        if (name.equals("this") && !visitedLocalVariableThis) {
-            visitedLocalVariableThis = true;
-            // this is only so that eclipse debugger will not display <unknown receiving type>
-            // inside code when inside of code before the previous method start label
-            // (the debugger asks for "this", which is not otherwise available in the new code
-            // inserted at the beginning of the method)
-            //
-            // ClassReader always visits local variables at the very end (just prior to visitMaxs)
-            // so this is a good place to put the outer end label for the local variable 'this'
-            Label outerEndLabel = new Label();
-            visitLabel(outerEndLabel);
-            super.visitLocalVariable(name, desc, signature, methodStartLabel, outerEndLabel, index);
-            // at the same time, may as well define local vars for enabled and traveler as
-            // applicable
-            for (int i = 0; i < advisors.size(); i++) {
-                Advice advice = advisors.get(i);
-                Integer adviceFlowHolderLocalIndex = adviceFlowHolderLocals.get(advice);
-                if (adviceFlowHolderLocalIndex != null) {
-                    super.visitLocalVariable("glowroot$advice$flow$holder$" + i,
-                            adviceFlowHolderType.getDescriptor(), null, methodStartLabel,
-                            outerEndLabel, adviceFlowHolderLocalIndex);
-                }
-                Integer adviceFlowLocalIndex = originalAdviceFlowLocals.get(advice);
-                if (adviceFlowLocalIndex != null) {
-                    super.visitLocalVariable("glowroot$advice$flow$" + i,
-                            Type.BOOLEAN_TYPE.getDescriptor(), null, methodStartLabel,
-                            outerEndLabel, adviceFlowLocalIndex);
-                }
-                Integer enabledLocalIndex = enabledLocals.get(advice);
-                if (enabledLocalIndex != null) {
-                    super.visitLocalVariable("glowroot$enabled$" + i,
-                            Type.BOOLEAN_TYPE.getDescriptor(), null, methodStartLabel,
-                            outerEndLabel, enabledLocalIndex);
-                }
-                Integer travelerLocalIndex = travelerLocals.get(advice);
-                if (travelerLocalIndex != null) {
-                    Type travelerType = advice.travelerType();
-                    if (travelerType == null) {
-                        logger.error("visitLocalVariable(): traveler local index is not null,"
-                                + " but traveler type is null");
-                    } else {
-                        super.visitLocalVariable("glowroot$traveler$" + i,
-                                travelerType.getDescriptor(), null, methodStartLabel,
-                                outerEndLabel, travelerLocalIndex);
-                    }
+        if (!name.equals("this") || visitedLocalVariableThis) {
+            super.visitLocalVariable(name, desc, signature, start, end, index);
+            return;
+        }
+        visitedLocalVariableThis = true;
+        checkNotNull(methodStartLabel, "Call to onMethodEnter() is required");
+        // this is only so that eclipse debugger will not display <unknown receiving type>
+        // inside code when inside of code before the previous method start label
+        // (the debugger asks for "this", which is not otherwise available in the new code
+        // inserted at the beginning of the method)
+        //
+        // ClassReader always visits local variables at the very end (just prior to visitMaxs)
+        // so this is a good place to put the outer end label for the local variable 'this'
+        Label outerEndLabel = new Label();
+        visitLabel(outerEndLabel);
+        super.visitLocalVariable(name, desc, signature, methodStartLabel, outerEndLabel, index);
+        // at the same time, may as well define local vars for enabled and traveler as
+        // applicable
+        for (int i = 0; i < advisors.size(); i++) {
+            Advice advice = advisors.get(i);
+            Integer adviceFlowHolderLocalIndex = adviceFlowHolderLocals.get(advice);
+            if (adviceFlowHolderLocalIndex != null) {
+                super.visitLocalVariable("glowroot$advice$flow$holder$" + i,
+                        adviceFlowHolderType.getDescriptor(), null, methodStartLabel,
+                        outerEndLabel, adviceFlowHolderLocalIndex);
+            }
+            Integer adviceFlowLocalIndex = originalAdviceFlowLocals.get(advice);
+            if (adviceFlowLocalIndex != null) {
+                super.visitLocalVariable("glowroot$advice$flow$" + i,
+                        Type.BOOLEAN_TYPE.getDescriptor(), null, methodStartLabel,
+                        outerEndLabel, adviceFlowLocalIndex);
+            }
+            Integer enabledLocalIndex = enabledLocals.get(advice);
+            if (enabledLocalIndex != null) {
+                super.visitLocalVariable("glowroot$enabled$" + i,
+                        Type.BOOLEAN_TYPE.getDescriptor(), null, methodStartLabel,
+                        outerEndLabel, enabledLocalIndex);
+            }
+            Integer travelerLocalIndex = travelerLocals.get(advice);
+            if (travelerLocalIndex != null) {
+                Type travelerType = advice.travelerType();
+                if (travelerType == null) {
+                    logger.error("visitLocalVariable(): traveler local index is not null,"
+                            + " but traveler type is null");
+                } else {
+                    super.visitLocalVariable("glowroot$traveler$" + i,
+                            travelerType.getDescriptor(), null, methodStartLabel,
+                            outerEndLabel, travelerLocalIndex);
                 }
             }
-        } else {
-            super.visitLocalVariable(name, desc, signature, start, end, index);
         }
     }
 
@@ -245,9 +240,10 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                 visitOnAfterAdvice(advice);
             }
             resetAdviceFlowIfNecessary();
-            // need to call this directly on mv, otherwise will go to onMethodExit() causing
-            // infinite loop
-            mv.visitInsn(returnOpcode);
+            // need to call super.visitInsn() in order to avoid infinite loop
+            // could call mv.visitInsn(), but that would bypass special constructor handling in
+            // AdviceAdapter.visitInsn()
+            super.visitInsn(returnOpcode);
         }
         if (needsOnThrow) {
             checkNotNull(onCatchStartLabel, "Call to onMethodEnter() is required");
@@ -662,45 +658,6 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
         }
     }
 
-    @EnsuresNonNull("implicitFrame")
-    private void createImplicitFrame() {
-        int i;
-        if (Modifier.isStatic(access)) {
-            implicitFrame = new Object[argumentTypes.length];
-            i = 0;
-        } else {
-            implicitFrame = new Object[argumentTypes.length + 1];
-            implicitFrame[0] = owner.getInternalName();
-            i = 1;
-        }
-        for (Type argumentType : argumentTypes) {
-            implicitFrame[i++] = getStackFrameVarType(argumentType);
-        }
-    }
-
-    private Object getStackFrameVarType(Type type) throws AssertionError {
-        switch (type.getSort()) {
-            case Type.BOOLEAN:
-            case Type.CHAR:
-            case Type.BYTE:
-            case Type.SHORT:
-            case Type.INT:
-                return INTEGER;
-            case Type.FLOAT:
-                return FLOAT;
-            case Type.LONG:
-                return LONG;
-            case Type.DOUBLE:
-                return DOUBLE;
-            case Type.ARRAY:
-            case Type.OBJECT:
-            case Type.METHOD:
-                return type.getInternalName();
-            default:
-                throw new AssertionError("Unexpected type: " + type);
-        }
-    }
-
     private void pushDefault(Type type) {
         switch (type.getSort()) {
             case Type.BOOLEAN:
@@ -725,22 +682,5 @@ class WeavingMethodVisitor extends PatchedAdviceAdapter {
                 visitInsn(ACONST_NULL);
                 break;
         }
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("access", access)
-                .add("name", name)
-                .add("owner", owner)
-                .add("advisors", advisors)
-                .add("argumentTypes", argumentTypes)
-                .add("adviceFlowHolderLocals", adviceFlowHolderLocals)
-                .add("enabledLocals", enabledLocals)
-                .add("travelerLocals", travelerLocals)
-                .add("needsTryCatch", needsOnReturn)
-                .add("catchStartLabel", onCatchStartLabel)
-                .add("methodStartLabel", methodStartLabel)
-                .toString();
     }
 }

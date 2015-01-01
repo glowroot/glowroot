@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,26 +80,6 @@ public class UpgradeTest {
         storageConfig.setTraceExpirationHours(Integer.MAX_VALUE);
         container.getConfigService().updateStorageConfig(storageConfig);
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
-        container.close();
-        Files.copy(new File(dataDir, "config.json"),
-                new File("src/test/resources/for-upgrade-test/config.json"));
-        Files.copy(new File(dataDir, "glowroot.h2.db"),
-                new File("src/test/resources/for-upgrade-test/glowroot.h2.db"));
-        Files.copy(new File(dataDir, "glowroot.capped.db"),
-                new File("src/test/resources/for-upgrade-test/glowroot.capped.db"));
-        TempDirs.deleteRecursively(dataDir);
-    }
-
-    // upgrade existing database for upgrade test
-    public static void mainx(String... args) throws Exception {
-        File dataDir = TempDirs.createTempDir("glowroot-test-datadir");
-        Resources.asByteSource(Resources.getResource("for-upgrade-test/config.json"))
-                .copyTo(Files.asByteSink(new File(dataDir, "config.json")));
-        Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.h2.db"))
-                .copyTo(Files.asByteSink(new File(dataDir, "glowroot.h2.db")));
-        Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.capped.db"))
-                .copyTo(Files.asByteSink(new File(dataDir, "glowroot.capped.db")));
-        Container container = LocalContainer.createWithFileDb(dataDir);
         container.close();
         Files.copy(new File(dataDir, "config.json"),
                 new File("src/test/resources/for-upgrade-test/config.json"));

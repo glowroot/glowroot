@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import org.springframework.mock.web.MockServletConfig;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
+import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 
@@ -261,6 +262,19 @@ public class ServletPluginTest {
         assertThat(entries.get(1).getError().getException()).isNull();
         assertThat(entries.get(1).getStackTrace()).isNotNull();
         assertThat(entries.get(1).getStackTrace().get(0)).contains(".setStatus(");
+    }
+
+    @Test
+    public void testPluginDisabled() throws Exception {
+        // given
+        PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
+        pluginConfig.setEnabled(false);
+        container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        // when
+        container.executeAppUnderTest(ExecuteServlet.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace).isNull();
     }
 
     @SuppressWarnings("serial")

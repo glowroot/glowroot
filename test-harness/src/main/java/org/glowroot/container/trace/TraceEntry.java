@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 
-import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
+import static org.glowroot.container.common.ObjectMappers.checkNotNullItems;
 import static org.glowroot.container.common.ObjectMappers.nullToFalse;
 
 public class TraceEntry {
@@ -151,8 +151,7 @@ public class TraceEntry {
             @JsonProperty("limitExceededMarker") @Nullable Boolean limitExceededMarker,
             @JsonProperty("limitExtendedMarker") @Nullable Boolean limitExtendedMarker)
             throws JsonMappingException {
-        List<String> stackTrace =
-                checkNotNullItemsForProperty(uncheckedStackTrace, "stackTrace");
+        List<String> stackTrace = checkNotNullItems(uncheckedStackTrace, "stackTrace");
         return new TraceEntry(nullToZero(offset), nullToZero(duration), nullToFalse(active),
                 nullToZero(nestingLevel), message, error, stackTrace,
                 nullToFalse(limitExceededMarker), nullToFalse(limitExtendedMarker));

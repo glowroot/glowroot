@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,19 +35,21 @@ import org.glowroot.container.AppUnderTest;
 @SuppressWarnings("serial")
 public class JdbcServlet extends HttpServlet implements AppUnderTest {
 
-    private Connection connection;
+    private static Connection connection;
 
     @Override
     public void executeApp() throws Exception {
-        connection = JDBCDriver.getConnection("jdbc:hsqldb:mem:test", null);
-        Statement statement = connection.createStatement();
-        try {
-            statement.execute("create table employee (name varchar(100))");
-            statement.execute("insert into employee (name) values ('john doe')");
-            statement.execute("insert into employee (name) values ('jane doe')");
-            statement.execute("insert into employee (name) values ('sally doe')");
-        } finally {
-            statement.close();
+        if (connection == null) {
+            connection = JDBCDriver.getConnection("jdbc:hsqldb:mem:test", null);
+            Statement statement = connection.createStatement();
+            try {
+                statement.execute("create table employee (name varchar(100))");
+                statement.execute("insert into employee (name) values ('john doe')");
+                statement.execute("insert into employee (name) values ('jane doe')");
+                statement.execute("insert into employee (name) values ('sally doe')");
+            } finally {
+                statement.close();
+            }
         }
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/jdbcservlet");
         MockHttpServletResponse response = new MockHttpServletResponse();

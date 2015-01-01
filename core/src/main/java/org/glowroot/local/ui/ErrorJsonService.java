@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.glowroot.local.ui;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -41,6 +42,8 @@ import org.glowroot.local.store.ErrorMessageCount;
 import org.glowroot.local.store.ErrorMessageCountMarshaler;
 import org.glowroot.local.store.ErrorMessageQuery;
 import org.glowroot.local.store.ErrorPoint;
+import org.glowroot.local.store.OverallErrorCount;
+import org.glowroot.local.store.OverallErrorCountMarshaler;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;
 
@@ -74,7 +77,7 @@ class ErrorJsonService {
         ErrorRequestWithLimit request =
                 QueryStrings.decode(queryString, ErrorRequestWithLimit.class);
 
-        ErrorCount overallErrorCount =
+        OverallErrorCount overallErrorCount =
                 aggregateDao.readOverallErrorCount(request.from(), request.to());
         QueryResult<ErrorCount> queryResult = aggregateDao.readTransactionErrorCounts(
                 request.from(), request.to(), request.limit());
@@ -147,7 +150,7 @@ class ErrorJsonService {
         jg.writeStartObject();
         jg.writeObjectField("dataSeries", dataSeriesList);
         jg.writeFieldName("overallSummary");
-        ErrorCountMarshaler.instance().marshalInstance(jg, overallErrorCount);
+        OverallErrorCountMarshaler.instance().marshalInstance(jg, overallErrorCount);
         jg.writeFieldName("transactionSummaries");
         ErrorCountMarshaler.instance().marshalIterable(jg, queryResult.records());
         jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
@@ -160,26 +163,13 @@ class ErrorJsonService {
     String getErrorMessages(String queryString) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-        ErrorMessageQuery request = QueryStrings.decode(queryString, ErrorMessageQuery.class);
-        QueryResult<ErrorMessageCount> queryResult = traceDao.readErrorMessageCounts(request);
-        String transactionType = request.transactionType();
-        String transactionName = request.transactionName();
-        List<ErrorPoint> unfilteredErrorPoints;
-        if (!Strings.isNullOrEmpty(transactionType) && !Strings.isNullOrEmpty(transactionName)) {
-            unfilteredErrorPoints = aggregateDao.readTransactionErrorPoints(transactionType,
-                    transactionName, request.from(), request.to());
-        } else if (Strings.isNullOrEmpty(transactionType)
-                && Strings.isNullOrEmpty(transactionName)) {
-            unfilteredErrorPoints =
-                    aggregateDao.readOverallErrorPoints(request.from(), request.to());
-        } else {
-            throw new IllegalArgumentException("TransactionType and TransactionName must both be"
-                    + "empty or must both be non-empty");
-        }
+        ErrorMessageQuery query = QueryStrings.decode(queryString, ErrorMessageQuery.class);
+        QueryResult<ErrorMessageCount> queryResult = traceDao.readErrorMessageCounts(query);
+        List<ErrorPoint> unfilteredErrorPoints = getUnfilteredErrorPoints(query);
         DataSeries dataSeries = new DataSeries(null);
         Map<Long, Long[]> dataSeriesExtra = Maps.newHashMap();
-        if (request.includes().isEmpty() && request.excludes().isEmpty()) {
-            nameMe(request, unfilteredErrorPoints, dataSeries, dataSeriesExtra);
+        if (query.includes().isEmpty() && query.excludes().isEmpty()) {
+            populateDataSeries(query, unfilteredErrorPoints, dataSeries, dataSeriesExtra);
         } else {
             Map<Long, Long> transactionCountMap = Maps.newHashMap();
             for (ErrorPoint unfilteredErrorPoint : unfilteredErrorPoints) {
@@ -187,14 +177,14 @@ class ErrorJsonService {
                         unfilteredErrorPoint.getTransactionCount());
             }
             ImmutableList<ErrorPoint> errorPoints =
-                    traceDao.readErrorPoints(request, fixedAggregateIntervalMillis);
+                    traceDao.readErrorPoints(query, fixedAggregateIntervalMillis);
             for (ErrorPoint errorPoint : errorPoints) {
                 Long transactionCount = transactionCountMap.get(errorPoint.getCaptureTime());
                 if (transactionCount != null) {
                     errorPoint.setTransactionCount(transactionCount);
                 }
             }
-            nameMe(request, errorPoints, dataSeries, dataSeriesExtra);
+            populateDataSeries(query, errorPoints, dataSeries, dataSeriesExtra);
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -209,36 +199,7 @@ class ErrorJsonService {
         return sb.toString();
     }
 
-    private void nameMe(ErrorMessageQuery request, List<ErrorPoint> errorPoints,
-            DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra) {
-        ErrorPoint lastErrorPoint = null;
-        for (ErrorPoint errorPoint : errorPoints) {
-            if (lastErrorPoint == null) {
-                // first aggregate
-                dataSeriesHelper.addInitialUpslope(request.from(), errorPoint.getCaptureTime(),
-                        dataSeries);
-            } else {
-                dataSeriesHelper.addGapIfNeeded(lastErrorPoint.getCaptureTime(),
-                        errorPoint.getCaptureTime(), dataSeries);
-            }
-            lastErrorPoint = errorPoint;
-            long transactionCount = errorPoint.getTransactionCount();
-            if (transactionCount == -1) {
-                // make unknown really big?
-                dataSeries.add(errorPoint.getCaptureTime(), 100);
-            } else {
-                dataSeries.add(errorPoint.getCaptureTime(),
-                        100 * errorPoint.getErrorCount() / (double) transactionCount);
-            }
-            dataSeriesExtra.put(errorPoint.getCaptureTime(),
-                    new Long[] {errorPoint.getErrorCount(), transactionCount});
-        }
-        if (lastErrorPoint != null) {
-            dataSeriesHelper.addFinalDownslope(request.to(), dataSeries,
-                    lastErrorPoint.getCaptureTime());
-        }
-    }
-
+    // used by "show more"
     @GET("/backend/error/transaction-summaries")
     String getTransactionSummaries(String queryString) throws Exception {
         ErrorRequestWithLimit request =
@@ -248,11 +209,62 @@ class ErrorJsonService {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeObjectField("transactionSummaries", queryResult.records());
+        jg.writeFieldName("transactionSummaries");
+        ErrorCountMarshaler.instance().marshalIterable(jg, queryResult.records());
         jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
+    }
+
+    private List<ErrorPoint> getUnfilteredErrorPoints(ErrorMessageQuery query)
+            throws SQLException {
+        String transactionType = query.transactionType();
+        String transactionName = query.transactionName();
+        List<ErrorPoint> unfilteredErrorPoints;
+        if (!Strings.isNullOrEmpty(transactionType) && !Strings.isNullOrEmpty(transactionName)) {
+            unfilteredErrorPoints = aggregateDao.readTransactionErrorPoints(transactionType,
+                    transactionName, query.from(), query.to());
+        } else if (Strings.isNullOrEmpty(transactionType)
+                && Strings.isNullOrEmpty(transactionName)) {
+            unfilteredErrorPoints =
+                    aggregateDao.readOverallErrorPoints(query.from(), query.to());
+        } else {
+            throw new IllegalArgumentException("TransactionType and TransactionName must both be"
+                    + "empty or must both be non-empty");
+        }
+        return unfilteredErrorPoints;
+    }
+
+    private void populateDataSeries(ErrorMessageQuery request,
+            List<ErrorPoint> unfilteredErrorPoints, DataSeries dataSeries,
+            Map<Long, Long[]> dataSeriesExtra) {
+        ErrorPoint lastErrorPoint = null;
+        for (ErrorPoint unfilteredErrorPoint : unfilteredErrorPoints) {
+            if (lastErrorPoint == null) {
+                // first aggregate
+                dataSeriesHelper.addInitialUpslope(request.from(),
+                        unfilteredErrorPoint.getCaptureTime(), dataSeries);
+            } else {
+                dataSeriesHelper.addGapIfNeeded(lastErrorPoint.getCaptureTime(),
+                        unfilteredErrorPoint.getCaptureTime(), dataSeries);
+            }
+            lastErrorPoint = unfilteredErrorPoint;
+            long transactionCount = unfilteredErrorPoint.getTransactionCount();
+            if (transactionCount == -1) {
+                // make unknown really big?
+                dataSeries.add(unfilteredErrorPoint.getCaptureTime(), 100);
+            } else {
+                dataSeries.add(unfilteredErrorPoint.getCaptureTime(),
+                        100 * unfilteredErrorPoint.getErrorCount() / (double) transactionCount);
+            }
+            dataSeriesExtra.put(unfilteredErrorPoint.getCaptureTime(),
+                    new Long[] {unfilteredErrorPoint.getErrorCount(), transactionCount});
+        }
+        if (lastErrorPoint != null) {
+            dataSeriesHelper.addFinalDownslope(request.to(), dataSeries,
+                    lastErrorPoint.getCaptureTime());
+        }
     }
 
     private static @Nullable ErrorPoint getNextErrorPointIfMatching(

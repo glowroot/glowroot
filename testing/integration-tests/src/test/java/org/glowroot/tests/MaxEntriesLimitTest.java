@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ public class MaxEntriesLimitTest {
     }
 
     @Test
-    public void shouldReadActivePartialTrace() throws Exception {
+    public void shouldReadIsLimitExceededMarker() throws Exception {
         // given
         AdvancedConfig advancedConfig = container.getConfigService().getAdvancedConfig();
         advancedConfig.setMaxTraceEntriesPerTransaction(100);
@@ -124,6 +124,23 @@ public class MaxEntriesLimitTest {
         executorService.shutdown();
     }
 
+    @Test
+    public void shouldReadLimitBypassedTraceEntries() throws Exception {
+        // given
+        AdvancedConfig advancedConfig = container.getConfigService().getAdvancedConfig();
+        advancedConfig.setMaxTraceEntriesPerTransaction(100);
+        container.getConfigService().updateAdvancedConfig(advancedConfig);
+        // when
+        container.executeAppUnderTest(GenerateLimitBypassedEntries.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(trace).isNotNull();
+        assertThat(entries).hasSize(102);
+        assertThat(entries.get(100).isLimitExceededMarker()).isTrue();
+        assertThat(entries.get(101).getMessage().getText()).isEqualTo("ERROR -- abc");
+    }
+
     public static class GenerateLotsOfEntries implements AppUnderTest, TraceMarker {
         @Override
         public void executeApp() throws Exception {
@@ -137,6 +154,20 @@ public class MaxEntriesLimitTest {
                     return;
                 }
             }
+        }
+    }
+
+    public static class GenerateLimitBypassedEntries implements AppUnderTest, TraceMarker {
+        @Override
+        public void executeApp() throws Exception {
+            traceMarker();
+        }
+        @Override
+        public void traceMarker() {
+            for (int i = 0; i < 1000; i++) {
+                new LevelOne().call("a", "b");
+            }
+            new LogError().log("abc");
         }
     }
 

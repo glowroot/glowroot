@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -183,12 +183,20 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Override
     public TraceEntry startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, MetricName metricName) {
+        if (transactionType == null) {
+            logger.error("startTransaction(): argument 'transactionType' must be non-null");
+            return NopTraceEntry.INSTANCE;
+        }
+        if (transactionName == null) {
+            logger.error("startTransaction(): argument 'transactionName' must be non-null");
+            return NopTraceEntry.INSTANCE;
+        }
         if (messageSupplier == null) {
-            logger.error("startTrace(): argument 'messageSupplier' must be non-null");
+            logger.error("startTransaction(): argument 'messageSupplier' must be non-null");
             return NopTraceEntry.INSTANCE;
         }
         if (metricName == null) {
-            logger.error("startTrace(): argument 'metricName' must be non-null");
+            logger.error("startTransaction(): argument 'metricName' must be non-null");
             return NopTraceEntry.INSTANCE;
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
@@ -244,12 +252,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     private TransactionMetricExt startTransactionMetric(MetricName metricName, long startTick,
             Transaction transaction) {
-        if (metricName == null) {
-            logger.error("startTransactionMetric(): argument 'metricName' must be non-null");
-            return NopTransactionMetricExt.INSTANCE;
-        }
         TransactionMetricImpl currentTransactionMetric = transaction.getCurrentTransactionMetric();
         if (currentTransactionMetric == null) {
+            // this really shouldn't happen as current transaction metric should be non-null unless
+            // transaction has completed
             return NopTransactionMetricExt.INSTANCE;
         }
         return currentTransactionMetric.startNestedMetric(metricName, startTick);
@@ -258,7 +264,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     @Override
     public void addTraceEntry(ErrorMessage errorMessage) {
         if (errorMessage == null) {
-            logger.error("addErrorEntry(): argument 'errorMessage' must be non-null");
+            logger.error("addTraceEntry(): argument 'errorMessage' must be non-null");
             return;
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
@@ -325,6 +331,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     public void setTraceStoreThreshold(long threshold, TimeUnit unit) {
         if (threshold < 0) {
             logger.error("setTraceStoreThreshold(): argument 'threshold' must be non-negative");
+            return;
+        }
+        if (unit == null) {
+            logger.error("setTraceStoreThreshold(): argument 'unit' must be non-null");
             return;
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();

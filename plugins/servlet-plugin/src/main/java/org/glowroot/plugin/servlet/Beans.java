@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapMaker;
+import com.google.common.collect.Maps;
 
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
@@ -132,32 +133,31 @@ public class Beans {
         }
     }
 
-    // don't expose guava ImmutableMap in public api
     public static Map<String, String> propertiesAsText(Object obj) {
-        ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
-        ImmutableMap<String, Method> allGettersForObj = wildcardGetters
-                .getUnchecked(obj.getClass());
+        Map<String, String> properties = Maps.newHashMap();
+        ImmutableMap<String, Method> allGettersForObj =
+                wildcardGetters.getUnchecked(obj.getClass());
         for (Entry<String, Method> entry : allGettersForObj.entrySet()) {
             try {
                 Object value = entry.getValue().invoke(obj);
                 if (value != null) {
-                    builder.put(entry.getKey(), value.toString());
+                    properties.put(entry.getKey(), value.toString());
                 }
             } catch (IllegalAccessException e) {
                 // log exception at debug level
                 logger.debug(e.getMessage(), e);
-                builder.put(entry.getKey(), "<could not access>");
+                properties.put(entry.getKey(), "<could not access>");
             } catch (IllegalArgumentException e) {
                 // log exception at debug level
                 logger.debug(e.getMessage(), e);
-                builder.put(entry.getKey(), "<could not access>");
+                properties.put(entry.getKey(), "<could not access>");
             } catch (InvocationTargetException e) {
                 // log exception at debug level
                 logger.debug(e.getMessage(), e);
-                builder.put(entry.getKey(), "<could not access>");
+                properties.put(entry.getKey(), "<could not access>");
             }
         }
-        return builder.build();
+        return properties;
     }
 
     private static AccessibleObject getAccessor(Class<?> clazz, String name) {
@@ -178,31 +178,31 @@ public class Beans {
         } catch (ReflectiveException e) {
             // log exception at trace level
             logger.trace(e.getMessage(), e);
-            // fall back to "is" prefix
-            try {
-                return getMethod(clazz, "is" + capitalizedName);
-            } catch (ReflectiveException f) {
-                // log exception at trace level
-                logger.trace(f.getMessage(), f);
-                // fall back to no prefix
-                try {
-                    return getMethod(clazz, name);
-                } catch (ReflectiveException g) {
-                    // log exception at trace level
-                    logger.trace(g.getMessage(), g);
-                    // fall back to field access
-                    try {
-                        return getField(clazz, name);
-                    } catch (ReflectiveException h) {
-                        // log exception at trace level
-                        logger.trace(h.getMessage(), h);
-                        // log general failure message at debug level
-                        logger.debug("no accessor found for {} in class {}", name, clazz.getName());
-                        return SENTINEL_METHOD;
-                    }
-                }
-            }
         }
+        // fall back to "is" prefix
+        try {
+            return getMethod(clazz, "is" + capitalizedName);
+        } catch (ReflectiveException f) {
+            // log exception at trace level
+            logger.trace(f.getMessage(), f);
+        }
+        // fall back to no prefix
+        try {
+            return getMethod(clazz, name);
+        } catch (ReflectiveException g) {
+            // log exception at trace level
+            logger.trace(g.getMessage(), g);
+        }
+        // fall back to field access
+        try {
+            return getField(clazz, name);
+        } catch (ReflectiveException h) {
+            // log exception at trace level
+            logger.trace(h.getMessage(), h);
+        }
+        // log general failure message at debug level
+        logger.debug("no accessor found for {} in class {}", name, clazz.getName());
+        return SENTINEL_METHOD;
     }
 
     private static ImmutableMap<String, Method> getPropertyNames(Class<?> clazz) {
@@ -241,11 +241,9 @@ public class Beans {
             try {
                 return clazz.getDeclaredMethod(methodName);
             } catch (SecurityException f) {
-                // re-throw new exception (f)
                 throw new ReflectiveException(f);
             } catch (NoSuchMethodException f) {
-                // re-throw original exception (e)
-                throw new ReflectiveException(e);
+                throw new ReflectiveException(f);
             }
         } catch (SecurityException e) {
             throw new ReflectiveException(e);
@@ -259,11 +257,9 @@ public class Beans {
             try {
                 return clazz.getDeclaredField(fieldName);
             } catch (SecurityException f) {
-                // re-throw new exception (f)
                 throw new ReflectiveException(f);
             } catch (NoSuchFieldException f) {
-                // re-throw original exception (e)
-                throw new ReflectiveException(e);
+                throw new ReflectiveException(f);
             }
         } catch (SecurityException e) {
             throw new ReflectiveException(e);

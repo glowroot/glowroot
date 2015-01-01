@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.AppUnderTestServices;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
+import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 import org.glowroot.container.trace.TraceMetric;
@@ -315,6 +316,60 @@ public class JdbcPluginTest {
     }
 
     @Test
+    public void testResultSetValueMetricUsingColumnName() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResultSetGet", true);
+        // when
+        container.executeAppUnderTest(ExecuteStatementAndIterateOverResultsUsingColumnName.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        boolean found = false;
+        for (TraceMetric metric : trace.getRootMetric().getNestedMetrics()) {
+            if (metric.getName().equals("jdbc resultset value")) {
+                found = true;
+                break;
+            }
+        }
+        assertThat(found).isTrue();
+    }
+
+    @Test
+    public void testWithResultSetNavigateMetric() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        boolean found = false;
+        for (TraceMetric metric : trace.getRootMetric().getNestedMetrics()) {
+            if (metric.getName().equals("jdbc resultset navigate")) {
+                found = true;
+                break;
+            }
+        }
+        assertThat(found).isTrue();
+    }
+
+    @Test
+    public void testWithoutResultSetNavigateMetric() throws Exception {
+        // given
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "captureResultSetNavigate", false);
+        // when
+        container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        boolean found = false;
+        for (TraceMetric metric : trace.getRootMetric().getNestedMetrics()) {
+            if (metric.getName().equals("jdbc resultset navigate")) {
+                found = true;
+                break;
+            }
+        }
+        assertThat(found).isFalse();
+    }
+
+    @Test
     public void testBatchPreparedStatement() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
@@ -453,6 +508,68 @@ public class JdbcPluginTest {
                 .isEqualTo("jdbc get connection (autocommit: true)");
     }
 
+    @Test
+    public void testDefaultStackTraceThreshold() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(2);
+        TraceEntry jdbcEntry = entries.get(1);
+        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
+                "jdbc execution: select * from employee => 3 rows");
+        assertThat(jdbcEntry.getStackTrace()).isNull();
+    }
+
+    @Test
+    public void testZeroStackTraceThreshold() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "stackTraceThresholdMillis", 0);
+        // when
+        container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(2);
+        TraceEntry jdbcEntry = entries.get(1);
+        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
+                "jdbc execution: select * from employee => 3 rows");
+        assertThat(jdbcEntry.getStackTrace()).isNotNull();
+    }
+
+    @Test
+    public void testNullStackTraceThreshold() throws Exception {
+        // given
+        container.getConfigService()
+                .setPluginProperty(PLUGIN_ID, "stackTraceThresholdMillis", null);
+        // when
+        container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(2);
+        TraceEntry jdbcEntry = entries.get(1);
+        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
+                "jdbc execution: select * from employee => 3 rows");
+        assertThat(jdbcEntry.getStackTrace()).isNull();
+    }
+
+    @Test
+    public void testPluginDisabled() throws Exception {
+        // given
+        PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
+        pluginConfig.setEnabled(false);
+        container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        // when
+        container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(1);
+    }
+
     // TODO make a release build profile that runs all tests against
     // Hsqldb, Oracle, SQLServer, MySQL, ...
 
@@ -557,8 +674,7 @@ public class JdbcPluginTest {
             try {
                 // in case of previous failure mid-test
                 statement.execute("drop table employee");
-            } catch (SQLException e) {
-            }
+            } catch (SQLException e) {}
             statement.execute("create table employee (name varchar(100), misc " + binaryTypeName
                     + ")");
             statement.execute("insert into employee (name) values ('john doe')");
@@ -598,6 +714,33 @@ public class JdbcPluginTest {
                 ResultSet rs = statement.getResultSet();
                 while (rs.next()) {
                     rs.getString(1);
+                }
+            } finally {
+                statement.close();
+            }
+        }
+    }
+
+    public static class ExecuteStatementAndIterateOverResultsUsingColumnName implements
+            AppUnderTest, TraceMarker {
+        private Connection connection;
+        @Override
+        public void executeApp() throws Exception {
+            connection = createConnection();
+            try {
+                traceMarker();
+            } finally {
+                closeConnection(connection);
+            }
+        }
+        @Override
+        public void traceMarker() throws Exception {
+            Statement statement = connection.createStatement();
+            try {
+                statement.execute("select * from employee");
+                ResultSet rs = statement.getResultSet();
+                while (rs.next()) {
+                    rs.getString("name");
                 }
             } finally {
                 statement.close();

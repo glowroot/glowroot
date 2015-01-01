@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 // shallow copies are necessary because request may not be thread safe, which may affect ability
 // to see detail from active traces
@@ -77,7 +78,7 @@ class DetailCapture {
         if (capturePatterns.isEmpty()) {
             return ImmutableMap.of();
         }
-        ImmutableMap.Builder<String, Object> map = ImmutableMap.builder();
+        Map<String, Object> requestHeaders = Maps.newHashMap();
         Enumeration<String> headerNames = requestInvoker.getHeaderNames(request);
         if (headerNames == null) {
             // null check just to be safe in case this is a very strange servlet container
@@ -95,26 +96,9 @@ class DetailCapture {
                 continue;
             }
             Enumeration<String> values = requestInvoker.getHeaders(request, name);
-            if (values == null) {
-                // just to be safe since ImmutableMap won't accept nulls
-                map.put(name, "");
-            } else if (!values.hasMoreElements()) {
-                map.put(name, "");
-            } else {
-                String value = values.nextElement();
-                if (!values.hasMoreElements()) {
-                    map.put(name, Strings.nullToEmpty(value));
-                } else {
-                    List<String> list = Lists.newArrayList();
-                    list.add(Strings.nullToEmpty(value));
-                    while (values.hasMoreElements()) {
-                        list.add(Strings.nullToEmpty(values.nextElement()));
-                    }
-                    map.put(name, ImmutableList.copyOf(list));
-                }
-            }
+            captureRequestHeader(name, values, requestHeaders);
         }
-        return map.build();
+        return ImmutableMap.copyOf(requestHeaders);
     }
 
     static boolean matchesOneOf(String key, ImmutableList<Pattern> patterns) {
@@ -124,5 +108,27 @@ class DetailCapture {
             }
         }
         return false;
+    }
+
+    private static void captureRequestHeader(String name, Enumeration<String> values,
+            Map<String, Object> requestHeaders) {
+        if (values == null) {
+            // just to be safe since ImmutableMap won't accept nulls
+            requestHeaders.put(name, "");
+        } else if (!values.hasMoreElements()) {
+            requestHeaders.put(name, "");
+        } else {
+            String value = values.nextElement();
+            if (!values.hasMoreElements()) {
+                requestHeaders.put(name, Strings.nullToEmpty(value));
+            } else {
+                List<String> list = Lists.newArrayList();
+                list.add(Strings.nullToEmpty(value));
+                while (values.hasMoreElements()) {
+                    list.add(Strings.nullToEmpty(values.nextElement()));
+                }
+                requestHeaders.put(name, ImmutableList.copyOf(list));
+            }
+        }
     }
 }

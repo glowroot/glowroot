@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.glowroot.advicegen;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -29,6 +28,9 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.MapMaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.glowroot.common.Reflections;
+import org.glowroot.common.Reflections.ReflectiveException;
 
 class Beans {
 
@@ -93,15 +95,7 @@ class Beans {
             }
             Object currItem = accessor.evaluate(obj);
             return value(currItem, path, currIndex + 1);
-        } catch (IllegalAccessException e) {
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
-            return "<could not access>";
-        } catch (IllegalArgumentException e) {
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
-            return "<could not access>";
-        } catch (InvocationTargetException e) {
+        } catch (ReflectiveException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
             return "<could not access>";
@@ -131,90 +125,42 @@ class Beans {
         }
         String capitalizedName = Character.toUpperCase(name.charAt(0)) + name.substring(1);
         try {
-            Method method = getMethod(componentType, "get" + capitalizedName);
-            method.setAccessible(true);
+            Method method = Reflections.getAnyMethod(componentType, "get" + capitalizedName);
             return Accessor.fromMethod(method);
         } catch (ReflectiveException e) {
             // log exception at trace level
             logger.trace(e.getMessage(), e);
-            // fall back to "is" prefix
-            try {
-                Method method = getMethod(componentType, "is" + capitalizedName);
-                method.setAccessible(true);
-                return Accessor.fromMethod(method);
-            } catch (ReflectiveException f) {
-                // log exception at trace level
-                logger.trace(f.getMessage(), f);
-                // fall back to no prefix
-                try {
-                    Method method = getMethod(componentType, name);
-                    method.setAccessible(true);
-                    return Accessor.fromMethod(method);
-                } catch (ReflectiveException g) {
-                    // log exception at trace level
-                    logger.trace(g.getMessage(), g);
-                    // fall back to field access
-                    try {
-                        Field field = getField(componentType, name);
-                        field.setAccessible(true);
-                        return Accessor.fromField(field);
-                    } catch (ReflectiveException h) {
-                        // log exception at trace level
-                        logger.trace(h.getMessage(), h);
-                        // log general failure message at debug level
-                        logger.debug("no accessor found for {} in class {}", name,
-                                componentType.getName());
-                        return null;
-                    }
-                }
-            }
         }
-    }
-
-    private static Method getMethod(Class<?> clazz, String methodName) throws ReflectiveException {
+        // fall back to "is" prefix
         try {
-            return clazz.getMethod(methodName);
-        } catch (NoSuchMethodException e) {
-            try {
-                return clazz.getDeclaredMethod(methodName);
-            } catch (SecurityException f) {
-                // re-throw new exception (f)
-                throw new ReflectiveException(f);
-            } catch (NoSuchMethodException f) {
-                // re-throw original exception (e)
-                throw new ReflectiveException(e);
-            }
-        } catch (SecurityException e) {
-            throw new ReflectiveException(e);
+            Method method = Reflections.getAnyMethod(componentType, "is" + capitalizedName);
+            return Accessor.fromMethod(method);
+        } catch (ReflectiveException f) {
+            // log exception at trace level
+            logger.trace(f.getMessage(), f);
         }
-    }
-
-    private static Field getField(Class<?> clazz, String fieldName) throws ReflectiveException {
+        // fall back to no prefix
         try {
-            return clazz.getField(fieldName);
-        } catch (NoSuchFieldException e) {
-            try {
-                return clazz.getDeclaredField(fieldName);
-            } catch (SecurityException f) {
-                // re-throw new exception (f)
-                throw new ReflectiveException(f);
-            } catch (NoSuchFieldException f) {
-                // re-throw original exception (e)
-                throw new ReflectiveException(e);
-            }
-        } catch (SecurityException e) {
-            throw new ReflectiveException(e);
+            Method method = Reflections.getAnyMethod(componentType, name);
+            return Accessor.fromMethod(method);
+        } catch (ReflectiveException g) {
+            // log exception at trace level
+            logger.trace(g.getMessage(), g);
         }
+        // fall back to field access
+        try {
+            Field field = Reflections.getAnyField(componentType, name);
+            return Accessor.fromField(field);
+        } catch (ReflectiveException h) {
+            // log exception at trace level
+            logger.trace(h.getMessage(), h);
+        }
+        // log general failure message at debug level
+        logger.debug("no accessor found for {} in class {}", name, componentType.getName());
+        return null;
     }
 
     // this unused private method is required for use as SENTINEL_METHOD above
     @SuppressWarnings("unused")
     private static void sentinelMethod() {}
-
-    @SuppressWarnings("serial")
-    private static class ReflectiveException extends Exception {
-        private ReflectiveException(Exception cause) {
-            super(cause);
-        }
-    }
 }

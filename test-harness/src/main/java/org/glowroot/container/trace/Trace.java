@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,8 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
 
-import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
-import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
+import static org.glowroot.container.common.ObjectMappers.orEmpty;
 
 public class Trace {
 
@@ -188,7 +187,7 @@ public class Trace {
             @JsonProperty("entriesExistence") @Nullable Existence entriesExistence,
             @JsonProperty("profileExistence") @Nullable Existence profileExistence)
             throws JsonMappingException {
-        List<TraceGcInfo> gcInfos = checkNotNullItemsForProperty(gcInfosUnchecked, "gcInfos");
+        List<TraceGcInfo> gcInfos = orEmpty(gcInfosUnchecked, "gcInfos");
         checkRequiredProperty(id, "id");
         checkRequiredProperty(active, "active");
         checkRequiredProperty(partial, "partial");
@@ -211,14 +210,13 @@ public class Trace {
                     throw new JsonMappingException(
                             "Null value not allowed for custom attribute map value");
                 }
-                List<String> values =
-                        checkNotNullItemsForProperty(uncheckedValues, "customAttributes");
+                List<String> values = orEmpty(uncheckedValues, "customAttributes");
                 theCustomAttributes.putAll(entry.getKey(), values);
             }
         }
         return new Trace(id, active, partial, startTime, captureTime, duration, transactionType,
                 transactionName, headline, error, user, theCustomAttributes.build(), rootMetric,
-                threadInfo, nullToEmpty(gcInfos), entriesExistence, profileExistence);
+                threadInfo, gcInfos, entriesExistence, profileExistence);
     }
 
     public enum Existence {

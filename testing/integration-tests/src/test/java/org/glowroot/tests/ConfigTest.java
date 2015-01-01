@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -397,19 +397,15 @@ public class ConfigTest {
     private static Gauge createMBeanGauge() {
         Gauge config = new Gauge();
         config.setName("test");
-        config.setMBeanObjectName("anobject:k=v");
-        config.setMBeanAttributeNames(Lists.newArrayList("anattribute"));
+        config.setMBeanObjectName("java.lang:type=ClassLoading");
+        config.setMBeanAttributeNames(Lists.newArrayList("LoadedClassCount",
+                "TotalLoadedClassCount"));
         return config;
     }
 
     private static void updateAllFields(Gauge config) {
         config.setName(config.getName() + "a");
-        config.setMBeanObjectName(config.getMBeanObjectName() + "b");
-        List<String> mbeanAttributeNames = Lists.newArrayList();
-        for (String mbeanAttributeName : config.getMBeanAttributeNames()) {
-            mbeanAttributeNames.add(mbeanAttributeName + "c");
-        }
-        mbeanAttributeNames.add("d");
-        config.setMBeanAttributeNames(mbeanAttributeNames);
+        config.setMBeanObjectName("java.lang:type=Compilation");
+        config.setMBeanAttributeNames(Lists.newArrayList("TotalCompilationTime"));
     }
 }

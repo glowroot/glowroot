@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ glowroot.factory('traceModal', [
       // .modal-open-full-screen compensates for the missing scrollbar
       // to prevent the background page from shifting underneath the modal
       $body.addClass('modal-open-full-screen');
-      $modal.modal({ 'show': true, 'keyboard': false, 'backdrop': false });
+      $modal.modal({'show': true, 'keyboard': false, 'backdrop': false});
       $modal.animate({
         left: '25px',
         top: '25px',
@@ -74,7 +74,7 @@ glowroot.factory('traceModal', [
         if (!loaded) {
           // padding is same as for trace once it loads
           $modalContent.html('<div style="position: relative; display: inline-block;' +
-              ' padding-left: 40px; padding-top: 60px;"></div>');
+          ' padding-left: 40px; padding-top: 60px;"></div>');
           spinner = Glowroot.showSpinner($modalContent.children().first());
         }
 

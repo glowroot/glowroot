@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.glowroot.plugin.servlet;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -58,7 +59,7 @@ public class ResponseHeaderTest {
     public void testStandardResponseHeaders() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
-                "Content-Type, Content-Length");
+                "Content-Type, Content-Length, Content-Language");
         // when
         container.executeAppUnderTest(SetStandardResponseHeaders.class);
         // then
@@ -71,6 +72,7 @@ public class ResponseHeaderTest {
                 (Map<String, Object>) entry.getMessage().getDetail().get("Response headers");
         assertThat(responseHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("Content-Length")).isEqualTo("1");
+        assertThat(responseHeaders.get("Content-Language")).isEqualTo("en");
         assertThat(responseHeaders.get("Extra")).isNull();
     }
 
@@ -78,7 +80,7 @@ public class ResponseHeaderTest {
     public void testStandardResponseHeadersUsingSetHeader() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
-                "Content-Type, Content-Length");
+                "Content-Type, Content-Length, Content-Language");
         // when
         container.executeAppUnderTest(SetStandardResponseHeadersUsingSetHeader.class);
         // then
@@ -91,6 +93,7 @@ public class ResponseHeaderTest {
                 (Map<String, Object>) entry.getMessage().getDetail().get("Response headers");
         assertThat(responseHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("Content-Length")).isEqualTo("1");
+        assertThat(responseHeaders.get("Content-Language")).isEqualTo("en");
         assertThat(responseHeaders.get("Extra")).isNull();
     }
 
@@ -98,7 +101,7 @@ public class ResponseHeaderTest {
     public void testStandardResponseHeadersUsingAddHeader() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
-                "Content-Type, Content-Length");
+                "Content-Type, Content-Length, Content-Language");
         // when
         container.executeAppUnderTest(SetStandardResponseHeadersUsingAddHeader.class);
         // then
@@ -111,6 +114,7 @@ public class ResponseHeaderTest {
                 (Map<String, Object>) entry.getMessage().getDetail().get("Response headers");
         assertThat(responseHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("Content-Length")).isEqualTo("1");
+        assertThat(responseHeaders.get("Content-Language")).isEqualTo("en");
         assertThat(responseHeaders.get("Extra")).isNull();
     }
 
@@ -132,6 +136,48 @@ public class ResponseHeaderTest {
         assertThat(responseHeaders.get("content-type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("content-length")).isEqualTo("1");
         assertThat(responseHeaders.get("extra")).isNull();
+    }
+
+    @Test
+    public void testWithoutAnyHeaderCapture() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders", "");
+        // when
+        container.executeAppUnderTest(SetStandardResponseHeaders.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getDetail()).doesNotContainKey("Response headers");
+    }
+
+    @Test
+    public void testWithoutAnyHeaderCaptureUsingSetHeader() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders", "");
+        // when
+        container.executeAppUnderTest(SetStandardResponseHeadersUsingSetHeader.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getDetail()).doesNotContainKey("Response headers");
+    }
+
+    @Test
+    public void testWithoutAnyHeaderCaptureUsingAddHeader() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders", "");
+        // when
+        container.executeAppUnderTest(SetStandardResponseHeadersUsingAddHeader.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getDetail()).doesNotContainKey("Response headers");
     }
 
     @Test
@@ -177,6 +223,7 @@ public class ResponseHeaderTest {
             response.setContentLength(1);
             response.setContentType("text/plain");
             response.setCharacterEncoding("UTF-8");
+            response.setLocale(Locale.ENGLISH);
         }
     }
 
@@ -187,6 +234,7 @@ public class ResponseHeaderTest {
             response.setHeader("Content-Type", "text/plain;charset=UTF-8");
             response.setHeader("Content-Length", "1");
             response.setHeader("Extra", "abc");
+            response.setLocale(Locale.ENGLISH);
         }
     }
 
@@ -197,6 +245,7 @@ public class ResponseHeaderTest {
             response.addHeader("Content-Type", "text/plain;charset=UTF-8");
             response.addHeader("Content-Length", "1");
             response.addHeader("Extra", "abc");
+            response.setLocale(Locale.ENGLISH);
         }
     }
 
@@ -225,12 +274,14 @@ public class ResponseHeaderTest {
             response.addDateHeader("Date-one", 1393553213832L);
             response.setDateHeader("Date-Two", 1393553214832L);
             response.setDateHeader("Date-Thr", 1393553215832L);
+            response.addDateHeader("Date-Four", 1393553215832L);
 
             response.setIntHeader("Int-One", 1);
             response.setIntHeader("Int-one", 2);
             response.addIntHeader("Int-one", 3);
             response.setIntHeader("Int-Two", 4);
             response.setIntHeader("Int-Thr", 5);
+            response.addIntHeader("Int-Four", 6);
 
             response.addHeader("X-One", "xy");
             response.addDateHeader("X-one", 1393553216832L);

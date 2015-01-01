@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
@@ -31,20 +33,25 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Stopwatch;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.Agent;
 import org.glowroot.common.SpyingLogbackFilter.MessageCount;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
+import org.glowroot.container.common.HttpClient;
 import org.glowroot.container.config.ConfigService;
-import org.glowroot.container.impl.HttpConfigService.GetUiPortCommand;
+import org.glowroot.container.config.ConfigService.GetUiPortCommand;
 import org.glowroot.container.trace.TraceService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -64,21 +71,23 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
     private final Process process;
     private final ConsoleOutputPipe consoleOutputPipe;
     private final HttpClient httpClient;
-    private final HttpConfigService configService;
-    private final HttpTraceService traceService;
+    private final ConfigService configService;
+    private final TraceService traceService;
     private final Thread shutdownHook;
 
     public static JavaagentContainer createWithFileDb(File dataDir) throws Exception {
-        return new JavaagentContainer(dataDir, true, false, false, ImmutableList.<String>of());
+        return new JavaagentContainer(dataDir, true, 0, false, false, false,
+                ImmutableList.<String>of());
     }
 
     public static JavaagentContainer createWithExtraJvmArgs(List<String> extraJvmArgs)
             throws Exception {
-        return new JavaagentContainer(null, false, false, false, extraJvmArgs);
+        return new JavaagentContainer(null, false, 0, false, false, false, extraJvmArgs);
     }
 
-    public JavaagentContainer(@Nullable File dataDir, boolean useFileDb, boolean shared,
-            final boolean captureConsoleOutput, List<String> extraJvmArgs) throws Exception {
+    public JavaagentContainer(@Nullable File dataDir, boolean useFileDb, int port, boolean shared,
+            boolean captureConsoleOutput, boolean viewerMode, List<String> extraJvmArgs)
+            throws Exception {
         if (dataDir == null) {
             this.dataDir = TempDirs.createTempDir("glowroot-test-datadir");
             deleteDataDirOnClose = true;
@@ -89,13 +98,12 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
         this.shared = shared;
         // need to start socket listener before spawning process so process can connect to socket
         serverSocket = new ServerSocket(0);
-        // default to port 0 (any available)
         File configFile = new File(this.dataDir, "config.json");
         if (!configFile.exists()) {
-            Files.write("{\"ui\":{\"port\":0}}", configFile, Charsets.UTF_8);
+            Files.write("{\"ui\":{\"port\":" + port + "}}", configFile, Charsets.UTF_8);
         }
-        List<String> command = JavaagentMain.buildCommand(serverSocket.getLocalPort(),
-                this.dataDir, useFileDb, extraJvmArgs);
+        List<String> command = buildCommand(serverSocket.getLocalPort(), this.dataDir, useFileDb,
+                viewerMode, extraJvmArgs);
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
         final Process process = processBuilder.start();
@@ -124,13 +132,13 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
             throw e;
         }
         httpClient = new HttpClient(uiPort);
-        configService = new HttpConfigService(httpClient, new GetUiPortCommand() {
+        configService = new ConfigService(httpClient, new GetUiPortCommand() {
             @Override
             public int getUiPort() throws Exception {
                 return JavaagentContainer.getUiPort(socketCommander);
             }
         });
-        traceService = new HttpTraceService(httpClient);
+        traceService = new TraceService(httpClient);
         shutdownHook = new ShutdownHookThread(socketCommander);
         this.socketCommander = socketCommander;
         // unfortunately, ctrl-c during maven test will kill the maven process, but won't kill the
@@ -244,7 +252,7 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
         return unexpectedLines;
     }
 
-    private void cleanup() throws Exception {
+    public void cleanup() throws Exception {
         socketCommander.close();
         process.waitFor();
         serverSocket.close();
@@ -254,6 +262,70 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
         if (deleteDataDirOnClose) {
             TempDirs.deleteRecursively(dataDir);
         }
+    }
+
+    static List<String> buildCommand(int containerPort, File dataDir, boolean useFileDb,
+            boolean viewerMode, List<String> extraJvmArgs) throws Exception {
+        List<String> command = Lists.newArrayList();
+        String javaExecutable = StandardSystemProperty.JAVA_HOME.value() + File.separator + "bin"
+                + File.separator + "java";
+        command.add(javaExecutable);
+        command.addAll(extraJvmArgs);
+        // it is important for jacoco javaagent to be prior to glowroot javaagent so that jacoco
+        // will use original class bytes to form its class id at runtime which will then match up
+        // with the class id at analysis time
+        command.addAll(getJacocoArgsFromCurrentJvm());
+        String classpath = Strings.nullToEmpty(StandardSystemProperty.JAVA_CLASS_PATH.value());
+        if (viewerMode) {
+            command.add("-classpath");
+            command.add(classpath);
+            command.add("-Dglowroot.testHarness.viewerMode=true");
+        } else {
+            List<String> paths = Lists.newArrayList();
+            File javaagentJarFile = null;
+            for (String path : Splitter.on(File.pathSeparatorChar).split(classpath)) {
+                File file = new File(path);
+                if (file.getName().matches("glowroot-core-[0-9.]+(-SNAPSHOT)?.jar")) {
+                    javaagentJarFile = file;
+                } else {
+                    paths.add(path);
+                }
+            }
+            command.add("-Xbootclasspath/a:" + Joiner.on(File.pathSeparatorChar).join(paths));
+            if (javaagentJarFile == null) {
+                // create jar file in data dir since that gets cleaned up at end of test already
+                javaagentJarFile = DelegatingJavaagent.createDelegatingJavaagentJarFile(dataDir);
+                command.add("-javaagent:" + javaagentJarFile);
+                command.add("-DdelegateJavaagent=" + Agent.class.getName());
+            } else {
+                command.add("-javaagent:" + javaagentJarFile);
+            }
+        }
+        command.add("-Dglowroot.data.dir=" + dataDir.getAbsolutePath());
+        command.add("-Dglowroot.internal.logging.spy=true");
+        if (!useFileDb) {
+            command.add("-Dglowroot.internal.h2.memdb=true");
+        }
+        Integer aggregateInterval = Integer.getInteger("glowroot.internal.aggregateInterval");
+        if (aggregateInterval != null) {
+            command.add("-Dglowroot.internal.aggregateInterval=" + aggregateInterval);
+        }
+        command.add(JavaagentMain.class.getName());
+        command.add(Integer.toString(containerPort));
+        return command;
+    }
+
+    private static List<String> getJacocoArgsFromCurrentJvm() {
+        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+        List<String> arguments = runtimeMXBean.getInputArguments();
+        List<String> jacocoArgs = Lists.newArrayList();
+        for (String argument : arguments) {
+            if (argument.startsWith("-javaagent:") && argument.contains("jacoco")) {
+                jacocoArgs.add(argument + ",inclbootstrapclasses=true,includes=org.glowroot.*");
+                break;
+            }
+        }
+        return jacocoArgs;
     }
 
     private static int getUiPort(SocketCommander socketCommander) throws Exception {

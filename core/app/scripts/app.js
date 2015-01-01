@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,6 +111,10 @@ glowroot.run([
           });
     };
 
+    $rootScope.hideNavbar = function () {
+      return $location.path() === '/login';
+    };
+
     // with responsive design, container width doesn't change on every window resize event
     var $container = $('#container');
     var $window = $(window);
@@ -206,7 +210,7 @@ Glowroot = (function () {
 
   function showSpinner(selector, opts) {
     // z-index should be less than navbar (which is 1030)
-    opts = opts || { lines: 9, radius: 8, width: 5, zIndex: 1020 };
+    opts = opts || {lines: 9, radius: 8, width: 5, zIndex: 1020};
     var element = $(selector)[0];
     var spinner = new Spinner(opts);
 

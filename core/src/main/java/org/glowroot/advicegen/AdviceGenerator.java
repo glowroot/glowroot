@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,7 +95,6 @@ public class AdviceGenerator {
             List<CapturePoint> capturePoints, @Nullable String pluginId) {
         Map<Advice, LazyDefinedClass> advisors = Maps.newHashMap();
         for (CapturePoint capturePoint : capturePoints) {
-            validatePointcut(capturePoint);
             try {
                 LazyDefinedClass lazyAdviceClass =
                         new AdviceGenerator(capturePoint, pluginId).generate();
@@ -109,12 +108,6 @@ public class AdviceGenerator {
             }
         }
         return ImmutableMap.copyOf(advisors);
-    }
-
-    private static void validatePointcut(CapturePoint capturePoint) {
-        if (capturePoint.isTransaction() && capturePoint.transactionType().isEmpty()) {
-            // TODO complete
-        }
     }
 
     private AdviceGenerator(CapturePoint capturePoint, @Nullable String pluginId) {

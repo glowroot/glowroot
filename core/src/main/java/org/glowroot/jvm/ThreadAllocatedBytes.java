@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.glowroot.jvm;
 
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import org.slf4j.Logger;
@@ -44,24 +43,17 @@ public class ThreadAllocatedBytes {
         }
         Method isSupportedMethod;
         try {
-            isSupportedMethod = sunThreadMXBeanClass.getMethod("isThreadAllocatedMemorySupported");
-        } catch (SecurityException e) {
-            logger.error(e.getMessage(), e);
-            return OptionalService.unavailable("<see error log for detail>");
-        } catch (NoSuchMethodException e) {
+            isSupportedMethod = Reflections.getMethod(sunThreadMXBeanClass,
+                    "isThreadAllocatedMemorySupported");
+        } catch (ReflectiveException e) {
             logger.error(e.getMessage(), e);
             return OptionalService.unavailable("<see error log for detail>");
         }
         Boolean supported;
         try {
-            supported = (Boolean) isSupportedMethod.invoke(ManagementFactory.getThreadMXBean());
-        } catch (IllegalArgumentException e) {
-            logger.error(e.getMessage(), e);
-            return OptionalService.unavailable("<see error log for detail>");
-        } catch (IllegalAccessException e) {
-            logger.error(e.getMessage(), e);
-            return OptionalService.unavailable("<see error log for detail>");
-        } catch (InvocationTargetException e) {
+            supported = (Boolean) Reflections.invoke(isSupportedMethod,
+                    ManagementFactory.getThreadMXBean());
+        } catch (ReflectiveException e) {
             logger.error(e.getMessage(), e);
             return OptionalService.unavailable("<see error log for detail>");
         }
@@ -75,12 +67,9 @@ public class ThreadAllocatedBytes {
         }
         Method getThreadAllocatedBytesMethod;
         try {
-            getThreadAllocatedBytesMethod =
-                    sunThreadMXBeanClass.getMethod("getThreadAllocatedBytes", long.class);
-        } catch (SecurityException e) {
-            logger.error(e.getMessage(), e);
-            return OptionalService.unavailable("<see error log for detail>");
-        } catch (NoSuchMethodException e) {
+            getThreadAllocatedBytesMethod = Reflections.getMethod(sunThreadMXBeanClass,
+                    "getThreadAllocatedBytes", long.class);
+        } catch (ReflectiveException e) {
             logger.error(e.getMessage(), e);
             return OptionalService.unavailable("<see error log for detail>");
         }

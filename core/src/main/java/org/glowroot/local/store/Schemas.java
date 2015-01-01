@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,11 +37,13 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.checkerframework.checker.tainting.qual.Untainted;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.glowroot.common.Checkers.castUntainted;
 
 class Schemas {
 
@@ -59,8 +61,8 @@ class Schemas {
 
     private Schemas() {}
 
-    static void syncTable(String tableName, ImmutableList<Column> columns, Connection connection)
-            throws SQLException {
+    static void syncTable(@Untainted String tableName, ImmutableList<Column> columns,
+            Connection connection) throws SQLException {
         if (!tableExists(tableName, connection)) {
             createTable(tableName, columns, connection);
         } else if (tableNeedsUpgrade(tableName, columns, connection)) {
@@ -71,8 +73,8 @@ class Schemas {
         }
     }
 
-    static void syncIndexes(String tableName, ImmutableList<Index> indexes, Connection connection)
-            throws SQLException {
+    static void syncIndexes(@Untainted String tableName, ImmutableList<Index> indexes,
+            Connection connection) throws SQLException {
         ImmutableSet<Index> desiredIndexes = ImmutableSet.copyOf(indexes);
         Set<Index> existingIndexes = getIndexes(tableName, connection);
         for (Index index : Sets.difference(existingIndexes, desiredIndexes)) {
@@ -122,7 +124,7 @@ class Schemas {
         return ImmutableList.copyOf(columns);
     }
 
-    private static void createTable(String tableName, ImmutableList<Column> columns,
+    private static void createTable(@Untainted String tableName, ImmutableList<Column> columns,
             Connection connection) throws SQLException {
         StringBuilder sql = new StringBuilder();
         sql.append("create table ");
@@ -144,7 +146,7 @@ class Schemas {
             }
         }
         sql.append(")");
-        execute(sql.toString(), connection);
+        execute(castUntainted(sql.toString()), connection);
         if (tableNeedsUpgrade(tableName, columns, connection)) {
             logger.warn("table {} thinks it still needs to be upgraded, even after it was just"
                     + "upgraded", tableName);
@@ -209,7 +211,8 @@ class Schemas {
     @VisibleForTesting
     static ImmutableSet<Index> getIndexes(String tableName, Connection connection)
             throws SQLException {
-        ListMultimap<String, String> indexColumns = ArrayListMultimap.create();
+        ListMultimap</*@Untainted*/String, /*@Untainted*/String> indexColumns =
+                ArrayListMultimap.create();
         ResultSet resultSet = connection.getMetaData().getIndexInfo(null, null,
                 tableName.toUpperCase(Locale.ENGLISH), false, false);
         ResultSetCloser closer = new ResultSetCloser(resultSet);
@@ -220,7 +223,7 @@ class Schemas {
                 // hack-ish to skip over primary key constraints which seem to be always
                 // prefixed in H2 by PRIMARY_KEY_
                 if (!indexName.startsWith("PRIMARY_KEY_")) {
-                    indexColumns.put(indexName, columnName);
+                    indexColumns.put(castUntainted(indexName), castUntainted(columnName));
                 }
             }
         } catch (Throwable t) {
@@ -229,7 +232,8 @@ class Schemas {
             closer.close();
         }
         ImmutableSet.Builder<Index> indexes = ImmutableSet.builder();
-        for (Entry<String, Collection<String>> entry : indexColumns.asMap().entrySet()) {
+        for (Entry</*@Untainted*/String, Collection</*@Untainted*/String>> entry : indexColumns
+                .asMap().entrySet()) {
             String name = entry.getKey().toLowerCase(Locale.ENGLISH);
             List<String> columns = Lists.newArrayList();
             for (String column : entry.getValue()) {
@@ -255,10 +259,10 @@ class Schemas {
             sql.append(index.columns().get(i));
         }
         sql.append(")");
-        execute(sql.toString(), connection);
+        execute(castUntainted(sql.toString()), connection);
     }
 
-    private static void execute(String sql, Connection connection) throws SQLException {
+    private static void execute(@Untainted String sql, Connection connection) throws SQLException {
         Statement statement = connection.createStatement();
         try {
             statement.execute(sql);
@@ -281,8 +285,8 @@ class Schemas {
     @Value.Immutable
     abstract static class Index {
         @Value.Parameter
-        abstract String name();
+        abstract @Untainted String name();
         @Value.Parameter
-        abstract List<String> columns();
+        abstract List</*@Untainted*/String> columns();
     }
 }

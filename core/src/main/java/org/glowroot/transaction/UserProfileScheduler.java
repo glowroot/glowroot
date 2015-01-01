@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,12 +46,12 @@ class UserProfileScheduler {
         // schedule the first stack collection for configured interval after trace start (or
         // immediately, if trace duration already exceeds configured collection interval)
         int intervalMillis = userRecordingConfig.profileIntervalMillis();
-        ScheduledRunnable profileRunnable =
-                new TransactionProfileRunnable(transaction, configService);
+        ScheduledRunnable userProfileRunnable =
+                new UserProfileRunnable(transaction, configService);
         long initialDelay =
                 Math.max(0, intervalMillis - NANOSECONDS.toMillis(transaction.getDuration()));
-        profileRunnable.scheduleWithFixedDelay(scheduledExecutor, initialDelay, intervalMillis,
+        userProfileRunnable.scheduleWithFixedDelay(scheduledExecutor, initialDelay, intervalMillis,
                 MILLISECONDS);
-        transaction.setUserProfileRunnable(profileRunnable);
+        transaction.setUserProfileRunnable(userProfileRunnable);
     }
 }

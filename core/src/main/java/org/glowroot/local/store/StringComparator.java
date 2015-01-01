@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.glowroot.local.store;
 
+import org.checkerframework.checker.tainting.qual.Untainted;
+
 import org.glowroot.config.MarshalingRoutines.LowercaseMarshaling;
 
 public enum StringComparator implements LowercaseMarshaling {
@@ -25,10 +27,10 @@ public enum StringComparator implements LowercaseMarshaling {
     CONTAINS("like", "%%%s%%"),
     NOT_CONTAINS("not like", "%%%s%%");
 
-    private final String comparator;
+    private final @Untainted String comparator;
     private final String parameterFormat;
 
-    private StringComparator(String comparator, String parameterTemplate) {
+    private StringComparator(@Untainted String comparator, String parameterTemplate) {
         this.comparator = comparator;
         this.parameterFormat = parameterTemplate;
     }
@@ -37,6 +39,7 @@ public enum StringComparator implements LowercaseMarshaling {
         return String.format(parameterFormat, parameter);
     }
 
+    @Untainted
     String getComparator() {
         return comparator;
     }

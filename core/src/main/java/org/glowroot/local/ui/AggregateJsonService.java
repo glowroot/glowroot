@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.glowroot.local.ui;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -33,6 +34,7 @@ import com.google.common.collect.PeekingIterator;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.common.Clock;
@@ -118,7 +120,8 @@ class AggregateJsonService {
                     // convert to average seconds
                     dataSeries.add(
                             overallAggregate.captureTime(),
-                            (transactionAggregate.totalMicros() / (double) overallAggregate.transactionCount())
+                            (transactionAggregate.totalMicros() / (double) overallAggregate
+                                    .transactionCount())
                                     / MICROSECONDS_PER_SECOND);
                     totalOtherMicros -= transactionAggregate.totalMicros();
                 }
@@ -153,19 +156,8 @@ class AggregateJsonService {
     @GET("/backend/performance/metrics")
     String getMetrics(String queryString) throws Exception {
         AggregateRequest request = QueryStrings.decode(queryString, AggregateRequest.class);
-        List<Aggregate> aggregates;
-        String transactionName = request.transactionName();
-        if (transactionName == null) {
-            aggregates = aggregateDao.readOverallAggregates(request.transactionType(),
-                    request.from(), request.to());
-        } else {
-            aggregates = aggregateDao.readTransactionAggregates(request.transactionType(),
-                    transactionName, request.from(), request.to());
-        }
-        List<StackedPoint> stackedPoints = Lists.newArrayList();
-        for (Aggregate aggregate : aggregates) {
-            stackedPoints.add(StackedPoint.create(aggregate));
-        }
+        List<Aggregate> aggregates = getAggregates(request);
+        List<StackedPoint> stackedPoints = getStackedPoints(aggregates);
 
         final int topX = 5;
         List<String> metricNames = getTopMetricNames(stackedPoints, topX + 1);
@@ -220,15 +212,7 @@ class AggregateJsonService {
         }
 
         MergedAggregate mergedAggregate = aggregateCommonService.getMergedAggregate(aggregates);
-        long traceCount;
-        if (transactionName == null) {
-            traceCount = traceDao.readOverallCount(request.transactionType(), request.from(),
-                    request.to());
-        } else {
-            traceCount = traceDao.readTransactionCount(request.transactionType(),
-                    transactionName,
-                    request.from(), request.to());
-        }
+        long traceCount = getTraceCount(request);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
@@ -240,6 +224,7 @@ class AggregateJsonService {
         return sb.toString();
     }
 
+    // used by "show more"
     @GET("/backend/performance/transaction-summaries")
     String getTransactionSummaries(String queryString) throws Exception {
         AggregateRequestWithLimit request =
@@ -264,7 +249,11 @@ class AggregateJsonService {
         AggregateProfileNode profile = aggregateCommonService.getProfile(
                 request.transactionType(), request.transactionName(), request.from(),
                 request.to(), request.truncateLeafPercentage());
-        // TODO better error handling for null profile
+        if (profile == null) {
+            // this should not happen as the user interface checks profile sample count before
+            // sending this request
+            throw new JsonServiceException(HttpResponseStatus.NOT_FOUND, "Profile data not found");
+        }
         return mapper.writeValueAsString(profile);
     }
 
@@ -275,8 +264,9 @@ class AggregateJsonService {
                 request.transactionType(), request.transactionName(), request.from(),
                 request.to(), request.truncateLeafPercentage());
         if (profile == null) {
-            // TODO better error handling
-            return "{}";
+            // this should not happen as the user interface checks profile sample count before
+            // sending this request
+            throw new JsonServiceException(HttpResponseStatus.NOT_FOUND, "Profile data not found");
         }
         AggregateProfileNode interestingNode = profile;
         while (interestingNode.getChildNodes().size() == 1) {
@@ -298,6 +288,39 @@ class AggregateJsonService {
         jg.writeEndObject();
         jg.close();
         return sb.toString();
+    }
+
+    private static @Nullable Aggregate getNextAggregateIfMatching(
+            PeekingIterator<Aggregate> aggregates, long captureTime) {
+        if (!aggregates.hasNext()) {
+            return null;
+        }
+        Aggregate aggregate = aggregates.peek();
+        if (aggregate.captureTime() == captureTime) {
+            // advance iterator
+            aggregates.next();
+            return aggregate;
+        }
+        return null;
+    }
+
+    private List<Aggregate> getAggregates(AggregateRequest request) throws SQLException {
+        String transactionName = request.transactionName();
+        if (transactionName == null) {
+            return aggregateDao.readOverallAggregates(request.transactionType(), request.from(),
+                    request.to());
+        } else {
+            return aggregateDao.readTransactionAggregates(request.transactionType(),
+                    transactionName, request.from(), request.to());
+        }
+    }
+
+    private List<StackedPoint> getStackedPoints(List<Aggregate> aggregates) throws IOException {
+        List<StackedPoint> stackedPoints = Lists.newArrayList();
+        for (Aggregate aggregate : aggregates) {
+            stackedPoints.add(StackedPoint.create(aggregate));
+        }
+        return stackedPoints;
     }
 
     // calculate top 5 metrics
@@ -325,18 +348,15 @@ class AggregateJsonService {
         return metricNames;
     }
 
-    private static @Nullable Aggregate getNextAggregateIfMatching(
-            PeekingIterator<Aggregate> aggregates, long captureTime) {
-        if (!aggregates.hasNext()) {
-            return null;
+    private long getTraceCount(AggregateRequest request) throws SQLException {
+        String transactionName = request.transactionName();
+        if (transactionName == null) {
+            return traceDao.readOverallCount(request.transactionType(), request.from(),
+                    request.to());
+        } else {
+            return traceDao.readTransactionCount(request.transactionType(),
+                    transactionName, request.from(), request.to());
         }
-        Aggregate aggregate = aggregates.peek();
-        if (aggregate.captureTime() == captureTime) {
-            // advance iterator
-            aggregates.next();
-            return aggregate;
-        }
-        return null;
     }
 
     private static void writeFlameGraphNode(AggregateProfileNode node, JsonGenerator jg)
@@ -374,15 +394,7 @@ class AggregateJsonService {
                 // skip real root metrics
                 for (AggregateMetric topLevelMetric : realRootMetric.getNestedMetrics()) {
                     // traverse tree starting at top-level (under root) metrics
-                    for (AggregateMetric metric : AggregateMetric.TRAVERSER
-                            .preOrderTraversal(topLevelMetric)) {
-                        long totalNestedMicros = 0;
-                        for (AggregateMetric nestedMetric : metric.getNestedMetrics()) {
-                            totalNestedMicros += nestedMetric.getTotalMicros();
-                        }
-                        stackedMetrics.add(metric.getName(),
-                                metric.getTotalMicros() - totalNestedMicros);
-                    }
+                    addToStackedMetric(topLevelMetric, stackedMetrics);
                 }
             }
             return new StackedPoint(aggregate, stackedMetrics);
@@ -399,6 +411,16 @@ class AggregateJsonService {
 
         private MutableLongMap<String> getStackedMetrics() {
             return stackedMetrics;
+        }
+
+        private static void addToStackedMetric(AggregateMetric metric,
+                MutableLongMap<String> stackedMetrics) {
+            long totalNestedMicros = 0;
+            for (AggregateMetric nestedMetric : metric.getNestedMetrics()) {
+                totalNestedMicros += nestedMetric.getTotalMicros();
+                addToStackedMetric(nestedMetric, stackedMetrics);
+            }
+            stackedMetrics.add(metric.getName(), metric.getTotalMicros() - totalNestedMicros);
         }
     }
 

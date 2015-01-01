@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,9 @@ import java.io.IOException;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
+import javax.annotation.Nullable;
+
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +41,11 @@ class Version {
             logger.error(e.getMessage(), e);
             return "unknown";
         }
+        return getVersion(manifest);
+    }
+
+    @VisibleForTesting
+    static String getVersion(@Nullable Manifest manifest) {
         if (manifest == null) {
             // manifest is missing when running ui testing and integration tests from inside IDE
             // so only log this at debug level
@@ -52,22 +60,30 @@ class Version {
             return "unknown";
         }
         if (version.endsWith("-SNAPSHOT")) {
-            String commit = mainAttributes.getValue("Build-Commit");
-            if (commit != null && !commit.isEmpty()) {
-                if (commit.length() == 40) {
-                    version += ", commit " + commit.substring(0, 10);
-                } else {
-                    logger.warn("invalid Build-Commit attribute in META-INF/MANIFEST.MF file,"
-                            + " should be a 40 character git commit hash");
-                }
-            }
-            String snapshotTimestamp = mainAttributes.getValue("Build-Time");
-            if (snapshotTimestamp == null) {
-                logger.warn("could not find Build-Time attribute in META-INF/MANIFEST.MF file");
-                return version;
-            }
-            version += ", built at " + snapshotTimestamp;
+            return getSnapshotVersion(version, mainAttributes);
         }
         return version;
+    }
+
+    private static String getSnapshotVersion(String version, Attributes mainAttributes) {
+        StringBuilder snapshotVersion = new StringBuilder(version);
+        String commit = mainAttributes.getValue("Build-Commit");
+        if (commit != null && !commit.isEmpty()) {
+            if (commit.length() == 40) {
+                snapshotVersion.append(", commit ");
+                snapshotVersion.append(commit.substring(0, 10));
+            } else {
+                logger.warn("invalid Build-Commit attribute in META-INF/MANIFEST.MF file,"
+                        + " should be a 40 character git commit hash");
+            }
+        }
+        String snapshotTimestamp = mainAttributes.getValue("Build-Time");
+        if (snapshotTimestamp == null) {
+            logger.warn("could not find Build-Time attribute in META-INF/MANIFEST.MF file");
+            return snapshotVersion.toString();
+        }
+        snapshotVersion.append(", built at ");
+        snapshotVersion.append(snapshotTimestamp);
+        return snapshotVersion.toString();
     }
 }

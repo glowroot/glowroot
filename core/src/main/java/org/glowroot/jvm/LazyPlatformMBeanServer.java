@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,20 +19,21 @@ import java.lang.management.ManagementFactory;
 import java.util.Set;
 
 import javax.annotation.Nullable;
-import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
-import javax.management.IntrospectionException;
-import javax.management.MBeanException;
+import javax.management.JMException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.QueryExp;
-import javax.management.ReflectionException;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Stopwatch;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 // this is needed for jboss-modules because calling ManagementFactory.getPlatformMBeanServer()
 // before jboss-modules has set up its own logger will trigger the default JUL LogManager to be
@@ -41,20 +42,10 @@ public class LazyPlatformMBeanServer {
 
     private static final Logger logger = LoggerFactory.getLogger(LazyPlatformMBeanServer.class);
 
-    private static final boolean jbossModules;
+    private final boolean jbossModules;
 
-    static {
-        String command = System.getProperty("sun.java.command");
-        if (command == null) {
-            jbossModules = false;
-        } else {
-            int index = command.indexOf(' ');
-            if (index != -1) {
-                command = command.substring(0, index);
-            }
-            jbossModules = command.equals("org.jboss.modules.Main")
-                    || command.endsWith("jboss-modules.jar");
-        }
+    LazyPlatformMBeanServer(boolean jbossModules) {
+        this.jbossModules = jbossModules;
     }
 
     private volatile @MonotonicNonNull MBeanServer mbeanServer;
@@ -65,8 +56,7 @@ public class LazyPlatformMBeanServer {
     }
 
     void invoke(ObjectName name, String operationName, Object[] params, String[] signature)
-            throws InstanceNotFoundException, ReflectionException, MBeanException,
-            InterruptedException {
+            throws JMException, InterruptedException {
         ensureInit();
         mbeanServer.invoke(name, operationName, params, signature);
     }
@@ -77,15 +67,13 @@ public class LazyPlatformMBeanServer {
         return mbeanServer.queryNames(name, query);
     }
 
-    public MBeanInfo getMBeanInfo(ObjectName name) throws IntrospectionException,
-            InstanceNotFoundException, ReflectionException, InterruptedException {
+    public MBeanInfo getMBeanInfo(ObjectName name) throws JMException, InterruptedException {
         ensureInit();
         return mbeanServer.getMBeanInfo(name);
     }
 
     public Object getAttribute(ObjectName name, String attribute)
-            throws AttributeNotFoundException, InstanceNotFoundException, MBeanException,
-            ReflectionException, InterruptedException {
+            throws JMException, InterruptedException {
         ensureInit();
         return mbeanServer.getAttribute(name, attribute);
     }
@@ -96,25 +84,23 @@ public class LazyPlatformMBeanServer {
             if (jbossModules) {
                 // if running under jboss-modules, wait it to set up JUL before calling
                 // getPlatformMBeanServer()
-                long start = System.currentTimeMillis();
-                while (true) {
-                    if (System.getProperty("java.util.logging.manager") != null) {
-                        break;
-                    }
-                    Thread.sleep(100);
-                    if (System.currentTimeMillis() - start > 60000) {
-                        // something has gone wrong
-                        logger.warn("this jvm appears to be running jboss-modules, but it did not"
-                                + " set up java.util.logging.manager");
-                        break;
-                    }
-                }
+                waitForJBossModuleInitialization(Stopwatch.createUnstarted());
             }
             mbeanServer = ManagementFactory.getPlatformMBeanServer();
         }
     }
 
-    public static boolean isJbossModules() {
-        return jbossModules;
+    @VisibleForTesting
+    static void waitForJBossModuleInitialization(Stopwatch stopwatch) throws InterruptedException {
+        stopwatch.start();
+        while (stopwatch.elapsed(SECONDS) < 60) {
+            if (System.getProperty("java.util.logging.manager") != null) {
+                return;
+            }
+            Thread.sleep(100);
+        }
+        // something has gone wrong
+        logger.error("this jvm appears to be running jboss-modules, but it did not set up"
+                + " java.util.logging.manager");
     }
 }

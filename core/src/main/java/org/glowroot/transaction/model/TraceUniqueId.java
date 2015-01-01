@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.glowroot.transaction.model;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 
 // the string representation of the unique identifier is lazily constructed since it is only needed
@@ -27,7 +28,9 @@ class TraceUniqueId {
     // used to populate id (below)
     private static final AtomicLong idCounter = new AtomicLong();
 
-    private static final long MAX_ID = (long) Math.pow(16, 6); // at most 6 bytes in hex form
+    private static final long HEX_DIGITS = 16;
+    // at most 6 bytes in hex form
+    private static final long MAX_ID = (long) Math.pow(HEX_DIGITS, 6);
 
     private final long traceStartTime;
     private final long id;
@@ -41,19 +44,23 @@ class TraceUniqueId {
         return twelveDigitHex(traceStartTime) + BigInteger.valueOf(id % MAX_ID).toString(16);
     }
 
-    private static String twelveDigitHex(long x) {
+    @VisibleForTesting
+    static String twelveDigitHex(long x) {
         String s = BigInteger.valueOf(x).toString(16);
-        if (s.length() > 12) {
-            return s.substring(s.length() - 12);
-        } else if (s.length() == 12) {
-            return s;
-        } else if (s.length() == 11) {
+        if (s.length() == 11) {
             // this is the case for dates between Nov 3, 2004 and Jun 23, 2527 so it seems worth
-            // optimizing
+            // optimizing :-)
             return '0' + s;
-        } else {
-            return Strings.padStart(s, 12, '0');
         }
+        if (s.length() == 12) {
+            return s;
+        }
+        if (s.length() > 12) {
+            // Aug 1 of the year 10889 and beyond!
+            return s.substring(s.length() - 12);
+        }
+        // living in the past?
+        return Strings.padStart(s, 12, '0');
     }
 
     @Override

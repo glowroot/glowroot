@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import javax.annotation.Nullable;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.cache.CacheBuilder;
@@ -63,38 +65,45 @@ class QueryStrings {
                 throw new IllegalArgumentException("Unexpected attribute: " + key);
             }
             Class<?> valueClass = setter.getParameterTypes()[0];
-            List<String> values = entry.getValue();
             Object value;
+
             if (valueClass == Iterable.class) {
                 // only lists of type string supported
-                value = values;
-            } else if (values.get(0).equals("")) {
-                value = null;
-            } else if (valueClass == String.class) {
-                value = values.get(0);
-            } else if (valueClass == int.class || valueClass == Integer.class) {
-                value = Integer.parseInt(values.get(0));
-            } else if (valueClass == long.class || valueClass == Long.class) {
-                value = Long.parseLong(values.get(0));
-            } else if (valueClass == double.class || valueClass == Double.class) {
-                value = Double.parseDouble(values.get(0));
-            } else if (valueClass == boolean.class || valueClass == Boolean.class) {
-                value = Boolean.parseBoolean(values.get(0));
-            } else if (Enum.class.isAssignableFrom(valueClass)) {
-                @SuppressWarnings({"unchecked", "rawtypes"})
-                Enum<?> enumValue = Enum.valueOf((Class<? extends Enum>) valueClass,
-                        values.get(0).toUpperCase(Locale.ENGLISH));
-                value = enumValue;
+                value = entry.getValue();
             } else {
-                throw new IllegalStateException("Unexpected class: " + valueClass);
+                value = parseString(entry.getValue().get(0), valueClass);
             }
             Reflections.invoke(setter, builder, value);
         }
-        Method build = Reflections.getMethod(immutableBuilderClass, "build");
-        build.setAccessible(true);
+        Method build = Reflections.getDeclaredMethod(immutableBuilderClass, "build");
         @SuppressWarnings("unchecked")
         T decoded = (T) Reflections.invoke(build, builder);
         return decoded;
+    }
+
+    private static @Nullable Object parseString(String str, Class<?> targetClass) {
+        if (str.equals("")) {
+            return null;
+        } else if (targetClass == String.class) {
+            return str;
+        } else if (targetClass == int.class || targetClass == Integer.class) {
+            // parse as double and truncate, just in case there is a decimal part
+            return (int) Double.parseDouble(str);
+        } else if (targetClass == long.class || targetClass == Long.class) {
+            // parse as double and truncate, just in case there is a decimal part
+            return (long) Double.parseDouble(str);
+        } else if (targetClass == double.class || targetClass == Double.class) {
+            return Double.parseDouble(str);
+        } else if (targetClass == boolean.class || targetClass == Boolean.class) {
+            return Boolean.parseBoolean(str);
+        } else if (Enum.class.isAssignableFrom(targetClass)) {
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            Enum<?> enumValue = Enum.valueOf((Class<? extends Enum>) targetClass,
+                    str.toUpperCase(Locale.ENGLISH));
+            return enumValue;
+        } else {
+            throw new IllegalStateException("Unexpected class: " + targetClass);
+        }
     }
 
     private static <T> String createImmutableClassName(Class<T> clazz) {

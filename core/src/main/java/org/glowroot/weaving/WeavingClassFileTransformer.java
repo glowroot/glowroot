@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,8 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     //
     // so all exceptions must be caught and logged here or they will be lost
     @Override
-    public byte /*@Nullable*/[] transform(@Nullable ClassLoader loader, @Nullable String className,
+    public byte /*@Nullable*/[] transform(@Nullable ClassLoader loader,
+            @Nullable String className,
             @Nullable Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
             byte[] bytes) {
         if (className == null) {
@@ -76,18 +77,8 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
 
     private byte /*@Nullable*/[] transformInternal(@Nullable ClassLoader loader, String className,
             @Nullable ProtectionDomain protectionDomain, byte[] bytes) {
-        // don't weave glowroot classes, including shaded classes like h2 jdbc driver
-        // (can't just match "org/glowroot/" since that would match integration test classes)
-        if (className.startsWith("org/glowroot/api/")
-                || className.startsWith("org/glowroot/advicegen/")
-                || className.startsWith("org/glowroot/collector/")
-                || className.startsWith("org/glowroot/common/")
-                || className.startsWith("org/glowroot/config/")
-                || className.startsWith("org/glowroot/jvm/")
-                || className.startsWith("org/glowroot/local/")
-                || className.startsWith("org/glowroot/shaded/")
-                || className.startsWith("org/glowroot/transaction/")
-                || className.startsWith("org/glowroot/weaving/")) {
+        // don't weave glowroot core classes, including shaded classes like h2 jdbc driver
+        if (isGlowrootCoreClass(className)) {
             return null;
         }
         if (className.startsWith("sun/reflect/Generated")) {
@@ -110,6 +101,21 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             logger.debug("transform(): transformed {}", className);
         }
         return transformedBytes;
+    }
+
+    private static boolean isGlowrootCoreClass(String className) {
+        // can't just match "org/glowroot/" since that would match glowroot plugins
+        // (and integration test classes)
+        return className.startsWith("org/glowroot/api/")
+                || className.startsWith("org/glowroot/advicegen/")
+                || className.startsWith("org/glowroot/collector/")
+                || className.startsWith("org/glowroot/common/")
+                || className.startsWith("org/glowroot/config/")
+                || className.startsWith("org/glowroot/jvm/")
+                || className.startsWith("org/glowroot/local/")
+                || className.startsWith("org/glowroot/shaded/")
+                || className.startsWith("org/glowroot/transaction/")
+                || className.startsWith("org/glowroot/weaving/");
     }
 
     private static boolean isInBootstrapClassLoader() {

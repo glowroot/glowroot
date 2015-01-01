@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,31 +97,31 @@ public class Profile {
         // matching the new stack trace as far as possible
         for (nextIndex = stackTrace.size() - 1; nextIndex >= 0; nextIndex--) {
             StackTraceElementPlus element = stackTrace.get(nextIndex);
-            // check all child nodes
-            boolean matchFound = false;
+            // look for matching node
+            ProfileNode matchingNode = null;
             for (ProfileNode childNode : nextChildNodes) {
                 if (matches(element.getStackTraceElement(), childNode, nextIndex == 0,
                         threadState)) {
-                    // match found, update lastMatchedNode and break out of the inner loop
-                    childNode.incrementSampleCount(1);
-                    // the metric names for a given stack element should always match, unless
-                    // the line numbers aren't available and overloaded methods are matched up, or
-                    // the stack trace was captured while one of the synthetic $glowroot$metric$
-                    // methods was executing in which case one of the metric names may be a
-                    // subset of the other, in which case, the superset wins:
-                    List<String> metricNames = element.getMetricNames();
-                    if (metricNames.size() > childNode.getMetricNames().size()) {
-                        childNode.setMetricNames(metricNames);
-                    }
-                    lastMatchedNode = childNode;
-                    nextChildNodes = lastMatchedNode.getChildNodes();
-                    matchFound = true;
+                    matchingNode = childNode;
                     break;
                 }
             }
-            if (!matchFound) {
+            if (matchingNode == null) {
                 break;
             }
+            // match found, update lastMatchedNode and break out of the inner loop
+            matchingNode.incrementSampleCount(1);
+            // the metric names for a given stack element should always match, unless
+            // the line numbers aren't available and overloaded methods are matched up, or
+            // the stack trace was captured while one of the synthetic $glowroot$metric$
+            // methods was executing in which case one of the metric names may be a
+            // subset of the other, in which case, the superset wins:
+            List<String> metricNames = element.getMetricNames();
+            if (metricNames.size() > matchingNode.getMetricNames().size()) {
+                matchingNode.setMetricNames(metricNames);
+            }
+            lastMatchedNode = matchingNode;
+            nextChildNodes = lastMatchedNode.getChildNodes();
         }
         // add remaining stack trace elements
         for (int i = nextIndex; i >= 0; i--) {
@@ -159,32 +159,32 @@ public class Profile {
         for (Iterator<StackTraceElement> i = stackTrace.iterator(); i.hasNext();) {
             StackTraceElement element = i.next();
             String metricName = getMetricName(element);
-            if (metricName != null) {
-                String originalMethodName = element.getMethodName();
-                List<String> metricNames = Lists.newArrayListWithCapacity(2);
-                metricNames.add(metricName);
-                // skip over successive $glowroot$metric$ methods up to and including the "original"
-                // method
-                while (i.hasNext()) {
-                    StackTraceElement skipElement = i.next();
-                    metricName = getMetricName(skipElement);
-                    if (metricName == null) {
-                        // loop should always terminate here since synthetic $glowroot$metric$
-                        // methods should never be the last element (the last element is the first
-                        // element in the call stack)
-                        originalMethodName = skipElement.getMethodName();
-                        break;
-                    }
-                    metricNames.add(metricName);
-                }
-                // "original" in the sense that this is what it would have been without the
-                // synthetic $metric$ methods
-                StackTraceElement originalElement = new StackTraceElement(element.getClassName(),
-                        originalMethodName, element.getFileName(), element.getLineNumber());
-                stackTracePlus.add(new StackTraceElementPlus(originalElement, metricNames));
-            } else {
+            if (metricName == null) {
                 stackTracePlus.add(new StackTraceElementPlus(element, ImmutableList.<String>of()));
+                continue;
             }
+            String originalMethodName = element.getMethodName();
+            List<String> metricNames = Lists.newArrayListWithCapacity(2);
+            metricNames.add(metricName);
+            // skip over successive $glowroot$metric$ methods up to and including the "original"
+            // method
+            while (i.hasNext()) {
+                StackTraceElement skipElement = i.next();
+                metricName = getMetricName(skipElement);
+                if (metricName == null) {
+                    // loop should always terminate here since synthetic $glowroot$metric$
+                    // methods should never be the last element (the last element is the first
+                    // element in the call stack)
+                    originalMethodName = skipElement.getMethodName();
+                    break;
+                }
+                metricNames.add(metricName);
+            }
+            // "original" in the sense that this is what it would have been without the
+            // synthetic $metric$ methods
+            StackTraceElement originalElement = new StackTraceElement(element.getClassName(),
+                    originalMethodName, element.getFileName(), element.getLineNumber());
+            stackTracePlus.add(new StackTraceElementPlus(originalElement, metricNames));
         }
         return stackTracePlus;
     }

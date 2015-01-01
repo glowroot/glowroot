@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package org.glowroot.api;
 
 import javax.annotation.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
+
 /**
  * Very thin wrapper around SLF4J so plugins don't have to worry about SLF4J shading.
  */
@@ -29,11 +31,13 @@ public class LoggerFactory {
         return new LoggerImpl(logger);
     }
 
-    private static class LoggerImpl implements Logger {
+    @VisibleForTesting
+    static class LoggerImpl implements Logger {
 
         private final org.slf4j.Logger logger;
 
-        private LoggerImpl(org.slf4j.Logger logger) {
+        @VisibleForTesting
+        LoggerImpl(org.slf4j.Logger logger) {
             this.logger = logger;
         }
 

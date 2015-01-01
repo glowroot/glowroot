@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ HandlebarsRendering = (function () {
     if (map) {
       $.each(map, function (key, values) {
         $.each(values, function (index, value) {
-          buffer += options.fn({ key: key, value: value });
+          buffer += options.fn({key: key, value: value});
         });
       });
     }
@@ -123,7 +123,7 @@ HandlebarsRendering = (function () {
   Handlebars.registerHelper('ifThreadInfo', function (threadInfo, options) {
     if (threadInfo &&
         (threadInfo.threadCpuTime || threadInfo.threadBlockedTime || threadInfo.threadWaitedTime ||
-            threadInfo.threadAllocatedBytes)) {
+        threadInfo.threadAllocatedBytes)) {
       return options.fn(this);
     }
     return options.inverse(this);
@@ -490,7 +490,7 @@ HandlebarsRendering = (function () {
         rootNodeSampleCount = rootNode.sampleCount;
         nodeSampleCount = node.sampleCount;
       }
-      var nodes = [ node ];
+      var nodes = [node];
       while (node.childNodes && node.childNodes.length === 1) {
         node = node.childNodes[0];
         nodes.push(node);
@@ -561,7 +561,7 @@ HandlebarsRendering = (function () {
     var mergedCounts = calculateMetricCounts(rootNode);
     if (!$.isEmptyObject(mergedCounts)) {
       // build tree
-      var tree = { name: '', childNodes: {} };
+      var tree = {name: '', childNodes: {}};
       $.each(rootNode.metricCounts, function (metric) {
         // only really need to look at leafs (' / other') to hit all nodes
         if (metric.match(/ \/ other$/)) {
@@ -574,14 +574,14 @@ HandlebarsRendering = (function () {
             }
             partialName += part;
             if (!node.childNodes[part]) {
-              node.childNodes[part] = { name: partialName, childNodes: {} };
+              node.childNodes[part] = {name: partialName, childNodes: {}};
             }
             node = node.childNodes[part];
           });
         }
       });
       var nodesDepthFirst = function (node) {
-        var all = [ node ];
+        var all = [node];
         // order by count desc
         var childNodes = [];
         $.each(node.childNodes, function (name, childNode) {

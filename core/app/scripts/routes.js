@@ -136,17 +136,32 @@ glowroot.config([
     $stateProvider.state('config.traces', {
       url: '/traces',
       templateUrl: 'views/config/traces.html',
-      controller: 'ConfigTraceCtrl'
+      controller: 'ConfigCommonCtrl',
+      resolve: {
+        backendUrl: function () {
+          return 'backend/config/trace';
+        }
+      }
     });
     $stateProvider.state('config.profiling', {
       url: '/profiling',
       templateUrl: 'views/config/profiling.html',
-      controller: 'ConfigProfilingCtrl'
+      controller: 'ConfigCommonCtrl',
+      resolve: {
+        backendUrl: function () {
+          return 'backend/config/profiling';
+        }
+      }
     });
     $stateProvider.state('config.userRecording', {
       url: '/user-recording',
       templateUrl: 'views/config/user-recording.html',
-      controller: 'ConfigUserRecordingCtrl'
+      controller: 'ConfigCommonCtrl',
+      resolve: {
+        backendUrl: function () {
+          return 'backend/config/user-recording';
+        }
+      }
     });
     $stateProvider.state('config.capturePoints', {
       url: '/capture-points',
@@ -171,7 +186,12 @@ glowroot.config([
     $stateProvider.state('config.advanced', {
       url: '/advanced',
       templateUrl: 'views/config/advanced.html',
-      controller: 'ConfigAdvancedCtrl'
+      controller: 'ConfigCommonCtrl',
+      resolve: {
+        backendUrl: function () {
+          return 'backend/config/advanced';
+        }
+      }
     });
     $stateProvider.state('config.plugin', {
       url: '/plugin/:pluginId',

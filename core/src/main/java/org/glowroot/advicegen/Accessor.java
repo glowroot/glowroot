@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,12 @@ package org.glowroot.advicegen;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import javax.annotation.Nullable;
+
+import org.glowroot.common.Reflections;
+import org.glowroot.common.Reflections.ReflectiveException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -76,29 +78,31 @@ class Accessor {
     }
 
     @Nullable
-    Object evaluate(Object object) throws IllegalArgumentException, IllegalAccessException,
-            InvocationTargetException {
+    Object evaluate(Object object) throws ReflectiveException {
         if (object instanceof Object[] && accessorType != AccessorType.ARRAY_LENGTH) {
-            /*@Nullable*/Object[] array = (Object[]) object;
-            /*@Nullable*/Object[] values = new Object[array.length];
-            for (int i = 0; i < array.length; i++) {
-                Object item = array[i];
-                values[i] = item == null ? null : evaluate(item);
-            }
-            return values;
+            return evaluateArray((/*@Nullable*/Object[]) object);
         }
         switch (accessorType) {
             case METHOD:
                 checkNotNull(method);
-                return method.invoke(object);
+                return Reflections.invoke(method, object);
             case FIELD:
                 checkNotNull(field);
-                return field.get(object);
+                return Reflections.getFieldValue(field, object);
             case ARRAY_LENGTH:
                 return Array.getLength(object);
             default:
                 throw new AssertionError("Unexpected accessor type: " + accessorType);
         }
+    }
+
+    private Object evaluateArray(/*@Nullable*/Object[] array) throws ReflectiveException {
+        /*@Nullable*/Object[] values = new Object[array.length];
+        for (int i = 0; i < array.length; i++) {
+            Object item = array[i];
+            values[i] = item == null ? null : evaluate(item);
+        }
+        return values;
     }
 
     private static enum AccessorType {

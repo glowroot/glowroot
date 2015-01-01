@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,10 +47,10 @@ public class UiSandboxMain {
         File configFile = new File(dataDir, "config.json");
         boolean initConfig = !configFile.exists();
         if (useJavaagent) {
-            container = new JavaagentContainer(dataDir, true, false, false,
+            container = new JavaagentContainer(dataDir, true, 4000, false, false, false,
                     ImmutableList.<String>of());
         } else {
-            container = new LocalContainer(dataDir, true, false);
+            container = new LocalContainer(dataDir, true, 4000, false);
         }
         if (initConfig) {
             ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
@@ -64,7 +64,6 @@ public class UiSandboxMain {
             }
             UserInterfaceConfig userInterfaceConfig =
                     container.getConfigService().getUserInterfaceConfig();
-            userInterfaceConfig.setPort(4000);
             userInterfaceConfig.setDefaultTransactionType("Sandbox");
             container.getConfigService().updateUserInterfaceConfig(userInterfaceConfig);
         }

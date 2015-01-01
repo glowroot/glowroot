@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
@@ -37,7 +38,6 @@ import org.glowroot.GlowrootModule.DataDirLockedException;
 import org.glowroot.GlowrootModule.StartupFailedException;
 import org.glowroot.common.JavaVersion;
 import org.glowroot.config.PluginDescriptor;
-import org.glowroot.jvm.LazyPlatformMBeanServer;
 import org.glowroot.markers.OnlyUsedByTests;
 
 public class MainEntryPoint {
@@ -51,7 +51,8 @@ public class MainEntryPoint {
     private MainEntryPoint() {}
 
     public static void premain(Instrumentation instrumentation, @Nullable File glowrootJarFile) {
-        if (LazyPlatformMBeanServer.isJbossModules()) {
+        boolean jbossModules = isJBossModules();
+        if (jbossModules) {
             String jbossModulesSystemPkgs = System.getProperty("jboss.modules.system.pkgs");
             if (Strings.isNullOrEmpty(jbossModulesSystemPkgs)) {
                 jbossModulesSystemPkgs = "org.glowroot";
@@ -63,7 +64,7 @@ public class MainEntryPoint {
         ImmutableMap<String, String> properties = getGlowrootProperties();
         File dataDir = DataDir.getDataDir(properties, glowrootJarFile);
         try {
-            start(dataDir, properties, instrumentation, glowrootJarFile);
+            start(dataDir, properties, instrumentation, glowrootJarFile, jbossModules);
         } catch (DataDirLockedException e) {
             logDataDirLockedException(dataDir);
         } catch (Throwable t) {
@@ -78,7 +79,7 @@ public class MainEntryPoint {
         String version = Version.getVersion();
         try {
             glowrootModule = new GlowrootModule(dataDir, properties, null, glowrootJarFile,
-                    version, true);
+                    version, true, false);
         } catch (DataDirLockedException e) {
             logDataDirLockedException(dataDir);
             return;
@@ -95,13 +96,13 @@ public class MainEntryPoint {
     }
 
     private static void start(File dataDir, Map<String, String> properties,
-            @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile)
-            throws StartupFailedException, InterruptedException {
+            @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
+            boolean jbossModules) throws StartupFailedException {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion();
         glowrootModule = new GlowrootModule(dataDir, properties, instrumentation, glowrootJarFile,
-                version, false);
+                version, false, jbossModules);
         startupLogger.info("Glowroot started (version {})", version);
         List<PluginDescriptor> pluginDescriptors =
                 glowrootModule.getConfigModule().getPluginDescriptors();
@@ -115,7 +116,7 @@ public class MainEntryPoint {
         if (instrumentation == null || JavaVersion.isJdk6()) {
             // otherwise http server is lazy instantiated, see LocalUiModule
             startupLogger.info("Glowroot listening at http://localhost:{}",
-                    glowrootModule.getUiModule().getPort());
+                    glowrootModule.getUiModule().getNonLazyPort());
         }
     }
 
@@ -154,11 +155,25 @@ public class MainEntryPoint {
                 "org.apache.catalina.startup.Bootstrap stop");
     }
 
+    private static boolean isJBossModules() {
+        return isJBossModules(System.getProperty("sun.java.command"));
+    }
+
+    @VisibleForTesting
+    static boolean isJBossModules(@Nullable String command) {
+        if (command == null) {
+            return false;
+        }
+        int index = command.indexOf(' ');
+        String className = index == -1 ? command : command.substring(0, index);
+        return className.equals("org.jboss.modules.Main")
+                || className.endsWith("jboss-modules.jar");
+    }
+
     @OnlyUsedByTests
-    public static void start(Map<String, String> properties) throws StartupFailedException,
-            InterruptedException {
+    public static void start(Map<String, String> properties) throws StartupFailedException {
         File dataDir = DataDir.getDataDir(properties, null);
-        start(dataDir, properties, null, null);
+        start(dataDir, properties, null, null, false);
     }
 
     @OnlyUsedByTests

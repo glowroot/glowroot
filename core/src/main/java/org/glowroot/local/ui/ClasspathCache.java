@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ class ClasspathCache {
         this.instrumentation = instrumentation;
     }
 
-    // using synchronization over concurrent structures in this cache to conserve memory
+    // using synchronization instead of concurrent structures in this cache to conserve memory
     synchronized ImmutableList<String> getMatchingClassNames(String partialClassName, int limit) {
         // update cache before proceeding
         updateCache();
@@ -132,14 +132,9 @@ class ClasspathCache {
                 }
             }
         }
-        if (fullMatchingClassNames.size() < limit) {
-            int space = limit - fullMatchingClassNames.size();
-            int numToAdd = Math.min(space, matchingClassNames.size());
-            fullMatchingClassNames.addAll(
-                    ImmutableList.copyOf(Iterables.limit(matchingClassNames, numToAdd)));
-        }
-        return ImmutableList.copyOf(fullMatchingClassNames);
+        return combineClassNamesWithLimit(fullMatchingClassNames, matchingClassNames, limit);
     }
+
     // using synchronization over concurrent structures in this cache to conserve memory
     synchronized ImmutableList<UiAnalyzedMethod> getAnalyzedMethods(String className) {
         // update cache before proceeding
@@ -178,6 +173,17 @@ class ClasspathCache {
             newMap.putAll(newClassNames);
             classNames = ImmutableMultimap.copyOf(newMap);
         }
+    }
+
+    private ImmutableList<String> combineClassNamesWithLimit(Set<String> fullMatchingClassNames,
+            Set<String> matchingClassNames, int limit) {
+        if (fullMatchingClassNames.size() < limit) {
+            int space = limit - fullMatchingClassNames.size();
+            int numToAdd = Math.min(space, matchingClassNames.size());
+            fullMatchingClassNames.addAll(
+                    ImmutableList.copyOf(Iterables.limit(matchingClassNames, numToAdd)));
+        }
+        return ImmutableList.copyOf(fullMatchingClassNames);
     }
 
     private void updateCacheWithBootstrapClasses(Multimap<String, URI> newClassNames) {
@@ -338,21 +344,28 @@ class ClasspathCache {
         InputStream s = jarUri.toURL().openStream();
         JarInputStream jarIn = closer.register(new JarInputStream(s));
         try {
-            Manifest manifest = jarIn.getManifest();
-            if (manifest != null) {
-                String classpath = manifest.getMainAttributes().getValue("Class-Path");
-                if (classpath != null) {
-                    for (String path : Splitter.on(' ').omitEmptyStrings().split(classpath)) {
-                        URI uri = jarUri.resolve(path);
-                        loadClassNames(uri, newClassNames);
-                    }
-                }
-            }
+            loadClassNamesFromManifestClassPath(jarIn, jarUri, newClassNames);
             loadClassNamesFromJarInputStream(jarIn, jarUri, newClassNames);
         } catch (Throwable t) {
             throw closer.rethrow(t);
         } finally {
             closer.close();
+        }
+    }
+
+    private static void loadClassNamesFromManifestClassPath(JarInputStream jarIn, URI jarUri,
+            Multimap<String, URI> newClassNames) {
+        Manifest manifest = jarIn.getManifest();
+        if (manifest == null) {
+            return;
+        }
+        String classpath = manifest.getMainAttributes().getValue("Class-Path");
+        if (classpath == null) {
+            return;
+        }
+        for (String path : Splitter.on(' ').omitEmptyStrings().split(classpath)) {
+            URI uri = jarUri.resolve(path);
+            loadClassNames(uri, newClassNames);
         }
     }
 
@@ -364,19 +377,20 @@ class ClasspathCache {
                 continue;
             }
             String name = jarEntry.getName();
-            if (name.endsWith(".class")) {
-                String className = name.substring(0, name.lastIndexOf('.')).replace('/', '.');
-                // TODO test if this works with jar loaded over http protocol
-                try {
-                    String path = jarUri.getPath();
-                    if (path.endsWith("/")) {
-                        path = path.substring(0, path.length() - 1);
-                    }
-                    URI fileURI = new URI("jar", jarUri.getScheme() + ":" + path + "!/" + name, "");
-                    newClassNames.put(className, fileURI);
-                } catch (URISyntaxException e) {
-                    logger.error(e.getMessage(), e);
-                }
+            if (!name.endsWith(".class")) {
+                continue;
+            }
+            String className = name.substring(0, name.lastIndexOf('.')).replace('/', '.');
+            // TODO test if this works with jar loaded over http protocol
+            String path = jarUri.getPath();
+            if (path.endsWith("/")) {
+                path = path.substring(0, path.length() - 1);
+            }
+            try {
+                URI fileURI = new URI("jar", jarUri.getScheme() + ":" + path + "!/" + name, "");
+                newClassNames.put(className, fileURI);
+            } catch (URISyntaxException e) {
+                logger.error(e.getMessage(), e);
             }
         }
     }

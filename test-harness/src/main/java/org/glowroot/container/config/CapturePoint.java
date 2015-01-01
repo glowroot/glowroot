@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,9 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkNotNullValuesForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
+import static org.glowroot.container.common.ObjectMappers.orEmpty;
 
 public class CapturePoint {
 
@@ -303,18 +303,18 @@ public class CapturePoint {
             @JsonProperty("enabledProperty") @Nullable String enabledProperty,
             @JsonProperty("traceEntryEnabledProperty") @Nullable String traceEntryEnabledProperty,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
+        // methodParameterTypes is required (does not default to empty list) since it is ambiguous
+        // whether default should be {} or {".."}
+        checkRequiredProperty(uncheckedMethodParameterTypes, "methodParameterTypes");
         List<String> methodParameterTypes =
-                checkNotNullItemsForProperty(uncheckedMethodParameterTypes, "methodParameterTypes");
-        List<MethodModifier> methodModifiers =
-                checkNotNullItemsForProperty(uncheckedMethodModifiers, "methodModifiers");
+                orEmpty(uncheckedMethodParameterTypes, "methodParameterTypes");
+        List<MethodModifier> methodModifiers = orEmpty(uncheckedMethodModifiers, "methodModifiers");
         Map<String, String> transactionCustomAttributeTemplates =
                 checkNotNullValuesForProperty(uncheckedTransactionCustomAttributeTemplates,
                         "transactionCustomAttributeTemplates");
         checkRequiredProperty(className, "className");
         checkRequiredProperty(methodName, "methodName");
-        checkRequiredProperty(methodParameterTypes, "methodParameterTypes");
         checkRequiredProperty(methodReturnType, "methodReturnType");
-        checkRequiredProperty(methodModifiers, "methodModifiers");
         checkRequiredProperty(captureKind, "captureKind");
         checkRequiredProperty(metricName, "metricName");
         checkRequiredProperty(traceEntryTemplate, "traceEntryTemplate");

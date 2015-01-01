@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
@@ -66,23 +67,19 @@ class ServletMessageSupplier extends MessageSupplier {
     // thread (and live viewing thread also)
     // the initial value map contains the session attributes as they were present at the beginning
     // of the request
-    private final @Nullable ImmutableMap<String, String> sessionAttributeInitialValueMap;
+    private final ImmutableMap<String, String> sessionAttributeInitialValueMap;
 
     // ConcurrentHashMap does not allow null values, so need to use Optional values
     private volatile @MonotonicNonNull ConcurrentMap<String, Optional<String>> sessionAttributeUpdatedValueMap;
 
     ServletMessageSupplier(String requestMethod, String requestUri,
             @Nullable String requestQueryString, ImmutableMap<String, Object> requestHeaders,
-            @Nullable ImmutableMap<String, String> sessionAttributeMap) {
+            ImmutableMap<String, String> sessionAttributeMap) {
         this.requestMethod = requestMethod;
         this.requestUri = requestUri;
         this.requestQueryString = requestQueryString;
         this.requestHeaders = requestHeaders;
-        if (sessionAttributeMap == null || sessionAttributeMap.isEmpty()) {
-            this.sessionAttributeInitialValueMap = null;
-        } else {
-            this.sessionAttributeInitialValueMap = sessionAttributeMap;
-        }
+        this.sessionAttributeInitialValueMap = sessionAttributeMap;
     }
 
     @Override
@@ -159,28 +156,14 @@ class ServletMessageSupplier extends MessageSupplier {
     }
 
     private void addSessionAttributeDetail(Map<String, Object> detail) {
-        if (sessionAttributeInitialValueMap != null) {
+        if (!sessionAttributeInitialValueMap.isEmpty()) {
             if (sessionAttributeUpdatedValueMap == null) {
                 // session attributes were captured at the beginning of the request, and no session
                 // attributes were updated mid-request
                 detail.put("Session attributes", sessionAttributeInitialValueMap);
             } else {
-                // session attributes were updated mid-request
-                Map<String, /*@Nullable*/Object> sessionAttributeInitialValuePlusMap =
-                        Maps.newHashMap();
-                sessionAttributeInitialValuePlusMap.putAll(sessionAttributeInitialValueMap);
-                // add empty values into initial values for any updated attributes that are not
-                // already present in initial values nested detail map
-                for (Entry<String, Optional<String>> entry : sessionAttributeUpdatedValueMap
-                        .entrySet()) {
-                    if (!sessionAttributeInitialValueMap.containsKey(entry.getKey())) {
-                        sessionAttributeInitialValuePlusMap.put(entry.getKey(), null);
-                    }
-                }
-                detail.put("Session attributes (at beginning of this request)",
-                        sessionAttributeInitialValuePlusMap);
-                detail.put("Session attributes (updated during this request)",
-                        sessionAttributeUpdatedValueMap);
+                // some session attributes were updated mid-request
+                addMidRequestSessionAttributeDetail(detail);
             }
         } else if (sessionAttributeUpdatedValueMap != null) {
             // no session attributes were available at the beginning of the request, and session
@@ -191,5 +174,23 @@ class ServletMessageSupplier extends MessageSupplier {
             // both initial and updated value maps are null so there is nothing to add to the
             // detail map
         }
+    }
+
+    @RequiresNonNull("sessionAttributeUpdatedValueMap")
+    private void addMidRequestSessionAttributeDetail(Map<String, Object> detail) {
+        Map<String, /*@Nullable*/Object> sessionAttributeInitialValuePlusMap = Maps.newHashMap();
+        sessionAttributeInitialValuePlusMap.putAll(sessionAttributeInitialValueMap);
+        // add empty values into initial values for any updated attributes that are not
+        // already present in initial values nested detail map
+        for (Entry<String, Optional<String>> entry : sessionAttributeUpdatedValueMap
+                .entrySet()) {
+            if (!sessionAttributeInitialValueMap.containsKey(entry.getKey())) {
+                sessionAttributeInitialValuePlusMap.put(entry.getKey(), null);
+            }
+        }
+        detail.put("Session attributes (at beginning of this request)",
+                sessionAttributeInitialValuePlusMap);
+        detail.put("Session attributes (updated during this request)",
+                sessionAttributeUpdatedValueMap);
     }
 }

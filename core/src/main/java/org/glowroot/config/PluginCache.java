@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ abstract class PluginCache {
     private static final Logger logger = LoggerFactory.getLogger(PluginCache.class);
 
     abstract List<File> pluginJars();
-    abstract List<URL> descriptorURLs();
     abstract List<PluginDescriptor> pluginDescriptors();
 
     static PluginCache create(@Nullable File glowrootJarFile, boolean viewerModeEnabled)
@@ -61,7 +60,6 @@ abstract class PluginCache {
         }
         // also add descriptors on the class path (this is primarily for integration tests)
         descriptorURLs.addAll(getResources("META-INF/glowroot.plugin.json"));
-        builder.addAllDescriptorURLs(descriptorURLs);
         if (viewerModeEnabled) {
             builder.addAllPluginDescriptors(createInViewerMode(descriptorURLs));
         } else {

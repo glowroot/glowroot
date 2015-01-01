@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.glowroot.advicegen;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,6 +26,7 @@ import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.UsedByGeneratedBytecode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -180,13 +180,7 @@ public class MessageTemplate {
                     return sb.toString();
                 }
                 return String.valueOf(value);
-            } catch (IllegalArgumentException e) {
-                logger.debug(e.getMessage(), e);
-                return "<error evaluating: " + e.getMessage() + ">";
-            } catch (IllegalAccessException e) {
-                logger.debug(e.getMessage(), e);
-                return "<error evaluating: " + e.getMessage() + ">";
-            } catch (InvocationTargetException e) {
+            } catch (ReflectiveException e) {
                 logger.debug(e.getMessage(), e);
                 return "<error evaluating: " + e.getMessage() + ">";
             }

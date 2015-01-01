@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ glowroot.controller('ConfigCapturePointCtrl', [
         $scope.selectedClassName = data.className;
         $scope.selectedMethodName = data.methodName;
         $scope.selectedMethodSignature = methodSignature;
-        $scope.methodSignatures = [ methodSignature ];
+        $scope.methodSignatures = [methodSignature];
         $scope.captureKindTransaction = captureKind === 'transaction';
         $scope.showMetric = captureKind === 'metric' || captureKind === 'trace_entry' || captureKind === 'transaction';
         $scope.showTraceEntry = captureKind === 'trace_entry' || captureKind === 'transaction';
@@ -59,8 +59,8 @@ glowroot.controller('ConfigCapturePointCtrl', [
     onNewData($scope.capturePoint.config);
 
     $scope.hasChanges = function () {
-      return ($scope.config.className || $scope.originalConfig.className) &&
-          !angular.equals($scope.config, $scope.originalConfig);
+      return ($scope.config.className || $scope.originalConfig.className)
+          && !angular.equals($scope.config, $scope.originalConfig);
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
@@ -101,7 +101,7 @@ glowroot.controller('ConfigCapturePointCtrl', [
         return [];
       }
       if (suggestion.indexOf('*') !== -1) {
-        return [ suggestion ];
+        return [suggestion];
       }
       var queryData = {
         className: $scope.config.className,
@@ -136,7 +136,7 @@ glowroot.controller('ConfigCapturePointCtrl', [
           $scope.methodSignatures = [
             {
               name: methodName,
-              parameterTypes: [ '..' ],
+              parameterTypes: ['..'],
               returnType: '',
               modifiers: []
             }
@@ -232,7 +232,7 @@ glowroot.controller('ConfigCapturePointCtrl', [
               // non-matching method name and clicks outside of the input field to bypass the typeahead values
               $scope.methodSignatures.push({
                 name: methodName,
-                parameterTypes: [ '..' ],
+                parameterTypes: ['..'],
                 returnType: '',
                 modifiers: []
               });

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 
+import com.google.common.io.Closer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,9 +44,16 @@ public class ClassLoaders {
             Collection<LazyDefinedClass> lazyDefinedClasses, Instrumentation instrumentation,
             File generatedJarFile) {
         try {
-            JarOutputStream jarOut = new JarOutputStream(new FileOutputStream(generatedJarFile));
-            generate(lazyDefinedClasses, jarOut);
-            jarOut.close();
+            Closer closer = Closer.create();
+            try {
+                FileOutputStream out = closer.register(new FileOutputStream(generatedJarFile));
+                JarOutputStream jarOut = closer.register(new JarOutputStream(out));
+                generate(lazyDefinedClasses, jarOut);
+            } catch (Throwable t) {
+                closer.rethrow(t);
+            } finally {
+                closer.close();
+            }
             instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(generatedJarFile));
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
@@ -85,8 +93,7 @@ public class ClassLoaders {
     public static void cleanPreviouslyGeneratedJars(File generatedJarDir,
             String deleteJarsWithPrefix) throws IOException {
         if (generatedJarDir.exists() && generatedJarDir.isFile() && !generatedJarDir.delete()) {
-            throw new IOException("Could not delete file: "
-                    + generatedJarDir.getAbsolutePath());
+            throw new IOException("Could not delete file: " + generatedJarDir.getAbsolutePath());
         }
         if (!generatedJarDir.exists() && !generatedJarDir.mkdirs()) {
             throw new IOException("Could not create directory: "

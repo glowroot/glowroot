@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,12 @@ public class BasicMisc extends SuperBasicMisc implements Misc, Misc2, Misc3 {
         this(null);
     }
 
-    public BasicMisc(@SuppressWarnings("unused") Object dummy) {}
+    public BasicMisc(@SuppressWarnings("unused") Object dummy) {
+        // call some junk to test PatchedAdviceAdapter
+        new Object().toString();
+        String.valueOf("abc");
+        new Object[0].hashCode();
+    }
 
     // Misc implementation
     @Override

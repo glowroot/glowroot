@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Supplier;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -273,26 +272,10 @@ public class AnalyzedWorld {
         } else {
             url = loader.getResource(path);
             if (url != null) {
-                ClassLoader tempLoader = loader;
-                while (tempLoader != null) {
-                    ClassLoader parentLoader = tempLoader.getParent();
-                    URL parentLoaderUrl;
-                    if (parentLoader == null) {
-                        parentLoaderUrl = ClassLoader.getSystemResource(path);
-                    } else {
-                        parentLoaderUrl = parentLoader.getResource(path);
-                    }
-                    if (url.equals(parentLoaderUrl)) {
-                        // reuse parent loader's AnalyzedClass if available
-                        // this saves time here, and reduces memory footprint of AnalyzedWorld
-                        // which can be very noticeable when lots of ClassLoaders, e.g. groovy
-                        AnalyzedClass parentLoaderAnalyzedClass =
-                                getAnalyzedClasses(parentLoader).get(className);
-                        if (parentLoaderAnalyzedClass != null) {
-                            return parentLoaderAnalyzedClass;
-                        }
-                    }
-                    tempLoader = parentLoader;
+                AnalyzedClass parentLoaderAnalyzedClass =
+                        tryToReuseFromParentLoader(className, loader, path, url);
+                if (parentLoaderAnalyzedClass != null) {
+                    return parentLoaderAnalyzedClass;
                 }
             }
         }
@@ -317,6 +300,32 @@ public class AnalyzedWorld {
         AnalyzedClass analyzedClass = cv.getAnalyzedClass();
         checkNotNull(analyzedClass); // analyzedClass is non-null after visiting the class
         return analyzedClass;
+    }
+
+    private @Nullable AnalyzedClass tryToReuseFromParentLoader(String className,
+            ClassLoader originalLoader, String path, URL url) {
+        ClassLoader loader = originalLoader;
+        while (loader != null) {
+            ClassLoader parentLoader = loader.getParent();
+            URL parentLoaderUrl;
+            if (parentLoader == null) {
+                parentLoaderUrl = ClassLoader.getSystemResource(path);
+            } else {
+                parentLoaderUrl = parentLoader.getResource(path);
+            }
+            if (url.equals(parentLoaderUrl)) {
+                // reuse parent loader's AnalyzedClass if available
+                // this saves time here, and reduces memory footprint of AnalyzedWorld
+                // which can be very noticeable when lots of ClassLoaders, e.g. groovy
+                AnalyzedClass parentLoaderAnalyzedClass =
+                        getAnalyzedClasses(parentLoader).get(className);
+                if (parentLoaderAnalyzedClass != null) {
+                    return parentLoaderAnalyzedClass;
+                }
+            }
+            loader = parentLoader;
+        }
+        return null;
     }
 
     // plan B covers some class loaders like
@@ -354,14 +363,6 @@ public class AnalyzedWorld {
         } else {
             return world.getUnchecked(loader);
         }
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("world", world)
-                .add("bootstrapLoaderWorld", bootstrapLoaderWorld)
-                .toString();
     }
 
     // now that the type has been loaded anyways, build the analyzed class via reflection

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,15 @@ public class TraceCreator {
 
     public static Trace createActiveTrace(Transaction transaction, long captureTime,
             long captureTick) throws IOException {
-        return createTrace(transaction, true, transaction.isPartial(), captureTime, captureTick);
+        return createTrace(transaction, true, false, captureTime, captureTick);
+    }
+
+    // "partial" means "partial stored" but no longer currently active
+    public static Trace createPartialTrace(Transaction transaction, long captureTime,
+            long captureTick) throws IOException {
+        // doesn't really matter whether pass true or false for "active" since this method is only
+        // used for creating trace for storage and stored traces do not have "active" field
+        return createTrace(transaction, true, true, captureTime, captureTick);
     }
 
     public static Trace createCompletedTrace(Transaction transaction) throws IOException {

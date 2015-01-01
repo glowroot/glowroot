@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,25 +19,27 @@ import java.lang.management.ManagementFactory;
 
 import javax.annotation.Nullable;
 
-public class ProcessId {
+import com.google.common.annotations.VisibleForTesting;
 
-    private static final @Nullable String pid;
-
-    static {
-        pid = initPid();
-    }
+class ProcessId {
 
     private ProcessId() {}
 
-    public static @Nullable String getPid() {
-        return pid;
+    static @Nullable String getProcessId() {
+        return parseProcessId(ManagementFactory.getRuntimeMXBean().getName());
     }
 
-    private static @Nullable String initPid() {
-        String runtimeName = ManagementFactory.getRuntimeMXBean().getName();
+    @VisibleForTesting
+    static @Nullable String parseProcessId(String runtimeName) {
         int index = runtimeName.indexOf('@');
         if (index > 0) {
-            return runtimeName.substring(0, index);
+            String pid = runtimeName.substring(0, index);
+            try {
+                Long.parseLong(pid);
+                return pid;
+            } catch (NumberFormatException e) {
+                return null;
+            }
         } else {
             return null;
         }

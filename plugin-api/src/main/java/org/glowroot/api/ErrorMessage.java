@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,18 +109,22 @@ public abstract class ErrorMessage {
     }
 
     // implementing ReadableErrorMessage is just a way to access this class from glowroot without
-    // making it (obviously) accessible to plugin implementations
+    // making it accessible to plugins
     private static class ErrorMessageImpl extends ErrorMessage implements ReadableErrorMessage {
 
         private final @Nullable String text;
         private final @Nullable ExceptionInfo exceptionInfo;
-        private final @Nullable Map<String, ? extends /*@Nullable*/Object> detail;
+        private final Map<String, ? extends /*@Nullable*/Object> detail;
 
         private ErrorMessageImpl(@Nullable String text, @Nullable ExceptionInfo exceptionInfo,
                 @Nullable Map<String, ? extends /*@Nullable*/Object> detail) {
             this.text = text;
             this.exceptionInfo = exceptionInfo;
-            this.detail = detail;
+            if (detail == null) {
+                this.detail = ImmutableMap.of();
+            } else {
+                this.detail = detail;
+            }
         }
 
         @Override
@@ -133,7 +138,7 @@ public abstract class ErrorMessage {
         }
 
         @Override
-        public @Nullable Map<String, ? extends /*@Nullable*/Object> getDetail() {
+        public Map<String, ? extends /*@Nullable*/Object> getDetail() {
             return detail;
         }
 

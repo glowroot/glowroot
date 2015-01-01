@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,10 +109,10 @@ public class ThreadInfoComponent {
             // getBlockedTime() and getWaitedTime() return -1 if thread contention monitoring is
             // disabled (which is different than whether or not it is supported)
             long threadBlockedTime = threadInfo.getBlockedTime();
-            long threadWaitedTime = threadInfo.getWaitedTime();
             if (startingSnapshot.threadBlockedTime() != -1 && threadBlockedTime != -1) {
                 builder.threadBlockedTime(threadBlockedTime - startingSnapshot.threadBlockedTime());
             }
+            long threadWaitedTime = threadInfo.getWaitedTime();
             if (startingSnapshot.threadWaitedTime() != -1 && threadWaitedTime != -1) {
                 builder.threadWaitedTime(threadWaitedTime - startingSnapshot.threadWaitedTime());
             }

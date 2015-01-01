@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ public class ServletAspect {
                     DetailCapture.captureRequestHeaders(request, requestInvoker);
             if (session == null) {
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
-                        requestQueryString, requestHeaders, null);
+                        requestQueryString, requestHeaders, ImmutableMap.<String, String>of());
             } else {
                 ImmutableMap<String, String> sessionAttributes =
                         HttpSessions.getSessionAttributes(session, sessionInvoker);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package org.glowroot.shaded.jul;
 
 import java.text.MessageFormat;
 
+import com.google.common.annotations.VisibleForTesting;
+
 public class Logger {
 
     private final org.slf4j.Logger logger;
@@ -26,7 +28,12 @@ public class Logger {
     }
 
     private Logger(String name) {
-        logger = org.slf4j.LoggerFactory.getLogger(name);
+        this(org.slf4j.LoggerFactory.getLogger(name));
+    }
+
+    @VisibleForTesting
+    Logger(org.slf4j.Logger logger) {
+        this.logger = logger;
     }
 
     public void severe(String msg) {

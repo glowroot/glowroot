@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,12 +29,15 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
+import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class Slf4jMarkerTest {
+
+    private static final String PLUGIN_ID = "logger";
 
     private static Container container;
 
@@ -63,7 +66,7 @@ public class Slf4jMarkerTest {
     @Test
     public void testLog() throws Exception {
         // given
-        container.getConfigService().setPluginProperty("logger",
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLog.class);
@@ -79,7 +82,7 @@ public class Slf4jMarkerTest {
     @Test
     public void testLogWithThrowable() throws Exception {
         // given
-        container.getConfigService().setPluginProperty("logger",
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLogWithThrowable.class);
@@ -105,7 +108,7 @@ public class Slf4jMarkerTest {
     @Test
     public void testLogWithNullThrowable() throws Exception {
         // given
-        container.getConfigService().setPluginProperty("logger",
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLogWithNullThrowable.class);
@@ -216,6 +219,20 @@ public class Slf4jMarkerTest {
         assertThat(errorEntry.getError().getText()).isEqualTo("567");
         assertThat(errorEntry.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
+    }
+
+    @Test
+    public void testPluginDisabled() throws Exception {
+        // given
+        PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
+        pluginConfig.setEnabled(false);
+        container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        // when
+        container.executeAppUnderTest(ShouldLog.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(1);
     }
 
     public static class ShouldLog implements AppUnderTest, TraceMarker {

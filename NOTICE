@@ -1,20 +1,20 @@
 Glowroot
-Copyright 2011-2014 Glowroot contributors
+Copyright 2011-2015 Glowroot contributors
 
 Glowroot includes the following software:
 
 AngularJS
-Copyright 2010-2012 Google, Inc
+Copyright 2010-2014 Google, Inc
 http://angularjs.org
 MIT License
 
 AngularUI Bootstrap
-Copyright 2012-2013 the AngularUI Team
+Copyright 2012-2014 The AngularUI Team
 http://angular-ui.github.io/bootstrap
 MIT License
 
 AngularUI Router
-Copyright 2013 Karsten Sperling
+Copyright 2014 The AngularUI Team, Karsten Sperling
 https://github.com/angular-ui/ui-router
 MIT License
 
@@ -34,17 +34,17 @@ https://github.com/eternicode/bootstrap-datepicker
 Apache License, Version 2.0
 
 D3
-Copyright (c) 2010-2014 Michael Bostock
+Copyright 2012 Michael Bostock
 http://d3js.org
 BSD 3-Clause License
 
 Flot
-Copyright 2007-2013 IOLA and Ole Laursen
+Copyright 2007-2014 IOLA and Ole Laursen
 http://www.flotcharts.org
 MIT License
 
 Flot Tooltip
-Copyright (c) 2011-2014 Krzysztof Urbas (@krzysu) & Evan Steinkerchner (@Roundaround)
+Copyright 2011-2014 Krzysztof Urbas (@krzysu) & Evan Steinkerchner (@Roundaround)
 https://github.com/krzysu/flot.tooltip
 MIT License
 
@@ -55,17 +55,17 @@ SIL Open Font License 1.1 (font)
 MIT License (code)
 
 Guava
-Copyright 2013 The Guava Authors
-http://code.google.com/p/guava-libraries
+Copyright The Guava Authors
+https://github.com/google/guava
 Apache License, Version 2.0
 
 H2
-Copyright 2004-2012 H2 Group
+Copyright H2 Group
 http://www.h2database.com
 Eclipse Public License, Version 1.0
 
 handlebars
-Copyright 2011 Yehuda Katz
+Copyright 2011-2014 Yehuda Katz
 http://handlebarsjs.com
 MIT License
 
@@ -80,7 +80,7 @@ https://github.com/FasterXML/jackson
 Apache License, Version 2.0
 
 jQuery
-Copyright 2013 jQuery Foundation and other contributors
+Copyright 2014 jQuery Foundation and other contributors
 http://jquery.com
 MIT License
 
@@ -95,12 +95,12 @@ http://logback.qos.ch
 Eclipse Public License, Version 1.0
 
 Moment.js
-Copyright 2011-2013 Tim Wood, Iskren Chernev, Moment.js contributors
+Copyright 2011-2014 Tim Wood, Iskren Chernev, Moment.js contributors
 http://momentjs.com
 MIT License
 
 Netty
-Copyright 2011 The Netty Project
+Copyright The Netty Project
 http://netty.io
 Apache License, Version 2.0
 
@@ -110,7 +110,7 @@ http://github.com/ning/compress
 Apache License, Version 2.0
 
 Node Stackvis
-Copyright (c) 2013 Joyent, Inc
+Copyright 2013 Joyent, Inc
 https://github.com/davepacheco/node-stackvis
 MIT License
 
@@ -125,6 +125,6 @@ http://www.slf4j.org
 MIT License
 
 spin.js
-Copyright 2011 Felix Gnass [fgnass at neteye dot de]
+Copyright 2011-2014 Felix Gnass [fgnass at neteye dot de]
 http://fgnass.github.io/spin.js
 MIT License

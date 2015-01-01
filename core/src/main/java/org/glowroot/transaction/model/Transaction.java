@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package org.glowroot.transaction.model;
 
 import java.lang.management.ThreadInfo;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
@@ -62,8 +61,6 @@ public class Transaction {
     // timing data is tracked in nano seconds which cannot be converted into dates
     // (see javadoc for System.nanoTime()), so the start time is also tracked here
     private final long startTime;
-
-    private final AtomicBoolean partial = new AtomicBoolean();
 
     private volatile String transactionType;
     private volatile boolean explicitSetTransactionType;
@@ -125,16 +122,9 @@ public class Transaction {
         traceEntryComponent =
                 new TraceEntryComponent(messageSupplier, rootMetric, startTick, ticker);
         threadId = Thread.currentThread().getId();
-        if (captureThreadInfo) {
-            threadInfoComponent = new ThreadInfoComponent(threadAllocatedBytes);
-        } else {
-            threadInfoComponent = null;
-        }
-        if (captureGcInfo) {
-            gcInfoComponent = new GcInfoComponent();
-        } else {
-            gcInfoComponent = null;
-        }
+        threadInfoComponent =
+                captureThreadInfo ? new ThreadInfoComponent(threadAllocatedBytes) : null;
+        gcInfoComponent = captureGcInfo ? new GcInfoComponent() : null;
     }
 
     public long getStartTime() {
@@ -161,10 +151,6 @@ public class Transaction {
     // duration of trace in nanoseconds
     public long getDuration() {
         return traceEntryComponent.getDuration();
-    }
-
-    public boolean isPartial() {
-        return partial.get();
     }
 
     public String getTransactionType() {
@@ -231,18 +217,12 @@ public class Transaction {
 
     // can be called from a non-transaction thread
     public @Nullable ThreadInfoData getThreadInfo() {
-        if (threadInfoComponent == null) {
-            return null;
-        }
-        return threadInfoComponent.getThreadInfo();
+        return threadInfoComponent == null ? null : threadInfoComponent.getThreadInfo();
     }
 
     // can be called from a non-transaction thread
     public @Nullable List<GcInfo> getGcInfos() {
-        if (gcInfoComponent == null) {
-            return null;
-        }
-        return gcInfoComponent.getGcInfos();
+        return gcInfoComponent == null ? null : gcInfoComponent.getGcInfos();
     }
 
     public TraceEntry getTraceEntryComponent() {
@@ -256,10 +236,6 @@ public class Transaction {
     public ImmutableList<TraceEntry> getEntriesCopy() {
         readMemoryBarrier();
         return traceEntryComponent.getEntriesCopy();
-    }
-
-    public boolean isProfiled() {
-        return profile != null;
     }
 
     public @Nullable Profile getProfile() {
@@ -280,10 +256,6 @@ public class Transaction {
 
     public long getThreadId() {
         return threadId;
-    }
-
-    public void setPartial() {
-        partial.getAndSet(true);
     }
 
     public void setTransactionType(@Nullable String transactionType) {
@@ -393,13 +365,19 @@ public class Transaction {
             return;
         }
         if (profile == null) {
-            // initialization possible race condition is ok, worst case scenario it misses
-            // an almost simultaneously captured stack trace
-            profile = new Profile();
+            // initialization possible race condition (between StackTraceCollector and
+            // UserProfileRunnable) is ok, worst case scenario it misses an almost simultaneously
+            // captured stack trace
+            //
+            // profile is constructed and first stack trace is added prior to setting the
+            // transaction profile field, so that it is not possible to read a profile that doesn't
+            // have at least one stack trace
+            Profile profile = new Profile();
+            profile.addStackTrace(threadInfo, limit);
+            this.profile = profile;
+        } else {
+            profile.addStackTrace(threadInfo, limit);
         }
-        // TODO make sure that when reading profile it is not in-between instantiation
-        // and having its first stack trace here, maybe pass threadInfo to constructor????
-        profile.addStackTrace(threadInfo, limit);
     }
 
     // called by the transaction thread
@@ -422,7 +400,6 @@ public class Transaction {
         return MoreObjects.toStringHelper(this)
                 .add("id", id)
                 .add("startTime", startTime)
-                .add("partial", partial)
                 .add("transactionType", transactionType)
                 .add("explicitSetTransactionType", explicitSetTransactionType)
                 .add("transactionName", transactionName)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Marshaling2;
-import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ConfigService.DuplicateMBeanObjectNameException;
 import org.glowroot.config.Gauge;
@@ -90,7 +89,7 @@ class GaugeJsonService {
         if (sortedNames.size() > request.limit()) {
             sortedNames = sortedNames.subList(0, request.limit());
         }
-        return mapper.writeValueAsString(names);
+        return mapper.writeValueAsString(sortedNames);
     }
 
     @GET("/backend/config/mbean-attributes")
@@ -188,24 +187,31 @@ class GaugeJsonService {
                 Object descriptorFieldValue = descriptor.getFieldValue("openType");
                 if (descriptorFieldValue instanceof CompositeType) {
                     CompositeType compositeType = (CompositeType) descriptorFieldValue;
-                    for (String itemName : compositeType.keySet()) {
-                        OpenType<?> itemType = compositeType.getType(itemName);
-                        if (itemType == null) {
-                            break;
-                        }
-                        String className = itemType.getClassName();
-                        // see all possible classNames at
-                        // javax.management.openmbean.OpenType.ALLOWED_CLASSNAMES_LIST
-                        if (className.equals("java.lang.Long")
-                                || className.equals("java.lang.Integer")
-                                || className.equals("java.lang.Double")
-                                || className.equals("java.lang.Float")
-                                || className.equals("java.lang.BigDecimal")
-                                || className.equals("java.lang.BigInteger")) {
-                            attributeNames.add(attribute.getName() + "." + itemName);
-                        }
-                    }
+                    attributeNames.addAll(getCompositeTypeAttributeNames(attribute, compositeType));
                 }
+            }
+        }
+        return attributeNames;
+    }
+
+    private static List<String> getCompositeTypeAttributeNames(MBeanAttributeInfo attribute,
+            CompositeType compositeType) {
+        List<String> attributeNames = Lists.newArrayList();
+        for (String itemName : compositeType.keySet()) {
+            OpenType<?> itemType = compositeType.getType(itemName);
+            if (itemType == null) {
+                break;
+            }
+            String className = itemType.getClassName();
+            // see all possible classNames at
+            // javax.management.openmbean.OpenType.ALLOWED_CLASSNAMES_LIST
+            if (className.equals("java.lang.Long")
+                    || className.equals("java.lang.Integer")
+                    || className.equals("java.lang.Double")
+                    || className.equals("java.lang.Float")
+                    || className.equals("java.lang.BigDecimal")
+                    || className.equals("java.lang.BigInteger")) {
+                attributeNames.add(attribute.getName() + "." + itemName);
             }
         }
         return attributeNames;

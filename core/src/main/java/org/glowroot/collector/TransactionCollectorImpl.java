@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ public class TransactionCollectorImpl implements TransactionCollector {
     }
 
     public boolean shouldStore(Transaction transaction) {
-        if (transaction.isPartial() || transaction.getError() != null) {
+        if (!transaction.isCompleted() || transaction.getError() != null) {
             return true;
         }
         // check if should store for user recording
@@ -154,7 +154,7 @@ public class TransactionCollectorImpl implements TransactionCollector {
     @Override
     public void storePartialTrace(Transaction transaction) {
         try {
-            Trace trace = TraceCreator.createActiveTrace(transaction, clock.currentTimeMillis(),
+            Trace trace = TraceCreator.createPartialTrace(transaction, clock.currentTimeMillis(),
                     ticker.read());
             if (!transaction.isCompleted()) {
                 store(trace, transaction);

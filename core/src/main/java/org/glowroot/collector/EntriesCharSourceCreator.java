@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,17 +133,27 @@ public class EntriesCharSourceCreator {
                 return;
             }
             if (traceEntry.isLimitExceededMarker()) {
-                jg.writeStartObject();
-                jg.writeBooleanField("limitExceededMarker", true);
-                jg.writeEndObject();
-                return;
+                writeLimitExceededEntry();
+            } else if (traceEntry.isLimitExtendedMarker()) {
+                writeLimitExtendedEntry();
+            } else {
+                writeNormalEntry(traceEntry);
             }
-            if (traceEntry.isLimitExtendedMarker()) {
-                jg.writeStartObject();
-                jg.writeBooleanField("limitExtendedMarker", true);
-                jg.writeEndObject();
-                return;
-            }
+        }
+
+        private void writeLimitExceededEntry() throws IOException {
+            jg.writeStartObject();
+            jg.writeBooleanField("limitExceededMarker", true);
+            jg.writeEndObject();
+        }
+
+        private void writeLimitExtendedEntry() throws IOException {
+            jg.writeStartObject();
+            jg.writeBooleanField("limitExtendedMarker", true);
+            jg.writeEndObject();
+        }
+
+        private void writeNormalEntry(TraceEntry traceEntry) throws IOException {
             jg.writeStartObject();
             jg.writeNumberField("offset", traceEntry.getStartTick() - transactionStartTick);
             jg.writeFieldName("duration");
@@ -188,7 +198,7 @@ public class EntriesCharSourceCreator {
             jg.writeStartObject();
             jg.writeStringField("text", errorMessage.getText());
             Map<String, ? extends /*@Nullable*/Object> errorDetail = errorMessage.getDetail();
-            if (errorDetail != null) {
+            if (!errorDetail.isEmpty()) {
                 jg.writeFieldName("detail");
                 new DetailMapWriter(jg).write(errorDetail);
             }

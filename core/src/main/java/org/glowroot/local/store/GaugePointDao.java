@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.RowMapper;
 import org.glowroot.local.store.Schemas.Column;
 import org.glowroot.local.store.Schemas.Index;
+
+import static org.glowroot.common.Checkers.castUntainted;
 
 public class GaugePointDao implements GaugePointRepository {
 
@@ -119,7 +121,7 @@ public class GaugePointDao implements GaugePointRepository {
             long captureTimeTo, int rollupLevel) throws SQLException {
         String tableName = "gauge_point";
         if (rollupLevel > 0) {
-            tableName += "_rollup_" + rollupLevel;
+            tableName += "_rollup_" + castUntainted(rollupLevel);
         }
         return dataSource.query("select gauge_name, capture_time, value from " + tableName
                 + " where gauge_name = ? and capture_time >= ? and capture_time <= ?"
@@ -153,11 +155,13 @@ public class GaugePointDao implements GaugePointRepository {
 
     private void rollup(long lastRollupTime, long safeRollupTime) throws SQLException {
         // need ".0" to force double result
+        String captureTimeSql = castUntainted("ceil(capture_time / " + fixedRollupIntervalMillis
+                + ".0) * " + fixedRollupIntervalMillis);
         dataSource.update("insert into gauge_point_rollup_1 (gauge_name, capture_time, value,"
-                + " count) select gauge_name, ceil(capture_time / " + fixedRollupIntervalMillis
-                + ".0) * " + fixedRollupIntervalMillis + " ceil_capture_time, avg(value), count(*)"
-                + " from gauge_point where capture_time > ? and capture_time <= ?"
-                + " group by gauge_name, ceil_capture_time", lastRollupTime, safeRollupTime);
+                + " count) select gauge_name, " + captureTimeSql + " ceil_capture_time,"
+                + " avg(value), count(*) from gauge_point where capture_time > ?"
+                + " and capture_time <= ? group by gauge_name, ceil_capture_time", lastRollupTime,
+                safeRollupTime);
     }
 
     private static class GaugePointRowMapper implements RowMapper<GaugePoint> {

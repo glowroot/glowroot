@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,65 +19,202 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-public interface ConfigService {
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Lists;
 
-    void setPluginProperty(String pluginId, String propertyName, @Nullable Object propertyValue)
-            throws Exception;
+import org.glowroot.container.common.HttpClient;
+import org.glowroot.container.common.ObjectMappers;
 
-    TraceConfig getTraceConfig() throws Exception;
+public class ConfigService {
 
-    void updateTraceConfig(TraceConfig config) throws Exception;
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
-    ProfilingConfig getProfilingConfig() throws Exception;
+    private final HttpClient httpClient;
+    private final GetUiPortCommand getUiPortCommand;
 
-    void updateProfilingConfig(ProfilingConfig config) throws Exception;
+    public ConfigService(HttpClient httpClient, GetUiPortCommand getUiPortCommand) {
+        this.httpClient = httpClient;
+        this.getUiPortCommand = getUiPortCommand;
+    }
 
-    UserRecordingConfig getUserRecordingConfig() throws Exception;
+    public void setPluginProperty(String pluginId, String propertyName,
+            @Nullable Object propertyValue) throws Exception {
+        PluginConfig config = getPluginConfig(pluginId);
+        if (config == null) {
+            throw new IllegalStateException("Plugin not found for pluginId: " + pluginId);
+        }
+        config.setProperty(propertyName, propertyValue);
+        updatePluginConfig(pluginId, config);
+    }
 
-    void updateUserRecordingConfig(UserRecordingConfig config) throws Exception;
+    public TraceConfig getTraceConfig() throws Exception {
+        return getConfig("/backend/config/trace", TraceConfig.class);
+    }
 
-    StorageConfig getStorageConfig() throws Exception;
+    public void updateTraceConfig(TraceConfig config) throws Exception {
+        httpClient.post("/backend/config/trace", mapper.writeValueAsString(config));
+    }
 
-    void updateStorageConfig(StorageConfig config) throws Exception;
+    public ProfilingConfig getProfilingConfig() throws Exception {
+        return getConfig("/backend/config/profiling", ProfilingConfig.class);
+    }
 
-    UserInterfaceConfig getUserInterfaceConfig() throws Exception;
+    public void updateProfilingConfig(ProfilingConfig config) throws Exception {
+        httpClient.post("/backend/config/profiling", mapper.writeValueAsString(config));
+    }
+
+    public UserRecordingConfig getUserRecordingConfig() throws Exception {
+        return getConfig("/backend/config/user-recording", UserRecordingConfig.class);
+    }
+
+    public void updateUserRecordingConfig(UserRecordingConfig config) throws Exception {
+        httpClient.post("/backend/config/user-recording", mapper.writeValueAsString(config));
+    }
+
+    public StorageConfig getStorageConfig() throws Exception {
+        return getConfig("/backend/config/storage", StorageConfig.class);
+    }
+
+    public void updateStorageConfig(StorageConfig config) throws Exception {
+        httpClient.post("/backend/config/storage", mapper.writeValueAsString(config));
+    }
+
+    public UserInterfaceConfig getUserInterfaceConfig() throws Exception {
+        return getConfig("/backend/config/user-interface", UserInterfaceConfig.class);
+    }
 
     // throws CurrentPasswordIncorrectException
-    void updateUserInterfaceConfig(UserInterfaceConfig config) throws Exception;
+    public void updateUserInterfaceConfig(UserInterfaceConfig config) throws Exception {
+        String response = httpClient.post("/backend/config/user-interface",
+                mapper.writeValueAsString(config));
+        JsonNode node = mapper.readTree(response);
+        JsonNode currentPasswordIncorrectNode = node.get("currentPasswordIncorrect");
+        if (currentPasswordIncorrectNode != null && currentPasswordIncorrectNode.asBoolean()) {
+            throw new CurrentPasswordIncorrectException();
+        }
+        JsonNode portChangeFailedNode = node.get("portChangeFailed");
+        if (portChangeFailedNode != null && portChangeFailedNode.asBoolean()) {
+            throw new PortChangeFailedException();
+        }
+        httpClient.updateUiPort(getUiPortCommand.getUiPort());
+    }
 
-    AdvancedConfig getAdvancedConfig() throws Exception;
+    public AdvancedConfig getAdvancedConfig() throws Exception {
+        return getConfig("/backend/config/advanced", AdvancedConfig.class);
+    }
 
-    void updateAdvancedConfig(AdvancedConfig config) throws Exception;
+    public void updateAdvancedConfig(AdvancedConfig config) throws Exception {
+        httpClient.post("/backend/config/advanced", mapper.writeValueAsString(config));
+    }
 
-    @Nullable
-    PluginConfig getPluginConfig(String pluginId) throws Exception;
+    public @Nullable PluginConfig getPluginConfig(String pluginId) throws Exception {
+        return getConfig("/backend/config/plugin/" + pluginId, PluginConfig.class);
+    }
 
-    void updatePluginConfig(String pluginId, PluginConfig config) throws Exception;
+    public void updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
+        httpClient.post("/backend/config/plugin/" + pluginId, mapper.writeValueAsString(config));
+    }
 
-    List<Gauge> getGauges() throws Exception;
+    public List<Gauge> getGauges() throws Exception {
+        String response = httpClient.get("/backend/config/gauges");
+        ArrayNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ArrayNode.class);
+        List<Gauge> configs = Lists.newArrayList();
+        for (JsonNode childNode : rootNode) {
+            ObjectNode configNode =
+                    (ObjectNode) ObjectMappers.getRequiredChildNode(childNode, "config");
+            configs.add(mapper.readValue(mapper.treeAsTokens(configNode), Gauge.class));
+        }
+        return configs;
+    }
 
-    Gauge addGauge(Gauge gauge) throws Exception;
+    // returns new version
+    public Gauge addGauge(Gauge gauge) throws Exception {
+        String response = httpClient.post("/backend/config/gauges/add",
+                mapper.writeValueAsString(gauge));
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
+        return mapper.readValue(mapper.treeAsTokens(configNode), Gauge.class);
+    }
 
-    Gauge updateGauge(Gauge gauge) throws Exception;
+    public Gauge updateGauge(Gauge gauge) throws Exception {
+        String response = httpClient.post("/backend/config/gauges/update",
+                mapper.writeValueAsString(gauge));
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
+        return mapper.readValue(mapper.treeAsTokens(configNode), Gauge.class);
+    }
 
-    void removeGauge(String version) throws Exception;
+    public void removeGauge(String version) throws Exception {
+        httpClient.post("/backend/config/gauges/remove", mapper.writeValueAsString(version));
+    }
 
-    List<CapturePoint> getCapturePoints() throws Exception;
+    public List<CapturePoint> getCapturePoints() throws Exception {
+        String response = httpClient.get("/backend/config/capture-points");
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        JsonNode configsNode = ObjectMappers.getRequiredChildNode(rootNode, "configs");
+        return mapper.readValue(mapper.treeAsTokens(configsNode),
+                new TypeReference<List<CapturePoint>>() {});
+    }
 
-    CapturePoint addCapturePoint(CapturePoint capturePoint) throws Exception;
+    // returns new version
+    public CapturePoint addCapturePoint(CapturePoint capturePoint) throws Exception {
+        String response = httpClient.post("/backend/config/capture-points/add",
+                mapper.writeValueAsString(capturePoint));
+        return ObjectMappers.readRequiredValue(mapper, response, CapturePoint.class);
+    }
 
-    CapturePoint updateCapturePoint(CapturePoint capturePoint) throws Exception;
+    public CapturePoint updateCapturePoint(CapturePoint capturePoint) throws Exception {
+        String response = httpClient.post("/backend/config/capture-points/update",
+                mapper.writeValueAsString(capturePoint));
+        return ObjectMappers.readRequiredValue(mapper, response, CapturePoint.class);
+    }
 
-    void removeCapturePoint(String version) throws Exception;
+    public void removeCapturePoint(String version) throws Exception {
+        httpClient.post("/backend/config/capture-points/remove",
+                mapper.writeValueAsString(version));
+    }
 
-    int reweavePointcuts() throws Exception;
+    public int reweavePointcuts() throws Exception {
+        String response = httpClient.post("/backend/admin/reweave-capture-points", "");
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        JsonNode classesNode = ObjectMappers.getRequiredChildNode(rootNode, "classes");
+        return classesNode.asInt();
+    }
 
-    // TODO move to TraceService
-    void compactData() throws Exception;
+    public void compactData() throws Exception {
+        httpClient.post("/backend/admin/compact-data", "");
+    }
+
+    public void resetAllConfig() throws Exception {
+        httpClient.post("/backend/admin/reset-all-config", "");
+        // traceStoreThresholdMillis=0 is by far the most useful setting for testing
+        setTraceStoreThresholdMillis(0);
+    }
+
+    public void setTraceStoreThresholdMillis(int traceStoreThresholdMillis) throws Exception {
+        TraceConfig traceConfig = getTraceConfig();
+        traceConfig.setStoreThresholdMillis(traceStoreThresholdMillis);
+        updateTraceConfig(traceConfig);
+    }
+
+    private <T> T getConfig(String url, Class<T> valueType) throws Exception {
+        String response = httpClient.get(url);
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        JsonNode configNode = ObjectMappers.getRequiredChildNode(rootNode, "config");
+        return mapper.treeToValue(configNode, valueType);
+    }
+
+    public interface GetUiPortCommand {
+        int getUiPort() throws Exception;
+    }
 
     @SuppressWarnings("serial")
-    class CurrentPasswordIncorrectException extends Exception {}
+    public class CurrentPasswordIncorrectException extends Exception {}
 
     @SuppressWarnings("serial")
-    class PortChangeFailedException extends Exception {}
+    public class PortChangeFailedException extends Exception {}
 }

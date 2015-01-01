@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 
-import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
+import static org.glowroot.container.common.ObjectMappers.orEmpty;
 
 public class ExceptionInfo {
 
@@ -76,10 +76,8 @@ public class ExceptionInfo {
             @JsonProperty("framesInCommonWithCaused") @Nullable Integer framesInCommonWithCaused,
             @JsonProperty("cause") @Nullable ExceptionInfo cause)
             throws JsonMappingException {
-        List<String> stackTrace =
-                checkNotNullItemsForProperty(uncheckedStackTrace, "stackTrace");
+        List<String> stackTrace = orEmpty(uncheckedStackTrace, "stackTrace");
         checkRequiredProperty(display, "display");
-        checkRequiredProperty(stackTrace, "stackTrace");
         checkRequiredProperty(framesInCommonWithCaused, "framesInCommonWithCaused");
         return new ExceptionInfo(display, stackTrace, framesInCommonWithCaused, cause);
     }

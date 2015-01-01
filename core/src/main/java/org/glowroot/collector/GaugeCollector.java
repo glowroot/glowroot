@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ class GaugeCollector extends ScheduledRunnable {
                 if (mbeanAttributeName.contains(".")) {
                     String[] path = mbeanAttributeName.split("\\.");
                     attributeValue = lazyPlatformMBeanServer.getAttribute(objectName, path[0]);
-                    CompositeData compositeData = ((CompositeData) attributeValue);
+                    CompositeData compositeData = (CompositeData) attributeValue;
                     attributeValue = compositeData.get(path[1]);
                 } else {
                     attributeValue =
@@ -126,7 +126,7 @@ class GaugeCollector extends ScheduledRunnable {
     // relatively common, so nice message
     private void logFirstTimeMBeanNotFound(Gauge mbeanGauge) {
         int delaySeconds = configService.getAdvancedConfig().mbeanGaugeNotFoundDelaySeconds();
-        if (clock.currentTimeMillis() - startTimeMillis < delaySeconds * 1000) {
+        if (clock.currentTimeMillis() - startTimeMillis < delaySeconds * 1000L) {
             pendingLoggedMBeanGauges.add(mbeanGauge.version());
         } else if (loggedMBeanGauges.add(mbeanGauge.version())) {
             if (pendingLoggedMBeanGauges.remove(mbeanGauge.version())) {

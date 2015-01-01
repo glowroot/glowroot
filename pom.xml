@@ -75,17 +75,17 @@
       <dependency>
         <groupId>org.immutables</groupId>
         <artifactId>value</artifactId>
-        <version>1.1</version>
+        <version>1.2-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.immutables</groupId>
         <artifactId>common</artifactId>
-        <version>1.1</version>
+        <version>1.2-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.immutables</groupId>
         <artifactId>value-standalone</artifactId>
-        <version>1.1</version>
+        <version>1.2-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
@@ -451,6 +451,9 @@
                 </annotationProcessor>
                 <annotationProcessor>
                   org.checkerframework.checker.nullness.NullnessChecker
+                </annotationProcessor>
+                <annotationProcessor>
+                  org.checkerframework.checker.tainting.TaintingChecker
                 </annotationProcessor>
               </annotationProcessors>
               <compilerArgs>

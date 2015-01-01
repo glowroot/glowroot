@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,13 +75,13 @@ glowroot.filter('gtOnOff', function () {
   };
 });
 
-glowroot.filter('gtTypeaheadClassHighlight', function() {
+glowroot.filter('gtTypeaheadClassHighlight', function () {
 
   function escapeRegexp(queryToEscape) {
     return queryToEscape.replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1');
   }
 
-  return function(matchItem, query) {
+  return function (matchItem, query) {
     if (!query) {
       return matchItem;
     }

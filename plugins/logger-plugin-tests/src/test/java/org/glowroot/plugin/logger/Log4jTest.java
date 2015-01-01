@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,15 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
+import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class Log4jTest {
+
+    private static final String PLUGIN_ID = "logger";
 
     private static Container container;
 
@@ -55,7 +58,7 @@ public class Log4jTest {
     @Test
     public void testLog() throws Exception {
         // given
-        container.getConfigService().setPluginProperty("logger",
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLog.class);
@@ -72,7 +75,7 @@ public class Log4jTest {
     @Test
     public void testLogWithThrowable() throws Exception {
         // given
-        container.getConfigService().setPluginProperty("logger",
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLogWithThrowable.class);
@@ -106,7 +109,7 @@ public class Log4jTest {
     @Test
     public void testLogWithNullThrowable() throws Exception {
         // given
-        container.getConfigService().setPluginProperty("logger",
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLogWithNullThrowable.class);
@@ -130,7 +133,7 @@ public class Log4jTest {
     @Test
     public void testLogWithPriority() throws Exception {
         // given
-        container.getConfigService().setPluginProperty("logger",
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLogWithPriority.class);
@@ -180,7 +183,7 @@ public class Log4jTest {
     @Test
     public void testLogWithPriorityAndNullThrowable() throws Exception {
         // given
-        container.getConfigService().setPluginProperty("logger",
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLogWithPriorityAndNullThrowable.class);
@@ -237,7 +240,7 @@ public class Log4jTest {
     @Test
     public void testLocalizedLogWithNullThrowable() throws Exception {
         // given
-        container.getConfigService().setPluginProperty("logger",
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLocalizedLogWithNullThrowable.class);
@@ -299,7 +302,7 @@ public class Log4jTest {
     @Test
     public void testLocalizedLogWithParametersAndNullThrowable() throws Exception {
         // given
-        container.getConfigService().setPluginProperty("logger",
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
         // when
         container.executeAppUnderTest(ShouldLocalizedLogWithParametersAndNullThrowable.class);
@@ -321,6 +324,20 @@ public class Log4jTest {
         assertThat(fatalEntry.getMessage().getText())
                 .isEqualTo("log fatal (localized): fgh____null [f_, g_, h_]");
         assertThat(fatalEntry.getError().getText()).isEqualTo("fgh____null [f_, g_, h_]");
+    }
+
+    @Test
+    public void testPluginDisabled() throws Exception {
+        // given
+        PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
+        pluginConfig.setEnabled(false);
+        container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        // when
+        container.executeAppUnderTest(ShouldLog.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(1);
     }
 
     public static class ShouldLog implements AppUnderTest, TraceMarker {

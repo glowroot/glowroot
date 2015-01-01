@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.collect.ImmutableMap;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -212,7 +213,8 @@ public class SessionAttributeTest {
     public void testHasNestedSessionAttributePath() throws Exception {
         // given
         container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "one.two");
+                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                        "one.two.three,one.amap.x");
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
@@ -220,7 +222,8 @@ public class SessionAttributeTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         assertThat(getSessionAttributes(entries)).isNotNull();
-        assertThat(getSessionAttributes(entries).get("one.two")).isEqualTo("three");
+        assertThat(getSessionAttributes(entries).get("one.two.three")).isEqualTo("four");
+        assertThat(getSessionAttributes(entries).get("one.amap.x")).isEqualTo("y");
         assertThat(getUpdatedSessionAttributes(entries)).isNull();
     }
 
@@ -228,7 +231,8 @@ public class SessionAttributeTest {
     public void testSetNestedSessionAttributePath() throws Exception {
         // given
         container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "one.two");
+                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                        "one.two.three,one.amap.x");
         // when
         container.executeAppUnderTest(SetNestedSessionAttribute.class);
         // then
@@ -237,7 +241,8 @@ public class SessionAttributeTest {
         assertThat(entries).hasSize(1);
         assertThat(getSessionAttributes(entries)).isNull();
         assertThat(getUpdatedSessionAttributes(entries)).isNotNull();
-        assertThat(getUpdatedSessionAttributes(entries).get("one.two")).isEqualTo("three");
+        assertThat(getUpdatedSessionAttributes(entries).get("one.two.three")).isEqualTo("four");
+        assertThat(getUpdatedSessionAttributes(entries).get("one.amap.x")).isEqualTo("y");
     }
 
     @Test
@@ -274,7 +279,8 @@ public class SessionAttributeTest {
     public void testHasNestedSessionAttributePath2() throws Exception {
         // given
         container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "one.*");
+                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                        "one.*,one.two.*,one.amap.*");
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
@@ -282,8 +288,9 @@ public class SessionAttributeTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         assertThat(getSessionAttributes(entries)).isNotNull();
-        assertThat(getSessionAttributes(entries)).hasSize(2);
-        assertThat(getSessionAttributes(entries).get("one.two")).isEqualTo("three");
+        assertThat(getSessionAttributes(entries)).hasSize(5);
+        assertThat(getSessionAttributes(entries).get("one.two.three")).isEqualTo("four");
+        assertThat(getSessionAttributes(entries).get("one.amap.x")).isEqualTo("y");
         assertThat(getSessionAttributes(entries).get("one.another")).isEqualTo("3");
         assertThat(getUpdatedSessionAttributes(entries)).isNull();
     }
@@ -292,7 +299,8 @@ public class SessionAttributeTest {
     public void testSetNestedSessionAttributePath2() throws Exception {
         // given
         container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "one.*");
+                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                        "one.*,one.two.*,one.amap.*");
         // when
         container.executeAppUnderTest(SetNestedSessionAttribute.class);
         // then
@@ -301,8 +309,9 @@ public class SessionAttributeTest {
         assertThat(entries).hasSize(1);
         assertThat(getSessionAttributes(entries)).isNull();
         assertThat(getUpdatedSessionAttributes(entries)).isNotNull();
-        assertThat(getUpdatedSessionAttributes(entries)).hasSize(2);
-        assertThat(getUpdatedSessionAttributes(entries).get("one.two")).isEqualTo("three");
+        assertThat(getUpdatedSessionAttributes(entries)).hasSize(5);
+        assertThat(getUpdatedSessionAttributes(entries).get("one.two.three")).isEqualTo("four");
+        assertThat(getUpdatedSessionAttributes(entries).get("one.amap.x")).isEqualTo("y");
         assertThat(getUpdatedSessionAttributes(entries).get("one.another")).isEqualTo("3");
     }
 
@@ -390,7 +399,7 @@ public class SessionAttributeTest {
     public static class HasNestedSessionAttribute extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
-            request.getSession().setAttribute("one", new NestedTwo("three", "3"));
+            request.getSession().setAttribute("one", new NestedTwo("four", "3"));
         }
     }
 
@@ -398,19 +407,20 @@ public class SessionAttributeTest {
     public static class SetNestedSessionAttribute extends TestServlet {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-            request.getSession().setAttribute("one", new NestedTwo("three", "3"));
+            request.getSession().setAttribute("one", new NestedTwo("four", "3"));
         }
     }
 
     public static class NestedTwo {
-        private final String two;
+        private final NestedThree two;
         private final StringBuilder another;
         private final String iamnull = null;
+        private final Map<String, String> amap = ImmutableMap.of("x", "y");
         public NestedTwo(String two, String another) {
-            this.two = two;
+            this.two = new NestedThree(two);
             this.another = new StringBuilder(another);
         }
-        public String getTwo() {
+        public NestedThree getTwo() {
             return two;
         }
         public StringBuilder getAnother() {
@@ -418,6 +428,19 @@ public class SessionAttributeTest {
         }
         public String getIamnull() {
             return iamnull;
+        }
+        public Map<String, String> getAmap() {
+            return amap;
+        }
+    }
+
+    public static class NestedThree {
+        private final String three;
+        public NestedThree(String three) {
+            this.three = three;
+        }
+        public String getThree() {
+            return three;
         }
     }
 }

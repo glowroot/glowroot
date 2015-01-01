@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,20 @@
  */
 package org.glowroot.jvm;
 
+import javax.annotation.Nullable;
+
 public class JvmModule {
 
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
     private final OptionalService<HeapDumps> heapDumps;
+    private final @Nullable String processId;
 
-    public JvmModule() {
-        lazyPlatformMBeanServer = new LazyPlatformMBeanServer();
+    public JvmModule(boolean jbossModules) {
+        lazyPlatformMBeanServer = new LazyPlatformMBeanServer(jbossModules);
         threadAllocatedBytes = ThreadAllocatedBytes.create();
         heapDumps = HeapDumps.create(lazyPlatformMBeanServer);
+        processId = ProcessId.getProcessId();
     }
 
     public LazyPlatformMBeanServer getLazyPlatformMBeanServer() {
@@ -37,5 +41,9 @@ public class JvmModule {
 
     public OptionalService<HeapDumps> getHeapDumps() {
         return heapDumps;
+    }
+
+    public @Nullable String getProcessId() {
+        return processId;
     }
 }

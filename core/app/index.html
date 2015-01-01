@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Copyright 2012-2014 the original author or authors.
+  Copyright 2012-2015 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@
           Glowroot
         </span>
       </div>
-      <div ng-hide="title === 'Login'">
+      <div ng-hide="hideNavbar()">
         <nav class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
             <div gt-navbar-item
@@ -173,6 +173,7 @@
   <script src="scripts/services/confirm-if-has-changes.js"></script>
   <script src="scripts/services/http-errors.js"></script>
   <script src="scripts/services/login.js"></script>
+  <script src="scripts/services/charts.js"></script>
   <script src="scripts/services/keyed-color-pools.js"></script>
   <script src="scripts/services/query-strings.js"></script>
   <script src="scripts/services/conversions.js"></script>
@@ -191,14 +192,11 @@
   <script src="scripts/controllers/jvm/system-properties.js"></script>
   <script src="scripts/controllers/jvm/capabilities.js"></script>
   <script src="scripts/controllers/config.js"></script>
-  <script src="scripts/controllers/config/traces.js"></script>
-  <script src="scripts/controllers/config/profiling.js"></script>
-  <script src="scripts/controllers/config/user-recording.js"></script>
+  <script src="scripts/controllers/config/common.js"></script>
   <script src="scripts/controllers/config/gauge-list.js"></script>
   <script src="scripts/controllers/config/gauge.js"></script>
   <script src="scripts/controllers/config/capture-point-list.js"></script>
   <script src="scripts/controllers/config/capture-point.js"></script>
-  <script src="scripts/controllers/config/advanced.js"></script>
   <script src="scripts/controllers/config/user-interface.js"></script>
   <script src="scripts/controllers/config/storage.js"></script>
   <script src="scripts/controllers/config/plugin.js"></script>

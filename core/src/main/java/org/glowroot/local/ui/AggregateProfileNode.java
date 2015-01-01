@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,8 @@ import com.google.common.collect.Lists;
 
 import org.glowroot.markers.UsedByJsonBinding;
 
-import static org.glowroot.common.ObjectMappers.checkNotNullItemsForProperty;
-import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
-import static org.glowroot.common.ObjectMappers.nullToEmpty;
+import static org.glowroot.local.ui.ObjectMappers.checkRequiredProperty;
+import static org.glowroot.local.ui.ObjectMappers.orEmpty;
 
 @UsedByJsonBinding
 class AggregateProfileNode {
@@ -124,12 +123,10 @@ class AggregateProfileNode {
             @JsonProperty("metricNames") @Nullable List</*@Nullable*/String> uncheckedMetricNames,
             @JsonProperty("childNodes") @Nullable List</*@Nullable*/AggregateProfileNode> uncheckedChildNodes)
             throws JsonMappingException {
-        List<String> metricNames =
-                checkNotNullItemsForProperty(uncheckedMetricNames, "metricNames");
-        List<AggregateProfileNode> childNodes =
-                checkNotNullItemsForProperty(uncheckedChildNodes, "childNodes");
+        List<String> metricNames = orEmpty(uncheckedMetricNames, "metricNames");
+        List<AggregateProfileNode> childNodes = orEmpty(uncheckedChildNodes, "childNodes");
         checkRequiredProperty(sampleCount, "sampleCount");
         return new AggregateProfileNode(stackTraceElement, leafThreadState, sampleCount,
-                nullToEmpty(metricNames), nullToEmpty(childNodes));
+                metricNames, childNodes);
     }
 }

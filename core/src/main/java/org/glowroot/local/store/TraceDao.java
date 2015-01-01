@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
+import org.checkerframework.checker.tainting.qual.Untainted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +45,7 @@ import org.glowroot.local.store.Schemas.Index;
 import org.glowroot.markers.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.glowroot.common.Checkers.castUntainted;
 
 public class TraceDao implements TraceRepository {
 
@@ -77,19 +79,24 @@ public class TraceDao implements TraceRepository {
                     ImmutableColumn.of("value", Types.VARCHAR),
                     ImmutableColumn.of("capture_time", Types.BIGINT));
 
-    // TODO all of the columns needed for the trace points query are no longer in the same index
-    // (number of columns has grown), either update the index or the comment
-    //
-    // this index includes all of the columns needed for the trace points query so h2 can return
-    // result set directly from the index without having to reference the table for each row
     private static final ImmutableList<Index> traceIndexes = ImmutableList.<Index>of(
+            // trace_idx is for the default trace point query
+            //
+            // capture_time is listed first (instead of transaction_type) in order to handle both
+            // the case where transaction_type is a filter and where it is not
+            //
+            // duration, id and error columns are included so h2 can return the result set directly
+            // from the index without having to reference the table for each row
             ImmutableIndex.of("trace_idx", ImmutableList.of("capture_time", "transaction_type",
                     "duration", "id", "error")),
             // trace_error_message_idx is for readErrorMessageCounts()
-            ImmutableIndex.of("trace_error_message_idx", ImmutableList.of("transaction_type",
-                    "transaction_name", "capture_time", "error_message")),
-            // trace_count_idx is for readOverallCount()
-            ImmutableIndex.of("trace_count_idx",
+            ImmutableIndex.of("trace_error_message_idx", ImmutableList.of("error", "capture_time",
+                    "transaction_type", "transaction_name", "error_message")),
+            // trace_transaction_count_idx is for readTransactionCount()
+            ImmutableIndex.of("trace_transaction_count_idx",
+                    ImmutableList.of("transaction_type", "transaction_name", "capture_time")),
+            // trace_overall_count_idx is for readOverallCount()
+            ImmutableIndex.of("trace_overall_count_idx",
                     ImmutableList.of("transaction_type", "capture_time")));
 
     private final DataSource dataSource;
@@ -166,16 +173,23 @@ public class TraceDao implements TraceRepository {
                 captureTimeFrom, captureTimeTo);
     }
 
-    public ImmutableList<ErrorPoint> readErrorPoints(ErrorMessageQuery query, long resolutionMillis)
-            throws SQLException {
-        ParameterizedSql parameterizedSql = getErrorPointParameterizedSql(query, resolutionMillis);
+    public ImmutableList<ErrorPoint> readErrorPoints(ErrorMessageQuery query,
+            long resolutionMillis) throws SQLException {
+        // need ".0" to force double result
+        String captureTimeSql = castUntainted(
+                "ceil(capture_time / " + resolutionMillis + ".0) * " + resolutionMillis);
+        ParameterizedSql parameterizedSql = buildErrorMessageQuery(query,
+                "select " + captureTimeSql + ", count(*) from trace",
+                "group by " + captureTimeSql + " order by " + captureTimeSql);
         return dataSource.query(parameterizedSql.sql(), new ErrorPointRowMapper(),
                 parameterizedSql.argsAsArray());
     }
 
     public QueryResult<ErrorMessageCount> readErrorMessageCounts(ErrorMessageQuery query)
             throws SQLException {
-        ParameterizedSql parameterizedSql = getErrorMessageCountParameterizedSql(query);
+        ParameterizedSql parameterizedSql = buildErrorMessageQuery(query,
+                "select error_message, count(*) from trace",
+                "group by error_message order by count(*) desc");
         ImmutableList<ErrorMessageCount> points = dataSource.query(parameterizedSql.sql(),
                 new ErrorMessageCountRowMapper(), parameterizedSql.argsAsArray());
         // one extra record over the limit is fetched above to identify if the limit was hit
@@ -231,8 +245,8 @@ public class TraceDao implements TraceRepository {
         }
     }
 
-    private @Nullable CharSource readFromCappedDatabase(String columnName, String traceId)
-            throws SQLException {
+    private @Nullable CharSource readFromCappedDatabase(@Untainted String columnName,
+            String traceId) throws SQLException {
         List<String> ids = dataSource.query("select " + columnName + " from trace where id = ?",
                 new SingleStringRowMapper(), traceId);
         if (ids.isEmpty()) {
@@ -257,27 +271,11 @@ public class TraceDao implements TraceRepository {
     }
 
     @OnlyUsedByTests
-    public @Nullable Trace getLastTrace() throws SQLException {
-        List<String> ids = dataSource.query("select id from trace order by capture_time desc"
-                + " limit 1", new StringRowMapper());
-        if (ids.isEmpty()) {
-            return null;
-        }
-        return readTrace(ids.get(0));
-    }
-
-    @OnlyUsedByTests
     public long count() throws SQLException {
         return dataSource.queryForLong("select count(*) from trace");
     }
 
     private static ParameterizedSql getParameterizedSql(TracePointQuery query) {
-        // TODO all of these columns are no longer in the same index (number of columns has grown)
-        // either update index or comment
-        //
-        // all of these columns should be in the same index so h2 can return result set directly
-        // from the index without having to reference the table for each row
-        //
         // capture time lower bound is non-inclusive so that aggregate data intervals can be mapped
         // to their trace points (aggregate data intervals are non-inclusive on lower bound and
         // inclusive on upper bound)
@@ -374,23 +372,8 @@ public class TraceDao implements TraceRepository {
         }
     }
 
-    private ParameterizedSql getErrorPointParameterizedSql(ErrorMessageQuery query,
-            long resolutionMillis) {
-        // need ".0" to force double result
-        String captureTimeSql = "ceil(capture_time / " + resolutionMillis + ".0) * "
-                + resolutionMillis;
-        return buildErrorMessageQuery(query,
-                "select " + captureTimeSql + ", count(*) from trace",
-                "group by " + captureTimeSql + " order by " + captureTimeSql);
-    }
-
-    private ParameterizedSql getErrorMessageCountParameterizedSql(ErrorMessageQuery query) {
-        return buildErrorMessageQuery(query, "select error_message, count(*) from trace",
-                "group by error_message order by count(*) desc");
-    }
-
-    private ParameterizedSql buildErrorMessageQuery(ErrorMessageQuery query, String selectClause,
-            String groupByClause) {
+    private ParameterizedSql buildErrorMessageQuery(ErrorMessageQuery query,
+            @Untainted String selectClause, @Untainted String groupByClause) {
         String sql = selectClause;
         List<Object> args = Lists.newArrayList();
         sql += " where error = ?";
@@ -493,14 +476,6 @@ public class TraceDao implements TraceRepository {
                     .message(Strings.nullToEmpty(resultSet.getString(1)))
                     .count(resultSet.getLong(2))
                     .build();
-        }
-    }
-
-    private static class StringRowMapper implements RowMapper<String> {
-        @Override
-        public String mapRow(ResultSet resultSet) throws SQLException {
-            // this checkNotNull is safe since id is the primary key and cannot be null
-            return checkNotNull(resultSet.getString(1));
         }
     }
 

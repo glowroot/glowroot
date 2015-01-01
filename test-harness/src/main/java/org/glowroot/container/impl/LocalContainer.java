@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,9 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.AppUnderTestServices;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
+import org.glowroot.container.common.HttpClient;
 import org.glowroot.container.config.ConfigService;
-import org.glowroot.container.impl.HttpConfigService.GetUiPortCommand;
+import org.glowroot.container.config.ConfigService.GetUiPortCommand;
 import org.glowroot.container.trace.TraceService;
 import org.glowroot.transaction.AdviceCache;
 import org.glowroot.weaving.Advice;
@@ -53,16 +54,16 @@ public class LocalContainer implements Container {
 
     private final IsolatedWeavingClassLoader isolatedWeavingClassLoader;
     private final HttpClient httpClient;
-    private final HttpConfigService configService;
-    private final HttpTraceService traceService;
+    private final ConfigService configService;
+    private final TraceService traceService;
     private final List<Thread> executingAppThreads = Lists.newCopyOnWriteArrayList();
     private final GlowrootModule glowrootModule;
 
     public static Container createWithFileDb(File dataDir) throws Exception {
-        return new LocalContainer(dataDir, true, false);
+        return new LocalContainer(dataDir, true, 0, false);
     }
 
-    public LocalContainer(@Nullable File dataDir, boolean useFileDb, boolean shared)
+    public LocalContainer(@Nullable File dataDir, boolean useFileDb, int port, boolean shared)
             throws Exception {
         if (dataDir == null) {
             this.dataDir = TempDirs.createTempDir("glowroot-test-datadir");
@@ -72,10 +73,9 @@ public class LocalContainer implements Container {
             deleteDataDirOnClose = false;
         }
         this.shared = shared;
-        // default to port 0 (any available)
         File configFile = new File(this.dataDir, "config.json");
         if (!configFile.exists()) {
-            Files.write("{\"ui\":{\"port\":0}}", configFile, Charsets.UTF_8);
+            Files.write("{\"ui\":{\"port\":" + port + "}}", configFile, Charsets.UTF_8);
         }
         Map<String, String> properties = Maps.newHashMap();
         properties.put("data.dir", this.dataDir.getAbsolutePath());
@@ -102,15 +102,13 @@ public class LocalContainer implements Container {
         loader.setMetricWrapperMethods(glowrootModule.getConfigModule().getConfigService()
                 .getAdvancedConfig().metricWrapperMethods());
         loader.addBridgeClasses(AppUnderTest.class, AppUnderTestServices.class);
-        // TODO add hook to optionally exclude guava package which improves integration-test
-        // performance
         loader.addExcludePackages("org.glowroot.api", "org.glowroot.advicegen",
                 "org.glowroot.collector", "org.glowroot.common", "org.glowroot.config",
                 "org.glowroot.jvm", "org.glowroot.local", "org.glowroot.shaded",
                 "org.glowroot.transaction", "org.glowroot.weaving");
         isolatedWeavingClassLoader = loader.build();
         httpClient = new HttpClient(glowrootModule.getUiModule().getPort());
-        configService = new HttpConfigService(httpClient, new GetUiPortCommand() {
+        configService = new ConfigService(httpClient, new GetUiPortCommand() {
             @Override
             public int getUiPort() throws Exception {
                 // TODO report checker framework issue that checkNotNull needed here
@@ -119,7 +117,7 @@ public class LocalContainer implements Container {
                 return glowrootModule.getUiModule().getPort();
             }
         });
-        traceService = new HttpTraceService(httpClient);
+        traceService = new TraceService(httpClient);
         this.glowrootModule = glowrootModule;
     }
 

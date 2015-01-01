@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
@@ -30,6 +29,7 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
@@ -37,6 +37,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.tainting.qual.Untainted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,13 +58,14 @@ public class DataSource {
     private volatile int queryTimeoutSeconds;
     private volatile boolean closing = false;
 
-    private final LoadingCache<String, PreparedStatement> preparedStatementCache = CacheBuilder
-            .newBuilder().weakKeys().build(new CacheLoader<String, PreparedStatement>() {
-                @Override
-                public PreparedStatement load(String sql) throws SQLException {
-                    return connection.prepareStatement(sql);
-                }
-            });
+    private final LoadingCache</*@Untainted*/String, PreparedStatement> preparedStatementCache =
+            CacheBuilder.newBuilder().weakKeys()
+                    .build(new CacheLoader</*@Untainted*/String, PreparedStatement>() {
+                        @Override
+                        public PreparedStatement load(@Untainted String sql) throws SQLException {
+                            return connection.prepareStatement(sql);
+                        }
+                    });
 
     // creates an in-memory database
     DataSource() throws SQLException {
@@ -74,11 +76,7 @@ public class DataSource {
     }
 
     DataSource(File dbFile) throws SQLException {
-        if (dbFile.getPath().endsWith(".h2.db")) {
-            this.dbFile = dbFile;
-        } else {
-            this.dbFile = new File(dbFile.getParent(), dbFile.getName() + ".h2.db");
-        }
+        this.dbFile = dbFile;
         connection = createConnection(dbFile);
         shutdownHookThread = new ShutdownHookThread();
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
@@ -102,7 +100,7 @@ public class DataSource {
         }
     }
 
-    void execute(String sql) throws SQLException {
+    void execute(@Untainted String sql) throws SQLException {
         debug(sql);
         synchronized (lock) {
             if (closing) {
@@ -120,7 +118,7 @@ public class DataSource {
         }
     }
 
-    long queryForLong(final String sql, Object... args) throws SQLException {
+    long queryForLong(final @Untainted String sql, Object... args) throws SQLException {
         debug(sql, args);
         synchronized (lock) {
             if (closing) {
@@ -140,8 +138,8 @@ public class DataSource {
         }
     }
 
-    </*@NonNull*/T> ImmutableList<T> query(String sql, RowMapper<T> rowMapper, Object... args)
-            throws SQLException {
+    </*@NonNull*/T> ImmutableList<T> query(@Untainted String sql, RowMapper<T> rowMapper,
+            Object... args) throws SQLException {
         debug(sql, args);
         synchronized (lock) {
             if (closing) {
@@ -170,8 +168,8 @@ public class DataSource {
         }
     }
 
-    <T> /*@Nullable*/T query(String sql, ResultSetExtractor</*@NonNull*/T> rse, Object... args)
-            throws SQLException {
+    <T> /*@Nullable*/T query(@Untainted String sql, ResultSetExtractor</*@NonNull*/T> rse,
+            Object... args) throws SQLException {
         debug(sql, args);
         synchronized (lock) {
             if (closing) {
@@ -181,7 +179,7 @@ public class DataSource {
         }
     }
 
-    int update(String sql, @Nullable Object... args) throws SQLException {
+    int update(@Untainted String sql, @Nullable Object... args) throws SQLException {
         debug(sql, args);
         if (closing) {
             // this can get called a lot inserting traces, and these can get backlogged
@@ -205,7 +203,7 @@ public class DataSource {
         }
     }
 
-    int[] batchUpdate(String sql, BatchAdder batchAdder)
+    int[] batchUpdate(@Untainted String sql, BatchAdder batchAdder)
             throws SQLException {
         debug(sql);
         if (closing) {
@@ -228,7 +226,7 @@ public class DataSource {
         }
     }
 
-    void syncTable(String tableName, ImmutableList<Column> columns) throws SQLException {
+    void syncTable(@Untainted String tableName, ImmutableList<Column> columns) throws SQLException {
         synchronized (lock) {
             if (closing) {
                 return;
@@ -237,7 +235,8 @@ public class DataSource {
         }
     }
 
-    void syncIndexes(String tableName, ImmutableList<Index> indexes) throws SQLException {
+    void syncIndexes(@Untainted String tableName, ImmutableList<Index> indexes)
+            throws SQLException {
         synchronized (lock) {
             if (closing) {
                 return;
@@ -274,8 +273,8 @@ public class DataSource {
     }
 
     // lock must be acquired prior to calling this method
-    private <T> T queryUnderLock(String sql, Object[] args, ResultSetExtractor</*@NonNull*/T> rse)
-            throws SQLException {
+    private <T> T queryUnderLock(@Untainted String sql, Object[] args,
+            ResultSetExtractor</*@NonNull*/T> rse) throws SQLException {
         PreparedStatement preparedStatement = prepareStatement(sql);
         for (int i = 0; i < args.length; i++) {
             preparedStatement.setObject(i + 1, args[i]);
@@ -294,7 +293,7 @@ public class DataSource {
         // don't need to close statement since they are all cached and used under lock
     }
 
-    private PreparedStatement prepareStatement(String sql) throws SQLException {
+    private PreparedStatement prepareStatement(@Untainted String sql) throws SQLException {
         try {
             return preparedStatementCache.get(sql);
         } catch (ExecutionException e) {
@@ -330,27 +329,29 @@ public class DataSource {
     }
 
     private static void debug(String sql, @Nullable Object... args) {
-        debug(sql, Arrays.asList(args));
+        debug(logger, sql, args);
     }
 
-    private static void debug(String sql, List<? extends /*@Nullable*/Object> args) {
-        if (logger.isDebugEnabled()) {
-            if (args.isEmpty()) {
-                logger.debug(sql);
+    @VisibleForTesting
+    static void debug(Logger logger, String sql, @Nullable Object... args) {
+        if (!logger.isDebugEnabled()) {
+            return;
+        }
+        if (args.length == 0) {
+            logger.debug(sql);
+            return;
+        }
+        List<String> argStrings = Lists.newArrayList();
+        for (Object arg : args) {
+            if (arg instanceof String) {
+                argStrings.add('\'' + (String) arg + '\'');
+            } else if (arg == null) {
+                argStrings.add("NULL");
             } else {
-                List<String> argStrings = Lists.newArrayList();
-                for (Object arg : args) {
-                    if (arg instanceof String) {
-                        argStrings.add('\'' + (String) arg + '\'');
-                    } else if (arg == null) {
-                        argStrings.add("NULL");
-                    } else {
-                        argStrings.add(arg.toString());
-                    }
-                }
-                logger.debug("{} [{}]", sql, Joiner.on(", ").join(argStrings));
+                argStrings.add(arg.toString());
             }
         }
+        logger.debug("{} [{}]", sql, Joiner.on(", ").join(argStrings));
     }
 
     interface BatchAdder {

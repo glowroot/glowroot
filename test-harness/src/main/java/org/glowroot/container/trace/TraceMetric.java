@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,8 @@ import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.glowroot.container.common.ObjectMappers.checkNotNullItemsForProperty;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
-import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
+import static org.glowroot.container.common.ObjectMappers.orEmpty;
 
 public class TraceMetric {
 
@@ -157,8 +156,7 @@ public class TraceMetric {
             @JsonProperty("maxActive") @Nullable Boolean maxActive,
             @JsonProperty("nestedMetrics") @Nullable List</*@Nullable*/TraceMetric> uncheckedNestedMetrics)
             throws JsonMappingException {
-        List<TraceMetric> nestedMetrics =
-                checkNotNullItemsForProperty(uncheckedNestedMetrics, "nestedMetrics");
+        List<TraceMetric> nestedMetrics = orEmpty(uncheckedNestedMetrics, "nestedMetrics");
         checkRequiredProperty(name, "name");
         checkRequiredProperty(total, "total");
         checkRequiredProperty(min, "min");
@@ -168,6 +166,6 @@ public class TraceMetric {
         checkRequiredProperty(minActive, "minActive");
         checkRequiredProperty(maxActive, "maxActive");
         return new TraceMetric(name, total, min, max, count, active, minActive, maxActive,
-                nullToEmpty(nestedMetrics));
+                nestedMetrics);
     }
 }

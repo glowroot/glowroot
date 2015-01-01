@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.glowroot.local.ui;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.List;
@@ -49,7 +48,7 @@ class TraceDetailHttpService implements HttpService {
     // before they expand detail
     @Override
     public @Nullable HttpResponse handleRequest(HttpRequest request, Channel channel)
-            throws IOException {
+            throws Exception {
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
         String path = decoder.getPath();
         String traceComponent = path.substring(path.lastIndexOf('/') + 1);
@@ -63,28 +62,27 @@ class TraceDetailHttpService implements HttpService {
 
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.headers().set(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
-        CharSource charSource;
-        try {
-            if (traceComponent.equals("entries")) {
-                charSource = traceCommonService.getEntries(traceId);
-            } else if (traceComponent.equals("profile")) {
-                charSource = traceCommonService.getProfile(traceId);
-            } else {
-                throw new IllegalStateException("Unexpected uri: " + request.getUri());
-            }
-        } catch (SQLException e) {
-            throw new IOException(e);
-        }
+        CharSource charSource = getDetailCharSource(traceComponent, traceId);
         HttpServices.preventCaching(response);
         response.setChunked(true);
         channel.write(response);
         if (charSource == null) {
-            // UI checks entriesExistence/profileExistence so should
-            // not end up here, but tests don't, send json null value to them
+            // UI checks entriesExistence/profileExistence so should not end up here
             channel.write(ChunkedInputs.fromReader(new StringReader("null")));
         } else {
             channel.write(ChunkedInputs.fromReader(charSource.openStream()));
         }
         return null;
+    }
+
+    private @Nullable CharSource getDetailCharSource(String traceComponent, String traceId)
+            throws SQLException {
+        if (traceComponent.equals("entries")) {
+            return traceCommonService.getEntries(traceId);
+        }
+        if (traceComponent.equals("profile")) {
+            return traceCommonService.getProfile(traceId);
+        }
+        throw new IllegalStateException("Unexpected trace component: " + traceComponent);
     }
 }

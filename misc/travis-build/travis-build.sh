@@ -45,20 +45,38 @@ case "$1" in
       "sonar") if [[ $SONAR_JDBC_URL ]]
                then
                  # need to skip shading when running jacoco, otherwise the bytecode changes done to
-                 # the classes during shading and proguard-ing will modify the jacoco class id and
-                 # the sonar reports won't report usage of those bytecode modified classes
+                 # the classes during shading will modify the jacoco class id and the sonar reports
+                 # won't report usage of those bytecode modified classes
                  #
                  # jacoco destFile needs absolute path, otherwise it is relative to each submodule
                  #
-                 # using local test harness since that falls back to javaagent for a few tests and
-                 # hitting both harnesses gives the best code coverage
+                 # code coverage for @Pointcut classes are only captured when run with javaagent harness
+                 # since in that case jacoco javaagent goes first (see JavaagentMain) and uses the
+                 # original bytecode to construct the class ids, whereas when run with local harness
+                 # jacoco javaagent uses the bytecode that is woven by IsolatedWeavingClassLoader to
+                 # construct the class ids
                  mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install \
+                                 -Dglowroot.shading.skip=true \
+                                 -Dglowroot.test.harness=javaagent \
+                                 -Djacoco.destFile=$PWD/jacoco-combined.exec \
+                                 -B
+                 # also running integration-tests with local test harness to capture a couple methods
+                 # exercised only by the local test harness
+                 mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install \
+                                 -pl testing/integration-tests \
                                  -Dglowroot.shading.skip=true \
                                  -Dglowroot.test.harness=local \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
                                  -B
-                 # using local harness since it is faster (and the default anyways)
-                 #
+                 # also running logger-plugin-tests with shading and javaagent in order to get
+                 # code coverage for Slf4jTest and Slf4jMarkerTest
+                 # (see comments in those classes for more detail)
+                 mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install \
+                                 -pl plugin-api,core,plugins/logger-plugin-tests \
+                                 -Dglowroot.test.harness=javaagent \
+                                 -Djacoco.destFile=$PWD/jacoco-combined.exec \
+                                 -B
+
                  # the sonar.jdbc.password system property is set in the pom.xml using the
                  # environment variable SONAR_DB_PASSWORD (instead of setting the system
                  # property on the command line which which would make it visible to ps)
@@ -69,7 +87,6 @@ case "$1" in
                                  -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \
                                  -Dsonar.host.url=$SONAR_HOST_URL \
                                  -Dsonar.jacoco.reportPath=$PWD/jacoco-combined.exec \
-                                 -Dglowroot.test.harness=local \
                                  -B
                else
                  echo skipping, sonar analysis only runs against master repository and master branch
@@ -97,8 +114,8 @@ case "$1" in
                set -e
 
                find -name *.java -print0 | xargs -0 sed -i 's|/\*>>>@UnknownInitialization|/*>>>@org.checkerframework.checker.initialization.qual.UnknownInitialization|g'
+               find -name *.java -print0 | xargs -0 sed -i 's|/\*@Untainted\*/|/*@org.checkerframework.checker.tainting.qual.Untainted*/|g'
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@\([A-Za-z]*\)\*/|/*@org.checkerframework.checker.nullness.qual.\1*/|g'
-               find -name *.java -print0 | xargs -0 sed -i 's|import org.checkerframework.checker.nullness.qual.Nullable;|import javax.annotation.Nullable;|g'
 
                mvn clean compile -pl .,misc/license-resource-bundle,plugin-api,core,test-harness,plugins/jdbc-plugin,plugins/servlet-plugin,plugins/logger-plugin \
                                  -Pchecker \

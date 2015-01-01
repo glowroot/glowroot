@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,12 +67,12 @@ import org.glowroot.jvm.ImmutableAvailability;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 import org.glowroot.jvm.OptionalService;
 import org.glowroot.jvm.OptionalService.Availability;
-import org.glowroot.jvm.ProcessId;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.local.store.GaugePointDao;
 import org.glowroot.markers.UsedByJsonBinding;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_IMPLEMENTED;
 
 @JsonService
 class JvmJsonService {
@@ -106,6 +106,7 @@ class JvmJsonService {
 
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
     private final OptionalService<HeapDumps> heapDumps;
+    private final @Nullable String processId;
 
     private final long fixedGaugeIntervalMillis;
     private final long fixedGaugeRollupMillis;
@@ -113,20 +114,20 @@ class JvmJsonService {
     JvmJsonService(LazyPlatformMBeanServer lazyPlatformMBeanServer, GaugePointDao gaugePointDao,
             ConfigService configService,
             OptionalService<ThreadAllocatedBytes> threadAllocatedBytes,
-            OptionalService<HeapDumps> heapDumps, long fixedGaugeIntervalSeconds,
-            long fixedGaugeRollupSeconds) {
+            OptionalService<HeapDumps> heapDumps, @Nullable String processId,
+            long fixedGaugeIntervalSeconds, long fixedGaugeRollupSeconds) {
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
         this.gaugePointDao = gaugePointDao;
         this.configService = configService;
         this.threadAllocatedBytes = threadAllocatedBytes;
         this.heapDumps = heapDumps;
+        this.processId = processId;
         this.fixedGaugeIntervalMillis = fixedGaugeIntervalSeconds * 1000;
         this.fixedGaugeRollupMillis = fixedGaugeRollupSeconds * 1000;
     }
 
     @GET("/backend/jvm/process-info")
     String getProcess() throws Exception {
-        String pid = ProcessId.getPid();
         String command = System.getProperty("sun.java.command");
         String mainClass = null;
         List<String> arguments = ImmutableList.of();
@@ -151,7 +152,7 @@ class JvmJsonService {
         jg.writeStartObject();
         jg.writeNumberField("startTime", runtimeMXBean.getStartTime());
         jg.writeNumberField("uptime", runtimeMXBean.getUptime());
-        jg.writeStringField("pid", MoreObjects.firstNonNull(pid, "<unknown>"));
+        jg.writeStringField("pid", MoreObjects.firstNonNull(processId, "<unknown>"));
         jg.writeStringField("mainClass", mainClass);
         jg.writeFieldName("mainClassArguments");
         mapper.writeValue(jg, arguments);
@@ -178,20 +179,7 @@ class JvmJsonService {
         for (String gaugeName : request.gaugeNames()) {
             ImmutableList<GaugePoint> gaugePoints = gaugePointDao.readGaugePoints(gaugeName,
                     request.from(), request.to(), request.rollupLevel());
-            List<Number /*@Nullable*/[]> points = Lists.newArrayList();
-            GaugePoint lastGaugePoint = null;
-            for (GaugePoint gaugePoint : gaugePoints) {
-                if (lastGaugePoint != null) {
-                    long millisecondsSinceLastPoint =
-                            gaugePoint.captureTime() - lastGaugePoint.captureTime();
-                    if (millisecondsSinceLastPoint > gapMillis) {
-                        points.add(null);
-                    }
-                }
-                points.add(new Number[] {gaugePoint.captureTime(), gaugePoint.value()});
-                lastGaugePoint = gaugePoint;
-            }
-            series.add(points);
+            series.add(convertToDataSeriesWithGaps(gaugePoints, gapMillis));
         }
         return mapper.writeValueAsString(series);
     }
@@ -256,21 +244,18 @@ class JvmJsonService {
                 sortedRootNodes.put(domain, node);
             }
             List<String> propertyValues = ObjectNames.getPropertyValues(objectName);
-            for (int i = 0; i < propertyValues.size(); i++) {
-                String value = propertyValues.get(i);
-                if (i == propertyValues.size() - 1) {
-                    String name = objectName.toString();
-                    if (request.expanded().contains(name)) {
-                        Map<String, /*@Nullable*/Object> sortedAttributeMap =
-                                getMBeanSortedAttributeMap(objectName);
-                        node.addLeafNode(
-                                new MBeanTreeLeafNode(value, name, true, sortedAttributeMap));
-                    } else {
-                        node.addLeafNode(new MBeanTreeLeafNode(value, name, false, null));
-                    }
-                } else {
-                    node = node.getOrCreateNode(value);
-                }
+            for (int i = 0; i < propertyValues.size() - 1; i++) {
+                node = node.getOrCreateNode(propertyValues.get(i));
+            }
+            String name = objectName.toString();
+            String value = propertyValues.get(propertyValues.size() - 1);
+            if (request.expanded().contains(name)) {
+                Map<String, /*@Nullable*/Object> sortedAttributeMap =
+                        getMBeanSortedAttributeMap(objectName);
+                node.addLeafNode(
+                        new MBeanTreeLeafNode(value, name, true, sortedAttributeMap));
+            } else {
+                node.addLeafNode(new MBeanTreeLeafNode(value, name, false, null));
             }
         }
         return mapper.writeValueAsString(sortedRootNodes);
@@ -361,7 +346,12 @@ class JvmJsonService {
 
     @POST("/backend/jvm/dump-heap")
     String dumpHeap(String content) throws Exception {
-        HeapDumps service = OptionalJsonServices.validateAvailability(heapDumps);
+        HeapDumps service = heapDumps.getService();
+        if (service == null) {
+            throw new JsonServiceException(NOT_IMPLEMENTED,
+                    heapDumps.getClass().getSimpleName() + " service is not available: "
+                            + heapDumps.getAvailability().getReason());
+        }
         RequestWithDirectory request = Marshaling.fromJson(content, RequestWithDirectory.class);
         File dir = new File(request.directory());
         if (!dir.exists()) {
@@ -406,6 +396,21 @@ class JvmJsonService {
         jg.writeEndObject();
         jg.close();
         return sb.toString();
+    }
+
+    private static List<Number /*@Nullable*/[]> convertToDataSeriesWithGaps(
+            ImmutableList<GaugePoint> gaugePoints, double gapMillis) {
+        List<Number /*@Nullable*/[]> points = Lists.newArrayList();
+        GaugePoint lastGaugePoint = null;
+        for (GaugePoint gaugePoint : gaugePoints) {
+            if (lastGaugePoint != null
+                    && gaugePoint.captureTime() - lastGaugePoint.captureTime() > gapMillis) {
+                points.add(null);
+            }
+            points.add(new Number[] {gaugePoint.captureTime(), gaugePoint.value()});
+            lastGaugePoint = gaugePoint;
+        }
+        return points;
     }
 
     private static Availability getThreadCpuTimeAvailability() {
@@ -485,46 +490,56 @@ class JvmJsonService {
         if (value == null) {
             return null;
         } else if (value instanceof CompositeData) {
-            CompositeData compositeData = (CompositeData) value;
-            // linked hash map used to preserve attribute ordering
-            Map<String, /*@Nullable*/Object> valueMap = Maps.newLinkedHashMap();
-            for (String key : compositeData.getCompositeType().keySet()) {
-                valueMap.put(key, getMBeanAttributeValue(compositeData.get(key)));
-            }
-            return valueMap;
+            return getCompositeDataValue((CompositeData) value);
         } else if (value instanceof TabularData) {
-            TabularData tabularData = (TabularData) value;
-            // linked hash map used to preserve row ordering
-            Map<String, Map<String, /*@Nullable*/Object>> rowMap = Maps.newLinkedHashMap();
-            Set<String> attributeNames = tabularData.getTabularType().getRowType().keySet();
-            for (Object key : tabularData.keySet()) {
-                // TabularData.keySet() returns "Set<List<?>> but is declared Set<?> for
-                // compatibility reasons" (see javadocs) so safe to cast to List<?>
-                List<?> keyList = (List<?>) key;
-                String keyString = Joiner.on(", ").join(keyList);
-                CompositeData compositeData = tabularData.get(keyList.toArray());
-                // linked hash map used to preserve attribute ordering
-                Map<String, /*@Nullable*/Object> valueMap = Maps.newLinkedHashMap();
-                for (String attributeName : attributeNames) {
-                    valueMap.put(attributeName,
-                            getMBeanAttributeValue(compositeData.get(attributeName)));
-                }
-                rowMap.put(keyString, valueMap);
-            }
-            return rowMap;
+            return getTabularDataValue((TabularData) value);
         } else if (value.getClass().isArray()) {
-            int length = Array.getLength(value);
-            List</*@Nullable*/Object> valueList = Lists.newArrayListWithCapacity(length);
-            for (int i = 0; i < length; i++) {
-                Object val = Array.get(value, i);
-                valueList.add(getMBeanAttributeValue(val));
-            }
-            return valueList;
+            return getArrayValue(value);
         } else if (value instanceof Number) {
             return value;
         } else {
             return value.toString();
         }
+    }
+
+    private Object getCompositeDataValue(CompositeData compositeData) {
+        // linked hash map used to preserve attribute ordering
+        Map<String, /*@Nullable*/Object> valueMap = Maps.newLinkedHashMap();
+        for (String key : compositeData.getCompositeType().keySet()) {
+            valueMap.put(key, getMBeanAttributeValue(compositeData.get(key)));
+        }
+        return valueMap;
+    }
+
+    private Object getTabularDataValue(TabularData tabularData) {
+        // linked hash map used to preserve row ordering
+        Map<String, Map<String, /*@Nullable*/Object>> rowMap = Maps.newLinkedHashMap();
+        Set<String> attributeNames = tabularData.getTabularType().getRowType().keySet();
+        for (Object key : tabularData.keySet()) {
+            // TabularData.keySet() returns "Set<List<?>> but is declared Set<?> for
+            // compatibility reasons" (see javadocs) so safe to cast to List<?>
+            List<?> keyList = (List<?>) key;
+            String keyString = Joiner.on(", ").join(keyList);
+            CompositeData compositeData = tabularData.get(keyList.toArray());
+            // linked hash map used to preserve attribute ordering
+            Map<String, /*@Nullable*/Object> valueMap = Maps.newLinkedHashMap();
+            for (String attributeName : attributeNames) {
+                valueMap.put(attributeName,
+                        getMBeanAttributeValue(compositeData.get(attributeName)));
+            }
+            rowMap.put(keyString, valueMap);
+        }
+        return rowMap;
+    }
+
+    private Object getArrayValue(Object value) {
+        int length = Array.getLength(value);
+        List</*@Nullable*/Object> valueList = Lists.newArrayListWithCapacity(length);
+        for (int i = 0; i < length; i++) {
+            Object val = Array.get(value, i);
+            valueList.add(getMBeanAttributeValue(val));
+        }
+        return valueList;
     }
 
     private interface MBeanTreeNode {

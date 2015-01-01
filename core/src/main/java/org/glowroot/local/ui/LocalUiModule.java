@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.GaugePointDao;
 import org.glowroot.local.store.StorageModule;
 import org.glowroot.local.store.TraceDao;
-import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.transaction.TransactionModule;
 import org.glowroot.transaction.TransactionRegistry;
@@ -101,7 +100,8 @@ public class LocalUiModule {
                 collectorModule.getFixedAggregateIntervalSeconds());
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
                 gaugePointDao, configService, jvmModule.getThreadAllocatedBytes(),
-                jvmModule.getHeapDumps(), collectorModule.getFixedGaugeIntervalSeconds(),
+                jvmModule.getHeapDumps(), jvmModule.getProcessId(),
+                collectorModule.getFixedGaugeIntervalSeconds(),
                 storageModule.getFixedGaugeRollupSeconds());
         ConfigJsonService configJsonService = new ConfigJsonService(configService,
                 cappedDatabase, configModule.getPluginDescriptors(), dataDir, httpSessionManager,
@@ -143,12 +143,11 @@ public class LocalUiModule {
     }
 
     public int getPort() throws InterruptedException {
-        HttpServer httpServer = lazyHttpServer.get();
-        if (httpServer == null) {
-            return -1;
-        } else {
-            return httpServer.getPort();
-        }
+        return getPort(lazyHttpServer.get());
+    }
+
+    public int getNonLazyPort() {
+        return getPort(lazyHttpServer.getNonLazy());
     }
 
     @OnlyUsedByTests
@@ -159,23 +158,8 @@ public class LocalUiModule {
         }
     }
 
-    @OnlyUsedByTests
-    public TraceCommonService getTraceCommonService() {
-        return traceCommonService;
-    }
-
-    @OnlyUsedByTests
-    public TraceExportHttpService getTraceExportHttpService() {
-        return traceExportHttpService;
-    }
-
-    @OnlyUsedByTests
-    public void changeHttpServerPort(int newPort) throws PortChangeFailedException,
-            InterruptedException {
-        HttpServer httpServer = lazyHttpServer.get();
-        if (httpServer != null) {
-            httpServer.changePort(newPort);
-        }
+    private static int getPort(@Nullable HttpServer httpServer) {
+        return httpServer == null ? -1 : httpServer.getPort();
     }
 
     private static String getBindAddress(Map<String, String> properties) {

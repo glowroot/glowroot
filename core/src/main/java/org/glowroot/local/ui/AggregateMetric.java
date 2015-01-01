@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,24 +23,14 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.collect.TreeTraverser;
 
 import org.glowroot.markers.UsedByJsonBinding;
 
-import static org.glowroot.common.ObjectMappers.checkNotNullItemsForProperty;
-import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
-import static org.glowroot.common.ObjectMappers.nullToEmpty;
+import static org.glowroot.local.ui.ObjectMappers.checkRequiredProperty;
+import static org.glowroot.local.ui.ObjectMappers.orEmpty;
 
 @UsedByJsonBinding
 public class AggregateMetric {
-
-    static final TreeTraverser<AggregateMetric> TRAVERSER =
-            new TreeTraverser<AggregateMetric>() {
-                @Override
-                public Iterable<AggregateMetric> children(AggregateMetric root) {
-                    return root.getNestedMetrics();
-                }
-            };
 
     private final String name;
     // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
@@ -91,11 +81,10 @@ public class AggregateMetric {
             @JsonProperty("count") @Nullable Long count,
             @JsonProperty("nestedMetrics") @Nullable List</*@Nullable*/AggregateMetric> uncheckedNestedMetrics)
             throws JsonMappingException {
-        List<AggregateMetric> nestedMetrics =
-                checkNotNullItemsForProperty(uncheckedNestedMetrics, "nestedMetrics");
+        List<AggregateMetric> nestedMetrics = orEmpty(uncheckedNestedMetrics, "nestedMetrics");
         checkRequiredProperty(name, "name");
         checkRequiredProperty(totalMicros, "totalMicros");
         checkRequiredProperty(count, "count");
-        return new AggregateMetric(name, totalMicros, count, nullToEmpty(nestedMetrics));
+        return new AggregateMetric(name, totalMicros, count, nestedMetrics);
     }
 }

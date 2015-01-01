@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ glowroot.controller('JvmHeapDumpCtrl', [
     $scope.checkDiskSpace = function (deferred) {
       $scope.checkDiskSpaceResponse = false;
       $scope.heapDumpResponse = false;
-      $http.post('backend/jvm/check-disk-space', { directory: $scope.data.directory })
+      $http.post('backend/jvm/check-disk-space', {directory: $scope.data.directory})
           .success(function (data) {
             if (data.error) {
               deferred.reject(data.error);
@@ -39,7 +39,7 @@ glowroot.controller('JvmHeapDumpCtrl', [
     $scope.dumpHeap = function (deferred) {
       $scope.checkDiskSpaceResponse = false;
       $scope.heapDumpResponse = false;
-      $http.post('backend/jvm/dump-heap', { directory: $scope.data.directory })
+      $http.post('backend/jvm/dump-heap', {directory: $scope.data.directory})
           .success(function (data) {
             if (data.error) {
               deferred.reject(data.error);

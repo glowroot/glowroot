@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,13 +66,15 @@ public class Containers {
 
     public static Container getSharedJavaagentContainer() throws Exception {
         if (!SharedContainerRunListener.useSharedContainer()) {
-            return new JavaagentContainer(null, false, false, false, ImmutableList.<String>of());
+            return new JavaagentContainer(null, false, 0, false, false, false,
+                    ImmutableList.<String>of());
         }
         JavaagentContainer container =
                 (JavaagentContainer) SharedContainerRunListener.getSharedJavaagentContainer();
         if (container == null) {
             container =
-                    new JavaagentContainer(null, false, true, false, ImmutableList.<String>of());
+                    new JavaagentContainer(null, false, 0, true, false, false,
+                            ImmutableList.<String>of());
             SharedContainerRunListener.setSharedJavaagentContainer(container);
         }
         return container;
@@ -85,7 +87,7 @@ public class Containers {
         LocalContainer container =
                 (LocalContainer) SharedContainerRunListener.getSharedLocalContainer();
         if (container == null) {
-            container = new LocalContainer(null, false, true);
+            container = new LocalContainer(null, false, 0, true);
             SharedContainerRunListener.setSharedLocalContainer(container);
         } else {
             container.reopen();
@@ -109,12 +111,12 @@ public class Containers {
                 // this is the most realistic way to run tests because it launches an external JVM
                 // process using -javaagent:glowroot.jar
                 logger.debug("create(): using javaagent container");
-                return new JavaagentContainer(dataDir, useFileDb, shared, false,
+                return new JavaagentContainer(dataDir, useFileDb, 0, shared, false, false,
                         ImmutableList.<String>of());
             case LOCAL:
                 // this is the easiest way to run/debug tests inside of Eclipse
                 logger.debug("create(): using local container");
-                return new LocalContainer(dataDir, useFileDb, shared);
+                return new LocalContainer(dataDir, useFileDb, 0, shared);
             default:
                 throw new IllegalStateException("Unexpected harness enum value: " + harness);
         }

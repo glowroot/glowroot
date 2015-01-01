@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@ package org.glowroot.local.ui;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.Collection;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.Iterables;
 import com.google.common.io.CharSource;
 
 import org.glowroot.collector.EntriesCharSourceCreator;
@@ -32,7 +32,6 @@ import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
 import org.glowroot.local.store.TraceDao;
-import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.transaction.model.Transaction;
 
@@ -55,20 +54,12 @@ class TraceCommonService {
 
     @Nullable
     Trace getTrace(String traceId) throws Exception {
-        // check active transactions first to make sure that the transaction is not missed if it
-        // should complete after checking stored traces but before checking active transactions
-        for (Transaction activeTransaction : transactionRegistry.getTransactions()) {
-            if (activeTransaction.getId().equals(traceId)) {
-                return createActiveTrace(activeTransaction);
-            }
-        }
-        // then check pending transactions to make sure the transaction is not missed if it is in
-        // between active and stored
-        Collection<Transaction> pendingTransactions =
-                transactionCollectorImpl.getPendingTransactions();
-        for (Transaction pendingTransaction : pendingTransactions) {
-            if (pendingTransaction.getId().equals(traceId)) {
-                return TraceCreator.createCompletedTrace(pendingTransaction);
+        // check active traces first, then pending traces, and finally stored traces
+        // to make sure that the trace is not missed if it is in transition between these states
+        for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
+                transactionCollectorImpl.getPendingTransactions())) {
+            if (transaction.getId().equals(traceId)) {
+                return createTrace(transaction);
             }
         }
         return traceDao.readTrace(traceId);
@@ -78,18 +69,12 @@ class TraceCommonService {
     // expired trace will return {"expired":true}
     @Nullable
     CharSource getEntries(String traceId) throws SQLException {
-        // check active traces first to make sure that the trace is not missed if it should complete
-        // after checking stored traces but before checking active traces
-        for (Transaction active : transactionRegistry.getTransactions()) {
-            if (active.getId().equals(traceId)) {
-                return createEntries(active);
-            }
-        }
-        // then check pending traces to make sure the trace is not missed if it is in between active
-        // and stored
-        for (Transaction pending : transactionCollectorImpl.getPendingTransactions()) {
-            if (pending.getId().equals(traceId)) {
-                return createEntries(pending);
+        // check active traces first, then pending traces, and finally stored traces
+        // to make sure that the trace is not missed if it is in transition between these states
+        for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
+                transactionCollectorImpl.getPendingTransactions())) {
+            if (transaction.getId().equals(traceId)) {
+                return createEntries(transaction);
             }
         }
         return traceDao.readEntries(traceId);
@@ -99,18 +84,12 @@ class TraceCommonService {
     // expired trace will return {"expired":true}
     @Nullable
     CharSource getProfile(String traceId) throws SQLException {
-        // check active traces first to make sure that the trace is not missed if it should complete
-        // after checking stored traces but before checking active traces
-        for (Transaction active : transactionRegistry.getTransactions()) {
-            if (active.getId().equals(traceId)) {
-                return createProfile(active);
-            }
-        }
-        // then check pending traces to make sure the trace is not missed if it is in between active
-        // and stored
-        for (Transaction pending : transactionCollectorImpl.getPendingTransactions()) {
-            if (pending.getId().equals(traceId)) {
-                return createProfile(pending);
+        // check active traces first, then pending traces, and finally stored traces
+        // to make sure that the trace is not missed if it is in transition between these states
+        for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
+                transactionCollectorImpl.getPendingTransactions())) {
+            if (transaction.getId().equals(traceId)) {
+                return createProfile(transaction);
             }
         }
         return traceDao.readProfile(traceId);
@@ -118,22 +97,14 @@ class TraceCommonService {
 
     @Nullable
     TraceExport getExport(String traceId) throws Exception {
-        // check active traces first to make sure that the trace is not missed if it should complete
-        // after checking stored traces but before checking active traces
-        for (Transaction active : transactionRegistry.getTransactions()) {
-            if (active.getId().equals(traceId)) {
-                Trace trace = createActiveTrace(active);
-                return new TraceExport(trace, TraceWriter.toString(trace), createEntries(active),
-                        createProfile(active));
-            }
-        }
-        // then check pending traces to make sure the trace is not missed if it is in between active
-        // and stored
-        for (Transaction pending : transactionCollectorImpl.getPendingTransactions()) {
-            if (pending.getId().equals(traceId)) {
-                Trace trace = TraceCreator.createCompletedTrace(pending);
-                return new TraceExport(trace, TraceWriter.toString(trace), createEntries(pending),
-                        createProfile(pending));
+        // check active traces first, then pending traces, and finally stored traces
+        // to make sure that the trace is not missed if it is in transition between these states
+        for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
+                transactionCollectorImpl.getPendingTransactions())) {
+            if (transaction.getId().equals(traceId)) {
+                Trace trace = createTrace(transaction);
+                return new TraceExport(trace, TraceWriter.toString(trace),
+                        createEntries(transaction), createProfile(transaction));
             }
         }
         Trace trace = traceDao.readTrace(traceId);
@@ -148,9 +119,13 @@ class TraceCommonService {
         }
     }
 
-    private Trace createActiveTrace(Transaction activeTransaction) throws IOException {
-        return TraceCreator.createActiveTrace(activeTransaction, clock.currentTimeMillis(),
-                ticker.read());
+    private Trace createTrace(Transaction transaction) throws IOException {
+        if (transaction.isCompleted()) {
+            return TraceCreator.createCompletedTrace(transaction);
+        } else {
+            return TraceCreator.createActiveTrace(transaction, clock.currentTimeMillis(),
+                    ticker.read());
+        }
     }
 
     private CharSource createEntries(Transaction active) {
@@ -195,25 +170,5 @@ class TraceCommonService {
         CharSource getProfile() {
             return profile;
         }
-    }
-
-    // this method exists because tests cannot use (sometimes) shaded guava CharSource
-    @OnlyUsedByTests
-    public @Nullable String getEntriesString(String traceId) throws Exception {
-        CharSource entries = getEntries(traceId);
-        if (entries == null) {
-            return null;
-        }
-        return entries.read();
-    }
-
-    // this method exists because tests cannot use (sometimes) shaded guava CharSource
-    @OnlyUsedByTests
-    public @Nullable String getProfileString(String traceId) throws Exception {
-        CharSource profile = getProfile(traceId);
-        if (profile == null) {
-            return null;
-        }
-        return profile.read();
     }
 }

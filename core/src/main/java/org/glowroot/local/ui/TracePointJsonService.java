@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -134,15 +134,7 @@ class TracePointJsonService {
         private List<Transaction> getMatchingActiveTraces() {
             List<Transaction> activeTraces = Lists.newArrayList();
             for (Transaction transaction : transactionRegistry.getTransactions()) {
-                if (transactionCollector.shouldStore(transaction)
-                        && matchesDuration(transaction)
-                        && matchesTransactionType(transaction)
-                        && matchesErrorOnly(transaction)
-                        && matchesHeadline(transaction)
-                        && matchesTransactionName(transaction)
-                        && matchesError(transaction)
-                        && matchesUser(transaction)
-                        && matchesCustomAttribute(transaction)) {
+                if (matches(transaction)) {
                     activeTraces.add(transaction);
                 }
             }
@@ -182,6 +174,18 @@ class TracePointJsonService {
                 }
             }
             return points;
+        }
+
+        private boolean matches(Transaction transaction) {
+            return transactionCollector.shouldStore(transaction)
+                    && matchesDuration(transaction)
+                    && matchesTransactionType(transaction)
+                    && matchesErrorOnly(transaction)
+                    && matchesHeadline(transaction)
+                    && matchesTransactionName(transaction)
+                    && matchesError(transaction)
+                    && matchesUser(transaction)
+                    && matchesCustomAttribute(transaction);
         }
 
         private boolean matchesDuration(Transaction transaction) {
@@ -316,18 +320,19 @@ class TracePointJsonService {
                 Transaction activeTransaction = i.next();
                 for (Iterator<TracePoint> j = points.iterator(); j.hasNext();) {
                     TracePoint point = j.next();
-                    if (activeTransaction.getId().equals(point.id())) {
-                        if (activeTransaction.getDuration() > point.duration()) {
-                            // prefer the active trace, it must be a partial trace that hasn't
-                            // completed yet
-                            j.remove();
-                        } else {
-                            // otherwise prefer the completed trace
-                            i.remove();
-                        }
-                        // there can be at most one duplicate per id, so ok to break to outer
-                        break;
+                    if (!activeTransaction.getId().equals(point.id())) {
+                        continue;
                     }
+                    if (activeTransaction.getDuration() > point.duration()) {
+                        // prefer the active trace, it must be a partial trace that hasn't
+                        // completed yet
+                        j.remove();
+                    } else {
+                        // otherwise prefer the completed trace
+                        i.remove();
+                    }
+                    // there can be at most one duplicate per id, so ok to break to outer
+                    break;
                 }
             }
         }

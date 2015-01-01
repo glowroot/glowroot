@@ -1,4 +1,5 @@
 import org.checkerframework.checker.nullness.qual.*;
+import org.checkerframework.checker.tainting.qual.PolyTainted;
 
 /* ========================================================================== */
 package java.lang;
@@ -8,6 +9,10 @@ public class ClassLoader {
     protected Package definePackage(String name, @Nullable String specTitle,
             @Nullable String specVersion, @Nullable String specVendor, @Nullable String implTitle,
             @Nullable String implVersion, @Nullable String implVendor, @Nullable URL sealBase);
+}
+
+public class String {
+    public @PolyTainted String toLowerCase(Locale locale) @PolyTainted;
 }
 
 /* ========================================================================== */

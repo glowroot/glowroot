@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -258,25 +257,5 @@ public class TransactionMetricImpl implements TransactionMetricExt {
         }
         count++;
         total += time;
-    }
-
-    @Override
-    public String toString() {
-        ImmutableList<TransactionMetricImpl> copyOfNestedMetrics = null;
-        if (threadSafeNestedMetrics != null) {
-            synchronized (threadSafeNestedMetrics) {
-                copyOfNestedMetrics = ImmutableList.copyOf(threadSafeNestedMetrics);
-            }
-        }
-        return MoreObjects.toStringHelper(this)
-                .add("name", getName())
-                .add("total", total)
-                .add("min", min)
-                .add("max", max)
-                .add("count", count)
-                .add("startTick", startTick)
-                .add("selfNestingLevel", selfNestingLevel)
-                .add("nestedMetrics", copyOfNestedMetrics)
-                .toString();
     }
 }

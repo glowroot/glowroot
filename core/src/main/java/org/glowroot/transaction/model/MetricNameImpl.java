@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.glowroot.transaction.model;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.immutables.value.Value;
 
 import org.glowroot.api.MetricName;
@@ -26,8 +27,9 @@ public abstract class MetricNameImpl implements MetricName {
 
     private static final AtomicInteger nextSpecialHashCode = new AtomicInteger();
 
+    @VisibleForTesting
     @Value.Parameter
-    abstract String name();
+    public abstract String name();
 
     @Value.Derived
     int specialHashCode() {

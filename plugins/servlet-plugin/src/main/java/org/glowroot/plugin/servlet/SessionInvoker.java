@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@ public class SessionInvoker {
     public SessionInvoker(Class<?> clazz) {
         Class<?> httpSessionClass = null;
         try {
-            httpSessionClass = Class.forName("javax.servlet.http.HttpSession", false,
-                    clazz.getClassLoader());
+            httpSessionClass =
+                    Class.forName("javax.servlet.http.HttpSession", false, clazz.getClassLoader());
         } catch (ClassNotFoundException e) {
             logger.warn(e.getMessage(), e);
         }

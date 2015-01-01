@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,15 +77,15 @@ glowroot.directive('gtButtonGroup', [
       scope: {},
       transclude: true,
       template: '' +
-          '<div class="clearfix">' +
-          '  <div ng-transclude style="float: left;"></div>' +
-          '  <span class="button-spinner hide" style="float: left;"></span>' +
+      '<div class="clearfix">' +
+      '  <div ng-transclude style="float: left;"></div>' +
+      '  <span class="button-spinner hide" style="float: left;"></span>' +
         // this needs to be div, and it's child needs to be div, for formatting of multi-line messages
         // same as done in gt-button.html template
-          '  <div style="overflow-x: hidden;">' +
-          '    <div class="button-message hide" style="padding-top: 5px;"></div>' +
-          '  </div>' +
-          '</div>',
+      '  <div style="overflow-x: hidden;">' +
+      '    <div class="button-message hide" style="padding-top: 5px;"></div>' +
+      '  </div>' +
+      '</div>',
       controller: [
         '$element',
         function ($element) {
@@ -273,7 +273,7 @@ glowroot.directive('gtNavbarItem', [
           $navbarCollapse.removeClass('in');
           $navbarCollapse.addClass('collapse');
           if ($location.path() === '/' + scope.gtUrl && !event.ctrlKey) {
-            $state.go($state.$current, null, { reload: true });
+            $state.go($state.$current, null, {reload: true});
             // suppress normal link
             event.preventDefault();
             return false;
@@ -306,7 +306,7 @@ glowroot.directive('gtSidebarItem', [
         };
         scope.ngClick = function (event) {
           if ($location.path() === '/' + scope.gtUrl && !event.ctrlKey) {
-            $state.go($state.$current, null, { reload: true });
+            $state.go($state.$current, null, {reload: true});
             // suppress normal link
             event.preventDefault();
             return false;
@@ -360,13 +360,17 @@ glowroot.directive('gtSpinner', function () {
                 left = 10;
               }
               // z-index should be less than navbar (which is 1030)
-              spinner = new Spinner({ lines: 9, radius: 8, width: 5, left: left, zIndex: 1020 });
+              spinner = new Spinner({lines: 9, radius: 8, width: 5, left: left, zIndex: 1020});
             }
             if (iAttrs.gtNoDelay) {
               iElement.removeClass('hide');
               spinner.spin(iElement[0]);
             } else {
               // small delay so that if there is an immediate response the spinner doesn't blink
+              //
+              // must clear previous timer, e.g. in case multiple keystrokes are entered on typeahead
+              // inside of 100 milliseconds
+              clearTimeout(timer);
               timer = setTimeout(function () {
                 iElement.removeClass('hide');
                 spinner.spin(iElement[0]);

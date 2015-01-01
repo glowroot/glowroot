@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,7 +112,6 @@ class WeavingClassVisitor extends ClassVisitor {
     private int innerMethodCounter;
 
     // these are for handling class and method metas
-    private boolean maybeHasMetas;
     private final Set<Type> classMetaTypes = Sets.newHashSet();
     private final Set<MethodMetaGroup> methodMetaGroups = Sets.newHashSet();
     private @MonotonicNonNull String metaHolderInternalName;
@@ -148,28 +147,6 @@ class WeavingClassVisitor extends ClassVisitor {
         interfaceSoNothingToWeave = Modifier.isInterface(access);
         if (interfaceSoNothingToWeave) {
             return;
-        }
-        for (AdviceMatcher adviceMatcher : analyzingClassVisitor.getAdviceMatchers()) {
-            if (!adviceMatcher.advice().classMetaTypes().isEmpty()
-                    || !adviceMatcher.advice().methodMetaTypes().isEmpty()) {
-                maybeHasMetas = true;
-                break;
-            }
-        }
-        if (!maybeHasMetas) {
-            List<AnalyzedClass> superAnalyzedClasses =
-                    analyzingClassVisitor.getSuperAnalyzedClasses();
-            outer: for (AnalyzedClass analyzedClass : superAnalyzedClasses) {
-                for (AnalyzedMethod analyzedMethod : analyzedClass.analyzedMethods()) {
-                    for (Advice advice : analyzedMethod.advisors()) {
-                        if (!advice.classMetaTypes().isEmpty()
-                                || !advice.methodMetaTypes().isEmpty()) {
-                            maybeHasMetas = true;
-                            break outer;
-                        }
-                    }
-                }
-            }
         }
         type = Type.getObjectType(internalName);
         String /*@Nullable*/[] interfacesIncludingMixins = getInterfacesIncludingMixins(

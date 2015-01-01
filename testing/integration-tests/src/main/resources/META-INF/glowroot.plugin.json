@@ -50,6 +50,17 @@
       "description": [
         "LevelFive property above must be enabled also in order to capture trace entries."
       ]
+    },
+    {
+      "name": "anumber",
+      "type": "double",
+      "label": "A number"
+    },
+    {
+      "name": "anumberWithDefaultValue",
+      "type": "double",
+      "default": 22,
+      "label": "A number with default value"
     }
   ],
   "capturePoints": [
@@ -100,6 +111,7 @@
     "org.glowroot.tests.plugin.LogErrorAspect",
     "org.glowroot.tests.plugin.LogCauseAspect",
     "org.glowroot.tests.plugin.PauseAspect",
-    "org.glowroot.tests.plugin.MockDriverAspect"
+    "org.glowroot.tests.plugin.MockDriverAspect",
+    "org.glowroot.tests.plugin.TraceGeneratorAspect"
   ]
 }

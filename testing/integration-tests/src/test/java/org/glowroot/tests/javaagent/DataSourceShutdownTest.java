@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,8 @@ public class DataSourceShutdownTest {
     @Test
     public void shouldShutdown() throws Exception {
         // given
-        final JavaagentContainer container =
-                new JavaagentContainer(null, true, false, true, ImmutableList.<String>of());
+        final JavaagentContainer container = new JavaagentContainer(null, true, 0, false, true,
+                false, ImmutableList.<String>of());
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.submit(new Callable<Void>() {
@@ -92,8 +92,7 @@ public class DataSourceShutdownTest {
                     for (int i = 0; i < 100; i++) {
                         try {
                             traceMarker();
-                        } catch (InterruptedException e) {
-                        }
+                        } catch (InterruptedException e) {}
                     }
                 }
             });

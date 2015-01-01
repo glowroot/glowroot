@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,9 @@
  */
 package org.glowroot.common;
 
+import javax.annotation.Nullable;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.StandardSystemProperty;
 
 public class JavaVersion {
@@ -22,11 +25,17 @@ public class JavaVersion {
     private static final boolean jdk6;
 
     static {
-        String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
-        jdk6 = (javaVersion != null && javaVersion.startsWith("1.6"));
+        jdk6 = parseIsJdk6(StandardSystemProperty.JAVA_VERSION.value());
     }
+
+    private JavaVersion() {}
 
     public static boolean isJdk6() {
         return jdk6;
+    }
+
+    @VisibleForTesting
+    static boolean parseIsJdk6(@Nullable String javaVersion) {
+        return javaVersion != null && javaVersion.startsWith("1.6");
     }
 }

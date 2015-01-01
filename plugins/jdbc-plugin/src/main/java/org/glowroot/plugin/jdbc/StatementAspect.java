@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -365,39 +365,14 @@ public class StatementAspect {
                     // this shouldn't happen since just checked hasGlowrootStatementMirror() above
                     return null;
                 }
-                if (pluginServices.isEnabled()) {
-                    JdbcMessageSupplier jdbcMessageSupplier;
-                    if (captureBindParameters) {
-                        jdbcMessageSupplier =
-                                JdbcMessageSupplier.createWithBatchedParameters(mirror);
-                    } else {
-                        jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql());
-                    }
-                    mirror.setLastRecordCountObject(jdbcMessageSupplier.getRecordCountObject());
-                    return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
-                } else {
-                    // clear lastRecordCountObject so that its numRows won't be updated if the
-                    // plugin is re-enabled in the middle of iterating over a different result set
-                    mirror.clearLastRecordCountObject();
-                    return null;
-                }
+                return onBeforePreparedStatement(mirror);
             } else {
                 StatementMirror mirror = statement.getGlowrootStatementMirror();
                 if (mirror == null) {
                     // this shouldn't happen since just checked hasGlowrootStatementMirror() above
                     return null;
                 }
-                if (pluginServices.isEnabled()) {
-                    JdbcMessageSupplier jdbcMessageSupplier =
-                            JdbcMessageSupplier.createWithBatchedSqls(mirror);
-                    mirror.setLastRecordCountObject(jdbcMessageSupplier.getRecordCountObject());
-                    return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
-                } else {
-                    // clear lastRecordCountObject so that its numRows won't be updated if the
-                    // plugin is re-enabled in the middle of iterating over a different result set
-                    mirror.clearLastRecordCountObject();
-                    return null;
-                }
+                return onBeforeStatement(mirror);
             }
         }
         @OnReturn
@@ -412,6 +387,38 @@ public class StatementAspect {
                 @BindTraveler @Nullable TraceEntry traceEntry) {
             if (traceEntry != null) {
                 traceEntry.endWithError(ErrorMessage.from(t));
+            }
+        }
+        private static @Nullable TraceEntry onBeforePreparedStatement(
+                PreparedStatementMirror mirror) {
+            if (pluginServices.isEnabled()) {
+                JdbcMessageSupplier jdbcMessageSupplier;
+                if (captureBindParameters) {
+                    jdbcMessageSupplier =
+                            JdbcMessageSupplier.createWithBatchedParameters(mirror);
+                } else {
+                    jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql());
+                }
+                mirror.setLastRecordCountObject(jdbcMessageSupplier.getRecordCountObject());
+                return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
+            } else {
+                // clear lastRecordCountObject so that its numRows won't be updated if the
+                // plugin is re-enabled in the middle of iterating over a different result set
+                mirror.clearLastRecordCountObject();
+                return null;
+            }
+        }
+        private static @Nullable TraceEntry onBeforeStatement(StatementMirror mirror) {
+            if (pluginServices.isEnabled()) {
+                JdbcMessageSupplier jdbcMessageSupplier =
+                        JdbcMessageSupplier.createWithBatchedSqls(mirror);
+                mirror.setLastRecordCountObject(jdbcMessageSupplier.getRecordCountObject());
+                return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
+            } else {
+                // clear lastRecordCountObject so that its numRows won't be updated if the
+                // plugin is re-enabled in the middle of iterating over a different result set
+                mirror.clearLastRecordCountObject();
+                return null;
             }
         }
     }

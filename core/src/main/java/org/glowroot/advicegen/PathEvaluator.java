@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,14 @@
  */
 package org.glowroot.advicegen;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 import javax.annotation.Nullable;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+
+import org.glowroot.common.Reflections.ReflectiveException;
 
 class PathEvaluator {
 
@@ -57,8 +58,7 @@ class PathEvaluator {
     }
 
     @Nullable
-    Object evaluateOnBase(Object base) throws IllegalArgumentException, IllegalAccessException,
-            InvocationTargetException {
+    Object evaluateOnBase(Object base) throws ReflectiveException {
         Object curr = base;
         for (Accessor accessor : accessors) {
             curr = accessor.evaluate(curr);

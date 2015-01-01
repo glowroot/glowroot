@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,17 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import org.jboss.netty.channel.ChannelException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 class LazyHttpServer {
 
-    private static final Logger logger = LoggerFactory.getLogger(LocalUiModule.class);
+    private static final Logger logger = LoggerFactory.getLogger(LazyHttpServer.class);
 
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
@@ -72,15 +75,7 @@ class LazyHttpServer {
             @Override
             public void run() {
                 try {
-                    outer:
-                    while (true) {
-                        Thread.sleep(100);
-                        for (Class<?> clazz : instrumentation.getInitiatedClasses(null)) {
-                            if (clazz.getName().equals("sun.launcher.LauncherHelper")) {
-                                break outer;
-                            }
-                        }
-                    }
+                    waitForMain(instrumentation);
                     initNonLazy(configJsonService);
                     int port = httpServer != null ? httpServer.getPort() : -1;
                     startupLogger.info("Glowroot listening at http://localhost:{}", port);
@@ -93,6 +88,7 @@ class LazyHttpServer {
 
     void initNonLazy(ConfigJsonService configJsonService) {
         HttpServer httpServer = build();
+        initialized = true;
         if (httpServer != null) {
             this.httpServer = httpServer;
             configJsonService.setHttpServer(httpServer);
@@ -101,21 +97,18 @@ class LazyHttpServer {
 
     @Nullable
     HttpServer get() throws InterruptedException {
-        if (initialized) {
-            return httpServer;
-        }
         for (int i = 0; i < 5000; i++) {
-            Thread.sleep(100);
-            if (httpServer != null) {
-                break;
+            if (initialized) {
+                return httpServer;
             }
+            Thread.sleep(100);
         }
-        initialized = true;
-        return httpServer;
+        logger.warn("timeout occurred waiting for http server to initialize");
+        return null;
     }
 
     @Nullable
-    HttpServer getNonLazy() throws InterruptedException {
+    HttpServer getNonLazy() {
         return httpServer;
     }
 
@@ -155,5 +148,19 @@ class LazyHttpServer {
             logger.error("error binding to any port, the user interface will not be available", e);
             return null;
         }
+    }
+
+    private static void waitForMain(Instrumentation instrumentation) throws InterruptedException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (stopwatch.elapsed(SECONDS) < 60) {
+            Thread.sleep(100);
+            for (Class<?> clazz : instrumentation.getInitiatedClasses(null)) {
+                if (clazz.getName().equals("sun.launcher.LauncherHelper")) {
+                    return;
+                }
+            }
+        }
+        // something has gone wrong
+        logger.error("sun.launcher.LauncherHelper was never loaded");
     }
 }

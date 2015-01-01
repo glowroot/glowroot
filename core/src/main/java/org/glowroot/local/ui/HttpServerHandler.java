@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -242,17 +242,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         for (Entry<Pattern, Object> uriMappingEntry : uriMappings.entrySet()) {
             Matcher matcher = uriMappingEntry.getKey().matcher(path);
             if (matcher.matches()) {
-                if (uriMappingEntry.getValue() instanceof HttpService) {
-                    if (httpSessionManager.needsAuthentication(request)) {
-                        return handleUnauthorized(request);
-                    }
-                    return ((HttpService) uriMappingEntry.getValue()).handleRequest(request,
-                            channel);
-                } else {
-                    // only other value type is String
-                    String resourcePath = matcher.replaceFirst((String) uriMappingEntry.getValue());
-                    return handleStaticResource(resourcePath, request);
-                }
+                return handleUriMapping(uriMappingEntry.getValue(), matcher, request, channel);
             }
         }
         for (JsonServiceMapping jsonServiceMapping : jsonServiceMappings) {
@@ -277,6 +267,22 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         }
         logger.warn("unexpected uri: {}", request.getUri());
         return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
+    }
+
+    private @Nullable HttpResponse handleUriMapping(Object uriHandler, Matcher matcher,
+            HttpRequest request, Channel channel) throws Exception {
+        if (uriHandler instanceof IndexHtmlHttpService) {
+            return ((HttpService) uriHandler).handleRequest(request, channel);
+        }
+        if (uriHandler instanceof HttpService) {
+            if (httpSessionManager.needsAuthentication(request)) {
+                return handleUnauthorized(request);
+            }
+            return ((HttpService) uriHandler).handleRequest(request, channel);
+        }
+        // only other value type is String
+        String resourcePath = matcher.replaceFirst((String) uriHandler);
+        return handleStaticResource(resourcePath, request);
     }
 
     private HttpResponse handleUnauthorized(HttpRequest request) {
@@ -377,13 +383,6 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         if (responseText instanceof String) {
             response.setContent(ChannelBuffers.copiedBuffer(responseText.toString(),
                     Charsets.ISO_8859_1));
-            response.headers().add(Names.CONTENT_TYPE, MediaType.JSON_UTF_8);
-            response.headers().add("Glowroot-Layout-Version", layoutJsonService.getLayoutVersion());
-            HttpServices.preventCaching(response);
-            return response;
-        }
-        if (responseText instanceof byte[]) {
-            response.setContent(ChannelBuffers.wrappedBuffer((byte[]) responseText));
             response.headers().add(Names.CONTENT_TYPE, MediaType.JSON_UTF_8);
             response.headers().add("Glowroot-Layout-Version", layoutJsonService.getLayoutVersion());
             HttpServices.preventCaching(response);

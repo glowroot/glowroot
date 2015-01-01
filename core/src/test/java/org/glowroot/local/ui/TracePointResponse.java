@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
-import static org.glowroot.common.ObjectMappers.checkNotNullItemsForProperty;
-
 class TracePointResponse {
 
     private final List<RawPoint> normalPoints;
@@ -31,17 +29,9 @@ class TracePointResponse {
     private final List<RawPoint> activePoints;
 
     @JsonCreator
-    private TracePointResponse(
-            @JsonProperty("normalPoints") List</*@Nullable*/RawPoint> uncheckedNormalPoints,
-            @JsonProperty("errorPoints") List</*@Nullable*/RawPoint> uncheckedErrorPoints,
-            @JsonProperty("activePoints") List</*@Nullable*/RawPoint> uncheckedActivePoints)
-            throws JsonMappingException {
-        List<RawPoint> normalPoints =
-                checkNotNullItemsForProperty(uncheckedNormalPoints, "normalPoints");
-        List<RawPoint> errorPoints =
-                checkNotNullItemsForProperty(uncheckedErrorPoints, "errorPoints");
-        List<RawPoint> activePoints =
-                checkNotNullItemsForProperty(uncheckedActivePoints, "activePoints");
+    private TracePointResponse(@JsonProperty("normalPoints") List<RawPoint> normalPoints,
+            @JsonProperty("errorPoints") List<RawPoint> errorPoints,
+            @JsonProperty("activePoints") List<RawPoint> activePoints) throws JsonMappingException {
         this.normalPoints = normalPoints;
         this.errorPoints = errorPoints;
         this.activePoints = activePoints;

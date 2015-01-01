@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ glowroot.controller('TracesCtrl', [
               var midnight = new Date(from).setHours(0, 0, 0, 0);
               plot.getAxes().xaxis.options.zoomRange = [
                 midnight,
-                    midnight + 24 * 60 * 60 * 1000
+                midnight + 24 * 60 * 60 * 1000
               ];
               plot.unhighlight();
             }
@@ -451,7 +451,7 @@ glowroot.controller('TracesCtrl', [
           absoluteZoomRange: true,
           zoomRange: [
             fromMidnight,
-                fromMidnight + 24 * 60 * 60 * 1000
+            fromMidnight + 24 * 60 * 60 * 1000
           ],
           reserveSpace: false
         },

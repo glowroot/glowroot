@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Copyright 2012-2014 the original author or authors.
+  Copyright 2012-2015 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -25,13 +25,10 @@
   <link rel="stylesheet" href="styles/export.css"/>
   <!-- endbuild -->
 
-  <!-- build:js(.) scripts/export-vendor.js -->
+  <!-- build:js({.,app,.tmp}) scripts/export-main.js -->
   <script src="bower_components/jquery/dist/jquery.js"></script>
   <script src="bower_components/handlebars/handlebars.runtime.js"></script>
   <script src="bower_components/moment/moment.js"></script>
-  <!-- endbuild -->
-
-  <!-- build:js({app,.tmp}) scripts/export-trace-scripts.js -->
   <script src="scripts/trace-export.js"></script>
   <script src="scripts/handlebars-rendering.js"></script>
   <script src="scripts/generated/handlebars-templates.js"></script>

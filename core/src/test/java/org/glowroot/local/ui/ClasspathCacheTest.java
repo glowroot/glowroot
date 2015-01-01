@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.glowroot.local.ui;
 
 import java.net.URISyntaxException;
+import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
@@ -30,11 +31,15 @@ public class ClasspathCacheTest {
 
     @Test
     public void shouldRead() throws URISyntaxException {
+        // given
         AnalyzedWorld analyzedWorld = mock(AnalyzedWorld.class);
         when(analyzedWorld.getClassLoaders())
                 .thenReturn(ImmutableList.of(ClasspathCacheTest.class.getClassLoader()));
         ClasspathCache classpathCache = new ClasspathCache(analyzedWorld, null);
-        assertThat(classpathCache.getMatchingClassNames("lang.stringutils", 10))
-                .contains("org.apache.commons.lang.StringUtils");
+        // when
+        List<String> classNames = classpathCache
+                .getMatchingClassNames("google.common.base.str", 10);
+        // then
+        assertThat(classNames).contains("com.google.common.base.Strings");
     }
 }

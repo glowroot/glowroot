@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.Deserializers;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -86,9 +87,24 @@ public class ObjectMappers {
         }
     }
 
+    @SuppressWarnings("return.type.incompatible")
+    public static <T> List</*@NonNull*/T> orEmpty(@Nullable List<T> list, String fieldName)
+            throws JsonMappingException {
+        if (list == null) {
+            return ImmutableList.of();
+        }
+        for (T item : list) {
+            if (item == null) {
+                throw new JsonMappingException("Null items are not allowed in array field: "
+                        + fieldName);
+            }
+        }
+        return list;
+    }
+
     @PolyNull
     @SuppressWarnings("return.type.incompatible")
-    public static <T> List</*@NonNull*/T> checkNotNullItemsForProperty(@PolyNull List<T> list,
+    public static <T> List</*@NonNull*/T> checkNotNullItems(@PolyNull List<T> list,
             String fieldName) throws JsonMappingException {
         if (list == null) {
             return null;

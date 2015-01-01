@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 package org.glowroot.tests;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -37,7 +32,6 @@ import org.glowroot.container.trace.ProfileNode;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.Trace.Existence;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ProfilingTest {
@@ -98,36 +92,6 @@ public class ProfilingTest {
         // profiler should have captured about 10 stack traces
         ProfileNode rootProfileNode = container.getTraceService().getProfile(trace.getId());
         assertThat(rootProfileNode.getSampleCount()).isBetween(5, 15);
-    }
-
-    // set profile store threshold to 0, and see if trace shows up in active list right away
-    @Test
-    public void shouldReadActiveProfile() throws Exception {
-        // given
-        ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
-        profilingConfig.setEnabled(true);
-        profilingConfig.setIntervalMillis(10);
-        container.getConfigService().updateProfilingConfig(profilingConfig);
-        // when
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Future<Void> future = executorService.submit(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                try {
-                    container.executeAppUnderTest(ShouldWaitForInterrupt.class);
-                } catch (Throwable t) {
-                    t.printStackTrace();
-                }
-                return null;
-            }
-        });
-        // then
-        Trace trace = container.getTraceService().getActiveTrace(5, SECONDS);
-        assertThat(trace).isNotNull();
-        // cleanup
-        container.interruptAppUnderTest();
-        future.get();
-        executorService.shutdown();
     }
 
     public static class ShouldWaitForInterrupt implements AppUnderTest, TraceMarker {

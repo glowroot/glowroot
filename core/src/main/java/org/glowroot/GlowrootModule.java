@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,8 @@ public class GlowrootModule {
 
     GlowrootModule(File dataDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
-            String version, boolean viewerModeEnabled) throws StartupFailedException {
+            String version, boolean viewerModeEnabled, boolean jbossModules)
+            throws StartupFailedException {
 
         loggingSpy = Boolean.valueOf(properties.get("internal.logging.spy"));
         initStaticLoggerState(dataDir, loggingSpy);
@@ -92,9 +93,9 @@ public class GlowrootModule {
         File lockFile = new File(tmpDir, ".lock");
         try {
             Files.createParentDirs(lockFile);
-            lockFile.createNewFile();
+            Files.touch(lockFile);
         } catch (IOException e) {
-            throw new StartupFailedException(e);
+            throw new DataDirLockedException(e);
         }
         try {
             dataDirLockFile = new RandomAccessFile(lockFile, "rw");
@@ -145,7 +146,7 @@ public class GlowrootModule {
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
                 .setNameFormat("Glowroot-Background-%d").build();
         scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
-        JvmModule jvmModule = new JvmModule();
+        JvmModule jvmModule = new JvmModule(jbossModules);
         // trace module needs to be started as early as possible, so that weaving will be applied to
         // as many classes as possible
         // in particular, it needs to be started before StorageModule which uses shaded H2, which
@@ -234,28 +235,8 @@ public class GlowrootModule {
     }
 
     @OnlyUsedByTests
-    public Clock getClock() {
-        return clock;
-    }
-
-    @OnlyUsedByTests
-    public Ticker getTicker() {
-        return ticker;
-    }
-
-    @OnlyUsedByTests
     public ConfigModule getConfigModule() {
         return configModule;
-    }
-
-    @OnlyUsedByTests
-    public StorageModule getStorageModule() {
-        return storageModule;
-    }
-
-    @OnlyUsedByTests
-    public CollectorModule getCollectorModule() {
-        return collectorModule;
     }
 
     @OnlyUsedByTests
@@ -266,11 +247,6 @@ public class GlowrootModule {
     @OnlyUsedByTests
     public LocalUiModule getUiModule() {
         return uiModule;
-    }
-
-    @OnlyUsedByTests
-    public File getDataDir() {
-        return dataDir;
     }
 
     @OnlyUsedByTests
@@ -298,12 +274,12 @@ public class GlowrootModule {
     @SuppressWarnings("serial")
     public static class StartupFailedException extends Exception {
 
-        private StartupFailedException(Throwable cause) {
-            super(cause);
-        }
-
         private StartupFailedException() {
             super();
+        }
+
+        private StartupFailedException(Throwable cause) {
+            super(cause);
         }
     }
 
@@ -313,9 +289,14 @@ public class GlowrootModule {
         private DataDirLockedException() {
             super();
         }
+
+        private DataDirLockedException(Throwable cause) {
+            super(cause);
+        }
     }
 
-    private static class TransactionCollectorProxy implements TransactionCollector {
+    @VisibleForTesting
+    static class TransactionCollectorProxy implements TransactionCollector {
 
         private volatile @MonotonicNonNull TransactionCollector instance;
 
@@ -333,7 +314,8 @@ public class GlowrootModule {
             }
         }
 
-        private void setInstance(TransactionCollector instance) {
+        @VisibleForTesting
+        void setInstance(TransactionCollector instance) {
             this.instance = instance;
         }
     }

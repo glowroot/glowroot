@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,13 +85,19 @@ class HttpServer {
             }
         });
         this.handler = handler;
-        InetSocketAddress localAddress = new InetSocketAddress(bindAddress, port);
         logger.debug("<init>(): binding http server to port {}", port);
         Channel serverChannel;
         try {
-            serverChannel = bootstrap.bind(localAddress);
+            serverChannel = bootstrap.bind(new InetSocketAddress(bindAddress, port));
         } catch (ChannelException e) {
-            serverChannel = bootstrap.bind(new InetSocketAddress(0));
+            try {
+                serverChannel = bootstrap.bind(new InetSocketAddress(bindAddress, 0));
+            } catch (ChannelException f) {
+                // clean up
+                handler.close();
+                bootstrap.releaseExternalResources();
+                throw f;
+            }
             logger.error("error binding to port: {} (bound to port {} instead)", port,
                     ((InetSocketAddress) serverChannel.getLocalAddress()).getPort());
             // log exception at debug level
