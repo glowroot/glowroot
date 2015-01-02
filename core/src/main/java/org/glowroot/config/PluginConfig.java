@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import org.glowroot.config.PropertyDescriptor.PropertyType;
 
 @Value.Immutable
 @Json.Marshaled
-@Json.Import({MarshalingRoutines.class})
+@Json.Import(MarshalingRoutines.class)
 public abstract class PluginConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginConfig.class);

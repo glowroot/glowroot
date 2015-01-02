@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// fontawesome is used for gear and sign out icons in top right of navbar and also for help icon
+@import "../../bower_components/fontawesome/less/variables.less";
+@import "../../bower_components/fontawesome/less/mixins.less";
+@import "../../bower_components/fontawesome/less/core.less";
+@import "../../bower_components/fontawesome/less/icons.less";
 @import "../../bower_components/bootstrap-datepicker/less/datepicker3";
 @import "../../bower_components/bootstrap/less/variables";
 @import "../../bower_components/bootstrap/less/mixins";
@@ -39,8 +44,10 @@
 @import "../../bower_components/bootstrap/less/navbar";
 // panels are used by config views
 @import "../../bower_components/bootstrap/less/panels";
-// panels are used by heapdump view
+// wells are used by heapdump view
 @import "../../bower_components/bootstrap/less/wells";
+// bootstrap-select is used by transaction selection sidebar
+@import "../../bower_components/bootstrap-select/less/bootstrap-select";
 // basic bootstrap foundation
 @import "../../bower_components/bootstrap/less/grid";
 @import "../../bower_components/bootstrap/less/normalize";
@@ -49,10 +56,9 @@
 @import "../../bower_components/bootstrap/less/utilities";
 @import "../../bower_components/bootstrap/less/responsive-utilities";
 @import "../../bower_components/bootstrap/less/tables";
-// fontawesome currently only used for gear icon in top right of navbar
-@import "../../bower_components/fontawesome/less/font-awesome";
 @import "common-trace";
 @import "chart";
+@import "transaction-sidebar";
 @import "search";
 @import "config";
 @import "system";
@@ -77,6 +83,50 @@
 
 @state-danger-text: @glowroot-red;
 
+// only supporting IE9+ so only need woff/woff2
+@font-face {
+  font-family: 'Open Sans';
+  font-weight: 400;
+  src: local('Open Sans'),
+  local('OpenSans'),
+  url(../fonts/opensans-regular-webfont.woff2) format('woff2'),
+  url(../fonts/opensans-regular-webfont.woff) format('woff');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-weight: 600;
+  src: local('Open Sans Semibold'),
+  local('OpenSans-Semibold'),
+  url(../fonts/opensans-semibold-webfont.woff2) format('woff2'),
+  url(../fonts/opensans-semibold-webfont.woff) format('woff');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-weight: 700;
+  src: local('Open Sans Bold'),
+  local('OpenSans-Bold'),
+  url(../fonts/opensans-bold-webfont.woff2) format('woff2'),
+  url(../fonts/opensans-bold-webfont.woff) format('woff');
+}
+
+// explicitly specifiying font-face for font-awesome since only supporting IE9+ and so only need woff/woff2
+// this also helps by removing ?v=... versioning url which causes some issue keeping the font preloading url
+// (see index.html) in sync when new font-awesome versions are released, and the urls are revved during grunt build
+// already so the versioned url is not needed
+@font-face {
+  font-family: 'FontAwesome';
+  // TODO update once woff2 support is released, see https://github.com/FortAwesome/Font-Awesome/issues/4261
+  src: url('../fonts/fontawesome-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  font-family: 'Open Sans', sans-serif;
+}
+
 body {
   // always display vertical scrollbar so content doesn't shift horizontally when the vertical
   // scrollbar shows up because the page dynamically expanded greater than a single screen, or
@@ -98,12 +148,14 @@ body {
 .header-page-name {
   font-size: 36px;
   color: @glowroot-page-title-color;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .header-page-name li a {
   font-size: 22px;
   cursor: pointer;
+  // padding to align left side with dropdown header
+  padding: 3px 12px;
 }
 
 .header-menu {
@@ -113,7 +165,32 @@ body {
 }
 
 .header-page-name li a:hover {
-  background-color: #ddd;
+  background-color: #edeae4;
+}
+
+.header-page-name .dropdown-toggle {
+  // 30px matches font size of panel header below it
+  font-size: 30px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-block;
+  padding: 3px 20px 4px;
+  background: #edeae4;
+  border-radius: 8px;
+}
+
+.header-page-name .gt-separator {
+  font-size: 54px;
+  font-weight: 400;
+  margin-left: -4px;
+  margin-right: -4px;
+  vertical-align: -4px;
+}
+
+.header-page-name .dropdown-menu {
+  margin-top: 5px;
+  min-width: 100%;
+  border-radius: 8px;
 }
 
 .navbar-brand {
@@ -122,16 +199,23 @@ body {
   text-shadow: 0 0 4px white;
   font-weight: 700;
   margin-top: -1px;
+  // margin bottom is just to offset negative margin-top and keep same height
+  margin-bottom: 1px;
 }
 
 .nav.navbar-nav a {
   font-size: 16px;
-  font-weight: 600;
 }
 
 .container {
   padding-left: 15px !important;
   padding-right: 15px !important;
+}
+
+@media (min-width: 1400px) {
+  .container {
+    width: 1370px;
+  }
 }
 
 // since the angular script is not loaded in the html head, the ng-cloak css style must be provided here
@@ -228,4 +312,13 @@ hr.soften {
   background-image: -ms-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, .1), rgba(0, 0, 0, 0));
   background-image: -o-linear-gradient(left, rgba(0, 0, 0, 0), rgba(0, 0, 0, .1), rgba(0, 0, 0, 0));
   border: 0;
+}
+
+.header input {
+  // this is for date filters
+  font-size: 20px;
+}
+
+.bootstrap-select .selected {
+  display: none;
 }

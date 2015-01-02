@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,19 +45,12 @@ glowroot.config([
         };
       }
     ]);
-    $urlRouterProvider.otherwise('performance/transactions');
-    $stateProvider.state('/performance-transactions', {
-      url: '/performance/transactions',
-      templateUrl: 'views/performance-transactions.html',
-      controller: 'PerformanceTransactionsCtrl',
-      // performance-transactions controller needs to wait for layout when running under grunt serve
-      resolve: waitForLayout
-    });
-    $stateProvider.state('performance-metrics', {
-      url: '/performance/metrics',
-      templateUrl: 'views/performance-metrics.html',
-      controller: 'PerformanceMetricsCtrl',
-      // performance-metrics controller needs to wait for layout when running under grunt serve
+    $urlRouterProvider.otherwise('performance');
+    $stateProvider.state('/performance', {
+      url: '/performance?transaction-type',
+      templateUrl: 'views/performance.html',
+      controller: 'PerformanceCtrl',
+      // performance controller needs to wait for layout when running under grunt serve
       resolve: waitForLayout
     });
     $stateProvider.state('performance-flame-graph', {
@@ -65,18 +58,11 @@ glowroot.config([
       templateUrl: 'views/performance-flame-graph.html',
       controller: 'PerformanceFlameGraphCtrl'
     });
-    $stateProvider.state('errors-transactions', {
-      url: '/errors/transactions',
-      templateUrl: 'views/errors-transactions.html',
-      controller: 'ErrorsTransactionsCtrl',
-      // errors-transactions controller needs to wait for layout when running under grunt serve
-      resolve: waitForLayout
-    });
-    $stateProvider.state('errors-messages', {
-      url: '/errors/messages',
-      templateUrl: 'views/errors-messages.html',
-      controller: 'ErrorsMessagesCtrl',
-      // errors-transactions controller needs to wait for layout when running under grunt serve
+    $stateProvider.state('errors', {
+      url: '/errors?transaction-type',
+      templateUrl: 'views/errors.html',
+      controller: 'ErrorsCtrl',
+      // errors controller needs to wait for layout when running under grunt serve
       resolve: waitForLayout
     });
     $stateProvider.state('traces', {

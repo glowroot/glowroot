@@ -244,7 +244,7 @@ class CapturePointJsonService {
 
     @Value.Immutable
     @Json.Marshaled
-    @Json.Import({MarshalingRoutines.class})
+    @Json.Import(MarshalingRoutines.class)
     abstract static class CapturePointDto {
 
         abstract String className();

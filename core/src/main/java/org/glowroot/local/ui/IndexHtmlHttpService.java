@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,15 +72,6 @@ class IndexHtmlHttpService implements HttpService {
         String layoutScript = "var layout=" + layout + ";";
         indexHtml = indexHtml.replaceFirst("<base href=\"/\">", "<script>" + baseHrefScript
                 + layoutScript + "</script>");
-        // this is to work around an issue with Chrome when running behind reverse proxy with
-        // non-root base href, e.g. /glowroot
-        // the issue is that Chrome doesn't use the custom base href when loading the final script
-        // tag on the page
-        indexHtml = indexHtml.replaceFirst(
-                "<script src=\"scripts/scripts\\.([0-9a-f]+)\\.js\"></script>",
-                "<script>document.write('<script src=\"'"
-                        + " + document.getElementsByTagName(\"base\")[0].href"
-                        + " + 'scripts/scripts.$1.js\"><\\\\/script>');</script>");
         // this is to work around an issue with IE10-11 (IE9 is OK)
         // (even without reverse proxy/non-root base href)
         // IE doesn't use the base href when loading the favicon

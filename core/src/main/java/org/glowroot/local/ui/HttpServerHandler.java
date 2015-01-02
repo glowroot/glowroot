@@ -100,12 +100,9 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                     .put("html", MediaType.HTML_UTF_8)
                     .put("js", MediaType.JAVASCRIPT_UTF_8)
                     .put("css", MediaType.CSS_UTF_8)
-                    .put("png", MediaType.PNG)
                     .put("ico", MediaType.ICO)
                     .put("woff", MediaType.WOFF)
-                    .put("eot", MediaType.EOT)
-                    .put("ttf", MediaType.SFNT)
-                    .put("swf", MediaType.SHOCKWAVE_FLASH)
+                    .put("woff2", MediaType.create("application", "font-woff2"))
                     .put("map", MediaType.JSON_UTF_8)
                     .build();
 

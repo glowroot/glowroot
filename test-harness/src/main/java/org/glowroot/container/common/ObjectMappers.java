@@ -185,7 +185,8 @@ public class ObjectMappers {
             if (value == null) {
                 jgen.writeNull();
             } else if (value instanceof Enum) {
-                jgen.writeString(((Enum<?>) value).name().toLowerCase(Locale.ENGLISH));
+                jgen.writeString(((Enum<?>) value).name().replace('_', '-')
+                        .toLowerCase(Locale.ENGLISH));
             } else {
                 logger.error("unexpected value class: {}", value.getClass());
             }
@@ -206,7 +207,8 @@ public class ObjectMappers {
                     for (Object enumConstant : enumConstants) {
                         if (enumConstant instanceof Enum) {
                             Enum<?> constant = (Enum<?>) enumConstant;
-                            theEnumMap.put(constant.name().toLowerCase(Locale.ENGLISH), constant);
+                            theEnumMap.put(constant.name().replace('_', '-')
+                                    .toLowerCase(Locale.ENGLISH), constant);
                         } else {
                             logger.error("unexpected constant class: {}", enumConstant.getClass());
                         }

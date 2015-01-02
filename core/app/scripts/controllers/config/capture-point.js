@@ -44,9 +44,9 @@ glowroot.controller('ConfigCapturePointCtrl', [
         $scope.selectedMethodSignature = methodSignature;
         $scope.methodSignatures = [methodSignature];
         $scope.captureKindTransaction = captureKind === 'transaction';
-        $scope.showMetric = captureKind === 'metric' || captureKind === 'trace_entry' || captureKind === 'transaction';
-        $scope.showTraceEntry = captureKind === 'trace_entry' || captureKind === 'transaction';
-        $scope.showTraceEntryStackThreshold = captureKind === 'trace_entry';
+        $scope.showMetric = captureKind === 'metric' || captureKind === 'trace-entry' || captureKind === 'transaction';
+        $scope.showTraceEntry = captureKind === 'trace-entry' || captureKind === 'transaction';
+        $scope.showTraceEntryStackThreshold = captureKind === 'trace-entry';
         $scope.loadMethodSignatures = true;
       } else {
         $timeout(function () {
@@ -256,9 +256,9 @@ glowroot.controller('ConfigCapturePointCtrl', [
 
     $scope.$watch('config.captureKind', function (value) {
       $scope.captureKindTransaction = value === 'transaction';
-      $scope.showMetric = value === 'metric' || value === 'trace_entry' || value === 'transaction';
-      $scope.showTraceEntry = value === 'trace_entry' || value === 'transaction';
-      $scope.showTraceEntryStackThreshold = value === 'trace_entry';
+      $scope.showMetric = value === 'metric' || value === 'trace-entry' || value === 'transaction';
+      $scope.showTraceEntry = value === 'trace-entry' || value === 'transaction';
+      $scope.showTraceEntryStackThreshold = value === 'trace-entry';
       if (!$scope.showMetric) {
         $scope.config.metricName = '';
       }

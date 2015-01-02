@@ -26,28 +26,25 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.PeekingIterator;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
 
 import org.glowroot.common.Clock;
 import org.glowroot.local.store.AggregateDao;
-import org.glowroot.local.store.ErrorCount;
-import org.glowroot.local.store.ErrorCountMarshaler;
+import org.glowroot.local.store.AggregateDao.ErrorSummaryQuery;
+import org.glowroot.local.store.AggregateDao.ErrorSummarySortOrder;
 import org.glowroot.local.store.ErrorMessageCount;
 import org.glowroot.local.store.ErrorMessageCountMarshaler;
 import org.glowroot.local.store.ErrorMessageQuery;
 import org.glowroot.local.store.ErrorPoint;
-import org.glowroot.local.store.OverallErrorCount;
-import org.glowroot.local.store.OverallErrorCountMarshaler;
+import org.glowroot.local.store.ErrorSummary;
+import org.glowroot.local.store.ErrorSummaryMarshaler;
+import org.glowroot.local.store.ImmutableErrorMessageQuery;
+import org.glowroot.local.store.ImmutableErrorSummaryQuery;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 @JsonService
 class ErrorJsonService {
@@ -72,98 +69,20 @@ class ErrorJsonService {
         dataSeriesHelper = new DataSeriesHelper(clock, fixedAggregateIntervalMillis);
     }
 
-    @GET("/backend/error/transactions")
-    String getTransactions(String queryString) throws Exception {
-        ErrorRequestWithLimit request =
-                QueryStrings.decode(queryString, ErrorRequestWithLimit.class);
+    @GET("/backend/error/data")
+    String getData(String queryString) throws Exception {
+        ErrorDataRequest request =
+                QueryStrings.decode(queryString, ErrorDataRequest.class);
 
-        OverallErrorCount overallErrorCount =
-                aggregateDao.readOverallErrorCount(request.from(), request.to());
-        QueryResult<ErrorCount> queryResult = aggregateDao.readTransactionErrorCounts(
-                request.from(), request.to(), request.limit());
-
-        ImmutableList<ErrorPoint> overallErrorPoints =
-                aggregateDao.readOverallErrorPoints(request.from(), request.to());
-
-        final int topX = 5;
-        List<DataSeries> dataSeriesList = Lists.newArrayList();
-        List<PeekingIterator<ErrorPoint>> transactionErrorPointsList = Lists.newArrayList();
-        for (int i = 0; i < Math.min(queryResult.records().size(), topX); i++) {
-            ErrorCount errorCount = queryResult.records().get(i);
-            String transactionType = errorCount.transactionType();
-            String transactionName = errorCount.transactionName();
-            checkNotNull(transactionType);
-            checkNotNull(transactionName);
-            dataSeriesList.add(new DataSeries(transactionName));
-            transactionErrorPointsList.add(Iterators.peekingIterator(
-                    aggregateDao.readTransactionErrorPoints(transactionType, transactionName,
-                            request.from(), request.to()).iterator()));
-        }
-
-        DataSeries otherDataSeries = null;
-        if (queryResult.records().size() > topX) {
-            otherDataSeries = new DataSeries(null);
-        }
-
-        ErrorPoint lastOverallErrorPoint = null;
-        for (ErrorPoint overallErrorPoint : overallErrorPoints) {
-            if (lastOverallErrorPoint == null) {
-                // first aggregate
-                dataSeriesHelper.addInitialUpslope(request.from(),
-                        overallErrorPoint.getCaptureTime(), dataSeriesList, otherDataSeries);
-            } else {
-                dataSeriesHelper.addGapIfNeeded(lastOverallErrorPoint.getCaptureTime(),
-                        overallErrorPoint.getCaptureTime(), dataSeriesList, otherDataSeries);
-            }
-            lastOverallErrorPoint = overallErrorPoint;
-
-            long totalOtherErrorCount = overallErrorPoint.getErrorCount();
-            for (int i = 0; i < dataSeriesList.size(); i++) {
-                PeekingIterator<ErrorPoint> transactionErrorPoints =
-                        transactionErrorPointsList.get(i);
-                ErrorPoint transactionErrorPoint = getNextErrorPointIfMatching(
-                        transactionErrorPoints, overallErrorPoint.getCaptureTime());
-                DataSeries dataSeries = dataSeriesList.get(i);
-                if (transactionErrorPoint == null) {
-                    dataSeries.add(overallErrorPoint.getCaptureTime(), 0);
-                } else {
-                    dataSeries.add(overallErrorPoint.getCaptureTime(),
-                            100 * transactionErrorPoint.getErrorCount()
-                                    / (double) overallErrorPoint.getTransactionCount());
-                    totalOtherErrorCount -= transactionErrorPoint.getErrorCount();
-                }
-            }
-            if (otherDataSeries != null) {
-                otherDataSeries.add(overallErrorPoint.getCaptureTime(), 100 * totalOtherErrorCount
-                        / (double) overallErrorPoint.getTransactionCount());
-            }
-        }
-        if (lastOverallErrorPoint != null) {
-            dataSeriesHelper.addFinalDownslope(request.to(), dataSeriesList, otherDataSeries,
-                    lastOverallErrorPoint.getCaptureTime());
-        }
-        if (otherDataSeries != null) {
-            dataSeriesList.add(otherDataSeries);
-        }
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeObjectField("dataSeries", dataSeriesList);
-        jg.writeFieldName("overallSummary");
-        OverallErrorCountMarshaler.instance().marshalInstance(jg, overallErrorCount);
-        jg.writeFieldName("transactionSummaries");
-        ErrorCountMarshaler.instance().marshalIterable(jg, queryResult.records());
-        jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
-    }
-
-    @GET("/backend/error/messages")
-    String getErrorMessages(String queryString) throws Exception {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-        ErrorMessageQuery query = QueryStrings.decode(queryString, ErrorMessageQuery.class);
+        ErrorMessageQuery query = ImmutableErrorMessageQuery.builder()
+                .transactionType(request.transactionType())
+                .transactionName(request.transactionName())
+                .from(request.from())
+                .to(request.to())
+                .addAllIncludes(request.includes())
+                .addAllExcludes(request.excludes())
+                .limit(request.errorMessageLimit())
+                .build();
         QueryResult<ErrorMessageCount> queryResult = traceDao.readErrorMessageCounts(query);
         List<ErrorPoint> unfilteredErrorPoints = getUnfilteredErrorPoints(query);
         DataSeries dataSeries = new DataSeries(null);
@@ -186,6 +105,19 @@ class ErrorJsonService {
             }
             populateDataSeries(query, errorPoints, dataSeries, dataSeriesExtra);
         }
+
+        ImmutableErrorSummaryQuery summaryQuery = ImmutableErrorSummaryQuery.builder()
+                .transactionType(request.transactionType())
+                .from(request.from())
+                .to(request.to())
+                .sortOrder(request.summarySortOrder())
+                .limit(request.summaryLimit())
+                .build();
+        ErrorSummary sidebarOverallErrorSummary =
+                aggregateDao.readOverallErrorSummary(request.from(), request.to());
+        QueryResult<ErrorSummary> sidebarQueryResult =
+                aggregateDao.readTransactionErrorSummaries(summaryQuery);
+
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
@@ -193,25 +125,27 @@ class ErrorJsonService {
         jg.writeObjectField("dataSeriesExtra", dataSeriesExtra);
         jg.writeFieldName("errorMessages");
         ErrorMessageCountMarshaler.instance().marshalIterable(jg, queryResult.records());
-        jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
+        jg.writeBooleanField("moreErrorMessagesAvailable", queryResult.moreAvailable());
+        jg.writeFieldName("overallSummary");
+        ErrorSummaryMarshaler.instance().marshalInstance(jg, sidebarOverallErrorSummary);
+        jg.writeFieldName("transactionSummaries");
+        ErrorSummaryMarshaler.instance().marshalIterable(jg, sidebarQueryResult.records());
+        jg.writeBooleanField("moreSummariesAvailable", sidebarQueryResult.moreAvailable());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
 
-    // used by "show more"
-    @GET("/backend/error/transaction-summaries")
-    String getTransactionSummaries(String queryString) throws Exception {
-        ErrorRequestWithLimit request =
-                QueryStrings.decode(queryString, ErrorRequestWithLimit.class);
-        QueryResult<ErrorCount> queryResult = aggregateDao.readTransactionErrorCounts(
-                request.from(), request.to(), request.limit());
+    @GET("/backend/error/summaries")
+    String getSummaries(String queryString) throws Exception {
+        ErrorSummaryQuery query = QueryStrings.decode(queryString, ErrorSummaryQuery.class);
+        QueryResult<ErrorSummary> queryResult = aggregateDao.readTransactionErrorSummaries(query);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeFieldName("transactionSummaries");
-        ErrorCountMarshaler.instance().marshalIterable(jg, queryResult.records());
-        jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
+        ErrorSummaryMarshaler.instance().marshalIterable(jg, queryResult.records());
+        jg.writeBooleanField("moreSummariesAvailable", queryResult.moreAvailable());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -219,19 +153,14 @@ class ErrorJsonService {
 
     private List<ErrorPoint> getUnfilteredErrorPoints(ErrorMessageQuery query)
             throws SQLException {
-        String transactionType = query.transactionType();
         String transactionName = query.transactionName();
         List<ErrorPoint> unfilteredErrorPoints;
-        if (!Strings.isNullOrEmpty(transactionType) && !Strings.isNullOrEmpty(transactionName)) {
-            unfilteredErrorPoints = aggregateDao.readTransactionErrorPoints(transactionType,
-                    transactionName, query.from(), query.to());
-        } else if (Strings.isNullOrEmpty(transactionType)
-                && Strings.isNullOrEmpty(transactionName)) {
-            unfilteredErrorPoints =
-                    aggregateDao.readOverallErrorPoints(query.from(), query.to());
+        if (Strings.isNullOrEmpty(transactionName)) {
+            unfilteredErrorPoints = aggregateDao.readOverallErrorPoints(query.transactionType(),
+                    query.from(), query.to());
         } else {
-            throw new IllegalArgumentException("TransactionType and TransactionName must both be"
-                    + "empty or must both be non-empty");
+            unfilteredErrorPoints = aggregateDao.readTransactionErrorPoints(
+                    query.transactionType(), transactionName, query.from(), query.to());
         }
         return unfilteredErrorPoints;
     }
@@ -267,36 +196,17 @@ class ErrorJsonService {
         }
     }
 
-    private static @Nullable ErrorPoint getNextErrorPointIfMatching(
-            PeekingIterator<ErrorPoint> errorPoints, long captureTime) {
-        if (!errorPoints.hasNext()) {
-            return null;
-        }
-        ErrorPoint errorPoint = errorPoints.peek();
-        if (errorPoint.getCaptureTime() == captureTime) {
-            // advance iterator
-            errorPoints.next();
-            return errorPoint;
-        }
-        return null;
-    }
-
     @Value.Immutable
     @Json.Marshaled
-    abstract static class ErrorRequest {
+    abstract static class ErrorDataRequest {
         abstract long from();
         abstract long to();
-        abstract @Nullable String transactionType();
+        abstract String transactionType();
         abstract @Nullable String transactionName();
-    }
-
-    @Value.Immutable
-    @Json.Marshaled
-    abstract static class ErrorRequestWithLimit {
-        abstract long from();
-        abstract long to();
-        abstract @Nullable String transactionType();
-        abstract @Nullable String transactionName();
-        abstract int limit();
+        public abstract List<String> includes();
+        public abstract List<String> excludes();
+        abstract int errorMessageLimit();
+        abstract ErrorSummarySortOrder summarySortOrder();
+        abstract int summaryLimit();
     }
 }

@@ -2,6 +2,15 @@
    ng-class="{active: isActive()}"
    ng-href="{{gtUrl}}"
    ng-click="ngClick($event)"
-   ng-show="ngShow()">
-  {{gtDisplay}}
+   ng-show="ngShow()"
+   style="cursor: pointer;">
+  <div ng-if="!gtDisplayRight">
+    {{gtDisplay}}
+  </div>
+  <table ng-if="gtDisplayRight" style="width: 100%;">
+    <tr>
+      <td style="word-break: break-all; padding-right: 15px;">{{gtDisplay}}</td>
+      <td style="text-align: right; vertical-align: top; white-space: nowrap;">{{gtDisplayRight}}</td>
+    </tr>
+  </table>
 </a>

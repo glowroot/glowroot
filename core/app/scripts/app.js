@@ -23,7 +23,8 @@ var glowroot = angular.module('glowroot', [
   'ui.bootstrap.popover',
   'ui.bootstrap.typeahead',
   'ui.bootstrap.bindHtml',
-  'ui.bootstrap.modal'
+  'ui.bootstrap.modal',
+  'angular-bootstrap-select'
 ]);
 
 var Glowroot;

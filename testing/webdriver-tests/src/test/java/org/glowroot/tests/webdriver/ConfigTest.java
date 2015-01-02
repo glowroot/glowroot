@@ -53,7 +53,7 @@ public class ConfigTest extends WebDriverTest {
         app.open();
         globalNavbar.getConfigurationLink().click();
         // need to give angular view a chance to render before assertions
-        Thread.sleep(100);
+        Thread.sleep(200);
         assertThat(page.getEnabledSwitchOn().getAttribute("class").split(" "))
                 .doesNotContain("active");
         assertThat(page.getEnabledSwitchOff().getAttribute("class").split(" ")).contains("active");
@@ -86,7 +86,7 @@ public class ConfigTest extends WebDriverTest {
         globalNavbar.getConfigurationLink().click();
         configSidebar.getProfilingLink().click();
         // need to give angular view a chance to render before assertions
-        Thread.sleep(100);
+        Thread.sleep(200);
         assertThat(page.getEnabledSwitchOn().getAttribute("class").split(" "))
                 .doesNotContain("active");
         assertThat(page.getEnabledSwitchOff().getAttribute("class").split(" ")).contains("active");
@@ -121,7 +121,7 @@ public class ConfigTest extends WebDriverTest {
         globalNavbar.getConfigurationLink().click();
         configSidebar.getUserRecordingLink().click();
         // need to give angular view a chance to render before assertions
-        Thread.sleep(100);
+        Thread.sleep(200);
         assertThat(page.getEnabledSwitchOn().getAttribute("class").split(" "))
                 .doesNotContain("active");
         assertThat(page.getEnabledSwitchOff().getAttribute("class").split(" ")).contains("active");
@@ -158,7 +158,7 @@ public class ConfigTest extends WebDriverTest {
         globalNavbar.getConfigurationLink().click();
         configSidebar.getStorageLink().click();
         // need to give angular view a chance to render before assertions
-        Thread.sleep(100);
+        Thread.sleep(200);
         assertThat(page.getAggregateExpirationTextField().getAttribute("value"))
                 .isEqualTo("44");
         assertThat(page.getTracesExpirationTextField().getAttribute("value")).isEqualTo("55");
@@ -202,7 +202,7 @@ public class ConfigTest extends WebDriverTest {
         globalNavbar.getConfigurationLink().click();
         configSidebar.getAdvancedLink().click();
         // need to give angular view a chance to render before assertions
-        Thread.sleep(100);
+        Thread.sleep(200);
         assertThat(page.getMetricWrapperMethodsCheckBox().isSelected()).isFalse();
         assertThat(page.getImmediatePartialStoreThresholdTextField().getAttribute("value"))
                 .isEqualTo("1234");

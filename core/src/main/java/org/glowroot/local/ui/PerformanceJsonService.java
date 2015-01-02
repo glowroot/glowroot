@@ -27,10 +27,8 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
-import com.google.common.collect.PeekingIterator;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
@@ -39,16 +37,19 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.glowroot.collector.Aggregate;
 import org.glowroot.common.Clock;
 import org.glowroot.local.store.AggregateDao;
+import org.glowroot.local.store.AggregateDao.PerformanceSummaryQuery;
+import org.glowroot.local.store.AggregateDao.PerformanceSummarySortOrder;
+import org.glowroot.local.store.ImmutablePerformanceSummaryQuery;
+import org.glowroot.local.store.PerformanceSummary;
+import org.glowroot.local.store.PerformanceSummaryMarshaler;
 import org.glowroot.local.store.QueryResult;
-import org.glowroot.local.store.Summary;
-import org.glowroot.local.store.SummaryMarshaler;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.ui.AggregateCommonService.MergedAggregate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @JsonService
-class AggregateJsonService {
+class PerformanceJsonService {
 
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final int MICROSECONDS_PER_SECOND = 1000000;
@@ -58,7 +59,8 @@ class AggregateJsonService {
     private final TraceDao traceDao;
     private final DataSeriesHelper dataSeriesHelper;
 
-    AggregateJsonService(AggregateCommonService aggregateCommonService, AggregateDao aggregateDao,
+    PerformanceJsonService(AggregateCommonService aggregateCommonService,
+            AggregateDao aggregateDao,
             TraceDao traceDao, Clock clock, long fixedAggregateIntervalSeconds) {
         this.aggregateCommonService = aggregateCommonService;
         this.aggregateDao = aggregateDao;
@@ -66,178 +68,58 @@ class AggregateJsonService {
         dataSeriesHelper = new DataSeriesHelper(clock, fixedAggregateIntervalSeconds * 1000);
     }
 
-    @GET("/backend/performance/transactions")
-    String getTransactions(String queryString) throws Exception {
-        AggregateRequestWithLimit request =
-                QueryStrings.decode(queryString, AggregateRequestWithLimit.class);
-        Summary overallSummary = aggregateDao.readOverallSummary(request.transactionType(),
-                request.from(), request.to());
-        Integer limit = request.limit();
-        checkNotNull(limit);
-        QueryResult<Summary> queryResult = aggregateDao.readTransactionSummaries(
-                request.transactionType(), request.from(), request.to(), limit);
-        List<Aggregate> overallAggregates = aggregateDao.readOverallAggregates(
-                request.transactionType(), request.from(), request.to());
+    @GET("/backend/performance/data")
+    String getData(String queryString) throws Exception {
+        PerformanceDataRequest request =
+                QueryStrings.decode(queryString, PerformanceDataRequest.class);
 
-        final int topX = 5;
-        List<DataSeries> dataSeriesList = Lists.newArrayList();
-        List<PeekingIterator<Aggregate>> transactionAggregatesList = Lists.newArrayList();
-        for (int i = 0; i < Math.min(queryResult.records().size(), topX); i++) {
-            String transactionName = queryResult.records().get(i).transactionName();
-            checkNotNull(transactionName);
-            dataSeriesList.add(new DataSeries(transactionName));
-            transactionAggregatesList.add(Iterators.peekingIterator(
-                    aggregateDao.readTransactionAggregates(request.transactionType(),
-                            transactionName, request.from(), request.to()).iterator()));
-        }
-
-        DataSeries otherDataSeries = null;
-        if (queryResult.records().size() > topX) {
-            otherDataSeries = new DataSeries(null);
-        }
-
-        Aggregate lastOverallAggregate = null;
-        for (Aggregate overallAggregate : overallAggregates) {
-            if (lastOverallAggregate == null) {
-                // first aggregate
-                dataSeriesHelper.addInitialUpslope(request.from(), overallAggregate.captureTime(),
-                        dataSeriesList, otherDataSeries);
-            } else {
-                dataSeriesHelper.addGapIfNeeded(lastOverallAggregate.captureTime(),
-                        overallAggregate.captureTime(), dataSeriesList, otherDataSeries);
-            }
-            lastOverallAggregate = overallAggregate;
-
-            long totalOtherMicros = overallAggregate.totalMicros();
-            for (int i = 0; i < dataSeriesList.size(); i++) {
-                PeekingIterator<Aggregate> transactionAggregates = transactionAggregatesList.get(i);
-                Aggregate transactionAggregate = getNextAggregateIfMatching(transactionAggregates,
-                        overallAggregate.captureTime());
-                DataSeries dataSeries = dataSeriesList.get(i);
-                if (transactionAggregate == null) {
-                    dataSeries.add(overallAggregate.captureTime(), 0);
-                } else {
-                    // convert to average seconds
-                    dataSeries.add(
-                            overallAggregate.captureTime(),
-                            (transactionAggregate.totalMicros() / (double) overallAggregate
-                                    .transactionCount())
-                                    / MICROSECONDS_PER_SECOND);
-                    totalOtherMicros -= transactionAggregate.totalMicros();
-                }
-            }
-            if (otherDataSeries != null) {
-                otherDataSeries.add(overallAggregate.captureTime(),
-                        (totalOtherMicros / (double) overallAggregate.transactionCount())
-                                / MICROSECONDS_PER_SECOND);
-            }
-        }
-        if (lastOverallAggregate != null) {
-            dataSeriesHelper.addFinalDownslope(request.to(), dataSeriesList, otherDataSeries,
-                    lastOverallAggregate.captureTime());
-        }
-        if (otherDataSeries != null) {
-            dataSeriesList.add(otherDataSeries);
-        }
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeObjectField("dataSeries", dataSeriesList);
-        jg.writeFieldName("overallSummary");
-        SummaryMarshaler.marshal(jg, overallSummary);
-        jg.writeFieldName("transactionSummaries");
-        SummaryMarshaler.instance().marshalIterable(jg, queryResult.records());
-        jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
-    }
-
-    @GET("/backend/performance/metrics")
-    String getMetrics(String queryString) throws Exception {
-        AggregateRequest request = QueryStrings.decode(queryString, AggregateRequest.class);
         List<Aggregate> aggregates = getAggregates(request);
         List<StackedPoint> stackedPoints = getStackedPoints(aggregates);
-
-        final int topX = 5;
-        List<String> metricNames = getTopMetricNames(stackedPoints, topX + 1);
-        List<DataSeries> dataSeriesList = Lists.newArrayList();
-        for (int i = 0; i < Math.min(metricNames.size(), topX); i++) {
-            dataSeriesList.add(new DataSeries(metricNames.get(i)));
-        }
-        // need 'other' data series even if < topX metrics in order to capture root metrics,
-        // e.g. time spent in 'servlet' metric but not in any nested metric
-        DataSeries otherDataSeries = new DataSeries(null);
-        Aggregate lastAggregate = null;
-        for (StackedPoint stackedPoint : stackedPoints) {
-            Aggregate aggregate = stackedPoint.getAggregate();
-            if (lastAggregate == null) {
-                // first aggregate
-                dataSeriesHelper.addInitialUpslope(request.from(), aggregate.captureTime(),
-                        dataSeriesList, otherDataSeries);
-            } else {
-                dataSeriesHelper.addGapIfNeeded(lastAggregate.captureTime(),
-                        aggregate.captureTime(), dataSeriesList, otherDataSeries);
-            }
-            lastAggregate = aggregate;
-            MutableLongMap<String> stackedMetrics = stackedPoint.getStackedMetrics();
-            long totalOtherMicros = aggregate.totalMicros();
-            for (DataSeries dataSeries : dataSeriesList) {
-                MutableLong totalMicros = stackedMetrics.get(dataSeries.getName());
-                if (totalMicros == null) {
-                    dataSeries.add(aggregate.captureTime(), 0);
-                } else {
-                    // convert to average seconds
-                    dataSeries.add(aggregate.captureTime(),
-                            (totalMicros.longValue() / (double) aggregate.transactionCount())
-                                    / MICROSECONDS_PER_SECOND);
-                    totalOtherMicros -= totalMicros.longValue();
-                }
-            }
-            if (aggregate.transactionCount() == 0) {
-                otherDataSeries.add(aggregate.captureTime(), 0);
-            } else {
-                // convert to average seconds
-                otherDataSeries.add(aggregate.captureTime(),
-                        (totalOtherMicros / (double) aggregate.transactionCount())
-                                / MICROSECONDS_PER_SECOND);
-            }
-        }
-        if (lastAggregate != null) {
-            dataSeriesHelper.addFinalDownslope(request.to(), dataSeriesList, otherDataSeries,
-                    lastAggregate.captureTime());
-        }
-        if (!stackedPoints.isEmpty()) {
-            dataSeriesList.add(otherDataSeries);
-        }
-
+        List<DataSeries> dataSeriesList = getMetricDataSeries(request, stackedPoints);
         MergedAggregate mergedAggregate = aggregateCommonService.getMergedAggregate(aggregates);
         long traceCount = getTraceCount(request);
+
+        PerformanceSummary overallSummary = aggregateDao.readOverallPerformanceSummary(
+                request.transactionType(),
+                request.from(), request.to());
+        ImmutablePerformanceSummaryQuery query = ImmutablePerformanceSummaryQuery.builder()
+                .transactionType(request.transactionType())
+                .from(request.from())
+                .to(request.to())
+                .sortOrder(request.summarySortOrder())
+                .limit(request.summaryLimit())
+                .build();
+        QueryResult<PerformanceSummary> queryResult =
+                aggregateDao.readTransactionPerformanceSummaries(query);
+
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeObjectField("dataSeries", dataSeriesList);
         jg.writeObjectField("mergedAggregate", mergedAggregate);
         jg.writeObjectField("traceCount", traceCount);
+        jg.writeFieldName("overallSummary");
+        PerformanceSummaryMarshaler.marshal(jg, overallSummary);
+        jg.writeFieldName("transactionSummaries");
+        PerformanceSummaryMarshaler.instance().marshalIterable(jg, queryResult.records());
+        jg.writeBooleanField("moreSummariesAvailable", queryResult.moreAvailable());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
 
-    // used by "show more"
-    @GET("/backend/performance/transaction-summaries")
-    String getTransactionSummaries(String queryString) throws Exception {
-        AggregateRequestWithLimit request =
-                QueryStrings.decode(queryString, AggregateRequestWithLimit.class);
-        QueryResult<Summary> queryResult =
-                aggregateDao.readTransactionSummaries(request.transactionType(),
-                        request.from(), request.to(), request.limit());
+    @GET("/backend/performance/summaries")
+    String getSummaries(String queryString) throws Exception {
+        PerformanceSummaryQuery query =
+                QueryStrings.decode(queryString, PerformanceSummaryQuery.class);
+        QueryResult<PerformanceSummary> queryResult =
+                aggregateDao.readTransactionPerformanceSummaries(query);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeFieldName("transactionSummaries");
-        SummaryMarshaler.instance().marshalIterable(jg, queryResult.records());
-        jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
+        PerformanceSummaryMarshaler.instance().marshalIterable(jg, queryResult.records());
+        jg.writeBooleanField("moreSummariesAvailable", queryResult.moreAvailable());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -290,21 +172,63 @@ class AggregateJsonService {
         return sb.toString();
     }
 
-    private static @Nullable Aggregate getNextAggregateIfMatching(
-            PeekingIterator<Aggregate> aggregates, long captureTime) {
-        if (!aggregates.hasNext()) {
-            return null;
+    private List<DataSeries> getMetricDataSeries(PerformanceDataRequest request,
+            List<StackedPoint> stackedPoints) {
+        final int topX = 5;
+        List<String> metricNames = getTopMetricNames(stackedPoints, topX + 1);
+        List<DataSeries> dataSeriesList = Lists.newArrayList();
+        for (int i = 0; i < Math.min(metricNames.size(), topX); i++) {
+            dataSeriesList.add(new DataSeries(metricNames.get(i)));
         }
-        Aggregate aggregate = aggregates.peek();
-        if (aggregate.captureTime() == captureTime) {
-            // advance iterator
-            aggregates.next();
-            return aggregate;
+        // need 'other' data series even if < topX metrics in order to capture root metrics,
+        // e.g. time spent in 'servlet' metric but not in any nested metric
+        DataSeries otherDataSeries = new DataSeries(null);
+        Aggregate lastAggregate = null;
+        for (StackedPoint stackedPoint : stackedPoints) {
+            Aggregate aggregate = stackedPoint.getAggregate();
+            if (lastAggregate == null) {
+                // first aggregate
+                dataSeriesHelper.addInitialUpslope(request.from(), aggregate.captureTime(),
+                        dataSeriesList, otherDataSeries);
+            } else {
+                dataSeriesHelper.addGapIfNeeded(lastAggregate.captureTime(),
+                        aggregate.captureTime(), dataSeriesList, otherDataSeries);
+            }
+            lastAggregate = aggregate;
+            MutableLongMap<String> stackedMetrics = stackedPoint.getStackedMetrics();
+            long totalOtherMicros = aggregate.totalMicros();
+            for (DataSeries dataSeries : dataSeriesList) {
+                MutableLong totalMicros = stackedMetrics.get(dataSeries.getName());
+                if (totalMicros == null) {
+                    dataSeries.add(aggregate.captureTime(), 0);
+                } else {
+                    // convert to average seconds
+                    dataSeries.add(aggregate.captureTime(),
+                            (totalMicros.longValue() / (double) aggregate.transactionCount())
+                                    / MICROSECONDS_PER_SECOND);
+                    totalOtherMicros -= totalMicros.longValue();
+                }
+            }
+            if (aggregate.transactionCount() == 0) {
+                otherDataSeries.add(aggregate.captureTime(), 0);
+            } else {
+                // convert to average seconds
+                otherDataSeries.add(aggregate.captureTime(),
+                        (totalOtherMicros / (double) aggregate.transactionCount())
+                                / MICROSECONDS_PER_SECOND);
+            }
         }
-        return null;
+        if (lastAggregate != null) {
+            dataSeriesHelper.addFinalDownslope(request.to(), dataSeriesList, otherDataSeries,
+                    lastAggregate.captureTime());
+        }
+        if (!stackedPoints.isEmpty()) {
+            dataSeriesList.add(otherDataSeries);
+        }
+        return dataSeriesList;
     }
 
-    private List<Aggregate> getAggregates(AggregateRequest request) throws SQLException {
+    private List<Aggregate> getAggregates(PerformanceDataRequest request) throws SQLException {
         String transactionName = request.transactionName();
         if (transactionName == null) {
             return aggregateDao.readOverallAggregates(request.transactionType(), request.from(),
@@ -348,7 +272,7 @@ class AggregateJsonService {
         return metricNames;
     }
 
-    private long getTraceCount(AggregateRequest request) throws SQLException {
+    private long getTraceCount(PerformanceDataRequest request) throws SQLException {
         String transactionName = request.transactionName();
         if (transactionName == null) {
             return traceDao.readOverallCount(request.transactionType(), request.from(),
@@ -452,21 +376,13 @@ class AggregateJsonService {
 
     @Value.Immutable
     @Json.Marshaled
-    abstract static class AggregateRequest {
+    abstract static class PerformanceDataRequest {
         abstract long from();
         abstract long to();
         abstract String transactionType();
         abstract @Nullable String transactionName();
-    }
-
-    @Value.Immutable
-    @Json.Marshaled
-    abstract static class AggregateRequestWithLimit {
-        abstract long from();
-        abstract long to();
-        abstract String transactionType();
-        abstract @Nullable String transactionName();
-        abstract int limit();
+        abstract PerformanceSummarySortOrder summarySortOrder();
+        abstract int summaryLimit();
     }
 
     @Value.Immutable

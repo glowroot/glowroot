@@ -99,7 +99,7 @@ class QueryStrings {
         } else if (Enum.class.isAssignableFrom(targetClass)) {
             @SuppressWarnings({"unchecked", "rawtypes"})
             Enum<?> enumValue = Enum.valueOf((Class<? extends Enum>) targetClass,
-                    str.toUpperCase(Locale.ENGLISH));
+                    str.replace('-', '_').toUpperCase(Locale.ENGLISH));
             return enumValue;
         } else {
             throw new IllegalStateException("Unexpected class: " + targetClass);

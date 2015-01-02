@@ -19,7 +19,7 @@
       "className": "org.glowroot.microbenchmarks.core.support.TraceEntryWorthy",
       "methodName": "doSomethingTraceEntryWorthy2",
       "methodParameterTypes": [ ],
-      "captureKind": "trace_entry",
+      "captureKind": "trace-entry",
       "metricName": "trace entry worthy",
       "traceEntryTemplate": "trace entry worthy: {{this.name}}"
     },

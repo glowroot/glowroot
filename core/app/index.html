@@ -30,181 +30,203 @@
   <!-- this is needed when base href is not / -->
   <link rel="shortcut icon" href="favicon.ico">
 
-  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans:400,600,700">
-
   <!-- build:css({.tmp,.}) styles/main.css -->
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="bower_components/stackvis/share/icicle.css">
   <!-- endbuild -->
+
+  <script>
+    if (document.fonts) {
+      new FontFace('Open Sans',
+          'url(fonts/opensans-regular-webfont.woff2) format("woff2"),' +
+          ' url(fonts/opensans-regular-webfont.woff) format("woff")',
+          {weight: '400'}).load();
+      new FontFace('Open Sans',
+          'url(fonts/opensans-semibold-webfont.woff2) format("woff2"),' +
+          ' url(fonts/opensans-semibold-webfont.woff) format("woff")',
+          {weight: '600'}).load();
+      new FontFace('Open Sans',
+          'url(fonts/opensans-bold-webfont.woff2) format("woff2"),' +
+          ' url(fonts/opensans-bold-webfont.woff) format("woff")',
+          {weight: '700'}).load();
+      new FontFace('FontAwesome', 'url(fonts/fontawesome-webfont.woff) format("woff")').load();
+    }
+  </script>
 </head>
 <body ng-app="glowroot"
       id="ng-app">
-  <!--[if lt IE 9]>
-  <style>
-    body div {
-      display: none;
-    }
-  </style>
-  <p style="text-align: center; padding-top: 50px; font-size: 20px;">
-    Glowroot UI does not support IE8 or prior
-  </p>
-  <![endif]-->
-  <header class="navbar navbar-inverse navbar-fixed-top">
-    <div class="container">
-      <div class="navbar-header">
-        <button type="button"
-                class="navbar-toggle"
-                data-toggle="collapse"
-                data-target=".navbar-collapse">
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-        </button>
-        <span class="navbar-brand">
-          Glowroot
-        </span>
-      </div>
-      <div ng-hide="hideNavbar()">
-        <nav class="collapse navbar-collapse">
-          <ul class="nav navbar-nav">
-            <div gt-navbar-item
-                 gt-display="Performance"
-                 gt-item-name="performance"
-                 gt-url="performance/transactions">
-            </div>
-            <div gt-navbar-item
-                 gt-display="Errors"
-                 gt-item-name="errors"
-                 gt-url="errors/transactions">
-            </div>
-            <div gt-navbar-item
-                 gt-display="Traces"
-                 gt-item-name="traces"
-                 gt-url="traces">
-            </div>
-            <div gt-navbar-item
-                 gt-display="JVM"
-                 gt-item-name="jvm"
-                 gt-url="jvm/gauges">
-            </div>
-          </ul>
-          <ul class="nav navbar-nav navbar-right">
-            <div gt-navbar-item
-                 gt-display=""
-                 gt-item-name="config"
-                 gt-url="config/traces"
-                 gt-style="padding-top: 14px; padding-bottom: 0; height: 50px;">
-              <i title="Configuration" class="fa fa-gears" style="font-size: 24px;"></i>
-            </div>
-            <li class="ng-cloak" ng-show="layout.passwordEnabled">
-              <a href="#"
-                 ng-click="signOut()"
-                 style="padding-top: 14px; padding-bottom: 0; height: 50px;">
-                <i title="Sign out" class="fa fa-sign-out" style="font-size: 24px;"></i>
-              </a>
-            </li>
-          </ul>
-        </nav>
+<!--[if lt IE 9]>
+<style>
+  body div {
+    display: none;
+  }
+</style>
+<p style="text-align: center; padding-top: 50px; font-size: 20px;">
+  Glowroot UI does not support IE8 or prior
+</p>
+<![endif]-->
+<header class="navbar navbar-inverse navbar-fixed-top">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button"
+              class="navbar-toggle"
+              data-toggle="collapse"
+              data-target=".navbar-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <div class="navbar-brand">
+        Glowroot
       </div>
     </div>
-  </header>
-  <div class="container" id="container">
-    <!-- autoscroll=true behavior is overridden to scroll to top of page, see $uiViewScroll decorator in routes.js -->
-    <div ui-view autoscroll="true"></div>
-    <div id="push"></div>
+    <div ng-hide="hideNavbar()">
+      <nav class="collapse navbar-collapse">
+        <ul class="nav navbar-nav">
+          <div gt-navbar-item
+               gt-display="Performance"
+               gt-item-name="performance"
+               gt-url="performance">
+          </div>
+          <div gt-navbar-item
+               gt-display="Errors"
+               gt-item-name="errors"
+               gt-url="errors">
+          </div>
+          <div gt-navbar-item
+               gt-display="Traces"
+               gt-item-name="traces"
+               gt-url="traces">
+          </div>
+          <div gt-navbar-item
+               gt-display="JVM"
+               gt-item-name="jvm"
+               gt-url="jvm/gauges">
+          </div>
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
+          <div class="ng-cloak"
+               gt-navbar-item
+               gt-display=""
+               gt-item-name="config"
+               gt-url="config/traces">
+            <i title="Configuration"
+               class="fa fa-gears"
+               style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -3px;"></i>
+          </div>
+          <li class="ng-cloak" ng-show="layout.passwordEnabled">
+            <a href="#"
+               ng-click="signOut()"
+               style="padding-top: 14px; padding-bottom: 0; height: 50px;">
+              <i title="Sign out"
+                 class="fa fa-sign-out"
+                 style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -3px;"></i>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
   </div>
-  <div class="ng-cloak" id="footer">
-    {{layout.footerMessage}}
-  </div>
+</header>
+<div class="container" id="container">
+  <!-- autoscroll=true behavior is overridden to scroll to top of page, see $uiViewScroll decorator in routes.js -->
+  <div ui-view autoscroll="true"></div>
+  <div id="push"></div>
+</div>
+<div class="ng-cloak" id="footer">
+  {{layout.footerMessage}}
+</div>
 
-  <!-- build:js({.tmp,.}) scripts/vendor.js -->
-  <script src="bower_components/jquery/dist/jquery.js"></script>
-  <script src="bower_components/angular/angular.js"></script>
-  <script src="bower_components/angular-ui-router/release/angular-ui-router.js"></script>
-  <script src="bower_components/handlebars/handlebars.runtime.js"></script>
-  <!-- modal is used by trace modals -->
-  <script src="bower_components/bootstrap/js/modal.js"></script>
-  <!-- collapse is needed for the navbar on small screen (mobile) -->
-  <script src="bower_components/bootstrap/js/collapse.js"></script>
-  <!-- transition is needed for the navbar open/close effect on small screen (mobile) -->
-  <script src="bower_components/bootstrap/js/transition.js"></script>
-  <!-- buttons is used by button-group styled radio buttons (e.g. On/Off) -->
-  <script src="bower_components/angular-ui-bootstrap/src/buttons/buttons.js"></script>
-  <!-- dropdown is used by the trace search form (e.g. begins with / equals / ends with / contains) -->
-  <script src="bower_components/angular-ui-bootstrap/src/dropdown/dropdown.js"></script>
-  <!-- typeahead is used by capture pointcut view -->
-  <script src="bower_components/angular-ui-bootstrap/src/typeahead/typeahead.js"></script>
-  <!-- position is needed by typeahead -->
-  <script src="bower_components/angular-ui-bootstrap/src/position/position.js"></script>
-  <!-- bindHtml is needed by typeahead -->
-  <script src="bower_components/angular-ui-bootstrap/src/bindHtml/bindHtml.js"></script>
-  <!-- modal is used for config unsaved changes confirmation -->
-  <script src="bower_components/angular-ui-bootstrap/src/modal/modal.js"></script>
-  <!-- popover is used for chart help -->
-  <script src="bower_components/angular-ui-bootstrap/src/popover/popover.js"></script>
-  <!-- tooltip is needed by popover -->
-  <script src="bower_components/angular-ui-bootstrap/src/tooltip/tooltip.js"></script>
-  <!-- transition is needed by modal and collapse -->
-  <script src="bower_components/angular-ui-bootstrap/src/transition/transition.js"></script>
-  <script src="bower_components/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
-  <script src="bower_components/flot/src/jquery.flot.js"></script>
-  <script src="bower_components/flot/lib/jquery.colorhelpers.js"></script>
-  <script src="bower_components/flot/lib/jquery.mousewheel.js"></script>
-  <script src="bower_components/flot/src/plugins/jquery.flot.navigate.js"></script>
-  <script src="bower_components/flot/src/plugins/jquery.flot.selection.js"></script>
-  <script src="bower_components/flot/src/plugins/jquery.flot.time.js"></script>
-  <script src="bower_components/flot/src/plugins/jquery.flot.stack.js"></script>
-  <script src="bower_components/flot.tooltip/js/jquery.flot.tooltip.js"></script>
-  <script src="bower_components/moment/moment.js"></script>
-  <script src="bower_components/spinjs/spin.js"></script>
-  <script src="bower_components/d3/d3.v2.js"></script>
-  <script src="bower_components/stackvis/share/icicle.js"></script>
-  <!-- angular-ui-bootstrap-templates.js is generated at build time by grunt-angular-templates -->
-  <script src="scripts/generated/angular-ui-bootstrap-templates.js"></script>
-  <!-- endbuild -->
+<!-- build:js({.tmp,.}) scripts/vendor.js -->
+<script src="bower_components/jquery/dist/jquery.js"></script>
+<script src="bower_components/angular/angular.js"></script>
+<script src="bower_components/angular-ui-router/release/angular-ui-router.js"></script>
+<script src="bower_components/handlebars/handlebars.runtime.js"></script>
+<!-- modal is used by trace modals -->
+<script src="bower_components/bootstrap/js/modal.js"></script>
+<!-- collapse is needed for the navbar on small screen (mobile) -->
+<script src="bower_components/bootstrap/js/collapse.js"></script>
+<!-- transition is needed for the navbar open/close effect on small screen (mobile) -->
+<script src="bower_components/bootstrap/js/transition.js"></script>
+<!-- dropdown is needed for bootstrap-select (used by transaction sidebar) -->
+<script src="bower_components/bootstrap/js/dropdown.js"></script>
+<!-- buttons is used by button-group styled radio buttons (e.g. On/Off) -->
+<script src="bower_components/angular-ui-bootstrap/src/buttons/buttons.js"></script>
+<!-- dropdown is used by the trace search form (e.g. begins with / equals / ends with / contains) -->
+<script src="bower_components/angular-ui-bootstrap/src/dropdown/dropdown.js"></script>
+<!-- typeahead is used by capture pointcut view -->
+<script src="bower_components/angular-ui-bootstrap/src/typeahead/typeahead.js"></script>
+<!-- position is needed by typeahead -->
+<script src="bower_components/angular-ui-bootstrap/src/position/position.js"></script>
+<!-- bindHtml is needed by typeahead -->
+<script src="bower_components/angular-ui-bootstrap/src/bindHtml/bindHtml.js"></script>
+<!-- modal is used for config unsaved changes confirmation -->
+<script src="bower_components/angular-ui-bootstrap/src/modal/modal.js"></script>
+<!-- popover is used for chart help -->
+<script src="bower_components/angular-ui-bootstrap/src/popover/popover.js"></script>
+<!-- tooltip is needed by popover -->
+<script src="bower_components/angular-ui-bootstrap/src/tooltip/tooltip.js"></script>
+<!-- transition is needed by modal and collapse -->
+<script src="bower_components/angular-ui-bootstrap/src/transition/transition.js"></script>
+<script src="bower_components/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
+<script src="bower_components/bootstrap-select/js/bootstrap-select.js"></script>
+<script src="bower_components/angular-bootstrap-select/src/angular-bootstrap-select.js"></script>
+<script src="bower_components/flot/src/jquery.flot.js"></script>
+<script src="bower_components/flot/lib/jquery.colorhelpers.js"></script>
+<script src="bower_components/flot/lib/jquery.mousewheel.js"></script>
+<script src="bower_components/flot/src/plugins/jquery.flot.navigate.js"></script>
+<script src="bower_components/flot/src/plugins/jquery.flot.selection.js"></script>
+<script src="bower_components/flot/src/plugins/jquery.flot.time.js"></script>
+<script src="bower_components/flot/src/plugins/jquery.flot.stack.js"></script>
+<script src="bower_components/flot.tooltip/js/jquery.flot.tooltip.js"></script>
+<script src="bower_components/moment/moment.js"></script>
+<script src="bower_components/spinjs/spin.js"></script>
+<script src="bower_components/d3/d3.v2.js"></script>
+<script src="bower_components/stackvis/share/icicle.js"></script>
+<!-- angular-ui-bootstrap-templates.js is generated at build time by grunt-angular-templates -->
+<script src="scripts/generated/angular-ui-bootstrap-templates.js"></script>
+<!-- endbuild -->
 
-  <!-- build:js({.tmp,app}) scripts/scripts.js -->
-  <script src="scripts/app.js"></script>
-  <script src="scripts/routes.js"></script>
-  <script src="scripts/directives.js"></script>
-  <script src="scripts/filters.js"></script>
-  <script src="scripts/handlebars-rendering.js"></script>
-  <script src="scripts/services/trace-modal.js"></script>
-  <script src="scripts/services/confirm-if-has-changes.js"></script>
-  <script src="scripts/services/http-errors.js"></script>
-  <script src="scripts/services/login.js"></script>
-  <script src="scripts/services/charts.js"></script>
-  <script src="scripts/services/keyed-color-pools.js"></script>
-  <script src="scripts/services/query-strings.js"></script>
-  <script src="scripts/services/conversions.js"></script>
-  <script src="scripts/controllers/performance-transactions.js"></script>
-  <script src="scripts/controllers/performance-metrics.js"></script>
-  <script src="scripts/controllers/performance-flame-graph.js"></script>
-  <script src="scripts/controllers/errors-transactions.js"></script>
-  <script src="scripts/controllers/errors-messages.js"></script>
-  <script src="scripts/controllers/traces.js"></script>
-  <script src="scripts/controllers/jvm.js"></script>
-  <script src="scripts/controllers/jvm/gauges.js"></script>
-  <script src="scripts/controllers/jvm/mbean-tree.js"></script>
-  <script src="scripts/controllers/jvm/thread-dump.js"></script>
-  <script src="scripts/controllers/jvm/heap-dump.js"></script>
-  <script src="scripts/controllers/jvm/process-info.js"></script>
-  <script src="scripts/controllers/jvm/system-properties.js"></script>
-  <script src="scripts/controllers/jvm/capabilities.js"></script>
-  <script src="scripts/controllers/config.js"></script>
-  <script src="scripts/controllers/config/common.js"></script>
-  <script src="scripts/controllers/config/gauge-list.js"></script>
-  <script src="scripts/controllers/config/gauge.js"></script>
-  <script src="scripts/controllers/config/capture-point-list.js"></script>
-  <script src="scripts/controllers/config/capture-point.js"></script>
-  <script src="scripts/controllers/config/user-interface.js"></script>
-  <script src="scripts/controllers/config/storage.js"></script>
-  <script src="scripts/controllers/config/plugin.js"></script>
-  <script src="scripts/controllers/login.js"></script>
-  <!-- handlebars-templates.js is generated at build time by grunt-contrib-handlebars -->
-  <script src="scripts/generated/handlebars-templates.js"></script>
-  <!-- angular-templates.js is generated at build time by grunt-angular-templates -->
-  <script src="scripts/generated/angular-templates.js"></script>
-  <!-- endbuild -->
+<!-- build:js({.tmp,app}) scripts/scripts.js -->
+<script src="scripts/app.js"></script>
+<script src="scripts/routes.js"></script>
+<script src="scripts/directives.js"></script>
+<script src="scripts/filters.js"></script>
+<script src="scripts/handlebars-rendering.js"></script>
+<script src="scripts/services/trace-modal.js"></script>
+<script src="scripts/services/confirm-if-has-changes.js"></script>
+<script src="scripts/services/http-errors.js"></script>
+<script src="scripts/services/login.js"></script>
+<script src="scripts/services/charts.js"></script>
+<script src="scripts/services/keyed-color-pools.js"></script>
+<script src="scripts/services/query-strings.js"></script>
+<script src="scripts/services/conversions.js"></script>
+<script src="scripts/controllers/performance.js"></script>
+<script src="scripts/controllers/performance-flame-graph.js"></script>
+<script src="scripts/controllers/errors.js"></script>
+<script src="scripts/controllers/traces.js"></script>
+<script src="scripts/controllers/jvm.js"></script>
+<script src="scripts/controllers/jvm/gauges.js"></script>
+<script src="scripts/controllers/jvm/mbean-tree.js"></script>
+<script src="scripts/controllers/jvm/thread-dump.js"></script>
+<script src="scripts/controllers/jvm/heap-dump.js"></script>
+<script src="scripts/controllers/jvm/process-info.js"></script>
+<script src="scripts/controllers/jvm/system-properties.js"></script>
+<script src="scripts/controllers/jvm/capabilities.js"></script>
+<script src="scripts/controllers/config.js"></script>
+<script src="scripts/controllers/config/common.js"></script>
+<script src="scripts/controllers/config/gauge-list.js"></script>
+<script src="scripts/controllers/config/gauge.js"></script>
+<script src="scripts/controllers/config/capture-point-list.js"></script>
+<script src="scripts/controllers/config/capture-point.js"></script>
+<script src="scripts/controllers/config/user-interface.js"></script>
+<script src="scripts/controllers/config/storage.js"></script>
+<script src="scripts/controllers/config/plugin.js"></script>
+<script src="scripts/controllers/login.js"></script>
+<!-- handlebars-templates.js is generated at build time by grunt-contrib-handlebars -->
+<script src="scripts/generated/handlebars-templates.js"></script>
+<!-- angular-templates.js is generated at build time by grunt-angular-templates -->
+<script src="scripts/generated/angular-templates.js"></script>
+<!-- endbuild -->
 </body>
 </html>

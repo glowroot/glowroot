@@ -45,19 +45,19 @@ public class GaugeSection {
     }
 
     public WebElement getMBeanAttributeCheckBox(String label) {
-        return withWait(xpath(".//label[normalize-space(text())='" + label + "']//input"));
+        return withWait(xpath(".//label[text()[normalize-space()='" + label + "']]//input"));
     }
 
     public WebElement getAddButton() {
-        return withWait(xpath(".//button[text()='Add']"));
+        return withWait(xpath(".//button[normalize-space()='Add']"));
     }
 
     public WebElement getSaveButton() {
-        return withWait(xpath(".//button[text()='Save']"));
+        return withWait(xpath(".//button[normalize-space()='Save']"));
     }
 
     public WebElement getDeleteButton() {
-        return withWait(xpath(".//button[text()='Delete']"));
+        return withWait(xpath(".//button[normalize-space()='Delete']"));
     }
 
     private WebElement withWait(By by) {
@@ -65,7 +65,7 @@ public class GaugeSection {
     }
 
     private void clickTypeAheadItem(String label, final String text) {
-        final By xpath = xpath(".//div[label[text()='" + label + "']]//ul/li/a");
+        final By xpath = xpath(".//div[label[normalize-space()='" + label + "']]//ul/li/a");
         new WebDriverWait(driver, 30).until(new Predicate<WebDriver>() {
             @Override
             public boolean apply(WebDriver driver) {

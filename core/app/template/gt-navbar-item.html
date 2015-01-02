@@ -1,7 +1,7 @@
 <li ng-class="{active: isActive()}"
     ng-show="ngShow()">
-  <a ng-href="{{gtUrl}}" ng-click="ngClick($event)" style="{{gtStyle}}">
+  <a ng-href="{{gtUrl}}" ng-click="ngClick($event)">
     {{gtDisplay}}
-    <span ng-transclude></span>
+    <div ng-transclude></div>
   </a>
 </li>

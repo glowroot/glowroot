@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,11 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import org.immutables.value.Json;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@Json.Marshaled
 public abstract class ErrorMessageQuery {
-    public abstract @Nullable String transactionType();
+    public abstract String transactionType();
     public abstract @Nullable String transactionName();
     public abstract long from();
     public abstract long to();

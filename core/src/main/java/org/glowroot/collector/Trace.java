@@ -25,7 +25,7 @@ import org.glowroot.config.MarshalingRoutines;
 
 @Value.Immutable
 @Json.Marshaled
-@Json.Import({MarshalingRoutines.class})
+@Json.Import(MarshalingRoutines.class)
 public abstract class Trace {
 
     public abstract String id();

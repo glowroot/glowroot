@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.Existence;
 import org.glowroot.collector.ImmutableAggregate;
 import org.glowroot.common.Ticker;
+import org.glowroot.local.store.AggregateDao.PerformanceSummarySortOrder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -165,8 +166,15 @@ public class AggregateDaoTest {
         aggregateDao.store(ImmutableList.of(overallAggregate2), transactionAggregates2);
         // when
         List<Aggregate> overallAggregates = aggregateDao.readOverallAggregates("a type", 0, 100000);
-        QueryResult<Summary> queryResult =
-                aggregateDao.readTransactionSummaries("a type", 0, 100000, 10);
+        ImmutablePerformanceSummaryQuery query = ImmutablePerformanceSummaryQuery.builder()
+                .transactionType("a type")
+                .from(0)
+                .to(100000)
+                .sortOrder(PerformanceSummarySortOrder.TOTAL_TIME)
+                .limit(10)
+                .build();
+        QueryResult<PerformanceSummary> queryResult =
+                aggregateDao.readTransactionPerformanceSummaries(query);
         // then
         assertThat(overallAggregates).hasSize(2);
         assertThat(queryResult.records()).hasSize(3);

@@ -18,6 +18,11 @@ Copyright 2014 The AngularUI Team, Karsten Sperling
 https://github.com/angular-ui/ui-router
 MIT License
 
+angular-bootstrap-select
+Copyright 2014 João Pinto Neto
+https://github.com/joaoneto/angular-bootstrap-select
+MIT License
+
 ASM
 Copyright 2000-2011 INRIA, France Telecom
 http://asm.ow2.org
@@ -32,6 +37,11 @@ bootstrap-datepicker
 Copyright 2012 Stefan Petre, Improvements by Andrew Rowls
 https://github.com/eternicode/bootstrap-datepicker
 Apache License, Version 2.0
+
+bootstrap-select
+Copyright 2013-2014 bootstrap-select
+http://silviomoreto.github.io/bootstrap-select
+MIT License
 
 D3
 Copyright 2012 Michael Bostock

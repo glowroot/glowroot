@@ -83,8 +83,12 @@ class AggregateCommonService {
         }
         AggregateProfileNode syntheticRootNode = AggregateProfileNode.createSyntheticRootNode();
         for (CharSource profile : profiles) {
+            String profileContent = profile.read();
+            if (profileContent.equals(AggregateDao.OVERWRITTEN)) {
+                continue;
+            }
             AggregateProfileNode toBeMergedRootNode = ObjectMappers.readRequiredValue(mapper,
-                    profile.read(), AggregateProfileNode.class);
+                    profileContent, AggregateProfileNode.class);
             if (toBeMergedRootNode.getStackTraceElement() == null) {
                 // to-be-merged root node is already synthetic
                 mergeMatchedNode(toBeMergedRootNode, syntheticRootNode);

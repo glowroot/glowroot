@@ -71,7 +71,7 @@
         "java.lang.String",
         "java.lang.String"
       ],
-      "captureKind": "trace_entry",
+      "captureKind": "trace-entry",
       "metricName": "level four",
       "traceEntryTemplate": "Level Four: {{0}}, {{1}}"
     },
@@ -82,7 +82,7 @@
         "java.lang.String",
         "java.lang.String"
       ],
-      "captureKind": "trace_entry",
+      "captureKind": "trace-entry",
       "metricName": "level five",
       "traceEntryTemplate": "Level Five: {{0}}, {{1}}",
       "enabledProperty": "levelFiveEnabled",

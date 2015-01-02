@@ -67,15 +67,13 @@ module.exports = function (grunt) {
         livereload: 35729
       },
       rules: [
-        { from: '^/performance/transactions(\\?.*)?$', to: '/index.html' },
-        { from: '^/performance/metrics\\?.*$', to: '/index.html' },
-        { from: '^/performance/flame-graph\\?.*$', to: '/index.html' },
-        { from: '^/errors/transactions(\\?.*)?$', to: '/index.html' },
-        { from: '^/errors/messages(\\?.*)?$', to: '/index.html' },
-        { from: '^/traces(\\?.*)?$', to: '/index.html' },
-        { from: '^/jvm/.*$', to: '/index.html' },
-        { from: '^/config/.*$', to: '/index.html' },
-        { from: '^/login$', to: '/index.html' }
+        {from: '^/performance(\\?.*)?$', to: '/index.html'},
+        {from: '^/performance/flame-graph\\?.*$', to: '/index.html'},
+        {from: '^/errors(\\?.*)?$', to: '/index.html'},
+        {from: '^/traces(\\?.*)?$', to: '/index.html'},
+        {from: '^/jvm/.*$', to: '/index.html'},
+        {from: '^/config/.*$', to: '/index.html'},
+        {from: '^/login$', to: '/index.html'}
       ],
       proxies: [
         {
@@ -87,6 +85,15 @@ module.exports = function (grunt) {
           context: '/export',
           host: 'localhost',
           port: 4000
+        },
+        {
+          // this is for simulating a reverse proxy with custom base href
+          context: '/xyzzy',
+          host: 'localhost',
+          port: 4000,
+          rewrite: {
+            '^/xyzzy': ''
+          }
         }
       ],
       livereload: {
@@ -106,14 +113,12 @@ module.exports = function (grunt) {
           }
         }
       },
-      dist: {
+      reverseproxy: {
         options: {
-          open: true,
-          base: '<%= yeoman.dist %>',
+          open: 'http://localhost:9000/xyzzy',
           middleware: function (connect) {
             return [
-              setXUACompatibleHeader,
-              connect.static(appConfig.dist)
+              require('grunt-connect-proxy/lib/utils').proxyRequest
             ];
           }
         }
@@ -151,27 +156,6 @@ module.exports = function (grunt) {
       server: '.tmp'
     },
 
-    less: {
-      dist: {
-        files: {
-          '.tmp/styles/main.css': '<%= yeoman.app %>/styles/main.less',
-          '.tmp/styles/export.css': '<%= yeoman.app %>/styles/export.less'
-        }
-      }
-    },
-
-    // Renames files for browser caching purposes
-    filerev: {
-      dist: {
-        src: [
-          '<%= yeoman.dist %>/scripts/{,*/,*/*/}*.js',
-          '<%= yeoman.dist %>/styles/*.css',
-          '<%= yeoman.dist %>/fonts/*',
-          '<%= yeoman.dist %>/favicon.ico'
-        ]
-      }
-    },
-
     // Reads HTML for usemin blocks to enable smart builds that automatically
     // concat, minify and revision files. Creates configurations in memory so
     // additional tasks can operate on them
@@ -195,58 +179,12 @@ module.exports = function (grunt) {
       }
     },
 
-    // Performs rewrites based on filerev and the useminPrepare configuration
-    usemin: {
-      html: [
-        '<%= yeoman.dist %>/index.html',
-        '<%= yeoman.exportDist %>/*-export.html'
-      ],
-      css: ['<%= yeoman.dist %>/styles/*.css'],
-      options: {
-        assetsDirs: ['<%= yeoman.dist %>', '<%= yeoman.dist %>/fonts']
-      }
-    },
-
-    handlebars: {
+    less: {
       dist: {
-        options: {
-          processName: function (filename) {
-            var pieces = filename.split('/');
-            var simple = pieces[pieces.length - 1];
-            return simple.substring(0, simple.indexOf('.'));
-          },
-          processContent: function (content) {
-            // remove leading and trailing spaces
-            content = content.replace(/^[ \t\r\n]+/mg, '').replace(/[ \t]+$/mg, '');
-            // keep newlines since they can be meaningful, e.g. in thread-dump.hbs
-            return content;
-          }
-        },
         files: {
-          '.tmp/scripts/generated/handlebars-templates.js': '<%= yeoman.app %>/hbs/*.hbs'
+          '.tmp/styles/main.css': '<%= yeoman.app %>/styles/main.less',
+          '.tmp/styles/export.css': '<%= yeoman.app %>/styles/export.less'
         }
-      }
-    },
-
-    htmlmin: {
-      dist: {
-        options: {
-          removeComments: true
-        },
-        files: [
-          {
-            expand: true,
-            cwd: '<%= yeoman.dist %>',
-            src: 'index.html',
-            dest: '<%= yeoman.dist %>'
-          },
-          {
-            expand: true,
-            cwd: '<%= yeoman.exportDist %>',
-            src: '*-export.html',
-            dest: '<%= yeoman.exportDist %>'
-          }
-        ]
       }
     },
 
@@ -254,6 +192,11 @@ module.exports = function (grunt) {
       options: {
         htmlmin: {
           collapseWhitespace: true,
+          // conservativeCollapse keeps one space, this helps prevent collapsing intentional space between
+          // two inline elements, e.g. in "Performance | Servlet" header
+          // these issues don't appear when running under grunt serve (since no minification) so easy to miss
+          // and better to use conservative option here
+          conservativeCollapse: true,
           removeComments: true
         }
       },
@@ -282,6 +225,27 @@ module.exports = function (grunt) {
       }
     },
 
+    handlebars: {
+      dist: {
+        options: {
+          processName: function (filename) {
+            var pieces = filename.split('/');
+            var simple = pieces[pieces.length - 1];
+            return simple.substring(0, simple.indexOf('.'));
+          },
+          processContent: function (content) {
+            // remove leading and trailing spaces
+            content = content.replace(/^[ \t\r\n]+/mg, '').replace(/[ \t]+$/mg, '');
+            // keep newlines since they can be meaningful, e.g. in thread-dump.hbs
+            return content;
+          }
+        },
+        files: {
+          '.tmp/scripts/generated/handlebars-templates.js': '<%= yeoman.app %>/hbs/*.hbs'
+        }
+      }
+    },
+
     // Copies remaining files to places other tasks can use
     copy: {
       dist: {
@@ -301,7 +265,8 @@ module.exports = function (grunt) {
             cwd: 'bower_components/fontawesome',
             dest: '<%= yeoman.dist %>',
             src: [
-              'fonts/*'
+              // only supporting IE9+ so only need woff/woff2
+              'fonts/*.woff{,2}'
             ]
           },
           {
@@ -315,12 +280,61 @@ module.exports = function (grunt) {
           }
         ]
       }
+    },
+
+    // Renames files for browser caching purposes
+    filerev: {
+      dist: {
+        src: [
+          '<%= yeoman.dist %>/scripts/{,*/,*/*/}*.js',
+          '<%= yeoman.dist %>/styles/*.css',
+          '<%= yeoman.dist %>/fonts/*',
+          '<%= yeoman.dist %>/favicon.ico'
+        ]
+      }
+    },
+
+    // Performs rewrites based on filerev and the useminPrepare configuration
+    usemin: {
+      html: [
+        '<%= yeoman.dist %>/index.html',
+        '<%= yeoman.exportDist %>/*-export.html'
+      ],
+      css: ['<%= yeoman.dist %>/styles/*.css'],
+      options: {
+        assetsDirs: ['<%= yeoman.dist %>', '<%= yeoman.dist %>/fonts']
+      }
+    },
+
+    htmlmin: {
+      dist: {
+        options: {
+          removeComments: true
+        },
+        files: [
+          {
+            expand: true,
+            cwd: '<%= yeoman.dist %>',
+            src: 'index.html',
+            dest: '<%= yeoman.dist %>'
+          },
+          {
+            expand: true,
+            cwd: '<%= yeoman.exportDist %>',
+            src: '*-export.html',
+            dest: '<%= yeoman.exportDist %>'
+          }
+        ]
+      }
     }
   });
 
   grunt.registerTask('serve', 'Compile then start a connect web server', function (target) {
-    if (target === 'dist') {
-      return grunt.task.run(['build', 'connect:dist:keepalive']);
+    if (target === 'reverseproxy') {
+      return grunt.task.run([
+        'configureProxies',
+        'connect:reverseproxy:keepalive'
+      ]);
     }
 
     grunt.task.run([

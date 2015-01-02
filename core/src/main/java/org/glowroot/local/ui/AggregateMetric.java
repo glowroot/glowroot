@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.google.common.collect.Lists;
 
 import org.glowroot.markers.UsedByJsonBinding;
 
@@ -47,7 +48,7 @@ public class AggregateMetric {
         this.name = name;
         this.totalMicros = totalMicros;
         this.count = count;
-        this.nestedMetrics = nestedMetrics;
+        this.nestedMetrics = Lists.newArrayList(nestedMetrics);
     }
 
     void incrementCount(long num) {

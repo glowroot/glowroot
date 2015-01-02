@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -536,7 +536,7 @@ class ConfigJsonService {
 
     @Value.Immutable
     @Json.Marshaled
-    @Json.Import({MarshalingRoutines.class})
+    @Json.Import(MarshalingRoutines.class)
     abstract static class PluginConfigDto {
 
         abstract boolean enabled();

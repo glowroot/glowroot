@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular, $ */
+/* global glowroot, moment, $ */
 
+// common code shared between performance.js and errors.js
 glowroot.factory('charts', [
   '$http',
   '$location',
@@ -23,61 +24,6 @@ glowroot.factory('charts', [
   'queryStrings',
   'httpErrors',
   function ($http, $location, $timeout, queryStrings, httpErrors) {
-
-    function refreshData(url, query, chartState, $scope, onSuccess) {
-      var date = $scope.filterDate;
-      if (!date) {
-        // TODO display 'Missing date' message
-        return;
-      }
-      $scope.showChartSpinner++;
-      var refreshId = ++chartState.currentRefreshId;
-      $http.get(url + '?' + queryStrings.encodeObject(query))
-          .success(function (data) {
-            $scope.showChartSpinner--;
-            if (refreshId !== chartState.currentRefreshId) {
-              return;
-            }
-            $scope.chartNoData = !data.dataSeries.length;
-            // reset axis in case user changed the date and then zoomed in/out to trigger this refresh
-            chartState.plot.getAxes().xaxis.options.min = query.from;
-            chartState.plot.getAxes().xaxis.options.max = query.to;
-            chartState.plot.getAxes().xaxis.options.zoomRange = [
-              date.getTime(),
-              date.getTime() + 24 * 60 * 60 * 1000
-            ];
-            var plotData = [];
-            var labels = [];
-            angular.forEach(data.dataSeries, function (dataSeries) {
-              labels.push(dataSeries.name ? dataSeries.name : 'Other');
-            });
-            chartState.keyedColorPool.reset(labels);
-            angular.forEach(data.dataSeries, function (dataSeries, index) {
-              var label = labels[index];
-              plotData.push({
-                data: dataSeries.data,
-                label: label,
-                color: chartState.keyedColorPool.get(label)
-              });
-            });
-            if (plotData.length) {
-              chartState.plot.setData(plotData);
-            } else {
-              chartState.plot.setData([[]]);
-            }
-            chartState.plot.setupGrid();
-            chartState.plot.draw();
-            onSuccess(data);
-            // TODO display 'Success' message
-          })
-          .error(function (data, status) {
-            $scope.showChartSpinner--;
-            if (refreshId !== chartState.currentRefreshId) {
-              return;
-            }
-            httpErrors.handler($scope)(data, status);
-          });
-    }
 
     function refreshButtonClick(chartState, $scope) {
       if (!$scope.filterDate) {
@@ -94,12 +40,62 @@ glowroot.factory('charts', [
       chartState.refreshData();
     }
 
-    function initFilter(chartState, $scope) {
+    function initScope(chartState, urlComponent, $scope) {
+
+      $scope.timeDisplay = function () {
+        return moment($scope.chartFrom).format('LT') + ' to ' + moment($scope.chartTo).format('LT');
+      };
+
+      $scope.headerQueryString = function (transactionType) {
+        var query = {};
+        // add transactionType first so it is first in url
+        if (transactionType !== $scope.layout.defaultTransactionType) {
+          query.transactionType = transactionType;
+        }
+        if (!chartState.chartFromToDefault) {
+          query.from = $scope.chartFrom;
+          query.to = $scope.chartTo;
+        }
+        return queryStrings.encodeObject(query);
+      };
+
+      $scope.sidebarQueryString = function (transactionName) {
+        var query = {
+          transactionType: $scope.transactionType,
+          transactionName: transactionName,
+          from: $scope.chartFrom,
+          to: $scope.chartTo
+        };
+        return queryStrings.encodeObject(query);
+      };
+
+      $scope.sidebarUpdated = function (transactionName) {
+        $scope.transactionName = transactionName;
+        updateLocation(chartState, $scope);
+        chartState.refreshData();
+      };
+
+      $scope.$watch('summarySortOrder', function (newValue, oldValue) {
+        if (newValue && newValue !== oldValue) {
+          updateLocation(chartState, $scope);
+          updateSummaries('backend/' + urlComponent + '/summaries', $scope);
+        }
+      });
+
+      $scope.showMoreSummaries = function () {
+        // double each time
+        $scope.summaryLimit *= 2;
+        updateSummaries('backend/' + urlComponent + '/summaries', $scope);
+      };
+
+      $scope.transactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
+      $scope.transactionName = $location.search()['transaction-name'];
+      $scope.summarySortOrder = $location.search()['summary-sort-order'] || $scope.defaultSummarySortOrder;
+
       $scope.chartFrom = Number($location.search().from);
       $scope.chartTo = Number($location.search().to);
       // both from and to must be supplied or neither will take effect
       if ($scope.chartFrom && $scope.chartTo) {
-        $scope.chartFrom += chartState.fixedAggregateIntervalMillis;
         $scope.filterDate = new Date($scope.chartFrom);
         $scope.filterDate.setHours(0, 0, 0, 0);
       } else {
@@ -245,9 +241,20 @@ glowroot.factory('charts', [
       var html = '<table><tbody>';
       var total = 0;
       var plotData = chartState.plot.getData();
-      for (var seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
-        var dataSeries = plotData[seriesIndex];
-        var value = dataSeries.data[dataIndex][1];
+      var seriesIndex;
+      var dataSeries;
+      var value;
+      for (seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
+        dataSeries = plotData[seriesIndex];
+        value = dataSeries.data[dataIndex][1];
+        total += value;
+      }
+      if (total === 0) {
+        return 'No data';
+      }
+      for (seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
+        dataSeries = plotData[seriesIndex];
+        value = dataSeries.data[dataIndex][1];
         html += '<tr';
         if (seriesIndex === highlightSeriesIndex) {
           html += ' style="background-color: #eee;"';
@@ -258,22 +265,66 @@ glowroot.factory('charts', [
         '<div style="width: 4px; height: 0px; border: 5px solid ' + dataSeries.color + '; overflow: hidden;">' +
         '</div></div></td>' +
         '<td class="legendLabel" style="padding-right: 10px;">' + dataSeries.label + '</td>' +
-        '<td><strong>' + value.toFixed(3) + '</strong></td>' +
+        '<td><strong>' + (100 * value / total).toFixed(1) + ' %</strong></td>' +
         '</tr>';
-        total += value;
-      }
-      if (total === 0) {
-        return 'No data';
       }
       html += '</tbody></table>';
       return html;
     }
 
+    function updateLocation(chartState, $scope) {
+      var query = {};
+      // add transactionType first so it is first in url
+      if ($scope.transactionType !== $scope.layout.defaultTransactionType) {
+        query['transaction-type'] = $scope.transactionType;
+      }
+      query['transaction-name'] = $scope.transactionName;
+      if (!chartState.chartFromToDefault) {
+        query.from = $scope.chartFrom;
+        query.to = $scope.chartTo;
+      }
+      if ($scope.summarySortOrder !== $scope.defaultSummarySortOrder) {
+        query['summary-sort-order'] = $scope.summarySortOrder;
+      }
+      $location.search(query).replace();
+    }
+
+    function updateSummaries(baseUrl, $scope) {
+      var query = {
+        from: $scope.chartFrom,
+        to: $scope.chartTo,
+        transactionType: $scope.transactionType,
+        sortOrder: $scope.summarySortOrder,
+        limit: $scope.summaryLimit
+      };
+      $scope.showMoreSummariesSpinner++;
+      $http.get(baseUrl + '?' + queryStrings.encodeObject(query))
+          .success(function (data) {
+            $scope.showMoreSummariesSpinner--;
+            onRefreshUpdateSummaries(data, query.from, query.to, query.sortOrder, $scope);
+          })
+          .error(httpErrors.handler($scope));
+    }
+
+    function onRefreshUpdateSummaries(data, queryFrom, queryTo, querySummarySortOrder, $scope) {
+      $scope.summariesNoData = !data.transactionSummaries.length;
+      if (data.overallSummary) {
+        // overall summary is not returned from /error/summaries
+        $scope.overallSummary = data.overallSummary;
+        $scope.lastSummaryDuration = queryTo - queryFrom;
+      }
+      $scope.transactionSummaries = data.transactionSummaries;
+      $scope.moreSummariesAvailable = data.moreSummariesAvailable;
+      $scope.lastSummarySortOrder = querySummarySortOrder;
+    }
+
     return {
-      initFilter: initFilter,
+      initScope: initScope,
       initChart: initChart,
-      refreshData: refreshData,
-      refreshButtonClick: refreshButtonClick
+      refreshButtonClick: refreshButtonClick,
+      updateLocation: updateLocation,
+      updateSummaries: updateSummaries,
+      onRefreshUpdateSummaries: onRefreshUpdateSummaries
     };
   }
 ]);

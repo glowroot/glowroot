@@ -196,11 +196,15 @@ glowroot.directive('gtDatepicker', function () {
   return {
     scope: {
       gtModel: '=',
-      gtClass: '@',
-      gtId: '@'
+      gtId: '@',
+      gtMaxWidth: '@'
     },
-    template: '<input type="text" class="form-control" ng-class="gtClass" id="{{gtId}}" style="max-width: 10em;">',
+    template: '<input type="text" class="form-control gt-datepicker" ng-class="gtClass" id="{{gtId}}"' +
+    ' ng-style="{\'max-width\': gtMaxWidth, \'height\': \'auto\'}">',
     link: function (scope, iElement, iAttrs) {
+      if (!scope.gtMaxWidth) {
+        scope.gtMaxWidth = '10em';
+      }
       // TODO use bootstrap-datepicker momentjs backend when it's available and then use momentjs's
       // localized format 'moment.longDateFormat.L' both here and when parsing date
       // see https://github.com/eternicode/bootstrap-datepicker/issues/24
@@ -253,8 +257,7 @@ glowroot.directive('gtNavbarItem', [
         gtDisplay: '@',
         gtItemName: '@',
         gtUrl: '@',
-        gtShow: '&',
-        gtStyle: '@'
+        gtShow: '&'
       },
       // replace is needed in order to not mess up bootstrap css hierarchical selectors
       replace: true,
@@ -273,7 +276,10 @@ glowroot.directive('gtNavbarItem', [
           $navbarCollapse.removeClass('in');
           $navbarCollapse.addClass('collapse');
           if ($location.path() === '/' + scope.gtUrl && !event.ctrlKey) {
-            $state.go($state.$current, null, {reload: true});
+            // inherit false prevents current state from being passed
+            // e.g. without inherit false transaction-type=Background will be passed
+            // which will defeat the point of reloading the page fresh (with no explicit transaction-type)
+            $state.go($state.$current, null, {reload: true, inherit: false});
             // suppress normal link
             event.preventDefault();
             return false;
@@ -291,8 +297,11 @@ glowroot.directive('gtSidebarItem', [
     return {
       scope: {
         gtDisplay: '@',
+        gtDisplayRight: '@',
         gtUrl: '@',
-        gtShow: '&'
+        gtShow: '&',
+        gtActive: '&',
+        gtClick: '&'
       },
       // replace is needed in order to not mess up bootstrap css hierarchical selectors
       replace: true,
@@ -302,10 +311,16 @@ glowroot.directive('gtSidebarItem', [
           return iAttrs.gtShow ? scope.gtShow() : true;
         };
         scope.isActive = function () {
-          return $location.path() === '/' + scope.gtUrl;
+          return iAttrs.gtActive ? scope.gtActive() : $location.path() === '/' + scope.gtUrl;
         };
         scope.ngClick = function (event) {
-          if ($location.path() === '/' + scope.gtUrl && !event.ctrlKey) {
+          if (iAttrs.gtClick && !event.ctrlKey) {
+            // this is used by transaction sidebar
+            scope.gtClick();
+            // suppress normal link
+            event.preventDefault();
+            return false;
+          } else if ($location.path() === '/' + scope.gtUrl && !event.ctrlKey) {
             $state.go($state.$current, null, {reload: true});
             // suppress normal link
             event.preventDefault();

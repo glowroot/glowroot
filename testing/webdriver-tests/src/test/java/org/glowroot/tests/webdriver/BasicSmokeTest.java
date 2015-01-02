@@ -56,13 +56,12 @@ public class BasicSmokeTest extends WebDriverTest {
 
         app.open();
 
-        Utils.withWait(driver, By.linkText("All Transactions")).click();
         Utils.withWait(driver, By.xpath("//button[contains(., ' stack trace samples')]")).click();
         Utils.withWait(driver, By.linkText("View flame graph (experimental)")).click();
         // give flame graph a chance to render (only for visual when running locally)
         Thread.sleep(500);
         globalNavbar.getPerformanceLink().click();
-        Utils.withWait(driver, By.linkText("/jdbcservlet")).click();
+        Utils.withWait(driver, By.partialLinkText("/jdbcservlet")).click();
         Utils.withWait(driver, By.xpath("//button[contains(., ' stack trace samples')]")).click();
         Utils.withWait(driver, By.linkText("View flame graph (experimental)")).click();
     }
@@ -76,11 +75,10 @@ public class BasicSmokeTest extends WebDriverTest {
         app.open();
         globalNavbar.getErrorsLink().click();
 
-        Utils.withWait(driver, By.linkText("All Transactions")).click();
         Utils.withWait(driver, By.xpath("//input[@ng-model='errorFilter']")).sendKeys("xyz");
         Utils.withWait(driver, By.xpath("//button[@ng-click='refreshButtonClick()']")).click();
         globalNavbar.getErrorsLink().click();
-        Utils.withWait(driver, By.linkText("/errorservlet")).click();
+        Utils.withWait(driver, By.partialLinkText("/errorservlet")).click();
     }
 
     @Test

@@ -29,11 +29,11 @@ class GlobalNavbar {
     }
 
     WebElement getPerformanceLink() {
-        return Utils.withWait(driver, xpath("//nav//a[@href='performance/transactions']"));
+        return Utils.withWait(driver, xpath("//nav//a[@href='performance']"));
     }
 
     WebElement getErrorsLink() {
-        return Utils.withWait(driver, xpath("//nav//a[@href='errors/transactions']"));
+        return Utils.withWait(driver, xpath("//nav//a[@href='errors']"));
     }
 
     WebElement getTracesLink() {

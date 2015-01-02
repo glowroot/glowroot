@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ public class CapturePointSection {
     }
 
     public WebElement getCaptureKindTraceEntryRadioButton() {
-        return withWait(xpath(".//input[@ng-model='config.captureKind'][@value='trace_entry']"));
+        return withWait(xpath(".//input[@ng-model='config.captureKind'][@value='trace-entry']"));
     }
 
     public WebElement getCaptureKindTransactionRadioButton() {
@@ -97,15 +97,15 @@ public class CapturePointSection {
     }
 
     public WebElement getAddButton() {
-        return withWait(xpath(".//button[text()='Add']"));
+        return withWait(xpath(".//button[normalize-space()='Add']"));
     }
 
     public WebElement getSaveButton() {
-        return withWait(xpath(".//button[text()='Save']"));
+        return withWait(xpath(".//button[normalize-space()='Save']"));
     }
 
     public WebElement getDeleteButton() {
-        return withWait(xpath(".//button[text()='Delete']"));
+        return withWait(xpath(".//button[normalize-space()='Delete']"));
     }
 
     private WebElement withWait(By by) {
@@ -113,7 +113,7 @@ public class CapturePointSection {
     }
 
     private void clickTypeAheadItem(String label, final String text) {
-        final By xpath = xpath(".//div[label[text()='" + label + "']]//ul/li/a");
+        final By xpath = xpath(".//div[label[normalize-space()='" + label + "']]//ul/li/a");
         new WebDriverWait(driver, 30).until(new Predicate<WebDriver>() {
             @Override
             public boolean apply(WebDriver driver) {

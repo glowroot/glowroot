@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,12 +31,13 @@ public class MarshalingRoutines {
     public static <T extends Enum<T> & LowercaseMarshaling> /*@NonNull*/T unmarshal(
             JsonParser parser, @SuppressWarnings("unused") @Nullable Enum<T> instanceNull,
             Class</*@NonNull*/T> expectedClass) throws IOException {
-        return Enum.valueOf(expectedClass, parser.getText().toUpperCase(Locale.ENGLISH));
+        return Enum.valueOf(expectedClass,
+                parser.getText().replace('-', '_').toUpperCase(Locale.ENGLISH));
     }
 
     public static <T extends Enum<T> & LowercaseMarshaling> void marshal(JsonGenerator generator,
             T instance) throws IOException {
-        generator.writeString(instance.name().toLowerCase(Locale.ENGLISH));
+        generator.writeString(instance.name().replace('_', '-').toLowerCase(Locale.ENGLISH));
     }
 
     public static MethodModifier unmarshal(JsonParser parser,

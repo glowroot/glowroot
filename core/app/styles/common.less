@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -212,4 +212,9 @@ span.disabled {
 
 .chart-help-button:hover {
   color: darken(#7d7358, 5%);
+}
+
+// remove IE 10's "clear field" icon since it is not useful in (required) datepicker fields
+.gt-datepicker::-ms-clear {
+  display: none;
 }

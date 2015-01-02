@@ -16,7 +16,7 @@
 
 /* global glowroot, $ */
 
-glowroot.controller('ErrorsMessagesCtrl', [
+glowroot.controller('ErrorsCtrl', [
   '$scope',
   '$location',
   '$filter',
@@ -24,9 +24,10 @@ glowroot.controller('ErrorsMessagesCtrl', [
   '$q',
   '$timeout',
   'charts',
-  'httpErrors',
+  'keyedColorPools',
   'queryStrings',
-  function ($scope, $location, $filter, $http, $q, $timeout, charts, httpErrors, queryStrings) {
+  'httpErrors',
+  function ($scope, $location, $filter, $http, $q, $timeout, charts, keyedColorPools, queryStrings, httpErrors) {
     // \u00b7 is &middot;
     document.title = 'Errors \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'errors';
@@ -40,11 +41,111 @@ glowroot.controller('ErrorsMessagesCtrl', [
       refreshData: refreshData
     };
 
-    var summaryLimit = 100;
+    $scope.defaultSummarySortOrder = 'error-count';
+    $scope.summaryLimit = 10;
 
+    $scope.showMoreSummariesSpinner = 0;
+    $scope.showChartSpinner = 0;
+    $scope.showChartOverlay = 0;
+
+    var errorMessageLimit = 25;
     var dataSeriesExtra;
 
-    $scope.showTableOverlay = 0;
+    function refreshData(deferred) {
+      charts.updateLocation(chartState, $scope);
+      var date = $scope.filterDate;
+      var refreshId = ++chartState.currentRefreshId;
+      var query = {
+        from: $scope.chartFrom,
+        to: $scope.chartTo,
+        transactionType: $scope.transactionType,
+        transactionName: $scope.transactionName,
+        includes: $scope.errorFilterIncludes,
+        excludes: $scope.errorFilterExcludes,
+        summarySortOrder: $scope.summarySortOrder,
+        summaryLimit: $scope.summaryLimit,
+        errorMessageLimit: errorMessageLimit
+      };
+      if (deferred) {
+        $scope.showChartOverlay++;
+      } else {
+        $scope.showChartSpinner++;
+      }
+      $http.get('backend/error/data?' + queryStrings.encodeObject(query))
+          .success(function (data) {
+            if (deferred) {
+              $scope.showChartOverlay--;
+            } else {
+              $scope.showChartSpinner--;
+            }
+            if (refreshId !== chartState.currentRefreshId) {
+              return;
+            }
+            $scope.chartNoData = !data.dataSeries.data.length;
+            // reset axis in case user changed the date and then zoomed in/out to trigger this refresh
+            chartState.plot.getAxes().xaxis.options.min = query.from;
+            chartState.plot.getAxes().xaxis.options.max = query.to;
+            chartState.plot.getAxes().xaxis.options.zoomRange = [
+              date.getTime(),
+              date.getTime() + 24 * 60 * 60 * 1000
+            ];
+            if (data.dataSeries.data.length) {
+              chartState.plot.setData([{data: data.dataSeries.data}]);
+            } else {
+              chartState.plot.setData([[]]);
+            }
+            chartState.plot.setupGrid();
+            chartState.plot.draw();
+            dataSeriesExtra = data.dataSeriesExtra;
+
+            $scope.moreErrorMessagesAvailable = data.moreErrorMessagesAvailable;
+            $scope.errorMessages = data.errorMessages;
+            $scope.traceCount = data.traceCount;
+            charts.onRefreshUpdateSummaries(data, query.from, query.to, query.summarySortOrder, $scope);
+            if (deferred) {
+              deferred.resolve();
+            }
+          })
+          .error(function (data, status) {
+            if (deferred) {
+              $scope.showChartOverlay--;
+            } else {
+              $scope.showChartSpinner--;
+            }
+            if (refreshId !== chartState.currentRefreshId) {
+              return;
+            }
+            httpErrors.handler($scope, deferred)(data, status);
+          });
+    }
+
+    $scope.$watch('filterDate', function (newValue, oldValue) {
+      if (newValue && newValue !== oldValue) {
+        $scope.refreshButtonClick();
+      }
+    });
+
+    $scope.overallSummaryValue = function () {
+      if ($scope.lastSummarySortOrder === 'error-count') {
+        return $scope.overallSummary.errorCount;
+      } else if ($scope.lastSummarySortOrder === 'error-rate') {
+        return (100 * $scope.overallSummary.errorCount / $scope.overallSummary.transactionCount).toFixed(1) + ' %';
+      } else {
+        // TODO handle this better
+        return '???';
+      }
+    };
+
+    $scope.transactionSummaryValue = function (transactionSummary) {
+      if ($scope.lastSummarySortOrder === 'error-count') {
+        return transactionSummary.errorCount;
+      } else if ($scope.lastSummarySortOrder === 'error-rate') {
+        return (100 * transactionSummary.errorCount / transactionSummary.transactionCount).toFixed(1) + ' %';
+      } else {
+        // TODO handle this better
+        return '???';
+      }
+    };
 
     $scope.tracesQueryString = function (errorMessage) {
       var query = {
@@ -66,85 +167,19 @@ glowroot.controller('ErrorsMessagesCtrl', [
       return queryStrings.encodeObject(query);
     };
 
-    $scope.showMore = function (deferred) {
+    $scope.showMoreErrorMessages = function (deferred) {
       // double each time
-      summaryLimit *= 2;
+      errorMessageLimit *= 2;
       refreshData(deferred);
     };
 
-    function refreshData(deferred) {
-      updateLocation();
-      var date = $scope.filterDate;
-      var refreshId = ++chartState.currentRefreshId;
-      var query = {
-        from: $scope.chartFrom,
-        to: $scope.chartTo,
-        transactionType: $scope.transactionType,
-        transactionName: $scope.transactionName,
-        includes: $scope.errorFilterIncludes,
-        excludes: $scope.errorFilterExcludes,
-        limit: summaryLimit
-      };
-      $scope.showChartSpinner++;
-      $http.get('backend/error/messages?' + queryStrings.encodeObject(query))
-          .success(function (data) {
-            $scope.showChartSpinner--;
-            if (refreshId !== chartState.currentRefreshId) {
-              return;
-            }
-            $scope.chartNoData = !data.dataSeries.data.length;
-            // reset axis in case user changed the date and then zoomed in/out to trigger this refresh
-            chartState.plot.getAxes().xaxis.options.min = query.from;
-            chartState.plot.getAxes().xaxis.options.max = query.to;
-            chartState.plot.getAxes().xaxis.options.zoomRange = [
-              date.getTime(),
-              date.getTime() + 24 * 60 * 60 * 1000
-            ];
-            if (data.dataSeries.data.length) {
-              chartState.plot.setData([{data: data.dataSeries.data}]);
-            } else {
-              chartState.plot.setData([[]]);
-            }
-            chartState.plot.setupGrid();
-            chartState.plot.draw();
-            dataSeriesExtra = data.dataSeriesExtra;
-
-            $scope.moreAvailable = data.moreAvailable;
-            $scope.errorMessages = data.errorMessages;
-            $scope.traceCount = data.traceCount;
-            if (deferred) {
-              deferred.resolve();
-            }
-          })
-          .error(function (data, status) {
-            $scope.showChartSpinner--;
-            if (refreshId !== chartState.currentRefreshId) {
-              return;
-            }
-            httpErrors.handler($scope, deferred)(data, status);
-          });
-    }
-
-    function updateLocation() {
-      var query = {
-        'transaction-type': $scope.transactionType,
-        'transaction-name': $scope.transactionName
-      };
-      if (!chartState.chartFromToDefault) {
-        query.from = $scope.chartFrom - chartState.fixedAggregateIntervalMillis;
-        query.to = $scope.chartTo;
-      }
-      $location.search(query).replace();
-    }
-
-    $scope.refreshButtonClick = function (deferred) {
+    $scope.refreshButtonClick = function () {
       $scope.parsingError = undefined;
       parseQuery($scope.errorFilter || '');
       if ($scope.parsingError) {
-        deferred.reject($scope.parsingError);
         return;
       }
-      refreshData(deferred);
+      charts.refreshButtonClick(chartState, $scope);
     };
 
     function parseQuery(text) {
@@ -207,11 +242,8 @@ glowroot.controller('ErrorsMessagesCtrl', [
       $scope.errorFilterExcludes = excludes;
     }
 
-    $scope.filter = {};
-    charts.initFilter(chartState, $scope);
-    $scope.transactionType = $location.search()['transaction-type'];
-    $scope.transactionName = $location.search()['transaction-name'];
-
+    $scope.summarySortOrder = $location.search()['summary-sort-order'] || 'error-count';
+    charts.initScope(chartState, 'error', $scope);
     // 100% yaxis max just for initial empty chart rendering
     charts.initChart($('#chart'), chartState, $scope,
         {
@@ -220,7 +252,7 @@ glowroot.controller('ErrorsMessagesCtrl', [
             label: 'error percentage'
           },
           tooltipOpts: {
-            content: function (label, xval, yval, flotItem) {
+            content: function (label, xval, yval) {
               if (yval === 0 && !dataSeriesExtra[xval]) {
                 // this is synthetic point for initial upslope, gap or final downslope
                 return 'No errors';
