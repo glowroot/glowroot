@@ -181,8 +181,6 @@
 <script src="bower_components/flot.tooltip/js/jquery.flot.tooltip.js"></script>
 <script src="bower_components/moment/moment.js"></script>
 <script src="bower_components/spinjs/spin.js"></script>
-<script src="bower_components/d3/d3.v2.js"></script>
-<script src="bower_components/stackvis/share/icicle.js"></script>
 <!-- angular-ui-bootstrap-templates.js is generated at build time by grunt-angular-templates -->
 <script src="scripts/generated/angular-ui-bootstrap-templates.js"></script>
 <!-- endbuild -->
@@ -227,6 +225,14 @@
 <script src="scripts/generated/handlebars-templates.js"></script>
 <!-- angular-templates.js is generated at build time by grunt-angular-templates -->
 <script src="scripts/generated/angular-templates.js"></script>
+<!-- endbuild -->
+
+<!-- build:js(.) scripts/vendor-flame-graph.js -->
+<!-- large d3.js is loaded async since only needed on flame graph page
+     and just to be safe, the angular route for the flame graph page waits for window.d3 to be present
+     (see routes.js) -->
+<script async src="bower_components/d3/d3.v2.js"></script>
+<script async src="bower_components/stackvis/share/icicle.js"></script>
 <!-- endbuild -->
 </body>
 </html>

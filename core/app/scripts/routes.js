@@ -56,7 +56,21 @@ glowroot.config([
     $stateProvider.state('performance-flame-graph', {
       url: '/performance/flame-graph',
       templateUrl: 'views/performance-flame-graph.html',
-      controller: 'PerformanceFlameGraphCtrl'
+      controller: 'PerformanceFlameGraphCtrl',
+      resolve: {
+        dummy: ['$q', '$timeout', function ($q, $timeout) {
+          var deferred = $q.defer();
+          function checkForD3() {
+            if (window.d3) {
+              deferred.resolve();
+            } else {
+              $timeout(checkForD3, 100);
+            }
+          }
+          $timeout(checkForD3, 100);
+          return deferred.promise;
+        }]
+      }
     });
     $stateProvider.state('errors', {
       url: '/errors?transaction-type',
