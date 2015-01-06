@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2014 the original author or authors.
+  Copyright 2012-2015 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 -->
 <div gt-spinner
      gt-show="!loaded && !httpError"
-     class="left-aligned-spinner">
+     class="gt-left-aligned-spinner">
 </div>
 <div ng-include src="'template/gt-http-error.html'"></div>
 <div ng-repeat="capturePoint in capturePoints"
@@ -60,7 +60,7 @@
                  gt-spinner-inline="true"
                  gt-show="showClassNameSpinner"
                  gt-no-delay="true"
-                 class="inline-spinner">
+                 class="gt-inline-spinner">
             </div>
             <div class="help-block">
               The class or interface containing the method(s) where the capture point will be applied.
@@ -89,7 +89,7 @@
                  gt-spinner-inline="true"
                  gt-show="showMethodNameSpinner"
                  gt-no-delay="true"
-                 class="inline-spinner">
+                 class="gt-inline-spinner">
             </div>
             <div class="help-block">
               The method(s) where the capture point will be applied.
@@ -113,7 +113,7 @@
             <div gt-spinner
                  gt-show="methodSignaturesLoading && !httpError"
                  gt-no-delay="true"
-                 class="inline-spinner hide"
+                 class="gt-inline-spinner hide"
                  style="height: 50px;">
             </div>
             <div ng-if="loadMethodSignatures">
@@ -326,20 +326,20 @@
           </div>
         </div>
       </fieldset>
-      <div class="form-group form-buttons">
+      <div class="form-group gt-form-buttons">
         <div class="col-lg-offset-2 col-lg-9">
           <div gt-button-group>
             <div gt-button
                  gt-label="{{config.version ? 'Save' : 'Add'}}"
                  gt-click="save(deferred)"
                  gt-disabled="!hasChanges() || formCtrl.$invalid"
-                 class="inline-block">
+                 class="gt-inline-block">
             </div>
             <div gt-button
                  gt-label="Delete"
                  gt-click="delete(deferred)"
                  gt-btn-class="btn-default"
-                 class="inline-block"
+                 class="gt-inline-block"
                  style="margin-left: 5px;">
             </div>
           </div>

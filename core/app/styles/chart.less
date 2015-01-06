@@ -15,11 +15,11 @@
  */
 @import "variables";
 
-@trace-point-normal: @glowroot-yellow;
-@trace-point-active: darken(@glowroot-blue, 10%);
-@trace-point-error: @glowroot-red;
+@trace-point-normal: @gt-yellow;
+@trace-point-active: darken(@gt-blue, 10%);
+@trace-point-error: @gt-red;
 
-.chart-container {
+.gt-chart-container {
   position: relative;
   height: 300px;
   // need min width, otherwise sometimes it gets flot error:
@@ -27,7 +27,7 @@
   min-width: 100px;
 }
 
-.chart-dimensions {
+.gt-chart-dimensions {
   position: absolute;
   top: 0;
   left: 0;
@@ -35,20 +35,20 @@
   height: 100%;
 }
 
-.chart-spinner {
+.gt-chart-spinner {
   pointer-events: none;
-  .chart-dimensions;
+  .gt-chart-dimensions;
 }
 
-.chart-warning {
+.gt-chart-warning {
   padding: 10px 35px;
-  color: @glowroot-red;
-  background-color: @glowroot-light-red-background;
+  color: @gt-red;
+  background-color: @gt-light-red-background;
   margin-bottom: 6px;
   border-radius: 6px;
 }
 
-.chart-error {
+.gt-chart-error {
   position: absolute;
   width: 250px;
   left: 50%;
@@ -56,10 +56,10 @@
   // include padding in margin-left
   //margin-left: -(250px / 2 + 35px);
   pointer-events: none;
-  .chart-warning;
+  .gt-chart-warning;
 }
 
-.chart-no-data {
+.gt-chart-no-data {
   display: inline-block;
   color: #333;
   background-color: #ddd;
@@ -70,21 +70,21 @@
   border-radius: 6px;
 }
 
-.chart-help {
+.gt-chart-help {
   padding: 4px 35px;
   background-color: #eee;
   border-radius: 6px;
 }
 
-.qtip-border-color-0 {
+.gt-trace-point-normal {
   border-color: @trace-point-normal;
 }
 
-.qtip-border-color-1 {
+.gt-trace-point-error {
   border-color: @trace-point-error;
 }
 
-.qtip-border-color-2 {
+.gt-trace-point-active {
   border-color: @trace-point-active;
 }
 

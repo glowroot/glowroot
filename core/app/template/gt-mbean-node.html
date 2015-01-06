@@ -7,13 +7,13 @@
     </div>
   </div>
   <div ng-if="node.objectName">
-    <span class="inline-block mbean-unexpanded-content glowroot-link-color"
+    <span class="gt-inline-block gt-mbean-unexpanded-content gt-link-color"
           style="margin-left: -10px;"
           ng-hide="node.expanded"
           gt-smart-click="toggleMBean(node)">
       {{node.nodeName}}
     </span>
-    <div class="inline-block mbean-expanded-content"
+    <div class="gt-inline-block gt-mbean-expanded-content"
          style="margin-left: -10px;"
          ng-show="node.expanded"
          gt-smart-click="toggleMBean(node)">
@@ -26,11 +26,11 @@
           <td valign="top">{{key}}</td>
           <td style="padding-left: 10px;">
             <div ng-show="isSimpleValue(value)"
-                 class="break-word">
+                 class="gt-break-word">
               {{value}}
             </div>
             <div ng-hide="isSimpleValue(value)">
-              <pre class="mbean-value-pre break-word">{{indentedJson(value)}}</pre>
+              <pre class="gt-mbean-value-pre gt-break-word">{{indentedJson(value)}}</pre>
             </div>
           </td>
         </tr>
@@ -38,7 +38,7 @@
         <tr ng-hide="node.attributeMap.ObjectName">
           <td valign="top"><em>ObjectName</em></td>
           <td style="padding-left: 10px;">
-            <div class="break-word">
+            <div class="gt-break-word">
               {{node.objectName}}
             </div>
           </td>

@@ -188,13 +188,13 @@ Glowroot = (function () {
     $(selector).each(function () {
       // handle crazy user clicking on the button
       var $this = $(this);
-      if ($this.data('timeout')) {
-        clearTimeout($this.data('timeout'));
+      if ($this.data('gtTimeout')) {
+        clearTimeout($this.data('gtTimeout'));
       }
       $this.stop().animate({opacity: '100'});
       $this.removeClass('hide');
       var outerThis = this;
-      $this.data('timeout', setTimeout(function () {
+      $this.data('gtTimeout', setTimeout(function () {
         fadeOut(outerThis, 1000);
       }, delay));
     });

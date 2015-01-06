@@ -19,13 +19,13 @@
 @indent1: 1em;
 @horizontal-padding: 1em;
 // by default using flatButtonVerticalPadding, but these are really independent vars
-@vertical-padding: @flat-button-vertical-padding;
+@vertical-padding: @gt-flat-button-vertical-padding;
 
-.content-detail {
+.gt-content-detail {
   margin-left: (2 * @indent1);
 }
 
-.trace-metrics-table td {
+.gt-trace-metrics-table td {
   padding-left: 0px;
   padding-right: 16px;
   text-align: right;
@@ -33,28 +33,28 @@
 }
 
 // some elements need the same padding as expanding elements
-.content-padding {
+.gt-content-padding {
   padding: @vertical-padding @horizontal-padding;
 }
 
-.unexpanded-content,
-.expanded-content {
+.gt-unexpanded-content,
+.gt-expanded-content {
   cursor: pointer;
   // margin-right is used (instead of padding-right on the container) so that stack traces which
   // require horizontal scrolling still have padding to their right
   margin-right: 20px;
   border-radius: 4px;
-  .content-padding;
+  .gt-content-padding;
 }
 
-.unexpanded-content:hover,
-.unexpanded-content:focus,
-.expanded-content:hover,
-.expanded-content:focus {
+.gt-unexpanded-content:hover,
+.gt-unexpanded-content:focus,
+.gt-expanded-content:hover,
+.gt-expanded-content:focus {
   background-color: #ddd;
 }
 
-.expanded-content {
+.gt-expanded-content {
   background-color: #eee;
   // margin for white space between successive expanded elements, at the bottom so that
   // expanding doesn't create jitter/shift down of expanding section
@@ -62,54 +62,54 @@
 }
 
 // tighter vertical spacing in profile
-.profile .unexpanded-content {
+.gt-profile .gt-unexpanded-content {
   margin-top: -1px;
   margin-bottom: -1px;
 }
 
-.profile .expanded-content {
+.gt-profile .gt-expanded-content {
   margin-top: -1px;
   margin-bottom: 3px;
 }
 
-.left-numeric-column {
+.gt-left-numeric-column {
   text-align: right;
   // needs the same vertical padding as content
   padding: @vertical-padding 0;
 }
 
-.indent1 {
+.gt-indent1 {
   margin-left: @indent1;
 }
 
-.indent2 {
+.gt-indent2 {
   margin-left: (2 * @indent1);
 }
 
-.pad1 {
+.gt-pad1 {
   padding-left: @horizontal-padding;
   padding-right: @horizontal-padding;
 }
 
-.pad1aligned {
+.gt-pad1aligned {
   margin-left: -@horizontal-padding;
-  .pad1;
+  .gt-pad1;
 }
 
-.flat-btn.flat-btn-big-pad1aligned {
+.gt-flat-btn.gt-flat-btn-big-pad1aligned {
   margin-left: -@horizontal-padding;
-  .pad1;
+  .gt-pad1;
   padding-top: 6px;
   padding-bottom: 6px;
 }
 
-.flat-btn.flat-btn-big {
-  .pad1;
+.gt-flat-btn.gt-flat-btn-big {
+  .gt-pad1;
   padding-top: 6px;
   padding-bottom: 6px;
 }
 
-.second-line-indent {
+.gt-second-line-indent {
   padding-left: (4 * @indent1);
   text-indent: -(4 * @indent1);
 }
@@ -117,17 +117,17 @@
 /* text-indent is inherited by default, so need to reset it on buttons inside .second-level-indent,
    e.g. export button on trace modal
    (note: button seems ok in Chrome and Firefox without this, but IE seems technically correct and requires it) */
-.second-line-indent button {
+.gt-second-line-indent button {
   text-indent: 0;
 }
 
-.break-word {
+.gt-break-word {
   word-wrap: break-word;
   word-break: break-all;
 }
 
 /* this is not used by export */
-.trace-detail-spinner {
+.gt-trace-detail-spinner {
   // relative position needed for spinner
   position: relative;
   display: inline-block;

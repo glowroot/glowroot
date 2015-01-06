@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2014 the original author or authors.
+  Copyright 2013-2015 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -13,8 +13,8 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="header">
-  <div class="header-page-name">
+<div class="gt-header">
+  <div class="gt-header-page-name">
     Login
   </div>
 </div>
@@ -24,18 +24,18 @@
      name="formCtrl">
   <div class="form-group">
     <input type="password"
-           class="form-control inline-block"
+           class="form-control gt-inline-block"
            ng-model="page.password"
            id="loginPassword"
            placeholder="Enter password"
            style="max-width: 20em;">
-    <span class="glowroot-red"
+    <span class="gt-red"
           ng-show="message"
           style="padding-left: 15px;">
       {{message}}
     </span>
   </div>
-  <div class="form-group form-buttons">
+  <div class="form-group gt-form-buttons">
     <div gt-button
          gt-label="Login"
          gt-click="login(deferred)"

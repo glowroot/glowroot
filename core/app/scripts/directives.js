@@ -29,8 +29,8 @@ glowroot.factory('gtButtonGroupControllerFactory', [
             if (alreadyExecuting) {
               return;
             }
-            var $buttonMessage = $element.find('.button-message');
-            var $buttonSpinner = $element.find('.button-spinner');
+            var $buttonMessage = $element.find('.gt-button-message');
+            var $buttonSpinner = $element.find('.gt-button-spinner');
             // in case button is clicked again before message fades out
             $buttonMessage.addClass('hide');
             var spinner;
@@ -46,8 +46,8 @@ glowroot.factory('gtButtonGroupControllerFactory', [
               // if success is undefined (e.g. no explicit success message), need to pass empty string,
               // otherwise it won't overwrite old error message in $buttonMessage if there is one
               $buttonMessage.text(success || '');
-              $buttonMessage.removeClass('button-message-error');
-              $buttonMessage.addClass('button-message-success');
+              $buttonMessage.removeClass('gt-button-message-error');
+              $buttonMessage.addClass('gt-button-message-success');
               Glowroot.showAndFadeSuccessMessage($buttonMessage);
               alreadyExecuting = false;
             }, function (error) {
@@ -55,8 +55,8 @@ glowroot.factory('gtButtonGroupControllerFactory', [
                 spinner.stop();
               }
               $buttonMessage.text(error);
-              $buttonMessage.removeClass('button-message-success');
-              $buttonMessage.addClass('button-message-error');
+              $buttonMessage.removeClass('gt-button-message-success');
+              $buttonMessage.addClass('gt-button-message-error');
               $buttonMessage.removeClass('hide');
               alreadyExecuting = false;
             });
@@ -79,11 +79,11 @@ glowroot.directive('gtButtonGroup', [
       template: '' +
       '<div class="clearfix">' +
       '  <div ng-transclude style="float: left;"></div>' +
-      '  <span class="button-spinner hide" style="float: left;"></span>' +
+      '  <span class="gt-button-spinner hide" style="float: left;"></span>' +
         // this needs to be div, and it's child needs to be div, for formatting of multi-line messages
         // same as done in gt-button.html template
       '  <div style="overflow-x: hidden;">' +
-      '    <div class="button-message hide" style="padding-top: 5px;"></div>' +
+      '    <div class="gt-button-message hide" style="padding-top: 5px;"></div>' +
       '  </div>' +
       '</div>',
       controller: [

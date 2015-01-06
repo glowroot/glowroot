@@ -19,18 +19,18 @@
     <strong>Background</strong>
   </div>
 {{/if}}
-<div class="second-line-indent">
+<div class="gt-second-line-indent">
   <strong>{{headline}}</strong>
   {{#if showExport}}
-    <button class="flat-btn flat-btn-big glowroot-link-color download-trace">
+    <button class="gt-flat-btn gt-flat-btn-big gt-link-color download-trace">
       export
     </button>
   {{/if}}
 </div>
-<div class="second-line-indent">
+<div class="gt-second-line-indent">
   Transaction type: {{transactionType}}
 </div>
-<div class="second-line-indent">
+<div class="gt-second-line-indent">
   Transaction name: {{transactionName}}
 </div>
 <div>
@@ -40,25 +40,25 @@
   Duration: {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds
 </div>
 {{#if error}}
-  <div class="second-line-indent">
+  <div class="gt-second-line-indent">
     <strong>Error: {{error}}</strong>
   </div>
 {{/if}}
 {{#if user}}
-  <div class="second-line-indent">
+  <div class="gt-second-line-indent">
     User: {{user}}
   </div>
 {{/if}}
 {{#eachKeyValuePair customAttributes}}
-  <div class="second-line-indent">
+  <div class="gt-second-line-indent">
     {{key}}: {{value}}
   </div>
 {{/eachKeyValuePair}}
 <div>
   Breakdown (in milliseconds):
 </div>
-<div class="trace-metrics">
-  <table class="trace-metrics-table indent2" style="border-spacing: 0;">
+<div class="gt-trace-metrics">
+  <table class="gt-trace-metrics-table gt-indent2" style="border-spacing: 0;">
     <thead>
     <tr>
       <td></td>
@@ -67,7 +67,7 @@
       <td>max</td>
       <td>count</td>
       <td>
-        <button class="flat-btn flat-btn-big glowroot-link-color metric-view-toggle"
+        <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-metric-view-toggle"
                 style="margin-top: -6px; margin-bottom: -6px;">
           switch to tree view
         </button>
@@ -79,7 +79,7 @@
       <tr class="align-top">
         <td style="text-align: left;">
           <div style="margin-left: {{metricIndent .}}em;">
-            <div class="second-line-indent">{{name}}</div>
+            <div class="gt-second-line-indent">{{name}}</div>
           </div>
         </td>
         <td>{{nanosToMillis total}}{{#if active}}..{{/if}}</td>
@@ -91,7 +91,7 @@
     {{/eachMetricFlattenedOrdered}}
     </tbody>
   </table>
-  <table class="hide trace-metrics-table indent2" style="border-spacing: 0;">
+  <table class="hide gt-trace-metrics-table gt-indent2" style="border-spacing: 0;">
     <thead>
     <tr>
       <td></td>
@@ -100,7 +100,7 @@
       <td>max</td>
       <td>count</td>
       <td>
-        <button class="flat-btn flat-btn-big glowroot-link-color metric-view-toggle"
+        <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-metric-view-toggle"
                 style="margin-top: -6px; margin-bottom: -6px;">
           switch to flattened view
         </button>
@@ -112,7 +112,7 @@
       <tr class="align-top">
         <td style="text-align: left;">
           <div style="margin-left: {{metricIndent .}}em;">
-            <div class="second-line-indent">{{name}}</div>
+            <div class="gt-second-line-indent">{{name}}</div>
           </div>
         </td>
         <td>{{nanosToMillis total}}{{#if active}}..{{/if}}</td>
@@ -130,22 +130,22 @@
     Thread info
   </div>
   {{#ifExists threadInfo.threadCpuTime}}
-    <div class="indent2">
+    <div class="gt-indent2">
       CPU time: {{nanosToMillis threadInfo.threadCpuTime}} milliseconds
     </div>
   {{/ifExists}}
   {{#ifExists threadInfo.threadBlockedTime}}
-    <div class="indent2">
+    <div class="gt-indent2">
       Blocked time: {{threadInfo.threadBlockedTime}} milliseconds
     </div>
   {{/ifExists}}
   {{#ifExists threadInfo.threadWaitedTime}}
-    <div class="indent2">
+    <div class="gt-indent2">
       Waited time: {{threadInfo.threadWaitedTime}} milliseconds
     </div>
   {{/ifExists}}
   {{#ifExists threadInfo.threadAllocatedBytes}}
-    <div class="indent2">
+    <div class="gt-indent2">
       Allocated memory: {{formatAllocatedBytes threadInfo.threadAllocatedBytes}}
     </div>
   {{/ifExists}}
@@ -155,7 +155,7 @@
     GC info
   </div>
   {{#eachGcInfoOrdered gcInfos}}
-    <div class="indent2">
+    <div class="gt-indent2">
       {{name}}: {{collectionTime}} milliseconds ({{collectionCount}}
       collection{{#ifNotOne collectionCount}}s{{/ifNotOne}})
     </div>
@@ -164,12 +164,12 @@
 <br>
 {{#ifExistenceYes entriesExistence}}
   <div>
-    <button class="flat-btn flat-btn-big-pad1aligned sps-toggle">
-      <span class="glowroot-link-color">Trace entries</span>
+    <button class="gt-flat-btn gt-flat-btn-big-pad1aligned gt-sps-toggle">
+      <span class="gt-link-color">Trace entries</span>
     </button>
     {{! spinner is not used in export file }}
     <div>
-      <div class="hide trace-detail-spinner"></div>
+      <div class="hide gt-trace-detail-spinner"></div>
     </div>
   </div>
   <div id="sps"></div>
@@ -184,19 +184,19 @@
 {{/ifExistenceExpired}}
 {{#ifExistenceYes profileExistence}}
   <div>
-    <button class="flat-btn flat-btn-big-pad1aligned profile-toggle">
-      <span class="glowroot-link-color">Profile</span>
+    <button class="gt-flat-btn gt-flat-btn-big-pad1aligned gt-profile-toggle">
+      <span class="gt-link-color">Profile</span>
     </button>
     {{! spinner is not used in export file }}
     <div>
-      <div class="hide trace-detail-spinner"></div>
+      <div class="hide gt-trace-detail-spinner"></div>
     </div>
   </div>
-  <div class="nowrap hide" id="profileOuter">
-    <select class="form-control profile-filter input-xlarge hide" onchange="this.blur()"
+  <div class="gt-nowrap hide" id="profileOuter">
+    <select class="form-control gt-profile-filter gt-input-xlarge hide" onchange="this.blur()"
             style="margin: 4px;">
     </select>
-    <div class="profile indent1"></div>
+    <div class="gt-profile gt-indent1"></div>
   </div>
 {{/ifExistenceYes}}
 {{#ifExistenceExpired profileExistence}}

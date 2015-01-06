@@ -1,4 +1,4 @@
-<!-- using ng-if instead of ng-show so jquery selector only picks up one .button-message inside a button group -->
+<!-- using ng-if instead of ng-show so jquery selector only picks up one .gt-button-message inside a button group -->
 <div ng-if="noGroup">
   <button class="btn"
           ng-class="gtBtnClass || 'btn-primary'"
@@ -7,16 +7,16 @@
           ng-disabled="gtDisabled()">
     {{gtLabel}}
   </button>
-  <span class="button-spinner hide"></span>
+  <span class="gt-button-spinner hide"></span>
   <!-- this needs to be div, and it's child needs to be div, for formatting of multi-line messages
        e.g. Configuration optimistic lock error message -->
   <span style="overflow-x: hidden;">
-    <span class="button-message hide"
+    <span class="gt-button-message hide"
           style="padding-top: 5px;">
     </span>
   </span>
 </div>
-<span ng-if="!noGroup" class="inline-block">
+<span ng-if="!noGroup" class="gt-inline-block">
   <button class="btn"
           ng-class="gtBtnClass || 'btn-primary'"
           ng-click="onClick()"

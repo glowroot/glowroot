@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2014 the original author or authors.
+  Copyright 2013-2015 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
   <div class="panel-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-    <div class="row jvm-general-row">
+    <div class="row gt-jvm-general-row">
       <div class="col-md-2">
         <label>Start time</label>
       </div>
@@ -28,7 +28,7 @@
         {{data.startTime | date:'medium'}}
       </div>
     </div>
-    <div class="row jvm-general-row">
+    <div class="row gt-jvm-general-row">
       <div class="col-md-2">
         <label>Uptime</label>
       </div>
@@ -36,7 +36,7 @@
         {{data.uptime | gtDuration}}
       </div>
     </div>
-    <div class="row jvm-general-row">
+    <div class="row gt-jvm-general-row">
       <div class="col-md-2">
         <label>Process ID</label>
       </div>
@@ -46,7 +46,7 @@
     </div>
     <!-- mainClass is not available on JDK5 -->
     <div ng-show="data.mainClass !== null">
-      <div class="row jvm-general-row">
+      <div class="row gt-jvm-general-row">
         <div class="col-md-2">
           <label>Main class</label>
         </div>
@@ -54,7 +54,7 @@
           {{data.mainClass}}
         </div>
       </div>
-      <div class="row jvm-general-row">
+      <div class="row gt-jvm-general-row">
         <div class="col-md-2">
           <label>Main class args</label>
         </div>
@@ -66,7 +66,7 @@
             <div ng-switch-default>
               <!-- track by $index is needed since duplicates are possible in this list -->
               <div ng-repeat="argument in data.mainClassArguments track by $index">
-                <div class="jvm-argument break-word">
+                <div class="gt-jvm-argument gt-break-word">
                   {{argument}}
                 </div>
               </div>
@@ -75,7 +75,7 @@
         </div>
       </div>
     </div>
-    <div class="row jvm-general-row">
+    <div class="row gt-jvm-general-row">
       <div class="col-md-2">
         <label>JVM</label>
       </div>
@@ -83,7 +83,7 @@
         <div>{{data.jvm}}</div>
       </div>
     </div>
-    <div class="row jvm-general-row">
+    <div class="row gt-jvm-general-row">
       <div class="col-md-2">
         <label>Java</label>
       </div>
@@ -91,7 +91,7 @@
         <div>{{data.java}}</div>
       </div>
     </div>
-    <div class="row jvm-general-row">
+    <div class="row gt-jvm-general-row">
       <div class="col-md-2">
         <label>Java Home</label>
       </div>
@@ -99,14 +99,14 @@
         <div>{{data.javaHome}}</div>
       </div>
     </div>
-    <div class="row jvm-general-row">
+    <div class="row gt-jvm-general-row">
       <div class="col-md-2">
         <label>JVM args</label>
       </div>
       <div class="col-md-10">
         <!-- track by $index is needed since duplicates are possible in this list -->
         <div ng-repeat="argument in data.jvmArguments track by $index">
-          <div class="jvm-argument break-word">
+          <div class="gt-jvm-argument gt-break-word">
             {{argument}}
           </div>
         </div>

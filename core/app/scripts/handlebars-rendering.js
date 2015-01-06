@@ -196,12 +196,12 @@ HandlebarsRendering = (function () {
           // array values are supported to simulate multimaps, e.g. for http request parameters and http headers, both
           // of which can have multiple values for the same key
           $.each(propVal, function (i, propVal) {
-            ret += '<div class="break-word second-line-indent">' + propName + ': ' + propVal + '</div>';
+            ret += '<div class="gt-break-word gt-second-line-indent">' + propName + ': ' + propVal + '</div>';
           });
         } else if (typeof propVal === 'object' && propVal !== null) {
-          ret += propName + ':<br><div class="indent1">' + messageDetailHtml(propVal) + '</div>';
+          ret += propName + ':<br><div class="gt-indent1">' + messageDetailHtml(propVal) + '</div>';
         } else {
-          ret += '<div class="break-word second-line-indent">' + propName + ': ' + propVal + '</div>';
+          ret += '<div class="gt-break-word gt-second-line-indent">' + propName + ': ' + propVal + '</div>';
         }
       });
       return ret;
@@ -283,8 +283,8 @@ HandlebarsRendering = (function () {
   // TODO register these handlers on trace modal each time one is opened instead of globally on $(document)
   // TODO (and make sure it still works on export files)
   $(document).on('click', 'button.download-trace', function () {
-    var $traceParent = $(this).parents('.trace-parent');
-    var traceId = $traceParent.data('traceId');
+    var $traceParent = $(this).parents('.gt-trace-parent');
+    var traceId = $traceParent.data('gtTraceId');
     window.location = 'export/trace/' + traceId;
   });
   var mousedownPageX, mousedownPageY;
@@ -292,24 +292,24 @@ HandlebarsRendering = (function () {
     mousedownPageX = e.pageX;
     mousedownPageY = e.pageY;
   });
-  $(document).on('click', '.metric-view-toggle', function () {
-    $(this).parents('.trace-metrics').children('table').toggleClass('hide');
+  $(document).on('click', '.gt-metric-view-toggle', function () {
+    $(this).parents('.gt-trace-metrics').children('table').toggleClass('hide');
   });
-  $(document).on('click', '.unexpanded-content, .expanded-content', function (e, keyboard) {
+  $(document).on('click', '.gt-unexpanded-content, .gt-expanded-content', function (e, keyboard) {
     smartToggle($(this).parent(), e, keyboard);
   });
-  $(document).on('click', '.sps-toggle', function () {
+  $(document).on('click', '.gt-sps-toggle', function () {
     var $selector = $('#sps');
-    if ($selector.data('loading')) {
+    if ($selector.data('gtLoading')) {
       // handles rapid clicking when loading from url
       return;
     }
-    if (!$selector.data('loaded')) {
-      var $traceParent = $(this).parents('.trace-parent');
-      var traceEntries = $traceParent.data('traceEntries');
+    if (!$selector.data('gtLoaded')) {
+      var $traceParent = $(this).parents('.gt-trace-parent');
+      var traceEntries = $traceParent.data('gtTraceEntries');
       if (traceEntries) {
         // this is an export file
-        $selector.data('loaded', true);
+        $selector.data('gtLoaded', true);
         // first time opening
         initTraceEntryLineLength();
         // un-hide before building in case there are lots of trace entries, at least can see first few quickly
@@ -317,14 +317,14 @@ HandlebarsRendering = (function () {
         renderNext(traceEntries, 0);
       } else {
         // this is not an export file
-        var traceId = $traceParent.data('traceId');
-        $selector.data('loading', true);
+        var traceId = $traceParent.data('gtTraceId');
+        $selector.data('gtLoading', true);
         var loaded;
         var spinner;
         var $button = $(this);
         setTimeout(function () {
           if (!loaded) {
-            spinner = Glowroot.showSpinner($button.parent().find('.trace-detail-spinner'));
+            spinner = Glowroot.showSpinner($button.parent().find('.gt-trace-detail-spinner'));
           }
         }, 100);
         $.get('backend/trace/entries?trace-id=' + traceId)
@@ -344,8 +344,8 @@ HandlebarsRendering = (function () {
               if (spinner) {
                 spinner.stop();
               }
-              $selector.data('loading', false);
-              $selector.data('loaded', true);
+              $selector.data('gtLoading', false);
+              $selector.data('gtLoaded', true);
             });
       }
     } else if ($selector.hasClass('hide')) {
@@ -354,36 +354,36 @@ HandlebarsRendering = (function () {
       $selector.addClass('hide');
     }
   });
-  $(document).on('click', '.profile-toggle', function () {
-    var $traceParent = $(this).parents('.trace-parent');
+  $(document).on('click', '.gt-profile-toggle', function () {
+    var $traceParent = $(this).parents('.gt-trace-parent');
     var $button = $(this);
-    var profile = $traceParent.data('profile');
+    var profile = $traceParent.data('gtProfile');
     var url;
     if (!profile) {
-      url = 'backend/trace/profile' + '?trace-id=' + $traceParent.data('traceId');
+      url = 'backend/trace/profile' + '?trace-id=' + $traceParent.data('gtTraceId');
     }
     profileToggle($button, '#profileOuter', profile, url);
   });
 
   function profileToggle($button, selector, profile, url) {
     var $selector = $(selector);
-    if ($selector.data('loading')) {
+    if ($selector.data('gtLoading')) {
       // handles rapid clicking when loading from url
       return;
     }
-    if (!$selector.data('loaded')) {
+    if (!$selector.data('gtLoaded')) {
       if (profile) {
         // this is an export file
         buildMergedStackTree(profile, $selector);
         $selector.removeClass('hide');
-        $selector.data('loaded', true);
+        $selector.data('gtLoaded', true);
       } else {
-        $selector.data('loading', true);
+        $selector.data('gtLoading', true);
         var loaded;
         var spinner;
         setTimeout(function () {
           if (!loaded) {
-            spinner = Glowroot.showSpinner($button.parent().find('.trace-detail-spinner'));
+            spinner = Glowroot.showSpinner($button.parent().find('.gt-trace-detail-spinner'));
           }
         }, 100);
         $.get(url)
@@ -400,8 +400,8 @@ HandlebarsRendering = (function () {
               if (spinner) {
                 spinner.stop();
               }
-              $selector.data('loading', false);
-              $selector.data('loaded', true);
+              $selector.data('gtLoading', false);
+              $selector.data('gtLoaded', true);
             });
       }
     } else if ($selector.hasClass('hide')) {
@@ -413,7 +413,7 @@ HandlebarsRendering = (function () {
 
   function initTraceEntryLineLength() {
     // using an average character (width-wise) 'o'
-    $('body').prepend('<span class="offscreen" id="bodyFontCharWidth">o</span>');
+    $('body').prepend('<span class="gt-offscreen" id="bodyFontCharWidth">o</span>');
     var charWidth = $('#bodyFontCharWidth').width();
     // -100 for the left margin of the trace entry lines
     traceEntryLineLength = ($('#sps').width() - 100) / charWidth;
@@ -448,8 +448,8 @@ HandlebarsRendering = (function () {
   }
 
   function basicToggle(parent) {
-    var expanded = parent.find('.expanded-content');
-    var unexpanded = parent.find('.unexpanded-content');
+    var expanded = parent.find('.gt-expanded-content');
+    var unexpanded = parent.find('.gt-unexpanded-content');
     unexpanded.toggleClass('hide');
     expanded.toggleClass('hide');
     if (unexpanded.hasClass('hide')) {
@@ -468,8 +468,8 @@ HandlebarsRendering = (function () {
       // not a simple single click, probably highlighting text
       return;
     }
-    parent.find('.expanded-content').toggleClass('hide');
-    parent.find('.unexpanded-content').toggleClass('hide');
+    parent.find('.gt-expanded-content').toggleClass('hide');
+    parent.find('.gt-unexpanded-content').toggleClass('hide');
   }
 
   function buildMergedStackTree(rootNode, selector) {
@@ -495,7 +495,7 @@ HandlebarsRendering = (function () {
         node = node.childNodes[0];
         nodes.push(node);
       }
-      var ret = '<span class="inline-block" style="width: 4em; margin-left: ' + level + 'em;">';
+      var ret = '<span class="gt-inline-block" style="width: 4em; margin-left: ' + level + 'em;">';
       var samplePercentage = (nodeSampleCount / rootNodeSampleCount) * 100;
       ret += samplePercentage.toFixed(1);
       // the space after the % is actually important when highlighting a block of stack trace
@@ -505,17 +505,17 @@ HandlebarsRendering = (function () {
       ret += '% </span>';
       if (nodes.length === 1) {
         ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-        ret += '<span class="inline-block" style="padding: 1px 1em;">';
+        ret += '<span class="gt-inline-block" style="padding: 1px 1em;">';
         ret += escapeHtml(node.stackTraceElement);
         ret += '</span><br>';
       } else {
         ret += '<span>';
-        ret += '<span class="inline-block unexpanded-content" style="vertical-align: top;">';
-        ret += '<span class="glowroot-link-color"><strong>...</strong> </span>';
+        ret += '<span class="gt-inline-block gt-unexpanded-content" style="vertical-align: top;">';
+        ret += '<span class="gt-link-color"><strong>...</strong> </span>';
         ret += escapeHtml(nodes[nodes.length - 1].stackTraceElement) + '<br>';
         ret += '</span>';
         ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-        ret += '<span class="inline-block expanded-content hide" style="vertical-align: top;">';
+        ret += '<span class="gt-inline-block gt-expanded-content hide" style="vertical-align: top;">';
         $.each(nodes, function (index, node) {
           ret += escapeHtml(node.stackTraceElement) + '<br>';
         });
@@ -523,10 +523,10 @@ HandlebarsRendering = (function () {
         ret += '</span><br>';
       }
       if (node.leafThreadState) {
-        ret += '<span class="inline-block" style="width: 4em; margin-left: ' + (level + 2) + 'em;">';
+        ret += '<span class="gt-inline-block" style="width: 4em; margin-left: ' + (level + 2) + 'em;">';
         ret += '</span>';
         ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-        ret += '<span class="inline-block" style="padding: 1px 1em;">';
+        ret += '<span class="gt-inline-block" style="padding: 1px 1em;">';
         ret += escapeHtml(node.leafThreadState);
         ret += '</span><br>';
       }
@@ -544,10 +544,10 @@ HandlebarsRendering = (function () {
         }
       }
       if (node.ellipsed) {
-        ret += '<span class="inline-block" style="width: 4em; margin-left: ' + (level + 1) + 'em;">';
+        ret += '<span class="gt-inline-block" style="width: 4em; margin-left: ' + (level + 1) + 'em;">';
         ret += '</span>';
         ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-        ret += '<span class="inline-block" style="padding: 1px 1em;">(some branches < 0.1%)</span><br>';
+        ret += '<span class="gt-inline-block" style="padding: 1px 1em;">(some branches < 0.1%)</span><br>';
       }
       return ret;
     }
@@ -556,7 +556,7 @@ HandlebarsRendering = (function () {
     // first time only, process merged stack tree and populate dropdown
     // build initial merged stack tree
     var html = curr(rootNode, 0);
-    $selector.find('.profile').html(html);
+    $selector.find('.gt-profile').html(html);
 
     var mergedCounts = calculateMetricCounts(rootNode);
     if (!$.isEmptyObject(mergedCounts)) {
@@ -604,7 +604,7 @@ HandlebarsRendering = (function () {
       // remove the root '' since all nodes are already under the single root trace metric
       orderedNodes.splice(0, 1);
       // build filter dropdown
-      var $profileFilter = $selector.find('.profile-filter');
+      var $profileFilter = $selector.find('.gt-profile-filter');
       $profileFilter.removeClass('hide');
       $.each(orderedNodes, function (i, node) {
         $profileFilter.append($('<option />').val(node.name)
@@ -613,7 +613,7 @@ HandlebarsRendering = (function () {
       $profileFilter.change(function () {
         // update merged stack tree based on filter
         var html = curr(rootNode, 0, $(this).val());
-        $selector.find('.profile').html(html);
+        $selector.find('.gt-profile').html(html);
       });
     }
   }
@@ -654,12 +654,12 @@ HandlebarsRendering = (function () {
     renderTrace: function (trace, $selector) {
       var html = JST.trace(trace);
       $selector.html(html);
-      $selector.addClass('trace-parent');
-      $selector.data('traceId', trace.id);
+      $selector.addClass('gt-trace-parent');
+      $selector.data('gtTraceId', trace.id);
     },
     renderTraceFromExport: function (trace, $selector, traceEntries, profile) {
-      $selector.data('traceEntries', traceEntries);
-      $selector.data('profile', profile);
+      $selector.data('gtTraceEntries', traceEntries);
+      $selector.data('gtProfile', profile);
       this.renderTrace(trace, $selector);
     },
     profileToggle: profileToggle

@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2014 the original author or authors.
+  Copyright 2012-2015 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -20,19 +20,19 @@
   <div class="panel-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-    <div gt-button
-         gt-button-right-aligned
-         gt-label="Export as text"
-         gt-click="exportAsText(deferred)"
-         gt-btn-class="btn-default"
+    <div class="clearfix"
          style="float: right;">
+      <button class="btn btn-default"
+              ng-click="exportAsText()">
+        Export as text
+      </button>
     </div>
     <div gt-button
          gt-label="Refresh"
          gt-click="refresh(deferred)"
          style="margin-bottom: 20px;">
     </div>
-    <div class="thread-dump-flat-pre"
+    <div class="gt-thread-dump-flat-pre"
          ng-class="{hide: !loaded}"
          id="threadDump">
     </div>

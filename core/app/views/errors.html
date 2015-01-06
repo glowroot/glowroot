@@ -13,11 +13,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="panel-overlay" ng-show="httpError">
+<div class="gt-panel-overlay" ng-show="httpError">
   <!-- need top padding so message is not hidden under navbar -->
   <div ng-include src="'template/gt-http-error.html'" style="padding-top: 50px;"></div>
 </div>
-<div class="header"
+<div class="gt-header"
      style="padding-bottom: 46px;">
   <div ng-form
        gt-form-with-primary-button
@@ -36,28 +36,28 @@
     <button popover-window="template/gt-chart-help.html"
             popover-window-placement="left"
             popover-window-trigger="focus"
-            class="chart-help-button inline-block"
+            class="gt-chart-help-button gt-inline-block"
             style="border: none;">
       <i title="Help"
          class="fa fa-question-circle"
          style="font-size: 28px; vertical-align: middle; margin-left: 8px;"></i>
     </button>
   </div>
-  <div class="header-page-name">
+  <div class="gt-header-page-name">
     <div ng-show="layout.transactionTypes.length > 1"
          style="margin-top: -16px;">
       Errors
       <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
            while chrome guesses the placement of the border based on default font and then it moves slightly
            once font is available -->
-      <span class="inline-block gt-separator">
+      <span class="gt-inline-block gt-separator">
         |
       </span>
-      <span class="inline-block header-menu">
+      <span class="gt-inline-block gt-header-menu">
         <span class="dropdown">
           <div data-toggle="dropdown" class="dropdown-toggle">
             {{transactionType}}
-            <span class="large-caret"></span>
+            <span class="gt-large-caret"></span>
           </div>
           <ul class="dropdown-menu">
             <li ng-repeat="tt in layout.transactionTypes"
@@ -78,7 +78,7 @@
 </div>
 <div class="gt-transaction-sidebar"
      style="position: relative;">
-  <div class="panel-overlay"
+  <div class="gt-panel-overlay"
        ng-show="showMoreSummariesSpinner">
     <div gt-spinner
          gt-show="showMoreSummariesSpinner"
@@ -154,7 +154,7 @@
           <button popover-window="template/gt-error-messages-help.html"
                   popover-window-placement="left"
                   popover-window-trigger="focus"
-                  class="chart-help-button inline-block"
+                  class="gt-chart-help-button gt-inline-block"
                   style="border: none;">
             <i title="Help"
                class="fa fa-question-circle"
@@ -162,30 +162,30 @@
           </button>
         </div>
       </div>
-      <div class="chart-container" style="margin-top: 5px;">
+      <div class="gt-chart-container" style="margin-top: 5px;">
         <!-- pointer-events: none is to allow scrollwheel events
              to pass through to flot in order to handle rapid zooming -->
         <div gt-spinner
              gt-show="showChartSpinner"
              gt-no-delay="true"
-             class="spinner panel-overlay"
+             class="spinner gt-panel-overlay"
              id="chartSpinner"
              style="position: absolute; width: 100%; height: 100%; pointer-events: none;">
         </div>
-        <div class="panel-overlay" ng-show="showChartOverlay">
+        <div class="gt-panel-overlay" ng-show="showChartOverlay">
         </div>
-        <div class="chart-dimensions" id="chart"></div>
+        <div class="gt-chart-dimensions" id="chart"></div>
         <div ng-show="chartNoData && !showChartSpinner"
              style="display: table; width: 100%; height: 100%;">
           <div style="display: table-cell; text-align: center; vertical-align: middle;">
-            <div class="chart-no-data">No data for this time period</div>
+            <div class="gt-chart-no-data">No data for this time period</div>
           </div>
         </div>
       </div>
       <!-- 32px + 8px (padding on tds) is to match 40px margin on performance tab -->
       <div ng-hide="chartNoData"
            style="position: relative; padding-top: 40px; margin-left: 32px;">
-        <div class="panel-overlay" ng-show="showChartSpinner || showChartOverlay">
+        <div class="gt-panel-overlay" ng-show="showChartSpinner || showChartOverlay">
         </div>
         <table class="table">
           <thead>

@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2014 the original author or authors.
+  Copyright 2012-2015 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 -->
 <div gt-spinner
      gt-show="!loaded && !httpError"
-     class="left-aligned-spinner">
+     class="gt-left-aligned-spinner">
 </div>
 <div ng-include src="'template/gt-http-error.html'"></div>
 <div ng-repeat="gauge in gauges"
@@ -50,15 +50,15 @@
           <div gt-spinner
                gt-spinner-inline="true"
                gt-show="showMBeanObjectNameSpinner"
-               class="inline-spinner">
+               class="gt-inline-spinner">
           </div>
           <div ng-show="mbeanUnavailable"
-               class="glowroot-red"
+               class="gt-red"
                style="padding-top: 10px;">
             MBean not found
           </div>
           <div ng-show="duplicateMBean"
-               class="glowroot-red"
+               class="gt-red"
                style="padding-top: 10px;">
             There is already a gauge for this MBean
           </div>
@@ -71,7 +71,7 @@
         <div class="col-lg-10">
           <div gt-spinner
                gt-show="mbeanAttributesLoading && !httpError"
-               class="inline-spinner hide"
+               class="gt-inline-spinner hide"
                style="height: 50px;">
           </div>
           <div ng-repeat="mbeanAttribute in allMBeanAttributes | orderBy:'name'"
@@ -81,7 +81,7 @@
                 <input type="checkbox" ng-model="mbeanAttribute.checked">
                 {{mbeanAttribute.name}}
                 <span ng-show="!mbeanAttribute.available"
-                      class="glowroot-red"
+                      class="gt-red"
                       style="padding-left: 10px;">
                   Attribute not found
                 </span>
@@ -89,25 +89,25 @@
             </div>
           </div>
           <div ng-show="!allMBeanAttributes.length && !mbeanUnavailable && config.selectedMBeanObjectName"
-               class="glowroot-red">
+               class="gt-red">
             There are no number-valued attributes for this MBean
           </div>
         </div>
       </div>
-      <div class="form-group form-buttons">
+      <div class="form-group gt-form-buttons">
         <div class="col-lg-offset-2 col-lg-10">
           <div gt-button-group>
             <div gt-button
                  gt-label="{{config.version ? 'Save' : 'Add'}}"
                  gt-click="save(deferred)"
                  gt-disabled="saveDisabled()"
-                 class="inline-block">
+                 class="gt-inline-block">
             </div>
             <div gt-button
                  gt-label="Delete"
                  gt-click="delete(deferred)"
                  gt-btn-class="btn-default"
-                 class="inline-block"
+                 class="gt-inline-block"
                  style="margin-left: 5px;">
             </div>
           </div>

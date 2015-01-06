@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2014 the original author or authors.
+  Copyright 2012-2015 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -13,28 +13,28 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="header" style="margin-bottom: 8px;">
-  <div class="header-page-name">
+<div class="gt-header" style="margin-bottom: 8px;">
+  <div class="gt-header-page-name">
     Traces
   </div>
 </div>
-<div class="chart-container">
+<div class="gt-chart-container">
   <!-- pointer-events: none is to allow scrollwheel events to pass through to flot in order to handle rapid zooming -->
   <div gt-spinner
        gt-show="showChartSpinner"
        gt-no-delay="true"
-       class="spinner panel-overlay"
+       class="spinner gt-panel-overlay"
        id="chartSpinner"
        style="position: absolute; width: 100%; height: 100%; pointer-events: none;">
   </div>
-  <div class="chart-dimensions" id="chart"></div>
-  <div class="chart-error" ng-show="refreshChartError">
+  <div class="gt-chart-dimensions" id="chart"></div>
+  <div class="gt-chart-error" ng-show="refreshChartError">
     <strong>{{refreshChartError}}</strong>
   </div>
   <div ng-show="chartNoData && !showChartSpinner"
        style="display: table; width: 100%; height: 100%;">
     <div style="display: table-cell; text-align: center; vertical-align: middle;">
-      <div class="chart-no-data">No data</div>
+      <div class="gt-chart-no-data">No data</div>
     </div>
   </div>
 </div>
@@ -42,7 +42,7 @@
 <div class="col-xs-12 col-sm-4"
      style="float: right; margin: 10px auto 0;">
   <div ng-show="chartLimitExceeded">
-    <div class="chart-warning">
+    <div class="gt-chart-warning">
       <strong>
         Specified result limit exceeded,<br>
         only displaying the slowest<br>
@@ -50,7 +50,7 @@
       </strong>
     </div>
   </div>
-  <div class="chart-help">
+  <div class="gt-chart-help">
     <div style="margin-top: 10px;">
       <strong>Chart navigation</strong>
     </div>
@@ -60,7 +60,7 @@
       <li>drag over a region to zoom in</li>
       <li>double click to zoom in</li>
       <li>
-        <button class="flat-btn glowroot-link-color"
+        <button class="gt-flat-btn gt-link-color"
                 id="zoomOut"
                 style="margin-left: -4px; padding: 0 4px;">
           click here to zoom out
@@ -308,6 +308,6 @@
   </button>
   <div class="modal-body" id="modalContent"></div>
 </div>
-<span class="qtip-border-color-0 offscreen" id="offscreenNormalColor"></span>
-<span class="qtip-border-color-1 offscreen" id="offscreenErrorColor"></span>
-<span class="qtip-border-color-2 offscreen" id="offscreenActiveColor"></span>
+<span class="gt-trace-point-normal gt-offscreen" id="offscreenNormalColor"></span>
+<span class="gt-trace-point-error gt-offscreen" id="offscreenErrorColor"></span>
+<span class="gt-trace-point-active gt-offscreen" id="offscreenActiveColor"></span>

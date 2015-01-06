@@ -1,5 +1,5 @@
 <!--
-  Copyright 2014 the original author or authors.
+  Copyright 2014-2015 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
   <div class="panel-body">
     <div gt-spinner
          gt-show="!loaded && !httpError"
-         class="left-aligned-spinner">
+         class="gt-left-aligned-spinner">
     </div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-show="loaded">
@@ -50,11 +50,11 @@
                gt-no-spinner="true">
           </div>
         </div>
-        <div class="chart-container">
+        <div class="gt-chart-container">
           <button popover-window="template/gt-chart-help.html"
                   popover-window-placement="left"
                   popover-window-trigger="focus"
-                  class="chart-help-button"
+                  class="gt-chart-help-button"
                   style="position: absolute; right: 0; top: -26px; border: none;">
             <i title="Help"
                class="fa fa-question-circle"
@@ -65,27 +65,27 @@
           <div gt-spinner
                gt-show="showChartSpinner"
                gt-no-delay="true"
-               class="spinner panel-overlay"
+               class="spinner gt-panel-overlay"
                id="chartSpinner"
                style="position: absolute; width: 100%; height: 100%; pointer-events: none;">
           </div>
-          <div class="chart-dimensions" id="chart"></div>
+          <div class="gt-chart-dimensions" id="chart"></div>
           <div ng-show="chartNoData && !showChartSpinner"
                style="display: table; width: 100%; height: 100%;">
             <div style="display: table-cell; text-align: center; vertical-align: middle;">
-              <div ng-if="keyedColorPool.keys().length" class="chart-no-data">No data</div>
-              <div ng-if="!keyedColorPool.keys().length" class="chart-no-data">Select one or more gauges below</div>
+              <div ng-if="keyedColorPool.keys().length" class="gt-chart-no-data">No data</div>
+              <div ng-if="!keyedColorPool.keys().length" class="gt-chart-no-data">Select one or more gauges below</div>
             </div>
           </div>
         </div>
         <br>
         <div>
           <div ng-repeat="gaugeName in keyedColorPool.keys() | orderBy"
-               class="inline-block"
+               class="gt-inline-block"
                ng-style="displayFilterRowStyle(gaugeName)">
             {{allShortGaugeNames[gaugeName]}}
             <button type="button"
-                    class="gauges-displayed-close"
+                    class="gt-gauges-displayed-close"
                     ng-click="removeDisplayedGauge(gaugeName)">
               &times;
             </button>
@@ -95,7 +95,7 @@
         <div>
           Filter
           <input type="text"
-                 class="form-control inline-block"
+                 class="form-control gt-inline-block"
                  ng-model="gaugeNameFilter"
                  style="width: 25em; margin-left: 5px;">
           <a href="" ng-click="selectAllGauges()" style="margin: 0 20px;">select all</a>

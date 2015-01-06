@@ -185,10 +185,10 @@ glowroot.controller('PerformanceCtrl', [
           var $profileOuter = $('#profileOuter');
           if (!$profileOuter.hasClass('hide')) {
             $profileOuter.addClass('hide');
-            $profileOuter.data('loaded', false);
+            $profileOuter.data('gtLoaded', false);
           }
-          var $profileFilter = $profileOuter.find('.profile-filter');
-          var $profile = $profileOuter.find('.profile');
+          var $profileFilter = $profileOuter.find('.gt-profile-filter');
+          var $profile = $profileOuter.find('.gt-profile');
           $profileFilter.html('');
           $profile.html('');
         } else {

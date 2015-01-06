@@ -18,11 +18,11 @@
 @import "../../bower_components/bootstrap/less/mixins";
 @import "variables";
 
-// --------
-// flat-btn
-// --------
+// -----------
+// gt-flat-btn
+// -----------
 
-.flat-btn {
+.gt-flat-btn {
   // upside to using a real button: mouse click does not focus on button, can use :active to provide
   // feedback on clicking already focused button
   // also good keyboard navigation, can be selected by tabbing and activated by <enter>
@@ -34,16 +34,16 @@
   border-radius: 4px;
 }
 
-.flat-btn:hover,
-.flat-btn:focus {
+.gt-flat-btn:hover,
+.gt-flat-btn:focus {
   background-color: #ddd;
 }
 
-.flat-btn:active {
+.gt-flat-btn:active {
   background-color: #ccc;
 }
 
-.flat-btn-big {
+.gt-flat-btn-big {
   padding: 6px 12px;
 }
 
@@ -51,25 +51,19 @@
 // utilities
 // ---------
 
-html.lte-ie8 .lte-ie8-hide {
-  display: none;
-}
-
-.button-message {
+.gt-button-message {
   font-size: 16px;
   font-weight: 600;
   margin-left: 14px;
-  // margin-right is needed for gt-button-message-on-left
-  margin-right: 14px;
   vertical-align: middle;
 }
 
-.button-message-success {
-  color: @glowroot-green;
+.gt-button-message-success {
+  color: @gt-green;
 }
 
-.button-message-error {
-  color: @glowroot-red;
+.gt-button-message-error {
+  color: @gt-red;
 }
 
 // this is to dynamically hide the validation error message immediately after it is fixed
@@ -77,42 +71,40 @@ form.ng-valid .button-validation-error {
   display: none;
 }
 
-.button-spinner {
+.gt-button-spinner {
   // relative position needed spinner
   position: relative;
   margin-top: 16px;
   margin-left: 32px;
-  // margin-right is needed for gt-button-message-on-left
-  margin-right: 32px;
   vertical-align: middle;
 }
 
-.glowroot-link-color {
-  color: darken(@glowroot-blue, 5%);
+.gt-link-color {
+  color: darken(@gt-blue, 5%);
   font-weight: bold;
 }
 
-.glowroot-red {
-  color: @glowroot-red;
+.gt-red {
+  color: @gt-red;
 }
 
-.glowroot-yellow {
-  color: @glowroot-yellow;
+.gt-yellow {
+  color: @gt-yellow;
 }
 
-.nowrap {
+.gt-nowrap {
   white-space: nowrap;
 }
 
-.inline-block {
+.gt-inline-block {
   display: inline-block;
 }
 
-.inline-block.hide {
+.gt-inline-block.hide {
   display: none;
 }
 
-.offscreen {
+.gt-offscreen {
   position: absolute;
   left: -999em;
 }
@@ -122,7 +114,7 @@ span.disabled {
   cursor: not-allowed;
 }
 
-.input-xlarge {
+.gt-input-xlarge {
   width: 270px;
 }
 
@@ -159,50 +151,7 @@ span.disabled {
   opacity: 0.8;
 }
 
-.full-screen-modal {
-  // need to hide outer scrollbar
-  overflow-y: hidden;
-}
-
-.full-screen-modal .modal-dialog {
-  position: fixed;
-  left: 25px;
-  right: 25px;
-  top: 25px;
-  bottom: 25px;
-  margin: 0;
-  // need to override bootstrap default modal-dialog width: 600px
-  width: auto;
-  // disable modal animation (ideally would remove fade from angular-ui bootstrap template/modal/window.html
-  -webkit-transition: none !important;
-  -moz-transition: none !important;
-  -o-transition: none !important;
-  transition: none !important;
-  -webkit-transform: none !important;
-  -ms-transform: none !important;
-  transform: none !important;
-}
-
-.full-screen-modal .modal-content {
-  width: 100%;
-  height: 100%;
-  box-shadow: none;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
-.full-screen-modal-content {
-  overflow-y: scroll;
-  background-color: white;
-  margin: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 6px;
-  box-shadow: none;
-  border-width: 0;
-}
-
-.chart-help-button {
+.gt-chart-help-button {
   color: #7d7358;
   background: none;
   outline: none;
@@ -210,11 +159,16 @@ span.disabled {
   padding: 1px;
 }
 
-.chart-help-button:hover {
+.gt-chart-help-button:hover {
   color: darken(#7d7358, 5%);
 }
 
 // remove IE 10's "clear field" icon since it is not useful in (required) datepicker fields
 .gt-datepicker::-ms-clear {
   display: none;
+}
+
+// this is for typeahead dropdowns
+.dropdown-menu > .active > a {
+  cursor: pointer;
 }

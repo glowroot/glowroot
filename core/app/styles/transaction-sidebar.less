@@ -15,9 +15,9 @@
  */
 @import "variables";
 
-@trace-point-normal: @glowroot-yellow;
-@trace-point-active: darken(@glowroot-blue, 10%);
-@trace-point-error: @glowroot-red;
+@trace-point-normal: @gt-yellow;
+@trace-point-active: darken(@gt-blue, 10%);
+@trace-point-error: @gt-red;
 
 .gt-transaction-sidebar-by {
   background-color: #aaa !important;
@@ -30,7 +30,7 @@
   color: #fff;
 }
 
-.bootstrap-select .btn.gt-transaction-sidebar-by:focus {
+.bootstrap-select .gt-transaction-sidebar-by:focus {
   outline: none !important;
   border-color: #ccc !important;
   -webkit-box-shadow: none;

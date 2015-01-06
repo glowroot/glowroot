@@ -1,5 +1,5 @@
 <!--
-  Copyright 2014 the original author or authors.
+  Copyright 2014-2015 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -13,12 +13,12 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="panel-overlay" ng-show="httpError">
+<div class="gt-panel-overlay" ng-show="httpError">
   <!-- need top padding so message is not hidden under navbar -->
   <div ng-include src="'template/gt-http-error.html'" style="padding-top: 50px;"></div>
 </div>
-<div class="header">
-  <div class="header-page-name">
+<div class="gt-header">
+  <div class="gt-header-page-name">
     Flame graph (experimental)
   </div>
 </div>
@@ -30,7 +30,7 @@
   <!-- margin-left: -22px is to counter default padding-left: 32px -->
   <div gt-spinner
        gt-show="!loaded && !httpError"
-       class="left-aligned-spinner"
+       class="gt-left-aligned-spinner"
        style="margin-left: -22px;">
   </div>
   <div id="chart">

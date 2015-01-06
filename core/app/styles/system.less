@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,60 +15,32 @@
  */
 @import "../../bower_components/bootstrap/less/variables";
 
-.jvm-general-row {
+.gt-jvm-general-row {
   padding-top: 5px;
   padding-bottom: 5px;
 }
 
-.jvm-argument {
+.gt-jvm-argument {
   padding-bottom: 10px;
 }
 
-.system-property {
+.gt-system-property {
   padding-top: 5px;
   padding-bottom: 5px;
 }
 
-.system-property label {
+.gt-system-property label {
   margin-bottom: 0px !important;
 }
 
-.heap-dump-response td {
+.gt-heap-dump-response td {
   padding-left: 10px;
   padding-right: 10px;
   vertical-align: top;
 }
 
-.table-sortable th {
-  cursor: pointer;
-}
-
-.memory-overview-panel-body h3 {
-  // padding-left it to match up with Memory pool table heading, looks a little better
-  padding-left: 8px;
-  font-size: 28px;
-}
-
-.memory-pool-table tfoot {
-  font-weight: bold;
-}
-
-.memory-pool-table .memory-pool-current-row {
-  background-color: whitesmoke;
-}
-
-.xs-word-break {
-  word-break: break-all;
-}
-
-@media (min-width: @screen-sm-min) {
-  .xs-word-break {
-    word-break: normal;
-  }
-}
-
-.mbean-unexpanded-content,
-.mbean-expanded-content {
+.gt-mbean-unexpanded-content,
+.gt-mbean-expanded-content {
   cursor: pointer;
   // margin-right is used (instead of padding-right on the container) so that wide content which
   // requires horizontal scrolling will still have padding to its right
@@ -77,21 +49,21 @@
   padding: 2px 10px;
 }
 
-.mbean-unexpanded-content:hover,
-.mbean-unexpanded-content:focus,
-.mbean-expanded-content:hover,
-.mbean-expanded-content:focus {
+.gt-mbean-unexpanded-content:hover,
+.gt-mbean-unexpanded-content:focus,
+.gt-mbean-expanded-content:hover,
+.gt-mbean-expanded-content:focus {
   background-color: #ddd;
 }
 
-.mbean-expanded-content {
+.gt-mbean-expanded-content {
   background-color: #eee;
   // margin for white space between successive expanded elements, at the bottom so that
   // expanding doesn't create jitter/shift down of expanding section
   margin-bottom: 4px;
 }
 
-.mbean-value-pre {
+.gt-mbean-value-pre {
   margin: 0;
   font-family: inherit;
   white-space: pre-wrap;

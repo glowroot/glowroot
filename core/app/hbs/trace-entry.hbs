@@ -1,20 +1,20 @@
 {{#if limitExceededMarker}}
-  <div class="indent1" style="padding: 10px 0;">
+  <div class="gt-indent1" style="padding: 10px 0;">
     <strong>... Entry limit exceeded ...</strong>
   </div>
 {{^}}
   {{#if limitExtendedMarker}}
-    <div class="indent1" style="padding: 10px 0;">
+    <div class="gt-indent1" style="padding: 10px 0;">
       <strong>... Entry limit extended mid-trace ...</strong>
     </div>
   {{^}}
     <div class="clearfix">
-      <div class="indent1 left-numeric-column" style="width: {{offsetColumnWidth}}em; float: left;">
+      <div class="gt-indent1 gt-left-numeric-column" style="width: {{offsetColumnWidth}}em; float: left;">
         +{{nanosToMillis offset}}
       </div>
       {{! +1 at the beginning is for the indent1 of the offset column }}
       <div style="margin-left: {{traceEntryIndent .}}em; float: left;">
-        <span class="inline-block indent1 left-numeric-column" style="width: {{offsetColumnWidth}}em;">
+        <span class="gt-inline-block gt-indent1 gt-left-numeric-column" style="width: {{offsetColumnWidth}}em;">
           {{nanosToMillis duration}}{{#if active}}..{{/if}}
         </span>
       </div>
@@ -23,37 +23,37 @@
           {{#ifLongMessage message.text}}
             {{! surrounding div is needed as common parent for toggling unexpanded/expanded content }}
             <div>
-              <div class="inline-block unexpanded-content">{{firstPart message.text}}
-                <span class="glowroot-link-color"><strong>...</strong></span> {{lastPart message.text}}
+              <div class="gt-inline-block gt-unexpanded-content">{{firstPart message.text}}
+                <span class="gt-link-color"><strong>...</strong></span> {{lastPart message.text}}
               </div>
-              <span class="inline-block expanded-content break-word hide">{{message.text}}</span>
+              <span class="gt-inline-block gt-expanded-content gt-break-word hide">{{message.text}}</span>
             </div>
           {{^}}
-            <div class="content-padding">{{message.text}}</div>
+            <div class="gt-content-padding">{{message.text}}</div>
           {{/ifLongMessage}}
           {{#if message.detail}}
-            <div class="content-detail">
-              <span class="inline-block unexpanded-content glowroot-link-color">detail</span>
-              <span class="inline-block expanded-content hide">{{{messageDetailHtml message.detail}}}</span>
+            <div class="gt-content-detail">
+              <span class="gt-inline-block gt-unexpanded-content gt-link-color">detail</span>
+              <span class="gt-inline-block gt-expanded-content hide">{{{messageDetailHtml message.detail}}}</span>
             </div>
           {{/if}}
         {{/if}}
         {{#if error}}
           <div class="{{{errorIndentClass message}}}">
             <div>
-              <strong><span class="inline-block content-padding">{{error.text}}</span></strong>
+              <strong><span class="gt-inline-block gt-content-padding">{{error.text}}</span></strong>
             </div>
             {{#if error.detail}}
-              <div class="content-detail">
-                <span class="inline-block unexpanded-content glowroot-link-color">detail</span>
-                <span class="inline-block expanded-content hide">{{{messageDetailHtml error.detail}}}</span>
+              <div class="gt-content-detail">
+                <span class="gt-inline-block gt-unexpanded-content gt-link-color">detail</span>
+                <span class="gt-inline-block gt-expanded-content hide">{{{messageDetailHtml error.detail}}}</span>
               </div>
             {{/if}}
             {{#if error.exception}}
               <div class="{{{exceptionIndentClass message}}}">
-                <span class="inline-block unexpanded-content glowroot-link-color">exception</span>
+                <span class="gt-inline-block gt-unexpanded-content gt-link-color">exception</span>
                 {{! using span so background will stretch beyond page border if needed }}
-                <span class="inline-block expanded-content nowrap hide">
+                <span class="gt-inline-block gt-expanded-content gt-nowrap hide">
                   {{{exceptionHtml error.exception}}}
                 </span>
               </div>
@@ -61,10 +61,10 @@
           </div>
         {{/if}}
         {{#if stackTrace}}
-          <div class="indent2">
-            <span class="inline-block unexpanded-content glowroot-link-color">trace entry stack trace</span>
+          <div class="gt-indent2">
+            <span class="gt-inline-block gt-unexpanded-content gt-link-color">trace entry stack trace</span>
             {{! using span so background will stretch beyond page border if needed }}
-            <span class="inline-block expanded-content nowrap hide">{{{stackTraceHtml stackTrace}}}</span>
+            <span class="gt-inline-block gt-expanded-content gt-nowrap hide">{{{stackTraceHtml stackTrace}}}</span>
           </div>
         {{/if}}
       </div>

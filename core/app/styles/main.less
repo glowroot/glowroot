@@ -18,7 +18,6 @@
 @import "../../bower_components/fontawesome/less/mixins.less";
 @import "../../bower_components/fontawesome/less/core.less";
 @import "../../bower_components/fontawesome/less/icons.less";
-@import "../../bower_components/bootstrap-datepicker/less/datepicker3";
 @import "../../bower_components/bootstrap/less/variables";
 @import "../../bower_components/bootstrap/less/mixins";
 @import "../../bower_components/bootstrap/less/buttons";
@@ -56,6 +55,7 @@
 @import "../../bower_components/bootstrap/less/utilities";
 @import "../../bower_components/bootstrap/less/responsive-utilities";
 @import "../../bower_components/bootstrap/less/tables";
+@import "datepicker3";
 @import "common-trace";
 @import "chart";
 @import "transaction-sidebar";
@@ -70,18 +70,18 @@
 @import "variables";
 
 @navbar-height: 50px;
-@navbar-inverse-bg: @glowroot-primary-color;
+@navbar-inverse-bg: @gt-primary-color;
 @navbar-inverse-link-active-bg: darken(@navbar-inverse-bg, 5%);
 @navbar-inverse-link-color: #e8e8e8;
 
-@input-border-focus: @glowroot-blue;
+@input-border-focus: @gt-blue;
 
 @btn-primary-color: #f8f8f8;
 @btn-primary-border: #ccc;
 
-@brand-primary: @glowroot-blue;
+@brand-primary: @gt-blue;
 
-@state-danger-text: @glowroot-red;
+@state-danger-text: @gt-red;
 
 // only supporting IE9+ so only need woff/woff2
 @font-face {
@@ -139,36 +139,36 @@ body {
   font-family: 'Open Sans', sans-serif;
 }
 
-.header {
+.gt-header {
   font-size: 36px;
   // extra top padding to accomodate for navbar
   padding: 100px 0 40px;
 }
 
-.header-page-name {
+.gt-header-page-name {
   font-size: 36px;
-  color: @glowroot-page-title-color;
+  color: @gt-page-title-color;
   font-weight: 700;
 }
 
-.header-page-name li a {
+.gt-header-page-name li a {
   font-size: 22px;
   cursor: pointer;
   // padding to align left side with dropdown header
   padding: 3px 12px;
 }
 
-.header-menu {
+.gt-header-menu {
   color: #555;
   font-weight: normal;
   font-size: 32px;
 }
 
-.header-page-name li a:hover {
+.gt-header-page-name li a:hover {
   background-color: #edeae4;
 }
 
-.header-page-name .dropdown-toggle {
+.gt-header-page-name .dropdown-toggle {
   // 30px matches font size of panel header below it
   font-size: 30px;
   font-weight: 600;
@@ -179,7 +179,7 @@ body {
   border-radius: 8px;
 }
 
-.header-page-name .gt-separator {
+.gt-header-page-name .gt-separator {
   font-size: 54px;
   font-weight: 400;
   margin-left: -4px;
@@ -187,7 +187,7 @@ body {
   vertical-align: -4px;
 }
 
-.header-page-name .dropdown-menu {
+.gt-header-page-name .dropdown-menu {
   margin-top: 5px;
   min-width: 100%;
   border-radius: 8px;
@@ -212,7 +212,7 @@ body {
   padding-right: 15px !important;
 }
 
-@media (min-width: 1400px) {
+@media screen and (min-width: 1400px) {
   .container {
     width: 1370px;
   }
@@ -223,7 +223,7 @@ body {
   display: none !important;
 }
 
-.inline-spinner {
+.gt-inline-spinner {
   // relative position needed for spinner
   position: relative;
   display: inline-block;
@@ -232,7 +232,7 @@ body {
   vertical-align: middle;
 }
 
-.http-error {
+.gt-http-error {
   color: #660099;
   font-size: 24px;
   padding-left: 30px;
@@ -241,25 +241,25 @@ body {
 }
 
 // margin at top of config pages pushes down entire sidebar
-.http-error {
+.gt-http-error {
   margin-top: 0;
 }
 
 // put back margin inside of panels
-.panel-overlay .http-error {
+.gt-panel-overlay .gt-http-error {
   margin-top: 20px;
 }
 
-.http-error a {
+.gt-http-error a {
   color: #660099;
   text-decoration: underline;
 }
 
-.http-error a:hover {
+.gt-http-error a:hover {
   color: lighten(#660099, 15);
 }
 
-.http-error-message {
+.gt-http-error-message {
   font-size: 18px;
   padding-top: 5px;
   // not sure what this error message might contain
@@ -267,7 +267,7 @@ body {
   word-wrap: break-word;
 }
 
-.http-error-stack-trace {
+.gt-http-error-stack-trace {
   font-size: 14px;
   overflow-x: visible;
   // no line wrapping so stack trace will look nice
@@ -277,26 +277,11 @@ body {
   padding-bottom: 100px;
 }
 
-.secondary-text {
+.gt-secondary-text {
   color: #737373;
 }
 
-.login-modal .modal-dialog {
-  width: 400px;
-}
-
-.login-modal .modal-body {
-  // this overrides .modal-body which has "padding-left: 0" since it is used on trace modal
-  padding: 30px;
-}
-
-.sortable-table-header {
-  text-decoration: none !important;
-  display: inline-block;
-  white-space: nowrap;
-}
-
-.large-caret {
+.gt-large-caret {
   .caret;
   border-top: 6px solid;
   border-right: 6px solid transparent;
@@ -314,7 +299,7 @@ hr.soften {
   border: 0;
 }
 
-.header input {
+.gt-header input {
   // this is for date filters
   font-size: 20px;
 }
