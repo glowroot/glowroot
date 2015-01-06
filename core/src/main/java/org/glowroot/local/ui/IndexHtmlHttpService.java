@@ -21,6 +21,7 @@ import java.net.URL;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Strings;
 import com.google.common.io.Resources;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
@@ -28,15 +29,25 @@ import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
-import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 class IndexHtmlHttpService implements HttpService {
 
+    private static final String baseHref;
+
     private static final @Nullable String googleAnalyticsTrackingId =
             System.getProperty("glowroot.internal.googleAnalyticsTrackingId");
+
+    static {
+        String uiBase = System.getProperty("glowroot.ui.base");
+        if (Strings.isNullOrEmpty(uiBase)) {
+            baseHref = "/";
+        } else {
+            baseHref = uiBase;
+        }
+    }
 
     private final HttpSessionManager httpSessionManager;
     private final LayoutJsonService layoutJsonService;
@@ -57,21 +68,9 @@ class IndexHtmlHttpService implements HttpService {
         } else {
             layout = layoutJsonService.getLayout();
         }
-        QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
-        String requestPath = decoder.getPath();
-        String baseHrefScript = "var path=location.pathname;";
-        if (requestPath.equals("/")) {
-            // edge case, if request uri is "/", the location.pathname may end with "/" or not
-            baseHrefScript += "if(!path||path.slice(-1)!=='/')path+='/';";
-        }
-        baseHrefScript += "var base=path.substring(0,path.length-" + requestPath.length() + ");"
-                + "document.write('<base href=\"'+location.protocol+'//'"
-                + "+location.host+base+'/\"/>');";
-        // embed script in IIFE to not polute global vars
-        baseHrefScript = "(function(){" + baseHrefScript + "}());";
         String layoutScript = "var layout=" + layout + ";";
-        indexHtml = indexHtml.replaceFirst("<base href=\"/\">", "<script>" + baseHrefScript
-                + layoutScript + "</script>");
+        indexHtml = indexHtml.replaceFirst("<base href=\"/\">",
+                "<base href=\"" + baseHref + "\"><script>" + layoutScript + "</script>");
         // this is to work around an issue with IE10-11 (IE9 is OK)
         // (even without reverse proxy/non-root base href)
         // IE doesn't use the base href when loading the favicon

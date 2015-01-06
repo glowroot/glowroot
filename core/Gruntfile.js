@@ -57,7 +57,7 @@ module.exports = function (grunt) {
       },
       livereload: {
         options: {
-          livereload: '<%= connect.options.livereload %>'
+          livereload: '<%= connect.livereload.options.livereload %>'
         },
         files: [
           '<%= yeoman.app %>/index.html',
@@ -74,12 +74,6 @@ module.exports = function (grunt) {
 
     // The actual grunt server settings
     connect: {
-      options: {
-        port: 9000,
-        // Change this to '0.0.0.0' to access the server from outside.
-        hostname: 'localhost',
-        livereload: 35729
-      },
       rules: [
         {from: '^/performance(\\?.*)?$', to: '/index.html'},
         {from: '^/performance/flame-graph\\?.*$', to: '/index.html'},
@@ -89,29 +83,24 @@ module.exports = function (grunt) {
         {from: '^/config/.*$', to: '/index.html'},
         {from: '^/login$', to: '/index.html'}
       ],
-      proxies: [
-        {
-          context: '/backend',
-          host: 'localhost',
-          port: 4000
-        },
-        {
-          context: '/export',
-          host: 'localhost',
-          port: 4000
-        },
-        {
-          // this is for simulating a reverse proxy with custom base href
-          context: '/xyzzy',
-          host: 'localhost',
-          port: 4000,
-          rewrite: {
-            '^/xyzzy': ''
-          }
-        }
-      ],
       livereload: {
+        proxies: [
+          {
+            context: '/backend',
+            host: 'localhost',
+            port: 4000
+          },
+          {
+            context: '/export',
+            host: 'localhost',
+            port: 4000
+          }
+        ],
         options: {
+          port: 9000,
+          // Change this to '0.0.0.0' to access the server from outside.
+          hostname: 'localhost',
+          livereload: 35729,
           open: true,
           middleware: function (connect) {
             return [
@@ -127,8 +116,22 @@ module.exports = function (grunt) {
           }
         }
       },
-      reverseproxy: {
+      xyzzy: {
+        proxies: [
+          {
+            // this is for simulating a reverse proxy with custom base href
+            context: '/xyzzy',
+            host: 'localhost',
+            port: 4000,
+            rewrite: {
+              '^/xyzzy': ''
+            }
+          }
+        ],
         options: {
+          port: 9000,
+          // Change this to '0.0.0.0' to access the server from outside.
+          hostname: 'localhost',
           open: 'http://localhost:9000/xyzzy',
           middleware: function (connect) {
             return [
@@ -430,10 +433,11 @@ module.exports = function (grunt) {
   });
 
   grunt.registerTask('serve', 'Compile then start a connect web server', function (target) {
-    if (target === 'reverseproxy') {
+    if (target === 'xyzzy') {
       return grunt.task.run([
-        'configureProxies',
-        'connect:reverseproxy:keepalive'
+        'configureProxies:xyzzy',
+        'configureRewriteRules',
+        'connect:xyzzy:keepalive'
       ]);
     }
 
@@ -443,7 +447,7 @@ module.exports = function (grunt) {
       'handlebars',
       //'uncss:serve',
       'configureRewriteRules',
-      'configureProxies',
+      'configureProxies:livereload',
       'connect:livereload',
       'watch'
     ]);
