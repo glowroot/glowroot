@@ -33,6 +33,7 @@
   <!-- build:css({.tmp,.}) styles/main.css -->
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="bower_components/stackvis/share/icicle.css">
+  <link rel="stylesheet" href="bower_components/sweetalert/lib/sweet-alert.css">
   <!-- endbuild -->
 
   <script>
@@ -142,7 +143,8 @@
 <script src="bower_components/angular/angular.js"></script>
 <script src="bower_components/angular-ui-router/release/angular-ui-router.js"></script>
 <script src="bower_components/handlebars/handlebars.runtime.js"></script>
-<!-- modal is used by trace modals -->
+<!-- bootstrap modal is much better than angular-ui-modal
+     in particular around dealing with vertical scrollbar to prevent background jitter -->
 <script src="bower_components/bootstrap/js/modal.js"></script>
 <!-- collapse is needed for the navbar on small screen (mobile) -->
 <script src="bower_components/bootstrap/js/collapse.js"></script>
@@ -160,8 +162,6 @@
 <script src="bower_components/angular-ui-bootstrap/src/position/position.js"></script>
 <!-- bindHtml is needed by typeahead -->
 <script src="bower_components/angular-ui-bootstrap/src/bindHtml/bindHtml.js"></script>
-<!-- modal is used for config unsaved changes confirmation -->
-<script src="bower_components/angular-ui-bootstrap/src/modal/modal.js"></script>
 <!-- popover is used for chart help -->
 <script src="bower_components/angular-ui-bootstrap/src/popover/popover.js"></script>
 <!-- tooltip is needed by popover -->
@@ -181,6 +181,7 @@
 <script src="bower_components/flot.tooltip/js/jquery.flot.tooltip.js"></script>
 <script src="bower_components/moment/moment.js"></script>
 <script src="bower_components/spinjs/spin.js"></script>
+<script src="bower_components/sweetalert/lib/sweet-alert.js"></script>
 <!-- angular-ui-bootstrap-templates.js is generated at build time by grunt-angular-templates -->
 <script src="scripts/generated/angular-ui-bootstrap-templates.js"></script>
 <!-- endbuild -->

@@ -327,6 +327,9 @@ module.exports = function (grunt) {
           /\.bootstrap-select.*/,
           // .open > .dropdown-menu is used by bootstrap-select
           '.open > .dropdown-menu',
+          // .sweet-overlay and sweet-alert are used by confirmation dialogs
+          /.sweet-overlay.*/,
+          /.sweet-alert.*/,
           // .icicle is used by flame graphs
           /\.icicle.*/
         ],

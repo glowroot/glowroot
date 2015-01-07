@@ -298,15 +298,20 @@
     </div>
   </div>
 </div>
-<div class="modal" id="modal">
+<!-- escape key doesn't close modal in some situations without tabindex="-1"
+     in particular, open trace modal, expand trace entries, then expand a concatenated span (one with ...)
+     then hit escape key and modal doesn't close (at least not in chrome) -->
+<div class="modal gt-full-screen-modal" id="modal" tabindex="-1">
   <button type="button"
           class="close"
-          aria-hidden="true"
+          data-dismiss="modal"
           id="modalHide"
           style="position: fixed; right: 60px; top: 35px; z-index: 100;">
     &times;
   </button>
-  <div class="modal-body" id="modalContent"></div>
+  <div class="modal-dialog" id="modalDialog">
+    <div class="modal-body" id="modalContent"></div>
+  </div>
 </div>
 <span class="gt-trace-point-normal gt-offscreen" id="offscreenNormalColor"></span>
 <span class="gt-trace-point-error gt-offscreen" id="offscreenErrorColor"></span>

@@ -251,20 +251,14 @@ glowroot.controller('TracesCtrl', [
     });
 
     function showTrace(item) {
-      var x = item.pageX;
-      var y = item.pageY;
       var traceId = plot.getData()[item.seriesIndex].data[item.dataIndex][2];
-      var modalVanishPoint = [x, y];
       $scope.$apply(function () {
-        traceModal.displayModal(traceId, modalVanishPoint);
+        traceModal.displayModal(traceId);
       });
     }
 
     $('#zoomOut').click(function () {
       plot.zoomOut();
-    });
-    $('#modalHide').click(function () {
-      traceModal.hideModal();
     });
 
     $scope.filterDurationComparatorOptions = [

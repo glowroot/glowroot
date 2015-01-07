@@ -16,7 +16,8 @@
     "jquery": "2.1.3",
     "moment": "2.8.4",
     "spinjs": "2.0.1",
-    "stackvis": "trask/node-stackvis#1b4231badff79e31d29cf487993bbb23b586d9d2"
+    "stackvis": "trask/node-stackvis#1b4231badff79e31d29cf487993bbb23b586d9d2",
+    "sweetalert": "0.3.3"
   },
   "resolutions": {
     "bootstrap-select": "3b26b5f6573f2f2318ad1206114c2f80e758b5fb"

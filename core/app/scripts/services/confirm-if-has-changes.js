@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,27 +14,29 @@
  * limitations under the License.
  */
 
-/* global glowroot */
+/* global glowroot, swal */
 
 glowroot.factory('confirmIfHasChanges', [
-  '$modal',
   '$location',
-  function ($modal, $location) {
+  function ($location) {
     return function ($scope) {
       var confirmed;
       return function (event, newUrl) {
         if (!$scope.httpError && !confirmed && $scope.hasChanges()) {
           event.preventDefault();
-          var modal = $modal.open({
-            templateUrl: 'template/gt-modal-has-changes.html',
-            controller: ['$scope', '$modalInstance', function ($scope, $modalInstance) {
-              $scope.close = $modalInstance.close;
-            }]
-          });
-          modal.result.then(function (result) {
-            if (result) {
-              confirmed = true;
-              $location.$$parse(newUrl);
+          swal({
+            title: 'You have unsaved changes',
+            text: 'Are you sure you want to navigate away from this page?',
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#DD6B55',
+            confirmButtonText: 'Yes'
+          }, function (isConfirm) {
+            if (isConfirm) {
+              $scope.$apply(function () {
+                confirmed = true;
+                $location.$$parse(newUrl);
+              });
             }
           });
         }

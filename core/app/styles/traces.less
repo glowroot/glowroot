@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,27 +14,31 @@
  * limitations under the License.
  */
 
-// override bootstrap which gives room (15px) for scrollbar, but in case of full screen modal that makes navbar
-// not extend all the way across which doesn't look as good
-.gt-modal-open-full-screen .navbar-fixed-top,
-.gt-modal-open-full-screen .navbar-fixed-bottom {
-  margin-right: 0 !important;
-  padding-right: 15px !important;
+.gt-full-screen-modal .modal-dialog {
+  width: auto !important;
+  overflow-y: scroll;
 }
 
-#modal {
+#modalDialog {
+  position: fixed;
+  left: 25px;
+  top: 25px;
+  right: 25px;
+  bottom: 25px;
+  margin: 0;
+  background-color: #fff;
   border-top-left-radius: 6px;
   border-bottom-left-radius: 6px;
   border: 1px solid #aaa;
 }
 
 // override bootstrap styling for modal close icon
-.modal .close {
+.modal-dialog .close {
   opacity: .4 !important;
   font-size: 24px !important;
 }
 
 // override bootstrap styling for modal close icon
-.modal .close:hover {
+.modal-dialog .close:hover {
   opacity: .6 !important;
 }

@@ -23,7 +23,6 @@ var glowroot = angular.module('glowroot', [
   'ui.bootstrap.popover',
   'ui.bootstrap.typeahead',
   'ui.bootstrap.bindHtml',
-  'ui.bootstrap.modal',
   'angular-bootstrap-select'
 ]);
 
@@ -94,9 +93,8 @@ glowroot.run([
   '$rootScope',
   '$http',
   '$location',
-  '$modalStack',
   'login',
-  function ($rootScope, $http, $location, $modalStack, login) {
+  function ($rootScope, $http, $location, login) {
 
     $rootScope.signOut = function () {
       // need to collapse the navbar in mobile view
@@ -157,20 +155,6 @@ glowroot.run([
         }
       }, 3000);
     }
-
-    $rootScope.$on('$stateChangeStart', function () {
-      // this is a hacky way to close trace modal on browser back button
-      var $modalBackdrop = $('#modalBackdrop');
-      if ($modalBackdrop) {
-        $modalBackdrop.remove();
-      }
-      // and this is a hacky way to close normal angular-ui-bootstrap modals
-      // (see https://github.com/angular-ui/bootstrap/issues/335)
-      var top = $modalStack.getTop();
-      if (top) {
-        $modalStack.dismiss(top.key);
-      }
-    });
 
     $rootScope.$on('$stateChangeSuccess', function () {
       // google analytics is enabled on https://demo.glowroot.org using the

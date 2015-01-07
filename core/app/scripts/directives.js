@@ -284,6 +284,8 @@ glowroot.directive('gtNavbarItem', [
             event.preventDefault();
             return false;
           }
+          // blur navbar item so it doesn't have highlight around it (at least in firefox)
+          document.activeElement.blur();
         };
       }
     };
@@ -326,6 +328,8 @@ glowroot.directive('gtSidebarItem', [
             event.preventDefault();
             return false;
           }
+          // blur navbar item so it doesn't have highlight around it
+          document.activeElement.blur();
         };
       }
     };
