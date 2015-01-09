@@ -311,17 +311,12 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                     new Date(System.currentTimeMillis() + FIVE_MINUTES));
         } else {
             // all other static resources are versioned and can be safely cached forever
-            String filename = path.substring(path.lastIndexOf('/') + 1);
-            int to = filename.lastIndexOf('.');
-            int from = filename.lastIndexOf('.', to - 1);
-            String rev = filename.substring(from + 1, to);
-            response.headers().add(Names.ETAG, rev);
-            response.headers().add(Names.EXPIRES, new Date(System.currentTimeMillis() + TEN_YEARS));
-
-            if (rev.equals(request.headers().get(Names.IF_NONE_MATCH))) {
+            if (request.headers().contains(Names.IF_MODIFIED_SINCE)) {
                 response.setStatus(NOT_MODIFIED);
                 return response;
             }
+            response.headers().add(Names.LAST_MODIFIED, new Date(0));
+            response.headers().add(Names.EXPIRES, new Date(System.currentTimeMillis() + TEN_YEARS));
         }
         URL url;
         ClassLoader classLoader = HttpServerHandler.class.getClassLoader();
