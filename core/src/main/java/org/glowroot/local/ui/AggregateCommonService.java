@@ -15,21 +15,20 @@
  */
 package org.glowroot.local.ui;
 
-import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Objects;
 import com.google.common.io.CharSource;
+import org.HdrHistogram.Histogram;
 
 import org.glowroot.collector.Aggregate;
-import org.glowroot.collector.Existence;
+import org.glowroot.collector.LazyHistogram;
 import org.glowroot.local.store.AggregateDao;
-import org.glowroot.markers.UsedByJsonBinding;
 
 class AggregateCommonService {
 
@@ -41,34 +40,44 @@ class AggregateCommonService {
         this.aggregateDao = aggregateDao;
     }
 
-    MergedAggregate getMergedAggregate(List<Aggregate> aggregates) throws IOException {
-        long totalMicros = 0;
-        long count = 0;
+    MetricMergedAggregate getMetricMergedAggregate(List<Aggregate> aggregates) throws Exception {
+        long transactionCount = 0;
         AggregateMetric syntheticRootMetric = AggregateMetric.createSyntheticRootMetric();
-        Existence profileExistence = Existence.NO;
-        long profileSampleCount = 0;
         for (Aggregate aggregate : aggregates) {
-            totalMicros += aggregate.totalMicros();
-            count += aggregate.transactionCount();
+            transactionCount += aggregate.transactionCount();
             AggregateMetric toBeMergedSyntheticRootMetric =
                     mapper.readValue(aggregate.metrics(), AggregateMetric.class);
             mergeMatchedMetric(toBeMergedSyntheticRootMetric, syntheticRootMetric);
-            if (profileExistence == Existence.NO) {
-                profileExistence = aggregate.profileExistence();
-            } else if (profileExistence == Existence.EXPIRED
-                    && aggregate.profileExistence() == Existence.YES) {
-                profileExistence = Existence.YES;
-            }
-            if (aggregate.profileExistence() == Existence.YES) {
-                profileSampleCount += aggregate.profileSampleCount();
-            }
         }
         AggregateMetric rootMetric = syntheticRootMetric;
         if (syntheticRootMetric.getNestedMetrics().size() == 1) {
             rootMetric = syntheticRootMetric.getNestedMetrics().get(0);
         }
-        return new MergedAggregate(totalMicros, count, rootMetric, profileExistence,
-                profileSampleCount);
+        return new MetricMergedAggregate(rootMetric, transactionCount);
+    }
+
+    HistogramMergedAggregate getHistogramMergedAggregate(List<Aggregate> aggregates)
+            throws Exception {
+        long transactionCount = 0;
+        long totalMicros = 0;
+        Histogram histogram = new Histogram(LazyHistogram.HISTOGRAM_SIGNIFICANT_DIGITS);
+        for (Aggregate aggregate : aggregates) {
+            transactionCount += aggregate.transactionCount();
+            totalMicros += aggregate.totalMicros();
+            ByteBuffer histogramBuffer = ByteBuffer.wrap(aggregate.histogram());
+            if (histogramBuffer.getInt() == 0) {
+                // 0 means list of longs
+                // don't need array size when reading here, so just read and skip it
+                histogramBuffer.getInt();
+                while (histogramBuffer.remaining() > 0) {
+                    histogram.recordValue(histogramBuffer.getLong());
+                }
+            } else {
+                // 1 means compressed histogram
+                histogram.add(Histogram.decodeFromCompressedByteBuffer(histogramBuffer, 0));
+            }
+        }
+        return new HistogramMergedAggregate(histogram, transactionCount, totalMicros);
     }
 
     @Nullable
@@ -181,44 +190,60 @@ class AggregateCommonService {
         }
     }
 
-    // MergedAggregate could use @Value.Immutable, but it's not technically immutable since it
-    // contains non-immutable state (AggregateMetric)
-    @UsedByJsonBinding
-    public static class MergedAggregate {
+    // could use @Value.Immutable, but it's not technically immutable since it contains
+    // non-immutable state (AggregateMetric)
+    public static class MetricMergedAggregate {
 
-        private final long totalMicros;
-        private final long count;
         private final AggregateMetric rootMetric;
-        private final Existence profileExistence;
-        private final long profileSampleCount;
+        private final long transactionCount;
 
-        private MergedAggregate(long totalMicros, long count, AggregateMetric rootMetric,
-                Existence profileExistence, long profileSampleCount) {
-            this.totalMicros = totalMicros;
-            this.count = count;
+        private MetricMergedAggregate(AggregateMetric rootMetric, long transactionCount) {
             this.rootMetric = rootMetric;
-            this.profileExistence = profileExistence;
-            this.profileSampleCount = profileSampleCount;
-        }
-
-        public long getTotalMicros() {
-            return totalMicros;
-        }
-
-        public long getCount() {
-            return count;
+            this.transactionCount = transactionCount;
         }
 
         public AggregateMetric getMetrics() {
             return rootMetric;
         }
 
-        public String getProfileExistence() {
-            return profileExistence.name().toLowerCase(Locale.ENGLISH);
+        public long getTransactionCount() {
+            return transactionCount;
+        }
+    }
+
+    // could use @Value.Immutable, but it's not technically immutable since it contains
+    // non-immutable state (Histogram)
+    public static class HistogramMergedAggregate {
+
+        private final long totalMicros;
+        private final long transactionCount;
+        private final Histogram histogram;
+
+        private HistogramMergedAggregate(Histogram histogram, long transactionCount,
+                long totalMicros) {
+            this.histogram = histogram;
+            this.transactionCount = transactionCount;
+            this.totalMicros = totalMicros;
         }
 
-        public long getProfileSampleCount() {
-            return profileSampleCount;
+        public long getTransactionCount() {
+            return transactionCount;
+        }
+
+        public long getTotalMicros() {
+            return totalMicros;
+        }
+
+        public long getPercentile1() {
+            return histogram.getValueAtPercentile(50);
+        }
+
+        public long getPercentile2() {
+            return histogram.getValueAtPercentile(95);
+        }
+
+        public long getPercentile3() {
+            return histogram.getValueAtPercentile(99);
         }
     }
 }

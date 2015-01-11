@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,9 +55,9 @@ public class CappedDatabaseTest {
         // given
         String text = "0123456789";
         // when
-        FileBlock block = cappedDatabase.write(CharSource.wrap(text));
+        long cappedId = cappedDatabase.write(CharSource.wrap(text));
         // then
-        String text2 = cappedDatabase.read(block, "").read();
+        String text2 = cappedDatabase.read(cappedId, "").read();
         assertThat(text2).isEqualTo(text);
     }
 
@@ -73,9 +73,9 @@ public class CappedDatabaseTest {
         String text = sb.toString();
         cappedDatabase.write(CharSource.wrap(text));
         // when
-        FileBlock block = cappedDatabase.write(CharSource.wrap(text));
+        long cappedId = cappedDatabase.write(CharSource.wrap(text));
         // then
-        String text2 = cappedDatabase.read(block, "").read();
+        String text2 = cappedDatabase.read(cappedId, "").read();
         assertThat(text2).isEqualTo(text);
     }
 
@@ -92,9 +92,9 @@ public class CappedDatabaseTest {
         cappedDatabase.write(CharSource.wrap(text));
         cappedDatabase.write(CharSource.wrap(text));
         // when
-        FileBlock block = cappedDatabase.write(CharSource.wrap(text));
+        long cappedId = cappedDatabase.write(CharSource.wrap(text));
         // then
-        String text2 = cappedDatabase.read(block, "").read();
+        String text2 = cappedDatabase.read(cappedId, "").read();
         assertThat(text2).isEqualTo(text);
     }
 
@@ -108,13 +108,13 @@ public class CappedDatabaseTest {
             sb.append((char) ('a' + random.nextInt(26)));
         }
         String text = sb.toString();
-        FileBlock block = cappedDatabase.write(CharSource.wrap(text));
+        long cappedId = cappedDatabase.write(CharSource.wrap(text));
         cappedDatabase.write(CharSource.wrap(text));
         // when
         cappedDatabase.write(CharSource.wrap(text));
         // then
         // for now, overwritten blocks return empty byte array when read
-        String text2 = cappedDatabase.read(block, "").read();
+        String text2 = cappedDatabase.read(cappedId, "").read();
         assertThat(text2).isEqualTo("");
     }
 }

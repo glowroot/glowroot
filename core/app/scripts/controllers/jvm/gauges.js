@@ -45,7 +45,7 @@ glowroot.controller('JvmGaugesCtrl', [
 
     $scope.keyedColorPool = keyedColorPool;
 
-    $scope.$watchCollection('[containerWidth, windowHeight]', function () {
+    $scope.$watchGroup(['containerWidth', 'windowHeight'], function () {
       plot.resize();
       plot.setupGrid();
       plot.draw();
@@ -142,7 +142,7 @@ glowroot.controller('JvmGaugesCtrl', [
         rollupLevel: rollupLevel
       };
       $scope.showChartSpinner++;
-      $http.get('backend/jvm/gauge-points?' + queryStrings.encodeObject(query))
+      $http.get('backend/jvm/gauge-points' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.showChartSpinner--;
             if (refreshId !== currentRefreshId) {

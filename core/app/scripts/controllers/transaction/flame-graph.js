@@ -16,7 +16,7 @@
 
 /* global glowroot, $ */
 
-glowroot.controller('PerformanceFlameGraphCtrl', [
+glowroot.controller('TransactionFlameGraphCtrl', [
   '$scope',
   '$location',
   '$http',
@@ -24,12 +24,12 @@ glowroot.controller('PerformanceFlameGraphCtrl', [
   'queryStrings',
   function ($scope, $location, $http, httpErrors, queryStrings) {
     // \u00b7 is &middot;
-    document.title = 'Performance \u00b7 Glowroot';
-    $scope.$parent.activeNavbarItem = 'performance';
+    document.title = 'Transactions \u00b7 Glowroot';
+    $scope.$parent.activeNavbarItem = 'transaction';
 
     $scope.from = $location.search().from;
     $scope.to = $location.search().to;
-    $scope.transactionType = $location.search()['transaction-type'];
+    $scope.transactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
     $scope.transactionName = $location.search()['transaction-name'];
 
     var query = {
@@ -43,11 +43,15 @@ glowroot.controller('PerformanceFlameGraphCtrl', [
       truncateLeafPercentage: 0.01
     };
 
-    $http.get('backend/performance/flame-graph?' + queryStrings.encodeObject(query))
+    $http.get('backend/transaction/flame-graph' + queryStrings.encodeObject(query))
         .success(function (data) {
-          window.svRawData = data;
-          window.svInit();
           $scope.loaded = true;
+          if (data[''].svTotal === 0) {
+            $scope.chartNoData = true;
+          } else {
+            window.svRawData = data;
+            window.svInit();
+          }
         })
         .error(httpErrors.handler($scope));
 

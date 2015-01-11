@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.glowroot.collector;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -24,6 +25,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.TransactionMetricImpl;
@@ -42,6 +44,8 @@ class AggregateBuilder {
     private long errorCount;
     private long transactionCount;
     private long profileSampleCount;
+    // histogram uses microseconds to reduce (or at least simplify) bucket allocations
+    private final LazyHistogram histogram = new LazyHistogram();
     private final AggregateMetric syntheticRootMetric = new AggregateMetric("");
     private final AggregateProfileBuilder aggregateProfile = new AggregateProfileBuilder();
 
@@ -51,11 +55,13 @@ class AggregateBuilder {
     }
 
     void add(long duration, boolean error) {
-        totalMicros += NANOSECONDS.toMicros(duration);
+        long durationMicros = NANOSECONDS.toMicros(duration);
+        totalMicros += durationMicros;
         if (error) {
             errorCount++;
         }
         transactionCount++;
+        histogram.add(durationMicros);
     }
 
     void addToMetrics(TransactionMetricImpl rootTransactionMetric) {
@@ -67,9 +73,14 @@ class AggregateBuilder {
         profileSampleCount += profile.getSyntheticRootNode().getSampleCount();
     }
 
-    Aggregate build(long captureTime) throws IOException {
-        String profile = getProfileJson();
-        Existence profileExistence = profile != null ? Existence.YES : Existence.NO;
+    Aggregate build(long captureTime, ScratchBuffer scratchBuffer) throws IOException {
+        ByteBuffer buffer = scratchBuffer.getBuffer(histogram.getNeededByteBufferCapacity());
+        buffer.clear();
+        histogram.encodeIntoByteBuffer(buffer);
+        int size = buffer.position();
+        buffer.flip();
+        byte[] histogram = new byte[size];
+        buffer.get(histogram, 0, size);
         return ImmutableAggregate.builder()
                 .transactionType(transactionType)
                 .transactionName(transactionName)
@@ -78,9 +89,9 @@ class AggregateBuilder {
                 .errorCount(errorCount)
                 .transactionCount(transactionCount)
                 .metrics(getMetricsJson())
-                .profileExistence(profileExistence)
+                .histogram(histogram)
                 .profileSampleCount(profileSampleCount)
-                .profile(profile)
+                .profile(getProfileJson())
                 .build();
     }
 
@@ -128,6 +139,18 @@ class AggregateBuilder {
             jg.writeEndArray();
         }
         jg.writeEndObject();
+    }
+
+    static class ScratchBuffer {
+
+        private @MonotonicNonNull ByteBuffer buffer;
+
+        ByteBuffer getBuffer(int capacity) {
+            if (buffer == null || buffer.capacity() < capacity) {
+                buffer = ByteBuffer.allocate(capacity);
+            }
+            return buffer;
+        }
     }
 
     private static class AggregateMetric {

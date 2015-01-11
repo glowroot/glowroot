@@ -33,7 +33,6 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.Clock;
 import org.glowroot.local.store.AggregateDao;
-import org.glowroot.local.store.AggregateDao.ErrorSummaryQuery;
 import org.glowroot.local.store.AggregateDao.ErrorSummarySortOrder;
 import org.glowroot.local.store.ErrorMessageCount;
 import org.glowroot.local.store.ErrorMessageCountMarshaler;
@@ -69,12 +68,11 @@ class ErrorJsonService {
         dataSeriesHelper = new DataSeriesHelper(clock, fixedAggregateIntervalMillis);
     }
 
-    @GET("/backend/error/data")
+    @GET("/backend/error/messages")
     String getData(String queryString) throws Exception {
-        ErrorDataRequest request =
-                QueryStrings.decode(queryString, ErrorDataRequest.class);
+        ErrorMessageRequest request = QueryStrings.decode(queryString, ErrorMessageRequest.class);
 
-        ErrorMessageQuery query = ImmutableErrorMessageQuery.builder()
+        ImmutableErrorMessageQuery query = ImmutableErrorMessageQuery.builder()
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
@@ -83,7 +81,11 @@ class ErrorJsonService {
                 .addAllExcludes(request.excludes())
                 .limit(request.errorMessageLimit())
                 .build();
-        QueryResult<ErrorMessageCount> queryResult = traceDao.readErrorMessageCounts(query);
+        // requested from is in aggregate terms, so need to subtract aggregate interval to get
+        // real timing interval which is needed for trace queries
+        ImmutableErrorMessageQuery traceDaoQuery =
+                query.withFrom(query.from() - fixedAggregateIntervalMillis);
+        QueryResult<ErrorMessageCount> queryResult = traceDao.readErrorMessageCounts(traceDaoQuery);
         List<ErrorPoint> unfilteredErrorPoints = getUnfilteredErrorPoints(query);
         DataSeries dataSeries = new DataSeries(null);
         Map<Long, Long[]> dataSeriesExtra = Maps.newHashMap();
@@ -96,7 +98,7 @@ class ErrorJsonService {
                         unfilteredErrorPoint.getTransactionCount());
             }
             ImmutableList<ErrorPoint> errorPoints =
-                    traceDao.readErrorPoints(query, fixedAggregateIntervalMillis);
+                    traceDao.readErrorPoints(traceDaoQuery, fixedAggregateIntervalMillis);
             for (ErrorPoint errorPoint : errorPoints) {
                 Long transactionCount = transactionCountMap.get(errorPoint.getCaptureTime());
                 if (transactionCount != null) {
@@ -106,18 +108,6 @@ class ErrorJsonService {
             populateDataSeries(query, errorPoints, dataSeries, dataSeriesExtra);
         }
 
-        ImmutableErrorSummaryQuery summaryQuery = ImmutableErrorSummaryQuery.builder()
-                .transactionType(request.transactionType())
-                .from(request.from())
-                .to(request.to())
-                .sortOrder(request.summarySortOrder())
-                .limit(request.summaryLimit())
-                .build();
-        ErrorSummary sidebarOverallErrorSummary =
-                aggregateDao.readOverallErrorSummary(request.from(), request.to());
-        QueryResult<ErrorSummary> sidebarQueryResult =
-                aggregateDao.readTransactionErrorSummaries(summaryQuery);
-
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
@@ -126,11 +116,6 @@ class ErrorJsonService {
         jg.writeFieldName("errorMessages");
         ErrorMessageCountMarshaler.instance().marshalIterable(jg, queryResult.records());
         jg.writeBooleanField("moreErrorMessagesAvailable", queryResult.moreAvailable());
-        jg.writeFieldName("overallSummary");
-        ErrorSummaryMarshaler.instance().marshalInstance(jg, sidebarOverallErrorSummary);
-        jg.writeFieldName("transactionSummaries");
-        ErrorSummaryMarshaler.instance().marshalIterable(jg, sidebarQueryResult.records());
-        jg.writeBooleanField("moreSummariesAvailable", sidebarQueryResult.moreAvailable());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -138,14 +123,57 @@ class ErrorJsonService {
 
     @GET("/backend/error/summaries")
     String getSummaries(String queryString) throws Exception {
-        ErrorSummaryQuery query = QueryStrings.decode(queryString, ErrorSummaryQuery.class);
-        QueryResult<ErrorSummary> queryResult = aggregateDao.readTransactionErrorSummaries(query);
+        ErrorSummaryRequest request =
+                QueryStrings.decode(queryString, ErrorSummaryRequest.class);
+
+        ImmutableErrorSummaryQuery summaryQuery = ImmutableErrorSummaryQuery.builder()
+                .transactionType(request.transactionType())
+                .from(request.from())
+                .to(request.to())
+                .sortOrder(request.sortOrder())
+                .limit(request.limit())
+                .build();
+        ErrorSummary overallSummary = aggregateDao.readOverallErrorSummary(
+                request.transactionType(), request.from(), request.to());
+        QueryResult<ErrorSummary> queryResult =
+                aggregateDao.readTransactionErrorSummaries(summaryQuery);
+
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeFieldName("transactionSummaries");
+        jg.writeFieldName("overall");
+        ErrorSummaryMarshaler.instance().marshalInstance(jg, overallSummary);
+        jg.writeFieldName("transactions");
         ErrorSummaryMarshaler.instance().marshalIterable(jg, queryResult.records());
-        jg.writeBooleanField("moreSummariesAvailable", queryResult.moreAvailable());
+        jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
+    }
+
+    @GET("/backend/error/tab-bar-data")
+    String getTabBarData(String queryString) throws Exception {
+        TabBarDataRequest request =
+                QueryStrings.decode(queryString, TabBarDataRequest.class);
+
+        String transactionName = request.transactionName();
+        // requested from is in aggregate terms, so need to subtract aggregate interval to get
+        // real timing interval which is needed for trace queries
+        long from = request.from() - fixedAggregateIntervalMillis;
+
+        long traceCount;
+        if (transactionName == null) {
+            traceCount = traceDao.readOverallErrorCount(request.transactionType(), from,
+                    request.to());
+        } else {
+            traceCount = traceDao.readTransactionErrorCount(request.transactionType(),
+                    transactionName, from, request.to());
+        }
+
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeNumberField("traceCount", traceCount);
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -198,7 +226,26 @@ class ErrorJsonService {
 
     @Value.Immutable
     @Json.Marshaled
-    abstract static class ErrorDataRequest {
+    abstract static class ErrorSummaryRequest {
+        abstract long from();
+        abstract long to();
+        abstract String transactionType();
+        abstract ErrorSummarySortOrder sortOrder();
+        abstract int limit();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class TabBarDataRequest {
+        abstract long from();
+        abstract long to();
+        abstract String transactionType();
+        abstract @Nullable String transactionName();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class ErrorMessageRequest {
         abstract long from();
         abstract long to();
         abstract String transactionType();
@@ -206,7 +253,5 @@ class ErrorJsonService {
         public abstract List<String> includes();
         public abstract List<String> excludes();
         abstract int errorMessageLimit();
-        abstract ErrorSummarySortOrder summarySortOrder();
-        abstract int summaryLimit();
     }
 }

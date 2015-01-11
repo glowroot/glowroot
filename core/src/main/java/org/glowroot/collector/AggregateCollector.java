@@ -30,6 +30,7 @@ import com.google.common.collect.Queues;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.collector.AggregateBuilder.ScratchBuffer;
 import org.glowroot.common.Clock;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.transaction.model.Profile;
@@ -165,8 +166,8 @@ class AggregateCollector {
             synchronized (intervalCollector) {
                 try {
                     runInternal();
-                } catch (IOException e) {
-                    logger.error(e.getMessage(), e);
+                } catch (Throwable t) {
+                    logger.error(t.getMessage(), t);
                 }
             }
         }
@@ -175,14 +176,16 @@ class AggregateCollector {
             List<Aggregate> overallAggregates = Lists.newArrayList();
             List<Aggregate> transactionAggregates = Lists.newArrayList();
             Map<String, IntervalTypeCollector> typeCollectors = intervalCollector.typeCollectors;
+            ScratchBuffer scratchBuffer = new ScratchBuffer();
             for (Entry<String, IntervalTypeCollector> e : typeCollectors.entrySet()) {
                 IntervalTypeCollector intervalTypeCollector = e.getValue();
-                overallAggregates.add(
-                        intervalTypeCollector.overallBuilder.build(intervalCollector.endTime));
+                overallAggregates.add(intervalTypeCollector.overallBuilder.build(
+                        intervalCollector.endTime, scratchBuffer));
                 Map<String, AggregateBuilder> transactionBuilders =
                         intervalTypeCollector.transactionBuilders;
                 for (Entry<String, AggregateBuilder> f : transactionBuilders.entrySet()) {
-                    transactionAggregates.add(f.getValue().build(intervalCollector.endTime));
+                    transactionAggregates.add(f.getValue().build(intervalCollector.endTime,
+                            scratchBuffer));
                 }
             }
             aggregateRepository.store(overallAggregates, transactionAggregates);

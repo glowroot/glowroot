@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ public abstract class Aggregate {
     public abstract long errorCount();
     public abstract long transactionCount();
     public abstract String metrics();
-    public abstract Existence profileExistence();
+    public abstract byte[] histogram();
     public abstract long profileSampleCount();
     public abstract @Nullable String profile();
 }

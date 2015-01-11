@@ -25,11 +25,14 @@ glowroot.controller('TracesCtrl', [
   'httpErrors',
   'traceModal',
   'queryStrings',
-  function ($scope, $location, $http, $q, $timeout, httpErrors, traceModal, queryStrings) {
-    // \u00b7 is &middot;
-    document.title = 'Traces \u00b7 Glowroot';
-    $scope.$parent.title = 'Traces';
-    $scope.$parent.activeNavbarItem = 'traces';
+  'errorOnly',
+  function ($scope, $location, $http, $q, $timeout, httpErrors, traceModal, queryStrings, errorOnly) {
+
+    $scope.$parent.activeTabItem = 'traces';
+
+    // this is needed when click occurs on sidebar b/c it doesn't reload template in that case but still need
+    // to update transactionName
+    $scope.$parent.transactionName = $location.search()['transaction-name'];
 
     var plot;
 
@@ -43,13 +46,26 @@ glowroot.controller('TracesCtrl', [
     var filterFromToDefault;
     var filterLimitDefault;
 
-    $scope.$watchCollection('[containerWidth, windowHeight]', function () {
+    var fixedAggregateIntervalMillis = 1000 * $scope.layout.fixedAggregateIntervalSeconds;
+
+    $scope.$watchGroup(['containerWidth', 'windowHeight'], function () {
       plot.resize();
       plot.setupGrid();
       plot.draw();
     });
 
     $scope.showChartSpinner = 0;
+    $scope.showErrorFilter = errorOnly;
+
+    $scope.$watch('filterDate', function (newValue, oldValue) {
+      if (newValue !== oldValue) {
+        // date filter in transaction-header was changed
+        appliedFilter.from = $scope.chartFrom;
+        appliedFilter.to = $scope.chartTo;
+        updateLocation();
+        refreshChart();
+      }
+    });
 
     function refreshChart(deferred) {
       var from = appliedFilter.from;
@@ -64,11 +80,15 @@ glowroot.controller('TracesCtrl', [
       if (query.durationHigh) {
         query.durationHigh = Math.floor(query.durationHigh * 1000000000);
       }
-      if (query.transactionType === '(any)') {
-        query.transactionType = '';
+      if (errorOnly) {
+        query.errorOnly = true;
+      }
+      if ($scope.transactionName) {
+        query.transactionName = $scope.transactionName;
+        query.transactionNameComparator = 'equals';
       }
       $scope.showChartSpinner++;
-      $http.get('backend/trace/points?' + queryStrings.encodeObject(query))
+      $http.get('backend/trace/points' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.showChartSpinner--;
             if (refreshId !== currentRefreshId) {
@@ -77,19 +97,16 @@ glowroot.controller('TracesCtrl', [
             $scope.chartNoData = !data.normalPoints.length && !data.errorPoints.length && !data.activePoints.length;
             $scope.chartLimitExceeded = data.limitExceeded;
             $scope.chartLimit = limit;
-            if (deferred) {
-              // user clicked on Refresh button, need to reset axes
-              plot.getAxes().xaxis.options.min = from;
-              plot.getAxes().xaxis.options.max = to;
-              plot.getAxes().yaxis.options.min = durationLow;
-              plot.getAxes().yaxis.options.realMax = durationHigh;
-              var midnight = new Date(from).setHours(0, 0, 0, 0);
-              plot.getAxes().xaxis.options.zoomRange = [
-                midnight,
-                midnight + 24 * 60 * 60 * 1000
-              ];
-              plot.unhighlight();
-            }
+            // user clicked on Refresh button, need to reset axes
+            plot.getAxes().xaxis.options.min = from;
+            plot.getAxes().xaxis.options.max = to;
+            plot.getAxes().yaxis.options.min = durationLow;
+            plot.getAxes().yaxis.options.realMax = durationHigh;
+            var midnight = new Date(from).setHours(0, 0, 0, 0);
+            plot.getAxes().xaxis.options.zoomRange = [
+              midnight,
+              midnight + 24 * 60 * 60 * 1000
+            ];
             plot.setData([data.normalPoints, data.errorPoints, data.activePoints]);
             // setupGrid is needed in case yaxis.max === undefined
             plot.setupGrid();
@@ -125,7 +142,6 @@ glowroot.controller('TracesCtrl', [
       $scope.$apply(function () {
         // throw up spinner right away
         $scope.showChartSpinner++;
-        $scope.showTableOverlay++;
         var zoomingOut = args.amount && args.amount < 1;
         if (zoomingOut) {
           plot.getAxes().yaxis.options.min = 0;
@@ -144,7 +160,6 @@ glowroot.controller('TracesCtrl', [
               refreshChart();
             }
             $scope.showChartSpinner--;
-            $scope.showTableOverlay--;
           }, 100);
         } else {
           // no need to fetch new data
@@ -157,7 +172,6 @@ glowroot.controller('TracesCtrl', [
           // increment currentRefreshId to cancel any refresh in action
           currentRefreshId++;
           $scope.showChartSpinner--;
-          $scope.showTableOverlay--;
         }
       });
     });
@@ -190,6 +204,13 @@ glowroot.controller('TracesCtrl', [
       });
     });
 
+    $scope.zoomOut = function () {
+      // need to execute this outside of $apply since code assumes it needs to do its own $apply
+      $timeout(function () {
+        plot.zoomOut();
+      });
+    };
+
     function afterZoom(zoomingOut) {
       // update filter
       var from = plot.getAxes().xaxis.min;
@@ -198,6 +219,9 @@ glowroot.controller('TracesCtrl', [
       var durationHigh = plot.getAxes().yaxis.options.realMax;
       appliedFilter.from = from;
       appliedFilter.to = to;
+      $scope.$parent.chartFrom = fixedAggregateIntervalMillis * Math.floor(from / fixedAggregateIntervalMillis);
+      $scope.$parent.chartTo = fixedAggregateIntervalMillis * Math.ceil(to / fixedAggregateIntervalMillis);
+      $scope.$parent.chartFromToDefault = false;
       if (zoomingOut) {
         // scroll zooming out, reset duration limits
         $scope.filterDurationComparator = 'greater';
@@ -257,10 +281,6 @@ glowroot.controller('TracesCtrl', [
       });
     }
 
-    $('#zoomOut').click(function () {
-      plot.zoomOut();
-    });
-
     $scope.filterDurationComparatorOptions = [
       {
         display: 'Greater than',
@@ -300,27 +320,11 @@ glowroot.controller('TracesCtrl', [
     ];
 
     appliedFilter = {};
-    appliedFilter.from = Number($location.search().from);
-    appliedFilter.to = Number($location.search().to);
-    // both from and to must be supplied or neither will take effect
-    if (appliedFilter.from && appliedFilter.to) {
-      $scope.filterDate = new Date(appliedFilter.from);
-      $scope.filterDate.setHours(0, 0, 0, 0);
-    } else {
-      filterFromToDefault = true;
-      var today = new Date();
-      today.setHours(0, 0, 0, 0);
-      $scope.filterDate = today;
-      // show 2 hour interval, but nothing prior to today (e.g. if 'now' is 1am) or after today
-      // (e.g. if 'now' is 11:55pm)
-      var now = new Date();
-      now.setSeconds(0, 0);
-      appliedFilter.from = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
-      appliedFilter.to = Math.min(appliedFilter.from + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
-    }
-    appliedFilter.durationLow = Number($location.search().durationLow) || 0;
-    appliedFilter.durationHigh = Number($location.search().durationHigh) || undefined;
-    appliedFilter.transactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
+    appliedFilter.transactionType = $scope.transactionType;
+    appliedFilter.from = $scope.chartFrom;
+    appliedFilter.to = $scope.chartTo;
+    appliedFilter.durationLow = Number($location.search()['duration-low']) || 0;
+    appliedFilter.durationHigh = Number($location.search()['duration-high']) || undefined;
     appliedFilter.transactionNameComparator = $location.search()['transaction-name-comparator'] || 'begins';
     appliedFilter.transactionName = $location.search()['transaction-name'] || '';
     appliedFilter.headlineComparator = $location.search()['headline-comparator'] || 'begins';
@@ -337,7 +341,6 @@ glowroot.controller('TracesCtrl', [
       filterLimitDefault = true;
       appliedFilter.limit = 500;
     }
-    appliedFilter.errorOnly = $location.search()['error-only'] === 'true';
 
     $scope.filter = angular.copy(appliedFilter);
     // need to remove from and to so they aren't copied back during angular.extend(appliedFilter, $scope.filter)
@@ -367,19 +370,12 @@ glowroot.controller('TracesCtrl', [
     });
 
     function updateLocation() {
-      var query = {};
-      if (!filterFromToDefault) {
-        query.from = appliedFilter.from;
-        query.to = appliedFilter.to;
-      }
+      var query = $scope.buildQueryObject();
       if (Number(appliedFilter.durationLow)) {
         query['duration-low'] = appliedFilter.durationLow;
       }
       if (Number(appliedFilter.durationHigh)) {
         query['duration-high'] = appliedFilter.durationHigh;
-      }
-      if (appliedFilter.transactionType !== $scope.layout.defaultTransactionType) {
-        query['transaction-type'] = appliedFilter.transactionType;
       }
       if (appliedFilter.headline) {
         query['headline-comparator'] = appliedFilter.headlineComparator;
@@ -403,9 +399,6 @@ glowroot.controller('TracesCtrl', [
       if (appliedFilter.customAttributeValue) {
         query['custom-attribute-value-comparator'] = appliedFilter.customAttributeValueComparator;
         query['custom-attribute-value'] = appliedFilter.customAttributeValue;
-      }
-      if (appliedFilter.errorOnly) {
-        query['error-only'] = 'true';
       }
       if (!filterLimitDefault) {
         query.limit = appliedFilter.limit;

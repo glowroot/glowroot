@@ -1,0 +1,63 @@
+<!--
+  Copyright 2015 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="gt-chart-container">
+  <!-- pointer-events: none is to allow scrollwheel events
+       to pass through to flot in order to handle rapid zooming -->
+  <div gt-spinner
+       gt-show="showChartSpinner"
+       gt-no-delay="true"
+       class="spinner gt-panel-overlay"
+       id="chartSpinner"
+       style="position: absolute; width: 100%; height: 100%; pointer-events: none;">
+  </div>
+  <div class="gt-chart-dimensions" id="chart"></div>
+  <div ng-show="chartNoData && !showChartSpinner"
+       style="display: table; width: 100%; height: 100%;">
+    <div style="display: table-cell; text-align: center; vertical-align: middle;">
+      <div class="gt-chart-no-data">No data for this time period</div>
+    </div>
+  </div>
+</div>
+<div ng-show="mergedAggregate.transactionCount"
+     style="position: relative; padding-top: 30px; margin-left: 40px;">
+  <div class="gt-panel-overlay" ng-show="showChartSpinner"></div>
+  <div>
+    <label>Average:</label>
+    {{(mergedAggregate.totalMicros / (1000 * mergedAggregate.transactionCount)).toFixed(1)}} ms
+  </div>
+  <div>
+    <label>Throughput:</label>
+    {{(60 * 1000 * mergedAggregate.transactionCount / lastDurationMillis).toFixed(1)}}/min
+    ({{mergedAggregate.transactionCount}}
+    <span ng-pluralize
+          count="mergedAggregate.transactionCount"
+          when="{'1':'transaction','other':'transactions'}">
+    </span>
+    in this period)
+  </div>
+  <div>
+    <label>50th percentile:</label>
+    {{(mergedAggregate.percentile1 / 1000).toFixed(1)}} ms
+  </div>
+  <div>
+    <label>95th percentile:</label>
+    {{(mergedAggregate.percentile2 / 1000).toFixed(1)}} ms
+  </div>
+  <div>
+    <label>99th percentile:</label>
+    {{(mergedAggregate.percentile3 / 1000).toFixed(1)}} ms
+  </div>
+</div>

@@ -257,6 +257,7 @@ glowroot.directive('gtNavbarItem', [
         gtDisplay: '@',
         gtItemName: '@',
         gtUrl: '@',
+        gtState: '@',
         gtShow: '&'
       },
       // replace is needed in order to not mess up bootstrap css hierarchical selectors
@@ -275,11 +276,11 @@ glowroot.directive('gtNavbarItem', [
           var $navbarCollapse = $('.navbar-collapse');
           $navbarCollapse.removeClass('in');
           $navbarCollapse.addClass('collapse');
-          if ($location.path() === '/' + scope.gtUrl && !event.ctrlKey) {
+          if (!event.ctrlKey) {
             // inherit false prevents current state from being passed
             // e.g. without inherit false transaction-type=Background will be passed
             // which will defeat the point of reloading the page fresh (with no explicit transaction-type)
-            $state.go($state.$current, null, {reload: true, inherit: false});
+            $state.go(scope.gtState, null, {reload: true, inherit: false});
             // suppress normal link
             event.preventDefault();
             return false;
@@ -302,8 +303,7 @@ glowroot.directive('gtSidebarItem', [
         gtDisplayRight: '@',
         gtUrl: '@',
         gtShow: '&',
-        gtActive: '&',
-        gtClick: '&'
+        gtActive: '&'
       },
       // replace is needed in order to not mess up bootstrap css hierarchical selectors
       replace: true,
@@ -316,13 +316,7 @@ glowroot.directive('gtSidebarItem', [
           return iAttrs.gtActive ? scope.gtActive() : $location.path() === '/' + scope.gtUrl;
         };
         scope.ngClick = function (event) {
-          if (iAttrs.gtClick && !event.ctrlKey) {
-            // this is used by transaction sidebar
-            scope.gtClick();
-            // suppress normal link
-            event.preventDefault();
-            return false;
-          } else if ($location.path() === '/' + scope.gtUrl && !event.ctrlKey) {
+          if ($location.path() === '/' + scope.gtUrl && !event.ctrlKey) {
             $state.go($state.$current, null, {reload: true});
             // suppress normal link
             event.preventDefault();

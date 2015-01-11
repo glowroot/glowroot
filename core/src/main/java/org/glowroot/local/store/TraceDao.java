@@ -38,8 +38,8 @@ import org.glowroot.collector.ImmutableTrace;
 import org.glowroot.collector.Trace;
 import org.glowroot.collector.TraceRepository;
 import org.glowroot.local.store.DataSource.BatchAdder;
+import org.glowroot.local.store.DataSource.ResultSetExtractor;
 import org.glowroot.local.store.DataSource.RowMapper;
-import org.glowroot.local.store.FileBlock.InvalidBlockIdFormatException;
 import org.glowroot.local.store.Schemas.Column;
 import org.glowroot.local.store.Schemas.Index;
 import org.glowroot.markers.OnlyUsedByTests;
@@ -68,8 +68,8 @@ public class TraceDao implements TraceRepository {
             ImmutableColumn.of("metrics", Types.VARCHAR), // json data
             ImmutableColumn.of("thread_info", Types.VARCHAR), // json data
             ImmutableColumn.of("gc_infos", Types.VARCHAR), // json data
-            ImmutableColumn.of("entries_id", Types.VARCHAR), // capped database id
-            ImmutableColumn.of("profile_id", Types.VARCHAR)); // capped database id
+            ImmutableColumn.of("entries_capped_id", Types.VARCHAR), // capped database id
+            ImmutableColumn.of("profile_capped_id", Types.VARCHAR)); // capped database id
 
     // capture_time column is used for expiring records without using FK with on delete cascade
     private static final ImmutableList<Column> transactionCustomAttributeColumns =
@@ -113,21 +113,22 @@ public class TraceDao implements TraceRepository {
 
     @Override
     public void store(final Trace trace, CharSource entries, @Nullable CharSource profile) {
-        String entriesId = cappedDatabase.write(entries).getId();
-        String profileId = null;
+        long entriesId = cappedDatabase.write(entries);
+        Long profileId = null;
         if (profile != null) {
-            profileId = cappedDatabase.write(profile).getId();
+            profileId = cappedDatabase.write(profile);
         }
         try {
             dataSource.update("merge into trace (id, partial, start_time, capture_time, duration,"
                     + " transaction_type, transaction_name, headline, error, profiled,"
                     + " error_message, user, custom_attributes, metrics, thread_info, gc_infos,"
-                    + " entries_id, profile_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
-                    + " ?, ?, ?, ?, ?)", trace.id(), trace.partial(), trace.startTime(),
-                    trace.captureTime(), trace.duration(), trace.transactionType(),
-                    trace.transactionName(), trace.headline(), trace.error() != null,
-                    profileId != null, trace.error(), trace.user(), trace.customAttributes(),
-                    trace.metrics(), trace.threadInfo(), trace.gcInfos(), entriesId, profileId);
+                    + " entries_capped_id, profile_capped_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?,"
+                    + " ?, ?, ?, ?, ?, ?, ?, ?, ?)", trace.id(), trace.partial(),
+                    trace.startTime(), trace.captureTime(), trace.duration(),
+                    trace.transactionType(), trace.transactionName(), trace.headline(),
+                    trace.error() != null, profileId != null, trace.error(), trace.user(),
+                    trace.customAttributes(), trace.metrics(), trace.threadInfo(), trace.gcInfos(),
+                    entriesId, profileId);
             final ImmutableSetMultimap<String, String> customAttributesForIndexing =
                     trace.customAttributesForIndexing();
             if (!customAttributesForIndexing.isEmpty()) {
@@ -173,6 +174,21 @@ public class TraceDao implements TraceRepository {
                 captureTimeFrom, captureTimeTo);
     }
 
+    public long readTransactionErrorCount(String transactionType, String transactionName,
+            long captureTimeFrom, long captureTimeTo) throws SQLException {
+        return dataSource.queryForLong("select count(*) from trace where transaction_type = ?"
+                + " and transaction_name = ? and capture_time >= ? and capture_time <= ? and"
+                + " error = ?", transactionType, transactionName, captureTimeFrom, captureTimeTo,
+                true);
+    }
+
+    public long readOverallErrorCount(String transactionType, long captureTimeFrom,
+            long captureTimeTo) throws SQLException {
+        return dataSource.queryForLong("select count(*) from trace where transaction_type = ?"
+                + " and capture_time >= ? and capture_time <= ? and error = ?", transactionType,
+                captureTimeFrom, captureTimeTo, true);
+    }
+
     public ImmutableList<ErrorPoint> readErrorPoints(ErrorMessageQuery query,
             long resolutionMillis) throws SQLException {
         // need ".0" to force double result
@@ -199,8 +215,8 @@ public class TraceDao implements TraceRepository {
     public @Nullable Trace readTrace(String traceId) throws SQLException {
         List<Trace> traces = dataSource.query("select id, partial, start_time, capture_time,"
                 + " duration, transaction_type, transaction_name, headline, error_message, user,"
-                + " custom_attributes, metrics, thread_info, gc_infos, entries_id, profile_id"
-                + " from trace where id = ?", new TraceRowMapper(), traceId);
+                + " custom_attributes, metrics, thread_info, gc_infos, entries_capped_id,"
+                + " profile_capped_id from trace where id = ?", new TraceRowMapper(), traceId);
         if (traces.isEmpty()) {
             return null;
         }
@@ -211,11 +227,11 @@ public class TraceDao implements TraceRepository {
     }
 
     public @Nullable CharSource readEntries(String traceId) throws SQLException {
-        return readFromCappedDatabase("entries_id", traceId);
+        return readFromCappedDatabase("entries_capped_id", traceId);
     }
 
     public @Nullable CharSource readProfile(String traceId) throws SQLException {
-        return readFromCappedDatabase("profile_id", traceId);
+        return readFromCappedDatabase("profile_capped_id", traceId);
     }
 
     public void deleteAll() {
@@ -247,27 +263,8 @@ public class TraceDao implements TraceRepository {
 
     private @Nullable CharSource readFromCappedDatabase(@Untainted String columnName,
             String traceId) throws SQLException {
-        List<String> ids = dataSource.query("select " + columnName + " from trace where id = ?",
-                new SingleStringRowMapper(), traceId);
-        if (ids.isEmpty()) {
-            // trace must have just expired while user was viewing it
-            logger.debug("no trace found for id: {}", traceId);
-            return CharSource.wrap("{\"expired\":true}");
-        }
-        if (ids.size() > 1) {
-            throw new SQLException("Multiple records returned for trace id: " + traceId);
-        }
-        String id = ids.get(0);
-        if (id.equals("")) {
-            return null;
-        }
-        FileBlock fileBlock;
-        try {
-            fileBlock = FileBlock.from(id);
-        } catch (InvalidBlockIdFormatException e) {
-            throw new SQLException(e);
-        }
-        return cappedDatabase.read(fileBlock, "{\"overwritten\":true}");
+        return dataSource.query("select " + columnName + " from trace where id = ?",
+                new CappedIdResultExtractor(), traceId);
     }
 
     @OnlyUsedByTests
@@ -405,16 +402,25 @@ public class TraceDao implements TraceRepository {
         if (!dataSource.tableExists("trace")) {
             return;
         }
-        for (Column column : dataSource.getColumns("trace")) {
-            if (column.name().equals("outlier_profile_id")) {
-                dataSource.execute("alter table trace drop column outlier_profile_id");
-                break;
+    }
+
+    private class CappedIdResultExtractor implements ResultSetExtractor</*@Nullable*/CharSource> {
+        @Override
+        public @Nullable CharSource extractData(ResultSet resultSet) throws SQLException {
+            if (!resultSet.next()) {
+                // trace must have just expired while user was viewing it
+                return CharSource.wrap("{\"expired\":true}");
             }
+            long cappedId = resultSet.getLong(1);
+            if (resultSet.wasNull()) {
+                return null;
+            }
+            return cappedDatabase.read(cappedId, "{\"overwritten\":true}");
+
         }
     }
 
     private static class TracePointRowMapper implements RowMapper<TracePoint> {
-
         @Override
         public TracePoint mapRow(ResultSet resultSet) throws SQLException {
             String id = resultSet.getString(1);
@@ -452,10 +458,8 @@ public class TraceDao implements TraceRepository {
                     .metrics(resultSet.getString(12))
                     .threadInfo(resultSet.getString(13))
                     .gcInfos(resultSet.getString(14))
-                    .entriesExistence(
-                            RowMappers.getExistence(resultSet.getString(15), cappedDatabase))
-                    .profileExistence(
-                            RowMappers.getExistence(resultSet.getString(16), cappedDatabase))
+                    .entriesExistence(RowMappers.getExistence(resultSet, 15, cappedDatabase))
+                    .profileExistence(RowMappers.getExistence(resultSet, 16, cappedDatabase))
                     .build();
         }
     }
@@ -476,15 +480,6 @@ public class TraceDao implements TraceRepository {
                     .message(Strings.nullToEmpty(resultSet.getString(1)))
                     .count(resultSet.getLong(2))
                     .build();
-        }
-    }
-
-    private static class SingleStringRowMapper implements RowMapper<String> {
-        @Override
-        public String mapRow(ResultSet resultSet) throws SQLException {
-            // need to use empty instead of null since this is added to ImmutableList which does not
-            // allow nulls
-            return Strings.nullToEmpty(resultSet.getString(1));
         }
     }
 }

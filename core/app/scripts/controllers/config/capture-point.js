@@ -74,7 +74,7 @@ glowroot.controller('ConfigCapturePointCtrl', [
       };
       $scope.showClassNameSpinner++;
       // use 'then' method to return promise
-      return $http.get('backend/config/matching-class-names?' + queryStrings.encodeObject(postData))
+      return $http.get('backend/config/matching-class-names' + queryStrings.encodeObject(postData))
           .then(function (response) {
             $scope.showClassNameSpinner--;
             return response.data;
@@ -109,7 +109,7 @@ glowroot.controller('ConfigCapturePointCtrl', [
         limit: 10
       };
       $scope.showMethodNameSpinner++;
-      return $http.get('backend/config/matching-method-names?' + queryStrings.encodeObject(queryData))
+      return $http.get('backend/config/matching-method-names' + queryStrings.encodeObject(queryData))
           .then(function (response) {
             $scope.showMethodNameSpinner--;
             return response.data;
@@ -223,7 +223,7 @@ glowroot.controller('ConfigCapturePointCtrl', [
         methodName: methodName
       };
       $scope.methodSignaturesLoading = true;
-      $http.get('backend/config/method-signatures?' + queryStrings.encodeObject(queryData))
+      $http.get('backend/config/method-signatures' + queryStrings.encodeObject(queryData))
           .success(function (data) {
             $scope.methodSignaturesLoading = false;
             $scope.methodSignatures = data;

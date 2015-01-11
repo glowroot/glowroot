@@ -34,8 +34,8 @@
           <div class="gt-yellow"
                ng-show="originalConfig.metricWrapperMethods !== originalData.metricWrapperMethodsActive"
                style="padding-bottom: 5px;">
-            Active value is <code>{{metricWrapperMethodsActive ? 'ON' : 'OFF'}}</code>. The newly configured value
-            will take effect on next JVM restart.
+            Active value is <code>{{originalData.metricWrapperMethodsActive ? 'ON' : 'OFF'}}</code>.
+            The newly configured value will take effect on next JVM restart.
           </div>
           <p>
             When enabled, all methods that are woven for trace metric timing are renamed with suffix

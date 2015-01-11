@@ -16,6 +16,7 @@
 package org.glowroot.local.ui;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -30,36 +31,38 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
+import org.HdrHistogram.Histogram;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.common.Clock;
+import org.glowroot.config.MarshalingRoutines.LowercaseMarshaling;
 import org.glowroot.local.store.AggregateDao;
-import org.glowroot.local.store.AggregateDao.PerformanceSummaryQuery;
-import org.glowroot.local.store.AggregateDao.PerformanceSummarySortOrder;
-import org.glowroot.local.store.ImmutablePerformanceSummaryQuery;
-import org.glowroot.local.store.PerformanceSummary;
-import org.glowroot.local.store.PerformanceSummaryMarshaler;
+import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
+import org.glowroot.local.store.ImmutableTransactionSummaryQuery;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;
-import org.glowroot.local.ui.AggregateCommonService.MergedAggregate;
+import org.glowroot.local.store.TransactionSummary;
+import org.glowroot.local.store.TransactionSummaryMarshaler;
+import org.glowroot.local.ui.AggregateCommonService.HistogramMergedAggregate;
+import org.glowroot.local.ui.AggregateCommonService.MetricMergedAggregate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @JsonService
-class PerformanceJsonService {
+class TransactionJsonService {
 
     private static final ObjectMapper mapper = new ObjectMapper();
-    private static final int MICROSECONDS_PER_SECOND = 1000000;
+    private static final double MICROSECONDS_PER_SECOND = 1000000.0;
 
     private final AggregateCommonService aggregateCommonService;
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
     private final DataSeriesHelper dataSeriesHelper;
 
-    PerformanceJsonService(AggregateCommonService aggregateCommonService,
+    TransactionJsonService(AggregateCommonService aggregateCommonService,
             AggregateDao aggregateDao,
             TraceDao traceDao, Clock clock, long fixedAggregateIntervalSeconds) {
         this.aggregateCommonService = aggregateCommonService;
@@ -68,80 +71,136 @@ class PerformanceJsonService {
         dataSeriesHelper = new DataSeriesHelper(clock, fixedAggregateIntervalSeconds * 1000);
     }
 
-    @GET("/backend/performance/data")
-    String getData(String queryString) throws Exception {
-        PerformanceDataRequest request =
-                QueryStrings.decode(queryString, PerformanceDataRequest.class);
+    @GET("/backend/transaction/overview")
+    String getOverview(String queryString) throws Exception {
+        TransactionDataRequest request =
+                QueryStrings.decode(queryString, TransactionDataRequest.class);
 
         List<Aggregate> aggregates = getAggregates(request);
-        List<StackedPoint> stackedPoints = getStackedPoints(aggregates);
-        List<DataSeries> dataSeriesList = getMetricDataSeries(request, stackedPoints);
-        MergedAggregate mergedAggregate = aggregateCommonService.getMergedAggregate(aggregates);
-        long traceCount = getTraceCount(request);
-
-        PerformanceSummary overallSummary = aggregateDao.readOverallPerformanceSummary(
-                request.transactionType(),
-                request.from(), request.to());
-        ImmutablePerformanceSummaryQuery query = ImmutablePerformanceSummaryQuery.builder()
-                .transactionType(request.transactionType())
-                .from(request.from())
-                .to(request.to())
-                .sortOrder(request.summarySortOrder())
-                .limit(request.summaryLimit())
-                .build();
-        QueryResult<PerformanceSummary> queryResult =
-                aggregateDao.readTransactionPerformanceSummaries(query);
+        List<DataSeries> dataSeriesList = getDataSeriesForOverviewChart(request, aggregates);
+        if (!aggregates.isEmpty() && aggregates.get(0).captureTime() == request.from()) {
+            // the left most aggregate is not really in the requested interval since it is for
+            // prior capture times
+            aggregates = aggregates.subList(1, aggregates.size());
+        }
+        HistogramMergedAggregate histogramMergedAggregate =
+                aggregateCommonService.getHistogramMergedAggregate(aggregates);
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeObjectField("dataSeries", dataSeriesList);
-        jg.writeObjectField("mergedAggregate", mergedAggregate);
-        jg.writeObjectField("traceCount", traceCount);
-        jg.writeFieldName("overallSummary");
-        PerformanceSummaryMarshaler.marshal(jg, overallSummary);
-        jg.writeFieldName("transactionSummaries");
-        PerformanceSummaryMarshaler.instance().marshalIterable(jg, queryResult.records());
-        jg.writeBooleanField("moreSummariesAvailable", queryResult.moreAvailable());
+        jg.writeObjectField("mergedAggregate", histogramMergedAggregate);
         jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
 
-    @GET("/backend/performance/summaries")
-    String getSummaries(String queryString) throws Exception {
-        PerformanceSummaryQuery query =
-                QueryStrings.decode(queryString, PerformanceSummaryQuery.class);
-        QueryResult<PerformanceSummary> queryResult =
-                aggregateDao.readTransactionPerformanceSummaries(query);
+    @GET("/backend/transaction/metrics")
+    String getMetrics(String queryString) throws Exception {
+        TransactionDataRequest request =
+                QueryStrings.decode(queryString, TransactionDataRequest.class);
+
+        List<Aggregate> aggregates = getAggregates(request);
+        List<DataSeries> dataSeriesList = getDataSeriesForMetricsChart(request, aggregates);
+        if (!aggregates.isEmpty() && aggregates.get(0).captureTime() == request.from()) {
+            // the left most aggregate is not really in the requested interval since it is for
+            // prior capture times
+            aggregates = aggregates.subList(1, aggregates.size());
+        }
+        MetricMergedAggregate metricMergedAggregate =
+                aggregateCommonService.getMetricMergedAggregate(aggregates);
+
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeFieldName("transactionSummaries");
-        PerformanceSummaryMarshaler.instance().marshalIterable(jg, queryResult.records());
-        jg.writeBooleanField("moreSummariesAvailable", queryResult.moreAvailable());
+        jg.writeObjectField("dataSeries", dataSeriesList);
+        jg.writeObjectField("mergedAggregate", metricMergedAggregate);
         jg.writeEndObject();
         jg.close();
         return sb.toString();
     }
 
-    @GET("/backend/performance/profile")
+    @GET("/backend/transaction/profile")
     String getProfile(String queryString) throws Exception {
-        ProfileRequest request = QueryStrings.decode(queryString, ProfileRequest.class);
-        AggregateProfileNode profile = aggregateCommonService.getProfile(
-                request.transactionType(), request.transactionName(), request.from(),
-                request.to(), request.truncateLeafPercentage());
-        if (profile == null) {
-            // this should not happen as the user interface checks profile sample count before
-            // sending this request
-            throw new JsonServiceException(HttpResponseStatus.NOT_FOUND, "Profile data not found");
-        }
-        return mapper.writeValueAsString(profile);
+        TransactionProfileRequest request =
+                QueryStrings.decode(queryString, TransactionProfileRequest.class);
+
+        AggregateProfileNode profile = aggregateCommonService.getProfile(request.transactionType(),
+                request.transactionName(), request.from(), request.to(),
+                request.truncateLeafPercentage());
+
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeObjectField("profile", profile);
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
     }
 
-    @GET("/backend/performance/flame-graph")
+    @GET("/backend/transaction/summaries")
+    String getSummaries(String queryString) throws Exception {
+        TransactionSummaryRequest request =
+                QueryStrings.decode(queryString, TransactionSummaryRequest.class);
+
+        TransactionSummary overallSummary = aggregateDao.readOverallTransactionSummary(
+                request.transactionType(), request.from(), request.to());
+        ImmutableTransactionSummaryQuery query = ImmutableTransactionSummaryQuery.builder()
+                .transactionType(request.transactionType())
+                .from(request.from())
+                .to(request.to())
+                .sortOrder(request.sortOrder())
+                .limit(request.limit())
+                .build();
+        QueryResult<TransactionSummary> queryResult = aggregateDao.readTransactionSummaries(query);
+
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeFieldName("overall");
+        TransactionSummaryMarshaler.marshal(jg, overallSummary);
+        jg.writeFieldName("transactions");
+        TransactionSummaryMarshaler.instance().marshalIterable(jg, queryResult.records());
+        jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
+    }
+
+    @GET("/backend/transaction/tab-bar-data")
+    String getTabBarData(String queryString) throws Exception {
+        TransactionDataRequest request =
+                QueryStrings.decode(queryString, TransactionDataRequest.class);
+
+        String transactionName = request.transactionName();
+        long profileSampleCount;
+        long traceCount;
+        if (transactionName == null) {
+            profileSampleCount = aggregateDao.readOverallProfileSampleCount(
+                    request.transactionType(), request.from(), request.to());
+            traceCount = traceDao.readOverallCount(request.transactionType(), request.from(),
+                    request.to());
+        } else {
+            profileSampleCount = aggregateDao.readTransactionProfileSampleCount(
+                    request.transactionType(), transactionName, request.from(), request.to());
+            traceCount = traceDao.readTransactionCount(request.transactionType(),
+                    transactionName, request.from(), request.to());
+        }
+
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeNumberField("profileSampleCount", profileSampleCount);
+        jg.writeNumberField("traceCount", traceCount);
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
+    }
+
+    @GET("/backend/transaction/flame-graph")
     String getFlameGraph(String queryString) throws Exception {
-        ProfileRequest request = QueryStrings.decode(queryString, ProfileRequest.class);
+        FlameGraphRequest request = QueryStrings.decode(queryString, FlameGraphRequest.class);
         AggregateProfileNode profile = aggregateCommonService.getProfile(
                 request.transactionType(), request.transactionName(), request.from(),
                 request.to(), request.truncateLeafPercentage());
@@ -172,7 +231,90 @@ class PerformanceJsonService {
         return sb.toString();
     }
 
-    private List<DataSeries> getMetricDataSeries(PerformanceDataRequest request,
+    private List<Aggregate> getAggregates(TransactionDataRequest request) throws SQLException {
+        String transactionName = request.transactionName();
+        if (transactionName == null) {
+            return aggregateDao.readOverallAggregates(request.transactionType(), request.from(),
+                    request.to());
+        } else {
+            return aggregateDao.readTransactionAggregates(request.transactionType(),
+                    transactionName, request.from(), request.to());
+        }
+    }
+
+    private List<DataSeries> getDataSeriesForOverviewChart(TransactionDataRequest request,
+            List<Aggregate> aggregates) throws Exception {
+        if (aggregates.isEmpty()) {
+            return Lists.newArrayList();
+        }
+        List<DataSeries> dataSeriesList = Lists.newArrayList();
+        DataSeries dataSeries1 = new DataSeries("50th percentile");
+        DataSeries dataSeries2 = new DataSeries("95th percentile");
+        DataSeries dataSeries3 = new DataSeries("99th percentile");
+        dataSeriesList.add(dataSeries1);
+        dataSeriesList.add(dataSeries2);
+        dataSeriesList.add(dataSeries3);
+        Aggregate lastAggregate = null;
+        for (Aggregate aggregate : aggregates) {
+            if (lastAggregate == null) {
+                // first aggregate
+                dataSeriesHelper.addInitialUpslope(request.from(), aggregate.captureTime(),
+                        dataSeriesList, null);
+            } else {
+                dataSeriesHelper.addGapIfNeeded(lastAggregate.captureTime(),
+                        aggregate.captureTime(), dataSeriesList, null);
+            }
+            lastAggregate = aggregate;
+            ByteBuffer histogramBuffer = ByteBuffer.wrap(aggregate.histogram());
+            if (histogramBuffer.getInt() == 0) {
+                // 0 means list of (already sorted) longs
+                // read size and use it to pre-allocate correctly sized array
+                int size = histogramBuffer.getInt();
+                List<Long> data = Lists.newArrayListWithCapacity(size);
+                while (histogramBuffer.remaining() > 0) {
+                    data.add(histogramBuffer.getLong());
+                }
+                dataSeries1.add(aggregate.captureTime(),
+                        getValueAtPercentile(data, 50) / MICROSECONDS_PER_SECOND);
+                dataSeries2.add(aggregate.captureTime(),
+                        getValueAtPercentile(data, 95) / MICROSECONDS_PER_SECOND);
+                dataSeries3.add(aggregate.captureTime(),
+                        getValueAtPercentile(data, 99) / MICROSECONDS_PER_SECOND);
+            } else {
+                // 1 means compressed histogram
+                Histogram histogram = Histogram.decodeFromCompressedByteBuffer(histogramBuffer, 0);
+                dataSeries1.add(aggregate.captureTime(),
+                        histogram.getValueAtPercentile(50) / MICROSECONDS_PER_SECOND);
+                dataSeries2.add(aggregate.captureTime(),
+                        histogram.getValueAtPercentile(95) / MICROSECONDS_PER_SECOND);
+                dataSeries3.add(aggregate.captureTime(),
+                        histogram.getValueAtPercentile(99) / MICROSECONDS_PER_SECOND);
+            }
+        }
+        if (lastAggregate != null) {
+            dataSeriesHelper.addFinalDownslope(request.to(), dataSeriesList, null,
+                    lastAggregate.captureTime());
+        }
+        return dataSeriesList;
+    }
+
+    private List<DataSeries> getDataSeriesForMetricsChart(TransactionDataRequest request,
+            List<Aggregate> aggregates) throws IOException {
+        if (aggregates.isEmpty()) {
+            return Lists.newArrayList();
+        }
+        List<StackedPoint> stackedPoints = Lists.newArrayList();
+        for (Aggregate aggregate : aggregates) {
+            stackedPoints.add(StackedPoint.create(aggregate));
+        }
+        return getMetricDataSeries(request, stackedPoints);
+    }
+
+    private double getValueAtPercentile(List<Long> sortedData, double percentile) {
+        return sortedData.get((int) Math.ceil(sortedData.size() * percentile / 100) - 1);
+    }
+
+    private List<DataSeries> getMetricDataSeries(TransactionDataRequest request,
             List<StackedPoint> stackedPoints) {
         final int topX = 5;
         List<String> metricNames = getTopMetricNames(stackedPoints, topX + 1);
@@ -222,29 +364,8 @@ class PerformanceJsonService {
             dataSeriesHelper.addFinalDownslope(request.to(), dataSeriesList, otherDataSeries,
                     lastAggregate.captureTime());
         }
-        if (!stackedPoints.isEmpty()) {
-            dataSeriesList.add(otherDataSeries);
-        }
+        dataSeriesList.add(otherDataSeries);
         return dataSeriesList;
-    }
-
-    private List<Aggregate> getAggregates(PerformanceDataRequest request) throws SQLException {
-        String transactionName = request.transactionName();
-        if (transactionName == null) {
-            return aggregateDao.readOverallAggregates(request.transactionType(), request.from(),
-                    request.to());
-        } else {
-            return aggregateDao.readTransactionAggregates(request.transactionType(),
-                    transactionName, request.from(), request.to());
-        }
-    }
-
-    private List<StackedPoint> getStackedPoints(List<Aggregate> aggregates) throws IOException {
-        List<StackedPoint> stackedPoints = Lists.newArrayList();
-        for (Aggregate aggregate : aggregates) {
-            stackedPoints.add(StackedPoint.create(aggregate));
-        }
-        return stackedPoints;
     }
 
     // calculate top 5 metrics
@@ -270,17 +391,6 @@ class PerformanceJsonService {
             metricNames.add(entry.getKey());
         }
         return metricNames;
-    }
-
-    private long getTraceCount(PerformanceDataRequest request) throws SQLException {
-        String transactionName = request.transactionName();
-        if (transactionName == null) {
-            return traceDao.readOverallCount(request.transactionType(), request.from(),
-                    request.to());
-        } else {
-            return traceDao.readTransactionCount(request.transactionType(),
-                    transactionName, request.from(), request.to());
-        }
     }
 
     private static void writeFlameGraphNode(AggregateProfileNode node, JsonGenerator jg)
@@ -376,22 +486,44 @@ class PerformanceJsonService {
 
     @Value.Immutable
     @Json.Marshaled
-    abstract static class PerformanceDataRequest {
+    abstract static class TransactionSummaryRequest {
         abstract long from();
         abstract long to();
         abstract String transactionType();
-        abstract @Nullable String transactionName();
-        abstract PerformanceSummarySortOrder summarySortOrder();
-        abstract int summaryLimit();
+        abstract TransactionSummarySortOrder sortOrder();
+        abstract int limit();
     }
 
     @Value.Immutable
     @Json.Marshaled
-    abstract static class ProfileRequest {
+    abstract static class TransactionDataRequest {
+        abstract long from();
+        abstract long to();
+        abstract String transactionType();
+        abstract @Nullable String transactionName();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class TransactionProfileRequest {
         abstract long from();
         abstract long to();
         abstract String transactionType();
         abstract @Nullable String transactionName();
         abstract double truncateLeafPercentage();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class FlameGraphRequest {
+        abstract long from();
+        abstract long to();
+        abstract String transactionType();
+        abstract @Nullable String transactionName();
+        abstract double truncateLeafPercentage();
+    }
+
+    public static enum ChartType implements LowercaseMarshaling {
+        PERCENTILES, METRICS
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,16 +88,16 @@ public class CappedDatabaseResizeTest {
         cappedDatabase.write(CharSource.wrap(text));
         cappedDatabase.write(CharSource.wrap(text));
         cappedDatabase.write(CharSource.wrap(text));
-        FileBlock block = cappedDatabase.write(CharSource.wrap(text));
+        long cappedId = cappedDatabase.write(CharSource.wrap(text));
         cappedDatabase.resize(newSizeKb);
         // then
-        String text2 = cappedDatabase.read(block, "").read();
+        String text2 = cappedDatabase.read(cappedId, "").read();
         assertThat(text2).isEqualTo(text);
 
         // also test close and re-open
         cappedDatabase.close();
         cappedDatabase = new CappedDatabase(tempFile, 2, scheduledExecutor, Ticker.systemTicker());
-        text2 = cappedDatabase.read(block, "").read();
+        text2 = cappedDatabase.read(cappedId, "").read();
         assertThat(text2).isEqualTo(text);
     }
 
@@ -110,15 +110,15 @@ public class CappedDatabaseResizeTest {
         cappedDatabase.write(CharSource.wrap(text));
         cappedDatabase.write(CharSource.wrap(text));
         cappedDatabase.write(CharSource.wrap(text));
-        FileBlock block = cappedDatabase.write(CharSource.wrap(text));
+        long cappedId = cappedDatabase.write(CharSource.wrap(text));
         // then
-        String text2 = cappedDatabase.read(block, "").read();
+        String text2 = cappedDatabase.read(cappedId, "").read();
         assertThat(text2).isEqualTo(text);
 
         // also test close and re-open
         cappedDatabase.close();
         cappedDatabase = new CappedDatabase(tempFile, 2, scheduledExecutor, Ticker.systemTicker());
-        text2 = cappedDatabase.read(block, "").read();
+        text2 = cappedDatabase.read(cappedId, "").read();
         assertThat(text2).isEqualTo(text);
     }
 

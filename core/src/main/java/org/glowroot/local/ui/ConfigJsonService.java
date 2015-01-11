@@ -150,6 +150,7 @@ class ConfigJsonService {
             throw new IllegalArgumentException("Plugin id not found: " + pluginId);
         }
         return Marshaling2.toJson(ImmutablePluginConfigResponse.builder()
+                .name(pluginDescriptor.name())
                 .addAllPropertyDescriptors(pluginDescriptor.properties())
                 .config(PluginConfigDto.fromConfig(config))
                 .build());
@@ -359,6 +360,7 @@ class ConfigJsonService {
     @Value.Immutable
     @Json.Marshaled
     abstract static class PluginConfigResponse {
+        abstract String name();
         abstract PluginConfigDto config();
         @Json.ForceEmpty
         abstract List<PropertyDescriptor> propertyDescriptors();

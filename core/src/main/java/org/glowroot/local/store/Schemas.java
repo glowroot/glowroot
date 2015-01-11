@@ -57,6 +57,7 @@ class Schemas {
         sqlTypeNames.put(Types.BOOLEAN, "boolean");
         sqlTypeNames.put(Types.CLOB, "clob");
         sqlTypeNames.put(Types.DOUBLE, "double");
+        sqlTypeNames.put(Types.BLOB, "blob");
     }
 
     private Schemas() {}
@@ -149,7 +150,7 @@ class Schemas {
         execute(castUntainted(sql.toString()), connection);
         if (tableNeedsUpgrade(tableName, columns, connection)) {
             logger.warn("table {} thinks it still needs to be upgraded, even after it was just"
-                    + "upgraded", tableName);
+                    + " upgraded", tableName);
         }
     }
 

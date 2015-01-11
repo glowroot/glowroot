@@ -132,10 +132,6 @@ body {
   // scrollbar shows up because the page dynamically expanded greater than a single screen, or
   // contracted down to a single screen, e.g. when showing or hiding content
   overflow-y: scroll;
-  // never display horizontal scrollbar
-  // when resizing the window horizontally smaller than the chart, there is a brief time before the chart re-draws
-  // itself during which time the horizontal scrollbar shows up (which actually triggers a vertical window resize)
-  overflow-x: hidden;
   font-family: 'Open Sans', sans-serif;
 }
 
@@ -306,4 +302,11 @@ hr.soften {
 
 .bootstrap-select .selected {
   display: none;
+}
+
+.gt-transaction-tabs {
+  margin-bottom: 25px;
+  margin-left: -10px;
+  margin-right: -10px;
+  padding-left: 10px;
 }

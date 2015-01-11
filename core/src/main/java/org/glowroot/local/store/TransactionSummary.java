@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,16 @@
  */
 package org.glowroot.local.store;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import javax.annotation.Nullable;
 
-import org.glowroot.local.store.FileBlock.InvalidBlockIdFormatException;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 
-public class FileBlockTest {
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
-    @Test
-    public void testInvalidBlockId() throws InvalidBlockIdFormatException {
-        thrown.expect(InvalidBlockIdFormatException.class);
-        FileBlock.from("1000");
-    }
+@Value.Immutable
+@Json.Marshaled
+public abstract class TransactionSummary {
+    public abstract @Nullable String transactionName();
+    // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
+    public abstract long totalMicros();
+    public abstract long transactionCount();
 }

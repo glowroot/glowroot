@@ -14,138 +14,43 @@
  * limitations under the License.
  */
 
-/* global glowroot, moment, $ */
+/* global glowroot, angular, moment, $ */
 
-// common code shared between performance.js and errors.js
+// common code shared between transaction.js and errors.js
 glowroot.factory('charts', [
   '$http',
   '$location',
   '$timeout',
-  'queryStrings',
+    'queryStrings',
   'httpErrors',
   function ($http, $location, $timeout, queryStrings, httpErrors) {
 
-    function refreshButtonClick(chartState, $scope) {
-      if (!$scope.filterDate) {
-        // TODO display 'Missing date' message
-        return;
-      }
-      var midnight = new Date($scope.chartFrom).setHours(0, 0, 0, 0);
-      if (midnight !== $scope.filterDate.getTime()) {
-        // filterDate has changed
-        chartState.chartFromToDefault = false;
-        $scope.chartFrom = $scope.filterDate.getTime() + ($scope.chartFrom - midnight);
-        $scope.chartTo = $scope.filterDate.getTime() + ($scope.chartTo - midnight);
-      }
-      chartState.refreshData();
-    }
+    function init(chartState, $chart, $scope) {
 
-    function initScope(chartState, urlComponent, $scope) {
+      $scope.showChartSpinner = 0;
 
-      $scope.timeDisplay = function () {
-        return moment($scope.chartFrom).format('LT') + ' to ' + moment($scope.chartTo).format('LT');
-      };
-
-      $scope.headerQueryString = function (transactionType) {
-        var query = {};
-        // add transactionType first so it is first in url
-        if (transactionType !== $scope.layout.defaultTransactionType) {
-          query.transactionType = transactionType;
-        }
-        if (!chartState.chartFromToDefault) {
-          query.from = $scope.chartFrom;
-          query.to = $scope.chartTo;
-        }
-        return queryStrings.encodeObject(query);
-      };
-
-      $scope.sidebarQueryString = function (transactionName) {
-        var query = {
-          transactionType: $scope.transactionType,
-          transactionName: transactionName,
-          from: $scope.chartFrom,
-          to: $scope.chartTo
-        };
-        return queryStrings.encodeObject(query);
-      };
-
-      $scope.sidebarUpdated = function (transactionName) {
-        $scope.transactionName = transactionName;
-        updateLocation(chartState, $scope);
-        chartState.refreshData();
-      };
-
-      $scope.$watch('summarySortOrder', function (newValue, oldValue) {
-        if (newValue && newValue !== oldValue) {
-          updateLocation(chartState, $scope);
-          updateSummaries('backend/' + urlComponent + '/summaries', $scope);
-        }
-      });
-
-      $scope.showMoreSummaries = function () {
-        // double each time
-        $scope.summaryLimit *= 2;
-        updateSummaries('backend/' + urlComponent + '/summaries', $scope);
-      };
-
-      $scope.transactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
-      $scope.transactionName = $location.search()['transaction-name'];
-      $scope.summarySortOrder = $location.search()['summary-sort-order'] || $scope.defaultSummarySortOrder;
-
-      $scope.chartFrom = Number($location.search().from);
-      $scope.chartTo = Number($location.search().to);
-      // both from and to must be supplied or neither will take effect
-      if ($scope.chartFrom && $scope.chartTo) {
-        $scope.filterDate = new Date($scope.chartFrom);
-        $scope.filterDate.setHours(0, 0, 0, 0);
-      } else {
-        chartState.chartFromToDefault = true;
-        var today = new Date();
-        today.setHours(0, 0, 0, 0);
-        $scope.filterDate = today;
-        // show 2 hour interval, but nothing prior to today (e.g. if 'now' is 1am) or after today
-        // (e.g. if 'now' is 11:55pm)
-        var now = new Date();
-        now.setSeconds(0, 0);
-        var fixedAggregateIntervalMinutes = chartState.fixedAggregateIntervalMillis / (60 * 1000);
-        if (fixedAggregateIntervalMinutes > 1) {
-          // this is the normal case since default aggregate interval is 5 min
-          var minutesRoundedDownToNearestAggregationInterval =
-              fixedAggregateIntervalMinutes * Math.floor(now.getMinutes() / fixedAggregateIntervalMinutes);
-          now.setMinutes(minutesRoundedDownToNearestAggregationInterval);
-        }
-        $scope.chartFrom = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
-        $scope.chartTo = Math.min($scope.chartFrom + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
-      }
-    }
-
-    function initChart($chart, chartState, $scope, chartOptions) {
-      $scope.$watchCollection('[containerWidth, windowHeight]', function () {
+      $scope.$watchGroup(['containerWidth', 'windowHeight'], function () {
         chartState.plot.resize();
         chartState.plot.setupGrid();
         chartState.plot.draw();
       });
 
-      $scope.showChartSpinner = 0;
-
       $chart.bind('plotzoom', function (event, plot) {
         $scope.$apply(function () {
           // throw up spinner right away
           $scope.showChartSpinner++;
-          $scope.showTableOverlay++;
           // need to call setupGrid on each zoom to handle rapid zooming
           plot.setupGrid();
           var zoomId = ++chartState.currentZoomId;
           // use 100 millisecond delay to handle rapid zooming
           $timeout(function () {
             if (zoomId === chartState.currentZoomId) {
-              $scope.chartFrom = plot.getAxes().xaxis.min;
-              $scope.chartTo = plot.getAxes().xaxis.max;
-              chartState.chartFromToDefault = false;
-              chartState.refreshData();
+              $scope.$parent.chartFrom = plot.getAxes().xaxis.min;
+              $scope.$parent.chartTo = plot.getAxes().xaxis.max;
+              $scope.$parent.chartFromToDefault = false;
+              $location.search($scope.buildQueryObject()).replace();
             }
             $scope.showChartSpinner--;
-            $scope.showTableOverlay--;
           }, 100);
         });
       });
@@ -157,11 +62,10 @@ glowroot.factory('charts', [
           chartState.plot.getAxes().xaxis.options.min = ranges.xaxis.from;
           chartState.plot.getAxes().xaxis.options.max = ranges.xaxis.to;
           chartState.plot.setupGrid();
-          $scope.chartFrom = chartState.plot.getAxes().xaxis.min;
-          $scope.chartTo = chartState.plot.getAxes().xaxis.max;
-          chartState.chartFromToDefault = false;
-          chartState.currentRefreshId++;
-          chartState.refreshData();
+          $scope.$parent.chartFrom = chartState.plot.getAxes().xaxis.min;
+          $scope.$parent.chartTo = chartState.plot.getAxes().xaxis.max;
+          $scope.$parent.chartFromToDefault = false;
+          $location.search($scope.buildQueryObject()).replace();
         });
       });
 
@@ -171,7 +75,9 @@ glowroot.factory('charts', [
           chartState.plot.zoomOut();
         });
       };
+    }
 
+    function plot(data, chartOptions, chartState, $chart, $scope) {
       var options = {
         grid: {
           // min border margin should match trace chart so they are positioned the same from the top of page
@@ -221,37 +127,83 @@ glowroot.factory('charts', [
           points: {
             radius: 8
           }
-        },
-        tooltip: true,
-        tooltipOpts: {
-          content: function (label, xval, yval, flotItem) {
-            return renderTooltipHtml(flotItem.dataIndex, flotItem.seriesIndex, chartState);
-          }
         }
       };
-      // render chart with no data points
-      chartState.plot = $.plot($chart, [[]], $.extend(true, options, chartOptions));
-      chartState.plot.getAxes().xaxis.options.borderGridLock = chartState.fixedAggregateIntervalMillis;
-
+      chartState.plot = $.plot($chart, data, $.extend(true, options, chartOptions));
+      chartState.plot.getAxes().xaxis.options.borderGridLock = 1000 * $scope.layout.fixedAggregateIntervalSeconds;
       chartState.plot.getAxes().yaxis.options.max = undefined;
-      chartState.refreshData();
     }
 
-    function renderTooltipHtml(dataIndex, highlightSeriesIndex, chartState) {
-      var html = '<table><tbody>';
-      var total = 0;
+    function refreshData(url, chartState, $scope, onRefreshData) {
+      var query = {
+        from: $scope.chartFrom,
+        to: $scope.chartTo,
+        transactionType: $scope.transactionType,
+        transactionName: $scope.transactionName
+      };
+      var date = $scope.filterDate;
+      if (!date) {
+        // TODO display 'Missing date' message
+        return;
+      }
+      $scope.showChartSpinner++;
+      var refreshId = ++chartState.currentRefreshId;
+      $http.get(url + queryStrings.encodeObject(query))
+          .success(function (data) {
+            $scope.showChartSpinner--;
+            if (refreshId !== chartState.currentRefreshId) {
+              return;
+            }
+            $scope.chartNoData = !data.dataSeries.length;
+            // reset axis in case user changed the date and then zoomed in/out to trigger this refresh
+            chartState.plot.getAxes().xaxis.options.min = query.from;
+            chartState.plot.getAxes().xaxis.options.max = query.to;
+            chartState.plot.getAxes().xaxis.options.zoomRange = [
+              date.getTime(),
+              date.getTime() + 24 * 60 * 60 * 1000
+            ];
+            var plotData = [];
+            var labels = [];
+            angular.forEach(data.dataSeries, function (dataSeries) {
+              labels.push(dataSeries.name ? dataSeries.name : 'Other');
+            });
+            chartState.keyedColorPool.reset(labels);
+            angular.forEach(data.dataSeries, function (dataSeries, index) {
+              var label = labels[index];
+              plotData.push({
+                data: dataSeries.data,
+                label: label,
+                color: chartState.keyedColorPool.get(label)
+              });
+            });
+            if (plotData.length) {
+              chartState.plot.setData(plotData);
+            } else {
+              chartState.plot.setData([[]]);
+            }
+            chartState.plot.setupGrid();
+            chartState.plot.draw();
+            onRefreshData(data, query);
+          })
+          .error(function (data, status) {
+            $scope.showChartSpinner--;
+            if (refreshId !== chartState.currentRefreshId) {
+              return;
+            }
+            httpErrors.handler($scope)(data, status);
+          });
+    }
+
+    function renderTooltipHtml(from, to, dataIndex, highlightSeriesIndex, chartState, display) {
+      var html = '<table><thead><tr><td colspan="3" class="legendLabel" style="font-weight: 700;">';
+      html += moment(from).format('LT');
+      html += ' to ';
+      html += moment(to).format('LT');
+      html += '</td></tr></thead><tbody>';
       var plotData = chartState.plot.getData();
       var seriesIndex;
       var dataSeries;
       var value;
-      for (seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
-        dataSeries = plotData[seriesIndex];
-        value = dataSeries.data[dataIndex][1];
-        total += value;
-      }
-      if (total === 0) {
-        return 'No data';
-      }
       for (seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
         dataSeries = plotData[seriesIndex];
         value = dataSeries.data[dataIndex][1];
@@ -265,66 +217,18 @@ glowroot.factory('charts', [
         '<div style="width: 4px; height: 0px; border: 5px solid ' + dataSeries.color + '; overflow: hidden;">' +
         '</div></div></td>' +
         '<td class="legendLabel" style="padding-right: 10px;">' + dataSeries.label + '</td>' +
-        '<td><strong>' + (100 * value / total).toFixed(1) + ' %</strong></td>' +
+        '<td style="font-weight: 700;">' + display(value) + '</td>' +
         '</tr>';
       }
       html += '</tbody></table>';
       return html;
     }
 
-    function updateLocation(chartState, $scope) {
-      var query = {};
-      // add transactionType first so it is first in url
-      if ($scope.transactionType !== $scope.layout.defaultTransactionType) {
-        query['transaction-type'] = $scope.transactionType;
-      }
-      query['transaction-name'] = $scope.transactionName;
-      if (!chartState.chartFromToDefault) {
-        query.from = $scope.chartFrom;
-        query.to = $scope.chartTo;
-      }
-      if ($scope.summarySortOrder !== $scope.defaultSummarySortOrder) {
-        query['summary-sort-order'] = $scope.summarySortOrder;
-      }
-      $location.search(query).replace();
-    }
-
-    function updateSummaries(baseUrl, $scope) {
-      var query = {
-        from: $scope.chartFrom,
-        to: $scope.chartTo,
-        transactionType: $scope.transactionType,
-        sortOrder: $scope.summarySortOrder,
-        limit: $scope.summaryLimit
-      };
-      $scope.showMoreSummariesSpinner++;
-      $http.get(baseUrl + '?' + queryStrings.encodeObject(query))
-          .success(function (data) {
-            $scope.showMoreSummariesSpinner--;
-            onRefreshUpdateSummaries(data, query.from, query.to, query.sortOrder, $scope);
-          })
-          .error(httpErrors.handler($scope));
-    }
-
-    function onRefreshUpdateSummaries(data, queryFrom, queryTo, querySummarySortOrder, $scope) {
-      $scope.summariesNoData = !data.transactionSummaries.length;
-      if (data.overallSummary) {
-        // overall summary is not returned from /error/summaries
-        $scope.overallSummary = data.overallSummary;
-        $scope.lastSummaryDuration = queryTo - queryFrom;
-      }
-      $scope.transactionSummaries = data.transactionSummaries;
-      $scope.moreSummariesAvailable = data.moreSummariesAvailable;
-      $scope.lastSummarySortOrder = querySummarySortOrder;
-    }
-
     return {
-      initScope: initScope,
-      initChart: initChart,
-      refreshButtonClick: refreshButtonClick,
-      updateLocation: updateLocation,
-      updateSummaries: updateSummaries,
-      onRefreshUpdateSummaries: onRefreshUpdateSummaries
+      init: init,
+      plot: plot,
+      refreshData: refreshData,
+      renderTooltipHtml: renderTooltipHtml
     };
   }
 ]);

@@ -1,0 +1,64 @@
+<!--
+  Copyright 2015 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<div style="position: relative; min-height: 100px;">
+  <div gt-spinner
+       gt-show="showSpinner"
+       class="gt-left-aligned-spinner"
+       style="position: absolute;">
+  </div>
+  <div class="gt-panel-overlay" ng-show="showSpinner">
+  </div>
+  <div ng-show="!showSpinner && chartNoData"
+       style="display: table; width: 100%; height: 100%; margin-top: 50px;">
+    <div style="display: table-cell; text-align: center; vertical-align: middle;">
+      <div class="gt-chart-no-data">No data for this time period</div>
+    </div>
+  </div>
+  <div ng-show="showProfile">
+    <div class="gt-nowrap hide" id="profileOuter">
+      <div class="clearfix" style="padding: 10px 0;">
+        <!-- margin-bottom: 15px is for smaller screens where the link is above the select -->
+        <a class="pull-right" ng-href="transaction/flame-graph{{flameGraphQueryString()}}"
+           style="margin-bottom: 15px;">
+          <em>View flame graph (experimental)</em>
+        </a>
+
+        <div class="pull-left" style="font-weight: 700;">
+          Profile based on {{sampleCount}} samples
+        </div>
+      </div>
+      <div class="hide" style="padding: 0 0 20px;">
+        <select class="form-control gt-profile-filter gt-input-xlarge gt-inline-block"
+                onchange="this.blur()"
+                style="vertical-align: middle;">
+        </select>
+        <button popover-window="template/help/profile-filter.html"
+                popover-window-placement="left"
+                popover-window-trigger="focus"
+                class="gt-chart-help-button gt-inline-block"
+                style="border: none;">
+          <i title="Help"
+             class="fa fa-question-circle"
+             style="font-size: 28px; vertical-align: middle; margin-left: 8px;"></i>
+        </button>
+      </div>
+
+      <!-- background-color: white is to help the text not overlap the right hand panel border -->
+      <span class="gt-profile" style="background-color: white;"></span>
+    </div>
+  </div>
+</div>

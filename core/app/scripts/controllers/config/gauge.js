@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,7 +99,7 @@ glowroot.controller('ConfigGaugeCtrl', [
       };
       $scope.showMBeanObjectNameSpinner++;
       // use 'then' method to return promise
-      return $http.get('backend/config/matching-mbean-objects?' + queryStrings.encodeObject(queryData))
+      return $http.get('backend/config/matching-mbean-objects' + queryStrings.encodeObject(queryData))
           .then(function (response) {
             $scope.showMBeanObjectNameSpinner--;
             return response.data;
@@ -134,7 +134,7 @@ glowroot.controller('ConfigGaugeCtrl', [
         gaugeVersion: $scope.config.version || ''
       };
       $scope.mbeanAttributesLoading = true;
-      $http.get('backend/config/mbean-attributes?' + queryStrings.encodeObject(queryData))
+      $http.get('backend/config/mbean-attributes' + queryStrings.encodeObject(queryData))
           .success(function (data) {
             $scope.mbeanAttributesLoading = false;
             $scope.mbeanUnavailable = data.mbeanUnavailable;

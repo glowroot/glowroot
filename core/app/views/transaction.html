@@ -1,5 +1,5 @@
 <!--
-  Copyright 2014-2015 the original author or authors.
+  Copyright 2013-2015 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -17,26 +17,19 @@
   <!-- need top padding so message is not hidden under navbar -->
   <div ng-include src="'template/gt-http-error.html'" style="padding-top: 50px;"></div>
 </div>
-<div class="gt-header">
-  <div class="gt-header-page-name">
-    Flame graph (experimental)
-  </div>
+<div ui-view="header" autoscroll="false"></div>
+<div class="gt-transaction-sidebar">
+  <div ui-view="sidebar" autoscroll="false"></div>
 </div>
-<div class="icicle">
-  <div id="info">
-    Hover over a block for summary information. Click a block for details.
-    <div class="svTooltip" id="svTooltip"></div>
-  </div>
-  <!-- margin-left: -22px is to counter default padding-left: 32px -->
-  <div gt-spinner
-       gt-show="!loaded && !httpError"
-       class="gt-left-aligned-spinner"
-       style="margin-left: -22px;">
-  </div>
-  <div id="chart">
-    <div style="position: relative">
-      <div class="svPopout" id="svPopout">
-      </div>
+<div class="gt-transaction-main-column">
+  <div class="panel panel-default">
+    <div class="panel-heading" style="word-break: break-all;">
+      <h2>{{transactionName ? transactionName : 'All Transactions'}}</h2>
+    </div>
+    <div class="panel-body">
+      <div ui-view="tabs" autoscroll="false"></div>
+      <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+      <div ui-view="main" autoscroll="false"></div>
     </div>
   </div>
 </div>

@@ -61,7 +61,7 @@ module.exports = function (grunt) {
         },
         files: [
           '<%= yeoman.app %>/index.html',
-          '<%= yeoman.app %>/scripts/{,*/,*/*/}*.js',
+          '<%= yeoman.app %>/scripts/**/*.js',
           '<%= yeoman.app %>/views/**/*.html',
           '<%= yeoman.app %>/template/**/*.html',
           // watch:less output
@@ -75,10 +75,8 @@ module.exports = function (grunt) {
     // The actual grunt server settings
     connect: {
       rules: [
-        {from: '^/performance(\\?.*)?$', to: '/index.html'},
-        {from: '^/performance/flame-graph\\?.*$', to: '/index.html'},
-        {from: '^/errors(\\?.*)?$', to: '/index.html'},
-        {from: '^/traces(\\?.*)?$', to: '/index.html'},
+        {from: '^/transaction/.*$', to: '/index.html'},
+        {from: '^/error/.*$', to: '/index.html'},
         {from: '^/jvm/.*$', to: '/index.html'},
         {from: '^/config/.*$', to: '/index.html'},
         {from: '^/login$', to: '/index.html'}
@@ -151,7 +149,7 @@ module.exports = function (grunt) {
       all: {
         src: [
           'Gruntfile.js',
-          '<%= yeoman.app %>/scripts/{,*/,*/*/}*.js'
+          '<%= yeoman.app %>/scripts/**/*.js'
         ]
       }
     },
@@ -210,7 +208,7 @@ module.exports = function (grunt) {
         htmlmin: {
           collapseWhitespace: true,
           // conservativeCollapse keeps one space, this helps prevent collapsing intentional space between
-          // two inline elements, e.g. in "Performance | Servlet" header
+          // two inline elements, e.g. in "Transactions | Servlet" header
           // these issues don't appear when running under grunt serve (since no minification) so easy to miss
           // and better to use conservative option here
           conservativeCollapse: true,
@@ -307,6 +305,8 @@ module.exports = function (grunt) {
           /\.has-error.*/,
           // .navbar-inverse is used by navbar
           '.navbar-inverse .navbar-nav > .active > a',
+          // .nav-tabs is used by transaction and error tabs
+          '.nav-tabs > li.active > a',
           // .flot-text is used by flot charts
           '.flot-text',
           // .modal used by trace modal

@@ -1,0 +1,74 @@
+<!--
+  Copyright 2015 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="gt-header clearfix"
+     style="padding-bottom: 46px;">
+  <div class="gt-header-page-name pull-left">
+    <div ng-show="layout.transactionTypes.length > 1"
+         style="margin-top: -16px;">
+      {{headerDisplay}}
+      <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
+           while chrome guesses the placement of the border based on default font and then it moves slightly
+           once font is available -->
+      <span class="gt-inline-block gt-separator">
+        |
+      </span>
+      <span class="gt-inline-block gt-header-menu">
+        <span class="dropdown">
+          <div data-toggle="dropdown" class="dropdown-toggle">
+            {{transactionType}}
+            <span class="gt-large-caret"></span>
+          </div>
+          <ul class="dropdown-menu">
+            <li ng-repeat="tt in layout.transactionTypes"
+                ng-hide="tt === transactionType">
+              <a ng-href="{{defaultTabUrl}}{{headerQueryString(tt)}}">
+                {{tt}}
+              </a>
+            </li>
+          </ul>
+        </span>
+      </span>
+    </div>
+    <div ng-hide="layout.transactionTypes.length > 1"
+         style="padding-bottom: 4px;">
+      {{headerDisplay}}
+    </div>
+  </div>
+  <div class="pull-right"
+       ng-form
+       gt-form-with-primary-button>
+    <span style="font-size: 20px; padding-right: 15px; vertical-align: middle; color: #555;">
+      {{timeDisplay()}}
+    </span>
+    <!-- height 42px is needed to force IE to use the "right" height, otherwise it is 2 pixels off and date text
+         doesn't line up with time text -->
+    <span gt-datepicker
+          gt-model="filterDate"
+          gt-id="filterDate"
+          gt-max-width="7em"
+          style="height: 42px; display: inline-block; vertical-align: middle;">
+    </span>
+    <button popover-window="template/help/chart.html"
+            popover-window-placement="left"
+            popover-window-trigger="focus"
+            class="gt-chart-help-button gt-inline-block"
+            style="border: none;">
+      <i title="Help"
+         class="fa fa-question-circle"
+         style="font-size: 28px; vertical-align: middle; margin-left: 8px;"></i>
+    </button>
+  </div>
+</div>

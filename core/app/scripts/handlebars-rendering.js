@@ -373,7 +373,7 @@ HandlebarsRendering = (function () {
     }
     if (!$selector.data('gtLoaded')) {
       if (profile) {
-        // this is an export file
+        // this is an export file or transaction profile tab
         buildMergedStackTree(profile, $selector);
         $selector.removeClass('hide');
         $selector.data('gtLoaded', true);
@@ -606,6 +606,8 @@ HandlebarsRendering = (function () {
       // build filter dropdown
       var $profileFilter = $selector.find('.gt-profile-filter');
       $profileFilter.removeClass('hide');
+      // remove hide from parent is for aggregate profile so the hide/show contains the help icon
+      $profileFilter.parent().removeClass('hide');
       $.each(orderedNodes, function (i, node) {
         $profileFilter.append($('<option />').val(node.name)
             .text(node.name + ' (' + rootNode.metricCounts[node.name] + ')'));
@@ -620,7 +622,7 @@ HandlebarsRendering = (function () {
 
   function calculateMetricCounts(node) {
     var mergedCounts = {};
-    if (node.leafThreadState && node.metricNames.length) {
+    if (node.leafThreadState && node.metricNames && node.metricNames.length) {
       var partial = '';
       $.each(node.metricNames, function (i, metricName) {
         if (i > 0) {

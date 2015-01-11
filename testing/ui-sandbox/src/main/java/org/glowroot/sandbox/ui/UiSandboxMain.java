@@ -19,6 +19,7 @@ import java.io.File;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
@@ -37,7 +38,7 @@ public class UiSandboxMain {
     private static final boolean useReverseProxy = false;
 
     static {
-        System.setProperty("glowroot.internal.aggregateInterval", "15");
+        System.setProperty("glowroot.internal.aggregateInterval", "60");
         if (useReverseProxy) {
             System.setProperty("glowroot.ui.base", "http://localhost:9000/xyzzy/");
         }
@@ -79,7 +80,7 @@ public class UiSandboxMain {
         public void executeApp() throws InterruptedException {
             while (true) {
                 Stopwatch stopwatch = Stopwatch.createStarted();
-                while (stopwatch.elapsed(SECONDS) < 30) {
+                while (stopwatch.elapsed(SECONDS) < 300) {
                     // a very short trace that will have an empty profile
                     new NestableCall(1, 10, 100).execute();
                     // a trace that will have profile tree with only a single leaf

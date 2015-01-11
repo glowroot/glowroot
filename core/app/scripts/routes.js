@@ -22,20 +22,20 @@ glowroot.config([
   '$urlRouterProvider',
   function ($provide, $stateProvider, $urlRouterProvider) {
     var waitForLayout;
-    if (!window.layout) {
+    if (window.layout) {
+      waitForLayout = function () {};
+    } else {
       // some controllers need to wait for layout when running under grunt serve
-      waitForLayout = {
-        dummy: ['$q', '$rootScope', function ($q, $rootScope) {
-          var deferred = $q.defer();
-          var unregisterWatch = $rootScope.$watch('layout', function (value) {
-            if (value) {
-              deferred.resolve();
-              unregisterWatch();
-            }
-          });
-          return deferred.promise;
-        }]
-      };
+      waitForLayout = ['$q', '$rootScope', function ($q, $rootScope) {
+        var deferred = $q.defer();
+        var unregisterWatch = $rootScope.$watch('layout', function (value) {
+          if (value) {
+            deferred.resolve();
+            unregisterWatch();
+          }
+        });
+        return deferred.promise;
+      }];
     }
     // overriding autoscroll=true behavior to scroll to the top of the page
     $provide.decorator('$uiViewScroll', [
@@ -45,21 +45,115 @@ glowroot.config([
         };
       }
     ]);
-    $urlRouterProvider.otherwise('performance');
-    $stateProvider.state('/performance', {
-      url: '/performance?transaction-type',
-      templateUrl: 'views/performance.html',
-      controller: 'PerformanceCtrl',
-      // performance controller needs to wait for layout when running under grunt serve
-      resolve: waitForLayout
+    $urlRouterProvider.otherwise('transaction/overview');
+    $stateProvider.state('transaction', {
+      abstract: true,
+      url: '/transaction?transaction-type',
+      templateUrl: 'views/transaction.html',
+      controller: 'TransactionCtrl',
+      resolve: {
+        headerDisplay: function () {
+          return 'Transactions';
+        },
+        shortName: function () {
+          return 'transaction';
+        },
+        defaultTabUrl: function () {
+          return 'transaction/overview';
+        },
+        defaultSummarySortOrder: function () {
+          return 'total-time';
+        },
+        // transaction controller needs to wait for layout when running under grunt serve
+        waitForLayout: waitForLayout
+      }
     });
-    $stateProvider.state('performance-flame-graph', {
-      url: '/performance/flame-graph',
-      templateUrl: 'views/performance-flame-graph.html',
-      controller: 'PerformanceFlameGraphCtrl',
+    $stateProvider.state('transaction.detail', {
+      abstract: true,
+      views: {
+        header: {
+          templateUrl: 'views/transaction/header.html',
+          controller: 'TransactionHeaderCtrl'
+        },
+        sidebar: {
+          templateUrl: 'views/transaction/sidebar.html',
+          controller: 'TransactionSidebarCtrl',
+          resolve: {
+            summarySortOrders: function () {
+              return {
+                'total-time': 'By percent of total time',
+                'average-time': 'By average time',
+                'throughput': 'By throughput (per min)'
+              };
+            },
+            summaryValueFn: function () {
+              return function (summary, sortOrder, overallSummary, durationMillis) {
+                if (sortOrder === 'total-time') {
+                  return (100 * summary.totalMicros / overallSummary.totalMicros).toFixed(1) + ' %';
+                } else if (sortOrder === 'average-time') {
+                  return (summary.totalMicros / (1000 * summary.transactionCount)).toFixed(1) + ' ms';
+                } else if (sortOrder === 'throughput') {
+                  return (60 * 1000 * summary.transactionCount / durationMillis).toFixed(1) + '/min';
+                }
+              };
+            }
+          }
+        },
+        tabs: {
+          templateUrl: 'views/transaction/tabs.html',
+          controller: 'TransactionTabCtrl'
+        }
+      }
+    });
+    $stateProvider.state('transaction.detail.overview', {
+      url: '/overview?transaction-name',
+      views: {
+        'main@transaction': {
+          templateUrl: 'views/transaction/overview.html',
+          controller: 'TransactionOverviewCtrl'
+        }
+      }
+    });
+    $stateProvider.state('transaction.detail.metrics', {
+      url: '/metrics?transaction-name',
+      views: {
+        'main@transaction': {
+          templateUrl: 'views/transaction/metrics.html',
+          controller: 'TransactionMetricsCtrl'
+        }
+      }
+    });
+    $stateProvider.state('transaction.detail.profile', {
+      url: '/profile?transaction-name',
+      views: {
+        'main@transaction': {
+          templateUrl: 'views/transaction/profile.html',
+          controller: 'TransactionProfileCtrl'
+        }
+      }
+    });
+    $stateProvider.state('transaction.detail.traces', {
+      url: '/traces?transaction-name',
+      views: {
+        'main@transaction': {
+          templateUrl: 'views/transaction/traces.html',
+          controller: 'TracesCtrl',
+          resolve: {
+            errorOnly: function () {
+              return false;
+            }
+          }
+        }
+      }
+    });
+    $stateProvider.state('transaction-flame-graph', {
+      url: '/transaction/flame-graph',
+      templateUrl: 'views/transaction/flame-graph.html',
+      controller: 'TransactionFlameGraphCtrl',
       resolve: {
         dummy: ['$q', '$timeout', function ($q, $timeout) {
           var deferred = $q.defer();
+
           function checkForD3() {
             if (window.d3) {
               deferred.resolve();
@@ -67,24 +161,93 @@ glowroot.config([
               $timeout(checkForD3, 100);
             }
           }
+
           $timeout(checkForD3, 100);
           return deferred.promise;
-        }]
+        }],
+        // flame graph controller needs to wait for layout when running under grunt serve
+        waitForLayout: waitForLayout
       }
     });
-    $stateProvider.state('errors', {
-      url: '/errors?transaction-type',
-      templateUrl: 'views/errors.html',
-      controller: 'ErrorsCtrl',
-      // errors controller needs to wait for layout when running under grunt serve
-      resolve: waitForLayout
+    $stateProvider.state('error', {
+      abstract: true,
+      url: '/error?transaction-type',
+      templateUrl: 'views/transaction.html',
+      controller: 'TransactionCtrl',
+      resolve: {
+        headerDisplay: function () {
+          return 'Errors';
+        },
+        shortName: function () {
+          return 'error';
+        },
+        defaultTabUrl: function () {
+          return 'error/messages';
+        },
+        defaultSummarySortOrder: function () {
+          return 'error-count';
+        },
+        // error controller needs to wait for layout when running under grunt serve
+        waitForLayout: waitForLayout
+      }
     });
-    $stateProvider.state('traces', {
-      url: '/traces',
-      templateUrl: 'views/traces.html',
-      controller: 'TracesCtrl',
-      // traces controller needs to wait for layout when running under grunt serve
-      resolve: waitForLayout
+    $stateProvider.state('error.detail', {
+      abstract: true,
+      views: {
+        header: {
+          templateUrl: 'views/transaction/header.html',
+          controller: 'TransactionHeaderCtrl'
+        },
+        sidebar: {
+          templateUrl: 'views/transaction/sidebar.html',
+          controller: 'TransactionSidebarCtrl',
+          resolve: {
+            summarySortOrders: function () {
+              return {
+                'error-count': 'By error count',
+                'error-rate': 'By error rate'
+              };
+            },
+            summaryValueFn: function () {
+              return function (summary, sortOrder) {
+                if (sortOrder === 'error-count') {
+                  return summary.errorCount;
+                } else if (sortOrder === 'error-rate') {
+                  return (100 * summary.errorCount / summary.transactionCount).toFixed(1) + ' %';
+                }
+              };
+            }
+          }
+        },
+        tabs: {
+          // same controller, just different html
+          templateUrl: 'views/transaction/error-tabs.html',
+          controller: 'TransactionTabCtrl'
+        }
+      }
+    });
+    $stateProvider.state('error.detail.messages', {
+      url: '/messages?transaction-name',
+      views: {
+        'main@error': {
+          templateUrl: 'views/transaction/error-messages.html',
+          controller: 'ErrorMessagesCtrl'
+        }
+      }
+    });
+    $stateProvider.state('error.detail.traces', {
+      url: '/traces?transaction-name',
+      views: {
+        'main@error': {
+          templateUrl: 'views/transaction/traces.html',
+          controller: 'TracesCtrl',
+          resolve: {
+            errorOnly: function () {
+              return true;
+            }
+          }
+        }
+      }
     });
     $stateProvider.state('jvm', {
       url: '/jvm',
@@ -96,7 +259,9 @@ glowroot.config([
       templateUrl: 'views/jvm/gauges.html',
       controller: 'JvmGaugesCtrl',
       // gauges controller needs to wait for layout when running under grunt serve
-      resolve: waitForLayout
+      resolve: {
+        waitForLayout: waitForLayout
+      }
     });
     $stateProvider.state('jvm.mbeanTree', {
       url: '/mbean-tree',

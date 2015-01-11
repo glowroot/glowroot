@@ -168,8 +168,8 @@ public class DataSource {
         }
     }
 
-    <T> /*@Nullable*/T query(@Untainted String sql, ResultSetExtractor</*@NonNull*/T> rse,
-            Object... args) throws SQLException {
+    </*@Nullable*/T> T query(@Untainted String sql, ResultSetExtractor<T> rse, Object... args)
+            throws SQLException {
         debug(sql, args);
         synchronized (lock) {
             if (closing) {
@@ -273,8 +273,8 @@ public class DataSource {
     }
 
     // lock must be acquired prior to calling this method
-    private <T> T queryUnderLock(@Untainted String sql, Object[] args,
-            ResultSetExtractor</*@NonNull*/T> rse) throws SQLException {
+    private </*@Nullable*/T> T queryUnderLock(@Untainted String sql, Object[] args,
+            ResultSetExtractor<T> rse) throws SQLException {
         PreparedStatement preparedStatement = prepareStatement(sql);
         for (int i = 0; i < args.length; i++) {
             preparedStatement.setObject(i + 1, args[i]);
@@ -362,7 +362,7 @@ public class DataSource {
         T mapRow(ResultSet resultSet) throws SQLException;
     }
 
-    interface ResultSetExtractor<T> {
+    interface ResultSetExtractor<T extends /*@Nullable*/Object> {
         T extractData(ResultSet resultSet) throws SQLException;
     }
 

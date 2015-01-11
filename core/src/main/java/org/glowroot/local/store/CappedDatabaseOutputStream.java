@@ -38,6 +38,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 class CappedDatabaseOutputStream extends OutputStream {
 
     static final int HEADER_SKIP_BYTES = 20;
+    static final int BLOCK_HEADER_SKIP_BYTES = 8;
 
     private static final Logger logger = LoggerFactory.getLogger(CappedDatabaseOutputStream.class);
 
@@ -59,6 +60,7 @@ class CappedDatabaseOutputStream extends OutputStream {
     private long sizeBytes;
 
     private long blockStartIndex;
+    private long blockStartPosition;
 
     private final AtomicBoolean fsyncNeeded = new AtomicBoolean();
     private final AtomicLong lastFsyncTick = new AtomicLong();
@@ -101,24 +103,38 @@ class CappedDatabaseOutputStream extends OutputStream {
     }
 
     void startBlock() {
+        long currPosition = (currIndex - lastResizeBaseIndex) % sizeBytes;
+        long remainingBytes = sizeBytes - currPosition;
+        if (remainingBytes < BLOCK_HEADER_SKIP_BYTES) {
+            // not enough space for contiguous block header
+            currIndex += remainingBytes;
+        }
         blockStartIndex = currIndex;
+        blockStartPosition = (currIndex - lastResizeBaseIndex) % sizeBytes;
+        // make space for block size to be written at start position
+        currIndex += BLOCK_HEADER_SKIP_BYTES;
     }
 
-    FileBlock endBlock() {
+    long endBlock() throws IOException {
+        out.seek(HEADER_SKIP_BYTES + blockStartPosition);
+        out.writeLong(currIndex - blockStartIndex - BLOCK_HEADER_SKIP_BYTES);
         fsyncNeeded.set(true);
         if (ticker.read() - lastFsyncTick.get() > SECONDS.toNanos(5)) {
             // scheduled fsyncs must have fallen behind (since they share a single thread with other
             // tasks in order to keep number of threads down), so force an fsync now
             fsyncIfNeeded();
         }
-        return ImmutableFileBlock.of(blockStartIndex, currIndex - blockStartIndex);
+        return blockStartIndex;
     }
 
-    boolean isOverwritten(FileBlock block) {
+    boolean isOverwritten(long cappedId) {
+        return cappedId < getSmallestNonOverwrittenId();
+    }
+
+    long getSmallestNonOverwrittenId() {
         // need to check lastResizeBaseIndex in case it was recently resized larger, in which case
         // currIndex - sizeBytes would be less than lastResizeBaseIndex
-        return block.startIndex() < lastResizeBaseIndex
-                || block.startIndex() < currIndex - sizeBytes;
+        return Math.max(lastResizeBaseIndex, currIndex - sizeBytes);
     }
 
     // this is ok to read outside of external synchronization around startBlock()/write()/endBlock()

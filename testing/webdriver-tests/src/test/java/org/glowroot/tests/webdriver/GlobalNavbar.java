@@ -28,16 +28,12 @@ class GlobalNavbar {
         this.driver = driver;
     }
 
-    WebElement getPerformanceLink() {
-        return Utils.withWait(driver, xpath("//nav//a[@href='performance']"));
+    WebElement getTransactionsLink() {
+        return Utils.withWait(driver, xpath("//nav//a[@href='transaction/overview']"));
     }
 
     WebElement getErrorsLink() {
-        return Utils.withWait(driver, xpath("//nav//a[@href='errors']"));
-    }
-
-    WebElement getTracesLink() {
-        return Utils.withWait(driver, xpath("//nav//a[@href='traces']"));
+        return Utils.withWait(driver, xpath("//nav//a[@href='error/messages']"));
     }
 
     WebElement getJvmLink() {

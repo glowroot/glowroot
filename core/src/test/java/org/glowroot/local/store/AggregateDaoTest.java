@@ -28,10 +28,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.collector.Aggregate;
-import org.glowroot.collector.Existence;
 import org.glowroot.collector.ImmutableAggregate;
 import org.glowroot.common.Ticker;
-import org.glowroot.local.store.AggregateDao.PerformanceSummarySortOrder;
+import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -78,7 +77,7 @@ public class AggregateDaoTest {
                 .errorCount(0)
                 .transactionCount(10)
                 .metrics("")
-                .profileExistence(Existence.NO)
+                .histogram(new byte[0])
                 .profileSampleCount(0)
                 .build();
         List<Aggregate> transactionAggregates = Lists.newArrayList();
@@ -90,7 +89,7 @@ public class AggregateDaoTest {
                 .errorCount(0)
                 .transactionCount(1)
                 .metrics("")
-                .profileExistence(Existence.NO)
+                .histogram(new byte[0])
                 .profileSampleCount(0)
                 .build());
         transactionAggregates.add(ImmutableAggregate.builder()
@@ -101,7 +100,7 @@ public class AggregateDaoTest {
                 .errorCount(0)
                 .transactionCount(2)
                 .metrics("")
-                .profileExistence(Existence.NO)
+                .histogram(new byte[0])
                 .profileSampleCount(0)
                 .build());
         transactionAggregates.add(ImmutableAggregate.builder()
@@ -112,7 +111,7 @@ public class AggregateDaoTest {
                 .errorCount(0)
                 .transactionCount(7)
                 .metrics("")
-                .profileExistence(Existence.NO)
+                .histogram(new byte[0])
                 .profileSampleCount(0)
                 .build());
         aggregateDao.store(ImmutableList.of(overallAggregate), transactionAggregates);
@@ -125,7 +124,7 @@ public class AggregateDaoTest {
                 .errorCount(0)
                 .transactionCount(10)
                 .metrics("")
-                .profileExistence(Existence.NO)
+                .histogram(new byte[0])
                 .profileSampleCount(0)
                 .build();
         List<Aggregate> transactionAggregates2 = Lists.newArrayList();
@@ -137,7 +136,7 @@ public class AggregateDaoTest {
                 .errorCount(0)
                 .transactionCount(1)
                 .metrics("")
-                .profileExistence(Existence.NO)
+                .histogram(new byte[0])
                 .profileSampleCount(0)
                 .build());
         transactionAggregates2.add(ImmutableAggregate.builder()
@@ -148,7 +147,7 @@ public class AggregateDaoTest {
                 .errorCount(0)
                 .transactionCount(2)
                 .metrics("")
-                .profileExistence(Existence.NO)
+                .histogram(new byte[0])
                 .profileSampleCount(0)
                 .build());
         transactionAggregates2.add(ImmutableAggregate.builder()
@@ -159,22 +158,22 @@ public class AggregateDaoTest {
                 .errorCount(0)
                 .transactionCount(7)
                 .metrics("")
-                .profileExistence(Existence.NO)
+                .histogram(new byte[0])
                 .profileSampleCount(0)
                 .build());
 
         aggregateDao.store(ImmutableList.of(overallAggregate2), transactionAggregates2);
         // when
         List<Aggregate> overallAggregates = aggregateDao.readOverallAggregates("a type", 0, 100000);
-        ImmutablePerformanceSummaryQuery query = ImmutablePerformanceSummaryQuery.builder()
+        ImmutableTransactionSummaryQuery query = ImmutableTransactionSummaryQuery.builder()
                 .transactionType("a type")
                 .from(0)
                 .to(100000)
-                .sortOrder(PerformanceSummarySortOrder.TOTAL_TIME)
+                .sortOrder(TransactionSummarySortOrder.TOTAL_TIME)
                 .limit(10)
                 .build();
-        QueryResult<PerformanceSummary> queryResult =
-                aggregateDao.readTransactionPerformanceSummaries(query);
+        QueryResult<TransactionSummary> queryResult =
+                aggregateDao.readTransactionSummaries(query);
         // then
         assertThat(overallAggregates).hasSize(2);
         assertThat(queryResult.records()).hasSize(3);

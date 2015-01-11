@@ -49,20 +49,24 @@ public class BasicSmokeTest extends WebDriverTest {
     }
 
     @Test
-    public void shouldCheckPerformancePages() throws Exception {
+    public void shouldCheckTransactionPages() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
 
         app.open();
 
-        Utils.withWait(driver, By.xpath("//button[contains(., ' stack trace samples')]")).click();
+        Utils.withWait(driver, By.partialLinkText("Metrics")).click();
+        Utils.withWait(driver, By.partialLinkText("Traces")).click();
+        Utils.withWait(driver, By.partialLinkText("Profile")).click();
         Utils.withWait(driver, By.linkText("View flame graph (experimental)")).click();
         // give flame graph a chance to render (only for visual when running locally)
         Thread.sleep(500);
-        globalNavbar.getPerformanceLink().click();
+        globalNavbar.getTransactionsLink().click();
         Utils.withWait(driver, By.partialLinkText("/jdbcservlet")).click();
-        Utils.withWait(driver, By.xpath("//button[contains(., ' stack trace samples')]")).click();
+        Utils.withWait(driver, By.partialLinkText("Metrics")).click();
+        Utils.withWait(driver, By.partialLinkText("Traces")).click();
+        Utils.withWait(driver, By.partialLinkText("Profile")).click();
         Utils.withWait(driver, By.linkText("View flame graph (experimental)")).click();
     }
 
@@ -77,18 +81,10 @@ public class BasicSmokeTest extends WebDriverTest {
 
         Utils.withWait(driver, By.xpath("//input[@ng-model='errorFilter']")).sendKeys("xyz");
         Utils.withWait(driver, By.xpath("//button[@ng-click='refreshButtonClick()']")).click();
+        Utils.withWait(driver, By.partialLinkText("Traces")).click();
         globalNavbar.getErrorsLink().click();
         Utils.withWait(driver, By.partialLinkText("/errorservlet")).click();
-    }
-
-    @Test
-    public void shouldCheckTracesPage() throws Exception {
-        // given
-        App app = new App(driver, "http://localhost:" + container.getUiPort());
-        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
-
-        app.open();
-        globalNavbar.getTracesLink().click();
+        Utils.withWait(driver, By.partialLinkText("Traces")).click();
     }
 
     @Test

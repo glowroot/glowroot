@@ -87,7 +87,7 @@ public class LocalUiModule {
         aggregateCommonService = new AggregateCommonService(aggregateDao);
         traceCommonService = new TraceCommonService(traceDao, transactionRegistry,
                 transactionCollector, clock, ticker);
-        PerformanceJsonService performanceJsonService = new PerformanceJsonService(
+        TransactionJsonService transactionJsonService = new TransactionJsonService(
                 aggregateCommonService, storageModule.getAggregateDao(), traceDao, clock,
                 collectorModule.getFixedAggregateIntervalSeconds());
         TracePointJsonService tracePointJsonService = new TracePointJsonService(traceDao,
@@ -118,7 +118,7 @@ public class LocalUiModule {
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(layoutJsonService);
-        jsonServices.add(performanceJsonService);
+        jsonServices.add(transactionJsonService);
         jsonServices.add(tracePointJsonService);
         jsonServices.add(traceJsonService);
         jsonServices.add(errorJsonService);

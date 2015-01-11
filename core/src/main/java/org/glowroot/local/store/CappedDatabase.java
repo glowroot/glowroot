@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,10 +61,10 @@ public class CappedDatabase {
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
     }
 
-    FileBlock write(CharSource charSource) {
+    long write(CharSource charSource) {
         synchronized (lock) {
             if (closing) {
-                return FileBlock.expired();
+                return -1;
             }
             out.startBlock();
             try {
@@ -72,20 +72,24 @@ public class CappedDatabase {
                         new OutputStreamWriter(new LZFOutputStream(out), Charsets.UTF_8);
                 charSource.copyTo(compressedWriter);
                 compressedWriter.flush();
+                return out.endBlock();
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
-                return FileBlock.expired();
+                return -1;
             }
-            return out.endBlock();
         }
     }
 
-    CharSource read(FileBlock block, String overwrittenResponse) {
-        return new FileBlockCharSource(block, overwrittenResponse);
+    CharSource read(long cappedId, String overwrittenResponse) {
+        return new CappedBlockCharSource(cappedId, overwrittenResponse);
     }
 
-    boolean isExpired(FileBlock block) {
-        return out.isOverwritten(block);
+    boolean isExpired(long cappedId) {
+        return out.isOverwritten(cappedId);
+    }
+
+    long getSmallestNonExpiredId() {
+        return out.getSmallestNonOverwrittenId();
     }
 
     public void resize(int newSizeKb) throws IOException {
@@ -109,50 +113,58 @@ public class CappedDatabase {
         Runtime.getRuntime().removeShutdownHook(shutdownHookThread);
     }
 
-    private class FileBlockCharSource extends CharSource {
+    private class CappedBlockCharSource extends CharSource {
 
-        private final FileBlock block;
+        private final long cappedId;
         private final String overwrittenResponse;
 
-        private FileBlockCharSource(FileBlock block, String overwrittenResponse) {
-            this.block = block;
+        private CappedBlockCharSource(long cappedId, String overwrittenResponse) {
+            this.cappedId = cappedId;
             this.overwrittenResponse = overwrittenResponse;
         }
 
         @Override
         public Reader openStream() throws IOException {
-            if (out.isOverwritten(block)) {
+            if (out.isOverwritten(cappedId)) {
                 return CharSource.wrap(overwrittenResponse).openStream();
             }
-            // it's important to wrap FileBlockInputStream in a BufferedInputStream to prevent lots
+            // it's important to wrap CappedBlockInputStream in a BufferedInputStream to prevent
+            // lots
             // of small reads from the underlying RandomAccessFile
             final int bufferSize = 32768;
             return new InputStreamReader(new LZFInputStream(new BufferedInputStream(
-                    new FileBlockInputStream(block), bufferSize)), Charsets.UTF_8);
+                    new CappedBlockInputStream(cappedId), bufferSize)), Charsets.UTF_8);
         }
     }
 
-    private class FileBlockInputStream extends InputStream {
+    private class CappedBlockInputStream extends InputStream {
 
-        private final FileBlock block;
+        private final long cappedId;
+        private long blockLength = -1;
         private long blockIndex;
 
-        private FileBlockInputStream(FileBlock block) {
-            this.block = block;
+        private CappedBlockInputStream(long cappedId) {
+            this.cappedId = cappedId;
         }
 
         @Override
         public int read(byte[] bytes, int off, int len) throws IOException {
-            long blockRemaining = block.length() - blockIndex;
-            if (blockRemaining == 0) {
+            if (blockIndex == blockLength) {
                 return -1;
             }
             synchronized (lock) {
-                if (out.isOverwritten(block)) {
+                if (out.isOverwritten(cappedId)) {
                     throw new IOException("Block rolled over mid-read");
                 }
-                long filePosition = out.convertToFilePosition(block.startIndex() + blockIndex);
+                if (blockLength == -1) {
+                    long filePosition = out.convertToFilePosition(cappedId);
+                    inFile.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + filePosition);
+                    blockLength = inFile.readLong();
+                }
+                long filePosition = out.convertToFilePosition(cappedId
+                        + CappedDatabaseOutputStream.BLOCK_HEADER_SKIP_BYTES + blockIndex);
                 inFile.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + filePosition);
+                long blockRemaining = blockLength - blockIndex;
                 long fileRemaining = out.getSizeKb() * 1024L - filePosition;
                 int numToRead = (int) Longs.min(len, blockRemaining, fileRemaining);
                 inFile.readFully(bytes, off, numToRead);
@@ -168,10 +180,10 @@ public class CappedDatabase {
         }
 
         // delegate to read(...) above, though this should never get called since
-        // FileBlockInputStream is wrapped in BufferedInputStream
+        // CappedBlockInputStream is wrapped in BufferedInputStream
         @Override
         public int read() throws IOException {
-            logger.warn("read() performs very poorly, FileBlockInputStream should always be"
+            logger.warn("read() performs very poorly, CappedBlockInputStream should always be"
                     + " wrapped in BufferedInputStream");
             byte[] bytes = new byte[1];
             if (read(bytes, 0, 1) == -1) {

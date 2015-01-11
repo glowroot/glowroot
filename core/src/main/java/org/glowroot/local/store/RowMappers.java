@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,29 +15,22 @@
  */
 package org.glowroot.local.store;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import javax.annotation.Nullable;
-
 import org.glowroot.collector.Existence;
-import org.glowroot.local.store.FileBlock.InvalidBlockIdFormatException;
 
 class RowMappers {
 
     private RowMappers() {}
 
-    static Existence getExistence(@Nullable String fileBlockId, CappedDatabase cappedDatabase)
-            throws SQLException {
-        if (fileBlockId == null) {
+    static Existence getExistence(ResultSet resultSet, int columnIndex,
+            CappedDatabase cappedDatabase) throws SQLException {
+        long cappedId = resultSet.getLong(columnIndex);
+        if (resultSet.wasNull()) {
             return Existence.NO;
         }
-        FileBlock fileBlock;
-        try {
-            fileBlock = FileBlock.from(fileBlockId);
-        } catch (InvalidBlockIdFormatException e) {
-            throw new SQLException(e);
-        }
-        if (cappedDatabase.isExpired(fileBlock)) {
+        if (cappedDatabase.isExpired(cappedId)) {
             return Existence.EXPIRED;
         } else {
             return Existence.YES;

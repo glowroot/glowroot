@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class CappedDatabaseOutputStreamTest {
 
+    private static final int BLOCK_HEADER_SIZE = 8;
+
     private File tempFile;
     private ScheduledExecutorService scheduledExecutor;
     private CappedDatabaseOutputStream cappedOut;
@@ -64,17 +66,19 @@ public class CappedDatabaseOutputStreamTest {
         cappedOut.startBlock();
         out.write(text);
         out.flush();
-        FileBlock block = cappedOut.endBlock();
+        long cappedId = cappedOut.endBlock();
         cappedOut.sync();
         // then
-        assertThat(block.startIndex()).isEqualTo(0);
+        assertThat(cappedId).isEqualTo(0);
         long currIndex = in.readLong();
         int cappedDatabaseSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();
-        assertThat(currIndex).isEqualTo(10);
+        assertThat(currIndex).isEqualTo(10 + BLOCK_HEADER_SIZE);
         assertThat(cappedDatabaseSizeKb).isEqualTo(1);
         assertThat(lastCompactionBaseIndex).isEqualTo(0);
-        byte[] bytes = new byte[10];
+        long blockSize = in.readLong();
+        assertThat(blockSize).isEqualTo(10);
+        byte[] bytes = new byte[(int) blockSize];
         in.readFully(bytes, 0, bytes.length);
         String content = new String(bytes);
         assertThat(content).isEqualTo(text);
@@ -98,20 +102,22 @@ public class CappedDatabaseOutputStreamTest {
         cappedOut.startBlock();
         out.write(text);
         out.flush();
-        FileBlock block = cappedOut.endBlock();
+        long cappedId = cappedOut.endBlock();
         // then
-        assertThat(block.startIndex()).isEqualTo(600);
+        assertThat(cappedId).isEqualTo(600 + BLOCK_HEADER_SIZE);
         long currIndex = in.readLong();
         int cappedDatabaseSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();
-        assertThat(currIndex).isEqualTo(1200);
+        assertThat(currIndex).isEqualTo(1200 + 2 * BLOCK_HEADER_SIZE);
         assertThat(cappedDatabaseSizeKb).isEqualTo(1);
         assertThat(lastCompactionBaseIndex).isEqualTo(0);
-        byte[] bytes = new byte[600];
-        in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + 600);
-        in.readFully(bytes, 0, 424);
+        in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + 600 + BLOCK_HEADER_SIZE);
+        long blockSize = in.readLong();
+        assertThat(blockSize).isEqualTo(600);
+        byte[] bytes = new byte[(int) blockSize];
+        in.readFully(bytes, 0, 408);
         in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES);
-        in.readFully(bytes, 424, 176);
+        in.readFully(bytes, 408, 192);
         String content = new String(bytes);
         assertThat(content).isEqualTo(text);
     }
@@ -138,17 +144,19 @@ public class CappedDatabaseOutputStreamTest {
         cappedOut.startBlock();
         out.write(text);
         out.flush();
-        FileBlock block = cappedOut.endBlock();
+        long cappedId = cappedOut.endBlock();
         // then
-        assertThat(block.startIndex()).isEqualTo(1200);
+        assertThat(cappedId).isEqualTo(1200 + 2 * BLOCK_HEADER_SIZE);
         long currIndex = in.readLong();
         int cappedDatabaseSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();
-        assertThat(currIndex).isEqualTo(1800);
+        assertThat(currIndex).isEqualTo(1800 + 3 * BLOCK_HEADER_SIZE);
         assertThat(cappedDatabaseSizeKb).isEqualTo(1);
         assertThat(lastCompactionBaseIndex).isEqualTo(0);
-        byte[] bytes = new byte[600];
-        in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + 176);
+        in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + 192);
+        long blockSize = in.readLong();
+        assertThat(blockSize).isEqualTo(600);
+        byte[] bytes = new byte[(int) blockSize];
         in.readFully(bytes, 0, bytes.length);
         String content = new String(bytes);
         assertThat(content).isEqualTo(text);
@@ -170,22 +178,24 @@ public class CappedDatabaseOutputStreamTest {
         cappedOut.startBlock();
         out.write(text);
         out.flush();
-        FileBlock block = cappedOut.endBlock();
+        long cappedId = cappedOut.endBlock();
         // when
         // have to close in before resizing
         in.close();
         cappedOut.resize(2);
         in = new RandomAccessFile(tempFile, "r");
         // then
-        assertThat(block.startIndex()).isEqualTo(600);
+        assertThat(cappedId).isEqualTo(600 + BLOCK_HEADER_SIZE);
         long currIndex = in.readLong();
         int cappedDatabaseSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();
-        assertThat(currIndex).isEqualTo(1200);
+        assertThat(currIndex).isEqualTo(1200 + 2 * BLOCK_HEADER_SIZE);
         assertThat(cappedDatabaseSizeKb).isEqualTo(2);
-        assertThat(lastCompactionBaseIndex).isEqualTo(176);
-        byte[] bytes = new byte[600];
-        in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + 424);
+        assertThat(lastCompactionBaseIndex).isEqualTo(192);
+        in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + 416);
+        long blockSize = in.readLong();
+        assertThat(blockSize).isEqualTo(600);
+        byte[] bytes = new byte[(int) blockSize];
         in.readFully(bytes, 0, 600);
         String content = new String(bytes);
         assertThat(content).isEqualTo(text);

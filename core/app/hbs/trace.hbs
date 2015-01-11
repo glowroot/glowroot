@@ -1,26 +1,26 @@
 {{#if error}}
   <div>
-    <strong>ERROR</strong>
+    <strong style="font-size: 16px;">ERROR</strong>
   </div>
 {{/if}}
 {{#if active}}
   <div>
-    <strong>ACTIVE {{#if partial}}/ PARTIAL{{/if}}</strong>
+    <strong style="font-size: 16px;">ACTIVE {{#if partial}}/ PARTIAL{{/if}}</strong>
   </div>
 {{^}}
   {{#if partial}}
     <div>
-      <strong>PARTIAL</strong>
+      <strong style="font-size: 16px;">PARTIAL</strong>
     </div>
   {{/if}}
 {{/if}}
 {{#if background}}
   <div>
-    <strong>Background</strong>
+    <strong style="font-size: 16px;">Background</strong>
   </div>
 {{/if}}
 <div class="gt-second-line-indent">
-  <strong>{{headline}}</strong>
+  <strong style="font-size: 16px;">{{headline}}</strong>
   {{#if showExport}}
     <button class="gt-flat-btn gt-flat-btn-big gt-link-color download-trace">
       export
@@ -28,34 +28,41 @@
   {{/if}}
 </div>
 <div class="gt-second-line-indent">
-  Transaction type: {{transactionType}}
+  <span class="gt-bold">Transaction type:</span>
+  {{transactionType}}
 </div>
 <div class="gt-second-line-indent">
-  Transaction name: {{transactionName}}
+  <span class="gt-bold">Transaction name:</span>
+  {{transactionName}}
 </div>
 <div>
-  Start: {{date startTime}}
+  <span class="gt-bold">Start:</span>
+  {{date startTime}}
 </div>
 <div>
-  Duration: {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds
+  <span class="gt-bold">Duration:</span>
+  {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds
 </div>
 {{#if error}}
   <div class="gt-second-line-indent">
-    <strong>Error: {{error}}</strong>
+    <span class="gt-bold">Error:</span>
+    {{error}}
   </div>
 {{/if}}
 {{#if user}}
   <div class="gt-second-line-indent">
-    User: {{user}}
+    <span class="gt-bold">User:</span>
+    {{user}}
   </div>
 {{/if}}
 {{#eachKeyValuePair customAttributes}}
   <div class="gt-second-line-indent">
-    {{key}}: {{value}}
+    <span class="gt-bold">{{key}}:</span>
+    {{value}}
   </div>
 {{/eachKeyValuePair}}
-<div>
-  Breakdown (in milliseconds):
+<div class="gt-bold">
+  Breakdown <span style="font-weight: normal;">(in milliseconds)</span>:
 </div>
 <div class="gt-trace-metrics">
   <table class="gt-trace-metrics-table gt-indent2" style="border-spacing: 0;">
@@ -126,38 +133,42 @@
   </table>
 </div>
 {{#ifThreadInfo threadInfo}}
-  <div>
+  <div class="gt-bold">
     Thread info
   </div>
   {{#ifExists threadInfo.threadCpuTime}}
     <div class="gt-indent2">
-      CPU time: {{nanosToMillis threadInfo.threadCpuTime}} milliseconds
+      <span>CPU time:</span>
+      {{nanosToMillis threadInfo.threadCpuTime}} milliseconds
     </div>
   {{/ifExists}}
   {{#ifExists threadInfo.threadBlockedTime}}
     <div class="gt-indent2">
-      Blocked time: {{threadInfo.threadBlockedTime}} milliseconds
+      <span>Blocked time:</span>
+      {{threadInfo.threadBlockedTime}} milliseconds
     </div>
   {{/ifExists}}
   {{#ifExists threadInfo.threadWaitedTime}}
     <div class="gt-indent2">
-      Waited time: {{threadInfo.threadWaitedTime}} milliseconds
+      <span>Waited time:</span>
+      {{threadInfo.threadWaitedTime}} milliseconds
     </div>
   {{/ifExists}}
   {{#ifExists threadInfo.threadAllocatedBytes}}
     <div class="gt-indent2">
-      Allocated memory: {{formatAllocatedBytes threadInfo.threadAllocatedBytes}}
+      <span>Allocated memory:</span>
+      {{formatAllocatedBytes threadInfo.threadAllocatedBytes}}
     </div>
   {{/ifExists}}
 {{/ifThreadInfo}}
 {{#if gcInfos}}
-  <div>
+  <div class="gt-bold">
     GC info
   </div>
   {{#eachGcInfoOrdered gcInfos}}
     <div class="gt-indent2">
-      {{name}}: {{collectionTime}} milliseconds ({{collectionCount}}
-      collection{{#ifNotOne collectionCount}}s{{/ifNotOne}})
+      <span>{{name}}:</span>
+      {{collectionTime}} milliseconds ({{collectionCount}} collection{{#ifNotOne collectionCount}}s{{/ifNotOne}})
     </div>
   {{/eachGcInfoOrdered}}
 {{/if}}
@@ -172,7 +183,9 @@
       <div class="hide gt-trace-detail-spinner"></div>
     </div>
   </div>
-  <div id="sps"></div>
+  <div style="margin: 10px 0;">
+    <div id="sps"></div>
+  </div>
 {{/ifExistenceYes}}
 {{#ifExistenceExpired entriesExistence}}
   <div>
@@ -192,9 +205,9 @@
       <div class="hide gt-trace-detail-spinner"></div>
     </div>
   </div>
-  <div class="gt-nowrap hide" id="profileOuter">
+  <div class="gt-nowrap hide" id="profileOuter" style="margin: 10px 0;">
     <select class="form-control gt-profile-filter gt-input-xlarge hide" onchange="this.blur()"
-            style="margin: 4px;">
+            style="margin: 4px 0 10px;">
     </select>
     <div class="gt-profile gt-indent1"></div>
   </div>

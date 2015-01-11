@@ -6,6 +6,7 @@ package com.fasterxml.jackson.core;
 public class JsonGenerator {
     public void writeString(@Nullable String text);
     public void writeStringField(String fieldName, @Nullable String value);
+    public void writeObjectField(String fieldName, @Nullable Object pojo);
 }
 
 /* ========================================================================== */
