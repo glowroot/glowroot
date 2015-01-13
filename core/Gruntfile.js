@@ -38,20 +38,6 @@ module.exports = function (grunt) {
         files: ['<%= yeoman.app %>/hbs/*.hbs'],
         tasks: ['handlebars']
       },
-      //uncss: {
-      //  files: [
-      //    '.tmp/styles/main.css',
-      //    '.tmp/styles/export.css',
-      //    '<%= yeoman.app %>/index.html',
-      //    '<%= yeoman.app %>/views/{,*/}*.html',
-      //    '<%= yeoman.app %>/template/*.html',
-      //    '<%= yeoman.app %>/hbs/*.hbs',
-      //    'bower_components/angular-ui-bootstrap/template/typeahead/*.html',
-      //    'bower_components/angular-ui-bootstrap/template/modal/*.html',
-      //    'bower_components/angular-ui-bootstrap/template/popover/*.html'
-      //  ],
-      //  tasks: ['less', 'uncss:serve']
-      //},
       gruntfile: {
         files: ['Gruntfile.js']
       },
@@ -297,89 +283,6 @@ module.exports = function (grunt) {
       }
     },
 
-    uncss: {
-      options: {
-        ignore: [
-          /\.gt-.*/,
-          // .has-error is used by config forms
-          /\.has-error.*/,
-          // .navbar-inverse is used by navbar
-          '.navbar-inverse .navbar-nav > .active > a',
-          // .nav-tabs is used by transaction and error tabs
-          '.nav-tabs > li.active > a',
-          // .flot-text is used by flot charts
-          '.flot-text',
-          // .modal used by trace modal
-          /\.modal.*/,
-          // .btn-primary.disabled used by config save buttons
-          /\.btn\[disabled]*/,
-          // .dropdown-menu is used by typeaheads
-          /\.dropdown-menu.*/,
-          // .datepicker is used by bootstrap-datepicker
-          /\.datepicker.*/,
-          // .popover is used by help popovers
-          /\.popover.*/,
-          // .fade is used by help popovers
-          /\.fade.*/,
-          // .pull-left is used by bootstrap-select
-          '.pull-left',
-          // .bootstrap-select is used by bootstrap-select
-          /\.bootstrap-select.*/,
-          // .open > .dropdown-menu is used by bootstrap-select
-          '.open > .dropdown-menu',
-          // .sweet-overlay and sweet-alert are used by confirmation dialogs
-          /.sweet-overlay.*/,
-          /.sweet-alert.*/,
-          // .icicle is used by flame graphs
-          /\.icicle.*/
-        ],
-        report: 'gzip'
-      },
-      main: {
-        options: {
-          stylesheets: ['../.tmp/concat/styles/main.css']
-        },
-        files: {
-          '.tmp/concat/styles/main.css': [
-            '<%= yeoman.app %>/index.html',
-            '<%= yeoman.app %>/views/{,*/}*.html',
-            '<%= yeoman.app %>/template/*.html',
-            '<%= yeoman.app %>/hbs/*.hbs',
-            'bower_components/angular-ui-bootstrap/template/typeahead/*.html',
-            'bower_components/angular-ui-bootstrap/template/modal/*.html',
-            'bower_components/angular-ui-bootstrap/template/popover/*.html'
-          ]
-        }
-      },
-      export: {
-        options: {
-          stylesheets: ['../.tmp/concat/styles/export.css']
-        },
-        files: {
-          '.tmp/concat/styles/export.css': [
-            '<%= yeoman.app %>/trace-export.html',
-            '<%= yeoman.app %>/hbs/*.hbs'
-          ]
-        }
-      },
-      serve: {
-        options: {
-          stylesheets: ['../.tmp/styles/main.css']
-        },
-        files: {
-          '.tmp/styles/main.css': [
-            '<%= yeoman.app %>/*.html',
-            '<%= yeoman.app %>/views/{,*/}*.html',
-            '<%= yeoman.app %>/template/*.html',
-            '<%= yeoman.app %>/hbs/*.hbs',
-            'bower_components/angular-ui-bootstrap/template/typeahead/*.html',
-            'bower_components/angular-ui-bootstrap/template/modal/*.html',
-            'bower_components/angular-ui-bootstrap/template/popover/*.html'
-          ]
-        }
-      }
-    },
-
     uglify: {
       options: {
         // currently report is not displayed unless without grunt -v
@@ -448,7 +351,6 @@ module.exports = function (grunt) {
       'clean:serve',
       'less',
       'handlebars',
-      //'uncss:serve',
       'configureRewriteRules',
       'configureProxies:livereload',
       'connect:livereload',
@@ -464,8 +366,6 @@ module.exports = function (grunt) {
     'handlebars',
     'concat',
     'copy:dist',
-    'uncss:main',
-    'uncss:export',
     'cssmin',
     'uglify',
     'filerev',
