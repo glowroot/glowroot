@@ -22,8 +22,6 @@ import javax.annotation.Nullable;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 
-import org.glowroot.common.Reflections.ReflectiveException;
-
 class PathEvaluator {
 
     private static final Splitter splitter = Splitter.on('.').omitEmptyStrings();
@@ -37,11 +35,7 @@ class PathEvaluator {
         Class<?> currClass = baseClass;
         while (!parts.isEmpty()) {
             String currPart = parts.remove(0);
-            Accessor accessor = Beans.findAccessor(currClass, currPart);
-            while (accessor == null && currClass.getComponentType() != null) {
-                currClass = currClass.getComponentType();
-                accessor = Beans.findAccessor(currClass, currPart);
-            }
+            Accessor accessor = Beans.loadPossiblyArrayBasedAccessor(currClass, currPart);
             if (accessor == null) {
                 parts.add(0, currPart);
                 break;
@@ -58,7 +52,7 @@ class PathEvaluator {
     }
 
     @Nullable
-    Object evaluateOnBase(Object base) throws ReflectiveException {
+    Object evaluateOnBase(Object base) throws Exception {
         Object curr = base;
         for (Accessor accessor : accessors) {
             curr = accessor.evaluate(curr);

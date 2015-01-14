@@ -19,8 +19,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 
-import com.google.common.base.MoreObjects;
-
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.config.ConfigService;
 import org.glowroot.transaction.model.Transaction;
@@ -50,12 +48,5 @@ class UserProfileRunnable extends ScheduledRunnable {
                 threadBean.getThreadInfo(transaction.getThreadId(), Integer.MAX_VALUE);
         transaction.captureStackTrace(threadInfo,
                 configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction());
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("transaction", transaction)
-                .toString();
     }
 }

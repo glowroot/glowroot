@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ import java.lang.reflect.Method;
 
 import javax.annotation.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
 
@@ -29,31 +31,26 @@ public class ResponseInvoker {
     private final @Nullable Method getContentTypeMethod;
 
     public ResponseInvoker(Class<?> clazz) {
-        Class<?> servletResponseClass = null;
-        try {
-            servletResponseClass = Class.forName("javax.servlet.ServletResponse", false,
-                    clazz.getClassLoader());
-        } catch (ClassNotFoundException e) {
-            logger.warn(e.getMessage(), e);
-        }
+        Class<?> servletResponseClass = getServletResponseClass(clazz);
         getContentTypeMethod = Invokers.getMethod(servletResponseClass, "getContentType");
     }
 
-    public @Nullable String getContentType(Object response) {
-        if (getContentTypeMethod == null) {
-            // this method only exists since Servlet 2.4 (e.g. since Tomcat 5.5.x)
-            // intentionally returning null here to be detected by caller
-            return null;
-        }
+    // ServletResponse.getContentType() was introduced in Servlet 2.4 (e.g. since Tomcat 5.5.x)
+    public boolean hasGetContentTypeMethod() {
+        return getContentTypeMethod != null;
+    }
+
+    public String getContentType(Object response) {
+        return Invokers.invoke(getContentTypeMethod, response, "");
+    }
+
+    @VisibleForTesting
+    static @Nullable Class<?> getServletResponseClass(Class<?> clazz) {
         try {
-            String contentType = (String) getContentTypeMethod.invoke(response);
-            if (contentType == null) {
-                return "";
-            }
-            return contentType;
-        } catch (Throwable t) {
-            logger.warn("error calling ServletResponse.getContentType()", t);
-            return "<error calling ServletResponse.getContentType()>";
+            return Class.forName("javax.servlet.ServletResponse", false, clazz.getClassLoader());
+        } catch (ClassNotFoundException e) {
+            logger.warn(e.getMessage(), e);
         }
+        return null;
     }
 }

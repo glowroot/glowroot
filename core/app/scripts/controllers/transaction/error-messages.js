@@ -21,22 +21,13 @@ glowroot.controller('ErrorMessagesCtrl', [
   '$http',
   '$location',
   'charts',
-  'keyedColorPools',
   'queryStrings',
   'httpErrors',
-  function ($scope, $http, $location, charts, keyedColorPools, queryStrings, httpErrors) {
+  function ($scope, $http, $location, charts, queryStrings, httpErrors) {
 
     $scope.$parent.activeTabItem = 'messages';
 
-    // this is needed when click occurs on sidebar b/c it doesn't reload template in that case but still need
-    // to update transactionName
-    $scope.$parent.transactionName = $location.search()['transaction-name'];
-
-    var chartState = {
-      plot: undefined,
-      currentRefreshId: 0,
-      currentZoomId: 0
-    };
+    var chartState = charts.createState();
 
     $scope.showChartOverlay = 0;
 
@@ -105,9 +96,6 @@ glowroot.controller('ErrorMessagesCtrl', [
             } else {
               $scope.showChartSpinner--;
             }
-            if (refreshId !== chartState.currentRefreshId) {
-              return;
-            }
             httpErrors.handler($scope, deferred)(data, status);
           });
     }
@@ -154,17 +142,22 @@ glowroot.controller('ErrorMessagesCtrl', [
       var currTerm;
       var inQuote;
       var inExclude;
+
+      function pushCurrTerm(inExclude) {
+        if (inExclude) {
+          excludes.push(currTerm);
+        } else {
+          includes.push(currTerm);
+        }
+      }
+
       for (i = 0; i < text.length; i++) {
         c = text.charAt(i);
         if (currTerm !== undefined) {
           // inside quoted or non-quoted term
           if (c === inQuote || !inQuote && c === ' ') {
             // end of term (quoted or non-quoted)
-            if (inExclude) {
-              excludes.push(currTerm);
-            } else {
-              includes.push(currTerm);
-            }
+            pushCurrTerm();
             currTerm = undefined;
             inQuote = undefined;
             inExclude = false;
@@ -196,11 +189,7 @@ glowroot.controller('ErrorMessagesCtrl', [
       }
       if (currTerm) {
         // end the last non-quoted term
-        if (inExclude) {
-          excludes.push(currTerm);
-        } else {
-          includes.push(currTerm);
-        }
+        pushCurrTerm();
       }
       $scope.errorFilterIncludes = includes;
       $scope.errorFilterExcludes = excludes;

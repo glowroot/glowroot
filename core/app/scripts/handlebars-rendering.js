@@ -19,7 +19,7 @@
 // and that would significantly increase the size of the exported trace files
 
 // Glowroot dependency is used for spinner, but is not used in export file
-/* global $, Handlebars, JST, moment, Glowroot, alert */
+/* global $, Handlebars, JST, moment, Glowroot */
 
 // IMPORTANT: DO NOT USE ANGULAR IN THIS FILE
 // that would require adding angular to trace-export.js
@@ -120,15 +120,6 @@ HandlebarsRendering = (function () {
     return buffer;
   });
 
-  Handlebars.registerHelper('ifThreadInfo', function (threadInfo, options) {
-    if (threadInfo &&
-        (threadInfo.threadCpuTime || threadInfo.threadBlockedTime || threadInfo.threadWaitedTime ||
-        threadInfo.threadAllocatedBytes)) {
-      return options.fn(this);
-    }
-    return options.inverse(this);
-  });
-
   Handlebars.registerHelper('ifExists', function (value, options) {
     if (value !== undefined) {
       return options.fn(this);
@@ -162,7 +153,6 @@ HandlebarsRendering = (function () {
   });
 
   Handlebars.registerHelper('date', function (timestamp) {
-    // TODO internationalize time format
     return moment(timestamp).format('YYYY-MM-DD h:mm:ss.SSS a (Z)');
   });
 
@@ -280,13 +270,6 @@ HandlebarsRendering = (function () {
     return html;
   });
 
-  // TODO register these handlers on trace modal each time one is opened instead of globally on $(document)
-  // TODO (and make sure it still works on export files)
-  $(document).on('click', 'button.download-trace', function () {
-    var $traceParent = $(this).parents('.gt-trace-parent');
-    var traceId = $traceParent.data('gtTraceId');
-    window.location = 'export/trace/' + traceId;
-  });
   var mousedownPageX, mousedownPageY;
   $(document).mousedown(function (e) {
     mousedownPageX = e.pageX;
@@ -329,15 +312,21 @@ HandlebarsRendering = (function () {
         }, 100);
         $.get('backend/trace/entries?trace-id=' + traceId)
             .done(function (data) {
-              // first time opening
-              initTraceEntryLineLength();
-              // un-hide before building in case there are lots of trace entries, at least can see first few quickly
-              $selector.removeClass('hide');
-              renderNext(data, 0);
+              if (data.overwritten) {
+                $('#sps').append('<div style="padding: 1em;">Sorry, the trace entries were overwritten</div>');
+              } else if (data.expired) {
+                $('#sps').append('<div style="padding: 1em;">Sorry, the trace expired</div>');
+              } else {
+                // first time opening
+                initTraceEntryLineLength();
+                // un-hide before building in case there are lots of trace entries, at least can see first few quickly
+                $selector.removeClass('hide');
+                renderNext(data, 0);
+              }
             })
-            .fail(function (jqXHR, textStatus, errorThrown) {
-              // TODO handle this better
-              alert('Error occurred: ' + textStatus);
+            .fail(function () {
+              $('#sps').append(
+                  '<div class="gt-red" style="padding: 1em;">An error occurred retrieving the trace entries</div>');
             })
             .always(function () {
               loaded = true;
@@ -391,9 +380,10 @@ HandlebarsRendering = (function () {
               buildMergedStackTree(data, $selector);
               $selector.removeClass('hide');
             })
-            .fail(function (jqXHR, textStatus, errorThrown) {
-              // TODO handle this better
-              alert('Error occurred: ' + textStatus);
+            .fail(function () {
+              $selector.find('.gt-profile').html(
+                  '<div class="gt-red" style="padding: 1em 0;">An error occurred retrieving the profile</div>');
+              $selector.removeClass('hide');
             })
             .always(function () {
               loaded = true;

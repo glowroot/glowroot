@@ -21,9 +21,19 @@ glowroot.factory('charts', [
   '$http',
   '$location',
   '$timeout',
-    'queryStrings',
+  'keyedColorPools',
+  'queryStrings',
   'httpErrors',
-  function ($http, $location, $timeout, queryStrings, httpErrors) {
+  function ($http, $location, $timeout, keyedColorPools, queryStrings, httpErrors) {
+
+    function createState() {
+      return {
+        plot: undefined,
+        currentRefreshId: 0,
+        currentZoomId: 0,
+        keyedColorPool: keyedColorPools.create()
+      };
+    }
 
     function init(chartState, $chart, $scope) {
 
@@ -142,10 +152,6 @@ glowroot.factory('charts', [
         transactionName: $scope.transactionName
       };
       var date = $scope.filterDate;
-      if (!date) {
-        // TODO display 'Missing date' message
-        return;
-      }
       $scope.showChartSpinner++;
       var refreshId = ++chartState.currentRefreshId;
       $http.get(url + queryStrings.encodeObject(query))
@@ -187,9 +193,6 @@ glowroot.factory('charts', [
           })
           .error(function (data, status) {
             $scope.showChartSpinner--;
-            if (refreshId !== chartState.currentRefreshId) {
-              return;
-            }
             httpErrors.handler($scope)(data, status);
           });
     }
@@ -225,6 +228,7 @@ glowroot.factory('charts', [
     }
 
     return {
+      createState: createState,
       init: init,
       plot: plot,
       refreshData: refreshData,

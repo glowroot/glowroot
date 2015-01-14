@@ -46,21 +46,22 @@ public class DataDirTest {
     }
 
     @Test
-    public void testWithNoDataDirProperty() {
-        // given
-        // when
-        File dataDir = DataDir.getDataDir(ImmutableMap.<String, String>of(), null);
-        // then
-        assertThat(dataDir.getPath()).isEqualTo(".");
-    }
-
-    @Test
     public void testWithNoDataDirPropertyAndGlowrootJarFile() {
         // given
         // when
         File dataDir = DataDir.getDataDir(ImmutableMap.<String, String>of(), glowrootJarFile);
         // then
         assertThat(dataDir.getPath()).isEqualTo(glowrootJarFile.getParent());
+    }
+
+    @Test
+    public void testWithNoDataDirPropertyAndGlowrootJarFileWithNullParent() {
+        // given
+        // when
+        File dataDir =
+                DataDir.getDataDir(ImmutableMap.<String, String>of(), new File("glowroot.jar"));
+        // then
+        assertThat(dataDir.getPath()).isEqualTo(new File(".").getPath());
     }
 
     @Test
@@ -81,16 +82,6 @@ public class DataDirTest {
         File dataDir = DataDir.getDataDir(properties, glowrootJarFile);
         // then
         assertThat(dataDir.getPath()).isEqualTo(customDataDir.getPath());
-    }
-
-    @Test
-    public void testWithRelativeDataDirProperty() {
-        // given
-        Map<String, String> properties = ImmutableMap.of("data.dir", "x" + File.separator + "y");
-        // when
-        File dataDir = DataDir.getDataDir(properties, null);
-        // then
-        assertThat(dataDir.getPath()).isEqualTo("x" + File.separator + "y");
     }
 
     @Test

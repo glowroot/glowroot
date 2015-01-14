@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,7 +111,11 @@ public class Log4jAspect {
                 pluginServices.getMetricName(LogWithPriorityAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
-        public static boolean isEnabled(@BindParameter Object priority) {
+        public static boolean isEnabled(@BindParameter @Nullable Object priority) {
+            if (priority == null) {
+                // seems nothing sensible to do here other than ignore
+                return false;
+            }
             if (LoggerPlugin.inAdvice() || !pluginServices.isEnabled()) {
                 return false;
             }
@@ -146,7 +150,11 @@ public class Log4jAspect {
                 pluginServices.getMetricName(LogWithPriorityAndThrowableAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
-        public static boolean isEnabled(@BindParameter Object priority) {
+        public static boolean isEnabled(@BindParameter @Nullable Object priority) {
+            if (priority == null) {
+                // seems nothing sensible to do here other than ignore
+                return false;
+            }
             if (LoggerPlugin.inAdvice() || !pluginServices.isEnabled()) {
                 return false;
             }
@@ -188,7 +196,11 @@ public class Log4jAspect {
                 pluginServices.getMetricName(LocalizedLogAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
-        public static boolean isEnabled(@BindParameter Object priority) {
+        public static boolean isEnabled(@BindParameter @Nullable Object priority) {
+            if (priority == null) {
+                // seems nothing sensible to do here other than ignore
+                return false;
+            }
             if (LoggerPlugin.inAdvice() || !pluginServices.isEnabled()) {
                 return false;
             }
@@ -229,7 +241,11 @@ public class Log4jAspect {
                 pluginServices.getMetricName(LocalizedLogWithParametersAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
-        public static boolean isEnabled(@BindParameter Object priority) {
+        public static boolean isEnabled(@BindParameter @Nullable Object priority) {
+            if (priority == null) {
+                // seems nothing sensible to do here other than ignore
+                return false;
+            }
             if (LoggerPlugin.inAdvice() || !pluginServices.isEnabled()) {
                 return false;
             }

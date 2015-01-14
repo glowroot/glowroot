@@ -25,6 +25,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -39,7 +40,7 @@ import org.glowroot.jvm.LazyPlatformMBeanServer;
 
 class GaugeCollector extends ScheduledRunnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(GaugeCollector.class);
+    private final Logger logger;
 
     private final ConfigService configService;
     private final GaugePointRepository gaugePointRepository;
@@ -51,16 +52,21 @@ class GaugeCollector extends ScheduledRunnable {
     private final Set<String> loggedMBeanGauges = Sets.newConcurrentHashSet();
 
     GaugeCollector(ConfigService configService, GaugePointRepository gaugePointRepository,
-            LazyPlatformMBeanServer lazyPlatformMBeanServer, Clock clock) {
+            LazyPlatformMBeanServer lazyPlatformMBeanServer, Clock clock, @Nullable Logger logger) {
         this.configService = configService;
         this.gaugePointRepository = gaugePointRepository;
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
         this.clock = clock;
         startTimeMillis = clock.currentTimeMillis();
+        if (logger == null) {
+            this.logger = LoggerFactory.getLogger(GaugeCollector.class);
+        } else {
+            this.logger = logger;
+        }
     }
 
     @Override
-    protected void runInternal() {
+    protected void runInternal() throws Exception {
         List<GaugePoint> gaugePoints = Lists.newArrayList();
         for (Gauge gauge : configService.getGauges()) {
             gaugePoints.addAll(runInternal(gauge));
@@ -68,7 +74,8 @@ class GaugeCollector extends ScheduledRunnable {
         gaugePointRepository.store(gaugePoints);
     }
 
-    private List<GaugePoint> runInternal(Gauge gauge) {
+    @VisibleForTesting
+    List<GaugePoint> runInternal(Gauge gauge) {
         ObjectName objectName;
         try {
             objectName = ObjectName.getInstance(gauge.mbeanObjectName());

@@ -22,6 +22,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -56,6 +57,21 @@ public class BasicSmokeTest extends WebDriverTest {
 
         app.open();
 
+        // hitting F5 is just to test 304 responses
+        Utils.withWait(driver, By.partialLinkText("Metrics")).sendKeys(Keys.F5);
+
+        Utils.withWait(driver, By.xpath("//a[@gt-display='All Transactions'][contains(., '%')]"));
+        driver.findElement(By.xpath("//button[@title='By percent of total time']")).click();
+        driver.findElement(By.linkText("By average time")).click();
+        Utils.withWait(driver, By.xpath("//a[@gt-display='All Transactions'][contains(., 'ms')]"));
+        driver.findElement(By.xpath("//button[@title='By average time']")).click();
+        driver.findElement(By.linkText("By throughput (per min)")).click();
+        Utils.withWait(driver,
+                By.xpath("//a[@gt-display='All Transactions'][contains(., '/min')]"));
+        driver.findElement(By.xpath("//button[@title='By throughput (per min)']")).click();
+        driver.findElement(By.linkText("By percent of total time")).click();
+        Utils.withWait(driver, By.xpath("//a[@gt-display='All Transactions'][contains(., '%')]"));
+
         Utils.withWait(driver, By.partialLinkText("Metrics")).click();
         Utils.withWait(driver, By.partialLinkText("Traces")).click();
         Utils.withWait(driver, By.partialLinkText("Profile")).click();
@@ -78,6 +94,16 @@ public class BasicSmokeTest extends WebDriverTest {
 
         app.open();
         globalNavbar.getErrorsLink().click();
+
+        Utils.withWait(driver,
+                By.xpath("//a[@gt-display='All Transactions'][not(contains(., '%'))]"));
+        driver.findElement(By.xpath("//button[@title='By error count']")).click();
+        driver.findElement(By.linkText("By error rate")).click();
+        Utils.withWait(driver, By.xpath("//a[@gt-display='All Transactions'][contains(., '%')]"));
+        driver.findElement(By.xpath("//button[@title='By error rate']")).click();
+        driver.findElement(By.linkText("By error count")).click();
+        Utils.withWait(driver,
+                By.xpath("//a[@gt-display='All Transactions'][not(contains(., '%'))]"));
 
         Utils.withWait(driver, By.xpath("//input[@ng-model='errorFilter']")).sendKeys("xyz");
         Utils.withWait(driver, By.xpath("//button[@ng-click='refreshButtonClick()']")).click();
@@ -106,6 +132,8 @@ public class BasicSmokeTest extends WebDriverTest {
         for (WebElement element : elements) {
             element.click();
         }
+        // test the refresh of opened items
+        driver.navigate().refresh();
         // need to go back to top of page b/c sidebar links need to be viewable before they can be
         // clicked in chrome and safari drivers
         ((JavascriptExecutor) driver).executeScript("scroll(0, 0)");
@@ -113,7 +141,9 @@ public class BasicSmokeTest extends WebDriverTest {
         jvmSidebar.getThreadDumpLink().click();
         jvmSidebar.getHeapDumpLink().click();
         Utils.withWait(driver, By.xpath("//button[normalize-space()='Dump heap']")).click();
+        Utils.withWait(driver, By.xpath("//div[@ng-show='heapDumpResponse']"));
         Utils.withWait(driver, By.xpath("//button[normalize-space()='Check disk space']")).click();
+        Utils.withWait(driver, By.xpath("//div[@ng-show='checkDiskSpaceResponse']"));
         jvmSidebar.getProcessInfoLink().click();
         jvmSidebar.getSystemPropertiesLink().click();
         jvmSidebar.getCapabilitiesLink().click();

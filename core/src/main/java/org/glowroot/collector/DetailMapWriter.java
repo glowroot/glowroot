@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,8 +69,8 @@ class DetailMapWriter {
             jg.writeString((String) value);
         } else if (value instanceof Boolean) {
             jg.writeBoolean((Boolean) value);
-        } else if (value instanceof Double) {
-            jg.writeNumber((Double) value);
+        } else if (value instanceof Number) {
+            jg.writeNumber(((Number) value).doubleValue());
         } else if (value instanceof Optional) {
             Optional<?> val = (Optional<?>) value;
             if (val.isPresent()) {

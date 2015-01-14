@@ -16,7 +16,6 @@
 package org.glowroot;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.instrument.Instrumentation;
@@ -82,8 +81,7 @@ public class GlowrootModule {
 
     GlowrootModule(File dataDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
-            String version, boolean viewerModeEnabled, boolean jbossModules)
-            throws StartupFailedException {
+            String version, boolean viewerModeEnabled, boolean jbossModules) throws Exception {
 
         loggingSpy = Boolean.valueOf(properties.get("internal.logging.spy"));
         initStaticLoggerState(dataDir, loggingSpy);
@@ -97,26 +95,16 @@ public class GlowrootModule {
         } catch (IOException e) {
             throw new DataDirLockedException(e);
         }
-        try {
-            dataDirLockFile = new RandomAccessFile(lockFile, "rw");
-            FileLock dataDirFileLock = dataDirLockFile.getChannel().tryLock();
-            if (dataDirFileLock == null) {
-                throw new DataDirLockedException();
-            }
-            this.dataDirFileLock = dataDirFileLock;
-        } catch (FileNotFoundException e) {
-            throw new StartupFailedException(e);
-        } catch (IOException e) {
-            throw new StartupFailedException(e);
+        dataDirLockFile = new RandomAccessFile(lockFile, "rw");
+        FileLock dataDirFileLock = dataDirLockFile.getChannel().tryLock();
+        if (dataDirFileLock == null) {
+            throw new DataDirLockedException();
         }
+        this.dataDirFileLock = dataDirFileLock;
         lockFile.deleteOnExit();
 
         // init config module
-        try {
-            configModule = new ConfigModule(dataDir, glowrootJarFile, viewerModeEnabled);
-        } catch (Exception e) {
-            throw new StartupFailedException(e);
-        }
+        configModule = new ConfigModule(dataDir, glowrootJarFile, viewerModeEnabled);
 
         if (dummyTicker) {
             ticker = new Ticker() {
@@ -130,19 +118,8 @@ public class GlowrootModule {
         }
         clock = Clock.systemClock();
 
-        ExtraBootResourceFinder extraBootResourceFinder = null;
-        if (instrumentation != null && glowrootJarFile != null) {
-            try {
-                List<File> pluginJars = configModule.getPluginJars();
-                for (File pluginJar : pluginJars) {
-                    instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(pluginJar));
-                }
-                extraBootResourceFinder = new ExtraBootResourceFinder(pluginJars);
-            } catch (IOException e) {
-                throw new StartupFailedException(e);
-            }
-        }
-
+        ExtraBootResourceFinder extraBootResourceFinder = createExtraBootResourceFinder(
+                instrumentation, configModule.getPluginJars());
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
                 .setNameFormat("Glowroot-Background-%d").build();
         scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
@@ -153,37 +130,18 @@ public class GlowrootModule {
         // loads java.sql.DriverManager, which loads 3rd party jdbc drivers found via
         // services/java.sql.Driver, and those drivers need to be woven
         TransactionCollectorProxy transactionCollectorProxy = new TransactionCollectorProxy();
-        try {
-            transactionModule = new TransactionModule(clock, ticker, configModule,
-                    transactionCollectorProxy, jvmModule.getThreadAllocatedBytes().getService(),
-                    instrumentation, dataDir, extraBootResourceFinder, scheduledExecutor);
-        } catch (IOException e) {
-            throw new StartupFailedException(e);
-        }
-        try {
-            storageModule = new StorageModule(dataDir, properties, ticker, clock, configModule,
-                    scheduledExecutor, viewerModeEnabled);
-        } catch (Exception e) {
-            throw new StartupFailedException(e);
-        }
+        transactionModule = new TransactionModule(clock, ticker, configModule,
+                transactionCollectorProxy, jvmModule.getThreadAllocatedBytes().getService(),
+                instrumentation, dataDir, extraBootResourceFinder, scheduledExecutor);
+        storageModule = new StorageModule(dataDir, properties, ticker, clock, configModule,
+                scheduledExecutor, viewerModeEnabled);
         collectorModule = new CollectorModule(clock, ticker, jvmModule, configModule,
                 storageModule.getTraceRepository(), storageModule.getAggregateRepository(),
                 storageModule.getGaugePointDao(), transactionModule.getTransactionRegistry(),
                 scheduledExecutor, viewerModeEnabled);
         // now inject the real TransactionCollector into the proxy
         transactionCollectorProxy.setInstance(collectorModule.getTransactionCollector());
-        // now init plugins to give them a chance to do something in their static initializer
-        // e.g. append their package to jboss.modules.system.pkgs
-        for (PluginDescriptor pluginDescriptor : configModule.getPluginDescriptors()) {
-            for (String aspect : pluginDescriptor.aspects()) {
-                try {
-                    Class.forName(aspect, true, GlowrootModule.class.getClassLoader());
-                } catch (ClassNotFoundException e) {
-                    // this would have already been logged as a warning during advice construction
-                    logger.debug(e.getMessage(), e);
-                }
-            }
-        }
+        initPlugins(configModule.getPluginDescriptors());
         uiModule = new LocalUiModule(ticker, clock, dataDir, jvmModule, configModule,
                 storageModule, collectorModule, transactionModule, instrumentation, properties,
                 version);
@@ -196,6 +154,32 @@ public class GlowrootModule {
         }
         if (loggingSpy) {
             SpyingLogbackFilter.init();
+        }
+    }
+
+    private static @Nullable ExtraBootResourceFinder createExtraBootResourceFinder(
+            @Nullable Instrumentation instrumentation, List<File> pluginJars) throws IOException {
+        if (instrumentation == null) {
+            return null;
+        }
+        for (File pluginJar : pluginJars) {
+            instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(pluginJar));
+        }
+        return new ExtraBootResourceFinder(pluginJars);
+    }
+
+    // now init plugins to give them a chance to do something in their static initializer
+    // e.g. append their package to jboss.modules.system.pkgs
+    private static void initPlugins(List<PluginDescriptor> pluginDescriptors) {
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
+            for (String aspect : pluginDescriptor.aspects()) {
+                try {
+                    Class.forName(aspect, true, GlowrootModule.class.getClassLoader());
+                } catch (ClassNotFoundException e) {
+                    // this would have already been logged as a warning during advice construction
+                    logger.debug(e.getMessage(), e);
+                }
+            }
         }
     }
 

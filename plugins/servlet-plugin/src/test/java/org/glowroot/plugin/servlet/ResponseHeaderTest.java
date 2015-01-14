@@ -26,11 +26,14 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 import org.glowroot.Containers;
+import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
+import org.glowroot.plugin.servlet.TestServlet.PatchedMockHttpServletResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -153,6 +156,20 @@ public class ResponseHeaderTest {
     }
 
     @Test
+    public void testWithoutAnyInterestingHeaderCapture() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders", "ABC");
+        // when
+        container.executeAppUnderTest(SetStandardResponseHeaders.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getDetail()).doesNotContainKey("Response headers");
+    }
+
+    @Test
     public void testWithoutAnyHeaderCaptureUsingSetHeader() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders", "");
@@ -214,6 +231,19 @@ public class ResponseHeaderTest {
         assertThat(responseHeaders.get("Int-Two")).isEqualTo("4");
         assertThat(responseHeaders.get("Int-Three")).isNull();
         assertThat(xOne).containsExactly("xy", "Fri, 28 Feb 2014 02:06:56 GMT", "6");
+    }
+
+    @Test
+    public void testOutsideServlet() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
+                "Content-Type, Content-Length, Content-Language");
+        // when
+        container.executeAppUnderTest(SetStandardResponseHeadersOutsideServlet.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace).isNull();
+        // basically just testing that it should not generate any errors
     }
 
     @SuppressWarnings("serial")
@@ -286,6 +316,17 @@ public class ResponseHeaderTest {
             response.addHeader("X-One", "xy");
             response.addDateHeader("X-one", 1393553216832L);
             response.addIntHeader("X-one", 6);
+        }
+    }
+
+    public static class SetStandardResponseHeadersOutsideServlet implements AppUnderTest {
+        @Override
+        public void executeApp() throws Exception {
+            MockHttpServletResponse response = new PatchedMockHttpServletResponse();
+            response.setContentLength(1);
+            response.setContentType("text/plain");
+            response.setCharacterEncoding("UTF-8");
+            response.setLocale(Locale.ENGLISH);
         }
     }
 }

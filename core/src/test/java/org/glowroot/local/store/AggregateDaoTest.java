@@ -16,7 +16,6 @@
 package org.glowroot.local.store;
 
 import java.io.File;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -67,7 +66,7 @@ public class AggregateDaoTest {
     }
 
     @Test
-    public void shouldReadTransactions() throws SQLException {
+    public void shouldReadTransactions() throws Exception {
         // given
         Aggregate overallAggregate = ImmutableAggregate.builder()
                 .transactionType("a type")

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,12 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
-import java.net.URISyntaxException;
 import java.security.CodeSource;
 import java.util.jar.JarFile;
+
+import javax.annotation.Nullable;
+
+import com.google.common.annotations.VisibleForTesting;
 
 // this class is registered as the Premain-Class in the MANIFEST.MF of glowroot.jar
 //
@@ -35,7 +38,8 @@ public class Agent {
     public static void premain(@SuppressWarnings("unused") String agentArgs,
             Instrumentation instrumentation) {
         try {
-            File glowrootJarFile = getGlowrootJarFile();
+            CodeSource codeSource = Agent.class.getProtectionDomain().getCodeSource();
+            File glowrootJarFile = getGlowrootJarFile(codeSource);
             Class<?> mainEntryPointClass;
             if (glowrootJarFile == null) {
                 // this is ok, running integration test in IDE
@@ -56,10 +60,10 @@ public class Agent {
     }
 
     // suppress warnings is used instead of annotating this method with @Nullable
-    // just to avoid dependencies on other classes (in this case the @Nullable annotation)
+    // just to avoid dependencies on other classes (in this case the @Nullable annotation itself)
+    @VisibleForTesting
     @SuppressWarnings("return.type.incompatible")
-    private static File getGlowrootJarFile() throws IOException, URISyntaxException {
-        CodeSource codeSource = Agent.class.getProtectionDomain().getCodeSource();
+    static File getGlowrootJarFile(@Nullable CodeSource codeSource) throws Exception {
         if (codeSource == null) {
             if (System.getProperty("delegateJavaagent") != null) {
                 // this is ok, running tests under delegating javaagent
@@ -67,9 +71,9 @@ public class Agent {
             }
             throw new IOException("Could not determine glowroot jar location");
         }
-        File glowrootJarFile = new File(codeSource.getLocation().toURI());
-        if (glowrootJarFile.getName().endsWith(".jar")) {
-            return glowrootJarFile;
+        File codeSourceFile = new File(codeSource.getLocation().toURI());
+        if (codeSourceFile.getName().endsWith(".jar")) {
+            return codeSourceFile;
         }
         if (System.getProperty("delegateJavaagent") != null) {
             // this is ok, running tests under delegating javaagent

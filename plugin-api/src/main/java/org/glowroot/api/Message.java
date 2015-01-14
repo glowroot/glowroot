@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.slf4j.Logger;
@@ -28,8 +27,8 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.api.internal.ReadableMessage;
 
 /**
- * The detail map can contain only {@link String}, {@link Double}, {@link Boolean} and null values.
- * It can also contain nested lists of {@link String}, {@link Double}, {@link Boolean} and null
+ * The detail map can contain only {@link String}, {@link Number}, {@link Boolean} and null values.
+ * It can also contain nested lists of {@link String}, {@link Number}, {@link Boolean} and null
  * values (in particular, lists elements cannot be other lists or maps). And it can contain any
  * level of nested maps whose keys are {@link String} and whose values are one of the above types
  * (including lists). The detail map cannot have null keys.
@@ -113,14 +112,15 @@ public abstract class Message {
             int argIndex = 0;
             while ((next = template.indexOf("{}", curr)) != -1) {
                 text.append(template.substring(curr, next));
-                if (argIndex >= args.length) {
-                    text.append("-- not enough args provided for template --");
+                if (argIndex < args.length) {
+                    // arg may be null but that is ok, StringBuilder will append "null"
+                    text.append(args[argIndex++]);
+                    curr = next + 2; // +2 to skip over "{}"
+                } else {
+                    text.append("<not enough args provided for template>");
+                    curr = next + 2; // +2 to skip over "{}"
                     logger.warn("not enough args provided for template: {}", template);
-                    break;
                 }
-                // arg may be null but that is ok, StringBuilder will append "null"
-                text.append(args[argIndex++]);
-                curr = next + 2; // +2 to skip over "{}"
             }
             text.append(template.substring(curr));
             return truncateToMessageCharLimit(text.toString());
@@ -129,15 +129,6 @@ public abstract class Message {
         @Override
         public Map<String, ? extends /*@Nullable*/Object> getDetail() {
             return detail;
-        }
-
-        @Override
-        public String toString() {
-            return MoreObjects.toStringHelper(this)
-                    .add("template", template)
-                    .add("args", args)
-                    .add("detail", detail)
-                    .toString();
         }
 
         private static @PolyNull String truncateToMessageCharLimit(@PolyNull String s) {

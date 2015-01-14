@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,10 @@
  */
 package org.glowroot.api.weaving;
 
+// primary use cases for matching on modifier include
+// * matching "public static void main(String[] args)"
+// * matching all public instance methods
 public enum MethodModifier {
 
-    PUBLIC, PRIVATE, PROTECTED, PACKAGE_PRIVATE, STATIC, NOT_STATIC;
+    PUBLIC, STATIC, NOT_STATIC;
 }

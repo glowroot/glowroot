@@ -45,7 +45,7 @@ public class UpgradeTest {
                 .copyTo(Files.asByteSink(new File(dataDir, "glowroot.mv.db")));
         Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.capped.db"))
                 .copyTo(Files.asByteSink(new File(dataDir, "glowroot.capped.db")));
-        Container container = Containers.create(dataDir, true);
+        Container container = Containers.createWithFileDb(dataDir);
         // when
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
@@ -69,7 +69,6 @@ public class UpgradeTest {
             TempDirs.deleteRecursively(dataDir);
         }
     }
-
     // create initial database for upgrade test
     public static void main(String... args) throws Exception {
         File dataDir = TempDirs.createTempDir("glowroot-test-datadir");

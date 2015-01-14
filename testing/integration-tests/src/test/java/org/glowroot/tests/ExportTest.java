@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,10 @@ import org.junit.Test;
 
 import org.glowroot.Containers;
 import org.glowroot.container.Container;
+import org.glowroot.container.config.ProfilingConfig;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.tests.BasicTest.ShouldGenerateTraceWithNestedEntries;
+import org.glowroot.tests.DetailMapTest.ShouldGenerateTraceWithNestedEntries;
+import org.glowroot.tests.ProfilingTest.ShouldGenerateTraceWithProfile;
 
 public class ExportTest {
 
@@ -52,6 +54,22 @@ public class ExportTest {
     public void shouldExportTrace() throws Exception {
         // given
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
+        // when
+        Trace trace = container.getTraceService().getLastTrace();
+        InputStream in = container.getTraceService().getTraceExport(trace.getId());
+        // then should not bomb
+        ZipInputStream zipIn = new ZipInputStream(in);
+        zipIn.getNextEntry();
+        ByteStreams.toByteArray(zipIn);
+    }
+
+    @Test
+    public void shouldExportTraceWithProfile() throws Exception {
+        // given
+        ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
+        profilingConfig.setIntervalMillis(20);
+        container.getConfigService().updateProfilingConfig(profilingConfig);
+        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
         // when
         Trace trace = container.getTraceService().getLastTrace();
         InputStream in = container.getTraceService().getTraceExport(trace.getId());

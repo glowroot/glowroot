@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.glowroot.local.store;
 
 import java.io.File;
-import java.sql.SQLException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -60,7 +59,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldReadTrace() throws SQLException {
+    public void shouldReadTrace() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -90,7 +89,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldReadTraceWithDurationQualifier() throws SQLException {
+    public void shouldReadTraceWithDurationQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -111,7 +110,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldNotReadTraceWithHighDurationQualifier() throws SQLException {
+    public void shouldNotReadTraceWithHighDurationQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -132,7 +131,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldNotReadTraceWithLowDurationQualifier() throws SQLException {
+    public void shouldNotReadTraceWithLowDurationQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -153,7 +152,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldReadTraceWithCustomAttributeQualifier() throws SQLException {
+    public void shouldReadTraceWithCustomAttributeQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -177,7 +176,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldReadTraceWithCustomAttributeQualifier2() throws SQLException {
+    public void shouldReadTraceWithCustomAttributeQualifier2() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -201,7 +200,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldReadTraceWithCustomAttributeQualifier3() throws SQLException {
+    public void shouldReadTraceWithCustomAttributeQualifier3() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -225,7 +224,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldNotReadTraceWithNonMatchingCustomAttributeQualifier() throws SQLException {
+    public void shouldNotReadTraceWithNonMatchingCustomAttributeQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -249,7 +248,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldNotReadTraceWithNonMatchingCustomAttributeQualifier2() throws SQLException {
+    public void shouldNotReadTraceWithNonMatchingCustomAttributeQualifier2() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();
@@ -273,7 +272,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldDeletedTrace() throws SQLException {
+    public void shouldDeletedTrace() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         CharSource entries = TraceTestData.createEntries();

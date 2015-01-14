@@ -103,9 +103,9 @@ glowroot.controller('ConfigGaugeCtrl', [
           .then(function (response) {
             $scope.showMBeanObjectNameSpinner--;
             return response.data;
-          }, function () {
+          }, function (data, status) {
             $scope.showMBeanObjectNameSpinner--;
-            // TODO handle error
+            httpErrors.handler($scope)(data, status);
           });
     };
 
@@ -148,7 +148,10 @@ glowroot.controller('ConfigGaugeCtrl', [
               });
             });
           })
-          .error(httpErrors.handler($scope));
+          .error(function (data, status) {
+            $scope.mbeanAttributesLoading = false;
+            httpErrors.handler($scope)(data, status);
+          });
     }
 
     $scope.hasMBeanObjectNameError = function () {
@@ -188,8 +191,9 @@ glowroot.controller('ConfigGaugeCtrl', [
           .error(function (data, status) {
             if (status === 409 && data.message === 'mbeanObjectName') {
               $scope.duplicateMBean = true;
+              deferred.reject('There is already a gauge for this MBean');
+              return;
             }
-            // normal error handling
             httpErrors.handler($scope, deferred)(data, status);
           });
     };
@@ -197,7 +201,7 @@ glowroot.controller('ConfigGaugeCtrl', [
     $scope.delete = function (deferred) {
       if ($scope.config.version) {
         $http.post('backend/config/gauges/remove', '"' + $scope.config.version + '"')
-            .success(function (data) {
+            .success(function () {
               $scope.$parent.removeGauge($scope.gauge);
               deferred.resolve('Deleted');
             })

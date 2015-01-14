@@ -26,6 +26,8 @@ import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 class DataDir {
 
     private static final Logger logger = LoggerFactory.getLogger(DataDir.class);
@@ -34,46 +36,46 @@ class DataDir {
 
     public static File getDataDir(Map<String, String> properties, @Nullable File glowrootJarFile) {
         String dataDirPath = properties.get("data.dir");
+        if (glowrootJarFile == null) {
+            // this is only for test support
+            checkNotNull(dataDirPath, "Property data.dir is required when no glowroot jar file");
+            return new File(dataDirPath);
+        }
         // empty check to support parameterized script, e.g. -Dglowroot.data.dir=${somevar}
         if (Strings.isNullOrEmpty(dataDirPath)) {
-            File baseDir = getBaseDir(glowrootJarFile);
-            return baseDir == null ? new File(".") : baseDir;
+            return getDefaultDataDir(glowrootJarFile);
         }
         File dataDir = new File(dataDirPath);
-        File baseDir = null;
         if (!dataDir.isAbsolute()) {
-            // resolve path relative to base dir instead of process current dir
-            baseDir = getBaseDir(glowrootJarFile);
-            dataDir = baseDir == null ? new File(dataDirPath) : new File(baseDir, dataDirPath);
+            return getRelativeDataDir(dataDirPath, glowrootJarFile);
         }
+        return getAbsoluteDataDir(dataDir);
+    }
+
+    private static File getDefaultDataDir(File glowrootJarFile) {
+        File glowrootDir = glowrootJarFile.getParentFile();
+        if (glowrootDir == null) {
+            // the file does not name a parent, so it must be current dir
+            return new File(".");
+        }
+        return glowrootDir;
+    }
+
+    // resolve path relative to glowroot dir instead of process current dir if possible
+    private static File getRelativeDataDir(String dataDirPath, File glowrootJarFile) {
+        File dataDir = new File(glowrootJarFile.getParentFile(), dataDirPath);
+        return getAbsoluteDataDir(dataDir);
+    }
+
+    private static File getAbsoluteDataDir(File dataDir) {
         try {
             Files.createParentDirs(dataDir);
             return dataDir;
         } catch (IOException e) {
-            if (baseDir == null) {
-                baseDir = getBaseDir(glowrootJarFile);
-                if (baseDir == null) {
-                    baseDir = new File(".");
-                }
-            }
+            File processCurrDir = new File(".");
             logger.warn("error creating data directory: {} (using directory {} instead)",
-                    dataDir.getAbsolutePath(), baseDir.getAbsolutePath(), e);
-            return baseDir;
+                    dataDir.getAbsolutePath(), processCurrDir.getAbsolutePath(), e);
+            return processCurrDir;
         }
-    }
-
-    private static @Nullable File getBaseDir(@Nullable File glowrootJarFile) {
-        if (glowrootJarFile == null) {
-            logWarning();
-            return null;
-        }
-        return glowrootJarFile.getParentFile();
-    }
-
-    private static void logWarning() {
-        // warning is logged lazily (instead of in static initializer) so that unit tests
-        // have a chance to pass in absolute data dir path and bypass this warning
-        logger.warn("could not determine location of glowroot.jar, using process current"
-                + " directory as the data directory");
     }
 }

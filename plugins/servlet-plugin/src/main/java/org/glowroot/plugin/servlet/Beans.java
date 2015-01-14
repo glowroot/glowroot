@@ -17,7 +17,6 @@ package org.glowroot.plugin.servlet;
 
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -47,10 +46,7 @@ public class Beans {
     static {
         try {
             SENTINEL_METHOD = Beans.class.getDeclaredMethod("sentinelMethod");
-        } catch (NoSuchMethodException e) {
-            // unrecoverable error
-            throw new AssertionError(e);
-        } catch (SecurityException e) {
+        } catch (Exception e) {
             // unrecoverable error
             throw new AssertionError(e);
         }
@@ -85,6 +81,36 @@ public class Beans {
     private Beans() {}
 
     public static @Nullable Object value(@Nullable Object obj, String path) {
+        try {
+            return valueInternal(obj, path);
+        } catch (Exception e) {
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
+            return "<could not access>";
+        }
+    }
+
+    public static Map<String, String> propertiesAsText(Object obj) {
+        Map<String, String> properties = Maps.newHashMap();
+        ImmutableMap<String, Method> allGettersForObj =
+                wildcardGetters.getUnchecked(obj.getClass());
+        for (Entry<String, Method> entry : allGettersForObj.entrySet()) {
+            try {
+                Object value = entry.getValue().invoke(obj);
+                if (value != null) {
+                    properties.put(entry.getKey(), value.toString());
+                }
+            } catch (Exception e) {
+                // log exception at debug level
+                logger.debug(e.getMessage(), e);
+                properties.put(entry.getKey(), "<could not access>");
+            }
+        }
+        return properties;
+    }
+
+    private static @Nullable Object valueInternal(@Nullable Object obj, String path)
+            throws Exception {
         if (obj == null) {
             return null;
         }
@@ -102,62 +128,16 @@ public class Beans {
             remaining = path.substring(index + 1);
         }
         if (obj instanceof Map) {
-            return value(((Map<?, ?>) obj).get(curr), remaining);
+            return valueInternal(((Map<?, ?>) obj).get(curr), remaining);
         }
-        try {
-            AccessibleObject accessor = getAccessor(obj.getClass(), curr);
-            if (accessor.equals(SENTINEL_METHOD)) {
-                // no appropriate method found, dynamic paths that may or may not resolve
-                // correctly are ok, just return null
-                return null;
-            }
-            Object currItem;
-            if (accessor instanceof Method) {
-                currItem = ((Method) accessor).invoke(obj);
-            } else {
-                currItem = ((Field) accessor).get(obj);
-            }
-            return value(currItem, remaining);
-        } catch (IllegalAccessException e) {
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
-            return "<could not access>";
-        } catch (IllegalArgumentException e) {
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
-            return "<could not access>";
-        } catch (InvocationTargetException e) {
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
-            return "<could not access>";
+        AccessibleObject accessor = getAccessor(obj.getClass(), curr);
+        if (accessor.equals(SENTINEL_METHOD)) {
+            // no appropriate method found, dynamic paths that may or may not resolve
+            // correctly are ok, just return null
+            return null;
         }
-    }
-
-    public static Map<String, String> propertiesAsText(Object obj) {
-        Map<String, String> properties = Maps.newHashMap();
-        ImmutableMap<String, Method> allGettersForObj =
-                wildcardGetters.getUnchecked(obj.getClass());
-        for (Entry<String, Method> entry : allGettersForObj.entrySet()) {
-            try {
-                Object value = entry.getValue().invoke(obj);
-                if (value != null) {
-                    properties.put(entry.getKey(), value.toString());
-                }
-            } catch (IllegalAccessException e) {
-                // log exception at debug level
-                logger.debug(e.getMessage(), e);
-                properties.put(entry.getKey(), "<could not access>");
-            } catch (IllegalArgumentException e) {
-                // log exception at debug level
-                logger.debug(e.getMessage(), e);
-                properties.put(entry.getKey(), "<could not access>");
-            } catch (InvocationTargetException e) {
-                // log exception at debug level
-                logger.debug(e.getMessage(), e);
-                properties.put(entry.getKey(), "<could not access>");
-            }
-        }
-        return properties;
+        Object currItem = invoke(accessor, obj);
+        return valueInternal(currItem, remaining);
     }
 
     private static AccessibleObject getAccessor(Class<?> clazz, String name) {
@@ -175,28 +155,28 @@ public class Beans {
         String capitalizedName = Character.toUpperCase(name.charAt(0)) + name.substring(1);
         try {
             return getMethod(clazz, "get" + capitalizedName);
-        } catch (ReflectiveException e) {
+        } catch (Exception e) {
             // log exception at trace level
             logger.trace(e.getMessage(), e);
         }
         // fall back to "is" prefix
         try {
             return getMethod(clazz, "is" + capitalizedName);
-        } catch (ReflectiveException f) {
+        } catch (Exception f) {
             // log exception at trace level
             logger.trace(f.getMessage(), f);
         }
         // fall back to no prefix
         try {
             return getMethod(clazz, name);
-        } catch (ReflectiveException g) {
+        } catch (Exception g) {
             // log exception at trace level
             logger.trace(g.getMessage(), g);
         }
         // fall back to field access
         try {
             return getField(clazz, name);
-        } catch (ReflectiveException h) {
+        } catch (Exception h) {
             // log exception at trace level
             logger.trace(h.getMessage(), h);
         }
@@ -205,15 +185,29 @@ public class Beans {
         return SENTINEL_METHOD;
     }
 
+    private static @Nullable Object invoke(AccessibleObject accessor, Object obj) throws Exception {
+        if (accessor instanceof Method) {
+            return ((Method) accessor).invoke(obj);
+        } else {
+            return ((Field) accessor).get(obj);
+        }
+    }
+
     private static ImmutableMap<String, Method> getPropertyNames(Class<?> clazz) {
-        ImmutableMap.Builder<String, Method> builder = ImmutableMap.builder();
+        Map<String, Method> propertyNames = Maps.newHashMap();
         for (Method method : clazz.getMethods()) {
             String propertyName = getPropertyName(method);
-            if (propertyName != null) {
-                builder.put(propertyName, method);
+            if (propertyName == null) {
+                continue;
             }
+            Method otherMethod = propertyNames.get(propertyName);
+            if (otherMethod != null && otherMethod.getName().startsWith("get")) {
+                // "getX" takes precedence over "isX"
+                continue;
+            }
+            propertyNames.put(propertyName, method);
         }
-        return builder.build();
+        return ImmutableMap.copyOf(propertyNames);
     }
 
     private static @Nullable String getPropertyName(Method method) {
@@ -225,55 +219,42 @@ public class Beans {
             // ignore this "getter"
             return null;
         }
-        if (methodName.startsWith("get") && methodName.length() > 3) {
-            return Character.toLowerCase(methodName.charAt(3)) + methodName.substring(4);
+        if (startsWithAndThenUpperCaseChar(methodName, "get")) {
+            return getRemainingWithFirstCharLowercased(methodName, "get");
         }
-        if (methodName.startsWith("is") && methodName.length() > 2) {
-            return Character.toLowerCase(methodName.charAt(2)) + methodName.substring(3);
+        if (startsWithAndThenUpperCaseChar(methodName, "is")) {
+            return getRemainingWithFirstCharLowercased(methodName, "is");
         }
         return null;
     }
 
-    private static Method getMethod(Class<?> clazz, String methodName) throws ReflectiveException {
+    private static boolean startsWithAndThenUpperCaseChar(String str, String prefix) {
+        return str.startsWith(prefix) && str.length() > prefix.length()
+                && Character.isUpperCase(str.charAt(prefix.length()));
+    }
+
+    private static String getRemainingWithFirstCharLowercased(String str, String prefix) {
+        return Character.toLowerCase(str.charAt(prefix.length()))
+                + str.substring(prefix.length() + 1);
+    }
+
+    private static Method getMethod(Class<?> clazz, String methodName) throws Exception {
         try {
             return clazz.getMethod(methodName);
         } catch (NoSuchMethodException e) {
-            try {
-                return clazz.getDeclaredMethod(methodName);
-            } catch (SecurityException f) {
-                throw new ReflectiveException(f);
-            } catch (NoSuchMethodException f) {
-                throw new ReflectiveException(f);
-            }
-        } catch (SecurityException e) {
-            throw new ReflectiveException(e);
+            return clazz.getDeclaredMethod(methodName);
         }
     }
 
-    private static Field getField(Class<?> clazz, String fieldName) throws ReflectiveException {
+    private static Field getField(Class<?> clazz, String fieldName) throws Exception {
         try {
             return clazz.getField(fieldName);
         } catch (NoSuchFieldException e) {
-            try {
-                return clazz.getDeclaredField(fieldName);
-            } catch (SecurityException f) {
-                throw new ReflectiveException(f);
-            } catch (NoSuchFieldException f) {
-                throw new ReflectiveException(f);
-            }
-        } catch (SecurityException e) {
-            throw new ReflectiveException(e);
+            return clazz.getDeclaredField(fieldName);
         }
     }
 
     // this unused private method is required for use as SENTINEL_METHOD above
     @SuppressWarnings("unused")
     private static void sentinelMethod() {}
-
-    @SuppressWarnings("serial")
-    private static class ReflectiveException extends Exception {
-        private ReflectiveException(Exception cause) {
-            super(cause);
-        }
-    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import java.util.List;
 
 import javax.annotation.concurrent.GuardedBy;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 
 import org.glowroot.transaction.model.Profile;
@@ -88,12 +87,5 @@ class AggregateProfileBuilder {
     private boolean matches(ProfileNode node1, ProfileNode node2) {
         return Objects.equal(node1.getStackTraceElement(), node2.getStackTraceElement())
                 && Objects.equal(node1.getLeafThreadState(), node2.getLeafThreadState());
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("syntheticRootNode", syntheticRootNode)
-                .toString();
     }
 }

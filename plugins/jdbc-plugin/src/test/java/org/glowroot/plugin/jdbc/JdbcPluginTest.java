@@ -17,17 +17,12 @@ package org.glowroot.plugin.jdbc;
 
 import java.sql.CallableStatement;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.List;
 
-import org.apache.commons.dbcp.BasicDataSource;
-import org.apache.tomcat.jdbc.pool.DataSource;
-import org.hsqldb.jdbc.JDBCDriver;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -67,178 +62,6 @@ public class JdbcPluginTest {
     }
 
     @Test
-    public void testStatement() throws Exception {
-        // given
-        // when
-        container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 3 rows");
-    }
-
-    @Test
-    public void testStatementUsingPrevious() throws Exception {
-        // given
-        // when
-        container.executeAppUnderTest(ExecuteStatementAndUsePrevious.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 3 rows");
-    }
-
-    @Test
-    public void testStatementUsingRelativeForward() throws Exception {
-        // given
-        // when
-        container.executeAppUnderTest(ExecuteStatementAndUseRelativeForward.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 3 rows");
-    }
-
-    @Test
-    public void testStatementUsingRelativeBackward() throws Exception {
-        // given
-        // when
-        container.executeAppUnderTest(ExecuteStatementAndUseRelativeBackward.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 3 rows");
-    }
-
-    @Test
-    public void testStatementUsingAbsolute() throws Exception {
-        // given
-        // when
-        container.executeAppUnderTest(ExecuteStatementAndUseAbsolute.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 2 rows");
-    }
-
-    @Test
-    public void testStatementUsingFirst() throws Exception {
-        // given
-        // when
-        container.executeAppUnderTest(ExecuteStatementAndUseFirst.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 1 row");
-    }
-
-    @Test
-    public void testStatementUsingLast() throws Exception {
-        // given
-        // when
-        container.executeAppUnderTest(ExecuteStatementAndUseLast.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 3 rows");
-    }
-
-    @Test
-    public void testPreparedStatement() throws Exception {
-        // given
-        // when
-        container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee where name like ? ['john%'] => 1 row");
-    }
-
-    @Test
-    public void testPreparedStatementWithoutBindParameters() throws Exception {
-        // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", false);
-        // when
-        container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee where name like ? => 1 row");
-    }
-
-    @Test
-    public void testPreparedStatementWithSetNull() throws Exception {
-        // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
-        // whens
-        container.executeAppUnderTest(ExecutePreparedStatementWithSetNull.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: insert into employee values (?, ?) [NULL, NULL]");
-    }
-
-    @Test
-    public void testPreparedStatementWithBinary() throws Exception {
-        // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
-        // when
-        container.executeAppUnderTest(ExecutePreparedStatementWithBinary.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: insert into employee values (?, ?) ['jane',"
-                        + " 0x00010203040506070809]");
-    }
-
-    @Test
-    public void testPreparedStatementThatHasInternalGlowrootToken() throws Exception {
-        // given
-        // when
-        container.executeAppUnderTest(ExecutePreparedStatementThatHasInternalGlowrootToken.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee where name like ? ['{}'] => 0 rows");
-    }
-
-    @Test
     public void testCallableStatement() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
@@ -250,51 +73,7 @@ public class JdbcPluginTest {
         assertThat(entries).hasSize(2);
         TraceEntry jdbcEntry = entries.get(1);
         assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: insert into employee values (?, ?) ['jane', NULL]");
-    }
-
-    @Test
-    public void testCommit() throws Exception {
-        // given
-        // when
-        container.executeAppUnderTest(ExecuteJdbcCommit.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        TraceEntry jdbcInsertEntry = entries.get(1);
-        assertThat(jdbcInsertEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: insert into employee (name) values ('john doe')");
-        TraceEntry jdbcCommitEntry = entries.get(2);
-        assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc commit");
-        assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(2);
-        // ordering is by total desc, so not fixed (though root metric will be first since it
-        // encompasses all other timings)
-        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootMetric().getNestedMetricNames())
-                .containsOnly("jdbc execute", "jdbc commit");
-    }
-
-    @Test
-    public void testRollback() throws Exception {
-        // given
-        // when
-        container.executeAppUnderTest(ExecuteJdbcRollback.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        TraceEntry jdbcInsertEntry = entries.get(1);
-        assertThat(jdbcInsertEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: insert into employee (name) values ('john doe')");
-        TraceEntry jdbcCommitEntry = entries.get(2);
-        assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc rollback");
-        assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(2);
-        // ordering is by total desc, so not fixed (though root metric will be first since it
-        // encompasses all other timings)
-        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootMetric().getNestedMetricNames())
-                .containsOnly("jdbc execute", "jdbc rollback");
+                "jdbc execution: insert into employee (name, misc) values (?, ?) ['jane', NULL]");
     }
 
     @Test
@@ -369,77 +148,6 @@ public class JdbcPluginTest {
         assertThat(found).isFalse();
     }
 
-    @Test
-    public void testBatchPreparedStatement() throws Exception {
-        // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
-        // when
-        container.executeAppUnderTest(ExecuteBatchPreparedStatement.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
-                + " insert into employee (name) values (?) ['huckle'] ['sally']");
-        assertThat(entries.get(2).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
-                + " insert into employee (name) values (?) ['lowly'] ['pig will']");
-    }
-
-    @Test
-    public void testBatchPreparedStatementWithoutClear() throws Exception {
-        // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
-        // when
-        container.executeAppUnderTest(ExecuteBatchPreparedStatementWithoutClear.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
-                + " insert into employee (name) values (?) ['huckle'] ['sally']");
-        assertThat(entries.get(2).getMessage().getText()).isEqualTo("jdbc execution: 4 x"
-                + " insert into employee (name) values (?) ['huckle'] ['sally'] ['lowly']"
-                + " ['pig will']");
-    }
-
-    @Test
-    public void testBatchStatement() throws Exception {
-        // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
-        // when
-        container.executeAppUnderTest(ExecuteBatchStatement.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo("jdbc execution:"
-                + " insert into employee (name) values ('huckle'),"
-                + " insert into employee (name) values ('sally')");
-        assertThat(entries.get(2).getMessage().getText()).isEqualTo("jdbc execution:"
-                + " insert into employee (name) values ('lowly'),"
-                + " insert into employee (name) values ('pig will')");
-    }
-
-    @Test
-    public void testBatchStatementWithoutClear() throws Exception {
-        // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
-        // when
-        container.executeAppUnderTest(ExecuteBatchStatementWithoutClear.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo("jdbc execution:"
-                + " insert into employee (name) values ('huckle'),"
-                + " insert into employee (name) values ('sally')");
-        assertThat(entries.get(2).getMessage().getText()).isEqualTo("jdbc execution:"
-                + " insert into employee (name) values ('huckle'),"
-                + " insert into employee (name) values ('sally'),"
-                + " insert into employee (name) values ('lowly'),"
-                + " insert into employee (name) values ('pig will')");
-    }
-
     // this test validates that lastRecordCountObject is cleared so that its numRows won't be
     // updated if the plugin is re-enabled in the middle of iterating over a different result set
     // (see related comments in StatementAspect)
@@ -454,58 +162,6 @@ public class JdbcPluginTest {
         assertThat(entries).hasSize(2);
         assertThat(entries.get(1).getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee where name like ? ['nomatch%'] => 0 rows");
-    }
-
-    @Test
-    public void testConnectionLifecycle() throws Exception {
-        // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureConnectionLifecycleTraceEntries", true);
-        // when
-        container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        TraceEntry entry1 = entries.get(1);
-        assertThat(entry1.getMessage().getText()).isEqualTo("jdbc get connection");
-        TraceEntry entry2 = entries.get(2);
-        assertThat(entry2.getMessage().getText()).isEqualTo("jdbc connection close");
-    }
-
-    @Test
-    public void testTransactionLifecycle() throws Exception {
-        // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureTransactionLifecycleTraceEntries", true);
-        // when
-        container.executeAppUnderTest(ExecuteSetAutoCommit.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        TraceEntry entry1 = entries.get(1);
-        assertThat(entry1.getMessage().getText()).isEqualTo("jdbc set autocommit: false");
-        TraceEntry entry2 = entries.get(2);
-        assertThat(entry2.getMessage().getText()).isEqualTo("jdbc set autocommit: true");
-    }
-
-    @Test
-    public void testConnectionLifecycleAndTransactionLifecycleTogether() throws Exception {
-        // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureConnectionLifecycleTraceEntries", true);
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureTransactionLifecycleTraceEntries", true);
-        // when
-        container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        TraceEntry entry1 = entries.get(1);
-        assertThat(entry1.getMessage().getText())
-                .isEqualTo("jdbc get connection (autocommit: true)");
     }
 
     @Test
@@ -570,140 +226,15 @@ public class JdbcPluginTest {
         assertThat(entries).hasSize(1);
     }
 
-    // TODO make a release build profile that runs all tests against
-    // Hsqldb, Oracle, SQLServer, MySQL, ...
-
-    private static Connection createConnection() throws SQLException {
-        return createHsqldbConnection();
-    }
-
-    private static Connection createHsqldbConnection() throws SQLException {
-        // set up database
-        Connection connection = JDBCDriver.getConnection("jdbc:hsqldb:mem:test", null);
-        insertRecords(connection);
-        return connection;
-    }
-
-    @SuppressWarnings("unused")
-    private static Connection createCommonsDbcpWrappedConnection() throws SQLException {
-        // set up database
-        BasicDataSource ds = new BasicDataSource();
-        ds.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
-        ds.setUrl("jdbc:hsqldb:mem:test");
-        Connection connection = ds.getConnection();
-        insertRecords(connection);
-        return connection;
-    }
-
-    @SuppressWarnings("unused")
-    private static Connection createTomcatJdbcPoolWrappedConnection() throws SQLException {
-        // set up database
-        DataSource ds = new DataSource();
-        ds.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
-        ds.setUrl("jdbc:hsqldb:mem:test");
-        ds.setJdbcInterceptors(
-                "org.apache.tomcat.jdbc.pool.interceptor.StatementDecoratorInterceptor");
-        Connection connection = ds.getConnection();
-        insertRecords(connection);
-        return connection;
-    }
-
-    @SuppressWarnings("unused")
-    private static Connection createPostgresConnection() throws SQLException {
-        // set up database
-        Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost/glowroot",
-                "glowroot", "glowroot");
-        insertRecords(connection, "bytea");
-        return connection;
-    }
-
-    // need to add the oracle driver to the path in order to use this, e.g. install into local repo:
-    //
-    // mvn install:install-file -Dfile=ojdbc6.jar -DgroupId=com.oracle -DartifactId=ojdbc6
-    // -Dversion=11.2.0.3 -Dpackaging=jar -DgeneratePom=true
-    //
-    // then add to pom.xml
-    //
-    // <dependency>
-    // <groupId>com.oracle</groupId>
-    // <artifactId>ojdbc6</artifactId>
-    // <version>11.2.0.3</version>
-    // <scope>test</scope>
-    // </dependency>
-    @SuppressWarnings("unused")
-    private static Connection createOracleConnection() throws SQLException {
-        // set up database
-        Connection connection = DriverManager.getConnection("jdbc:oracle:thin:@//localhost/orcl",
-                "glowroot", "glowroot");
-        insertRecords(connection);
-        return connection;
-    }
-
-    // need to add the sqlserver driver to the path in order to use this, e.g. install into local
-    // repo:
-    //
-    // mvn install:install-file -Dfile=sqljdbc.jar -DgroupId=com.microsoft -DartifactId=sqljdbc
-    // -Dversion=4.0 -Dpackaging=jar -DgeneratePom=true
-    //
-    // then add to pom.xml
-    //
-    // <dependency>
-    // <groupId>com.microsoft</groupId>
-    // <artifactId>sqljdbc</artifactId>
-    // <version>4.0</version>
-    // <scope>test</scope>
-    // </dependency>
-    @SuppressWarnings("unused")
-    private static Connection createSqlServerConnection() throws Exception {
-        // set up database
-        Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-        Connection connection =
-                DriverManager.getConnection("jdbc:sqlserver://localhost", "sa", "password");
-        insertRecords(connection);
-        return connection;
-    }
-
-    private static void insertRecords(Connection connection) throws SQLException {
-        insertRecords(connection, "binary(100)");
-    }
-
-    private static void insertRecords(Connection connection, String binaryTypeName)
-            throws SQLException {
-        Statement statement = connection.createStatement();
-        try {
-            try {
-                // in case of previous failure mid-test
-                statement.execute("drop table employee");
-            } catch (SQLException e) {}
-            statement.execute("create table employee (name varchar(100), misc " + binaryTypeName
-                    + ")");
-            statement.execute("insert into employee (name) values ('john doe')");
-            statement.execute("insert into employee (name) values ('jane doe')");
-            statement.execute("insert into employee (name) values ('sally doe')");
-        } finally {
-            statement.close();
-        }
-    }
-
-    private static void closeConnection(Connection connection) throws SQLException {
-        Statement statement = connection.createStatement();
-        try {
-            statement.execute("drop table employee");
-        } finally {
-            statement.close();
-        }
-        connection.close();
-    }
-
     public static class ExecuteStatementAndIterateOverResults implements AppUnderTest, TraceMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
-            connection = createConnection();
+            connection = Connections.createConnection();
             try {
                 traceMarker();
             } finally {
-                closeConnection(connection);
+                Connections.closeConnection(connection);
             }
         }
         @Override
@@ -726,11 +257,11 @@ public class JdbcPluginTest {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
-            connection = createConnection();
+            connection = Connections.createConnection();
             try {
                 traceMarker();
             } finally {
-                closeConnection(connection);
+                Connections.closeConnection(connection);
             }
         }
         @Override
@@ -748,304 +279,21 @@ public class JdbcPluginTest {
         }
     }
 
-    public static class ExecuteStatementAndUsePrevious implements AppUnderTest, TraceMarker {
-        private Connection connection;
-        @Override
-        public void executeApp() throws Exception {
-            connection = createConnection();
-            try {
-                traceMarker();
-            } finally {
-                closeConnection(connection);
-            }
-        }
-        @Override
-        public void traceMarker() throws Exception {
-            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                    ResultSet.CONCUR_READ_ONLY);
-            try {
-                statement.execute("select * from employee");
-                ResultSet rs = statement.getResultSet();
-                rs.afterLast();
-                while (rs.previous()) {
-                    rs.getString(1);
-                }
-            } finally {
-                statement.close();
-            }
-        }
-    }
-
-    public static class ExecuteStatementAndUseRelativeForward implements AppUnderTest, TraceMarker {
-        private Connection connection;
-        @Override
-        public void executeApp() throws Exception {
-            connection = createConnection();
-            try {
-                traceMarker();
-            } finally {
-                closeConnection(connection);
-            }
-        }
-        @Override
-        public void traceMarker() throws Exception {
-            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                    ResultSet.CONCUR_READ_ONLY);
-            try {
-                statement.execute("select * from employee");
-                ResultSet rs = statement.getResultSet();
-                // need to position cursor on a valid row before calling relative(), at least for
-                // sqlserver jdbc driver
-                rs.next();
-                rs.getString(1);
-                while (rs.relative(1)) {
-                    rs.getString(1);
-                }
-            } finally {
-                statement.close();
-            }
-        }
-    }
-
-    public static class ExecuteStatementAndUseRelativeBackward implements AppUnderTest,
-            TraceMarker {
-        private Connection connection;
-        @Override
-        public void executeApp() throws Exception {
-            connection = createConnection();
-            try {
-                traceMarker();
-            } finally {
-                closeConnection(connection);
-            }
-        }
-        @Override
-        public void traceMarker() throws Exception {
-            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                    ResultSet.CONCUR_READ_ONLY);
-            try {
-                statement.execute("select * from employee");
-                ResultSet rs = statement.getResultSet();
-                rs.afterLast();
-                // need to position cursor on a valid row before calling relative(), at least for
-                // sqlserver jdbc driver
-                rs.previous();
-                rs.getString(1);
-                while (rs.relative(-1)) {
-                    rs.getString(1);
-                }
-            } finally {
-                statement.close();
-            }
-        }
-    }
-
-    public static class ExecuteStatementAndUseAbsolute implements AppUnderTest, TraceMarker {
-        private Connection connection;
-        @Override
-        public void executeApp() throws Exception {
-            connection = createConnection();
-            try {
-                traceMarker();
-            } finally {
-                closeConnection(connection);
-            }
-        }
-        @Override
-        public void traceMarker() throws Exception {
-            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                    ResultSet.CONCUR_READ_ONLY);
-            try {
-                statement.execute("select * from employee");
-                ResultSet rs = statement.getResultSet();
-                rs.absolute(2);
-            } finally {
-                statement.close();
-            }
-        }
-    }
-
-    public static class ExecuteStatementAndUseFirst implements AppUnderTest, TraceMarker {
-        private Connection connection;
-        @Override
-        public void executeApp() throws Exception {
-            connection = createConnection();
-            try {
-                traceMarker();
-            } finally {
-                closeConnection(connection);
-            }
-        }
-        @Override
-        public void traceMarker() throws Exception {
-            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                    ResultSet.CONCUR_READ_ONLY);
-            try {
-                statement.execute("select * from employee");
-                ResultSet rs = statement.getResultSet();
-                rs.first();
-            } finally {
-                statement.close();
-            }
-        }
-    }
-
-    public static class ExecuteStatementAndUseLast implements AppUnderTest, TraceMarker {
-        private Connection connection;
-        @Override
-        public void executeApp() throws Exception {
-            connection = createConnection();
-            try {
-                traceMarker();
-            } finally {
-                closeConnection(connection);
-            }
-        }
-        @Override
-        public void traceMarker() throws Exception {
-            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
-                    ResultSet.CONCUR_READ_ONLY);
-            try {
-                statement.execute("select * from employee");
-                ResultSet rs = statement.getResultSet();
-                rs.last();
-            } finally {
-                statement.close();
-            }
-        }
-    }
-
-    public static class ExecutePreparedStatementAndIterateOverResults implements AppUnderTest,
-            TraceMarker {
-        private Connection connection;
-        @Override
-        public void executeApp() throws Exception {
-            connection = createConnection();
-            try {
-                traceMarker();
-            } finally {
-                closeConnection(connection);
-            }
-        }
-        @Override
-        public void traceMarker() throws Exception {
-            PreparedStatement preparedStatement =
-                    connection.prepareStatement("select * from employee where name like ?");
-            try {
-                preparedStatement.setString(1, "john%");
-                preparedStatement.execute();
-                ResultSet rs = preparedStatement.getResultSet();
-                while (rs.next()) {
-                    rs.getString(1);
-                }
-            } finally {
-                preparedStatement.close();
-            }
-        }
-    }
-
-    public static class ExecutePreparedStatementWithSetNull implements AppUnderTest, TraceMarker {
-        private Connection connection;
-        @Override
-        public void executeApp() throws Exception {
-            connection = createConnection();
-            try {
-                traceMarker();
-            } finally {
-                closeConnection(connection);
-            }
-        }
-        @Override
-        public void traceMarker() throws Exception {
-            PreparedStatement preparedStatement =
-                    connection.prepareStatement("insert into employee values (?, ?)");
-            try {
-                preparedStatement.setNull(1, Types.VARCHAR);
-                preparedStatement.setNull(2, Types.BINARY);
-                preparedStatement.execute();
-            } finally {
-                preparedStatement.close();
-            }
-        }
-    }
-
-    public static class ExecutePreparedStatementWithBinary implements AppUnderTest, TraceMarker {
-        static {
-            JdbcPluginProperties.setDisplayBinaryParameterAsHex(
-                    "insert into employee values (?, ?)", 2);
-        }
-        private Connection connection;
-        @Override
-        public void executeApp() throws Exception {
-            connection = createConnection();
-            try {
-                traceMarker();
-            } finally {
-                closeConnection(connection);
-            }
-        }
-        @Override
-        public void traceMarker() throws Exception {
-            PreparedStatement preparedStatement =
-                    connection.prepareStatement("insert into employee values (?, ?)");
-            try {
-                preparedStatement.setString(1, "jane");
-                byte[] bytes = new byte[10];
-                for (int i = 0; i < 10; i++) {
-                    bytes[i] = (byte) i;
-                }
-                preparedStatement.setBytes(2, bytes);
-                preparedStatement.execute();
-            } finally {
-                preparedStatement.close();
-            }
-        }
-    }
-
-    public static class ExecutePreparedStatementThatHasInternalGlowrootToken implements
-            AppUnderTest, TraceMarker {
-        private Connection connection;
-        @Override
-        public void executeApp() throws Exception {
-            connection = createConnection();
-            try {
-                traceMarker();
-            } finally {
-                closeConnection(connection);
-            }
-        }
-        @Override
-        public void traceMarker() throws Exception {
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "select * from employee where name like ?");
-            try {
-                preparedStatement.setString(1, "{}");
-                preparedStatement.execute();
-                ResultSet rs = preparedStatement.getResultSet();
-                while (rs.next()) {
-                    rs.getString(1);
-                }
-            } finally {
-                preparedStatement.close();
-            }
-        }
-    }
-
     public static class ExecuteCallableStatement implements AppUnderTest, TraceMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
-            connection = createConnection();
+            connection = Connections.createConnection();
             try {
                 traceMarker();
             } finally {
-                closeConnection(connection);
+                Connections.closeConnection(connection);
             }
         }
         @Override
         public void traceMarker() throws Exception {
             CallableStatement callableStatement =
-                    connection.prepareCall("insert into employee values (?, ?)");
+                    connection.prepareCall("insert into employee (name, misc) values (?, ?)");
             try {
                 callableStatement.setString(1, "jane");
                 callableStatement.setNull(2, Types.BINARY);
@@ -1056,187 +304,21 @@ public class JdbcPluginTest {
         }
     }
 
-    public static class ExecuteJdbcCommitBase implements AppUnderTest, TraceMarker {
-        protected Connection connection;
-        @Override
-        public void executeApp() throws Exception {
-            connection = createConnection();
-            connection.setAutoCommit(false);
-            try {
-                traceMarker();
-            } finally {
-                closeConnection(connection);
-            }
-        }
-        @Override
-        public void traceMarker() throws Exception {
-            Statement statement = connection.createStatement();
-            try {
-                statement.execute("insert into employee (name) values ('john doe')");
-            } finally {
-                statement.close();
-            }
-        }
-    }
-
-    public static class ExecuteJdbcCommit extends ExecuteJdbcCommitBase {
-        @Override
-        public void traceMarker() throws Exception {
-            super.traceMarker();
-            connection.commit();
-        }
-    }
-
-    public static class ExecuteJdbcRollback extends ExecuteJdbcCommitBase {
-        @Override
-        public void traceMarker() throws Exception {
-            super.traceMarker();
-            connection.rollback();
-        }
-    }
-
     public static class AccessMetaData implements AppUnderTest, TraceMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
-            connection = createConnection();
+            connection = Connections.createConnection();
             connection.setAutoCommit(false);
             try {
                 traceMarker();
             } finally {
-                closeConnection(connection);
+                Connections.closeConnection(connection);
             }
         }
         @Override
         public void traceMarker() throws Exception {
             connection.getMetaData().getTables(null, null, null, null);
-        }
-    }
-
-    public static class ExecuteBatchPreparedStatement implements AppUnderTest, TraceMarker {
-        private Connection connection;
-        @Override
-        public void executeApp() throws Exception {
-            connection = createConnection();
-            connection.setAutoCommit(false);
-            try {
-                traceMarker();
-            } finally {
-                closeConnection(connection);
-            }
-        }
-        @Override
-        public void traceMarker() throws Exception {
-            PreparedStatement preparedStatement =
-                    connection.prepareStatement("insert into employee (name) values (?)");
-            try {
-                preparedStatement.setString(1, "huckle");
-                preparedStatement.addBatch();
-                preparedStatement.setString(1, "sally");
-                preparedStatement.addBatch();
-                preparedStatement.executeBatch();
-                preparedStatement.clearBatch();
-                preparedStatement.setString(1, "lowly");
-                preparedStatement.addBatch();
-                preparedStatement.setString(1, "pig will");
-                preparedStatement.addBatch();
-                preparedStatement.executeBatch();
-            } finally {
-                preparedStatement.close();
-            }
-        }
-    }
-
-    public static class ExecuteBatchPreparedStatementWithoutClear implements AppUnderTest,
-            TraceMarker {
-        private Connection connection;
-        @Override
-        public void executeApp() throws Exception {
-            connection = createConnection();
-            connection.setAutoCommit(false);
-            try {
-                traceMarker();
-            } finally {
-                closeConnection(connection);
-            }
-        }
-        @Override
-        public void traceMarker() throws Exception {
-            PreparedStatement preparedStatement =
-                    connection.prepareStatement("insert into employee (name) values (?)");
-            try {
-                preparedStatement.setString(1, "huckle");
-                preparedStatement.addBatch();
-                preparedStatement.setString(1, "sally");
-                preparedStatement.addBatch();
-                preparedStatement.executeBatch();
-                // intentionally not calling preparedStatement.clearBatch()
-                preparedStatement.setString(1, "lowly");
-                preparedStatement.addBatch();
-                preparedStatement.setString(1, "pig will");
-                preparedStatement.addBatch();
-                preparedStatement.executeBatch();
-            } finally {
-                preparedStatement.close();
-            }
-        }
-    }
-
-    public static class ExecuteBatchStatement implements AppUnderTest, TraceMarker {
-        private Connection connection;
-        @Override
-        public void executeApp() throws Exception {
-            connection = createConnection();
-            connection.setAutoCommit(false);
-            try {
-                traceMarker();
-            } finally {
-                closeConnection(connection);
-            }
-        }
-        @Override
-        public void traceMarker() throws Exception {
-            Statement statement = connection.createStatement();
-            try {
-                statement.addBatch("insert into employee (name) values ('huckle')");
-                statement.addBatch("insert into employee (name) values ('sally')");
-                statement.executeBatch();
-                statement.clearBatch();
-                statement.addBatch("insert into employee (name) values ('lowly')");
-                statement.addBatch("insert into employee (name) values ('pig will')");
-                statement.executeBatch();
-            } finally {
-                statement.close();
-            }
-        }
-    }
-
-    public static class ExecuteBatchStatementWithoutClear implements AppUnderTest, TraceMarker {
-        private Connection connection;
-        @Override
-        public void executeApp() throws Exception {
-            connection = createConnection();
-            connection.setAutoCommit(false);
-            try {
-                traceMarker();
-            } finally {
-                closeConnection(connection);
-            }
-        }
-        @Override
-        public void traceMarker() throws Exception {
-            Statement statement = connection.createStatement();
-            try {
-                statement.addBatch("insert into employee (name) values ('huckle')");
-                statement.addBatch("insert into employee (name) values ('sally')");
-                statement.executeBatch();
-                // intentionally not calling statement.clearBatch()
-                statement.addBatch("insert into employee (name) values ('lowly')");
-                statement.addBatch("insert into employee (name) values ('pig will')");
-                statement.executeBatch();
-            } finally {
-                statement.close();
-            }
         }
     }
 
@@ -1246,11 +328,11 @@ public class JdbcPluginTest {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
-            connection = createConnection();
+            connection = Connections.createConnection();
             try {
                 traceMarker();
             } finally {
-                closeConnection(connection);
+                Connections.closeConnection(connection);
             }
         }
         @Override
@@ -1278,43 +360,6 @@ public class JdbcPluginTest {
             } finally {
                 preparedStatement.close();
             }
-        }
-    }
-
-    public static class ExecuteGetConnectionAndConnectionClose implements AppUnderTest,
-            TraceMarker {
-        private BasicDataSource dataSource;
-        @Override
-        public void executeApp() throws Exception {
-            dataSource = new BasicDataSource();
-            dataSource.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
-            dataSource.setUrl("jdbc:hsqldb:mem:test");
-            // BasicDataSource opens and closes a test connection on first getConnection(),
-            // so just getting that out of the way before starting trace
-            dataSource.getConnection().close();
-            traceMarker();
-        }
-        @Override
-        public void traceMarker() throws Exception {
-            dataSource.getConnection().close();
-        }
-    }
-
-    public static class ExecuteSetAutoCommit implements AppUnderTest, TraceMarker {
-        private Connection connection;
-        @Override
-        public void executeApp() throws Exception {
-            connection = createConnection();
-            try {
-                traceMarker();
-            } finally {
-                closeConnection(connection);
-            }
-        }
-        @Override
-        public void traceMarker() throws Exception {
-            connection.setAutoCommit(false);
-            connection.setAutoCommit(true);
         }
     }
 }

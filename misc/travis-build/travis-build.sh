@@ -10,8 +10,21 @@ case "$1" in
                  mvn clean test -Dglowroot.test.harness=$GLOWROOT_HARNESS \
                                 -B
                else
-                 mvn clean package -Dglowroot.test.harness=$GLOWROOT_HARNESS \
+                 # using install instead of package for subsequent jdbc-plugin tests
+                 mvn clean install -Dglowroot.test.harness=$GLOWROOT_HARNESS \
                                    -B
+                 mvn clean test -pl plugins/jdbc-plugin \
+                                -Dglowroot.test.harness=$GLOWROOT_HARNESS \
+                                -Dglowroot.test.jdbcConnectionType=H2 \
+                                -B
+                 mvn clean test -pl plugins/jdbc-plugin \
+                                -Dglowroot.test.harness=$GLOWROOT_HARNESS \
+                                -Dglowroot.test.jdbcConnectionType=COMMONS_DBCP_WRAPPED \
+                                -B
+                 mvn clean test -pl plugins/jdbc-plugin \
+                                -Dglowroot.test.harness=$GLOWROOT_HARNESS \
+                                -Dglowroot.test.jdbcConnectionType=TOMCAT_JDBC_POOL_WRAPPED \
+                                -B
                fi
                ;;
 

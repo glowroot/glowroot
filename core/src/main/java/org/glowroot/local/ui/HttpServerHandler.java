@@ -18,6 +18,7 @@ package org.glowroot.local.ui;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.channels.ClosedChannelException;
@@ -65,8 +66,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Reflections;
-import org.glowroot.common.Reflections.ReflectiveException;
-import org.glowroot.common.Reflections.ReflectiveTargetException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -160,6 +159,9 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         HttpResponse response;
         try {
             response = handleRequest(request, channel);
+        } catch (Exception f) {
+            logger.error(f.getMessage(), f);
+            response = newHttpResponseWithStackTrace(f, INTERNAL_SERVER_ERROR, null);
         } finally {
             currentChannel.remove();
         }
@@ -346,7 +348,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         Object responseText;
         try {
             responseText = callMethod(jsonService, serviceMethodName, args, requestText, response);
-        } catch (ReflectiveTargetException e) {
+        } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
             if (cause instanceof JsonServiceException) {
                 // this is an "expected" exception, no need to log
@@ -361,7 +363,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                         "Query timed out (timeout is configurable under Configuration > Advanced)");
             }
             return newHttpResponseWithStackTrace(e, INTERNAL_SERVER_ERROR, null);
-        } catch (ReflectiveException e) {
+        } catch (Exception e) {
             logger.error(e.getMessage(), e);
             return newHttpResponseWithStackTrace(e, INTERNAL_SERVER_ERROR, null);
         }
@@ -440,7 +442,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
     }
 
     private static @Nullable Object callMethod(Object object, String methodName, String[] args,
-            String requestText, HttpResponse response) throws ReflectiveException {
+            String requestText, HttpResponse response) throws Exception {
         List<Class<?>> parameterTypes = Lists.newArrayList();
         List<Object> parameters = Lists.newArrayList();
         for (int i = 0; i < args.length; i++) {
@@ -451,7 +453,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
         try {
             method = Reflections.getDeclaredMethod(object.getClass(), methodName,
                     parameterTypes.toArray(new Class[parameterTypes.size()]));
-        } catch (ReflectiveException e) {
+        } catch (Exception e) {
             // log exception at trace level
             logger.trace(e.getMessage(), e);
             // try again with requestText
@@ -460,7 +462,7 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
             try {
                 method = Reflections.getDeclaredMethod(object.getClass(), methodName,
                         parameterTypes.toArray(new Class[parameterTypes.size()]));
-            } catch (ReflectiveException f) {
+            } catch (Exception f) {
                 // log exception at trace level
                 logger.trace(f.getMessage(), f);
                 // try again with response
@@ -469,10 +471,10 @@ class HttpServerHandler extends SimpleChannelUpstreamHandler {
                 try {
                     method = Reflections.getDeclaredMethod(object.getClass(), methodName,
                             parameterTypes.toArray(new Class[parameterTypes.size()]));
-                } catch (ReflectiveException g) {
+                } catch (Exception g) {
                     // log exception at trace level
                     logger.trace(g.getMessage(), g);
-                    throw new ReflectiveException(new NoSuchMethodException(methodName));
+                    throw new NoSuchMethodException(methodName);
                 }
             }
         }

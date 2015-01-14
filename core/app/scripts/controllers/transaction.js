@@ -36,6 +36,11 @@ glowroot.controller('TransactionCtrl', [
 
     $scope.transactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
     $scope.transactionName = $location.search()['transaction-name'];
+    // this is needed when click occurs on sidebar b/c it doesn't reload TransactionCtrl in that case but still need
+    // to update transactionName
+    $scope.$on('$stateChangeSuccess', function () {
+      $scope.transactionName = $location.search()['transaction-name'];
+    });
 
     $scope.tabQueryString = function () {
       return queryStrings.encodeObject($scope.buildQueryObject());

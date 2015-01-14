@@ -93,25 +93,31 @@ glowroot.controller('JvmGaugesCtrl', [
       });
       var minRequiredForUniqueName;
       var shortNames = {};
-      var i, j, k;
+      var i, j;
       for (i = 0; i < gaugeNames.length; i++) {
-        var si = splitGaugeNames[i];
+        var splitGaugeName = splitGaugeNames[i];
         minRequiredForUniqueName = 1;
         for (j = 0; j < gaugeNames.length; j++) {
           if (j === i) {
             continue;
           }
-          var sj = splitGaugeNames[j];
-          for (k = 1; k <= Math.min(si.length, sj.length); k++) {
-            if (si[si.length - k] !== sj[sj.length - k]) {
-              break;
-            }
-            minRequiredForUniqueName = Math.max(minRequiredForUniqueName, k + 1);
-          }
+          var splitGaugeName2 = splitGaugeNames[j];
+          minRequiredForUniqueName = Math.max(minRequiredForUniqueName,
+              numSamePartsStartingAtEnd(splitGaugeName, splitGaugeName2) + 1);
         }
-        shortNames[gaugeNames[i]] = si.slice(-minRequiredForUniqueName).join('/');
+        shortNames[gaugeNames[i]] = splitGaugeName.slice(-minRequiredForUniqueName).join('/');
       }
       return shortNames;
+    }
+
+    function numSamePartsStartingAtEnd(array1, array2) {
+      var k = 0;
+      var len1 = array1.length;
+      var len2 = array2.length;
+      while (k < Math.min(len1, len2) && array1[len1 - 1 - k] === array2[len2 - 1 - k]) {
+        k++;
+      }
+      return k;
     }
 
     function newRollupLevel(from, to) {
@@ -168,9 +174,6 @@ glowroot.controller('JvmGaugesCtrl', [
           })
           .error(function (data, status) {
             $scope.showChartSpinner--;
-            if (refreshId !== currentRefreshId) {
-              return;
-            }
             httpErrors.handler($scope, deferred)(data, status);
           });
     }
@@ -289,29 +292,27 @@ glowroot.controller('JvmGaugesCtrl', [
     function getFilteredData() {
       var from = plot.getAxes().xaxis.options.min;
       var to = plot.getAxes().xaxis.options.max;
-      var i, j;
-      var filteredData = [];
       var data = plot.getData();
+      var filteredData = [];
+      var i;
       for (i = 0; i < data.length; i++) {
-        var filteredPoints = [];
-        var points = data[i].data;
-        var lastPoint = null;
-        var lastPointInRange = false;
-        for (j = 0; j < points.length; j++) {
-          var currPoint = points[j];
-          if (!currPoint) {
-            // point can be undefined which is used to represent no data collected in that period
-            if (lastPointInRange) {
-              filteredPoints.push(currPoint);
-            }
-            lastPoint = currPoint;
-            continue;
-          }
+        filteredData.push(getFilteredPoints(data[i].data, from, to));
+      }
+      return filteredData;
+    }
+
+    function getFilteredPoints(points, from, to) {
+      var lastPoint = null;
+      var lastPointInRange = false;
+      var filteredPoints = [];
+      var j;
+      for (j = 0; j < points.length; j++) {
+        var currPoint = points[j];
+        if (currPoint) {
           var currPointInRange = currPoint[0] >= from && currPoint[0] <= to;
           if (!lastPointInRange && currPointInRange) {
             // add one extra so partial line slope to point off the chart will be displayed
             filteredPoints.push(lastPoint);
-            filteredPoints.push(currPoint);
           } else if (lastPointInRange && !currPointInRange) {
             // add one extra so partial line slope to point off the chart will be displayed
             filteredPoints.push(currPoint);
@@ -323,10 +324,15 @@ glowroot.controller('JvmGaugesCtrl', [
           }
           lastPoint = currPoint;
           lastPointInRange = currPointInRange;
+        } else {
+          // point can be undefined which is used to represent no data collected in that period
+          if (lastPointInRange) {
+            filteredPoints.push(currPoint);
+          }
+          lastPoint = currPoint;
         }
-        filteredData.push(filteredPoints);
       }
-      return filteredData;
+      return filteredPoints;
     }
 
     $scope.gaugeRowStyle = function (gaugeName) {
@@ -484,8 +490,7 @@ glowroot.controller('JvmGaugesCtrl', [
         },
         tooltip: true,
         tooltipOpts: {
-          content: function (label, xval, yval, flotItem) {
-            // TODO internationalize time format
+          content: function (label, xval, yval) {
             var shortLabel = $scope.allShortGaugeNames[label];
             return moment(xval).format('h:mm:ss.SSS a (Z)') + '<br>' + shortLabel + ': ' + yval;
           }

@@ -27,7 +27,6 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -138,15 +137,6 @@ public class Profile {
             lastMatchedNode.addChildNode(nextNode);
             lastMatchedNode = nextNode;
         }
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("unmergedStackTraces", unmergedStackTraces)
-                .add("unmergedStackTraceThreadStates", unmergedStackTraceThreadStates)
-                .add("syntheticRootNode", syntheticRootNode)
-                .toString();
     }
 
     // recreate the stack trace as it would have been without the synthetic $glowroot$metric$

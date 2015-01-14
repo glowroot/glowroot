@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, Glowroot, HandlebarsRendering, $, alert */
+/* global glowroot, Glowroot, HandlebarsRendering, $ */
 
 glowroot.factory('traceModal', [
   '$rootScope',
@@ -48,11 +48,16 @@ glowroot.factory('traceModal', [
               $('#modalContent > div:first-of-type').attr('tabIndex', -1);
               $('#modalContent > div:first-of-type').css('outline', 'none');
               $('#modalContent > div:first-of-type').focus();
+              $('#modalContent button.download-trace').click(function () {
+                var $traceParent = $(this).parents('.gt-trace-parent');
+                var traceId = $traceParent.data('gtTraceId');
+                window.location = 'export/trace/' + traceId;
+              });
             }
           })
           .error(function () {
-            // TODO handle this better
-            alert('Error occurred');
+            $modalContent.html(
+                '<div class="gt-red" style="padding: 1em;">An error occurred retrieving the trace</div>');
           });
 
       // padding is same as for trace once it loads

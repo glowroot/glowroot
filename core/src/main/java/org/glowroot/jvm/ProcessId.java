@@ -20,8 +20,12 @@ import java.lang.management.ManagementFactory;
 import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class ProcessId {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProcessId.class);
 
     private ProcessId() {}
 
@@ -38,6 +42,7 @@ class ProcessId {
                 Long.parseLong(pid);
                 return pid;
             } catch (NumberFormatException e) {
+                logger.debug(e.getMessage(), e);
                 return null;
             }
         } else {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,44 +25,72 @@ import com.google.common.collect.Lists;
 class ObjectNames {
 
     static List<String> getPropertyValues(ObjectName objectName) throws IOException {
-        List<String> values = Lists.newArrayList();
-        char[] chars = objectName.getKeyPropertyListString().toCharArray();
-        boolean inValue = false;
-        boolean inQuotedValue = false;
-        StringBuilder currValue = new StringBuilder();
-        for (int i = 0; i < chars.length; i++) {
-            char c = chars[i];
-            // check for end of key
-            if (!inValue && c == '=') {
-                inValue = true;
-                if (i + 1 < chars.length && chars[i + 1] == '"') {
-                    inQuotedValue = true;
-                    i++;
-                }
-                continue;
-            }
-            // check for end of value
-            if (inQuotedValue && c == '"' || inValue && !inQuotedValue && c == ',') {
-                values.add(currValue.toString());
-                inValue = false;
-                inQuotedValue = false;
-                currValue.setLength(0);
-            }
-            if (inQuotedValue && c == '\\') {
-                c = chars[++i];
-                if (c == 'n') {
-                    c = '\n';
-                }
+        return new ObjectNameParser(objectName).getPropertyValues();
+    }
+
+    private static class ObjectNameParser {
+
+        private final char[] chars;
+        private int index;
+        private boolean inValue;
+        private boolean inQuotedValue;
+        private final StringBuilder currValue = new StringBuilder();
+        private final List<String> values = Lists.newArrayList();
+
+        private ObjectNameParser(ObjectName objectName) {
+            chars = objectName.getKeyPropertyListString().toCharArray();
+        }
+
+        private List<String> getPropertyValues() {
+            while (index < chars.length) {
+                readNextChar();
             }
             if (inValue) {
+                // add the last value
+                values.add(currValue.toString());
+            }
+            return values;
+        }
+
+        private void readNextChar() {
+            char c = chars[index++];
+            if (isStartOfValue(c)) {
+                startValue();
+            } else if (isEndOfValue(c)) {
+                endValue();
+            } else if (inQuotedValue && c == '\\') {
+                char d = chars[index++];
+                if (d == 'n') {
+                    d = '\n';
+                }
+                currValue.append(d);
+            } else if (inValue) {
                 currValue.append(c);
             }
         }
-        if (inValue) {
-            // add the last value
-            values.add(currValue.toString());
+
+        private boolean isStartOfValue(char c) {
+            return !inValue && c == '=';
         }
-        return values;
+
+        private void startValue() {
+            inValue = true;
+            if (index < chars.length && chars[index] == '"') {
+                inQuotedValue = true;
+                index++;
+            }
+        }
+
+        private boolean isEndOfValue(char c) {
+            return inQuotedValue && c == '"' || inValue && !inQuotedValue && c == ',';
+        }
+
+        private void endValue() {
+            values.add(currValue.toString());
+            inValue = false;
+            inQuotedValue = false;
+            currValue.setLength(0);
+        }
     }
 
     private ObjectNames() {}

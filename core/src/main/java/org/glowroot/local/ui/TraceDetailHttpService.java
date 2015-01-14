@@ -16,7 +16,6 @@
 package org.glowroot.local.ui;
 
 import java.io.StringReader;
-import java.sql.SQLException;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -31,6 +30,7 @@ import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
 import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
@@ -44,8 +44,6 @@ class TraceDetailHttpService implements HttpService {
         this.traceCommonService = traceCommonService;
     }
 
-    // TODO test this can still return "{expired: true}" if user viewing trace, and it expires
-    // before they expand detail
     @Override
     public @Nullable HttpResponse handleRequest(HttpRequest request, Channel channel)
             throws Exception {
@@ -53,10 +51,7 @@ class TraceDetailHttpService implements HttpService {
         String path = decoder.getPath();
         String traceComponent = path.substring(path.lastIndexOf('/') + 1);
         List<String> traceIds = decoder.getParameters().get("trace-id");
-        if (traceIds == null) {
-            throw new IllegalStateException("Missing trace id in query string: "
-                    + request.getUri());
-        }
+        checkNotNull(traceIds, "Missing trace id in query string: %s", request.getUri());
         String traceId = traceIds.get(0);
         logger.debug("handleRequest(): traceComponent={}, traceId={}", traceComponent, traceId);
 
@@ -76,7 +71,7 @@ class TraceDetailHttpService implements HttpService {
     }
 
     private @Nullable CharSource getDetailCharSource(String traceComponent, String traceId)
-            throws SQLException {
+            throws Exception {
         if (traceComponent.equals("entries")) {
             return traceCommonService.getEntries(traceId);
         }

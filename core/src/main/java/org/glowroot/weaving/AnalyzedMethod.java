@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.immutables.value.Value;
 import org.objectweb.asm.Type;
 
@@ -70,7 +71,8 @@ abstract class AnalyzedMethod {
     }
 
     // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
-    private static Type getType(String type) {
+    @VisibleForTesting
+    static Type getType(String type) {
         if (type.equals(Void.TYPE.getName())) {
             return Type.VOID_TYPE;
         }
@@ -99,16 +101,20 @@ abstract class AnalyzedMethod {
             return Type.DOUBLE_TYPE;
         }
         if (type.endsWith("[]")) {
-            StringBuilder sb = new StringBuilder();
-            String remaining = type;
-            while (remaining.endsWith("[]")) {
-                sb.append("[");
-                remaining = remaining.substring(0, remaining.length() - 2);
-            }
-            Type elementType = getType(remaining);
-            sb.append(elementType.getDescriptor());
-            return Type.getType(sb.toString());
+            return getArrayType(type);
         }
         return Type.getObjectType(type.replace('.', '/'));
+    }
+
+    private static Type getArrayType(String type) {
+        StringBuilder sb = new StringBuilder();
+        String remaining = type;
+        while (remaining.endsWith("[]")) {
+            sb.append("[");
+            remaining = remaining.substring(0, remaining.length() - 2);
+        }
+        Type elementType = getType(remaining);
+        sb.append(elementType.getDescriptor());
+        return Type.getType(sb.toString());
     }
 }

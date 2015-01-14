@@ -18,11 +18,13 @@ package org.glowroot.jvm;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 
+import javax.annotation.Nullable;
+
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Reflections;
-import org.glowroot.common.Reflections.ReflectiveException;
 
 public class ThreadAllocatedBytes {
 
@@ -32,6 +34,15 @@ public class ThreadAllocatedBytes {
     private volatile boolean disabledDueToError;
 
     static OptionalService<ThreadAllocatedBytes> create() {
+        try {
+            return createInternal();
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            return OptionalService.unavailable("<see error log for detail>");
+        }
+    }
+
+    private static OptionalService<ThreadAllocatedBytes> createInternal() throws Exception {
         Class<?> sunThreadMXBeanClass;
         try {
             sunThreadMXBeanClass = Class.forName("com.sun.management.ThreadMXBean");
@@ -41,38 +52,26 @@ public class ThreadAllocatedBytes {
             return OptionalService.unavailable("Cannot find class com.sun.management.ThreadMXBean"
                     + " (introduced in Oracle Java SE 6u25)");
         }
-        Method isSupportedMethod;
-        try {
-            isSupportedMethod = Reflections.getMethod(sunThreadMXBeanClass,
-                    "isThreadAllocatedMemorySupported");
-        } catch (ReflectiveException e) {
-            logger.error(e.getMessage(), e);
-            return OptionalService.unavailable("<see error log for detail>");
-        }
-        Boolean supported;
-        try {
-            supported = (Boolean) Reflections.invoke(isSupportedMethod,
-                    ManagementFactory.getThreadMXBean());
-        } catch (ReflectiveException e) {
-            logger.error(e.getMessage(), e);
-            return OptionalService.unavailable("<see error log for detail>");
-        }
+        Method isSupportedMethod = Reflections.getMethod(sunThreadMXBeanClass,
+                "isThreadAllocatedMemorySupported");
+        Boolean supported = (Boolean) Reflections.invoke(isSupportedMethod,
+                ManagementFactory.getThreadMXBean());
+        return createInternal(supported, sunThreadMXBeanClass);
+    }
+
+    @VisibleForTesting
+    static OptionalService<ThreadAllocatedBytes> createInternal(
+            @Nullable Boolean supported, Class<?> sunThreadMXBeanClass) throws Exception {
         if (supported == null) {
             return OptionalService.unavailable(
-                    "ThreadMXBean.isThreadAllocatedMemorySupported() returned null");
+                    "ThreadMXBean.isThreadAllocatedMemorySupported() unexpectedly returned null");
         }
         if (!supported) {
             return OptionalService.unavailable("Method com.sun.management.ThreadMXBean"
                     + ".isThreadAllocatedMemorySupported() returned false");
         }
-        Method getThreadAllocatedBytesMethod;
-        try {
-            getThreadAllocatedBytesMethod = Reflections.getMethod(sunThreadMXBeanClass,
-                    "getThreadAllocatedBytes", long.class);
-        } catch (ReflectiveException e) {
-            logger.error(e.getMessage(), e);
-            return OptionalService.unavailable("<see error log for detail>");
-        }
+        Method getThreadAllocatedBytesMethod = Reflections.getMethod(sunThreadMXBeanClass,
+                "getThreadAllocatedBytes", long.class);
         return OptionalService.available(new ThreadAllocatedBytes(getThreadAllocatedBytesMethod));
     }
 
@@ -95,7 +94,7 @@ public class ThreadAllocatedBytes {
                 return -1;
             }
             return threadAllocatedBytes;
-        } catch (ReflectiveException e) {
+        } catch (Exception e) {
             logger.error(e.getMessage(), e);
             disabledDueToError = true;
             return -1;

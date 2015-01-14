@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,42 +15,15 @@
  */
 package org.glowroot.local.store;
 
-import org.glowroot.markers.UsedByJsonBinding;
+import org.immutables.value.Value;
 
-@UsedByJsonBinding
-public class ErrorPoint {
+@Value.Immutable
+public abstract class ErrorPoint {
 
-    public static final long UNKNOWN_TRANSACTION_COUNT = -1;
-
-    private final long captureTime;
-    private final long errorCount;
-    private long transactionCount;
-
-    ErrorPoint(long captureTime, long errorCount, long transactionCount) {
-        this.captureTime = captureTime;
-        this.errorCount = errorCount;
-        this.transactionCount = transactionCount;
-    }
-
-    ErrorPoint(long captureTime, long errorCount) {
-        this.captureTime = captureTime;
-        this.errorCount = errorCount;
-        this.transactionCount = UNKNOWN_TRANSACTION_COUNT;
-    }
-
-    public long getCaptureTime() {
-        return captureTime;
-    }
-
-    public long getErrorCount() {
-        return errorCount;
-    }
-
-    public long getTransactionCount() {
-        return transactionCount;
-    }
-
-    public void setTransactionCount(long transactionCount) {
-        this.transactionCount = transactionCount;
-    }
+    @Value.Parameter
+    public abstract long captureTime();
+    @Value.Parameter
+    public abstract long errorCount();
+    @Value.Parameter
+    public abstract long transactionCount();
 }

@@ -22,7 +22,6 @@ import java.lang.reflect.Method;
 import javax.annotation.Nullable;
 
 import org.glowroot.common.Reflections;
-import org.glowroot.common.Reflections.ReflectiveException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -78,8 +77,8 @@ class Accessor {
     }
 
     @Nullable
-    Object evaluate(Object object) throws ReflectiveException {
-        if (object instanceof Object[] && accessorType != AccessorType.ARRAY_LENGTH) {
+    Object evaluate(Object object) throws Exception {
+        if (isArrayEvaluation(object)) {
             return evaluateArray((/*@Nullable*/Object[]) object);
         }
         switch (accessorType) {
@@ -96,7 +95,11 @@ class Accessor {
         }
     }
 
-    private Object evaluateArray(/*@Nullable*/Object[] array) throws ReflectiveException {
+    private boolean isArrayEvaluation(Object object) {
+        return object instanceof Object[] && accessorType != AccessorType.ARRAY_LENGTH;
+    }
+
+    private Object evaluateArray(/*@Nullable*/Object[] array) throws Exception {
         /*@Nullable*/Object[] values = new Object[array.length];
         for (int i = 0; i < array.length; i++) {
             Object item = array[i];

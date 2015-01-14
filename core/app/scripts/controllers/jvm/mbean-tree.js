@@ -57,7 +57,10 @@ glowroot.controller('JvmMBeanTreeCtrl', [
             node.loading = false;
             node.attributeMap = data;
           })
-          .error(httpErrors.handler($scope));
+          .error(function (data, status) {
+            node.loading = false;
+            httpErrors.handler($scope)(data, status);
+          });
     };
 
     $scope.isSimpleValue = function (value) {

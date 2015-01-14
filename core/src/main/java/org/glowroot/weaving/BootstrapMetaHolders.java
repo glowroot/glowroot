@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,9 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.objectweb.asm.Type;
 
 import org.glowroot.common.Reflections;
-import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.UsedByGeneratedBytecode;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 // can't generate classes in bootstrap class loader, so this is needed for storing meta holders
 // similar technique is not good for non-bootstrap class loaders anyways since then weak references
@@ -73,9 +74,7 @@ public class BootstrapMetaHolders {
             String classMetaFieldName, Type classMetaType, Type type) {
         String key = metaHolderInternalName + '.' + classMetaFieldName;
         Integer index = classMetaHolderIndexes.get(key);
-        if (index == null) {
-            throw new AssertionError("ClassMetaHolder was not reserved for key: " + key);
-        }
+        checkNotNull(index, "ClassMetaHolder was not reserved for key: " + key);
         ClassMetaHolder classMetaHolder = new ClassMetaHolder(classMetaType, type);
         classMetaHolders.set(index, classMetaHolder);
     }
@@ -85,27 +84,23 @@ public class BootstrapMetaHolders {
             List<Type> parameterTypes) {
         String key = metaHolderInternalName + '.' + methodMetaFieldName;
         Integer index = methodMetaHolderIndexes.get(key);
-        if (index == null) {
-            throw new AssertionError("MethodMetaHolder was not reserved for key: " + key);
-        }
+        checkNotNull(index, "MethodMetaHolder was not reserved for key: " + key);
         MethodMetaHolder methodMetaHolder =
                 new MethodMetaHolder(methodMetaType, type, returnType, parameterTypes);
         methodMetaHolders.set(index, methodMetaHolder);
     }
 
-    public static Object getClassMeta(int index) {
+    @UsedByGeneratedBytecode
+    public static Object getClassMeta(int index) throws Exception {
         ClassMetaHolder classMetaHolder = classMetaHolders.get(index);
-        if (classMetaHolder == null) {
-            throw new AssertionError("ClassMetaHolder was not instantiated for index: " + index);
-        }
+        checkNotNull(classMetaHolder, "ClassMetaHolder was not instantiated for index: " + index);
         return classMetaHolder.getClassMeta();
     }
 
-    public static Object getMethodMeta(int index) {
+    @UsedByGeneratedBytecode
+    public static Object getMethodMeta(int index) throws Exception {
         MethodMetaHolder methodMetaHolder = methodMetaHolders.get(index);
-        if (methodMetaHolder == null) {
-            throw new AssertionError("MethodMetaHolder was not instantiated for index: " + index);
-        }
+        checkNotNull(methodMetaHolder, "MethodMetaHolder was not instantiated for index: " + index);
         return methodMetaHolder.getMethodMeta();
     }
 
@@ -148,30 +143,18 @@ public class BootstrapMetaHolders {
             this.type = type;
         }
 
-        private Object getClassMeta() {
+        private Object getClassMeta() throws Exception {
             Object classMetaLocal = classMeta;
             if (classMetaLocal != null) {
                 return classMetaLocal;
             }
             synchronized (this) {
                 if (classMeta == null) {
-                    Class<?> classMetaClass;
-                    Class<?> wovenClass;
-                    try {
-                        classMetaClass = getType(classMetaType);
-                        wovenClass = getType(type);
-                    } catch (ClassNotFoundException e) {
-                        throw new IllegalStateException("Error instantiating @BindClassMeta class",
-                                e);
-                    }
-                    try {
-                        Constructor<?> constructor =
-                                Reflections.getConstructor(classMetaClass, Class.class);
-                        classMeta = Reflections.invoke(constructor, wovenClass);
-                    } catch (ReflectiveException e) {
-                        throw new IllegalStateException("Error instantiating @BindClassMeta class",
-                                e);
-                    }
+                    Class<?> classMetaClass = getType(classMetaType);
+                    Class<?> wovenClass = getType(type);
+                    Constructor<?> constructor =
+                            Reflections.getConstructor(classMetaClass, Class.class);
+                    classMeta = Reflections.invoke(constructor, wovenClass);
                 }
             }
             return classMeta;
@@ -194,38 +177,24 @@ public class BootstrapMetaHolders {
             this.parameterTypes = parameterTypes;
         }
 
-        private Object getMethodMeta() {
+        private Object getMethodMeta() throws Exception {
             Object methodMetaLocal = methodMeta;
             if (methodMetaLocal != null) {
                 return methodMetaLocal;
             }
             synchronized (this) {
                 if (methodMeta == null) {
-                    Class<?> classMetaClass;
-                    Class<?> wovenClass;
-                    Class<?> returnClass;
-                    Class<?>[] parameterClasses;
-                    try {
-                        classMetaClass = getType(methodMetaType);
-                        wovenClass = getType(type);
-                        returnClass = getType(returnType);
-                        parameterClasses = new Class[parameterTypes.size()];
-                        for (int i = 0; i < parameterTypes.size(); i++) {
-                            parameterClasses[i] = getType(parameterTypes.get(i));
-                        }
-                    } catch (ClassNotFoundException e) {
-                        throw new IllegalStateException(
-                                "Error instantiating @BindMethodMeta class", e);
+                    Class<?> classMetaClass = getType(methodMetaType);
+                    Class<?> wovenClass = getType(type);
+                    Class<?> returnClass = getType(returnType);
+                    Class<?>[] parameterClasses = new Class[parameterTypes.size()];
+                    for (int i = 0; i < parameterTypes.size(); i++) {
+                        parameterClasses[i] = getType(parameterTypes.get(i));
                     }
-                    try {
-                        Constructor<?> constructor = Reflections.getConstructor(classMetaClass,
-                                Class.class, Class.class, Class[].class);
-                        methodMeta = Reflections.invoke(constructor, wovenClass, returnClass,
-                                parameterClasses);
-                    } catch (ReflectiveException e) {
-                        throw new IllegalStateException(
-                                "Error instantiating @BindMethodMeta class", e);
-                    }
+                    Constructor<?> constructor = Reflections.getConstructor(classMetaClass,
+                            Class.class, Class.class, Class[].class);
+                    methodMeta = Reflections.invoke(constructor, wovenClass, returnClass,
+                            parameterClasses);
                 }
             }
             return methodMeta;

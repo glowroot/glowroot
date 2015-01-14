@@ -19,13 +19,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import java.io.SyncFailedException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.common.Ticker;
@@ -39,8 +35,6 @@ class CappedDatabaseOutputStream extends OutputStream {
 
     static final int HEADER_SKIP_BYTES = 20;
     static final int BLOCK_HEADER_SKIP_BYTES = 8;
-
-    private static final Logger logger = LoggerFactory.getLogger(CappedDatabaseOutputStream.class);
 
     private static final int FSYNC_INTERVAL_MILLIS = 2000;
     private static final int HEADER_CURR_INDEX_POS = 0;
@@ -148,26 +142,10 @@ class CappedDatabaseOutputStream extends OutputStream {
 
     // perform resize in-place to avoid using extra disk space
     void resize(int newSizeKb) throws IOException {
-        if (newSizeKb == sizeKb) {
+        if (performEasyResize(newSizeKb)) {
             return;
         }
         long newSizeBytes = newSizeKb * 1024L;
-        if (newSizeKb < sizeKb && currIndex - lastResizeBaseIndex < newSizeBytes) {
-            // resizing smaller and on first "loop" after a resize and haven't written up to the
-            // new smaller size yet
-            out.seek(8);
-            out.writeInt(newSizeKb);
-            sizeKb = newSizeKb;
-            sizeBytes = newSizeBytes;
-            return;
-        } else if (newSizeKb > sizeKb && currIndex - lastResizeBaseIndex < sizeBytes) {
-            // resizing larger and on first "loop" after a resize
-            out.seek(8);
-            out.writeInt(newSizeKb);
-            sizeKb = newSizeKb;
-            sizeBytes = newSizeBytes;
-            return;
-        }
         // keep the min of the current and new capped size
         int numKeepKb = Math.min(sizeKb, newSizeKb);
         long numKeepBytes = numKeepKb * 1024L;
@@ -240,17 +218,35 @@ class CappedDatabaseOutputStream extends OutputStream {
         out.writeLong(currIndex);
     }
 
-    private void fsyncIfNeeded() {
+    private void fsyncIfNeeded() throws IOException {
         if (fsyncNeeded.getAndSet(false)) {
-            try {
-                out.getFD().sync();
-                lastFsyncTick.set(ticker.read());
-            } catch (SyncFailedException e) {
-                logger.error(e.getMessage(), e);
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-            }
+            out.getFD().sync();
+            lastFsyncTick.set(ticker.read());
         }
+    }
+
+    private boolean performEasyResize(int newSizeKb) throws IOException {
+        if (newSizeKb == sizeKb) {
+            return true;
+        }
+        long newSizeBytes = newSizeKb * 1024L;
+        if (newSizeKb < sizeKb && currIndex - lastResizeBaseIndex < newSizeBytes) {
+            // resizing smaller and on first "loop" after a resize and haven't written up to the
+            // new smaller size yet
+            out.seek(8);
+            out.writeInt(newSizeKb);
+            sizeKb = newSizeKb;
+            sizeBytes = newSizeBytes;
+            return true;
+        } else if (newSizeKb > sizeKb && currIndex - lastResizeBaseIndex < sizeBytes) {
+            // resizing larger and on first "loop" after a resize
+            out.seek(8);
+            out.writeInt(newSizeKb);
+            sizeKb = newSizeKb;
+            sizeBytes = newSizeBytes;
+            return true;
+        }
+        return false;
     }
 
     @OnlyUsedByTests
@@ -260,7 +256,7 @@ class CappedDatabaseOutputStream extends OutputStream {
 
     private class FsyncRunnable extends ScheduledRunnable {
         @Override
-        protected void runInternal() {
+        protected void runInternal() throws IOException {
             fsyncIfNeeded();
         }
     }

@@ -44,7 +44,7 @@ public class CappedDatabaseOutputStreamTest {
     public void onBefore() throws IOException {
         tempFile = File.createTempFile("glowroot-test-", ".capped.txt");
         scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-        cappedOut = CappedDatabaseOutputStream.create(tempFile, 1, scheduledExecutor,
+        cappedOut = CappedDatabaseOutputStream.create(tempFile, 10, scheduledExecutor,
                 Ticker.systemTicker());
         in = new RandomAccessFile(tempFile, "r");
     }
@@ -69,19 +69,43 @@ public class CappedDatabaseOutputStreamTest {
         long cappedId = cappedOut.endBlock();
         cappedOut.sync();
         // then
-        assertThat(cappedId).isEqualTo(0);
-        long currIndex = in.readLong();
-        int cappedDatabaseSizeKb = in.readInt();
-        long lastCompactionBaseIndex = in.readLong();
-        assertThat(currIndex).isEqualTo(10 + BLOCK_HEADER_SIZE);
-        assertThat(cappedDatabaseSizeKb).isEqualTo(1);
-        assertThat(lastCompactionBaseIndex).isEqualTo(0);
-        long blockSize = in.readLong();
-        assertThat(blockSize).isEqualTo(10);
-        byte[] bytes = new byte[(int) blockSize];
-        in.readFully(bytes, 0, bytes.length);
-        String content = new String(bytes);
-        assertThat(content).isEqualTo(text);
+        assertWrite(text, cappedId);
+    }
+
+    @Test
+    public void shouldWriteUsingByteArray() throws IOException {
+        // given
+        String text = "0123456789";
+        // when
+        cappedOut.startBlock();
+        cappedOut.write(text.getBytes());
+        cappedOut.flush();
+        long cappedId = cappedOut.endBlock();
+        cappedOut.sync();
+        // then
+        assertWrite(text, cappedId);
+    }
+
+    @Test
+    public void shouldWriteUsingSingleBytes() throws IOException {
+        // given
+        // when
+        cappedOut.startBlock();
+        cappedOut.write('0');
+        cappedOut.write('1');
+        cappedOut.write('2');
+        cappedOut.write('3');
+        cappedOut.write('4');
+        cappedOut.write('5');
+        cappedOut.write('6');
+        cappedOut.write('7');
+        cappedOut.write('8');
+        cappedOut.write('9');
+        cappedOut.flush();
+        long cappedId = cappedOut.endBlock();
+        cappedOut.sync();
+        // then
+        assertWrite("0123456789", cappedId);
     }
 
     @Test
@@ -89,7 +113,7 @@ public class CappedDatabaseOutputStreamTest {
         // given
         Writer out = new OutputStreamWriter(cappedOut);
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 60; i++) {
+        for (int i = 0; i < 600; i++) {
             sb.append("0123456789");
         }
         String text = sb.toString();
@@ -104,20 +128,21 @@ public class CappedDatabaseOutputStreamTest {
         out.flush();
         long cappedId = cappedOut.endBlock();
         // then
-        assertThat(cappedId).isEqualTo(600 + BLOCK_HEADER_SIZE);
+        assertThat(cappedId).isEqualTo(6000 + BLOCK_HEADER_SIZE);
         long currIndex = in.readLong();
         int cappedDatabaseSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();
-        assertThat(currIndex).isEqualTo(1200 + 2 * BLOCK_HEADER_SIZE);
-        assertThat(cappedDatabaseSizeKb).isEqualTo(1);
+        assertThat(currIndex).isEqualTo(12000 + 2 * BLOCK_HEADER_SIZE);
+        assertThat(cappedDatabaseSizeKb).isEqualTo(10);
         assertThat(lastCompactionBaseIndex).isEqualTo(0);
-        in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + 600 + BLOCK_HEADER_SIZE);
+        in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + 6000 + BLOCK_HEADER_SIZE);
         long blockSize = in.readLong();
-        assertThat(blockSize).isEqualTo(600);
+        assertThat(blockSize).isEqualTo(6000);
         byte[] bytes = new byte[(int) blockSize];
-        in.readFully(bytes, 0, 408);
+        int remaining = 10240 - 6000 - 2 * BLOCK_HEADER_SIZE;
+        in.readFully(bytes, 0, remaining);
         in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES);
-        in.readFully(bytes, 408, 192);
+        in.readFully(bytes, remaining, 6000 - remaining);
         String content = new String(bytes);
         assertThat(content).isEqualTo(text);
     }
@@ -127,7 +152,7 @@ public class CappedDatabaseOutputStreamTest {
         // given
         Writer out = new OutputStreamWriter(cappedOut);
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 60; i++) {
+        for (int i = 0; i < 600; i++) {
             sb.append("0123456789");
         }
         String text = sb.toString();
@@ -146,16 +171,17 @@ public class CappedDatabaseOutputStreamTest {
         out.flush();
         long cappedId = cappedOut.endBlock();
         // then
-        assertThat(cappedId).isEqualTo(1200 + 2 * BLOCK_HEADER_SIZE);
+        assertThat(cappedId).isEqualTo(12000 + 2 * BLOCK_HEADER_SIZE);
         long currIndex = in.readLong();
         int cappedDatabaseSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();
-        assertThat(currIndex).isEqualTo(1800 + 3 * BLOCK_HEADER_SIZE);
-        assertThat(cappedDatabaseSizeKb).isEqualTo(1);
+        assertThat(currIndex).isEqualTo(18000 + 3 * BLOCK_HEADER_SIZE);
+        assertThat(cappedDatabaseSizeKb).isEqualTo(10);
         assertThat(lastCompactionBaseIndex).isEqualTo(0);
-        in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + 192);
+        int totalOfFirstTwoBlocks = 2 * (6000 + BLOCK_HEADER_SIZE);
+        in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + totalOfFirstTwoBlocks - 10240);
         long blockSize = in.readLong();
-        assertThat(blockSize).isEqualTo(600);
+        assertThat(blockSize).isEqualTo(6000);
         byte[] bytes = new byte[(int) blockSize];
         in.readFully(bytes, 0, bytes.length);
         String content = new String(bytes);
@@ -167,7 +193,7 @@ public class CappedDatabaseOutputStreamTest {
         // given
         Writer out = new OutputStreamWriter(cappedOut);
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 60; i++) {
+        for (int i = 0; i < 600; i++) {
             sb.append("0123456789");
         }
         String text = sb.toString();
@@ -182,21 +208,116 @@ public class CappedDatabaseOutputStreamTest {
         // when
         // have to close in before resizing
         in.close();
-        cappedOut.resize(2);
+        cappedOut.resize(20);
         in = new RandomAccessFile(tempFile, "r");
         // then
-        assertThat(cappedId).isEqualTo(600 + BLOCK_HEADER_SIZE);
+        assertThat(cappedId).isEqualTo(6000 + BLOCK_HEADER_SIZE);
         long currIndex = in.readLong();
         int cappedDatabaseSizeKb = in.readInt();
         long lastCompactionBaseIndex = in.readLong();
-        assertThat(currIndex).isEqualTo(1200 + 2 * BLOCK_HEADER_SIZE);
-        assertThat(cappedDatabaseSizeKb).isEqualTo(2);
-        assertThat(lastCompactionBaseIndex).isEqualTo(192);
+        assertThat(currIndex).isEqualTo(12000 + 2 * BLOCK_HEADER_SIZE);
+        assertThat(cappedDatabaseSizeKb).isEqualTo(20);
+        int total = 2 * (6000 + BLOCK_HEADER_SIZE);
+        assertThat(lastCompactionBaseIndex).isEqualTo(total - 10240);
+        int totalOfFirstBlock = 6000 + BLOCK_HEADER_SIZE;
+        in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + 10240 - totalOfFirstBlock);
+        long blockSize = in.readLong();
+        assertThat(blockSize).isEqualTo(6000);
+        byte[] bytes = new byte[(int) blockSize];
+        in.readFully(bytes, 0, 6000);
+        String content = new String(bytes);
+        assertThat(content).isEqualTo(text);
+    }
+
+    @Test
+    public void shouldWrapAndResizeVerySmall() throws IOException {
+        // given
+        Writer out = new OutputStreamWriter(cappedOut);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 60; i++) {
+            sb.append("0123456789");
+        }
+        String text = sb.toString();
+        for (int i = 0; i < 9; i++) {
+            cappedOut.startBlock();
+            out.write(text);
+            out.flush();
+            cappedOut.endBlock();
+        }
+        cappedOut.startBlock();
+        out.write(text);
+        out.flush();
+        long cappedId = cappedOut.endBlock();
+        // when
+        // have to close in before resizing
+        in.close();
+        cappedOut.resize(1);
+        in = new RandomAccessFile(tempFile, "r");
+        // then
+        assertThat(cappedId).isEqualTo(9 * (600 + BLOCK_HEADER_SIZE));
+        long currIndex = in.readLong();
+        int cappedDatabaseSizeKb = in.readInt();
+        long lastCompactionBaseIndex = in.readLong();
+        assertThat(currIndex).isEqualTo(10 * (600 + BLOCK_HEADER_SIZE));
+        assertThat(cappedDatabaseSizeKb).isEqualTo(1);
+        int total = 10 * (600 + BLOCK_HEADER_SIZE);
+        assertThat(lastCompactionBaseIndex).isEqualTo(total - 1024);
         in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + 416);
         long blockSize = in.readLong();
         assertThat(blockSize).isEqualTo(600);
         byte[] bytes = new byte[(int) blockSize];
         in.readFully(bytes, 0, 600);
+        String content = new String(bytes);
+        assertThat(content).isEqualTo(text);
+    }
+
+    @Test
+    public void shouldWrapWithoutEnoughSpaceAtEndForContiguousBlockHeader() throws IOException {
+        // given
+        String text = "0123456789";
+        cappedOut.startBlock();
+        int numBytesToWrite = 10240 - BLOCK_HEADER_SIZE - 1;
+        for (int i = 0; i < numBytesToWrite; i++) {
+            cappedOut.write(0);
+        }
+        cappedOut.flush();
+        cappedOut.endBlock();
+        // when
+        Writer out = new OutputStreamWriter(cappedOut);
+        out = new OutputStreamWriter(cappedOut);
+        cappedOut.startBlock();
+        out.write(text);
+        out.flush();
+        long cappedId = cappedOut.endBlock();
+        // then
+        assertThat(cappedId).isEqualTo(10240);
+        long currIndex = in.readLong();
+        int cappedDatabaseSizeKb = in.readInt();
+        long lastCompactionBaseIndex = in.readLong();
+        assertThat(currIndex).isEqualTo(10240 + BLOCK_HEADER_SIZE + text.length());
+        assertThat(cappedDatabaseSizeKb).isEqualTo(10);
+        assertThat(lastCompactionBaseIndex).isEqualTo(0);
+        in.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES);
+        long blockSize = in.readLong();
+        assertThat(blockSize).isEqualTo(text.length());
+        byte[] bytes = new byte[(int) blockSize];
+        in.readFully(bytes, 0, text.length());
+        String content = new String(bytes);
+        assertThat(content).isEqualTo(text);
+    }
+
+    private void assertWrite(String text, long cappedId) throws IOException {
+        assertThat(cappedId).isEqualTo(0);
+        long currIndex = in.readLong();
+        int cappedDatabaseSizeKb = in.readInt();
+        long lastCompactionBaseIndex = in.readLong();
+        assertThat(currIndex).isEqualTo(10 + BLOCK_HEADER_SIZE);
+        assertThat(cappedDatabaseSizeKb).isEqualTo(10);
+        assertThat(lastCompactionBaseIndex).isEqualTo(0);
+        long blockSize = in.readLong();
+        assertThat(blockSize).isEqualTo(10);
+        byte[] bytes = new byte[(int) blockSize];
+        in.readFully(bytes, 0, bytes.length);
         String content = new String(bytes);
         assertThat(content).isEqualTo(text);
     }

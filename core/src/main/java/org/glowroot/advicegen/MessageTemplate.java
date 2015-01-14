@@ -15,18 +15,20 @@
  */
 package org.glowroot.advicegen;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.markers.UsedByGeneratedBytecode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -173,36 +175,49 @@ public class MessageTemplate {
                 return "null";
             }
             try {
-                Object value = pathEvaluator.evaluateOnBase(base);
-                if (value instanceof Object[]) {
-                    StringBuilder sb = new StringBuilder();
-                    valueOf((Object[]) value, sb);
-                    return sb.toString();
-                }
-                return String.valueOf(value);
-            } catch (ReflectiveException e) {
+                return valueOf(pathEvaluator.evaluateOnBase(base));
+            } catch (InvocationTargetException e) {
                 logger.debug(e.getMessage(), e);
-                return "<error evaluating: " + e.getMessage() + ">";
+                // InvocationTargetException has the problem of obscuring the original message
+                // to try to use cause
+                Throwable t = MoreObjects.firstNonNull(e.getCause(), e);
+                // using toString() instead of getMessage() in order to capture exception class name
+                return "<error evaluating: " + t.toString() + ">";
+            } catch (Exception e) {
+                logger.warn(e.getMessage(), e);
+                // using toString() instead of getMessage() in order to capture exception class name
+                return "<error evaluating: " + e.toString() + ">";
             }
         }
 
-        private static void valueOf(Object object, StringBuilder sb) {
-            if (object instanceof Object[]) {
-                valueOf((Object[]) object, sb);
-            } else {
-                sb.append(String.valueOf(object));
+        private String valueOf(@Nullable Object value) {
+            if (value == null || !value.getClass().isArray()) {
+                // shortcut the common case
+                return String.valueOf(value);
             }
+            StringBuilder sb = new StringBuilder();
+            valueOfArray(value, sb);
+            return sb.toString();
         }
 
-        private static void valueOf(Object[] object, StringBuilder sb) {
+        private static void valueOfArray(Object array, StringBuilder sb) {
             sb.append('[');
-            for (int i = 0; i < object.length; i++) {
+            int len = Array.getLength(array);
+            for (int i = 0; i < len; i++) {
                 if (i != 0) {
                     sb.append(", ");
                 }
-                valueOf(object[i], sb);
+                valueOf(Array.get(array, i), sb);
             }
             sb.append(']');
+        }
+
+        private static void valueOf(Object object, StringBuilder sb) {
+            if (object.getClass().isArray()) {
+                valueOfArray(object, sb);
+            } else {
+                sb.append(String.valueOf(object));
+            }
         }
     }
 

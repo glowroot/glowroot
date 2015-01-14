@@ -122,7 +122,11 @@ public class StatementAspect {
         }
         @OnReturn
         public static void onReturn(@BindReturn HasStatementMirror preparedStatement,
-                @BindParameter String sql) {
+                @BindParameter @Nullable String sql) {
+            if (sql == null) {
+                // seems nothing sensible to do here other than ignore
+                return;
+            }
             // this runs even if plugin is temporarily disabled
             preparedStatement.setGlowrootStatementMirror(new PreparedStatementMirror(sql));
         }
@@ -154,7 +158,7 @@ public class StatementAspect {
     public static class SetXAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
-                @BindParameter int parameterIndex, @BindParameter Object x) {
+                @BindParameter int parameterIndex, @BindParameter @Nullable Object x) {
             PreparedStatementMirror mirror =
                     (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
             if (mirror != null) {
@@ -189,11 +193,15 @@ public class StatementAspect {
     // ================== Statement Batching ==================
 
     @Pointcut(className = "java.sql.Statement", methodName = "addBatch",
-            methodParameterTypes = {"java.lang.String"})
+            methodParameterTypes = {"java.lang.String"}, ignoreSelfNested = true)
     public static class StatementAddBatchAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror statement,
-                @BindParameter String sql) {
+                @BindParameter @Nullable String sql) {
+            if (sql == null) {
+                // seems nothing sensible to do here other than ignore
+                return;
+            }
             StatementMirror mirror = statement.getGlowrootStatementMirror();
             if (mirror != null) {
                 mirror.addBatch(sql);
@@ -202,7 +210,7 @@ public class StatementAspect {
     }
 
     @Pointcut(className = "java.sql.PreparedStatement", methodName = "addBatch",
-            methodParameterTypes = {})
+            methodParameterTypes = {}, ignoreSelfNested = true)
     public static class PreparedStatementAddBatchAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement) {
@@ -242,7 +250,11 @@ public class StatementAspect {
         }
         @OnBefore
         public static @Nullable TraceEntry onBefore(@BindReceiver HasStatementMirror statement,
-                @BindParameter String sql) {
+                @BindParameter @Nullable String sql) {
+            if (sql == null) {
+                // seems nothing sensible to do here other than ignore
+                return null;
+            }
             StatementMirror mirror = statement.getGlowrootStatementMirror();
             if (mirror == null) {
                 // this shouldn't happen since just checked hasGlowrootStatementMirror() above

@@ -132,7 +132,7 @@
     </tbody>
   </table>
 </div>
-{{#ifThreadInfo threadInfo}}
+{{#if threadInfo}}
   <div class="gt-bold">
     Thread info
   </div>
@@ -160,7 +160,7 @@
       {{formatAllocatedBytes threadInfo.threadAllocatedBytes}}
     </div>
   {{/ifExists}}
-{{/ifThreadInfo}}
+{{/if}}
 {{#if gcInfos}}
   <div class="gt-bold">
     GC info

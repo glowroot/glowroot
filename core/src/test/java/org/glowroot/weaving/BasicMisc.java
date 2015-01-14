@@ -46,9 +46,7 @@ public class BasicMisc extends SuperBasicMisc implements Misc, Misc2, Misc3 {
         Method method;
         try {
             method = BasicMisc.class.getDeclaredMethod("execute1");
-        } catch (NoSuchMethodException e) {
-            throw new AssertionError(e);
-        } catch (SecurityException e) {
+        } catch (Exception e) {
             throw new AssertionError(e);
         }
         if (!method.isAnnotationPresent(TestAnnotation.class)) {

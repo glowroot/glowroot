@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.glowroot.config;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.MoreObjects;
 import com.google.common.hash.Hashing;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
@@ -56,18 +55,5 @@ public class UserInterfaceConfig {
 
     public boolean passwordEnabled() {
         return !passwordHash().isEmpty();
-    }
-
-    @Override
-    public String toString() {
-        // don't expose passwordHash
-        return MoreObjects.toStringHelper(this)
-                .omitNullValues()
-                .add("defaultTransactionType", defaultTransactionType())
-                .add("port", port())
-                .add("passwordEnabled", passwordEnabled())
-                .add("sessionTimeoutMinutes", sessionTimeoutMinutes())
-                .add("version", version())
-                .toString();
     }
 }

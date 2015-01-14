@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,8 @@ import org.glowroot.weaving.SomeAspect.HasStringInterfaceMixin;
 import org.glowroot.weaving.SomeAspect.HasStringMultipleMixin;
 import org.glowroot.weaving.SomeAspect.InnerMethodAdvice;
 import org.glowroot.weaving.SomeAspect.InterfaceAppearsTwiceInHierarchyAdvice;
+import org.glowroot.weaving.SomeAspect.MatchingPublicNonStaticAdvice;
+import org.glowroot.weaving.SomeAspect.MethodParametersBadDotDotAdvice1;
 import org.glowroot.weaving.SomeAspect.MethodParametersDotDotAdvice1;
 import org.glowroot.weaving.SomeAspect.MethodParametersDotDotAdvice2;
 import org.glowroot.weaving.SomeAspect.MethodParametersDotDotAdvice3;
@@ -629,6 +631,17 @@ public class WeaverTest {
     }
 
     @Test
+    public void shouldNotMatchMethodParametersBadDotDot1() throws Exception {
+        // given
+        Misc test = newWovenObject(BasicMisc.class, Misc.class,
+                MethodParametersBadDotDotAdvice1.class);
+        // when
+        test.executeWithArgs("one", 2);
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(0);
+    }
+
+    @Test
     public void shouldMatchMethodParametersDotDot2() throws Exception {
         // given
         Misc test = newWovenObject(BasicMisc.class, Misc.class,
@@ -1101,7 +1114,7 @@ public class WeaverTest {
     }
 
     @Test
-    public void shouldPayAttentionToStaticKeyword() throws Exception {
+    public void shouldPayAttentionToStaticModifierMatching() throws Exception {
         // given
         Misc test = newWovenObject(BasicMisc.class, Misc.class, NonMatchingStaticAdvice.class);
         // when
@@ -1111,6 +1124,20 @@ public class WeaverTest {
         assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(0);
         assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
         assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldPayAttentionToPublicAndNonStaticModifierMatching() throws Exception {
+        // given
+        Misc test = newWovenObject(BasicMisc.class, Misc.class,
+                MatchingPublicNonStaticAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
     }
 
     @Test

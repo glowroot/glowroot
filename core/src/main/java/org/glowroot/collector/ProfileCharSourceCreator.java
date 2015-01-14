@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,20 +27,18 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.ProfileNode;
 
 public class ProfileCharSourceCreator {
 
-    private static final Logger logger = LoggerFactory.getLogger(ProfileCharSourceCreator.class);
     private static final JsonFactory jsonFactory = new JsonFactory();
 
     private ProfileCharSourceCreator() {}
 
-    public static @Nullable CharSource createProfileCharSource(@Nullable Profile profile) {
+    public static @Nullable CharSource createProfileCharSource(@Nullable Profile profile)
+            throws IOException {
         if (profile == null) {
             return null;
         }
@@ -53,7 +51,7 @@ public class ProfileCharSourceCreator {
         }
     }
 
-    static @Nullable String createProfileJson(ProfileNode syntheticRootNode) {
+    static @Nullable String createProfileJson(ProfileNode syntheticRootNode) throws IOException {
         ProfileNode rootNode;
         if (syntheticRootNode.getChildNodes().isEmpty()) {
             return null;
@@ -65,12 +63,7 @@ public class ProfileCharSourceCreator {
         }
         // need to convert profile into bytes entirely inside of the above lock (no lazy CharSource)
         StringWriter sw = new StringWriter(32768);
-        try {
-            new ProfileWriter(rootNode, sw).write();
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-            return null;
-        }
+        new ProfileWriter(rootNode, sw).write();
         return sw.toString();
     }
 

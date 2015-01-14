@@ -136,9 +136,7 @@ class Schemas {
                 sql.append(", ");
             }
             String sqlTypeName = sqlTypeNames.get(columns.get(i).type());
-            if (sqlTypeName == null) {
-                throw new SQLException("Unexpected sql type '" + columns.get(i).type());
-            }
+            checkNotNull(sqlTypeName, "Unexpected sql type: %s", columns.get(i).type());
             sql.append(columns.get(i).name());
             sql.append(" ");
             sql.append(sqlTypeName);
@@ -156,57 +154,66 @@ class Schemas {
 
     private static boolean tableNeedsUpgrade(String tableName, ImmutableList<Column> columns,
             Connection connection) throws SQLException {
-        if (primaryKeyNeedsUpgrade(tableName, Iterables.filter(columns, PrimaryKeyColumn.class),
-                connection)) {
+        if (primaryKeyNeedsUpgrade(tableName, columns, connection)) {
             return true;
         }
         // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
         // see https://code.google.com/p/guava-libraries/issues/detail?id=635
-        Map<String, Column> remaining = new TreeMap<String, Column>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, Column> columnMap = new TreeMap<String, Column>(String.CASE_INSENSITIVE_ORDER);
         for (Column column : columns) {
-            remaining.put(column.name(), column);
+            columnMap.put(column.name(), column);
         }
         ResultSet resultSet = connection.getMetaData().getColumns(null, null,
                 tableName.toUpperCase(Locale.ENGLISH), null);
         ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
-            while (resultSet.next()) {
-                Column column = remaining.remove(resultSet.getString("COLUMN_NAME"));
-                if (column == null) {
-                    return true;
-                }
-                if (column.type() != resultSet.getInt("DATA_TYPE")) {
-                    return true;
-                }
-            }
+            return !columnNamesAndTypesMatch(resultSet, columnMap);
         } catch (Throwable t) {
             throw closer.rethrow(t);
         } finally {
             closer.close();
         }
-        return !remaining.isEmpty();
     }
 
-    private static boolean primaryKeyNeedsUpgrade(String tableName,
-            Iterable<PrimaryKeyColumn> primaryKeyColumns, Connection connection)
-            throws SQLException {
+    private static boolean primaryKeyNeedsUpgrade(String tableName, ImmutableList<Column> columns,
+            Connection connection) throws SQLException {
+        List<PrimaryKeyColumn> primaryKeyColumns =
+                ImmutableList.copyOf(Iterables.filter(columns, PrimaryKeyColumn.class));
         ResultSet resultSet = connection.getMetaData().getPrimaryKeys(null, null,
                 tableName.toUpperCase(Locale.ENGLISH));
         ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
-            for (PrimaryKeyColumn primaryKeyColumn : primaryKeyColumns) {
-                if (!resultSet.next() || !primaryKeyColumn.name().equalsIgnoreCase(
-                        resultSet.getString("COLUMN_NAME"))) {
-                    return true;
-                }
-            }
-            // not ok to have extra columns on primary key
-            return resultSet.next();
+            return !primaryKeyColumnsMatch(resultSet, primaryKeyColumns);
         } catch (Throwable t) {
             throw closer.rethrow(t);
         } finally {
             closer.close();
         }
+    }
+
+    private static boolean primaryKeyColumnsMatch(ResultSet resultSet,
+            List<PrimaryKeyColumn> primaryKeyColumns) throws SQLException {
+        for (PrimaryKeyColumn primaryKeyColumn : primaryKeyColumns) {
+            if (!resultSet.next() || !primaryKeyColumn.name().equalsIgnoreCase(
+                    resultSet.getString("COLUMN_NAME"))) {
+                return false;
+            }
+        }
+        return !resultSet.next();
+    }
+
+    private static boolean columnNamesAndTypesMatch(ResultSet resultSet,
+            Map<String, Column> columnMap) throws SQLException {
+        while (resultSet.next()) {
+            Column column = columnMap.remove(resultSet.getString("COLUMN_NAME"));
+            if (column == null) {
+                return false;
+            }
+            if (column.type() != resultSet.getInt("DATA_TYPE")) {
+                return false;
+            }
+        }
+        return columnMap.isEmpty();
     }
 
     @VisibleForTesting

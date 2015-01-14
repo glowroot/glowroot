@@ -26,53 +26,40 @@ import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 
 import com.google.common.io.Closer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Reflections;
-import org.glowroot.common.Reflections.ReflectiveException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class ClassLoaders {
 
-    private static final Logger logger = LoggerFactory.getLogger(ClassLoaders.class);
-
     private ClassLoaders() {}
 
     public static void defineClassesInBootstrapClassLoader(
             Collection<LazyDefinedClass> lazyDefinedClasses, Instrumentation instrumentation,
-            File generatedJarFile) {
+            File generatedJarFile) throws IOException {
+        Closer closer = Closer.create();
         try {
-            Closer closer = Closer.create();
-            try {
-                FileOutputStream out = closer.register(new FileOutputStream(generatedJarFile));
-                JarOutputStream jarOut = closer.register(new JarOutputStream(out));
-                generate(lazyDefinedClasses, jarOut);
-            } catch (Throwable t) {
-                closer.rethrow(t);
-            } finally {
-                closer.close();
-            }
-            instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(generatedJarFile));
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
+            FileOutputStream out = closer.register(new FileOutputStream(generatedJarFile));
+            JarOutputStream jarOut = closer.register(new JarOutputStream(out));
+            generate(lazyDefinedClasses, jarOut);
+        } catch (Throwable t) {
+            closer.rethrow(t);
+        } finally {
+            closer.close();
         }
+        instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(generatedJarFile));
     }
 
     public static void defineClassesInClassLoader(Collection<LazyDefinedClass> lazyDefinedClasses,
-            ClassLoader loader) {
-        try {
-            for (LazyDefinedClass lazyDefinedClass : lazyDefinedClasses) {
-                defineClass(lazyDefinedClass, loader);
-            }
-        } catch (ReflectiveException e) {
-            logger.error(e.getMessage(), e);
+            ClassLoader loader) throws Exception {
+        for (LazyDefinedClass lazyDefinedClass : lazyDefinedClasses) {
+            defineClass(lazyDefinedClass, loader);
         }
     }
 
     static Class<?> defineClass(LazyDefinedClass lazyDefinedClass, ClassLoader loader)
-            throws ReflectiveException {
+            throws Exception {
         for (LazyDefinedClass dependency : lazyDefinedClass.dependencies()) {
             defineClass(dependency, loader);
         }
@@ -80,8 +67,7 @@ public class ClassLoaders {
                 loader);
     }
 
-    static Class<?> defineClass(String name, byte[] bytes, ClassLoader loader)
-            throws ReflectiveException {
+    static Class<?> defineClass(String name, byte[] bytes, ClassLoader loader) throws Exception {
         Method defineClassMethod = Reflections.getDeclaredMethod(ClassLoader.class, "defineClass",
                 String.class, byte[].class, int.class, int.class);
         Class<?> definedClass = (Class<?>) Reflections.invoke(defineClassMethod, loader, name,
@@ -90,25 +76,13 @@ public class ClassLoaders {
         return definedClass;
     }
 
-    public static void cleanPreviouslyGeneratedJars(File generatedJarDir,
-            String deleteJarsWithPrefix) throws IOException {
-        if (generatedJarDir.exists() && generatedJarDir.isFile() && !generatedJarDir.delete()) {
-            throw new IOException("Could not delete file: " + generatedJarDir.getAbsolutePath());
-        }
-        if (!generatedJarDir.exists() && !generatedJarDir.mkdirs()) {
-            throw new IOException("Could not create directory: "
-                    + generatedJarDir.getAbsolutePath());
-        }
-        File[] files = generatedJarDir.listFiles();
-        if (files == null) {
-            // strangely, listFiles() returns null if an I/O error occurs
-            throw new IOException("Could not get listing for directory: "
-                    + generatedJarDir.getAbsolutePath());
-        }
-        for (File file : files) {
-            if (file.getName().startsWith(deleteJarsWithPrefix) && !file.delete()) {
-                throw new IOException("Could not delete file: " + file.getAbsolutePath());
-            }
+    public static void createDirectoryOrCleanPreviousContentsWithPrefix(File dir, String prefix)
+            throws IOException {
+        deleteIfRegularFile(dir);
+        if (dir.exists()) {
+            deleteFilesWithPrefix(dir, prefix);
+        } else {
+            createDirectory(dir);
         }
     }
 
@@ -121,6 +95,32 @@ public class ClassLoaders {
             jarOut.write(lazyDefinedClass.bytes());
             jarOut.closeEntry();
             generate(lazyDefinedClass.dependencies(), jarOut);
+        }
+    }
+
+    private static void deleteIfRegularFile(File file) throws IOException {
+        if (file.isFile() && !file.delete()) {
+            throw new IOException("Could not delete file: " + file.getAbsolutePath());
+        }
+    }
+
+    private static void deleteFilesWithPrefix(File dir, String prefix) throws IOException {
+        File[] files = dir.listFiles();
+        if (files == null) {
+            // strangely, listFiles() returns null if an I/O error occurs
+            throw new IOException("Could not get listing for directory: "
+                    + dir.getAbsolutePath());
+        }
+        for (File file : files) {
+            if (file.getName().startsWith(prefix) && !file.delete()) {
+                throw new IOException("Could not delete file: " + file.getAbsolutePath());
+            }
+        }
+    }
+
+    private static void createDirectory(File dir) throws IOException {
+        if (!dir.mkdirs()) {
+            throw new IOException("Could not create directory: " + dir.getAbsolutePath());
         }
     }
 }

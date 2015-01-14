@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ public class CollectorModule {
             aggregateCollector = new AggregateCollector(scheduledExecutor, aggregateRepository,
                     clock, fixedAggregateIntervalSeconds);
             gaugeCollector = new GaugeCollector(configService, gaugePointRepository,
-                    jvmModule.getLazyPlatformMBeanServer(), clock);
+                    jvmModule.getLazyPlatformMBeanServer(), clock, null);
             // using fixed rate to keep gauge collections close to on the second mark
             long initialDelay = fixedGaugeIntervalSeconds
                     - (clock.currentTimeMillis() % fixedGaugeIntervalSeconds);
@@ -64,7 +64,9 @@ public class CollectorModule {
             stackTraceCollector = StackTraceCollector.create(transactionRegistry, configService,
                     scheduledExecutor);
         }
-        // TODO should be no need for transaction collector in viewer mode
+        // ideally there should be no need for CollectorModule or TransactionModule in viewer mode
+        // but viewer mode doesn't seem important enough (at this point) at least to optimize the
+        // code paths and eliminate these (harmless) modules
         transactionCollector = new TransactionCollectorImpl(scheduledExecutor, configService,
                 traceRepository, aggregateCollector, clock, ticker);
     }

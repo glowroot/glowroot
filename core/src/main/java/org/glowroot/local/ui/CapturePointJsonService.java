@@ -176,9 +176,6 @@ class CapturePointJsonService {
         String partialMethodNameUpper = partialMethodName.toUpperCase(Locale.ENGLISH);
         Set<String> methodNames = Sets.newHashSet();
         for (UiAnalyzedMethod analyzedMethod : classpathCache.getAnalyzedMethods(className)) {
-            if (Modifier.isNative(analyzedMethod.modifiers())) {
-                continue;
-            }
             String methodName = analyzedMethod.name();
             if (methodName.equals("<init>") || methodName.equals("<clinit>")) {
                 // static initializers are not supported by weaver
@@ -203,9 +200,6 @@ class CapturePointJsonService {
         // use set to remove duplicate methods (e.g. same class loaded by multiple class loaders)
         Set<UiAnalyzedMethod> analyzedMethods = Sets.newHashSet();
         for (UiAnalyzedMethod analyzedMethod : classpathCache.getAnalyzedMethods(className)) {
-            if (Modifier.isNative(analyzedMethod.modifiers())) {
-                continue;
-            }
             if (analyzedMethod.name().equals(methodName)) {
                 analyzedMethods.add(analyzedMethod);
             }

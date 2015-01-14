@@ -14,30 +14,18 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular, $ */
+/* global glowroot, $ */
 
 glowroot.controller('TransactionOverviewCtrl', [
   '$scope',
   '$location',
   '$http',
   'charts',
-  'keyedColorPools',
-  'queryStrings',
-  'httpErrors',
-  function ($scope, $location, $http, charts, keyedColorPools, queryStrings, httpErrors) {
+  function ($scope, $location, $http, charts) {
 
     $scope.$parent.activeTabItem = 'overview';
 
-    // this is needed when click occurs on sidebar b/c it doesn't reload template in that case but still need
-    // to update transactionName
-    $scope.$parent.transactionName = $location.search()['transaction-name'];
-
-    var chartState = {
-      plot: undefined,
-      currentRefreshId: 0,
-      currentZoomId: 0,
-      keyedColorPool: keyedColorPools.create()
-    };
+    var chartState = charts.createState();
 
     $scope.$watchGroup(['chartFrom', 'chartTo'], function (oldValues, newValues) {
       if (newValues !== oldValues) {

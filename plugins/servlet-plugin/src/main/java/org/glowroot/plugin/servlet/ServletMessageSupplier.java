@@ -112,12 +112,8 @@ class ServletMessageSupplier extends MessageSupplier {
         this.requestParameters = requestParameters;
     }
 
-    void setResponseHeader(String name, @Nullable String value) {
-        if (value == null) {
-            responseHeaders.setHeader(name, "");
-        } else {
-            responseHeaders.setHeader(name, value);
-        }
+    void setResponseHeader(String name, String value) {
+        responseHeaders.setHeader(name, value);
     }
 
     void setResponseDateHeader(String name, long date) {
@@ -132,12 +128,8 @@ class ServletMessageSupplier extends MessageSupplier {
         responseHeaders.setHeader(name, value);
     }
 
-    void addResponseHeader(String name, @Nullable String value) {
-        if (value == null) {
-            responseHeaders.addHeader(name, "");
-        } else {
-            responseHeaders.addHeader(name, value);
-        }
+    void addResponseHeader(String name, String value) {
+        responseHeaders.addHeader(name, value);
     }
 
     void addResponseDateHeader(String name, long date) {

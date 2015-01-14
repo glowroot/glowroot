@@ -78,7 +78,7 @@ public class TraceCreator {
         builder.customAttributesForIndexing(transaction.getCustomAttributes());
         builder.metrics(writeMetricsAsString(transaction.getRootMetric()));
         ThreadInfoData threadInfo = transaction.getThreadInfo();
-        if (threadInfo != null) {
+        if (threadInfo != null && !threadInfo.isEmpty()) {
             builder.threadInfo(Marshaling2.toJson(threadInfo));
         }
         List<GcInfo> gcInfos = transaction.getGcInfos();

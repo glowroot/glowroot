@@ -170,7 +170,6 @@ class WeavingMethodVisitor extends AdviceAdapter {
         // so visitedLocalVariableThis is checked and updated to ensure this block is only executed
         // once per method
         //
-        // TODO handle static methods also
         if (!name.equals("this") || visitedLocalVariableThis) {
             super.visitLocalVariable(name, desc, signature, start, end, index);
             return;

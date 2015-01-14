@@ -15,7 +15,6 @@
  */
 package org.glowroot.transaction;
 
-import com.google.common.base.MoreObjects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,13 +50,5 @@ class ImmediateTraceStoreRunnable extends ScheduledRunnable {
             }
         }
         transactionCollector.storePartialTrace(transaction);
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("transaction", transaction)
-                .add("transactionPreviouslyCompleted", transactionPreviouslyCompleted)
-                .toString();
     }
 }

@@ -31,6 +31,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
+import org.glowroot.common.ClassNames;
 import org.glowroot.weaving.AnalyzedWorld.ParseContext;
 import org.glowroot.weaving.WeavingClassVisitor.ShortCircuitException;
 
@@ -83,10 +84,8 @@ class AnalyzingClassVisitor extends ClassVisitor {
             String internalName, @Nullable String superInternalName,
             String /*@Nullable*/[] interfaceInternalNamesNullable) {
 
-        ImmutableList<String> interfaceNames = ImmutableList.of();
-        if (interfaceInternalNamesNullable != null) {
-            interfaceNames = ClassNames.fromInternalNames(interfaceInternalNamesNullable);
-        }
+        ImmutableList<String> interfaceNames =
+                ClassNames.fromInternalNames(interfaceInternalNamesNullable);
         String className = ClassNames.fromInternalName(internalName);
         String superClassName = ClassNames.fromInternalName(superInternalName);
         analyzedClassBuilder = ImmutableAnalyzedClass.builder()
@@ -121,14 +120,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
                 getMatchedMixinTypes(className, superAnalyzedHierarchy, interfaceAnalyzedHierarchy);
         analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
 
-        boolean hasSuperAdvice = false;
-        for (AnalyzedClass analyzedClass : superAnalyzedClasses) {
-            if (!analyzedClass.analyzedMethods().isEmpty()) {
-                hasSuperAdvice = true;
-                break;
-            }
-        }
-        if (!hasSuperAdvice && adviceMatchers.isEmpty() && matchedMixinTypes.isEmpty()) {
+        if (!hasSuperAdvice() && adviceMatchers.isEmpty() && matchedMixinTypes.isEmpty()) {
             return analyzedClassBuilder.build();
         } else {
             return null;
@@ -161,7 +153,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
             for (Type parameterType : parameterTypes) {
                 builder.addParameterTypes(parameterType.getClassName());
             }
-            builder.returnType(Type.getReturnType(desc).getClassName())
+            builder.returnType(returnType.getClassName())
                     .modifiers(access)
                     .signature(signature);
             if (exceptions != null) {
@@ -173,10 +165,6 @@ class AnalyzingClassVisitor extends ClassVisitor {
             analyzedClassBuilder.addAnalyzedMethods(builder.build());
         }
         return matchingAdvisors;
-    }
-
-    ImmutableList<AdviceMatcher> getAdviceMatchers() {
-        return adviceMatchers;
     }
 
     ImmutableList<MixinType> getMatchedMixinTypes() {
@@ -222,6 +210,15 @@ class AnalyzingClassVisitor extends ClassVisitor {
             }
         }
         return ImmutableList.copyOf(matchedMixinTypes);
+    }
+
+    private boolean hasSuperAdvice() {
+        for (AnalyzedClass analyzedClass : superAnalyzedClasses) {
+            if (!analyzedClass.analyzedMethods().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private List<Advice> getMatchingAdvisors(String methodName, List<Type> parameterTypes,

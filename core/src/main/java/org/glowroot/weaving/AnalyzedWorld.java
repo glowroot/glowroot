@@ -39,8 +39,8 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.ClassNames;
 import org.glowroot.common.Reflections;
-import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.weaving.WeavingClassVisitor.ShortCircuitException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -55,7 +55,7 @@ public class AnalyzedWorld {
         try {
             findLoadedClassMethod = Reflections.getDeclaredMethod(ClassLoader.class,
                     "findLoadedClass", new Class[] {String.class});
-        } catch (ReflectiveException e) {
+        } catch (Exception e) {
             // unrecoverable error
             throw new AssertionError(e);
         }
@@ -247,7 +247,7 @@ public class AnalyzedWorld {
         Class<?> clazz = null;
         try {
             clazz = (Class<?>) Reflections.invoke(findLoadedClassMethod, loader, className);
-        } catch (ReflectiveException e) {
+        } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
         ClassLoader analyzedLoader = loader;
@@ -313,7 +313,10 @@ public class AnalyzedWorld {
             } else {
                 parentLoaderUrl = parentLoader.getResource(path);
             }
-            if (url.equals(parentLoaderUrl)) {
+            // comparing results of URL.toExternalForm() since using URL.equals() directly
+            // performs name resolution and is a blocking operation (from the javadoc)
+            if (parentLoaderUrl != null &&
+                    parentLoaderUrl.toExternalForm().equals(url.toExternalForm())) {
                 // reuse parent loader's AnalyzedClass if available
                 // this saves time here, and reduces memory footprint of AnalyzedWorld
                 // which can be very noticeable when lots of ClassLoaders, e.g. groovy

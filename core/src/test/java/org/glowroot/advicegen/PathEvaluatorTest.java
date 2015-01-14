@@ -21,14 +21,12 @@ import java.util.List;
 import com.google.common.collect.Lists;
 import org.junit.Test;
 
-import org.glowroot.common.Reflections.ReflectiveException;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class PathEvaluatorTest {
 
     @Test
-    public void shouldCallGetterMethod() throws ReflectiveException {
+    public void shouldCallGetterMethod() throws Exception {
         // given
         PathEvaluator pathEvaluator = new PathEvaluator(SomeObject.class, "one");
         // when
@@ -38,7 +36,7 @@ public class PathEvaluatorTest {
     }
 
     @Test
-    public void shouldCallBooleanGetterMethod() throws ReflectiveException {
+    public void shouldCallBooleanGetterMethod() throws Exception {
         // given
         PathEvaluator pathEvaluator = new PathEvaluator(SomeObject.class, "two");
         // when
@@ -48,7 +46,7 @@ public class PathEvaluatorTest {
     }
 
     @Test
-    public void shouldCallNonGetterMethod() throws ReflectiveException {
+    public void shouldCallNonGetterMethod() throws Exception {
         // given
         PathEvaluator pathEvaluator = new PathEvaluator(SomeObject.class, "three");
         // when
@@ -58,7 +56,7 @@ public class PathEvaluatorTest {
     }
 
     @Test
-    public void shouldGetField() throws ReflectiveException {
+    public void shouldGetField() throws Exception {
         // given
         PathEvaluator pathEvaluator = new PathEvaluator(SomeObject.class, "four");
         // when
@@ -68,7 +66,7 @@ public class PathEvaluatorTest {
     }
 
     @Test
-    public void shouldCallMethodOnPackagePrivateClass() throws ReflectiveException {
+    public void shouldCallMethodOnPackagePrivateClass() throws Exception {
         // given
         PathEvaluator pathEvaluator = new PathEvaluator(List.class, "size");
         List<String> list = Lists.newArrayList();
@@ -80,7 +78,7 @@ public class PathEvaluatorTest {
     }
 
     @Test
-    public void shouldTestNestedPath() throws ReflectiveException {
+    public void shouldTestNestedPath() throws Exception {
         // given
         PathEvaluator pathEvaluator = new PathEvaluator(A.class, "b.str");
         // when
@@ -90,7 +88,17 @@ public class PathEvaluatorTest {
     }
 
     @Test
-    public void shouldTestNestedArrayPathNavigation() throws ReflectiveException {
+    public void shouldTestNestedPathWithNull() throws Exception {
+        // given
+        PathEvaluator pathEvaluator = new PathEvaluator(A.class, "b.nil.str");
+        // when
+        String value = (String) pathEvaluator.evaluateOnBase(new A());
+        // then
+        assertThat(value).isNull();
+    }
+
+    @Test
+    public void shouldTestNestedArrayPathNavigation() throws Exception {
         // given
         PathEvaluator pathEvaluator = new PathEvaluator(A.class, "b.c.d.str");
         // when
@@ -100,7 +108,7 @@ public class PathEvaluatorTest {
     }
 
     @Test
-    public void shouldTestRemainingPath() throws ReflectiveException {
+    public void shouldTestRemainingPath() throws Exception {
         // given
         PathEvaluator pathEvaluator = new PathEvaluator(A.class, "b.eee");
         A a = new A();
@@ -153,6 +161,7 @@ public class PathEvaluatorTest {
     private static class B {
         private final C[] c = new C[] {new C(), new C()};
         private final String str = "abc";
+        private final String nil = null;
     }
 
     @SuppressWarnings("unused")

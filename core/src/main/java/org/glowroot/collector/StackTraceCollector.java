@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.ProfilingConfig;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.transaction.model.Transaction;
@@ -74,6 +73,7 @@ class StackTraceCollector implements Runnable {
         try {
             runInternal();
         } catch (Throwable t) {
+            // log and return successfully so it will continue to run
             logger.error(t.getMessage(), t);
         }
     }
@@ -95,10 +95,6 @@ class StackTraceCollector implements Runnable {
     }
 
     private void runInternal() {
-        ProfilingConfig config = configService.getProfilingConfig();
-        if (!config.enabled()) {
-            return;
-        }
         List<Transaction> transactions =
                 ImmutableList.copyOf(transactionRegistry.getTransactions());
         if (transactions.isEmpty()) {

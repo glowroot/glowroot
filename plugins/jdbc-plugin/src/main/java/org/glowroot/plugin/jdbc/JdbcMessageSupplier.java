@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 class JdbcMessageSupplier extends MessageSupplier {
 
@@ -76,10 +78,8 @@ class JdbcMessageSupplier extends MessageSupplier {
             appendBatchedSqls(sb, batchedSqls);
             return Message.from(sb.toString());
         }
-        if (sql == null) {
-            throw new AssertionError("Fields 'sql' and 'batchedSqls' cannot both be null"
-                    + " (enforced by static factory methods)");
-        }
+        // sql and batchedSqls cannot both be null (enforced by static factory methods)
+        checkNotNull(sql);
         if (isUsingBatchedParameters() && batchedParameters.size() > 1) {
             // print out number of batches to make it easy to identify
             sb.append(Integer.toString(batchedParameters.size()));
@@ -130,6 +130,9 @@ class JdbcMessageSupplier extends MessageSupplier {
     }
 
     private static void appendBatchedSqls(StringBuilder sb, ImmutableList<String> batchedSqls) {
+        if (batchedSqls.isEmpty()) {
+            sb.append("(empty batch)");
+        }
         boolean first = true;
         for (String batchedSql : batchedSqls) {
             if (!first) {

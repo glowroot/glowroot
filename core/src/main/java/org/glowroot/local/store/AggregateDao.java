@@ -28,8 +28,6 @@ import com.google.common.io.CharSource;
 import org.checkerframework.checker.tainting.qual.Untainted;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.AggregateRepository;
@@ -47,8 +45,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class AggregateDao implements AggregateRepository {
 
     public static final String OVERWRITTEN = "{\"overwritten\":true}";
-
-    private static final Logger logger = LoggerFactory.getLogger(AggregateDao.class);
 
     private static final ImmutableList<Column> overallAggregatePointColumns =
             ImmutableList.<Column>of(
@@ -107,20 +103,16 @@ public class AggregateDao implements AggregateRepository {
 
     @Override
     public void store(final List<Aggregate> overallAggregates,
-            List<Aggregate> transactionAggregates) {
-        try {
-            dataSource.batchUpdate("insert into overall_aggregate (transaction_type, capture_time,"
-                    + " total_micros, error_count, transaction_count, profile_sample_count,"
-                    + " profile_capped_id, metrics, histogram) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    new OverallBatchAdder(overallAggregates));
-            dataSource.batchUpdate("insert into transaction_aggregate (transaction_type,"
-                    + " transaction_name, capture_time, total_micros, error_count,"
-                    + " transaction_count, profile_sample_count, profile_capped_id, metrics,"
-                    + " histogram) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    new TransactionBatchAdder(transactionAggregates));
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-        }
+            List<Aggregate> transactionAggregates) throws Exception {
+        dataSource.batchUpdate("insert into overall_aggregate (transaction_type, capture_time,"
+                + " total_micros, error_count, transaction_count, profile_sample_count,"
+                + " profile_capped_id, metrics, histogram) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                new OverallBatchAdder(overallAggregates));
+        dataSource.batchUpdate("insert into transaction_aggregate (transaction_type,"
+                + " transaction_name, capture_time, total_micros, error_count,"
+                + " transaction_count, profile_sample_count, profile_capped_id, metrics,"
+                + " histogram) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                new TransactionBatchAdder(transactionAggregates));
     }
 
     public TransactionSummary readOverallTransactionSummary(String transactionType,
@@ -196,8 +188,6 @@ public class AggregateDao implements AggregateRepository {
 
     public ImmutableList<Aggregate> readTransactionAggregates(String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo) throws SQLException {
-        // TODO this query is a little slow because of pulling in metrics for each row
-        // and sticking metrics into index does not seem to help
         return dataSource.query("select capture_time, total_micros, error_count,"
                 + " transaction_count, profile_sample_count, profile_capped_id, metrics, histogram"
                 + " from transaction_aggregate where transaction_type = ? and transaction_name = ?"
@@ -258,30 +248,22 @@ public class AggregateDao implements AggregateRepository {
                 cappedDatabase.getSmallestNonExpiredId());
     }
 
-    public void deleteAll() {
-        try {
-            dataSource.execute("truncate table overall_aggregate");
-            dataSource.execute("truncate table transaction_aggregate");
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-        }
+    public void deleteAll() throws SQLException {
+        dataSource.execute("truncate table overall_aggregate");
+        dataSource.execute("truncate table transaction_aggregate");
     }
 
-    void deleteBefore(long captureTime) {
-        try {
-            // delete 100 at a time, which is both faster than deleting all at once, and doesn't
-            // lock the single jdbc connection for one large chunk of time
-            while (true) {
-                int deleted = dataSource.update(
-                        "delete from overall_aggregate where capture_time < ?", captureTime);
-                deleted += dataSource.update(
-                        "delete from transaction_aggregate where capture_time < ?", captureTime);
-                if (deleted == 0) {
-                    break;
-                }
+    void deleteBefore(long captureTime) throws SQLException {
+        // delete 100 at a time, which is both faster than deleting all at once, and doesn't
+        // lock the single jdbc connection for one large chunk of time
+        while (true) {
+            int deleted = dataSource.update(
+                    "delete from overall_aggregate where capture_time < ?", captureTime);
+            deleted += dataSource.update(
+                    "delete from transaction_aggregate where capture_time < ?", captureTime);
+            if (deleted == 0) {
+                break;
             }
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
         }
     }
 
@@ -345,7 +327,7 @@ public class AggregateDao implements AggregateRepository {
             this.overallAggregates = overallAggregates;
         }
         @Override
-        public void addBatches(PreparedStatement preparedStatement) throws SQLException {
+        public void addBatches(PreparedStatement preparedStatement) throws Exception {
             for (Aggregate overallAggregate : overallAggregates) {
                 Long profileId = null;
                 String profile = overallAggregate.profile();
@@ -377,7 +359,7 @@ public class AggregateDao implements AggregateRepository {
             this.transactionAggregates = transactionAggregates;
         }
         @Override
-        public void addBatches(PreparedStatement preparedStatement) throws SQLException {
+        public void addBatches(PreparedStatement preparedStatement) throws Exception {
             for (Aggregate transactionAggregate : transactionAggregates) {
                 Long profileId = null;
                 String profile = transactionAggregate.profile();
@@ -474,10 +456,6 @@ public class AggregateDao implements AggregateRepository {
         }
         @Override
         public Aggregate mapRow(ResultSet resultSet) throws SQLException {
-            String metrics = resultSet.getString(7);
-            if (metrics == null) {
-                throw new SQLException("Found null metrics in transaction_aggregate table");
-            }
             return ImmutableAggregate.builder()
                     .transactionType(transactionType)
                     .transactionName(transactionName)
@@ -498,7 +476,7 @@ public class AggregateDao implements AggregateRepository {
             long captureTime = resultSet.getLong(1);
             long errorCount = resultSet.getLong(2);
             long transactionCount = resultSet.getLong(3);
-            return new ErrorPoint(captureTime, errorCount, transactionCount);
+            return ImmutableErrorPoint.of(captureTime, errorCount, transactionCount);
         }
     }
 

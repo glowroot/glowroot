@@ -97,7 +97,16 @@ glowroot.controller('TransactionSidebarCtrl', [
             $scope.transactionSummaries = data.transactions;
             $scope.moreSummariesAvailable = data.moreAvailable;
           })
-          .error(httpErrors.handler($scope));
+          .error(function (data, status) {
+            if (initialLoading) {
+              $scope.summariesLoadingInitial = false;
+            } else if (moreLoading) {
+              $scope.summariesLoadingMore--;
+            } else {
+              $scope.summariesRefreshing--;
+            }
+            httpErrors.handler($scope)(data, status);
+          });
     }
 
     updateSummaries(true);

@@ -83,6 +83,9 @@ public class PluginServicesImplDefensiveCheckTest {
         assertThat(pluginServices.getStringProperty(null)).isEqualTo("");
         assertThat(pluginServices.getBooleanProperty(null)).isEqualTo(false);
         assertThat(pluginServices.getDoubleProperty(null)).isEqualTo(null);
+        assertThat(pluginServices.getStringProperty("")).isEqualTo("");
+        assertThat(pluginServices.getBooleanProperty("")).isEqualTo(false);
+        assertThat(pluginServices.getDoubleProperty("")).isEqualTo(null);
     }
 
     @Test
@@ -115,6 +118,12 @@ public class PluginServicesImplDefensiveCheckTest {
     }
 
     @Test
+    public void testStartTransactionMetric() {
+        assertThat(pluginServices.startTransactionMetric(null)
+                .getClass().getSimpleName()).isEqualTo("NopTransactionMetric");
+    }
+
+    @Test
     public void testAddTraceEntry() {
         pluginServices.addTraceEntry(null);
     }
@@ -128,5 +137,10 @@ public class PluginServicesImplDefensiveCheckTest {
     public void testSetTraceStoreThreshold() {
         pluginServices.setTraceStoreThreshold(-1, SECONDS);
         pluginServices.setTraceStoreThreshold(1, null);
+    }
+
+    @Test
+    public void testRegisterListener() {
+        pluginServices.registerConfigListener(null);
     }
 }

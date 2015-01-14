@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,7 +98,9 @@ public class DataSourceAspect {
                         autoCommit = Boolean.toString(connection.getAutoCommit());
                     } catch (SQLException e) {
                         logger.warn(e.getMessage(), e);
-                        autoCommit = "unknown";
+                        // using toString() instead of getMessage() in order to capture exception
+                        // class name
+                        autoCommit = "<error occurred: " + e.toString() + ">";
                     }
                     GetConnectionMessageSupplier messageSupplier =
                             (GetConnectionMessageSupplier) traceEntry.getMessageSupplier();

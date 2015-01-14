@@ -22,8 +22,8 @@ import java.lang.management.ThreadMXBean;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
-import com.google.common.base.MoreObjects;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
 
@@ -98,41 +98,47 @@ public class ThreadInfoComponent {
             return builder.build();
         }
         if (isThreadCpuTimeSupported) {
-            // getThreadCpuTime() returns -1 if CPU time measurement is disabled (which is different
-            // than whether or not it is supported)
-            long threadCpuTime = threadMXBean.getThreadCpuTime(threadId);
-            if (startingSnapshot.threadCpuTime() != -1 && threadCpuTime != -1) {
-                builder.threadCpuTime(threadCpuTime - startingSnapshot.threadCpuTime());
-            }
+            addThreadCpuTime(builder);
         }
         if (isThreadContentionMonitoringSupported) {
-            // getBlockedTime() and getWaitedTime() return -1 if thread contention monitoring is
-            // disabled (which is different than whether or not it is supported)
-            long threadBlockedTime = threadInfo.getBlockedTime();
-            if (startingSnapshot.threadBlockedTime() != -1 && threadBlockedTime != -1) {
-                builder.threadBlockedTime(threadBlockedTime - startingSnapshot.threadBlockedTime());
-            }
-            long threadWaitedTime = threadInfo.getWaitedTime();
-            if (startingSnapshot.threadWaitedTime() != -1 && threadWaitedTime != -1) {
-                builder.threadWaitedTime(threadWaitedTime - startingSnapshot.threadWaitedTime());
-            }
+            addThreadBlockedAndWaitedTime(builder, threadInfo);
         }
         if (threadAllocatedBytes != null) {
-            long allocatedBytes = threadAllocatedBytes.getThreadAllocatedBytesSafely(threadId);
-            if (startingSnapshot.threadAllocatedBytes() != -1 && allocatedBytes != -1) {
-                builder.threadAllocatedBytes(
-                        allocatedBytes - startingSnapshot.threadAllocatedBytes());
-            }
+            addThreadAllocatedBytes(builder);
         }
         return builder.build();
     }
 
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("threadId", threadId)
-                .add("startingSnapshot", startingSnapshot)
-                .toString();
+    private void addThreadCpuTime(ImmutableThreadInfoData.Builder builder) {
+        // getThreadCpuTime() returns -1 if CPU time measurement is disabled (which is different
+        // than whether or not it is supported)
+        long threadCpuTime = threadMXBean.getThreadCpuTime(threadId);
+        if (startingSnapshot.threadCpuTime() != -1 && threadCpuTime != -1) {
+            builder.threadCpuTime(threadCpuTime - startingSnapshot.threadCpuTime());
+        }
+    }
+
+    private void addThreadBlockedAndWaitedTime(ImmutableThreadInfoData.Builder builder,
+            ThreadInfo threadInfo) {
+        // getBlockedTime() and getWaitedTime() return -1 if thread contention monitoring is
+        // disabled (which is different than whether or not it is supported)
+        long threadBlockedTime = threadInfo.getBlockedTime();
+        if (startingSnapshot.threadBlockedTime() != -1 && threadBlockedTime != -1) {
+            builder.threadBlockedTime(threadBlockedTime - startingSnapshot.threadBlockedTime());
+        }
+        long threadWaitedTime = threadInfo.getWaitedTime();
+        if (startingSnapshot.threadWaitedTime() != -1 && threadWaitedTime != -1) {
+            builder.threadWaitedTime(threadWaitedTime - startingSnapshot.threadWaitedTime());
+        }
+    }
+
+    @RequiresNonNull("threadAllocatedBytes")
+    private void addThreadAllocatedBytes(ImmutableThreadInfoData.Builder builder) {
+        long allocatedBytes = threadAllocatedBytes.getThreadAllocatedBytesSafely(threadId);
+        if (startingSnapshot.threadAllocatedBytes() != -1 && allocatedBytes != -1) {
+            builder.threadAllocatedBytes(
+                    allocatedBytes - startingSnapshot.threadAllocatedBytes());
+        }
     }
 
     @Value.Immutable
@@ -163,5 +169,9 @@ public class ThreadInfoComponent {
         abstract @Nullable Long threadBlockedTime();
         abstract @Nullable Long threadWaitedTime();
         abstract @Nullable Long threadAllocatedBytes();
+        public boolean isEmpty() {
+            return threadCpuTime() == null && threadBlockedTime() == null
+                    && threadWaitedTime() == null && threadAllocatedBytes() == null;
+        }
     }
 }

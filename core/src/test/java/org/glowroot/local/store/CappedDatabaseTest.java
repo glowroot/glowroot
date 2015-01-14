@@ -17,6 +17,7 @@ package org.glowroot.local.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -59,6 +60,27 @@ public class CappedDatabaseTest {
         // then
         String text2 = cappedDatabase.read(cappedId, "").read();
         assertThat(text2).isEqualTo(text);
+    }
+
+    @Test
+    public void shouldReadOneByteAtATime() throws Exception {
+        // given
+        String text = "0123456789";
+        // when
+        long cappedId = cappedDatabase.write(CharSource.wrap(text));
+        // then
+        Reader in = cappedDatabase.read(cappedId, "").openStream();
+        assertThat((char) in.read()).isEqualTo('0');
+        assertThat((char) in.read()).isEqualTo('1');
+        assertThat((char) in.read()).isEqualTo('2');
+        assertThat((char) in.read()).isEqualTo('3');
+        assertThat((char) in.read()).isEqualTo('4');
+        assertThat((char) in.read()).isEqualTo('5');
+        assertThat((char) in.read()).isEqualTo('6');
+        assertThat((char) in.read()).isEqualTo('7');
+        assertThat((char) in.read()).isEqualTo('8');
+        assertThat((char) in.read()).isEqualTo('9');
+        assertThat(in.read()).isEqualTo(-1);
     }
 
     @Test

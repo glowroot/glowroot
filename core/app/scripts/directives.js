@@ -201,13 +201,10 @@ glowroot.directive('gtDatepicker', function () {
     },
     template: '<input type="text" class="form-control gt-datepicker" ng-class="gtClass" id="{{gtId}}"' +
     ' ng-style="{\'max-width\': gtMaxWidth, \'height\': \'auto\'}">',
-    link: function (scope, iElement, iAttrs) {
+    link: function (scope, iElement) {
       if (!scope.gtMaxWidth) {
         scope.gtMaxWidth = '10em';
       }
-      // TODO use bootstrap-datepicker momentjs backend when it's available and then use momentjs's
-      // localized format 'moment.longDateFormat.L' both here and when parsing date
-      // see https://github.com/eternicode/bootstrap-datepicker/issues/24
       var $input = $(iElement).find('input');
       $input.datepicker({format: 'mm/dd/yyyy', autoclose: true, todayHighlight: true});
       $input.datepicker('setDate', scope.gtModel);
@@ -230,7 +227,7 @@ glowroot.directive('gtInputGroupDropdown', function () {
     templateUrl: 'template/gt-input-group-dropdown.html',
     // replace is needed in order to not mess up bootstrap css hierarchical selectors
     replace: true,
-    link: function (scope, iElement, iAttrs) {
+    link: function (scope) {
       // update display when model changes
       scope.$watch('gtModel', function (newGtModel) {
         angular.forEach(scope.gtItems(), function (item) {
@@ -346,7 +343,7 @@ glowroot.directive('gtDisplayWhitespace', function () {
     scope: {
       gtBind: '&'
     },
-    link: function (scope, iElement, iAttrs) {
+    link: function (scope, iElement) {
       var text = scope.gtBind();
       iElement.text(text);
       var html = iElement.html();
@@ -399,7 +396,7 @@ glowroot.directive('gtSpinner', function () {
 });
 
 glowroot.directive('gtFormWithPrimaryButton', function () {
-  return function (scope, iElement, iAttrs) {
+  return function (scope, iElement) {
     iElement.on('keypress', 'input', function (e) {
       if (e.which === 13) {
         // only click on button if it is enabled
@@ -410,7 +407,7 @@ glowroot.directive('gtFormWithPrimaryButton', function () {
 });
 
 glowroot.directive('gtFormAutofocusOnFirstInput', function () {
-  return function (scope, iElement, iAttrs) {
+  return function (scope, iElement) {
     var unregisterWatch = scope.$watch(function () {
       return iElement.find('input').length && iElement.find('input').first().is(':visible');
     }, function (newValue) {
@@ -430,7 +427,7 @@ glowroot.directive('gtSmartClick', function () {
     scope: {
       gtSmartClick: '&'
     },
-    link: function (scope, iElement, iAttrs) {
+    link: function (scope, iElement) {
       iElement.mousedown(function (e) {
         scope.mousedownPageX = e.pageX;
         scope.mousedownPageY = e.pageY;

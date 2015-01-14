@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
@@ -263,24 +262,7 @@ class TracePointJsonService {
             } else if (Strings.isNullOrEmpty(traceText)) {
                 return false;
             }
-            switch (requestComparator) {
-                case BEGINS:
-                    return traceText.toUpperCase(Locale.ENGLISH).startsWith(
-                            requestText.toUpperCase(Locale.ENGLISH));
-                case EQUALS:
-                    return traceText.equalsIgnoreCase(requestText);
-                case ENDS:
-                    return traceText.toUpperCase(Locale.ENGLISH).endsWith(
-                            requestText.toUpperCase(Locale.ENGLISH));
-                case CONTAINS:
-                    return traceText.toUpperCase(Locale.ENGLISH).contains(
-                            requestText.toUpperCase(Locale.ENGLISH));
-                case NOT_CONTAINS:
-                    return !traceText.toUpperCase(Locale.ENGLISH).contains(
-                            requestText.toUpperCase(Locale.ENGLISH));
-                default:
-                    throw new AssertionError("Unknown StringComparator enum: " + requestComparator);
-            }
+            return requestComparator.matches(traceText, requestText);
         }
 
         private void insertIntoOrderedPoints(TracePoint pendingPoint,

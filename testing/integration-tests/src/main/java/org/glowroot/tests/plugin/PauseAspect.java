@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public class PauseAspect {
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-integration-tests");
 
-    @Pointcut(className = "org.glowroot.tests.Pause", methodName = "pauseOneMillisecond",
+    @Pointcut(className = "org.glowroot.tests.Pause", methodName = "pause*",
             methodParameterTypes = {}, metricName = "pause")
     public static class PauseAdvice {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.markers.OnlyUsedByTests;
+
+import static com.google.common.base.Preconditions.checkState;
 
 public class ConfigService {
 
@@ -106,13 +108,10 @@ public class ConfigService {
         pluginConfigListeners.put(pluginId, listener);
     }
 
-    public String updateTraceConfig(TraceConfig traceConfig, String priorVersion)
-            throws OptimisticLockException, IOException {
+    public String updateTraceConfig(TraceConfig traceConfig, String priorVersion) throws Exception {
         boolean notifyPluginConfigListeners;
         synchronized (writeLock) {
-            if (!config.traceConfig().version().equals(priorVersion)) {
-                throw new OptimisticLockException();
-            }
+            checkVersionsEqual(config.traceConfig().version(), priorVersion);
             boolean previousEnabled = config.traceConfig().enabled();
             Config updatedConfig = ((ImmutableConfig) config).withTraceConfig(traceConfig);
             configFile.write(updatedConfig);
@@ -127,11 +126,9 @@ public class ConfigService {
     }
 
     public String updateProfilingConfig(ProfilingConfig profilingConfig, String priorVersion)
-            throws OptimisticLockException, IOException {
+            throws Exception {
         synchronized (writeLock) {
-            if (!config.profilingConfig().version().equals(priorVersion)) {
-                throw new OptimisticLockException();
-            }
+            checkVersionsEqual(config.profilingConfig().version(), priorVersion);
             Config updatedConfig = ((ImmutableConfig) config).withProfilingConfig(profilingConfig);
             configFile.write(updatedConfig);
             config = updatedConfig;
@@ -141,11 +138,9 @@ public class ConfigService {
     }
 
     public String updateUserRecordingConfig(UserRecordingConfig userRecordingConfig,
-            String priorVersion) throws OptimisticLockException, IOException {
+            String priorVersion) throws Exception {
         synchronized (writeLock) {
-            if (!config.userRecordingConfig().version().equals(priorVersion)) {
-                throw new OptimisticLockException();
-            }
+            checkVersionsEqual(config.userRecordingConfig().version(), priorVersion);
             Config updatedConfig =
                     ((ImmutableConfig) config).withUserRecordingConfig(userRecordingConfig);
             configFile.write(updatedConfig);
@@ -156,11 +151,9 @@ public class ConfigService {
     }
 
     public String updateStorageConfig(StorageConfig storageConfig, String priorVersion)
-            throws OptimisticLockException, IOException {
+            throws Exception {
         synchronized (writeLock) {
-            if (!config.storageConfig().version().equals(priorVersion)) {
-                throw new OptimisticLockException();
-            }
+            checkVersionsEqual(config.storageConfig().version(), priorVersion);
             Config updatedConfig = ((ImmutableConfig) config).withStorageConfig(storageConfig);
             configFile.write(updatedConfig);
             config = updatedConfig;
@@ -170,11 +163,9 @@ public class ConfigService {
     }
 
     public String updateUserInterfaceConfig(UserInterfaceConfig userInterfaceConfig,
-            String priorVersion) throws OptimisticLockException, IOException {
+            String priorVersion) throws Exception {
         synchronized (writeLock) {
-            if (!config.userInterfaceConfig().version().equals(priorVersion)) {
-                throw new OptimisticLockException();
-            }
+            checkVersionsEqual(config.userInterfaceConfig().version(), priorVersion);
             Config updatedConfig =
                     ((ImmutableConfig) config).withUserInterfaceConfig(userInterfaceConfig);
             configFile.write(updatedConfig);
@@ -185,11 +176,9 @@ public class ConfigService {
     }
 
     public String updateAdvancedConfig(AdvancedConfig advancedConfig, String priorVersion)
-            throws OptimisticLockException, IOException {
+            throws Exception {
         synchronized (writeLock) {
-            if (!config.advancedConfig().version().equals(priorVersion)) {
-                throw new OptimisticLockException();
-            }
+            checkVersionsEqual(config.advancedConfig().version(), priorVersion);
             Config updatedConfig = ((ImmutableConfig) config).withAdvancedConfig(advancedConfig);
             configFile.write(updatedConfig);
             config = updatedConfig;
@@ -199,24 +188,20 @@ public class ConfigService {
     }
 
     public String updatePluginConfig(PluginConfig pluginConfig, String priorVersion)
-            throws OptimisticLockException, IOException {
+            throws Exception {
         synchronized (writeLock) {
             List<PluginConfig> pluginConfigs = Lists.newArrayList(config.pluginConfigs());
             boolean found = false;
             for (ListIterator<PluginConfig> i = pluginConfigs.listIterator(); i.hasNext();) {
                 PluginConfig loopPluginConfig = i.next();
                 if (pluginConfig.id().equals(loopPluginConfig.id())) {
-                    if (!loopPluginConfig.version().equals(priorVersion)) {
-                        throw new OptimisticLockException();
-                    }
+                    checkVersionsEqual(loopPluginConfig.version(), priorVersion);
                     i.set(pluginConfig);
                     found = true;
                     break;
                 }
             }
-            if (!found) {
-                throw new IllegalStateException("Plugin config not found: " + pluginConfig.id());
-            }
+            checkState(found, "Plugin config not found: %s", pluginConfig.id());
             Config updatedConfig = ((ImmutableConfig) config).withPluginConfigs(pluginConfigs);
             configFile.write(updatedConfig);
             config = updatedConfig;
@@ -225,8 +210,7 @@ public class ConfigService {
         return pluginConfig.version();
     }
 
-    public String insertGauge(Gauge gauge) throws DuplicateMBeanObjectNameException,
-            IOException {
+    public String insertGauge(Gauge gauge) throws Exception {
         synchronized (writeLock) {
             List<Gauge> gauges = Lists.newArrayList(config.gauges());
             // check for duplicate mbeanObjectName
@@ -255,9 +239,7 @@ public class ConfigService {
                     break;
                 }
             }
-            if (!found) {
-                throw new IOException("Gauge config not found: " + priorVersion);
-            }
+            checkState(found, "Gauge config not found: %s", priorVersion);
             Config updatedConfig = ((ImmutableConfig) config).withGauges(gauges);
             configFile.write(updatedConfig);
             config = updatedConfig;
@@ -276,9 +258,7 @@ public class ConfigService {
                     break;
                 }
             }
-            if (!found) {
-                throw new IOException("Gauge config not found: " + version);
-            }
+            checkState(found, "Gauge config not found: %s", version);
             Config updatedConfig = ((ImmutableConfig) config).withGauges(gauges);
             configFile.write(updatedConfig);
             config = updatedConfig;
@@ -341,6 +321,13 @@ public class ConfigService {
             config = updatedConfig;
         }
         notifyConfigListeners();
+    }
+
+    private void checkVersionsEqual(String version, String priorVersion)
+            throws OptimisticLockException {
+        if (!version.equals(priorVersion)) {
+            throw new OptimisticLockException();
+        }
     }
 
     // the updated config is not passed to the listeners to avoid the race condition of multiple

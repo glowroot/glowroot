@@ -51,9 +51,9 @@ public class CapturePointTest extends WebDriverTest {
         // need to give angular view a chance to render before assertions
         Thread.sleep(100);
         assertThat(capturePointSection.getClassNameTextField().getAttribute("value"))
-                .isEqualTo("org.glowroot.container.AppUnderTest");
+                .isEqualTo("org.glowroot.container.Container");
         assertThat(capturePointSection.getMethodNameTextField().getAttribute("value"))
-                .isEqualTo("executeApp");
+                .isEqualTo("executeAppUnderTest");
         assertThat(capturePointSection.getCaptureKindTransactionRadioButton().isSelected())
                 .isTrue();
         assertThat(capturePointSection.getMetricNameTextField().getAttribute("value"))
@@ -120,9 +120,9 @@ public class CapturePointTest extends WebDriverTest {
         // need to give angular view a chance to render before assertions
         Thread.sleep(100);
         assertThat(capturePointSection.getClassNameTextField().getAttribute("value"))
-                .isEqualTo("org.glowroot.container.AppUnderTest");
+                .isEqualTo("org.glowroot.container.Container");
         assertThat(capturePointSection.getMethodNameTextField().getAttribute("value"))
-                .isEqualTo("executeApp");
+                .isEqualTo("executeAppUnderTest");
         assertThat(capturePointSection.getCaptureKindTraceEntryRadioButton().isSelected()).isTrue();
         assertThat(capturePointSection.getMetricNameTextField().getAttribute("value"))
                 .isEqualTo("a metric");
@@ -155,9 +155,9 @@ public class CapturePointTest extends WebDriverTest {
         // need to give angular view a chance to render before assertions
         Thread.sleep(100);
         assertThat(capturePointSection.getClassNameTextField().getAttribute("value"))
-                .isEqualTo("org.glowroot.container.AppUnderTest");
+                .isEqualTo("org.glowroot.container.Container");
         assertThat(capturePointSection.getMethodNameTextField().getAttribute("value"))
-                .isEqualTo("executeApp");
+                .isEqualTo("executeAppUnderTest");
         assertThat(capturePointSection.getCaptureKindMetricRadioButton().isSelected()).isTrue();
         assertThat(capturePointSection.getMetricNameTextField().getAttribute("value"))
                 .isEqualTo("a metric");
@@ -166,10 +166,10 @@ public class CapturePointTest extends WebDriverTest {
     private void createTraceCapturePoint(CapturePointListPage capturePointListPage) {
         capturePointListPage.getAddCapturePointButton().click();
         CapturePointSection capturePointSection = capturePointListPage.getSection(0);
-        capturePointSection.getClassNameTextField().sendKeys("container.AppUnderTest");
-        capturePointSection.clickClassNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
+        capturePointSection.getClassNameTextField().sendKeys("container.Container");
+        capturePointSection.clickClassNameAutoCompleteItem("org.glowroot.container.Container");
         capturePointSection.getMethodNameTextField().sendKeys("exec");
-        capturePointSection.clickMethodNameAutoCompleteItem("executeApp");
+        capturePointSection.clickMethodNameAutoCompleteItem("executeAppUnderTest");
         capturePointSection.getCaptureKindTransactionRadioButton().click();
         capturePointSection.getMetricNameTextField().clear();
         capturePointSection.getMetricNameTextField().sendKeys("a metric");
@@ -189,10 +189,17 @@ public class CapturePointTest extends WebDriverTest {
     private void createTraceEntryCapturePoint(CapturePointListPage capturePointListPage) {
         capturePointListPage.getAddCapturePointButton().click();
         CapturePointSection capturePointSection = capturePointListPage.getSection(0);
-        capturePointSection.getClassNameTextField().sendKeys("container.AppUnderTest");
-        capturePointSection.clickClassNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
+        // exercise limit first
+        capturePointSection.getClassNameTextField().sendKeys("java.io.File");
+        capturePointSection.clickClassNameAutoCompleteItem("java.io.File");
+        capturePointSection.getMethodNameTextField().sendKeys("a");
+        capturePointSection.clickMethodNameAutoCompleteItem("canExecute");
+        capturePointSection.getClassNameTextField().clear();
+        // now do the real thing
+        capturePointSection.getClassNameTextField().sendKeys("container.Container");
+        capturePointSection.clickClassNameAutoCompleteItem("org.glowroot.container.Container");
         capturePointSection.getMethodNameTextField().sendKeys("exec");
-        capturePointSection.clickMethodNameAutoCompleteItem("executeApp");
+        capturePointSection.clickMethodNameAutoCompleteItem("executeAppUnderTest");
         capturePointSection.getCaptureKindTraceEntryRadioButton().click();
         capturePointSection.getMetricNameTextField().clear();
         capturePointSection.getMetricNameTextField().sendKeys("a metric");
@@ -206,10 +213,10 @@ public class CapturePointTest extends WebDriverTest {
     private void createMetricCapturePoint(CapturePointListPage capturePointListPage) {
         capturePointListPage.getAddCapturePointButton().click();
         CapturePointSection capturePointSection = capturePointListPage.getSection(0);
-        capturePointSection.getClassNameTextField().sendKeys("container.AppUnderTest");
-        capturePointSection.clickClassNameAutoCompleteItem("org.glowroot.container.AppUnderTest");
+        capturePointSection.getClassNameTextField().sendKeys("container.Container");
+        capturePointSection.clickClassNameAutoCompleteItem("org.glowroot.container.Container");
         capturePointSection.getMethodNameTextField().sendKeys("exec");
-        capturePointSection.clickMethodNameAutoCompleteItem("executeApp");
+        capturePointSection.clickMethodNameAutoCompleteItem("executeAppUnderTest");
         capturePointSection.getCaptureKindMetricRadioButton().click();
         capturePointSection.getMetricNameTextField().clear();
         capturePointSection.getMetricNameTextField().sendKeys("a metric");

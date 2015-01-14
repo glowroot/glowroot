@@ -17,11 +17,11 @@ package org.glowroot.plugin.servlet;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
+import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -162,54 +162,23 @@ public class ServletPluginTest {
     }
 
     @Test
-    public void testRequestParameters() throws Exception {
+    public void testServletThrowsException() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(GetParameter.class);
+        container.executeAppUnderTest(ServletThrowsException.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        @SuppressWarnings("unchecked")
-        Map<String, Object> requestParameters =
-                (Map<String, Object>) entry.getMessage().getDetail().get("Request parameters");
-        assertThat(requestParameters.get("xYz")).isEqualTo("aBc");
-        assertThat(requestParameters.get("jpassword1")).isEqualTo("****");
-        @SuppressWarnings("unchecked")
-        List<String> multi = (List<String>) requestParameters.get("multi");
-        assertThat(multi).containsExactly("m1", "m2");
+        assertThat(trace.getError()).isNotNull();
+        assertThat(entries.get(0).getError().getException()).isNotNull();
     }
 
     @Test
-    public void testWithoutCaptureRequestParameters() throws Exception {
-        // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestParameters", "");
-        // when
-        container.executeAppUnderTest(GetParameter.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getDetail()).hasSize(1);
-        assertThat(entry.getMessage().getDetail()).containsKey("Request http method");
-    }
-
-    @Test
-    public void testRequestParameterMap() throws Exception {
+    public void testFilterThrowsException() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(GetParameterMap.class);
-        // then don't throw IllegalStateException (see MockCatalinaHttpServletRequest)
-        container.getTraceService().getLastTrace();
-    }
-
-    @Test
-    public void testThrowsException() throws Exception {
-        // given
-        // when
-        container.executeAppUnderTest(ThrowsException.class);
+        container.executeAppUnderTest(FilterThrowsException.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
@@ -272,6 +241,26 @@ public class ServletPluginTest {
         container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(ExecuteServlet.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace).isNull();
+    }
+
+    @Test
+    public void testBizzareServletContainer() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(BizzareServletContainer.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace).isNull();
+    }
+
+    @Test
+    public void testBizzareThrowingServletContainer() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(BizzareThrowingServletContainer.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace).isNull();
@@ -354,32 +343,6 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class GetParameter extends TestServlet {
-        @Override
-        protected void before(HttpServletRequest request, HttpServletResponse response) {
-            ((MockHttpServletRequest) request).setParameter("xYz", "aBc");
-            ((MockHttpServletRequest) request).setParameter("jpassword1", "mask me");
-            ((MockHttpServletRequest) request).setParameter("multi", new String[] {"m1", "m2"});
-        }
-        @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-            request.getParameter("xYz");
-        }
-    }
-
-    @SuppressWarnings("serial")
-    public static class GetParameterMap extends TestServlet {
-        @Override
-        protected void before(HttpServletRequest request, HttpServletResponse response) {
-            ((MockHttpServletRequest) request).setParameter("xy", "abc");
-        }
-        @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-            request.getParameterMap();
-        }
-    }
-
-    @SuppressWarnings("serial")
     public static class InvalidateSession extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
@@ -392,7 +355,7 @@ public class ServletPluginTest {
     }
 
     @SuppressWarnings("serial")
-    public static class ThrowsException extends TestServlet {
+    public static class ServletThrowsException extends TestServlet {
         private final RuntimeException exception = new RuntimeException("Something happened");
         @Override
         public void executeApp() throws Exception {
@@ -407,6 +370,25 @@ public class ServletPluginTest {
         }
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            throw exception;
+        }
+    }
+
+    public static class FilterThrowsException extends TestFilter {
+        private final RuntimeException exception = new RuntimeException("Something happened");
+        @Override
+        public void executeApp() throws Exception {
+            try {
+                super.executeApp();
+            } catch (RuntimeException e) {
+                // only suppress expected exception
+                if (e != exception) {
+                    throw e;
+                }
+            }
+        }
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) {
             throw exception;
         }
     }
@@ -427,6 +409,53 @@ public class ServletPluginTest {
                 throws IOException {
             response.setStatus(500);
         }
+    }
+
+    public static class BizzareServletContainer implements AppUnderTest, Servlet {
+        @Override
+        public void executeApp() throws Exception {
+            service(null, null);
+        }
+        @Override
+        public void init(ServletConfig config) {}
+        @Override
+        public ServletConfig getServletConfig() {
+            return null;
+        }
+        @Override
+        public void service(ServletRequest req, ServletResponse res) {}
+        @Override
+        public String getServletInfo() {
+            return null;
+        }
+        @Override
+        public void destroy() {}
+    }
+
+    public static class BizzareThrowingServletContainer implements AppUnderTest, Servlet {
+        @Override
+        public void executeApp() throws Exception {
+            try {
+                service(null, null);
+            } catch (RuntimeException e) {
+            }
+        }
+        @Override
+        public void init(ServletConfig config) {}
+        @Override
+        public ServletConfig getServletConfig() {
+            return null;
+        }
+        @Override
+        public void service(ServletRequest req, ServletResponse res) {
+            throw new RuntimeException();
+        }
+        @Override
+        public String getServletInfo() {
+            return null;
+        }
+        @Override
+        public void destroy() {}
     }
 
     public static class NestedTwo {

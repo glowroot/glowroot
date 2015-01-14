@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,10 @@
 package org.glowroot.local.store;
 
 import java.io.File;
-import java.io.IOException;
-import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Nullable;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.collector.AggregateRepository;
@@ -39,8 +34,6 @@ import org.glowroot.weaving.PreInitializeStorageShutdownClasses;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class StorageModule {
-
-    private static final Logger logger = LoggerFactory.getLogger(StorageModule.class);
 
     private static final long SNAPSHOT_REAPER_PERIOD_MINUTES = 5;
 
@@ -126,21 +119,11 @@ public class StorageModule {
     }
 
     @OnlyUsedByTests
-    public void close() {
+    public void close() throws Exception {
         if (reaperRunnable != null) {
             reaperRunnable.cancel();
         }
-        try {
-            cappedDatabase.close();
-        } catch (IOException e) {
-            // warning only since it occurs during shutdown anyways
-            logger.warn(e.getMessage(), e);
-        }
-        try {
-            dataSource.close();
-        } catch (SQLException e) {
-            // warning only since it occurs during shutdown anyways
-            logger.warn(e.getMessage(), e);
-        }
+        cappedDatabase.close();
+        dataSource.close();
     }
 }

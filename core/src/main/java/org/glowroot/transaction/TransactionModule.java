@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.glowroot.transaction;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.util.concurrent.ScheduledExecutorService;
@@ -59,7 +58,7 @@ public class TransactionModule {
             final @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             @Nullable Instrumentation instrumentation, File dataDir,
             @Nullable ExtraBootResourceFinder extraBootResourceFinder,
-            ScheduledExecutorService scheduledExecutor) throws IOException {
+            ScheduledExecutorService scheduledExecutor) throws Exception {
         this.threadAllocatedBytes = threadAllocatedBytes;
         ConfigService configService = configModule.getConfigService();
         transactionRegistry = new TransactionRegistry();

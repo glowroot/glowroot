@@ -105,8 +105,10 @@ glowroot.run([
           .success(function () {
             login.showLogin('You have been signed out');
           })
-          .error(function (data) {
-            // TODO
+          .error(function () {
+            // there is not an obvious placement on the screen for this error message
+            // since the action is triggered from navbar on any screen
+            alert('An error occurred during log out');
           });
     };
 
@@ -149,11 +151,6 @@ glowroot.run([
           .success(function (data) {
             setInitialLayout(data);
           });
-      setTimeout(function () {
-        if (!$rootScope.layout) {
-          alert('backend/layout is not loading, is the server running?');
-        }
-      }, 3000);
     }
 
     $rootScope.$on('$stateChangeSuccess', function () {

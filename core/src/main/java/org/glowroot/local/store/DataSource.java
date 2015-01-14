@@ -203,8 +203,7 @@ public class DataSource {
         }
     }
 
-    int[] batchUpdate(@Untainted String sql, BatchAdder batchAdder)
-            throws SQLException {
+    int[] batchUpdate(@Untainted String sql, BatchAdder batchAdder) throws Exception {
         debug(sql);
         if (closing) {
             // this can get called a lot inserting traces, and these can get backlogged
@@ -349,7 +348,7 @@ public class DataSource {
     }
 
     interface BatchAdder {
-        void addBatches(PreparedStatement preparedStatement) throws SQLException;
+        void addBatches(PreparedStatement preparedStatement) throws Exception;
     }
 
     interface RowMapper<T> {

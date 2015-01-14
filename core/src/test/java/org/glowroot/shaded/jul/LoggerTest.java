@@ -241,4 +241,10 @@ public class LoggerTest {
         assertThat(logger.isLoggable(Level.FINER)).isFalse();
         assertThat(logger.isLoggable(Level.FINEST)).isFalse();
     }
+
+    @Test
+    public void testGetLogger() {
+        Logger logger = Logger.getLogger("abc");
+        assertThat(logger.getLogger().getName()).isEqualTo("abc");
+    }
 }

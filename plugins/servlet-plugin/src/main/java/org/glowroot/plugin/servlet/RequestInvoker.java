@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,13 @@
 package org.glowroot.plugin.servlet;
 
 import java.lang.reflect.Method;
+import java.security.Principal;
 import java.util.Enumeration;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.api.Logger;
@@ -41,19 +43,9 @@ public class RequestInvoker {
     private final @Nullable Method getUserPrincipalMethod;
     private final @Nullable Method getParameterMapMethod;
 
-    private final PrincipalInvoker principalInvoker;
-
     public RequestInvoker(Class<?> clazz) {
-        Class<?> httpServletRequestClass = null;
-        Class<?> servletRequestClass = null;
-        try {
-            httpServletRequestClass = Class.forName("javax.servlet.http.HttpServletRequest", false,
-                    clazz.getClassLoader());
-            servletRequestClass = Class.forName("javax.servlet.ServletRequest", false,
-                    clazz.getClassLoader());
-        } catch (ClassNotFoundException e) {
-            logger.warn(e.getMessage(), e);
-        }
+        Class<?> httpServletRequestClass = getHttpServletRequestClass(clazz);
+        Class<?> servletRequestClass = getServletRequestClass(clazz);
         getSessionMethod = Invokers.getMethod(httpServletRequestClass, "getSession", boolean.class);
         getMethodMethod = Invokers.getMethod(httpServletRequestClass, "getMethod");
         getRequestURIMethod = Invokers.getMethod(httpServletRequestClass, "getRequestURI");
@@ -63,149 +55,69 @@ public class RequestInvoker {
         getHeaderNamesMethod = Invokers.getMethod(httpServletRequestClass, "getHeaderNames");
         getUserPrincipalMethod = Invokers.getMethod(httpServletRequestClass, "getUserPrincipal");
         getParameterMapMethod = Invokers.getMethod(servletRequestClass, "getParameterMap");
-
-        principalInvoker = new PrincipalInvoker(clazz);
     }
 
     public @Nullable Object getSession(Object request) {
-        if (getSessionMethod == null) {
-            return null;
-        }
-        try {
-            // passing "false" so it won't create a session if the request doesn't already have one
-            return getSessionMethod.invoke(request, false);
-        } catch (Throwable t) {
-            logger.warn("error calling HttpServletRequest.getSession()", t);
-            return null;
-        }
+        // passing "false" so it won't create a session if the request doesn't already have one
+        return Invokers.invoke(getSessionMethod, request, false, null);
     }
 
     public String getMethod(Object request) {
-        if (getMethodMethod == null) {
-            return "";
-        }
-        try {
-            String method = (String) getMethodMethod.invoke(request);
-            if (method == null) {
-                return "";
-            }
-            return method;
-        } catch (Throwable t) {
-            logger.warn("error calling HttpServletRequest.getMethod()", t);
-            return "<error calling HttpServletRequest.getMethod()>";
-        }
+        return Invokers.invoke(getMethodMethod, request, "");
     }
 
     public String getRequestURI(Object request) {
-        if (getRequestURIMethod == null) {
-            return "";
-        }
-        try {
-            String requestURI = (String) getRequestURIMethod.invoke(request);
-            if (requestURI == null) {
-                return "";
-            }
-            return requestURI;
-        } catch (Throwable t) {
-            logger.warn("error calling HttpServletRequest.getRequestURI()", t);
-            return "<error calling HttpServletRequest.getRequestURI()>";
-        }
+        return Invokers.invoke(getRequestURIMethod, request, "");
     }
 
     // don't convert null to empty, since null means no query string, while empty means
     // url ended with ? but nothing after that
     public @Nullable String getQueryString(Object request) {
-        if (getQueryStringMethod == null) {
-            return null;
-        }
-        try {
-            return (String) getQueryStringMethod.invoke(request);
-        } catch (Throwable t) {
-            logger.warn("error calling HttpServletRequest.getQueryString()", t);
-            return "<error calling HttpServletRequest.getQueryString()>";
-        }
+        return Invokers.invoke(getQueryStringMethod, request, null);
     }
 
     public @Nullable String getHeader(Object request, String name) {
-        if (getHeaderMethod == null) {
-            return null;
-        }
-        try {
-            return (String) getHeaderMethod.invoke(request, name);
-        } catch (Throwable t) {
-            logger.warn("error calling HttpServletRequest.getHeader()", t);
-            return "<error calling HttpServletRequest.getHeader()>";
-        }
+        return Invokers.invoke(getHeaderMethod, request, name, null);
     }
 
-    @SuppressWarnings("unchecked")
     public Enumeration<String> getHeaders(Object request, String name) {
-        if (getHeadersMethod == null) {
-            return EmptyStringEnumeration.INSTANCE;
-        }
-        try {
-            Enumeration<String> headers =
-                    (Enumeration<String>) getHeadersMethod.invoke(request, name);
-            if (headers == null) {
-                return EmptyStringEnumeration.INSTANCE;
-            }
-            return headers;
-        } catch (Throwable t) {
-            logger.warn("error calling HttpServletRequest.getHeaders()", t);
-            return EmptyStringEnumeration.INSTANCE;
-        }
+        return Invokers.invoke(getHeadersMethod, request, name, EmptyStringEnumeration.INSTANCE);
     }
 
-    @SuppressWarnings("unchecked")
     public Enumeration<String> getHeaderNames(Object request) {
-        if (getHeaderNamesMethod == null) {
-            return EmptyStringEnumeration.INSTANCE;
-        }
-        try {
-            Enumeration<String> headerNames =
-                    (Enumeration<String>) getHeaderNamesMethod.invoke(request);
-            if (headerNames == null) {
-                return EmptyStringEnumeration.INSTANCE;
-            }
-            return headerNames;
-        } catch (Throwable t) {
-            logger.warn("error calling HttpServletRequest.getHeaderNames()", t);
-            return EmptyStringEnumeration.INSTANCE;
-        }
+        return Invokers.invoke(getHeaderNamesMethod, request, EmptyStringEnumeration.INSTANCE);
     }
 
     public @Nullable String getUserPrincipalName(Object request) {
-        if (getUserPrincipalMethod == null) {
-            return null;
-        }
-        Object principal;
-        try {
-            principal = getUserPrincipalMethod.invoke(request);
-        } catch (Throwable t) {
-            logger.warn("error calling HttpServletRequest.getUserPrincipal()", t);
-            return null;
-        }
+        Principal principal = Invokers.invoke(getUserPrincipalMethod, request, null);
         if (principal == null) {
             return null;
         }
-        return principalInvoker.getName(principal);
+        return principal.getName();
     }
 
-    @SuppressWarnings("unchecked")
     public Map<String, String[]> getParameterMap(Object request) {
-        if (getParameterMapMethod == null) {
-            return ImmutableMap.of();
-        }
+        return Invokers.invoke(getParameterMapMethod, request, ImmutableMap.<String, String[]>of());
+    }
+
+    @VisibleForTesting
+    static @Nullable Class<?> getHttpServletRequestClass(Class<?> clazz) {
         try {
-            Map<String, String[]> parameterMap =
-                    (Map<String, String[]>) getParameterMapMethod.invoke(request);
-            if (parameterMap == null) {
-                return ImmutableMap.of();
-            }
-            return parameterMap;
-        } catch (Throwable t) {
-            logger.warn("error calling ServletRequest.getParameterMap()", t);
-            return ImmutableMap.of();
+            return Class.forName("javax.servlet.http.HttpServletRequest", false,
+                    clazz.getClassLoader());
+        } catch (ClassNotFoundException e) {
+            logger.warn(e.getMessage(), e);
         }
+        return null;
+    }
+
+    @VisibleForTesting
+    static @Nullable Class<?> getServletRequestClass(Class<?> clazz) {
+        try {
+            return Class.forName("javax.servlet.ServletRequest", false, clazz.getClassLoader());
+        } catch (ClassNotFoundException e) {
+            logger.warn(e.getMessage(), e);
+        }
+        return null;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,29 @@ public class GenericMessageSupplierTest {
     }
 
     @Test
+    public void shouldRenderNullPart() {
+        MessageTemplate template = MessageTemplate.create(
+                "{{this.class.name}}.{{methodName}}(): {{0.name}} => {{_}}", TestReceiver.class,
+                void.class, new Class<?>[] {HasName.class});
+        Message message =
+                GenericMessageSupplier.create(template, null, "execute", new HasName()).get();
+        String text = ((ReadableMessage) message).getText();
+        assertThat(text).isEqualTo("null.execute(): the name => ");
+    }
+
+    @Test
+    public void shouldRenderRequestedArgOutOfBounds() {
+        MessageTemplate template = MessageTemplate.create(
+                "{{this.class.name}}.{{methodName}}(): {{0.name}}, {{1.oops}} => {{_}}",
+                TestReceiver.class, void.class, new Class<?>[] {HasName.class});
+        Message message = GenericMessageSupplier.create(template, new TestReceiver(), "execute",
+                new HasName()).get();
+        String text = ((ReadableMessage) message).getText();
+        assertThat(text).isEqualTo(TestReceiver.class.getName()
+                + ".execute(): the name, <requested arg index out of bounds: 1> => ");
+    }
+
+    @Test
     public void shouldRenderTrailingText() {
         MessageTemplate template = MessageTemplate.create(
                 "{{this.class.name}}.{{methodName}}(): {{0.name}} trailing", TestReceiver.class,
@@ -57,7 +80,7 @@ public class GenericMessageSupplierTest {
     }
 
     @Test
-    public void shouldRenderBadText() {
+    public void shouldRenderBadTemplate() {
         MessageTemplate template = MessageTemplate.create(
                 "{{this.class.name}}.{{methodName}}(): {{1.name}} trailing", TestReceiver.class,
                 void.class, new Class<?>[] {HasName.class});
@@ -66,6 +89,42 @@ public class GenericMessageSupplierTest {
         String text = ((ReadableMessage) message).getText();
         assertThat(text).isEqualTo(TestReceiver.class.getName()
                 + ".execute(): <requested arg index out of bounds: 1> trailing");
+    }
+
+    @Test
+    public void shouldRenderBadTemplate2() {
+        MessageTemplate template = MessageTemplate.create(
+                "{{this.class.name}}.{{methodName}}(): {{x.name}} trailing", TestReceiver.class,
+                void.class, new Class<?>[] {HasName.class});
+        Message message =
+                GenericMessageSupplier.create(template, new TestReceiver(), "execute").get();
+        String text = ((ReadableMessage) message).getText();
+        assertThat(text).isEqualTo(TestReceiver.class.getName()
+                + ".execute(): {{x.name}} trailing");
+    }
+
+    @Test
+    public void shouldRenderBadMessage() {
+        MessageTemplate template = MessageTemplate.create(
+                "{{this.class.name}}.{{methodName}}(): {{0.name}} trailing", TestReceiver.class,
+                void.class, new Class<?>[] {HasName.class});
+        Message message =
+                GenericMessageSupplier.create(template, new TestReceiver(), "execute").get();
+        String text = ((ReadableMessage) message).getText();
+        assertThat(text).isEqualTo(TestReceiver.class.getName()
+                + ".execute(): <requested arg index out of bounds: 0> trailing");
+    }
+
+    @Test
+    public void shouldRenderMessageWithThrowingPart() {
+        MessageTemplate template = MessageTemplate.create(
+                "{{this.class.name}}.{{methodName}}(): {{0.throwingName}} trailing",
+                TestReceiver.class, void.class, new Class<?>[] {HasName.class});
+        Message message = GenericMessageSupplier.create(template, new TestReceiver(), "execute",
+                new HasName()).get();
+        String text = ((ReadableMessage) message).getText();
+        assertThat(text).isEqualTo(TestReceiver.class.getName()
+                + ".execute(): <error evaluating: java.lang.RuntimeException: Abc Xyz> trailing");
     }
 
     @Test
@@ -121,6 +180,9 @@ public class GenericMessageSupplierTest {
     public static class HasName {
         public String getName() {
             return "the name";
+        }
+        public String getThrowingName() {
+            throw new RuntimeException("Abc Xyz");
         }
     }
 

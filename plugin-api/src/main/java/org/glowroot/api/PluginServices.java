@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.glowroot.api;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
@@ -325,27 +324,7 @@ public abstract class PluginServices {
                         "Plugin services requested while glowroot is still starting");
             }
             return pluginServices;
-        } catch (ClassNotFoundException e) {
-            // this really really really shouldn't happen
-            logger.error(e.getMessage(), e);
-            throw new AssertionError(e);
-        } catch (NoSuchMethodException e) {
-            // this really really really shouldn't happen
-            logger.error(e.getMessage(), e);
-            throw new AssertionError(e);
-        } catch (SecurityException e) {
-            // this really really really shouldn't happen
-            logger.error(e.getMessage(), e);
-            throw new AssertionError(e);
-        } catch (IllegalAccessException e) {
-            // this really really really shouldn't happen
-            logger.error(e.getMessage(), e);
-            throw new AssertionError(e);
-        } catch (IllegalArgumentException e) {
-            // this really really really shouldn't happen
-            logger.error(e.getMessage(), e);
-            throw new AssertionError(e);
-        } catch (InvocationTargetException e) {
+        } catch (Exception e) {
             // this really really really shouldn't happen
             logger.error(e.getMessage(), e);
             throw new AssertionError(e);

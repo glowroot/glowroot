@@ -61,22 +61,17 @@ public class CappedDatabase {
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
     }
 
-    long write(CharSource charSource) {
+    long write(CharSource charSource) throws IOException {
         synchronized (lock) {
             if (closing) {
                 return -1;
             }
             out.startBlock();
-            try {
-                Writer compressedWriter =
-                        new OutputStreamWriter(new LZFOutputStream(out), Charsets.UTF_8);
-                charSource.copyTo(compressedWriter);
-                compressedWriter.flush();
-                return out.endBlock();
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-                return -1;
-            }
+            Writer compressedWriter =
+                    new OutputStreamWriter(new LZFOutputStream(out), Charsets.UTF_8);
+            charSource.copyTo(compressedWriter);
+            compressedWriter.flush();
+            return out.endBlock();
         }
     }
 
@@ -129,8 +124,7 @@ public class CappedDatabase {
                 return CharSource.wrap(overwrittenResponse).openStream();
             }
             // it's important to wrap CappedBlockInputStream in a BufferedInputStream to prevent
-            // lots
-            // of small reads from the underlying RandomAccessFile
+            // lots of small reads from the underlying RandomAccessFile
             final int bufferSize = 32768;
             return new InputStreamReader(new LZFInputStream(new BufferedInputStream(
                     new CappedBlockInputStream(cappedId), bufferSize)), Charsets.UTF_8);
@@ -173,24 +167,17 @@ public class CappedDatabase {
             }
         }
 
-        // delegate to read(...) above
         @Override
         public int read(byte[] bytes) throws IOException {
+            // this is never called since CappedBlockInputStream is always wrapped in a
+            // BufferedInputStream
             return read(bytes, 0, bytes.length);
         }
 
-        // delegate to read(...) above, though this should never get called since
-        // CappedBlockInputStream is wrapped in BufferedInputStream
         @Override
         public int read() throws IOException {
-            logger.warn("read() performs very poorly, CappedBlockInputStream should always be"
-                    + " wrapped in BufferedInputStream");
-            byte[] bytes = new byte[1];
-            if (read(bytes, 0, 1) == -1) {
-                return -1;
-            } else {
-                return bytes[0];
-            }
+            throw new UnsupportedOperationException(
+                    "CappedBlockInputStream should always be wrapped in a BufferedInputStream");
         }
     }
 

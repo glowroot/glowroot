@@ -32,6 +32,7 @@ import org.objectweb.asm.commons.JSRInlinerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.ClassNames;
 import org.glowroot.weaving.AnalyzedWorld.ParseContext;
 import org.glowroot.weaving.WeavingClassVisitor.PointcutClassFoundException;
 import org.glowroot.weaving.WeavingClassVisitor.ShortCircuitException;
@@ -112,9 +113,6 @@ class Weaver {
             shortCircuitException = true;
         } catch (PointcutClassFoundException e) {
             pointcutClassFoundException = true;
-        } catch (ClassCircularityError e) {
-            logger.error(e.getMessage(), e);
-            return null;
         }
         if (shortCircuitException || cv.isInterfaceSoNothingToWeave()) {
             return null;
@@ -170,13 +168,19 @@ class Weaver {
             if (type1.equals("java/lang/Object") || type2.equals("java/lang/Object")) {
                 return "java/lang/Object";
             }
+            try {
+                return getCommonSuperClassInternal(type1, type2);
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+                return "java/lang/Object";
+            }
+        }
+
+        private String getCommonSuperClassInternal(String type1, String type2) throws IOException {
             AnalyzedClass analyzedClass1;
             try {
                 analyzedClass1 =
                         analyzedWorld.getAnalyzedClass(ClassNames.fromInternalName(type1), loader);
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-                return "java/lang/Object";
             } catch (ClassNotFoundException e) {
                 // log at debug level only since this code will fail anyways if it is actually used
                 // at runtime since type doesn't exist
@@ -187,12 +191,9 @@ class Weaver {
             try {
                 analyzedClass2 =
                         analyzedWorld.getAnalyzedClass(ClassNames.fromInternalName(type2), loader);
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-                return "java/lang/Object";
             } catch (ClassNotFoundException e) {
-                // log at debug level only since this code must not be getting used anyways, as it
-                // would fail on execution since the type doesn't exist
+                // log at debug level only since this code will fail anyways if it is actually used
+                // at runtime since type doesn't exist
                 logger.debug("type {} not found while parsing type {}", type2, parseContext, e);
                 return "java/lang/Object";
             }
@@ -200,7 +201,7 @@ class Weaver {
         }
 
         private String getCommonSuperClass(AnalyzedClass analyzedClass1,
-                AnalyzedClass analyzedClass2, String type1, String type2) {
+                AnalyzedClass analyzedClass2, String type1, String type2) throws IOException {
             if (isAssignableFrom(analyzedClass1.name(), analyzedClass2)) {
                 return type1;
             }
@@ -214,7 +215,7 @@ class Weaver {
         }
 
         private String getCommonSuperClass(AnalyzedClass analyzedClass1,
-                AnalyzedClass analyzedClass2) {
+                AnalyzedClass analyzedClass2) throws IOException {
             // climb analyzedClass1 super class hierarchy and check if any of them are assignable
             // from analyzedClass2
             String superName = analyzedClass1.superName();
@@ -226,9 +227,6 @@ class Weaver {
                     AnalyzedClass superAnalyzedClass =
                             analyzedWorld.getAnalyzedClass(superName, loader);
                     superName = superAnalyzedClass.superName();
-                } catch (IOException e) {
-                    logger.error(e.getMessage(), e);
-                    return "java/lang/Object";
                 } catch (ClassNotFoundException e) {
                     // log at debug level only since this code must not be getting used anyways, as
                     // it would fail on execution since the type doesn't exist
@@ -241,7 +239,7 @@ class Weaver {
         }
 
         private boolean isAssignableFrom(String possibleSuperClassName,
-                AnalyzedClass analyzedClass) {
+                AnalyzedClass analyzedClass) throws IOException {
             if (analyzedClass.name().equals(possibleSuperClassName)) {
                 return true;
             }
@@ -256,7 +254,7 @@ class Weaver {
         }
 
         private boolean isAssignableFromInterfaces(String possibleSuperClassName,
-                AnalyzedClass analyzedClass) {
+                AnalyzedClass analyzedClass) throws IOException {
             for (String interfaceName : analyzedClass.interfaceNames()) {
                 try {
                     AnalyzedClass interfaceAnalyzedClass =
@@ -264,8 +262,6 @@ class Weaver {
                     if (isAssignableFrom(possibleSuperClassName, interfaceAnalyzedClass)) {
                         return true;
                     }
-                } catch (IOException e) {
-                    logger.error(e.getMessage(), e);
                 } catch (ClassNotFoundException e) {
                     // log at debug level only since this code must not be getting used anyways, as
                     // it would fail on execution since the type doesn't exist
@@ -277,14 +273,11 @@ class Weaver {
         }
 
         private boolean isAssignableFromSuperClass(String possibleSuperClassName,
-                String superName) {
+                String superName) throws IOException {
             try {
                 AnalyzedClass superAnalyzedClass =
                         analyzedWorld.getAnalyzedClass(superName, loader);
                 return isAssignableFrom(possibleSuperClassName, superAnalyzedClass);
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-                return false;
             } catch (ClassNotFoundException e) {
                 // log at debug level only since this code must not be getting used anyways, as it
                 // would fail on execution since the type doesn't exist

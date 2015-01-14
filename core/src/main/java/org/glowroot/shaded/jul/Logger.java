@@ -36,6 +36,11 @@ public class Logger {
         this.logger = logger;
     }
 
+    @VisibleForTesting
+    org.slf4j.Logger getLogger() {
+        return logger;
+    }
+
     public void severe(String msg) {
         logger.error(msg);
     }

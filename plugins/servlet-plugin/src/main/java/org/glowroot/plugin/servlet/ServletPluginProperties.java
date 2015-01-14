@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ class ServletPluginProperties {
     private static final String SESSION_USER_ATTRIBUTE_PROPERTY_NAME = "sessionUserAttribute";
     private static final String CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME =
             "captureSessionAttributes";
-    private static final String CAPTURE_STARTUP_PROPERTY_NAME = "captureStartup";
 
     private static final PluginServices pluginServices = PluginServices.get("servlet");
 
@@ -50,7 +49,6 @@ class ServletPluginProperties {
     private static volatile String sessionUserAttributePath = "";
     private static volatile ImmutableSet<String> captureSessionAttributePaths = ImmutableSet.of();
     private static volatile ImmutableSet<String> captureSessionAttributeNames = ImmutableSet.of();
-    private static volatile boolean captureStartup;
 
     static {
         pluginServices.registerConfigListener(new ConfigListener() {
@@ -94,10 +92,6 @@ class ServletPluginProperties {
         return captureSessionAttributeNames;
     }
 
-    static boolean captureStartup() {
-        return captureStartup;
-    }
-
     private static void updateCache() {
         captureRequestParameters = buildPatternList(CAPTURE_REQUEST_PARAMS_PROPERTY_NAME);
         maskRequestParameters = buildPatternList(MASK_REQUEST_PARAMS_PROPERTY_NAME);
@@ -110,7 +104,6 @@ class ServletPluginProperties {
         captureSessionAttributePaths = ImmutableSet.copyOf(splitter
                 .split(captureSessionAttributesText));
         captureSessionAttributeNames = buildCaptureSessionAttributeNames();
-        captureStartup = pluginServices.getBooleanProperty(CAPTURE_STARTUP_PROPERTY_NAME);
     }
 
     private static ImmutableList<Pattern> buildPatternList(String propertyName) {

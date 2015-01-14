@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,8 @@ abstract class AdviceMatcher {
     private boolean isMethodParameterTypesMatch(List<Type> parameterTypes) {
         String[] pointcutMethodParameterTypes = advice().pointcut().methodParameterTypes();
         for (int i = 0; i < pointcutMethodParameterTypes.length; i++) {
-            if (pointcutMethodParameterTypes[i].equals("..")) {
+            String pointcutMethodParameterType = pointcutMethodParameterTypes[i];
+            if (pointcutMethodParameterType.equals("..")) {
                 if (i != pointcutMethodParameterTypes.length - 1) {
                     logger.warn("'..' can only be used at the end of methodParameterTypes");
                     return false;
@@ -87,15 +88,19 @@ abstract class AdviceMatcher {
                 // have run out of argument types to match
                 return false;
             }
-            // only supporting * at this point
-            if (!pointcutMethodParameterTypes[i].equals("*")
-                    && !pointcutMethodParameterTypes[i].equals(
-                            parameterTypes.get(i).getClassName())) {
+            if (!isMethodParameterTypeMatch(pointcutMethodParameterType, parameterTypes.get(i))) {
                 return false;
             }
         }
         // need this final test since argumentTypes may still have unmatched elements
         return parameterTypes.size() == pointcutMethodParameterTypes.length;
+    }
+
+    private boolean isMethodParameterTypeMatch(String pointcutMethodParameterType,
+            Type parameterType) {
+        // only supporting * at this point
+        return pointcutMethodParameterType.equals("*")
+                || pointcutMethodParameterType.equals(parameterType.getClassName());
     }
 
     private boolean isMethodReturnMatch(Type returnType) {
@@ -117,13 +122,6 @@ abstract class AdviceMatcher {
         switch (methodModifier) {
             case PUBLIC:
                 return Modifier.isPublic(modifiers);
-            case PROTECTED:
-                return Modifier.isProtected(modifiers);
-            case PRIVATE:
-                return Modifier.isPrivate(modifiers);
-            case PACKAGE_PRIVATE:
-                return !Modifier.isPublic(modifiers) && !Modifier.isProtected(modifiers)
-                        && !Modifier.isPrivate(modifiers);
             case STATIC:
                 return Modifier.isStatic(modifiers);
             case NOT_STATIC:

@@ -80,10 +80,6 @@ class DetailCapture {
         }
         Map<String, Object> requestHeaders = Maps.newHashMap();
         Enumeration<String> headerNames = requestInvoker.getHeaderNames(request);
-        if (headerNames == null) {
-            // null check just to be safe in case this is a very strange servlet container
-            return ImmutableMap.of();
-        }
         for (Enumeration<String> e = headerNames; e.hasMoreElements();) {
             String name = e.nextElement();
             if (name == null) {
@@ -112,10 +108,7 @@ class DetailCapture {
 
     private static void captureRequestHeader(String name, Enumeration<String> values,
             Map<String, Object> requestHeaders) {
-        if (values == null) {
-            // just to be safe since ImmutableMap won't accept nulls
-            requestHeaders.put(name, "");
-        } else if (!values.hasMoreElements()) {
+        if (!values.hasMoreElements()) {
             requestHeaders.put(name, "");
         } else {
             String value = values.nextElement();

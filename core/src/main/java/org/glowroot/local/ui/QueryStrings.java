@@ -61,9 +61,7 @@ class QueryStrings {
             // special rule for "-mbean" so that it will convert to "...MBean"
             key = key.replace("Mbean", "MBean");
             Method setter = setters.get(key);
-            if (setter == null) {
-                throw new IllegalArgumentException("Unexpected attribute: " + key);
-            }
+            checkNotNull(setter, "Unexpected attribute: %s", key);
             Class<?> valueClass = setter.getParameterTypes()[0];
             Object value;
 
@@ -81,20 +79,29 @@ class QueryStrings {
         return decoded;
     }
 
+    private static <T> String createImmutableClassName(Class<T> clazz) {
+        Package pkg = clazz.getPackage();
+        if (pkg == null) {
+            return "Immutable" + clazz.getSimpleName();
+        } else {
+            return pkg.getName() + ".Immutable" + clazz.getSimpleName();
+        }
+    }
+
     private static @Nullable Object parseString(String str, Class<?> targetClass) {
         if (str.equals("")) {
             return null;
         } else if (targetClass == String.class) {
             return str;
-        } else if (targetClass == int.class || targetClass == Integer.class) {
+        } else if (isInteger(targetClass)) {
             // parse as double and truncate, just in case there is a decimal part
             return (int) Double.parseDouble(str);
-        } else if (targetClass == long.class || targetClass == Long.class) {
+        } else if (isLong(targetClass)) {
             // parse as double and truncate, just in case there is a decimal part
             return (long) Double.parseDouble(str);
-        } else if (targetClass == double.class || targetClass == Double.class) {
+        } else if (isDouble(targetClass)) {
             return Double.parseDouble(str);
-        } else if (targetClass == boolean.class || targetClass == Boolean.class) {
+        } else if (isBoolean(targetClass)) {
             return Boolean.parseBoolean(str);
         } else if (Enum.class.isAssignableFrom(targetClass)) {
             @SuppressWarnings({"unchecked", "rawtypes"})
@@ -106,13 +113,20 @@ class QueryStrings {
         }
     }
 
-    private static <T> String createImmutableClassName(Class<T> clazz) {
-        Package pkg = clazz.getPackage();
-        if (pkg == null) {
-            return "Immutable" + clazz.getSimpleName();
-        } else {
-            return pkg.getName() + ".Immutable" + clazz.getSimpleName();
-        }
+    private static boolean isInteger(Class<?> targetClass) {
+        return targetClass == int.class || targetClass == Integer.class;
+    }
+
+    private static boolean isLong(Class<?> targetClass) {
+        return targetClass == long.class || targetClass == Long.class;
+    }
+
+    private static boolean isDouble(Class<?> targetClass) {
+        return targetClass == double.class || targetClass == Double.class;
+    }
+
+    private static boolean isBoolean(Class<?> targetClass) {
+        return targetClass == boolean.class || targetClass == Boolean.class;
     }
 
     private static Map<String, Method> loadSetters(Class<?> immutableBuilderClass) {

@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Json;
@@ -41,9 +42,11 @@ import org.glowroot.local.store.ErrorPoint;
 import org.glowroot.local.store.ErrorSummary;
 import org.glowroot.local.store.ErrorSummaryMarshaler;
 import org.glowroot.local.store.ImmutableErrorMessageQuery;
+import org.glowroot.local.store.ImmutableErrorPoint;
 import org.glowroot.local.store.ImmutableErrorSummaryQuery;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;
+import org.glowroot.local.store.TraceErrorPoint;
 
 @JsonService
 class ErrorJsonService {
@@ -94,15 +97,17 @@ class ErrorJsonService {
         } else {
             Map<Long, Long> transactionCountMap = Maps.newHashMap();
             for (ErrorPoint unfilteredErrorPoint : unfilteredErrorPoints) {
-                transactionCountMap.put(unfilteredErrorPoint.getCaptureTime(),
-                        unfilteredErrorPoint.getTransactionCount());
+                transactionCountMap.put(unfilteredErrorPoint.captureTime(),
+                        unfilteredErrorPoint.transactionCount());
             }
-            ImmutableList<ErrorPoint> errorPoints =
+            ImmutableList<TraceErrorPoint> traceErrorPoints =
                     traceDao.readErrorPoints(traceDaoQuery, fixedAggregateIntervalMillis);
-            for (ErrorPoint errorPoint : errorPoints) {
-                Long transactionCount = transactionCountMap.get(errorPoint.getCaptureTime());
+            List<ErrorPoint> errorPoints = Lists.newArrayList();
+            for (TraceErrorPoint traceErrorPoint : traceErrorPoints) {
+                Long transactionCount = transactionCountMap.get(traceErrorPoint.captureTime());
                 if (transactionCount != null) {
-                    errorPoint.setTransactionCount(transactionCount);
+                    errorPoints.add(ImmutableErrorPoint.of(traceErrorPoint.captureTime(),
+                            traceErrorPoint.errorCount(), transactionCount));
                 }
             }
             populateDataSeries(query, errorPoints, dataSeries, dataSeriesExtra);
@@ -193,34 +198,28 @@ class ErrorJsonService {
         return unfilteredErrorPoints;
     }
 
-    private void populateDataSeries(ErrorMessageQuery request,
-            List<ErrorPoint> unfilteredErrorPoints, DataSeries dataSeries,
-            Map<Long, Long[]> dataSeriesExtra) {
+    private void populateDataSeries(ErrorMessageQuery request, List<ErrorPoint> errorPoints,
+            DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra) {
         ErrorPoint lastErrorPoint = null;
-        for (ErrorPoint unfilteredErrorPoint : unfilteredErrorPoints) {
+        for (ErrorPoint errorPoint : errorPoints) {
             if (lastErrorPoint == null) {
                 // first aggregate
-                dataSeriesHelper.addInitialUpslope(request.from(),
-                        unfilteredErrorPoint.getCaptureTime(), dataSeries);
+                dataSeriesHelper.addInitialUpslope(request.from(), errorPoint.captureTime(),
+                        dataSeries);
             } else {
-                dataSeriesHelper.addGapIfNeeded(lastErrorPoint.getCaptureTime(),
-                        unfilteredErrorPoint.getCaptureTime(), dataSeries);
+                dataSeriesHelper.addGapIfNeeded(lastErrorPoint.captureTime(),
+                        errorPoint.captureTime(), dataSeries);
             }
-            lastErrorPoint = unfilteredErrorPoint;
-            long transactionCount = unfilteredErrorPoint.getTransactionCount();
-            if (transactionCount == -1) {
-                // make unknown really big?
-                dataSeries.add(unfilteredErrorPoint.getCaptureTime(), 100);
-            } else {
-                dataSeries.add(unfilteredErrorPoint.getCaptureTime(),
-                        100 * unfilteredErrorPoint.getErrorCount() / (double) transactionCount);
-            }
-            dataSeriesExtra.put(unfilteredErrorPoint.getCaptureTime(),
-                    new Long[] {unfilteredErrorPoint.getErrorCount(), transactionCount});
+            lastErrorPoint = errorPoint;
+            long transactionCount = errorPoint.transactionCount();
+            dataSeries.add(errorPoint.captureTime(),
+                    100 * errorPoint.errorCount() / (double) transactionCount);
+            dataSeriesExtra.put(errorPoint.captureTime(),
+                    new Long[] {errorPoint.errorCount(), transactionCount});
         }
         if (lastErrorPoint != null) {
             dataSeriesHelper.addFinalDownslope(request.to(), dataSeries,
-                    lastErrorPoint.getCaptureTime());
+                    lastErrorPoint.captureTime());
         }
     }
 

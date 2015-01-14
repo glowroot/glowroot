@@ -68,7 +68,6 @@ glowroot.controller('TransactionHeaderCtrl', [
     $scope.$watch('filterDate', function (newValue, oldValue) {
       if (newValue !== oldValue) {
         if (!$scope.filterDate) {
-          // TODO display 'Missing date' message
           return;
         }
         $scope.$parent.filterDate = $scope.filterDate;

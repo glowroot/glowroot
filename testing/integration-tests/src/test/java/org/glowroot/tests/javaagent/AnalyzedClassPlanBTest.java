@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
+import org.glowroot.common.ClassNames;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.config.CapturePoint;
 import org.glowroot.container.config.CapturePoint.CaptureKind;
 import org.glowroot.weaving.AnalyzedWorld;
-import org.glowroot.weaving.ClassNames;
 
 public class AnalyzedClassPlanBTest {
 

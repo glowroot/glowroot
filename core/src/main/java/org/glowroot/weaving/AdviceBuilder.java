@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.glowroot.weaving;
 import java.lang.annotation.Annotation;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -46,7 +48,6 @@ import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.weaving.Advice.AdviceParameter;
 import org.glowroot.weaving.Advice.ParameterKind;
 
@@ -110,23 +111,23 @@ public class AdviceBuilder {
         builder.reweavable(reweavable);
     }
 
-    public Advice build() throws AdviceConstructionException {
+    public Advice build() throws Exception {
         Class<?> adviceClass = this.adviceClass;
         if (adviceClass == null) {
             // safe check, if adviceClass is null then lazyAdviceClass is non-null
             checkNotNull(lazyAdviceClass);
-            ClassLoader tempClassLoader = new URLClassLoader(new URL[0]);
-            try {
-                adviceClass = ClassLoaders.defineClass(lazyAdviceClass, tempClassLoader);
-            } catch (ReflectiveException e) {
-                throw new AdviceConstructionException(e);
-            }
+            ClassLoader tempClassLoader =
+                    AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
+                        @Override
+                        public ClassLoader run() {
+                            return new URLClassLoader(new URL[0]);
+                        }
+                    });
+            adviceClass = ClassLoaders.defineClass(lazyAdviceClass, tempClassLoader);
         }
         Pointcut pointcut = adviceClass.getAnnotation(Pointcut.class);
-        if (pointcut == null) {
-            throw new AdviceConstructionException(
-                    "Class was generated without @Pointcut annotation");
-        }
+        checkState(pointcut != null, "Class has no @Pointcut annotation");
+        checkNotNull(pointcut);
         builder.pointcut(pointcut);
         builder.adviceType(Type.getType(adviceClass));
         builder.pointcutClassNamePattern(buildPattern(pointcut.className()));
@@ -149,29 +150,23 @@ public class AdviceBuilder {
 
     private void initIsEnabledAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
             throws AdviceConstructionException {
-        if (hasIsEnabledAdvice) {
-            throw new AdviceConstructionException("@Pointcut '" + adviceClass.getName()
-                    + "' has more than one @IsEnabled method");
-        }
+        checkState(!hasIsEnabledAdvice,
+                "@Pointcut '" + adviceClass.getName() + "' has more than one @IsEnabled method");
         Method asmMethod = Method.getMethod(method);
-        if (asmMethod.getReturnType().getSort() == Type.BOOLEAN) {
-            builder.isEnabledAdvice(asmMethod);
-            List<AdviceParameter> parameters = getAdviceParameters(
-                    method.getParameterAnnotations(), method.getParameterTypes(),
-                    isEnabledBindAnnotationTypes, IsEnabled.class);
-            builder.addAllIsEnabledParameters(parameters);
-            hasIsEnabledAdvice = true;
-        } else {
-            throw new AdviceConstructionException("@IsEnabled method must return boolean");
-        }
+        checkState(asmMethod.getReturnType().getSort() == Type.BOOLEAN,
+                "@IsEnabled method must return boolean");
+        builder.isEnabledAdvice(asmMethod);
+        List<AdviceParameter> parameters = getAdviceParameters(
+                method.getParameterAnnotations(), method.getParameterTypes(),
+                isEnabledBindAnnotationTypes, IsEnabled.class);
+        builder.addAllIsEnabledParameters(parameters);
+        hasIsEnabledAdvice = true;
     }
 
     private void initOnBeforeAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
             throws AdviceConstructionException {
-        if (hasOnBeforeAdvice) {
-            throw new AdviceConstructionException("@Pointcut '" + adviceClass.getName()
-                    + "' has more than one @OnBefore method");
-        }
+        checkState(!hasOnBeforeAdvice,
+                "@Pointcut '" + adviceClass.getName() + "' has more than one @OnBefore method");
         Method onBeforeAdvice = Method.getMethod(method);
         builder.onBeforeAdvice(onBeforeAdvice);
         List<AdviceParameter> parameters = getAdviceParameters(
@@ -186,22 +181,16 @@ public class AdviceBuilder {
 
     private void initOnReturnAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
             throws AdviceConstructionException {
-        if (hasOnReturnAdvice) {
-            throw new AdviceConstructionException("@Pointcut '" + adviceClass.getName()
-                    + "' has more than one @OnReturn method");
-        }
+        checkState(!hasOnReturnAdvice,
+                "@Pointcut '" + adviceClass.getName() + "' has more than one @OnReturn method");
         List<AdviceParameter> parameters = getAdviceParameters(
                 method.getParameterAnnotations(), method.getParameterTypes(),
                 onReturnBindAnnotationTypes, OnReturn.class);
         for (int i = 1; i < parameters.size(); i++) {
-            if (parameters.get(i).kind() == ParameterKind.RETURN) {
-                throw new AdviceConstructionException(
-                        "@BindReturn must be the first argument to @OnReturn");
-            }
-            if (parameters.get(i).kind() == ParameterKind.OPTIONAL_RETURN) {
-                throw new AdviceConstructionException(
-                        "@BindOptionalReturn must be the first argument to @OnReturn");
-            }
+            checkState(parameters.get(i).kind() != ParameterKind.RETURN,
+                    "@BindReturn must be the first argument to @OnReturn");
+            checkState(parameters.get(i).kind() != ParameterKind.OPTIONAL_RETURN,
+                    "@BindOptionalReturn must be the first argument to @OnReturn");
         }
         builder.onReturnAdvice(Method.getMethod(method));
         builder.addAllOnReturnParameters(parameters);
@@ -210,23 +199,18 @@ public class AdviceBuilder {
 
     private void initOnThrowAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
             throws AdviceConstructionException {
-        if (hasOnThrowAdvice) {
-            throw new AdviceConstructionException("@Pointcut '" + adviceClass.getName()
-                    + "' has more than one @OnThrow method");
-        }
+        checkState(!hasOnThrowAdvice,
+                "@Pointcut '" + adviceClass.getName() + "' has more than one @OnThrow method");
         List<AdviceParameter> parameters = getAdviceParameters(
                 method.getParameterAnnotations(), method.getParameterTypes(),
                 onThrowBindAnnotationTypes, OnThrow.class);
         for (int i = 1; i < parameters.size(); i++) {
-            if (parameters.get(i).kind() == ParameterKind.THROWABLE) {
-                throw new AdviceConstructionException(
-                        "@BindThrowable must be the first argument to @OnThrow");
-            }
+            checkState(parameters.get(i).kind() != ParameterKind.THROWABLE,
+                    "@BindThrowable must be the first argument to @OnThrow");
         }
         Method asmMethod = Method.getMethod(method);
-        if (asmMethod.getReturnType().getSort() != Type.VOID) {
-            throw new AdviceConstructionException("@OnThrow method must return void (for now)");
-        }
+        checkState(asmMethod.getReturnType().getSort() == Type.VOID,
+                "@OnThrow method must return void (for now)");
         builder.onThrowAdvice(asmMethod);
         builder.addAllOnThrowParameters(parameters);
         hasOnThrowAdvice = true;
@@ -234,20 +218,24 @@ public class AdviceBuilder {
 
     private void initOnAfterAdvice(Class<?> adviceClass, java.lang.reflect.Method method)
             throws AdviceConstructionException {
-        if (hasOnAfterAdvice) {
-            throw new AdviceConstructionException("@Pointcut '" + adviceClass.getName()
-                    + "' has more than one @OnAfter method");
-        }
+        checkState(!hasOnAfterAdvice,
+                "@Pointcut '" + adviceClass.getName() + "' has more than one @OnAfter method");
         Method asmMethod = Method.getMethod(method);
-        if (asmMethod.getReturnType().getSort() != Type.VOID) {
-            throw new AdviceConstructionException("@OnAfter method must return void");
-        }
+        checkState(asmMethod.getReturnType().getSort() == Type.VOID,
+                "@OnAfter method must return void");
         builder.onAfterAdvice(asmMethod);
         List<AdviceParameter> parameters = getAdviceParameters(
                 method.getParameterAnnotations(), method.getParameterTypes(),
                 onAfterBindAnnotationTypes, OnAfter.class);
         builder.addAllOnAfterParameters(parameters);
         hasOnAfterAdvice = true;
+    }
+
+    private static void checkState(boolean condition, String message)
+            throws AdviceConstructionException {
+        if (!condition) {
+            throw new AdviceConstructionException(message);
+        }
     }
 
     private static @Nullable Pattern buildPattern(String maybePattern) {
@@ -313,16 +301,11 @@ public class AdviceBuilder {
             if (!parameterKindMap.containsKey(annotationType)) {
                 continue;
             }
-            if (foundBindAnnotationType != null) {
-                throw new AdviceConstructionException(
-                        "Multiple annotations found on a single parameter");
-            }
-            if (validBindAnnotationTypes.contains(annotationType)) {
-                foundBindAnnotationType = annotationType;
-            } else {
-                throw new AdviceConstructionException("Annotation '" + annotationType.getName()
-                        + "' found in an invalid location");
-            }
+            checkState(foundBindAnnotationType == null,
+                    "Multiple annotations found on a single parameter");
+            checkState(validBindAnnotationTypes.contains(annotationType),
+                    "Annotation '" + annotationType.getName() + "' found in an invalid location");
+            foundBindAnnotationType = annotationType;
         }
         return foundBindAnnotationType;
     }
@@ -331,22 +314,19 @@ public class AdviceBuilder {
             Class<? extends Annotation> validBindAnnotationType,
             Class<?> parameterType) throws AdviceConstructionException {
 
-        if (validBindAnnotationType == BindMethodName.class
-                && !parameterType.isAssignableFrom(String.class)) {
-            throw new AdviceConstructionException("@BindMethodName parameter type must be"
-                    + " java.lang.String (or super type of java.lang.String)");
-        }
-        if (validBindAnnotationType == BindThrowable.class
-                && !parameterType.isAssignableFrom(Throwable.class)) {
-            throw new AdviceConstructionException("@BindMethodName parameter type must be"
-                    + " java.lang.Throwable (or super type of java.lang.Throwable)");
-        }
+        checkState(validBindAnnotationType != BindMethodName.class
+                || parameterType.isAssignableFrom(String.class),
+                "@BindMethodName parameter type must be"
+                        + " java.lang.String (or super type of java.lang.String)");
+        checkState(validBindAnnotationType != BindThrowable.class
+                || parameterType.isAssignableFrom(Throwable.class),
+                "@BindMethodName parameter type must be"
+                        + " java.lang.Throwable (or super type of java.lang.Throwable)");
         ParameterKind parameterKind = parameterKindMap.get(validBindAnnotationType);
-        if (parameterKind == null) {
-            // not possible since all bind annotations have a mapping in parameterKindMap
-            throw new AssertionError("Annotation not found in parameterKindMap: "
-                    + validBindAnnotationType.getName());
-        }
+        // parameterKind should never be null since all bind annotations have a mapping in
+        // parameterKindMap
+        checkNotNull(parameterKind, "Annotation not found in parameterKindMap: "
+                + validBindAnnotationType.getName());
         return ImmutableAdviceParameter.builder()
                 .kind(parameterKind)
                 .type(Type.getType(parameterType))
@@ -355,9 +335,6 @@ public class AdviceBuilder {
 
     @SuppressWarnings("serial")
     public static class AdviceConstructionException extends Exception {
-        private AdviceConstructionException(Throwable cause) {
-            super(cause);
-        }
         private AdviceConstructionException(@Nullable String message) {
             super(message);
         }

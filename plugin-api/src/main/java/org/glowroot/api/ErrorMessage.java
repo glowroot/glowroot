@@ -19,7 +19,6 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
@@ -140,15 +139,6 @@ public abstract class ErrorMessage {
         @Override
         public Map<String, ? extends /*@Nullable*/Object> getDetail() {
             return detail;
-        }
-
-        @Override
-        public String toString() {
-            return MoreObjects.toStringHelper(this)
-                    .add("text", text)
-                    .add("exception", exceptionInfo)
-                    .add("detail", detail)
-                    .toString();
         }
     }
 }

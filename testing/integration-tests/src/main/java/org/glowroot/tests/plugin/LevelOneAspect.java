@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.glowroot.tests.plugin;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.Message;
@@ -41,7 +42,7 @@ public class LevelOneAspect {
             PluginServices.get("glowroot-integration-tests");
 
     @Pointcut(className = "org.glowroot.tests.LevelOne", methodName = "call",
-            methodParameterTypes = {"java.lang.String", "java.lang.String"},
+            methodParameterTypes = {"java.lang.Object", "java.lang.Object"},
             metricName = "level one")
     public static class LevelOneAdvice {
 
@@ -54,8 +55,8 @@ public class LevelOneAspect {
         }
 
         @OnBefore
-        public static TraceEntry onBefore(@BindParameter final String arg1,
-                @BindParameter final String arg2) {
+        public static TraceEntry onBefore(@BindParameter final Object arg1,
+                @BindParameter final Object arg2) {
             String headline = pluginServices.getStringProperty("alternateHeadline");
             if (headline.isEmpty()) {
                 headline = "Level One";
@@ -67,7 +68,20 @@ public class LevelOneAspect {
             MessageSupplier messageSupplier = new MessageSupplier() {
                 @Override
                 public Message get() {
-                    Optional<String> optionalArg2 = Optional.fromNullable(arg2);
+                    if (arg1.equals("useArg2AsKeyAndValue")) {
+                        Map<Object, Object> map = Maps.newLinkedHashMap();
+                        map.put("arg1", arg1);
+                        map.put(arg2, arg2);
+                        Map<Object, Object> nestedMap = Maps.newLinkedHashMap();
+                        nestedMap.put("nestedkey11", arg1);
+                        nestedMap.put(arg2, arg2);
+                        map.put("nested1", nestedMap);
+                        // intentionally doing a very bad thing here
+                        @SuppressWarnings("unchecked")
+                        Map<String, ?> detail = (Map<String, ?>) (Map<?, ?>) map;
+                        return Message.withDetail(headlineFinal, detail);
+                    }
+                    Optional<Object> optionalArg2 = Optional.fromNullable(arg2);
                     Map<String, ?> detail = ImmutableMap.of("arg1", arg1, "arg2", optionalArg2,
                             "nested1",
                             ImmutableMap.of("nestedkey11", arg1, "nestedkey12", optionalArg2,
@@ -81,7 +95,7 @@ public class LevelOneAspect {
             TraceEntry traceEntry = pluginServices.startTransaction("Integration test",
                     "basic test", messageSupplier, metricName);
             // several trace attributes to test ordering
-            pluginServices.setTransactionCustomAttribute("Zee One", arg2);
+            pluginServices.setTransactionCustomAttribute("Zee One", String.valueOf(arg2));
             pluginServices.setTransactionCustomAttribute("Yee Two", "yy3");
             pluginServices.setTransactionCustomAttribute("Yee Two", "yy");
             pluginServices.setTransactionCustomAttribute("Yee Two", "Yy2");
@@ -89,7 +103,6 @@ public class LevelOneAspect {
             pluginServices.setTransactionCustomAttribute("Wee Four", "ww");
             return traceEntry;
         }
-
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {
             traceEntry.end();

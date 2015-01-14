@@ -15,6 +15,8 @@
  */
 package org.glowroot.plugin.servlet;
 
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
@@ -23,10 +25,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpSession;
 
 import org.glowroot.Containers;
 import org.glowroot.container.Container;
@@ -59,8 +64,8 @@ public class SessionAttributeTest {
     @Test
     public void testHasSessionAttribute() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "testattr");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "testattr");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -75,8 +80,8 @@ public class SessionAttributeTest {
     @Test
     public void testHasSessionAttributeWithoutTrimmedAttributeName() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes", " testattr , other");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                " testattr , other");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -106,8 +111,8 @@ public class SessionAttributeTest {
     @Test
     public void testHasSessionAttributeUsingWildcardPlusOther() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*,other");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "*,other");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -136,15 +141,16 @@ public class SessionAttributeTest {
     @Test
     public void testSetSessionAttribute() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "testattr");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "testattr,testother");
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(getSessionAttributes(entries)).isNull();
+        assertThat(getInitialSessionAttributes(entries)).isNotNull();
+        assertThat(getInitialSessionAttributes(entries).get("testother")).isEqualTo("v");
         assertThat(getUpdatedSessionAttributes(entries)).isNotNull();
         assertThat(getUpdatedSessionAttributes(entries).get("testattr")).isEqualTo("val");
     }
@@ -167,8 +173,8 @@ public class SessionAttributeTest {
     @Test
     public void testSetSessionAttributeUsingWildcardAndOther() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*,other");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "*,other");
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
@@ -212,9 +218,8 @@ public class SessionAttributeTest {
     @Test
     public void testHasNestedSessionAttributePath() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                        "one.two.three,one.amap.x");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "one.two.three,one.amap.x");
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
@@ -230,9 +235,8 @@ public class SessionAttributeTest {
     @Test
     public void testSetNestedSessionAttributePath() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                        "one.two.three,one.amap.x");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "one.two.three,one.amap.x");
         // when
         container.executeAppUnderTest(SetNestedSessionAttribute.class);
         // then
@@ -248,8 +252,8 @@ public class SessionAttributeTest {
     @Test
     public void testHasMissingSessionAttribute() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "missingtestattr");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "missingtestattr");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -263,8 +267,8 @@ public class SessionAttributeTest {
     @Test
     public void testHasMissingNestedSessionAttributePath() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "one.missingtwo");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "one.missingtwo");
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
@@ -278,9 +282,8 @@ public class SessionAttributeTest {
     @Test
     public void testHasNestedSessionAttributePath2() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                        "one.*,one.two.*,one.amap.*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "one.*,one.two.*,one.amap.*");
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
@@ -298,9 +301,8 @@ public class SessionAttributeTest {
     @Test
     public void testSetNestedSessionAttributePath2() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                        "one.*,one.two.*,one.amap.*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "one.*,one.two.*,one.amap.*");
         // when
         container.executeAppUnderTest(SetNestedSessionAttribute.class);
         // then
@@ -313,6 +315,42 @@ public class SessionAttributeTest {
         assertThat(getUpdatedSessionAttributes(entries).get("one.two.three")).isEqualTo("four");
         assertThat(getUpdatedSessionAttributes(entries).get("one.amap.x")).isEqualTo("y");
         assertThat(getUpdatedSessionAttributes(entries).get("one.another")).isEqualTo("3");
+    }
+
+    @Test
+    public void testSetNestedSessionAttributeToNull() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "one.*");
+        // when
+        container.executeAppUnderTest(SetNestedSessionAttributeToNull.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(1);
+        assertThat(getSessionAttributes(entries)).isNull();
+        assertThat(getUpdatedSessionAttributes(entries)).isNotNull();
+        assertThat(getUpdatedSessionAttributes(entries)).hasSize(1);
+        assertThat(getUpdatedSessionAttributes(entries).containsKey("one")).isTrue();
+        assertThat(getUpdatedSessionAttributes(entries).get("one")).isNull();
+    }
+
+    @Test
+    public void testSetSessionAttributeToNull() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "one.two");
+        // when
+        container.executeAppUnderTest(SetNestedSessionAttributeToNull.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(1);
+        assertThat(getSessionAttributes(entries)).isNull();
+        assertThat(getUpdatedSessionAttributes(entries)).isNotNull();
+        assertThat(getUpdatedSessionAttributes(entries)).hasSize(1);
+        assertThat(getUpdatedSessionAttributes(entries).containsKey("one.two")).isTrue();
+        assertThat(getUpdatedSessionAttributes(entries).get("one.two")).isNull();
     }
 
     @Test
@@ -345,6 +383,20 @@ public class SessionAttributeTest {
         assertThat(getUpdatedSessionAttributes(entries)).isNull();
     }
 
+    @Test
+    public void testGetBadAttributeNames() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
+        // when
+        container.executeAppUnderTest(GetBadAttributeNames.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(1);
+        assertThat(getSessionAttributes(entries)).isNull();
+        assertThat(getUpdatedSessionAttributes(entries)).isNull();
+    }
+
     @SuppressWarnings("unchecked")
     private static @Nullable Map<String, String> getSessionAttributes(List<TraceEntry> entries) {
         Map<String, Object> detail = entries.get(0).getMessage().getDetail();
@@ -352,6 +404,18 @@ public class SessionAttributeTest {
             return null;
         } else {
             return (Map<String, String>) detail.get("Session attributes");
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static @Nullable Map<String, String> getInitialSessionAttributes(
+            List<TraceEntry> entries) {
+        Map<String, Object> detail = entries.get(0).getMessage().getDetail();
+        if (detail == null) {
+            return null;
+        } else {
+            return (Map<String, String>) detail
+                    .get("Session attributes (at beginning of this request)");
         }
     }
 
@@ -377,6 +441,10 @@ public class SessionAttributeTest {
 
     @SuppressWarnings("serial")
     public static class SetSessionAttribute extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            request.getSession().setAttribute("testother", "v");
+        }
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("testattr", "val");
@@ -408,6 +476,27 @@ public class SessionAttributeTest {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("one", new NestedTwo("four", "3"));
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class SetNestedSessionAttributeToNull extends TestServlet {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            request.getSession().setAttribute("one", null);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class GetBadAttributeNames extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            ((MockHttpServletRequest) request).setSession(new MockHttpSession() {
+                @Override
+                public Enumeration<String> getAttributeNames() {
+                    return Collections.enumeration(Lists.newArrayList((String) null));
+                }
+            });
         }
     }
 

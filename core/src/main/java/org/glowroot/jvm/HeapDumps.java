@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.glowroot.jvm;
 
 import javax.management.InstanceNotFoundException;
-import javax.management.JMException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
@@ -38,7 +37,7 @@ public class HeapDumps {
         this.objectName = objectName;
     }
 
-    public void dumpHeap(String path) throws JMException, InterruptedException {
+    public void dumpHeap(String path) throws Exception {
         lazyPlatformMBeanServer.invoke(objectName, "dumpHeap", new Object[] {path, false},
                 new String[] {"java.lang.String", "boolean"});
     }
@@ -59,15 +58,14 @@ public class HeapDumps {
                 // verify that mbean exists
                 try {
                     lazyPlatformMBeanServer.getObjectInstance(objectName);
-                } catch (InterruptedException e) {
-                    logger.error(e.getMessage(), e);
-                    return OptionalService.unavailable("Interrupted while initializing: "
-                            + e.getMessage());
                 } catch (InstanceNotFoundException e) {
                     // log exception at debug level
                     logger.debug(e.getMessage(), e);
                     return OptionalService.unavailable("No such MBean " + MBEAN_NAME
                             + " (introduced in Oracle Java SE 6)");
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                    return OptionalService.unavailable("<see error log for detail>");
                 }
                 return OptionalService.available(new HeapDumps(lazyPlatformMBeanServer,
                         objectName));

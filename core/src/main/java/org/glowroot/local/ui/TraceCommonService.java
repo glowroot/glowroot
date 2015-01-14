@@ -83,7 +83,7 @@ class TraceCommonService {
     // overwritten profile will return {"overwritten":true}
     // expired trace will return {"expired":true}
     @Nullable
-    CharSource getProfile(String traceId) throws SQLException {
+    CharSource getProfile(String traceId) throws Exception {
         // check active traces first, then pending traces, and finally stored traces
         // to make sure that the trace is not missed if it is in transition between these states
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
@@ -111,12 +111,8 @@ class TraceCommonService {
         if (trace == null) {
             return null;
         }
-        try {
-            return new TraceExport(trace, TraceWriter.toString(trace),
-                    traceDao.readEntries(traceId), traceDao.readProfile(traceId));
-        } catch (SQLException e) {
-            throw new IOException(e);
-        }
+        return new TraceExport(trace, TraceWriter.toString(trace), traceDao.readEntries(traceId),
+                traceDao.readProfile(traceId));
     }
 
     private Trace createTrace(Transaction transaction) throws IOException {
@@ -133,7 +129,7 @@ class TraceCommonService {
                 active.getStartTick(), ticker.read());
     }
 
-    private @Nullable CharSource createProfile(Transaction active) {
+    private @Nullable CharSource createProfile(Transaction active) throws IOException {
         return ProfileCharSourceCreator.createProfileCharSource(
                 active.getProfile());
     }

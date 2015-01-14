@@ -48,6 +48,7 @@ import org.glowroot.config.Gauge;
 import org.glowroot.config.ImmutableGauge;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
 
 @JsonService
@@ -118,7 +119,7 @@ class GaugeJsonService {
     }
 
     @POST("/backend/config/gauges/add")
-    String addGauge(String content) throws IOException {
+    String addGauge(String content) throws Exception {
         GaugeDto gaugeDto = Marshaling.fromJson(content, GaugeDto.class);
         Gauge gauge = gaugeDto.toConfig();
         try {
@@ -135,10 +136,8 @@ class GaugeJsonService {
     String updateGauge(String content) throws IOException {
         GaugeDto gaugeDto = Marshaling.fromJson(content, GaugeDto.class);
         Gauge gauge = gaugeDto.toConfig();
-        String version = gaugeDto.version();
-        if (version == null) {
-            throw new IllegalArgumentException("Missing required request property: version");
-        }
+        String version = checkNotNull(gaugeDto.version(),
+                "Missing required request property: version");
         configService.updateGauge(gauge, version);
         return Marshaling2.toJson(buildResponse(gauge));
     }
@@ -200,17 +199,17 @@ class GaugeJsonService {
         for (String itemName : compositeType.keySet()) {
             OpenType<?> itemType = compositeType.getType(itemName);
             if (itemType == null) {
-                break;
+                continue;
             }
             String className = itemType.getClassName();
-            // see all possible classNames at
-            // javax.management.openmbean.OpenType.ALLOWED_CLASSNAMES_LIST
-            if (className.equals("java.lang.Long")
-                    || className.equals("java.lang.Integer")
-                    || className.equals("java.lang.Double")
-                    || className.equals("java.lang.Float")
-                    || className.equals("java.lang.BigDecimal")
-                    || className.equals("java.lang.BigInteger")) {
+            Class<?> clazz;
+            try {
+                clazz = Class.forName(className);
+            } catch (ClassNotFoundException e) {
+                logger.warn(e.getMessage(), e);
+                continue;
+            }
+            if (Number.class.isAssignableFrom(clazz)) {
                 attributeNames.add(attribute.getName() + "." + itemName);
             }
         }

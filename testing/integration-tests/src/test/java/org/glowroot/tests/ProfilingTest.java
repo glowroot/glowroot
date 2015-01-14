@@ -73,6 +73,20 @@ public class ProfilingTest {
     }
 
     @Test
+    public void shouldNotReadProfile() throws Exception {
+        // given
+        ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
+        profilingConfig.setIntervalMillis(20);
+        profilingConfig.setEnabled(false);
+        container.getConfigService().updateProfilingConfig(profilingConfig);
+        // when
+        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getProfileExistence()).isEqualTo(Existence.NO);
+    }
+
+    @Test
     public void shouldReadUserRecordingProfile() throws Exception {
         // given
         UserRecordingConfig userRecordingConfig =
@@ -92,6 +106,25 @@ public class ProfilingTest {
         // profiler should have captured about 10 stack traces
         ProfileNode rootProfileNode = container.getTraceService().getProfile(trace.getId());
         assertThat(rootProfileNode.getSampleCount()).isBetween(5, 15);
+    }
+
+    @Test
+    public void shouldNotReadUserRecordingProfile() throws Exception {
+        // given
+        UserRecordingConfig userRecordingConfig =
+                container.getConfigService().getUserRecordingConfig();
+        userRecordingConfig.setEnabled(true);
+        userRecordingConfig.setUser("baker");
+        userRecordingConfig.setProfileIntervalMillis(20);
+        container.getConfigService().updateUserRecordingConfig(userRecordingConfig);
+        ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
+        profilingConfig.setEnabled(false);
+        container.getConfigService().updateProfilingConfig(profilingConfig);
+        // when
+        container.executeAppUnderTest(ShouldGenerateTraceWithProfileForAble.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getProfileExistence()).isEqualTo(Existence.NO);
     }
 
     public static class ShouldWaitForInterrupt implements AppUnderTest, TraceMarker {

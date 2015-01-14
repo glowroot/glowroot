@@ -15,7 +15,6 @@
  */
 package org.glowroot.container.impl;
 
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
@@ -28,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
 import org.glowroot.Viewer;
-import org.glowroot.config.ConfigService.OptimisticLockException;
 import org.glowroot.config.ImmutableTraceConfig;
 import org.glowroot.config.TraceConfig;
 
@@ -65,8 +63,7 @@ public class JavaagentMain {
         }
     }
 
-    static void setTraceStoreThresholdMillisToZero() throws OptimisticLockException,
-            IOException {
+    static void setTraceStoreThresholdMillisToZero() throws Exception {
         GlowrootModule glowrootModule = MainEntryPoint.getGlowrootModule();
         if (glowrootModule == null) {
             // failed to start, e.g. DataSourceLockTest

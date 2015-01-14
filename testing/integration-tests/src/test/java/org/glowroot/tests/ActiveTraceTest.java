@@ -60,7 +60,17 @@ public class ActiveTraceTest {
     }
 
     @Test
-    public void shouldReadActiveTrace() throws Exception {
+    public void shouldReadActiveTraceStuckOnRootMetric() throws Exception {
+        shouldReadActiveTrace(ShouldGenerateActiveTraceStuckOnRootMetric.class, false);
+    }
+
+    @Test
+    public void shouldReadActiveTraceStuckOnNonRootMetric() throws Exception {
+        shouldReadActiveTrace(ShouldGenerateActiveTraceStuckOnNonRootMetric.class, true);
+    }
+
+    private Trace shouldReadActiveTrace(final Class<? extends AppUnderTest> appUnderTest,
+            boolean stuckOnNonRoot) throws Exception {
         // given
         ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
         profilingConfig.setIntervalMillis(10);
@@ -71,7 +81,7 @@ public class ActiveTraceTest {
             @Override
             public Void call() throws Exception {
                 try {
-                    container.executeAppUnderTest(ShouldGenerateActiveTrace.class);
+                    container.executeAppUnderTest(appUnderTest);
                 } catch (Throwable t) {
                     t.printStackTrace();
                 }
@@ -92,11 +102,20 @@ public class ActiveTraceTest {
             }
             Thread.sleep(10);
         }
+        // sleep once more to make sure trace gets into proper nested entry
+        Thread.sleep(20);
+        trace = container.getTraceService().getActiveTrace(0, MILLISECONDS);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace).isNotNull();
         assertThat(trace.isActive()).isTrue();
         assertThat(trace.isPartial()).isFalse();
-        assertThat(entries).hasSize(1);
+        assertThat(trace.getRootMetric().isMaxActive()).isTrue();
+        if (stuckOnNonRoot) {
+            assertThat(trace.getRootMetric().getNestedMetrics().get(0).isMaxActive()).isTrue();
+            assertThat(entries).hasSize(3);
+        } else {
+            assertThat(entries).hasSize(1);
+        }
         assertThat(profile).isNotNull();
         // interrupt trace
         container.interruptAppUnderTest();
@@ -107,17 +126,36 @@ public class ActiveTraceTest {
         assertThat(trace.isPartial()).isFalse();
         // cleanup
         executorService.shutdown();
+        return trace;
     }
 
-    public static class ShouldGenerateActiveTrace implements AppUnderTest, TraceMarker {
+    public static class ShouldGenerateActiveTraceStuckOnRootMetric implements AppUnderTest,
+            TraceMarker {
+        @Override
+        public void executeApp() {
+            traceMarker();
+        }
+        @Override
+        public void traceMarker() {
+            try {
+                Thread.sleep(Long.MAX_VALUE);
+            } catch (InterruptedException e) {
+                return;
+            }
+        }
+    }
+
+    public static class ShouldGenerateActiveTraceStuckOnNonRootMetric implements AppUnderTest,
+            TraceMarker {
         @Override
         public void executeApp() throws InterruptedException {
             traceMarker();
         }
         @Override
         public void traceMarker() throws InterruptedException {
+            new Pause().pauseOneMillisecond();
             try {
-                Thread.sleep(Long.MAX_VALUE);
+                new Pause().pauseMaxMilliseconds();
             } catch (InterruptedException e) {
                 return;
             }

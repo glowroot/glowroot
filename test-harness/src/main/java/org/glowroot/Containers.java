@@ -96,7 +96,7 @@ public class Containers {
     }
 
     public static Container createWithFileDb(File dataDir) throws Exception {
-        return create(dataDir, true, false);
+        return create(dataDir, true);
     }
 
     // since dataDir is passed to the container, the container will not delete dataDir on close

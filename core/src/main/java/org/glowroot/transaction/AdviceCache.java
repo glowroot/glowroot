@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,10 +48,11 @@ import org.glowroot.config.PluginDescriptor;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.AdviceBuilder;
-import org.glowroot.weaving.AdviceBuilder.AdviceConstructionException;
 import org.glowroot.weaving.ClassLoaders;
 import org.glowroot.weaving.LazyDefinedClass;
 import org.glowroot.weaving.MixinType;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class AdviceCache {
 
@@ -71,14 +72,14 @@ public class AdviceCache {
 
     AdviceCache(List<PluginDescriptor> pluginDescriptors, List<File> pluginJars,
             List<CapturePoint> reweavableCapturePoints, @Nullable Instrumentation instrumentation,
-            File dataDir) throws IOException {
+            File dataDir) throws Exception {
 
         List<Advice> pluginAdvisors = Lists.newArrayList();
         List<MixinType> mixinTypes = Lists.newArrayList();
         Map<Advice, LazyDefinedClass> lazyAdvisors = Maps.newHashMap();
         // use temporary class loader so @Pointcut classes won't be defined for real until
         // PointcutClassVisitor is ready to weave them
-        URL[] pluginJarURLs = new URL[pluginJars.size()];
+        final URL[] pluginJarURLs = new URL[pluginJars.size()];
         for (int i = 0; i < pluginJars.size(); i++) {
             pluginJarURLs[i] = pluginJars.get(i).toURI().toURL();
         }
@@ -102,13 +103,12 @@ public class AdviceCache {
         if (instrumentation == null) {
             // this is for tests that don't run with javaagent container
             ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            if (loader == null) {
-                throw new AssertionError("Context class loader must be set");
-            }
+            checkNotNull(loader, "Context class loader must be set");
             ClassLoaders.defineClassesInClassLoader(lazyAdvisors.values(), loader);
         } else {
             File generatedJarDir = new File(dataDir, "tmp");
-            ClassLoaders.cleanPreviouslyGeneratedJars(generatedJarDir, "plugin-pointcuts.jar");
+            ClassLoaders.createDirectoryOrCleanPreviousContentsWithPrefix(generatedJarDir,
+                    "plugin-pointcuts.jar");
             if (!lazyAdvisors.isEmpty()) {
                 File jarFile = new File(generatedJarDir, "plugin-pointcuts.jar");
                 ClassLoaders.defineClassesInBootstrapClassLoader(lazyAdvisors.values(),
@@ -138,20 +138,19 @@ public class AdviceCache {
 
     @EnsuresNonNull({"reweavableAdvisors", "reweavableCapturePointVersions", "allAdvisors"})
     public void updateAdvisors(/*>>>@UnknownInitialization(AdviceCache.class) AdviceCache this,*/
-            List<CapturePoint> reweavableCapturePoints, boolean cleanTmpDir) throws IOException {
+            List<CapturePoint> reweavableCapturePoints, boolean cleanTmpDir) throws Exception {
         ImmutableMap<Advice, LazyDefinedClass> advisors =
                 AdviceGenerator.createAdvisors(reweavableCapturePoints, null);
         if (instrumentation == null) {
             // this is for tests that don't run with javaagent container
             ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            if (loader == null) {
-                throw new AssertionError("Context class loader must be set");
-            }
+            checkNotNull(loader, "Context class loader must be set");
             ClassLoaders.defineClassesInClassLoader(advisors.values(), loader);
         } else {
             File generatedJarDir = new File(dataDir, "tmp");
             if (cleanTmpDir) {
-                ClassLoaders.cleanPreviouslyGeneratedJars(generatedJarDir, "config-pointcuts");
+                ClassLoaders.createDirectoryOrCleanPreviousContentsWithPrefix(generatedJarDir,
+                        "config-pointcuts");
             }
             if (!advisors.isEmpty()) {
                 String suffix = "";
@@ -184,7 +183,7 @@ public class AdviceCache {
             if (memberClass.isAnnotationPresent(Pointcut.class)) {
                 try {
                     advisors.add(new AdviceBuilder(memberClass, false).build());
-                } catch (AdviceConstructionException e) {
+                } catch (Exception e) {
                     logger.error("error creating advice: {}", memberClass.getName(), e);
                 }
             }

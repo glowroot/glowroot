@@ -25,7 +25,7 @@ import org.junit.rules.ExpectedException;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
-public class ResultCloserTest {
+public class ResultSetCloserTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();

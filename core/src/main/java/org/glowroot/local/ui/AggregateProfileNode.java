@@ -22,7 +22,6 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.Lists;
 
 import org.glowroot.markers.UsedByJsonBinding;
@@ -101,18 +100,6 @@ class AggregateProfileNode {
 
     public boolean isEllipsed() {
         return ellipsed;
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("leafThreadState", leafThreadState)
-                .add("stackTraceElement", stackTraceElement)
-                .add("sampleCount", sampleCount)
-                .add("metricNames", metricNames)
-                .add("childNodes", childNodes)
-                .add("ellipsed", ellipsed)
-                .toString();
     }
 
     @JsonCreator

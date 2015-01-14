@@ -28,13 +28,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.Nullable;
 
 import com.google.common.base.CharMatcher;
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
+import org.immutables.value.Value;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -54,7 +54,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.Reflections.ReflectiveException;
+import org.glowroot.common.ClassNames;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.AASTORE;
@@ -176,13 +176,12 @@ class WeavingClassVisitor extends ClassVisitor {
             return null;
         }
         checkNotNull(type); // type is non null if there is something to weave
-        if (Modifier.isAbstract(access) || Modifier.isNative(access)
-                || (access & ACC_SYNTHETIC) != 0) {
+        if (isAbstractOrNativeOrSynthetic(access)) {
             // don't try to weave abstract, native and synthetic methods
             return cv.visitMethod(access, name, desc, signature, exceptions);
         }
-        if (name.equals("<init>") && !analyzingClassVisitor.getMatchedMixinTypes().isEmpty()) {
-            return visitInitWithMixin(access, name, desc, signature, exceptions, matchingAdvisors);
+        if (isInitWithMixins(name)) {
+            return visitInitWithMixins(access, name, desc, signature, exceptions, matchingAdvisors);
         }
         if (matchingAdvisors.isEmpty()) {
             return cv.visitMethod(access, name, desc, signature, exceptions);
@@ -216,9 +215,9 @@ class WeavingClassVisitor extends ClassVisitor {
             } else {
                 try {
                     generateMetaHolder();
-                } catch (ReflectiveException e) {
-                    logger.error(e.getMessage(), e);
-                    throw ShortCircuitException.INSTANCE;
+                } catch (Exception e) {
+                    // this will terminate weaving and get logged by WeavingClassFileTransformer
+                    throw new RuntimeException(e);
                 }
             }
         }
@@ -252,7 +251,7 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     @RequiresNonNull({"type", "metaHolderInternalName", "loader"})
-    private void generateMetaHolder() throws ReflectiveException {
+    private void generateMetaHolder() throws Exception {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
         cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, metaHolderInternalName, null, "java/lang/Object",
                 null);
@@ -363,22 +362,30 @@ class WeavingClassVisitor extends ClassVisitor {
                 mv.visitFieldInsn(GETSTATIC, "java/lang/Double", "TYPE", "Ljava/lang/Class;");
                 break;
             case Type.ARRAY:
-                loadType(mv, type.getElementType(), ownerType);
-                mv.visitIntInsn(BIPUSH, type.getDimensions());
-                mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(GeneratedBytecodeUtil.class),
-                        "getArrayClass", "(Ljava/lang/Class;I)Ljava/lang/Class;", false);
+                loadArrayType(mv, type, ownerType);
                 break;
             default:
-                // may not have access to type in meta holder, so need to use Class.forName()
-                // instead of class constant
-                mv.visitLdcInsn(type.getClassName());
-                mv.visitInsn(ICONST_0);
-                mv.visitLdcInsn(ownerType);
-                mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getClassLoader",
-                        "()Ljava/lang/ClassLoader;", false);
-                mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
-                        "(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;", false);
+                loadObjectType(mv, type, ownerType);
         }
+    }
+
+    private static void loadArrayType(MethodVisitor mv, Type type, Type ownerType) {
+        loadType(mv, type.getElementType(), ownerType);
+        mv.visitIntInsn(BIPUSH, type.getDimensions());
+        mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(GeneratedBytecodeUtil.class),
+                "getArrayClass", "(Ljava/lang/Class;I)Ljava/lang/Class;", false);
+    }
+
+    private static void loadObjectType(MethodVisitor mv, Type type, Type ownerType) {
+        // may not have access to type in meta holder, so need to use Class.forName()
+        // instead of class constant
+        mv.visitLdcInsn(type.getClassName());
+        mv.visitInsn(ICONST_0);
+        mv.visitLdcInsn(ownerType);
+        mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getClassLoader",
+                "()Ljava/lang/ClassLoader;", false);
+        mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
+                "(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;", false);
     }
 
     private static String /*@Nullable*/[] getInterfacesIncludingMixins(
@@ -398,8 +405,12 @@ class WeavingClassVisitor extends ClassVisitor {
         return Iterables.toArray(interfacesIncludingMixins, String.class);
     }
 
+    private boolean isInitWithMixins(String name) {
+        return name.equals("<init>") && !analyzingClassVisitor.getMatchedMixinTypes().isEmpty();
+    }
+
     @RequiresNonNull("type")
-    private MethodVisitor visitInitWithMixin(int access, String name, String desc,
+    private MethodVisitor visitInitWithMixins(int access, String name, String desc,
             @Nullable String signature, String /*@Nullable*/[] exceptions,
             List<Advice> matchingAdvisors) {
         Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, desc);
@@ -539,6 +550,22 @@ class WeavingClassVisitor extends ClassVisitor {
         if (analyzedClass.isInterface() || analyzedClass.isAbstract()) {
             return;
         }
+        Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets =
+                getInheritedInterfaceMethodsWithAdvice();
+        for (AnalyzedMethod analyzedMethod : analyzedClass.analyzedMethods()) {
+            matchingAdvisorSets.remove(AnalyzedMethodKey.wrap(analyzedMethod));
+        }
+        removeAdviceAlreadyWovenIntoSuperClass(matchingAdvisorSets);
+        for (Entry<AnalyzedMethodKey, Set<Advice>> entry : matchingAdvisorSets.entrySet()) {
+            AnalyzedMethod inheritedMethod = entry.getKey().analyzedMethod();
+            Set<Advice> advisors = entry.getValue();
+            if (!advisors.isEmpty()) {
+                overrideAndWeaveInheritedMethod(analyzedClass, inheritedMethod, advisors);
+            }
+        }
+    }
+
+    private Map<AnalyzedMethodKey, Set<Advice>> getInheritedInterfaceMethodsWithAdvice() {
         Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets = Maps.newHashMap();
         for (AnalyzedClass superAnalyzedClass : analyzingClassVisitor.getSuperAnalyzedClasses()) {
             if (!superAnalyzedClass.isInterface()) {
@@ -554,9 +581,11 @@ class WeavingClassVisitor extends ClassVisitor {
                 matchingAdvisorSet.addAll(superAnalyzedMethod.advisors());
             }
         }
-        for (AnalyzedMethod analyzedMethod : analyzedClass.analyzedMethods()) {
-            matchingAdvisorSets.remove(AnalyzedMethodKey.wrap(analyzedMethod));
-        }
+        return matchingAdvisorSets;
+    }
+
+    private void removeAdviceAlreadyWovenIntoSuperClass(
+            Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets) {
         for (AnalyzedClass superAnalyzedClass : analyzingClassVisitor.getSuperAnalyzedClasses()) {
             if (superAnalyzedClass.isInterface()) {
                 continue;
@@ -570,18 +599,15 @@ class WeavingClassVisitor extends ClassVisitor {
                 matchingAdvisorSet.removeAll(superAnalyzedMethod.advisors());
             }
         }
-        for (Entry<AnalyzedMethodKey, Set<Advice>> entry : matchingAdvisorSets.entrySet()) {
-            AnalyzedMethod inheritedMethod = entry.getKey().getAnalyzedMethod();
-            Set<Advice> advisors = entry.getValue();
-            if (!advisors.isEmpty()) {
-                overrideAndWeaveInheritedMethod(analyzedClass, inheritedMethod, advisors);
-            }
-        }
     }
 
     @RequiresNonNull("type")
     private void overrideAndWeaveInheritedMethod(AnalyzedClass analyzedClass,
             AnalyzedMethod inheritedMethod, Collection<Advice> matchingAdvisors) {
+        String superName = analyzedClass.superName();
+        // superName is null only for java.lang.Object which doesn't inherit anything
+        // so safe to assume superName not null here
+        checkNotNull(superName);
         String[] exceptions = new String[inheritedMethod.exceptions().size()];
         for (int i = 0; i < inheritedMethod.exceptions().size(); i++) {
             exceptions[i] = ClassNames.toInternalName(inheritedMethod.exceptions().get(i));
@@ -595,18 +621,17 @@ class WeavingClassVisitor extends ClassVisitor {
         mg.visitCode();
         mg.loadThis();
         mg.loadArgs();
-        String superName = analyzedClass.superName();
-        Type superType;
-        if (superName == null) {
-            superType = Type.getType(Object.class);
-        } else {
-            superType = Type.getObjectType(ClassNames.toInternalName(superName));
-        }
+        Type superType = Type.getObjectType(ClassNames.toInternalName(superName));
         // method is called invokeConstructor, but should really be called invokeSpecial
         Method method = new Method(inheritedMethod.name(), inheritedMethod.getDesc());
         mg.invokeConstructor(superType, method);
         mg.returnValue();
         mg.endMethod();
+    }
+
+    private static boolean isAbstractOrNativeOrSynthetic(int access) {
+        return Modifier.isAbstract(access) || Modifier.isNative(access)
+                || (access & ACC_SYNTHETIC) != 0;
     }
 
     private static void logInvalidMetricNameWarningOnce(String metricName) {
@@ -702,39 +727,20 @@ class WeavingClassVisitor extends ClassVisitor {
 
     // AnalyzedMethod equivalence defined only in terms of method name and parameter types
     // so that overridden methods will be equivalent
-    private static class AnalyzedMethodKey {
+    @Value.Immutable
+    static abstract class AnalyzedMethodKey {
 
-        private final AnalyzedMethod analyzedMethod;
+        abstract String name();
+        abstract List<String> parameterTypes();
+        @Value.Auxiliary
+        abstract AnalyzedMethod analyzedMethod();
 
         public static AnalyzedMethodKey wrap(AnalyzedMethod analyzedMethod) {
-            return new AnalyzedMethodKey(analyzedMethod);
-        }
-
-        private AnalyzedMethodKey(AnalyzedMethod analyzedMethod) {
-            this.analyzedMethod = analyzedMethod;
-        }
-
-        private AnalyzedMethod getAnalyzedMethod() {
-            return analyzedMethod;
-        }
-
-        @Override
-        public boolean equals(@Nullable Object obj) {
-            if (obj == this) {
-                return true;
-            }
-            if (obj instanceof AnalyzedMethodKey) {
-                AnalyzedMethodKey that = (AnalyzedMethodKey) obj;
-                return Objects.equal(analyzedMethod.name(), that.analyzedMethod.name())
-                        && Objects.equal(analyzedMethod.parameterTypes(),
-                                that.analyzedMethod.parameterTypes());
-            }
-            return false;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hashCode(analyzedMethod.name(), analyzedMethod.parameterTypes());
+            return ImmutableAnalyzedMethodKey.builder()
+                    .name(analyzedMethod.name())
+                    .addAllParameterTypes(analyzedMethod.parameterTypes())
+                    .analyzedMethod(analyzedMethod)
+                    .build();
         }
     }
 }

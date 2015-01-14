@@ -36,6 +36,18 @@ public class VersionTest {
     }
 
     @Test
+    public void testWithNoImplementationVersion() {
+        // given
+        Manifest manifest = mock(Manifest.class);
+        Attributes attributes = mock(Attributes.class);
+        when(manifest.getMainAttributes()).thenReturn(attributes);
+        // when
+        String version = Version.getVersion(manifest);
+        // then
+        assertThat(version).isEqualTo("unknown");
+    }
+
+    @Test
     public void testWithNonSnapshotVersion() {
         // given
         Manifest manifest = mock(Manifest.class);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,5 +68,18 @@ public class MessageTest {
         String longString = Strings.repeat("a", 512 * 1024);
         ReadableMessage message = (ReadableMessage) Message.from("{}", longString);
         assertThat(message.getText()).isEqualTo(longString);
+    }
+
+    @Test
+    public void shouldTestNotEnoughArgsForTemplate() {
+        ReadableMessage message = (ReadableMessage) Message.from("{}, {} xyz {}", "test");
+        assertThat(message.getText()).isEqualTo("test, <not enough args provided for template> xyz"
+                + " <not enough args provided for template>");
+    }
+
+    @Test
+    public void shouldTestNullTemplate() {
+        ReadableMessage message = (ReadableMessage) Message.from(null);
+        assertThat(message.getText()).isEqualTo("");
     }
 }

@@ -15,10 +15,14 @@
  */
 package org.glowroot.local.ui;
 
-import java.net.URISyntaxException;
+import java.lang.instrument.Instrumentation;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.weaving.AnalyzedWorld;
@@ -29,17 +33,99 @@ import static org.mockito.Mockito.when;
 
 public class ClasspathCacheTest {
 
-    @Test
-    public void shouldRead() throws URISyntaxException {
-        // given
+    private static ClasspathCache classpathCache;
+
+    @BeforeClass
+    public static void setUp() throws Exception {
+        ClassLoader badUrlsClassLoader = new URLClassLoader(
+                new URL[] {new URL("file://a/b c"), new URL("http://a/b/c")});
         AnalyzedWorld analyzedWorld = mock(AnalyzedWorld.class);
-        when(analyzedWorld.getClassLoaders())
-                .thenReturn(ImmutableList.of(ClasspathCacheTest.class.getClassLoader()));
-        ClasspathCache classpathCache = new ClasspathCache(analyzedWorld, null);
+        when(analyzedWorld.getClassLoaders()).thenReturn(
+                ImmutableList.of(badUrlsClassLoader, ClassLoader.getSystemClassLoader()));
+        Instrumentation instrumentation = mock(Instrumentation.class);
+        when(instrumentation.getAllLoadedClasses()).thenReturn(new Class[] {A.class});
+        classpathCache = new ClasspathCache(analyzedWorld, instrumentation);
+    }
+
+    @Test
+    public void shouldRead() {
+        // given
         // when
         List<String> classNames = classpathCache
-                .getMatchingClassNames("google.common.base.str", 10);
+                .getMatchingClassNames("google.common.base.str", 5);
         // then
         assertThat(classNames).contains("com.google.common.base.Strings");
+    }
+
+    @Test
+    public void shouldReadFullClass() {
+        // given
+        // when
+        List<String> classNames = classpathCache.getMatchingClassNames("ImmutableMap", 5);
+        // then
+        assertThat(classNames).contains("com.google.common.collect.ImmutableMap");
+    }
+
+    @Test
+    public void shouldReadFullFullClass() {
+        // given
+        // when
+        List<String> classNames =
+                classpathCache.getMatchingClassNames("com.google.common.collect.ImmutableMap", 5);
+        // then
+        assertThat(classNames).contains("com.google.common.collect.ImmutableMap");
+    }
+
+    @Test
+    public void shouldReadFullInnerClass() {
+        // given
+        // when
+        List<String> classNames = classpathCache.getMatchingClassNames("OnePlusArrayList", 5);
+        // then
+        assertThat(classNames).contains("com.google.common.collect.Lists$OnePlusArrayList");
+    }
+
+    @Test
+    public void shouldReadFullFullInnerClass() {
+        // given
+        // when
+        List<String> classNames = classpathCache.getMatchingClassNames(
+                "com.google.common.collect.Lists$OnePlusArrayList", 5);
+        // then
+        assertThat(classNames).contains("com.google.common.collect.Lists$OnePlusArrayList");
+    }
+
+    @Test
+    public void shouldHitFullMatchLimit() {
+        // given
+        // when
+        List<String> classNames = classpathCache.getMatchingClassNames("Builder", 5);
+        // then
+        assertThat(classNames).hasSize(5);
+        for (String className : classNames) {
+            if (!className.endsWith("$Builder") && !className.endsWith(".Builder")) {
+                throw new AssertionError();
+            }
+        }
+    }
+
+    @Test
+    public void shouldNotReadSyntheticMethod() {
+        List<UiAnalyzedMethod> methods = classpathCache.getAnalyzedMethods(A.class.getName());
+        assertThat(methods).hasSize(2);
+    }
+
+    @Test
+    public void shouldWorkWithBadClasspath() {
+        List<UiAnalyzedMethod> methods = classpathCache.getAnalyzedMethods(A.class.getName());
+        assertThat(methods).hasSize(2);
+    }
+
+    @SuppressWarnings("serial")
+    private static class A extends ArrayList<String> {
+        @Override
+        public boolean add(String str) {
+            return true;
+        }
     }
 }

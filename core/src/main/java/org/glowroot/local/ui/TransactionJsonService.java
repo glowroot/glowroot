@@ -31,14 +31,13 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
-import org.HdrHistogram.Histogram;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
 import org.glowroot.collector.Aggregate;
+import org.glowroot.collector.LazyHistogram;
 import org.glowroot.common.Clock;
-import org.glowroot.config.MarshalingRoutines.LowercaseMarshaling;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
 import org.glowroot.local.store.ImmutableTransactionSummaryQuery;
@@ -265,31 +264,14 @@ class TransactionJsonService {
                         aggregate.captureTime(), dataSeriesList, null);
             }
             lastAggregate = aggregate;
-            ByteBuffer histogramBuffer = ByteBuffer.wrap(aggregate.histogram());
-            if (histogramBuffer.getInt() == 0) {
-                // 0 means list of (already sorted) longs
-                // read size and use it to pre-allocate correctly sized array
-                int size = histogramBuffer.getInt();
-                List<Long> data = Lists.newArrayListWithCapacity(size);
-                while (histogramBuffer.remaining() > 0) {
-                    data.add(histogramBuffer.getLong());
-                }
-                dataSeries1.add(aggregate.captureTime(),
-                        getValueAtPercentile(data, 50) / MICROSECONDS_PER_SECOND);
-                dataSeries2.add(aggregate.captureTime(),
-                        getValueAtPercentile(data, 95) / MICROSECONDS_PER_SECOND);
-                dataSeries3.add(aggregate.captureTime(),
-                        getValueAtPercentile(data, 99) / MICROSECONDS_PER_SECOND);
-            } else {
-                // 1 means compressed histogram
-                Histogram histogram = Histogram.decodeFromCompressedByteBuffer(histogramBuffer, 0);
-                dataSeries1.add(aggregate.captureTime(),
-                        histogram.getValueAtPercentile(50) / MICROSECONDS_PER_SECOND);
-                dataSeries2.add(aggregate.captureTime(),
-                        histogram.getValueAtPercentile(95) / MICROSECONDS_PER_SECOND);
-                dataSeries3.add(aggregate.captureTime(),
-                        histogram.getValueAtPercentile(99) / MICROSECONDS_PER_SECOND);
-            }
+            LazyHistogram histogram = new LazyHistogram();
+            histogram.decodeFromByteBuffer(ByteBuffer.wrap(aggregate.histogram()));
+            dataSeries1.add(aggregate.captureTime(),
+                    histogram.getValueAtPercentile(50) / MICROSECONDS_PER_SECOND);
+            dataSeries2.add(aggregate.captureTime(),
+                    histogram.getValueAtPercentile(95) / MICROSECONDS_PER_SECOND);
+            dataSeries3.add(aggregate.captureTime(),
+                    histogram.getValueAtPercentile(99) / MICROSECONDS_PER_SECOND);
         }
         if (lastAggregate != null) {
             dataSeriesHelper.addFinalDownslope(request.to(), dataSeriesList, null,
@@ -308,10 +290,6 @@ class TransactionJsonService {
             stackedPoints.add(StackedPoint.create(aggregate));
         }
         return getMetricDataSeries(request, stackedPoints);
-    }
-
-    private double getValueAtPercentile(List<Long> sortedData, double percentile) {
-        return sortedData.get((int) Math.ceil(sortedData.size() * percentile / 100) - 1);
     }
 
     private List<DataSeries> getMetricDataSeries(TransactionDataRequest request,
@@ -521,9 +499,5 @@ class TransactionJsonService {
         abstract String transactionType();
         abstract @Nullable String transactionName();
         abstract double truncateLeafPercentage();
-    }
-
-    public static enum ChartType implements LowercaseMarshaling {
-        PERCENTILES, METRICS
     }
 }

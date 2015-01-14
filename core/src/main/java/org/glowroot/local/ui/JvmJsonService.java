@@ -72,7 +72,6 @@ import org.glowroot.local.store.GaugePointDao;
 import org.glowroot.markers.UsedByJsonBinding;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_IMPLEMENTED;
 
 @JsonService
 class JvmJsonService {
@@ -346,12 +345,9 @@ class JvmJsonService {
 
     @POST("/backend/jvm/dump-heap")
     String dumpHeap(String content) throws Exception {
-        HeapDumps service = heapDumps.getService();
-        if (service == null) {
-            throw new JsonServiceException(NOT_IMPLEMENTED,
-                    heapDumps.getClass().getSimpleName() + " service is not available: "
-                            + heapDumps.getAvailability().getReason());
-        }
+        // this command is filtered out of the UI when service is null
+        HeapDumps service = checkNotNull(heapDumps.getService(),
+                "Heap dump service is not available: %s", heapDumps.getAvailability().getReason());
         RequestWithDirectory request = Marshaling.fromJson(content, RequestWithDirectory.class);
         File dir = new File(request.directory());
         if (!dir.exists()) {
@@ -484,8 +480,6 @@ class JvmJsonService {
     // see list of allowed attribute value types:
     // http://docs.oracle.com/javase/7/docs/api/javax/management/openmbean/OpenType.html
     // #ALLOWED_CLASSNAMES_LIST
-    //
-    // TODO some of the above attribute value types are not handled yet
     private @Nullable Object getMBeanAttributeValue(@Nullable Object value) {
         if (value == null) {
             return null;

@@ -32,12 +32,10 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.config.CapturePoint;
 import org.glowroot.config.CapturePoint.CaptureKind;
 import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.AdviceBuilder;
-import org.glowroot.weaving.AdviceBuilder.AdviceConstructionException;
 import org.glowroot.weaving.AdviceFlowOuterHolder;
 import org.glowroot.weaving.ImmutableLazyDefinedClass;
 import org.glowroot.weaving.LazyDefinedClass;
@@ -101,9 +99,7 @@ public class AdviceGenerator {
                 boolean reweavable = pluginId == null;
                 Advice advice = new AdviceBuilder(lazyAdviceClass, reweavable).build();
                 advisors.put(advice, lazyAdviceClass);
-            } catch (ReflectiveException e) {
-                logger.error("error creating advice for advice config: {}", capturePoint, e);
-            } catch (AdviceConstructionException e) {
+            } catch (Exception e) {
                 logger.error("error creating advice for advice config: {}", capturePoint, e);
             }
         }
@@ -126,7 +122,7 @@ public class AdviceGenerator {
         }
     }
 
-    private LazyDefinedClass generate() throws ReflectiveException {
+    private LazyDefinedClass generate() throws Exception {
         LazyDefinedClass methodMetaClass = null;
         if (methodMetaInternalName != null) {
             methodMetaClass = generateMethodMetaClass(capturePoint);
@@ -517,31 +513,13 @@ public class AdviceGenerator {
     private void addOnReturnMethod(ClassWriter cw) {
         boolean entryOrTimer = !capturePoint.traceEntryEnabledProperty().isEmpty();
         String travelerType = entryOrTimer ? "Ljava/lang/Object;" : "Lorg/glowroot/api/TraceEntry;";
-        MethodVisitor mv;
-        int travelerParamIndex;
-        if (capturePoint.methodReturnType().isEmpty()) {
-            mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn",
-                    "(Lorg/glowroot/api/OptionalReturn;" + travelerType + ")V", null, null);
-            mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindOptionalReturn;", true)
-                    .visitEnd();
-            mv.visitParameterAnnotation(1, "Lorg/glowroot/api/weaving/BindTraveler;", true)
-                    .visitEnd();
-            travelerParamIndex = 1;
-        } else if (capturePoint.methodReturnType().equals("void")) {
-            mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn", "(" + travelerType + ")V",
-                    null, null);
-            mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindTraveler;", true)
-                    .visitEnd();
-            travelerParamIndex = 0;
-        } else {
-            mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn", "(Ljava/lang/Object;"
-                    + travelerType + ")V", null, null);
-            mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindReturn;", true)
-                    .visitEnd();
-            mv.visitParameterAnnotation(1, "Lorg/glowroot/api/weaving/BindTraveler;", true)
-                    .visitEnd();
-            travelerParamIndex = 1;
-        }
+        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn",
+                "(Lorg/glowroot/api/OptionalReturn;" + travelerType + ")V", null, null);
+        mv.visitParameterAnnotation(0, "Lorg/glowroot/api/weaving/BindOptionalReturn;", true)
+                .visitEnd();
+        mv.visitParameterAnnotation(1, "Lorg/glowroot/api/weaving/BindTraveler;", true)
+                .visitEnd();
+        int travelerParamIndex = 1;
         mv.visitAnnotation("Lorg/glowroot/api/weaving/OnReturn;", true)
                 .visitEnd();
         mv.visitCode();
@@ -558,31 +536,23 @@ public class AdviceGenerator {
             mv.visitLabel(label);
             mv.visitFrame(F_SAME, 0, null, 0, null);
         }
-        if (capturePoint.methodReturnType().isEmpty()) {
-            mv.visitVarInsn(ALOAD, 1);
-            mv.visitVarInsn(ALOAD, 0);
-            mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/OptionalReturn", "isVoid", "()Z",
-                    true);
-            Label notVoidLabel = new Label();
-            Label endIfLabel = new Label();
-            mv.visitJumpInsn(IFEQ, notVoidLabel);
-            mv.visitLdcInsn("void");
-            mv.visitJumpInsn(GOTO, endIfLabel);
-            mv.visitLabel(notVoidLabel);
-            mv.visitVarInsn(ALOAD, 0);
-            mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/OptionalReturn", "getValue",
-                    "()Ljava/lang/Object;", true);
-            mv.visitLabel(endIfLabel);
-            mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/advicegen/GenericMessageSupplier",
-                    "updateWithReturnValue", "(Lorg/glowroot/api/TraceEntry;Ljava/lang/Object;)V",
-                    false);
-        } else if (!capturePoint.methodReturnType().equals("void")) {
-            mv.visitVarInsn(ALOAD, 1);
-            mv.visitVarInsn(ALOAD, 0);
-            mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/advicegen/GenericMessageSupplier",
-                    "updateWithReturnValue", "(Lorg/glowroot/api/TraceEntry;Ljava/lang/Object;)V",
-                    false);
-        }
+        mv.visitVarInsn(ALOAD, 1);
+        mv.visitVarInsn(ALOAD, 0);
+        mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/OptionalReturn", "isVoid", "()Z",
+                true);
+        Label notVoidLabel = new Label();
+        Label endIfLabel = new Label();
+        mv.visitJumpInsn(IFEQ, notVoidLabel);
+        mv.visitLdcInsn("void");
+        mv.visitJumpInsn(GOTO, endIfLabel);
+        mv.visitLabel(notVoidLabel);
+        mv.visitVarInsn(ALOAD, 0);
+        mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/OptionalReturn", "getValue",
+                "()Ljava/lang/Object;", true);
+        mv.visitLabel(endIfLabel);
+        mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/advicegen/GenericMessageSupplier",
+                "updateWithReturnValue", "(Lorg/glowroot/api/TraceEntry;Ljava/lang/Object;)V",
+                false);
         mv.visitVarInsn(ALOAD, travelerParamIndex);
         Long stackTraceThresholdMillis = capturePoint.traceEntryStackThresholdMillis();
         if (stackTraceThresholdMillis == null) {
@@ -663,8 +633,7 @@ public class AdviceGenerator {
     }
 
     @RequiresNonNull("methodMetaInternalName")
-    private LazyDefinedClass generateMethodMetaClass(CapturePoint capturePoint)
-            throws ReflectiveException {
+    private LazyDefinedClass generateMethodMetaClass(CapturePoint capturePoint) throws Exception {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
         cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, methodMetaInternalName, null, "java/lang/Object",
                 null);

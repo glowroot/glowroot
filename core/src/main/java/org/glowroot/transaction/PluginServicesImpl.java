@@ -51,6 +51,8 @@ import org.glowroot.transaction.model.Transaction;
 import org.glowroot.transaction.model.TransactionMetricExt;
 import org.glowroot.transaction.model.TransactionMetricImpl;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginServicesImpl.class);
@@ -199,20 +201,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             logger.error("startTransaction(): argument 'metricName' must be non-null");
             return NopTraceEntry.INSTANCE;
         }
-        Transaction transaction = transactionRegistry.getCurrentTransaction();
-        if (transaction == null) {
-            TransactionMetricImpl rootMetric =
-                    TransactionMetricImpl.createRootMetric((MetricNameImpl) metricName, ticker);
-            long startTick = ticker.read();
-            rootMetric.start(startTick);
-            transaction = new Transaction(clock.currentTimeMillis(), transactionType,
-                    transactionName, messageSupplier, rootMetric, startTick, captureThreadInfo,
-                    captureGcInfo, threadAllocatedBytes, ticker);
-            transactionRegistry.addTransaction(transaction);
-            return new TraceEntryImpl(transaction.getTraceEntryComponent(), transaction);
-        } else {
-            return startTraceEntry(transaction, metricName, messageSupplier);
-        }
+        return startTransactionInternal(transactionType, transactionName, messageSupplier,
+                metricName);
     }
 
     @Override
@@ -228,9 +218,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction == null) {
             return NopTraceEntry.INSTANCE;
-        } else {
-            return startTraceEntry(transaction, metricName, messageSupplier);
         }
+        return startTraceEntryInternal(transaction, metricName, messageSupplier);
     }
 
     @Override
@@ -248,17 +237,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             return NopTransactionMetric.INSTANCE;
         }
         return currentMetric.startNestedMetric(metricName);
-    }
-
-    private TransactionMetricExt startTransactionMetric(MetricName metricName, long startTick,
-            Transaction transaction) {
-        TransactionMetricImpl currentTransactionMetric = transaction.getCurrentTransactionMetric();
-        if (currentTransactionMetric == null) {
-            // this really shouldn't happen as current transaction metric should be non-null unless
-            // transaction has completed
-            return NopTransactionMetricExt.INSTANCE;
-        }
-        return currentTransactionMetric.startNestedMetric(metricName, startTick);
     }
 
     @Override
@@ -356,14 +334,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             enabled = traceConfig.enabled();
         } else {
             PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
-            if (pluginConfig == null) {
-                // pluginId was already validated at construction time so this should not happen
-                logger.error("plugin config not found for plugin id: {}", pluginId);
-                enabled = traceConfig.enabled();
-            } else {
-                enabled = traceConfig.enabled() && pluginConfig.enabled();
-                this.pluginConfig = pluginConfig;
-            }
+            // pluginConfig should not be null since pluginId was already validated
+            // at construction time and plugins cannot be removed (or their ids changed) at runtime
+            checkNotNull(pluginConfig);
+            enabled = traceConfig.enabled() && pluginConfig.enabled();
+            this.pluginConfig = pluginConfig;
         }
         AdvancedConfig advancedConfig = configService.getAdvancedConfig();
         maxTraceEntriesPerTransaction = advancedConfig.maxTraceEntriesPerTransaction();
@@ -371,7 +346,25 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         captureGcInfo = advancedConfig.captureGcInfo();
     }
 
-    private TraceEntry startTraceEntry(Transaction transaction, MetricName metricName,
+    private TraceEntry startTransactionInternal(String transactionType, String transactionName,
+            MessageSupplier messageSupplier, MetricName metricName) {
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction == null) {
+            TransactionMetricImpl rootMetric =
+                    TransactionMetricImpl.createRootMetric((MetricNameImpl) metricName, ticker);
+            long startTick = ticker.read();
+            rootMetric.start(startTick);
+            transaction = new Transaction(clock.currentTimeMillis(), transactionType,
+                    transactionName, messageSupplier, rootMetric, startTick, captureThreadInfo,
+                    captureGcInfo, threadAllocatedBytes, ticker);
+            transactionRegistry.addTransaction(transaction);
+            return new TraceEntryImpl(transaction.getTraceEntryComponent(), transaction);
+        } else {
+            return startTraceEntryInternal(transaction, metricName, messageSupplier);
+        }
+    }
+
+    private TraceEntry startTraceEntryInternal(Transaction transaction, MetricName metricName,
             MessageSupplier messageSupplier) {
         long startTick = ticker.read();
         if (transaction.getEntryCount() >= maxTraceEntriesPerTransaction) {
@@ -387,6 +380,17 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                     transaction.pushEntry(startTick, messageSupplier, transactionMetric);
             return new TraceEntryImpl(traceEntry, transaction);
         }
+    }
+
+    private TransactionMetricExt startTransactionMetric(MetricName metricName, long startTick,
+            Transaction transaction) {
+        TransactionMetricImpl currentTransactionMetric = transaction.getCurrentTransactionMetric();
+        if (currentTransactionMetric == null) {
+            // this really shouldn't happen as current transaction metric should be non-null unless
+            // transaction has completed
+            return NopTransactionMetricExt.INSTANCE;
+        }
+        return currentTransactionMetric.startNestedMetric(metricName, startTick);
     }
 
     private static ImmutableList<StackTraceElement> captureStackTrace() {
@@ -443,12 +447,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         @Override
         public MessageSupplier getMessageSupplier() {
             MessageSupplier messageSupplier = traceEntry.getMessageSupplier();
-            if (messageSupplier == null) {
-                // this should be impossible since entry.getMessageSupplier() is only null when the
-                // entry was created using addErrorEntry(), and that method doesn't return the entry
-                // afterwards, so it should be impossible to call getMessageSupplier() on it
-                throw new AssertionError("Somehow got hold of an error entry??");
-            }
+            // messageSupplier should never be null since entry.getMessageSupplier() is only null
+            // when the entry was created using addErrorEntry(), and that method doesn't return the
+            // entry afterwards, so it should be impossible to call getMessageSupplier() on it
+            checkNotNull(messageSupplier);
             return messageSupplier;
         }
         private void endInternal(long endTick, @Nullable ErrorMessage errorMessage) {
@@ -491,6 +493,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         @Override
         public void endWithStackTrace(long threshold, TimeUnit unit) {
+            if (threshold < 0) {
+                logger.error("endWithStackTrace(): argument 'threshold' must be non-negative");
+                end();
+                return;
+            }
             long endTick = ticker.read();
             transactionMetric.end(endTick);
             // use higher entry limit when adding slow entries, but still need some kind of cap

@@ -21,22 +21,26 @@ import java.security.CodeSource;
 
 import javax.annotation.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
+
 public class Viewer {
 
     private Viewer() {}
 
     public static void main(String... args) throws Exception {
-        MainEntryPoint.runViewer(getGlowrootJarFile());
+        CodeSource codeSource = Viewer.class.getProtectionDomain().getCodeSource();
+        MainEntryPoint.runViewer(getGlowrootJarFile(codeSource));
     }
 
-    public static @Nullable File getGlowrootJarFile() throws URISyntaxException {
-        CodeSource codeSource = Viewer.class.getProtectionDomain().getCodeSource();
+    @VisibleForTesting
+    static @Nullable File getGlowrootJarFile(@Nullable CodeSource codeSource)
+            throws URISyntaxException {
         if (codeSource == null) {
             return null;
         }
-        File glowrootJarFile = new File(codeSource.getLocation().toURI());
-        if (glowrootJarFile.getName().equals("glowroot.jar")) {
-            return glowrootJarFile;
+        File codeSourceFile = new File(codeSource.getLocation().toURI());
+        if (codeSourceFile.getName().endsWith(".jar")) {
+            return codeSourceFile;
         }
         return null;
     }

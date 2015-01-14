@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,21 @@
  */
 package org.glowroot.plugin.servlet;
 
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 import org.glowroot.Containers;
 import org.glowroot.container.Container;
@@ -117,6 +121,53 @@ public class RequestHeaderTest {
         assertThat(requestHeaders.get("Three")).isNull();
     }
 
+    @Test
+    public void testBadRequestHeaders() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
+                "Content-Type, Content-Length");
+        // when
+        container.executeAppUnderTest(GetBadRequestHeaders.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> requestHeaders =
+                (Map<String, Object>) entry.getMessage().getDetail().get("Request headers");
+        assertThat(requestHeaders).isNull();
+    }
+
+    @Test
+    public void testBadRequestHeaders2() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
+                "Content-Type, Content-Length, h1");
+        // when
+        container.executeAppUnderTest(GetBadRequestHeaders2.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> requestHeaders =
+                (Map<String, Object>) entry.getMessage().getDetail().get("Request headers");
+        assertThat(requestHeaders).hasSize(1);
+        assertThat(requestHeaders.get("h1")).isEqualTo("");
+    }
+
+    @Test
+    public void testTransactionNameOverrideRequestHeaders() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(SetTransactionNameOverrideRequestHeaders.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getTransactionName()).isEqualTo("AbcXyz");
+    }
+
     @SuppressWarnings("serial")
     public static class SetStandardRequestHeaders extends TestServlet {
         @Override
@@ -126,8 +177,6 @@ public class RequestHeaderTest {
             ((MockHttpServletRequest) request).addHeader("Content-Length", "1");
             ((MockHttpServletRequest) request).addHeader("Extra", "abc");
         }
-        @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) {}
     }
 
     @SuppressWarnings("serial")
@@ -139,8 +188,6 @@ public class RequestHeaderTest {
             ((MockHttpServletRequest) request).addHeader("content-length", "1");
             ((MockHttpServletRequest) request).addHeader("extra", "abc");
         }
-        @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) {}
     }
 
     @SuppressWarnings("serial")
@@ -152,7 +199,67 @@ public class RequestHeaderTest {
             ((MockHttpServletRequest) request).addHeader("Two", "1");
             ((MockHttpServletRequest) request).addHeader("Three", "xyz");
         }
+    }
+
+    @SuppressWarnings("serial")
+    public static class GetBadRequestHeaders extends TestServlet {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) {}
+        public void executeApp() throws Exception {
+            MockHttpServletRequest request = new BadMockHttpServletRequest("GET", "/testservlet");
+            MockHttpServletResponse response = new PatchedMockHttpServletResponse();
+            service(request, response);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class GetBadRequestHeaders2 extends TestServlet {
+        @Override
+        public void executeApp() throws Exception {
+            MockHttpServletRequest request = new BadMockHttpServletRequest2("GET", "/testservlet");
+            MockHttpServletResponse response = new PatchedMockHttpServletResponse();
+            service(request, response);
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class SetTransactionNameOverrideRequestHeaders extends TestServlet {
+        @Override
+        protected void before(HttpServletRequest request, HttpServletResponse response) {
+            ((MockHttpServletRequest) request).addHeader("Glowroot-Transaction-Name",
+                    "AbcXyz");
+        }
+    }
+
+    public static class BadMockHttpServletRequest extends MockHttpServletRequest {
+
+        public BadMockHttpServletRequest(String method, String requestURI) {
+            super(method, requestURI);
+        }
+
+        @Override
+        public Enumeration<String> getHeaderNames() {
+            return Collections.enumeration(Lists.newArrayList((String) null));
+        }
+    }
+
+    public static class BadMockHttpServletRequest2 extends MockHttpServletRequest {
+
+        public BadMockHttpServletRequest2(String method, String requestURI) {
+            super(method, requestURI);
+        }
+
+        @Override
+        public Enumeration<String> getHeaderNames() {
+            return Collections.enumeration(Lists.newArrayList("h1"));
+        }
+
+        @Override
+        public Enumeration<String> getHeaders(String name) {
+            if (name.equals("h1")) {
+                return Collections.enumeration(Collections.<String>emptyList());
+            } else {
+                return super.getHeaders(name);
+            }
+        }
     }
 }

@@ -15,6 +15,7 @@
  */
 package org.glowroot.api;
 
+import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
 
 import org.glowroot.api.internal.ReadableErrorMessage;
@@ -22,6 +23,27 @@ import org.glowroot.api.internal.ReadableErrorMessage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ErrorMessageTest {
+
+    @Test
+    public void testWithDetail() {
+        ImmutableMap<String, Object> detail = ImmutableMap.of();
+        ReadableErrorMessage errorMessage =
+                (ReadableErrorMessage) ErrorMessage.withDetail("", detail);
+        assertThat(errorMessage.getText()).isEqualTo("");
+        assertThat(errorMessage.getDetail()).isEmpty();
+        assertThat(errorMessage.getExceptionInfo()).isNull();
+    }
+
+    @Test
+    public void testWithDetailAndThrowable() {
+        Throwable t = new Throwable();
+        ImmutableMap<String, Object> detail = ImmutableMap.of();
+        ReadableErrorMessage errorMessage =
+                (ReadableErrorMessage) ErrorMessage.withDetail("", t, detail);
+        assertThat(errorMessage.getText()).isEqualTo("");
+        assertThat(errorMessage.getDetail()).isEmpty();
+        assertThat(errorMessage.getExceptionInfo()).isNotNull();
+    }
 
     @Test
     public void testNullMessage() {

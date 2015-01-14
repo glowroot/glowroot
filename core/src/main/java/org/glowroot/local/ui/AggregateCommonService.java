@@ -15,6 +15,7 @@
  */
 package org.glowroot.local.ui;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
@@ -24,7 +25,6 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Objects;
 import com.google.common.io.CharSource;
-import org.HdrHistogram.Histogram;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.LazyHistogram;
@@ -60,22 +60,11 @@ class AggregateCommonService {
             throws Exception {
         long transactionCount = 0;
         long totalMicros = 0;
-        Histogram histogram = new Histogram(LazyHistogram.HISTOGRAM_SIGNIFICANT_DIGITS);
+        LazyHistogram histogram = new LazyHistogram();
         for (Aggregate aggregate : aggregates) {
             transactionCount += aggregate.transactionCount();
             totalMicros += aggregate.totalMicros();
-            ByteBuffer histogramBuffer = ByteBuffer.wrap(aggregate.histogram());
-            if (histogramBuffer.getInt() == 0) {
-                // 0 means list of longs
-                // don't need array size when reading here, so just read and skip it
-                histogramBuffer.getInt();
-                while (histogramBuffer.remaining() > 0) {
-                    histogram.recordValue(histogramBuffer.getLong());
-                }
-            } else {
-                // 1 means compressed histogram
-                histogram.add(Histogram.decodeFromCompressedByteBuffer(histogramBuffer, 0));
-            }
+            histogram.decodeFromByteBuffer(ByteBuffer.wrap(aggregate.histogram()));
         }
         return new HistogramMergedAggregate(histogram, transactionCount, totalMicros);
     }
@@ -90,6 +79,31 @@ class AggregateCommonService {
             profiles = aggregateDao.readTransactionProfiles(transactionType, transactionName, from,
                     to);
         }
+        return getProfile(profiles, truncateLeafPercentage);
+    }
+
+    private void mergeMatchedMetric(AggregateMetric toBeMergedMetric, AggregateMetric metric) {
+        metric.incrementCount(toBeMergedMetric.getCount());
+        metric.incrementTotalMicros(toBeMergedMetric.getTotalMicros());
+        for (AggregateMetric toBeMergedNestedMetric : toBeMergedMetric.getNestedMetrics()) {
+            // for each to-be-merged child node look for a match
+            AggregateMetric foundMatchingChildMetric = null;
+            for (AggregateMetric childMetric : metric.getNestedMetrics()) {
+                if (toBeMergedNestedMetric.getName().equals(childMetric.getName())) {
+                    foundMatchingChildMetric = childMetric;
+                    break;
+                }
+            }
+            if (foundMatchingChildMetric == null) {
+                metric.getNestedMetrics().add(toBeMergedNestedMetric);
+            } else {
+                mergeMatchedMetric(toBeMergedNestedMetric, foundMatchingChildMetric);
+            }
+        }
+    }
+
+    private @Nullable AggregateProfileNode getProfile(List<CharSource> profiles,
+            double truncateLeafPercentage) throws IOException {
         AggregateProfileNode syntheticRootNode = AggregateProfileNode.createSyntheticRootNode();
         for (CharSource profile : profiles) {
             String profileContent = profile.read();
@@ -117,26 +131,6 @@ class AggregateCommonService {
             return syntheticRootNode.getChildNodes().get(0);
         } else {
             return syntheticRootNode;
-        }
-    }
-
-    private void mergeMatchedMetric(AggregateMetric toBeMergedMetric, AggregateMetric metric) {
-        metric.incrementCount(toBeMergedMetric.getCount());
-        metric.incrementTotalMicros(toBeMergedMetric.getTotalMicros());
-        for (AggregateMetric toBeMergedNestedMetric : toBeMergedMetric.getNestedMetrics()) {
-            // for each to-be-merged child node look for a match
-            AggregateMetric foundMatchingChildMetric = null;
-            for (AggregateMetric childMetric : metric.getNestedMetrics()) {
-                if (toBeMergedNestedMetric.getName().equals(childMetric.getName())) {
-                    foundMatchingChildMetric = childMetric;
-                    break;
-                }
-            }
-            if (foundMatchingChildMetric == null) {
-                metric.getNestedMetrics().add(toBeMergedNestedMetric);
-            } else {
-                mergeMatchedMetric(toBeMergedNestedMetric, foundMatchingChildMetric);
-            }
         }
     }
 
@@ -217,9 +211,9 @@ class AggregateCommonService {
 
         private final long totalMicros;
         private final long transactionCount;
-        private final Histogram histogram;
+        private final LazyHistogram histogram;
 
-        private HistogramMergedAggregate(Histogram histogram, long transactionCount,
+        private HistogramMergedAggregate(LazyHistogram histogram, long transactionCount,
                 long totalMicros) {
             this.histogram = histogram;
             this.transactionCount = transactionCount;

@@ -48,6 +48,10 @@ public class GaugeSection {
         return withWait(xpath(".//label[text()[normalize-space()='" + label + "']]//input"));
     }
 
+    public WebElement getDuplicateMBeanMessage() {
+        return withWait(xpath(".//div[@ng-show='duplicateMBean']"));
+    }
+
     public WebElement getAddButton() {
         return withWait(xpath(".//button[normalize-space()='Add']"));
     }

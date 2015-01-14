@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, $, alert */
+/* global glowroot, $ */
 
 glowroot.controller('LoginCtrl', [
   '$scope',
@@ -23,7 +23,8 @@ glowroot.controller('LoginCtrl', [
   '$location',
   '$timeout',
   'login',
-  function ($scope, $http, $rootScope, $location, $timeout, login) {
+  'httpErrors',
+  function ($scope, $http, $rootScope, $location, $timeout, login, httpErrors) {
     // \u00b7 is &middot;
     document.title = 'Login \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'login';
@@ -45,10 +46,7 @@ glowroot.controller('LoginCtrl', [
               login.returnToOriginalPath();
             }
           })
-          .error(function (data) {
-            // TODO handle this better
-            alert('An error occurred');
-          });
+          .error(httpErrors.handler($scope, deferred));
     };
   }
 ]);

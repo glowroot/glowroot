@@ -19,8 +19,6 @@ import java.lang.management.ManagementFactory;
 import java.util.Set;
 
 import javax.annotation.Nullable;
-import javax.management.InstanceNotFoundException;
-import javax.management.JMException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -50,13 +48,13 @@ public class LazyPlatformMBeanServer {
 
     private volatile @MonotonicNonNull MBeanServer mbeanServer;
 
-    void getObjectInstance(ObjectName name) throws InstanceNotFoundException, InterruptedException {
+    void getObjectInstance(ObjectName name) throws Exception {
         ensureInit();
         mbeanServer.getObjectInstance(name);
     }
 
     void invoke(ObjectName name, String operationName, Object[] params, String[] signature)
-            throws JMException, InterruptedException {
+            throws Exception {
         ensureInit();
         mbeanServer.invoke(name, operationName, params, signature);
     }
@@ -67,13 +65,12 @@ public class LazyPlatformMBeanServer {
         return mbeanServer.queryNames(name, query);
     }
 
-    public MBeanInfo getMBeanInfo(ObjectName name) throws JMException, InterruptedException {
+    public MBeanInfo getMBeanInfo(ObjectName name) throws Exception {
         ensureInit();
         return mbeanServer.getMBeanInfo(name);
     }
 
-    public Object getAttribute(ObjectName name, String attribute)
-            throws JMException, InterruptedException {
+    public Object getAttribute(ObjectName name, String attribute) throws Exception {
         ensureInit();
         return mbeanServer.getAttribute(name, attribute);
     }

@@ -25,6 +25,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -291,6 +292,21 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
                     paths.add(path);
                 }
             }
+            if (javaagentJarFile != null) {
+                File relocatedJavaagentJarFile = new File(dataDir, javaagentJarFile.getName());
+                Files.copy(javaagentJarFile, relocatedJavaagentJarFile);
+                javaagentJarFile = relocatedJavaagentJarFile;
+                File pluginsDir = new File(dataDir, "plugins");
+                pluginsDir.mkdir();
+                for (Iterator<String> i = paths.iterator(); i.hasNext();) {
+                    File file = new File(i.next());
+                    if (file.getName().matches(
+                            "(jdbc|servlet|logger)-plugin-[0-9.]+(-SNAPSHOT)?.jar")) {
+                        Files.copy(file, new File(pluginsDir, file.getName()));
+                        i.remove();
+                    }
+                }
+            }
             command.add("-Xbootclasspath/a:" + Joiner.on(File.pathSeparatorChar).join(paths));
             if (javaagentJarFile == null) {
                 // create jar file in data dir since that gets cleaned up at end of test already
@@ -314,7 +330,6 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
         command.add(Integer.toString(containerPort));
         return command;
     }
-
     private static List<String> getJacocoArgsFromCurrentJvm() {
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
         List<String> arguments = runtimeMXBean.getInputArguments();

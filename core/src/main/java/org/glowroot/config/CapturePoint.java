@@ -32,8 +32,6 @@ import org.glowroot.config.MarshalingRoutines.LowercaseMarshaling;
 @Value.Immutable
 @Json.Marshaled
 @Json.Import(MarshalingRoutines.class)
-// TODO implement custom marshaling routine for this class for nice output to config.json
-// (don't write attributes that don't apply to given capture kind)
 public abstract class CapturePoint {
 
     public abstract String className();

@@ -37,8 +37,6 @@ import org.glowroot.api.weaving.Pointcut;
 // only the calls to the top-most Filter and to the top-most Servlet are captured
 //
 // this plugin is careful not to rely on request or session objects being thread-safe
-//
-// TODO add support for async servlets (servlet 3.0)
 public class ServletAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("servlet");
@@ -64,9 +62,13 @@ public class ServletAspect {
             return topLevel.get() == null && pluginServices.isEnabled();
         }
         @OnBefore
-        public static TraceEntry onBefore(@BindParameter Object request,
+        public static @Nullable TraceEntry onBefore(@BindParameter @Nullable Object request,
                 @BindClassMeta RequestInvoker requestInvoker,
                 @BindClassMeta SessionInvoker sessionInvoker) {
+            if (request == null) {
+                // seems nothing sensible to do here other than ignore
+                return null;
+            }
             // request parameter map is collected in GetParameterAdvice
             // session info is collected here if the request already has a session
             ServletMessageSupplier messageSupplier;
@@ -114,7 +116,10 @@ public class ServletAspect {
             return traceEntry;
         }
         @OnReturn
-        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry == null) {
+                return;
+            }
             ErrorMessage errorMessage = sendError.get();
             if (errorMessage != null) {
                 traceEntry.endWithError(errorMessage);
@@ -126,7 +131,10 @@ public class ServletAspect {
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler TraceEntry traceEntry) {
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry == null) {
+                return;
+            }
             // ignoring potential sendError since this seems worse
             sendError.remove();
             traceEntry.endWithError(ErrorMessage.from(t));
@@ -143,18 +151,18 @@ public class ServletAspect {
             return ServiceAdvice.isEnabled();
         }
         @OnBefore
-        public static TraceEntry onBefore(@BindParameter Object request,
+        public static @Nullable TraceEntry onBefore(@BindParameter @Nullable Object request,
                 @BindClassMeta RequestInvoker requestInvoker,
                 @BindClassMeta SessionInvoker sessionInvoker) {
             return ServiceAdvice.onBefore(request, requestInvoker, sessionInvoker);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
             ServiceAdvice.onReturn(traceEntry);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler TraceEntry traceEntry) {
+                @BindTraveler @Nullable TraceEntry traceEntry) {
             ServiceAdvice.onThrow(t, traceEntry);
         }
     }
@@ -168,18 +176,18 @@ public class ServletAspect {
             return ServiceAdvice.isEnabled();
         }
         @OnBefore
-        public static TraceEntry onBefore(@BindParameter Object request,
+        public static @Nullable TraceEntry onBefore(@BindParameter @Nullable Object request,
                 @BindClassMeta RequestInvoker requestInvoker,
                 @BindClassMeta SessionInvoker sessionInvoker) {
             return ServiceAdvice.onBefore(request, requestInvoker, sessionInvoker);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
+        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
             ServiceAdvice.onReturn(traceEntry);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler TraceEntry traceEntry) {
+                @BindTraveler @Nullable TraceEntry traceEntry) {
             ServiceAdvice.onThrow(t, traceEntry);
         }
     }

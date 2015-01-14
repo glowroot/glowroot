@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package org.glowroot.plugin.servlet;
 
 import java.util.Locale;
 import java.util.regex.Pattern;
+
+import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
@@ -101,21 +103,24 @@ public class ResponseHeaderAspect {
             inAdvice.set(true);
         }
         @OnAfter
-        public static void onAfter(@BindReceiver Object response, @BindParameter String value,
+        public static void onAfter(@BindReceiver Object response,
+                @BindParameter @Nullable String value,
                 @BindClassMeta ResponseInvoker responseInvoker) {
             inAdvice.set(false);
+            if (value == null) {
+                // seems nothing sensible to do here other than ignore
+                return;
+            }
             if (!captureResponseHeader("Content-Type")) {
                 return;
             }
             ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
             if (messageSupplier != null) {
-                String contentType = responseInvoker.getContentType(response);
-                if (contentType == null) {
-                    // Servlet 2.3 or prior
-                    messageSupplier.setResponseHeader("Content-Type", value);
-                } else {
-                    // Servlet 2.4 or later
+                if (responseInvoker.hasGetContentTypeMethod()) {
+                    String contentType = responseInvoker.getContentType(response);
                     messageSupplier.setResponseHeader("Content-Type", contentType);
+                } else {
+                    messageSupplier.setResponseHeader("Content-Type", value);
                 }
             }
         }
@@ -140,12 +145,9 @@ public class ResponseHeaderAspect {
                 return;
             }
             ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
-            if (messageSupplier != null) {
+            if (messageSupplier != null && responseInvoker.hasGetContentTypeMethod()) {
                 String contentType = responseInvoker.getContentType(response);
-                if (contentType != null) {
-                    // Servlet 2.4 or later
-                    messageSupplier.setResponseHeader("Content-Type", contentType);
-                }
+                messageSupplier.setResponseHeader("Content-Type", contentType);
             }
         }
     }
@@ -162,9 +164,14 @@ public class ResponseHeaderAspect {
             inAdvice.set(true);
         }
         @OnAfter
-        public static void onAfter(@BindReceiver Object response, @BindParameter Locale locale,
+        public static void onAfter(@BindReceiver Object response,
+                @BindParameter @Nullable Locale locale,
                 @BindClassMeta ResponseInvoker responseInvoker) {
             inAdvice.set(false);
+            if (locale == null) {
+                // seems nothing sensible to do here other than ignore
+                return;
+            }
             boolean captureContentLanguage = captureResponseHeader("Content-Language");
             boolean captureContentType = captureResponseHeader("Content-Type");
             if (!captureContentLanguage && !captureContentType) {
@@ -175,12 +182,9 @@ public class ResponseHeaderAspect {
                 if (captureContentLanguage) {
                     messageSupplier.setResponseHeader("Content-Language", locale.toString());
                 }
-                if (captureContentType) {
+                if (captureContentType && responseInvoker.hasGetContentTypeMethod()) {
                     String contentType = responseInvoker.getContentType(response);
-                    if (contentType != null) {
-                        // Servlet 2.4 or later
-                        messageSupplier.setResponseHeader("Content-Type", contentType);
-                    }
+                    messageSupplier.setResponseHeader("Content-Type", contentType);
                 }
             }
         }
@@ -199,8 +203,13 @@ public class ResponseHeaderAspect {
             inAdvice.set(true);
         }
         @OnAfter
-        public static void onAfter(@BindParameter String name, @BindParameter String value) {
+        public static void onAfter(@BindParameter @Nullable String name,
+                @BindParameter @Nullable String value) {
             inAdvice.set(false);
+            if (name == null || value == null) {
+                // seems nothing sensible to do here other than ignore
+                return;
+            }
             if (!captureResponseHeader(name)) {
                 return;
             }
@@ -223,8 +232,13 @@ public class ResponseHeaderAspect {
             inAdvice.set(true);
         }
         @OnAfter
-        public static void onAfter(@BindParameter String name, @BindParameter long value) {
+        public static void onAfter(@BindParameter @Nullable String name,
+                @BindParameter long value) {
             inAdvice.set(false);
+            if (name == null) {
+                // seems nothing sensible to do here other than ignore
+                return;
+            }
             if (!captureResponseHeader(name)) {
                 return;
             }
@@ -247,8 +261,12 @@ public class ResponseHeaderAspect {
             inAdvice.set(true);
         }
         @OnAfter
-        public static void onAfter(@BindParameter String name, @BindParameter int value) {
+        public static void onAfter(@BindParameter @Nullable String name, @BindParameter int value) {
             inAdvice.set(false);
+            if (name == null) {
+                // seems nothing sensible to do here other than ignore
+                return;
+            }
             if (!captureResponseHeader(name)) {
                 return;
             }
@@ -272,8 +290,13 @@ public class ResponseHeaderAspect {
             inAdvice.set(true);
         }
         @OnAfter
-        public static void onAfter(@BindParameter String name, @BindParameter String value) {
+        public static void onAfter(@BindParameter @Nullable String name,
+                @BindParameter @Nullable String value) {
             inAdvice.set(false);
+            if (name == null || value == null) {
+                // seems nothing sensible to do here other than ignore
+                return;
+            }
             if (!captureResponseHeader(name)) {
                 return;
             }
@@ -296,8 +319,13 @@ public class ResponseHeaderAspect {
             inAdvice.set(true);
         }
         @OnAfter
-        public static void onAfter(@BindParameter String name, @BindParameter long value) {
+        public static void onAfter(@BindParameter @Nullable String name,
+                @BindParameter long value) {
             inAdvice.set(false);
+            if (name == null) {
+                // seems nothing sensible to do here other than ignore
+                return;
+            }
             if (!captureResponseHeader(name)) {
                 return;
             }
@@ -320,8 +348,12 @@ public class ResponseHeaderAspect {
             inAdvice.set(true);
         }
         @OnAfter
-        public static void onAfter(@BindParameter String name, @BindParameter int value) {
+        public static void onAfter(@BindParameter @Nullable String name, @BindParameter int value) {
             inAdvice.set(false);
+            if (name == null) {
+                // seems nothing sensible to do here other than ignore
+                return;
+            }
             if (!captureResponseHeader(name)) {
                 return;
             }

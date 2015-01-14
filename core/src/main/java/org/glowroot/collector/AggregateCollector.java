@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.glowroot.collector;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -38,7 +37,6 @@ import org.glowroot.transaction.model.Transaction;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-// TODO add thread info aggregation
 class AggregateCollector {
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionProcessor.class);
@@ -100,8 +98,7 @@ class AggregateCollector {
                     // terminate successfully
                     return;
                 } catch (Throwable e) {
-                    // (e.g. could be temporary OOM or temporary disk error)
-                    // log and re-try
+                    // log and continue processing
                     logger.error(e.getMessage(), e);
                 }
             }
@@ -167,12 +164,13 @@ class AggregateCollector {
                 try {
                     runInternal();
                 } catch (Throwable t) {
+                    // log and terminate successfully
                     logger.error(t.getMessage(), t);
                 }
             }
         }
 
-        private void runInternal() throws IOException {
+        private void runInternal() throws Exception {
             List<Aggregate> overallAggregates = Lists.newArrayList();
             List<Aggregate> transactionAggregates = Lists.newArrayList();
             Map<String, IntervalTypeCollector> typeCollectors = intervalCollector.typeCollectors;

@@ -27,8 +27,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.config.CapturePoint;
@@ -42,10 +40,11 @@ import org.glowroot.transaction.AdviceCache;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.weaving.AnalyzedWorld;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+
 @JsonService
 class AdminJsonService {
-
-    private static final Logger logger = LoggerFactory.getLogger(AdminJsonService.class);
 
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
@@ -76,69 +75,32 @@ class AdminJsonService {
     }
 
     @POST("/backend/admin/delete-all-aggregates")
-    void deleteAllAggregates() {
+    void deleteAllAggregates() throws SQLException {
         aggregateDao.deleteAll();
     }
 
     @POST("/backend/admin/delete-all-traces")
-    void deleteAllTraces() {
+    void deleteAllTraces() throws SQLException {
         traceDao.deleteAll();
         gaugePointDao.deleteAll();
     }
 
     @POST("/backend/admin/reweave-capture-points")
     String reweaveCapturePoints() throws Exception {
-        if (instrumentation == null) {
-            logger.warn("retransformClasses does not work under IsolatedWeavingClassLoader");
-            return "{}";
-        }
-        if (!instrumentation.isRetransformClassesSupported()) {
-            logger.warn("retransformClasses is not supported");
-            return "{}";
-        }
-        List<CapturePoint> capturePoints = configService.getCapturePoints();
-        adviceCache.updateAdvisors(capturePoints, false);
-        Set<String> classNames = Sets.newHashSet();
-        for (CapturePoint capturePoint : capturePoints) {
-            classNames.add(capturePoint.className());
-        }
-        Set<Class<?>> classes = Sets.newHashSet();
-        List<Class<?>> possibleNewReweavableClasses = getExistingSubClasses(classNames);
-        // need to remove these classes from AnalyzedWorld, otherwise if a subclass and its parent
-        // class are both in the list and the subclass is re-transformed first, it will use the
-        // old cached AnalyzedClass for its parent which will have the old AnalyzedMethod advisors
-        List<Class<?>> existingReweavableClasses =
-                analyzedWorld.getClassesWithReweavableAdvice(true);
-        analyzedWorld.removeClasses(possibleNewReweavableClasses);
-        classes.addAll(existingReweavableClasses);
-        classes.addAll(possibleNewReweavableClasses);
-        if (classes.isEmpty()) {
-            return "{\"classes\":0}";
-        }
-        instrumentation.retransformClasses(Iterables.toArray(classes, Class.class));
-        List<Class<?>> updatedReweavableClasses =
-                analyzedWorld.getClassesWithReweavableAdvice(false);
-        // all existing reweavable classes were woven
-        int count = existingReweavableClasses.size();
-        // now add newly reweavable classes
-        for (Class<?> possibleNewReweavableClass : possibleNewReweavableClasses) {
-            if (updatedReweavableClasses.contains(possibleNewReweavableClass)
-                    && !existingReweavableClasses.contains(possibleNewReweavableClass)) {
-                count++;
-            }
-        }
+        // this command is filtered out of the UI when instrumentation is null (which is only in dev
+        // mode anyways)
+        checkNotNull(instrumentation);
+        // this command is filtered out of the UI when retransform classes is not supported
+        checkState(instrumentation.isRetransformClassesSupported(),
+                "Retransform classes is not supported");
+        int count = reweaveCapturePointsInternal();
         return "{\"classes\":" + count + "}";
     }
 
     // this is not currectly exposed via UI, but good to keep around in case it is needed
     @POST("/backend/admin/compact-data")
-    void compactData() {
-        try {
-            dataSource.compact();
-        } catch (SQLException e) {
-            // this might be serious, worth logging as error
-            logger.error(e.getMessage(), e);
-        }
+    void compactData() throws SQLException {
+        dataSource.compact();
     }
 
     @OnlyUsedByTests
@@ -163,6 +125,42 @@ class AdminJsonService {
     @GET("/backend/admin/num-traces")
     String getNumTraces() throws SQLException {
         return Long.toString(traceDao.count());
+    }
+
+    @RequiresNonNull("instrumentation")
+    private int reweaveCapturePointsInternal() throws Exception {
+        List<CapturePoint> capturePoints = configService.getCapturePoints();
+        adviceCache.updateAdvisors(capturePoints, false);
+        Set<String> classNames = Sets.newHashSet();
+        for (CapturePoint capturePoint : capturePoints) {
+            classNames.add(capturePoint.className());
+        }
+        Set<Class<?>> classes = Sets.newHashSet();
+        List<Class<?>> possibleNewReweavableClasses = getExistingSubClasses(classNames);
+        // need to remove these classes from AnalyzedWorld, otherwise if a subclass and its parent
+        // class are both in the list and the subclass is re-transformed first, it will use the
+        // old cached AnalyzedClass for its parent which will have the old AnalyzedMethod advisors
+        List<Class<?>> existingReweavableClasses =
+                analyzedWorld.getClassesWithReweavableAdvice(true);
+        analyzedWorld.removeClasses(possibleNewReweavableClasses);
+        classes.addAll(existingReweavableClasses);
+        classes.addAll(possibleNewReweavableClasses);
+        if (classes.isEmpty()) {
+            return 0;
+        }
+        instrumentation.retransformClasses(Iterables.toArray(classes, Class.class));
+        List<Class<?>> updatedReweavableClasses =
+                analyzedWorld.getClassesWithReweavableAdvice(false);
+        // all existing reweavable classes were woven
+        int count = existingReweavableClasses.size();
+        // now add newly reweavable classes
+        for (Class<?> possibleNewReweavableClass : possibleNewReweavableClasses) {
+            if (updatedReweavableClasses.contains(possibleNewReweavableClass)
+                    && !existingReweavableClasses.contains(possibleNewReweavableClass)) {
+                count++;
+            }
+        }
+        return count;
     }
 
     @RequiresNonNull("instrumentation")

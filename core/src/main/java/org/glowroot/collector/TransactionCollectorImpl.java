@@ -15,7 +15,6 @@
  */
 package org.glowroot.collector;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -88,9 +87,8 @@ public class TransactionCollectorImpl implements TransactionCollector {
         }
         // check if trace-specific store threshold was set
         long traceStoreThresholdMillis = transaction.getStoreThresholdMillisOverride();
-        if (traceStoreThresholdMillis != Transaction.USE_GENERAL_STORE_THRESHOLD
-                && transaction.getDuration() >= MILLISECONDS.toNanos(traceStoreThresholdMillis)) {
-            return true;
+        if (traceStoreThresholdMillis != Transaction.USE_GENERAL_STORE_THRESHOLD) {
+            return transaction.getDuration() >= MILLISECONDS.toNanos(traceStoreThresholdMillis);
         }
         // fall back to default trace store threshold
         traceStoreThresholdMillis = configService.getTraceConfig().storeThresholdMillis();
@@ -134,7 +132,6 @@ public class TransactionCollectorImpl implements TransactionCollector {
                         Trace trace = TraceCreator.createCompletedTrace(transaction);
                         store(trace, transaction);
                     } catch (Throwable t) {
-                        // log and terminate successfully
                         logger.error(t.getMessage(), t);
                     } finally {
                         pendingTransactions.remove(transaction);
@@ -159,7 +156,7 @@ public class TransactionCollectorImpl implements TransactionCollector {
             if (!transaction.isCompleted()) {
                 store(trace, transaction);
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
     }
@@ -178,7 +175,7 @@ public class TransactionCollectorImpl implements TransactionCollector {
         }
     }
 
-    private void store(Trace trace, Transaction transaction) throws IOException {
+    private void store(Trace trace, Transaction transaction) throws Exception {
         long captureTick;
         if (transaction.isCompleted()) {
             captureTick = transaction.getEndTick();

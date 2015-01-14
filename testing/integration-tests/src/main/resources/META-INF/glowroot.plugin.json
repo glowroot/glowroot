@@ -61,6 +61,12 @@
       "type": "double",
       "default": 22,
       "label": "A number with default value"
+    },
+    {
+      "name": "anumberWithExplicitNullDefaultValue",
+      "type": "double",
+      "default": null,
+      "label": "A number with explicit null default value"
     }
   ],
   "capturePoints": [
@@ -102,6 +108,24 @@
         "View": "v{{0}}",
         "Z": "z{{0}}"
       }
+    },
+    {
+      "className": "org.glowroot.tests.CoverAllTypes",
+      "methodName": "get*",
+      "methodParameterTypes": [],
+      "captureKind": "trace-entry",
+      "metricName": "coverage",
+      "traceEntryTemplate": "Coverage get: {{_}}"
+    },
+    {
+      "className": "org.glowroot.tests.CoverAllTypes",
+      "methodName": "put*",
+      "methodParameterTypes": [
+        "*"
+      ],
+      "captureKind": "trace-entry",
+      "metricName": "coverage",
+      "traceEntryTemplate": "Coverage put: {{0}}"
     }
   ],
   "aspects": [

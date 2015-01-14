@@ -17,7 +17,6 @@ package org.glowroot.local.ui;
 
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -126,9 +125,7 @@ class HttpServer {
             // calling get() will wait until ChangePort is complete and will re-throw any exceptions
             // thrown by ChangePort
             executor.submit(changePort).get();
-        } catch (InterruptedException e) {
-            throw new PortChangeFailedException(e);
-        } catch (ExecutionException e) {
+        } catch (Exception e) {
             throw new PortChangeFailedException(e);
         } finally {
             executor.shutdownNow();

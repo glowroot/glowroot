@@ -22,8 +22,6 @@ import java.sql.Types;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.GaugePoint;
 import org.glowroot.collector.GaugePointRepository;
@@ -34,11 +32,10 @@ import org.glowroot.local.store.DataSource.RowMapper;
 import org.glowroot.local.store.Schemas.Column;
 import org.glowroot.local.store.Schemas.Index;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.common.Checkers.castUntainted;
 
 public class GaugePointDao implements GaugePointRepository {
-
-    private static final Logger logger = LoggerFactory.getLogger(GaugePointDao.class);
 
     private static final ImmutableList<Column> gaugePointColumns = ImmutableList.<Column>of(
             ImmutableColumn.of("gauge_name", Types.VARCHAR),
@@ -79,26 +76,22 @@ public class GaugePointDao implements GaugePointRepository {
 
     // synchronization is needed for rollup logic
     @Override
-    public void store(final List<GaugePoint> gaugePoints) {
+    public void store(final List<GaugePoint> gaugePoints) throws Exception {
         if (gaugePoints.isEmpty()) {
             return;
         }
-        try {
-            dataSource.batchUpdate("insert into gauge_point (gauge_name, capture_time, value)"
-                    + " values (?, ?, ?)", new BatchAdder() {
-                @Override
-                public void addBatches(PreparedStatement preparedStatement) throws SQLException {
-                    for (GaugePoint gaugePoint : gaugePoints) {
-                        preparedStatement.setString(1, gaugePoint.gaugeName());
-                        preparedStatement.setLong(2, gaugePoint.captureTime());
-                        preparedStatement.setDouble(3, gaugePoint.value());
-                        preparedStatement.addBatch();
-                    }
+        dataSource.batchUpdate("insert into gauge_point (gauge_name, capture_time, value)"
+                + " values (?, ?, ?)", new BatchAdder() {
+            @Override
+            public void addBatches(PreparedStatement preparedStatement) throws SQLException {
+                for (GaugePoint gaugePoint : gaugePoints) {
+                    preparedStatement.setString(1, gaugePoint.gaugeName());
+                    preparedStatement.setLong(2, gaugePoint.captureTime());
+                    preparedStatement.setDouble(3, gaugePoint.value());
+                    preparedStatement.addBatch();
                 }
-            });
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-        }
+            }
+        });
         // clock can never go backwards and future gauge captures will wait until this method
         // completes since ScheduledExecutorService.scheduleAtFixedRate() guarantees that future
         // invocations of GaugeCollector will wait until prior invocations complete
@@ -108,12 +101,8 @@ public class GaugePointDao implements GaugePointRepository {
         safeRollupTime = (long) Math.floor(safeRollupTime / (double) fixedRollupIntervalMillis)
                 * fixedRollupIntervalMillis;
         if (safeRollupTime > lastRollupTime) {
-            try {
-                rollup(lastRollupTime, safeRollupTime);
-                lastRollupTime = safeRollupTime;
-            } catch (SQLException e) {
-                logger.error(e.getMessage(), e);
-            }
+            rollup(lastRollupTime, safeRollupTime);
+            lastRollupTime = safeRollupTime;
         }
     }
 
@@ -129,27 +118,19 @@ public class GaugePointDao implements GaugePointRepository {
                 captureTimeTo);
     }
 
-    public void deleteAll() {
-        try {
-            dataSource.execute("truncate table gauge_point");
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-        }
+    public void deleteAll() throws SQLException {
+        dataSource.execute("truncate table gauge_point");
     }
 
-    void deleteBefore(long captureTime) {
-        try {
-            // delete 100 at a time, which is both faster than deleting all at once, and doesn't
-            // lock the single jdbc connection for one large chunk of time
-            while (true) {
-                int deleted = dataSource.update("delete from gauge_point where capture_time < ?",
-                        captureTime);
-                if (deleted == 0) {
-                    break;
-                }
+    void deleteBefore(long captureTime) throws SQLException {
+        // delete 100 at a time, which is both faster than deleting all at once, and doesn't
+        // lock the single jdbc connection for one large chunk of time
+        while (true) {
+            int deleted = dataSource.update("delete from gauge_point where capture_time < ?",
+                    captureTime);
+            if (deleted == 0) {
+                break;
             }
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
         }
     }
 
@@ -168,10 +149,7 @@ public class GaugePointDao implements GaugePointRepository {
         @Override
         public GaugePoint mapRow(ResultSet resultSet) throws SQLException {
             String gaugeName = resultSet.getString(1);
-            if (gaugeName == null) {
-                // gauge_name should never be null
-                throw new SQLException("Found null gauge_name in gauge_point");
-            }
+            checkNotNull(gaugeName, "Found null gauge_name in gauge_point");
             long captureTime = resultSet.getLong(2);
             double value = resultSet.getDouble(3);
             return ImmutableGaugePoint.builder()

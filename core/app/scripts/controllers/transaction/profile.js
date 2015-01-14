@@ -26,10 +26,6 @@ glowroot.controller('TransactionProfileCtrl', [
 
     $scope.$parent.activeTabItem = 'profile';
 
-    // this is needed when click occurs on sidebar b/c it doesn't reload template in that case but still need
-    // to update transactionName
-    $scope.$parent.transactionName = $location.search()['transaction-name'];
-
     $scope.showProfile = false;
     $scope.showSpinner = 0;
 
@@ -39,7 +35,6 @@ glowroot.controller('TransactionProfileCtrl', [
         query['transaction-type'] = $scope.transactionType;
       }
       query['transaction-name'] = $scope.transactionName;
-      // TODO check $scope.chartFromToDefault and default from/to in flame-graph.js (same as transaction-header.js)
       query.from = $scope.chartFrom;
       query.to = $scope.chartTo;
       return queryStrings.encodeObject(query);

@@ -35,7 +35,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.GlowrootModule.DataDirLockedException;
-import org.glowroot.GlowrootModule.StartupFailedException;
 import org.glowroot.common.JavaVersion;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.markers.OnlyUsedByTests;
@@ -97,7 +96,7 @@ public class MainEntryPoint {
 
     private static void start(File dataDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
-            boolean jbossModules) throws StartupFailedException {
+            boolean jbossModules) throws Exception {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion();
@@ -171,7 +170,7 @@ public class MainEntryPoint {
     }
 
     @OnlyUsedByTests
-    public static void start(Map<String, String> properties) throws StartupFailedException {
+    public static void start(Map<String, String> properties) throws Exception {
         File dataDir = DataDir.getDataDir(properties, null);
         start(dataDir, properties, null, null, false);
     }

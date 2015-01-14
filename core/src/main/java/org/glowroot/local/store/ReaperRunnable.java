@@ -15,6 +15,8 @@
  */
 package org.glowroot.local.store;
 
+import java.sql.SQLException;
+
 import org.glowroot.common.Clock;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.config.ConfigService;
@@ -39,7 +41,7 @@ class ReaperRunnable extends ScheduledRunnable {
     }
 
     @Override
-    protected void runInternal() {
+    protected void runInternal() throws SQLException {
         long aggregateCaptureTime = clock.currentTimeMillis()
                 - HOURS.toMillis(configService.getStorageConfig().aggregateExpirationHours());
         aggregateDao.deleteBefore(aggregateCaptureTime);

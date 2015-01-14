@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,11 @@
  */
 package org.glowroot.tests;
 
+import java.io.File;
 import java.util.Random;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -25,6 +28,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
+import org.glowroot.container.TempDirs;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.trace.Trace;
 
@@ -36,16 +40,23 @@ public class PluginConfigTest {
 
     private static final Random random = new Random();
 
+    private static File dataDir;
     private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.getSharedContainer();
+        // create config.json with empty properties to test different code path
+        dataDir = TempDirs.createTempDir("glowroot-test-datadir");
+        Files.write("{\"ui\":{\"port\":0},\"plugins\":[{\"id\":\"glowroot-integration-tests\","
+                + "\"enabled\":true}]}", new File(dataDir, "config.json"),
+                Charsets.UTF_8);
+        container = Containers.createWithFileDb(dataDir);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         container.close();
+        TempDirs.deleteRecursively(dataDir);
     }
 
     @After
@@ -75,6 +86,8 @@ public class PluginConfigTest {
         PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         // then
         assertThat((String) pluginConfig.getProperty("hasDefaultVal")).isEqualTo("one");
+        assertThat((Double) pluginConfig.getProperty("anumberWithDefaultValue")).isEqualTo(22);
+        assertThat((Double) pluginConfig.getProperty("anumber")).isNull();
     }
 
     @Test

@@ -102,9 +102,27 @@ public class ScheduledRunnableTest {
         // do nothing
     }
 
+    @Test
+    public void testExceptionalScheduledRunnable() {
+        // given
+        ExceptionalScheduledRunnable testScheduledRunnable = new ExceptionalScheduledRunnable();
+        // when
+        testScheduledRunnable.run();
+        // then
+        // do not throw exception
+    }
+
     private static class TestScheduledRunnable extends ScheduledRunnable {
 
         @Override
         protected void runInternal() {}
+    }
+
+    private static class ExceptionalScheduledRunnable extends ScheduledRunnable {
+
+        @Override
+        protected void runInternal() {
+            throw new RuntimeException("This is a test");
+        }
     }
 }

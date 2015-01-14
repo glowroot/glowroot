@@ -112,48 +112,45 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public void store(final Trace trace, CharSource entries, @Nullable CharSource profile) {
+    public void store(final Trace trace, CharSource entries, @Nullable CharSource profile)
+            throws Exception {
         long entriesId = cappedDatabase.write(entries);
         Long profileId = null;
         if (profile != null) {
             profileId = cappedDatabase.write(profile);
         }
-        try {
-            dataSource.update("merge into trace (id, partial, start_time, capture_time, duration,"
-                    + " transaction_type, transaction_name, headline, error, profiled,"
-                    + " error_message, user, custom_attributes, metrics, thread_info, gc_infos,"
-                    + " entries_capped_id, profile_capped_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?,"
-                    + " ?, ?, ?, ?, ?, ?, ?, ?, ?)", trace.id(), trace.partial(),
-                    trace.startTime(), trace.captureTime(), trace.duration(),
-                    trace.transactionType(), trace.transactionName(), trace.headline(),
-                    trace.error() != null, profileId != null, trace.error(), trace.user(),
-                    trace.customAttributes(), trace.metrics(), trace.threadInfo(), trace.gcInfos(),
-                    entriesId, profileId);
-            final ImmutableSetMultimap<String, String> customAttributesForIndexing =
-                    trace.customAttributesForIndexing();
-            if (!customAttributesForIndexing.isEmpty()) {
-                dataSource.batchUpdate("insert into trace_custom_attribute (trace_id, name,"
-                        + " value, capture_time) values (?, ?, ?, ?)", new BatchAdder() {
-                    @Override
-                    public void addBatches(PreparedStatement preparedStatement)
-                            throws SQLException {
-                        for (Entry<String, String> entry : customAttributesForIndexing.entries()) {
-                            preparedStatement.setString(1, trace.id());
-                            preparedStatement.setString(2, entry.getKey());
-                            preparedStatement.setString(3, entry.getValue());
-                            preparedStatement.setLong(4, trace.captureTime());
-                            preparedStatement.addBatch();
-                        }
+        dataSource.update("merge into trace (id, partial, start_time, capture_time, duration,"
+                + " transaction_type, transaction_name, headline, error, profiled,"
+                + " error_message, user, custom_attributes, metrics, thread_info, gc_infos,"
+                + " entries_capped_id, profile_capped_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?,"
+                + " ?, ?, ?, ?, ?, ?, ?, ?, ?)", trace.id(), trace.partial(),
+                trace.startTime(), trace.captureTime(), trace.duration(),
+                trace.transactionType(), trace.transactionName(), trace.headline(),
+                trace.error() != null, profileId != null, trace.error(), trace.user(),
+                trace.customAttributes(), trace.metrics(), trace.threadInfo(), trace.gcInfos(),
+                entriesId, profileId);
+        final ImmutableSetMultimap<String, String> customAttributesForIndexing =
+                trace.customAttributesForIndexing();
+        if (!customAttributesForIndexing.isEmpty()) {
+            dataSource.batchUpdate("insert into trace_custom_attribute (trace_id, name,"
+                    + " value, capture_time) values (?, ?, ?, ?)", new BatchAdder() {
+                @Override
+                public void addBatches(PreparedStatement preparedStatement)
+                        throws SQLException {
+                    for (Entry<String, String> entry : customAttributesForIndexing.entries()) {
+                        preparedStatement.setString(1, trace.id());
+                        preparedStatement.setString(2, entry.getKey());
+                        preparedStatement.setString(3, entry.getValue());
+                        preparedStatement.setLong(4, trace.captureTime());
+                        preparedStatement.addBatch();
                     }
-                });
-            }
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
+                }
+            });
         }
     }
 
     public QueryResult<TracePoint> readPoints(TracePointQuery query) throws SQLException {
-        ParameterizedSql parameterizedSql = getParameterizedSql(query);
+        ParameterizedSql parameterizedSql = query.getParameterizedSql();
         ImmutableList<TracePoint> points = dataSource.query(parameterizedSql.sql(),
                 new TracePointRowMapper(), parameterizedSql.argsAsArray());
         // one extra record over the limit is fetched above to identify if the limit was hit
@@ -189,7 +186,7 @@ public class TraceDao implements TraceRepository {
                 captureTimeFrom, captureTimeTo, true);
     }
 
-    public ImmutableList<ErrorPoint> readErrorPoints(ErrorMessageQuery query,
+    public ImmutableList<TraceErrorPoint> readErrorPoints(ErrorMessageQuery query,
             long resolutionMillis) throws SQLException {
         // need ".0" to force double result
         String captureTimeSql = castUntainted(
@@ -234,30 +231,22 @@ public class TraceDao implements TraceRepository {
         return readFromCappedDatabase("profile_capped_id", traceId);
     }
 
-    public void deleteAll() {
-        try {
-            dataSource.execute("truncate table trace_custom_attribute");
-            dataSource.execute("truncate table trace");
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-        }
+    public void deleteAll() throws SQLException {
+        dataSource.execute("truncate table trace_custom_attribute");
+        dataSource.execute("truncate table trace");
     }
 
-    void deleteBefore(long captureTime) {
-        try {
-            // delete 100 at a time, which is both faster than deleting all at once, and doesn't
-            // lock the single jdbc connection for one large chunk of time
-            while (true) {
-                int deleted = dataSource.update("delete from trace_custom_attribute where"
-                        + " capture_time < ? limit 100", captureTime);
-                deleted += dataSource.update("delete from trace where capture_time < ? limit 100",
-                        captureTime);
-                if (deleted == 0) {
-                    break;
-                }
+    void deleteBefore(long captureTime) throws SQLException {
+        // delete 100 at a time, which is both faster than deleting all at once, and doesn't
+        // lock the single jdbc connection for one large chunk of time
+        while (true) {
+            int deleted = dataSource.update("delete from trace_custom_attribute where"
+                    + " capture_time < ? limit 100", captureTime);
+            deleted += dataSource.update("delete from trace where capture_time < ? limit 100",
+                    captureTime);
+            if (deleted == 0) {
+                break;
             }
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
         }
     }
 
@@ -270,103 +259,6 @@ public class TraceDao implements TraceRepository {
     @OnlyUsedByTests
     public long count() throws SQLException {
         return dataSource.queryForLong("select count(*) from trace");
-    }
-
-    private static ParameterizedSql getParameterizedSql(TracePointQuery query) {
-        // capture time lower bound is non-inclusive so that aggregate data intervals can be mapped
-        // to their trace points (aggregate data intervals are non-inclusive on lower bound and
-        // inclusive on upper bound)
-        String sql = "select trace.id, trace.capture_time, trace.duration, trace.error from trace";
-        List<Object> args = Lists.newArrayList();
-        ParameterizedSql customAttributeJoin = getTraceCustomAttributeJoin(query);
-        if (customAttributeJoin != null) {
-            sql += customAttributeJoin.sql();
-            args.addAll(customAttributeJoin.args());
-        } else {
-            sql += " where";
-        }
-        sql += " trace.capture_time > ? and trace.capture_time <= ?";
-        args.add(query.from());
-        args.add(query.to());
-        long durationLow = query.durationLow();
-        if (durationLow != 0) {
-            sql += " and trace.duration >= ?";
-            args.add(durationLow);
-        }
-        Long durationHigh = query.durationHigh();
-        if (durationHigh != null) {
-            sql += " and trace.duration <= ?";
-            args.add(durationHigh);
-        }
-        String transactionType = query.transactionType();
-        if (!Strings.isNullOrEmpty(transactionType)) {
-            sql += " and trace.transaction_type = ?";
-            args.add(transactionType);
-        }
-        if (query.errorOnly()) {
-            sql += " and trace.error = ?";
-            args.add(true);
-        }
-        StringComparator transactionNameComparator = query.transactionNameComparator();
-        String transactionName = query.transactionName();
-        if (transactionNameComparator != null && !Strings.isNullOrEmpty(transactionName)) {
-            sql += " and upper(trace.transaction_name) "
-                    + transactionNameComparator.getComparator() + " ?";
-            args.add(transactionNameComparator.formatParameter(
-                    transactionName.toUpperCase(Locale.ENGLISH)));
-        }
-        StringComparator headlineComparator = query.headlineComparator();
-        String headline = query.headline();
-        if (headlineComparator != null && !Strings.isNullOrEmpty(headline)) {
-            sql += " and upper(trace.headline) " + headlineComparator.getComparator() + " ?";
-            args.add(headlineComparator.formatParameter(headline.toUpperCase(Locale.ENGLISH)));
-        }
-        StringComparator errorComparator = query.errorComparator();
-        String error = query.error();
-        if (errorComparator != null && !Strings.isNullOrEmpty(error)) {
-            sql += " and upper(trace.error_message) " + errorComparator.getComparator() + " ?";
-            args.add(errorComparator.formatParameter(error.toUpperCase(Locale.ENGLISH)));
-        }
-        StringComparator userComparator = query.userComparator();
-        String user = query.user();
-        if (userComparator != null && !Strings.isNullOrEmpty(user)) {
-            sql += " and upper(trace.user) " + userComparator.getComparator() + " ?";
-            args.add(userComparator.formatParameter(user.toUpperCase(Locale.ENGLISH)));
-        }
-        sql += " order by trace.duration desc limit ?";
-        // +1 is to identify if limit was exceeded
-        args.add(query.limit() + 1);
-        return ImmutableParameterizedSql.of(sql, args);
-    }
-
-    private static @Nullable ParameterizedSql getTraceCustomAttributeJoin(TracePointQuery query) {
-        String criteria = "";
-        List<Object> criteriaArgs = Lists.newArrayList();
-        String customAttributeName = query.customAttributeName();
-        if (!Strings.isNullOrEmpty(customAttributeName)) {
-            criteria += " upper(attr.name) = ? and";
-            criteriaArgs.add(customAttributeName.toUpperCase(Locale.ENGLISH));
-        }
-        StringComparator customAttributeValueComparator = query.customAttributeValueComparator();
-        String customAttributeValue = query.customAttributeValue();
-        if (customAttributeValueComparator != null
-                && !Strings.isNullOrEmpty(customAttributeValue)) {
-            criteria += " upper(attr.value) " + customAttributeValueComparator.getComparator()
-                    + " ? and";
-            criteriaArgs.add(customAttributeValueComparator.formatParameter(
-                    customAttributeValue.toUpperCase(Locale.ENGLISH)));
-        }
-        if (criteria.equals("")) {
-            return null;
-        } else {
-            String sql = ", trace_custom_attribute attr where attr.trace_id = trace.id and"
-                    + " attr.capture_time > ? and attr.capture_time <= ? and" + criteria;
-            List<Object> args = Lists.newArrayList();
-            args.add(query.from());
-            args.add(query.to());
-            args.addAll(criteriaArgs);
-            return ImmutableParameterizedSql.of(sql, args);
-        }
     }
 
     private ParameterizedSql buildErrorMessageQuery(ErrorMessageQuery query,
@@ -464,12 +356,12 @@ public class TraceDao implements TraceRepository {
         }
     }
 
-    private static class ErrorPointRowMapper implements RowMapper<ErrorPoint> {
+    private static class ErrorPointRowMapper implements RowMapper<TraceErrorPoint> {
         @Override
-        public ErrorPoint mapRow(ResultSet resultSet) throws SQLException {
+        public TraceErrorPoint mapRow(ResultSet resultSet) throws SQLException {
             long captureTime = resultSet.getLong(1);
             long errorCount = resultSet.getLong(2);
-            return new ErrorPoint(captureTime, errorCount);
+            return ImmutableTraceErrorPoint.of(captureTime, errorCount);
         }
     }
 

@@ -62,9 +62,4 @@ class TraceUniqueId {
         // living in the past?
         return Strings.padStart(s, 12, '0');
     }
-
-    @Override
-    public String toString() {
-        return get();
-    }
 }

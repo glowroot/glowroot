@@ -26,10 +26,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.glowroot.common.ClassNames;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.impl.JavaagentContainer;
-import org.glowroot.weaving.ClassNames;
 
 public class ClassLoaderLeakTest {
 

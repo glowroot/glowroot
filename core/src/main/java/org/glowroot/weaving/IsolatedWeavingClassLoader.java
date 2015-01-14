@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.ClassNames;
 import org.glowroot.markers.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -86,9 +87,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
     public </*@Nullable*/S, T extends S> S newInstance(Class<T> implClass, Class<S> bridgeClass)
             throws Exception {
-        if (!isBridgeable(bridgeClass.getName())) {
-            throw new IllegalStateException("Class '" + bridgeClass + "' is not bridgeable");
-        }
+        validateBridgeable(bridgeClass.getName());
         return bridgeClass.cast(loadClass(implClass.getName()).newInstance());
     }
 
@@ -158,16 +157,16 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         }
     }
 
-    private <S> boolean isBridgeable(String name) {
+    private void validateBridgeable(String name) {
         if (isInBootstrapClassLoader(name)) {
-            return true;
+            return;
         }
         for (Class<?> bridgeClass : bridgeClasses) {
             if (bridgeClass.getName().equals(name)) {
-                return true;
+                return;
             }
         }
-        return false;
+        throw new IllegalStateException("Class '" + name + "' is not bridgeable");
     }
 
     private boolean loadWithParentClassLoader(String name) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,6 @@ public abstract class ScheduledRunnable implements Runnable {
             logger.debug(e.getMessage(), e);
             throw e;
         } catch (Throwable t) {
-            // (e.g. could be temporary OOM or temporary disk error)
             // log and return successfully so it will continue to run
             logger.error(t.getMessage(), t);
         }
@@ -69,7 +68,7 @@ public abstract class ScheduledRunnable implements Runnable {
         }
     }
 
-    protected abstract void runInternal();
+    protected abstract void runInternal() throws Exception;
 
     // marker exception used to terminate subsequent scheduled executions
     // (see ScheduledExecutorService.scheduleWithFixedDelay())

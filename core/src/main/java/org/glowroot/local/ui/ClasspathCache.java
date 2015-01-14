@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -58,12 +59,12 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.ClassNames;
 import org.glowroot.common.Reflections;
-import org.glowroot.common.Reflections.ReflectiveException;
 import org.glowroot.weaving.AnalyzedWorld;
-import org.glowroot.weaving.ClassNames;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.objectweb.asm.Opcodes.ACC_NATIVE;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.ASM5;
 
@@ -95,9 +96,7 @@ class ClasspathCache {
     synchronized ImmutableList<String> getMatchingClassNames(String partialClassName, int limit) {
         // update cache before proceeding
         updateCache();
-        String partialClassNameUpper = partialClassName.toUpperCase(Locale.ENGLISH);
-        String prefixedPartialClassNameUpper1 = '.' + partialClassNameUpper;
-        String prefixedPartialClassNameUpper2 = '$' + partialClassNameUpper;
+        PartialClassNameMatcher matcher = new PartialClassNameMatcher(partialClassName);
         Set<String> fullMatchingClassNames = Sets.newLinkedHashSet();
         Set<String> matchingClassNames = Sets.newLinkedHashSet();
         // also check loaded classes, e.g. for groovy classes
@@ -112,9 +111,7 @@ class ClasspathCache {
         while (i.hasNext()) {
             String className = i.next();
             String classNameUpper = className.toUpperCase(Locale.ENGLISH);
-            boolean potentialFullMatch = classNameUpper.equals(partialClassNameUpper)
-                    || classNameUpper.endsWith(prefixedPartialClassNameUpper1)
-                    || classNameUpper.endsWith(prefixedPartialClassNameUpper2);
+            boolean potentialFullMatch = matcher.isPotentialFullMatch(classNameUpper);
             if (matchingClassNames.size() == limit && !potentialFullMatch) {
                 // once limit reached, only consider full matches
                 continue;
@@ -122,9 +119,7 @@ class ClasspathCache {
             if (fullMatchingClassNames.size() == limit) {
                 break;
             }
-            if (classNameUpper.startsWith(partialClassNameUpper)
-                    || classNameUpper.contains(prefixedPartialClassNameUpper1)
-                    || classNameUpper.contains(prefixedPartialClassNameUpper2)) {
+            if (matcher.isPotentialMatch(classNameUpper)) {
                 if (potentialFullMatch) {
                     fullMatchingClassNames.add(className);
                 } else {
@@ -211,8 +206,8 @@ class ClasspathCache {
     private List<UiAnalyzedMethod> getAnalyzedMethods(Class<?> clazz) {
         List<UiAnalyzedMethod> analyzedMethods = Lists.newArrayList();
         for (Method method : clazz.getDeclaredMethods()) {
-            if (method.isSynthetic()) {
-                // don't add synthetic methods to the analyzed model
+            if (method.isSynthetic() || Modifier.isNative(method.getModifiers())) {
+                // don't add synthetic or native methods to the analyzed model
                 continue;
             }
             ImmutableUiAnalyzedMethod.Builder builder = ImmutableUiAnalyzedMethod.builder();
@@ -241,11 +236,7 @@ class ClasspathCache {
             if (url.getProtocol().equals("vfs")) {
                 try {
                     uris.add(getFileFromJBossVfsURL(url, loader).toURI());
-                } catch (ClassNotFoundException e) {
-                    logger.warn(e.getMessage(), e);
-                } catch (IOException e) {
-                    logger.warn(e.getMessage(), e);
-                } catch (ReflectiveException e) {
+                } catch (Exception e) {
                     logger.warn(e.getMessage(), e);
                 }
             } else {
@@ -303,18 +294,19 @@ class ClasspathCache {
     }
 
     private static void loadClassNames(URI uri, Multimap<String, URI> newClassNames) {
+        if (!uri.getScheme().equals("file")) {
+            return;
+        }
         try {
-            if (uri.getScheme().equals("file")) {
-                File file = new File(uri);
-                if (file.isDirectory()) {
-                    loadClassNamesFromDirectory(file, "", newClassNames);
-                } else if (file.exists() && file.getName().endsWith(".jar")) {
-                    loadClassNamesFromJarFile(uri, newClassNames);
-                }
-            } else if (uri.getPath().endsWith(".jar")) {
-                // try to load jar from non-file uri
+            File file = new File(uri);
+            if (file.isDirectory()) {
+                loadClassNamesFromDirectory(file, "", newClassNames);
+            } else if (file.exists() && file.getName().endsWith(".jar")) {
                 loadClassNamesFromJarFile(uri, newClassNames);
             }
+        } catch (IllegalArgumentException e) {
+            // new File(URI) constructor can throw IllegalArgumentException
+            logger.debug(e.getMessage(), e);
         } catch (IOException e) {
             logger.debug("error reading classes from uri: {}", uri, e);
         }
@@ -381,11 +373,7 @@ class ClasspathCache {
                 continue;
             }
             String className = name.substring(0, name.lastIndexOf('.')).replace('/', '.');
-            // TODO test if this works with jar loaded over http protocol
             String path = jarUri.getPath();
-            if (path.endsWith("/")) {
-                path = path.substring(0, path.length() - 1);
-            }
             try {
                 URI fileURI = new URI("jar", jarUri.getScheme() + ":" + path + "!/" + name, "");
                 newClassNames.put(className, fileURI);
@@ -395,8 +383,7 @@ class ClasspathCache {
         }
     }
 
-    private static File getFileFromJBossVfsURL(URL url, ClassLoader loader) throws IOException,
-            ClassNotFoundException, ReflectiveException {
+    private static File getFileFromJBossVfsURL(URL url, ClassLoader loader) throws Exception {
         Object virtualFile = url.openConnection().getContent();
         Class<?> virtualFileClass = loader.loadClass("org.jboss.vfs.VirtualFile");
         Method getPhysicalFileMethod = Reflections.getMethod(virtualFileClass, "getPhysicalFile");
@@ -406,6 +393,31 @@ class ClasspathCache {
         String name = (String) Reflections.invoke(getNameMethod, virtualFile);
         checkNotNull(name, "org.jboss.vfs.VirtualFile.getName() returned null");
         return new File(physicalFile.getParentFile(), name);
+    }
+
+    private static class PartialClassNameMatcher {
+
+        private final String partialClassNameUpper;
+        private final String prefixedPartialClassNameUpper1;
+        private final String prefixedPartialClassNameUpper2;
+
+        private PartialClassNameMatcher(String partialClassName) {
+            partialClassNameUpper = partialClassName.toUpperCase(Locale.ENGLISH);
+            prefixedPartialClassNameUpper1 = '.' + partialClassNameUpper;
+            prefixedPartialClassNameUpper2 = '$' + partialClassNameUpper;
+        }
+
+        private boolean isPotentialFullMatch(String classNameUpper) {
+            return classNameUpper.equals(partialClassNameUpper)
+                    || classNameUpper.endsWith(prefixedPartialClassNameUpper1)
+                    || classNameUpper.endsWith(prefixedPartialClassNameUpper2);
+        }
+
+        private boolean isPotentialMatch(String classNameUpper) {
+            return classNameUpper.startsWith(partialClassNameUpper)
+                    || classNameUpper.contains(prefixedPartialClassNameUpper1)
+                    || classNameUpper.contains(prefixedPartialClassNameUpper2);
+        }
     }
 
     private static class AnalyzingClassVisitor extends ClassVisitor {
@@ -419,8 +431,8 @@ class ClasspathCache {
         @Override
         public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
                 @Nullable String signature, String /*@Nullable*/[] exceptions) {
-            if ((access & ACC_SYNTHETIC) != 0) {
-                // don't add synthetic methods to the analyzed model
+            if ((access & ACC_SYNTHETIC) != 0 || (access & ACC_NATIVE) != 0) {
+                // don't add synthetic or native methods to the analyzed model
                 return null;
             }
             ImmutableUiAnalyzedMethod.Builder builder = ImmutableUiAnalyzedMethod.builder();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.Map;
 
-import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 
 class IsolatedClassLoader extends URLClassLoader {
-
-    private final Map<String, Class<?>> classes = Maps.newConcurrentMap();
 
     IsolatedClassLoader(URL[] urls) {
         super(urls);
@@ -59,17 +55,10 @@ class IsolatedClassLoader extends URLClassLoader {
     @Override
     protected synchronized Class<?> loadClass(String name, boolean resolve)
             throws ClassNotFoundException {
-
         if (useBootstrapClassLoader(name)) {
             return super.loadClass(name, resolve);
         }
-        Class<?> c = classes.get(name);
-        if (c != null) {
-            return c;
-        }
-        c = findClass(name);
-        classes.put(name, c);
-        return c;
+        return findClass(name);
     }
 
     private boolean useBootstrapClassLoader(String name) {

@@ -15,17 +15,44 @@
  */
 package org.glowroot.local.store;
 
+import java.util.Locale;
+
 import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.config.MarshalingRoutines.LowercaseMarshaling;
 
 public enum StringComparator implements LowercaseMarshaling {
 
-    BEGINS("like", "%s%%"),
-    EQUALS("=", "%s"),
-    ENDS("like", "%%%s"),
-    CONTAINS("like", "%%%s%%"),
-    NOT_CONTAINS("not like", "%%%s%%");
+    BEGINS("like", "%s%%") {
+        @Override
+        public boolean matches(String text, String partial) {
+            return upper(text).startsWith(upper(partial));
+        }
+    },
+    EQUALS("=", "%s") {
+        @Override
+        public boolean matches(String text, String partial) {
+            return text.equalsIgnoreCase(partial);
+        }
+    },
+    ENDS("like", "%%%s") {
+        @Override
+        public boolean matches(String text, String partial) {
+            return upper(text).endsWith(upper(partial));
+        }
+    },
+    CONTAINS("like", "%%%s%%") {
+        @Override
+        public boolean matches(String text, String partial) {
+            return upper(text).contains(upper(partial));
+        }
+    },
+    NOT_CONTAINS("not like", "%%%s%%") {
+        @Override
+        public boolean matches(String text, String partial) {
+            return !upper(text).contains(upper(partial));
+        }
+    };
 
     private final @Untainted String comparator;
     private final String parameterFormat;
@@ -36,11 +63,17 @@ public enum StringComparator implements LowercaseMarshaling {
     }
 
     String formatParameter(String parameter) {
-        return String.format(parameterFormat, parameter);
+        return String.format(parameterFormat, upper(parameter));
     }
 
     @Untainted
     String getComparator() {
         return comparator;
+    }
+
+    public abstract boolean matches(String text, String partial);
+
+    private static String upper(String str) {
+        return str.toUpperCase(Locale.ENGLISH);
     }
 }

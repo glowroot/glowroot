@@ -73,14 +73,14 @@ glowroot.controller('ConfigCapturePointCtrl', [
         limit: 10
       };
       $scope.showClassNameSpinner++;
-      // use 'then' method to return promise
+      // using 'then' method to return promise
       return $http.get('backend/config/matching-class-names' + queryStrings.encodeObject(postData))
           .then(function (response) {
             $scope.showClassNameSpinner--;
             return response.data;
-          }, function () {
+          }, function (data, status) {
             $scope.showClassNameSpinner--;
-            // TODO handle error
+            httpErrors.handler($scope)(data, status);
           });
     };
 
@@ -109,13 +109,14 @@ glowroot.controller('ConfigCapturePointCtrl', [
         limit: 10
       };
       $scope.showMethodNameSpinner++;
+      // using 'then' method to return promise
       return $http.get('backend/config/matching-method-names' + queryStrings.encodeObject(queryData))
           .then(function (response) {
             $scope.showMethodNameSpinner--;
             return response.data;
-          }, function () {
+          }, function (data, status) {
             $scope.showMethodNameSpinner--;
-            // TODO handle error
+            httpErrors.handler($scope)(data, status);
           });
     };
 
@@ -205,7 +206,7 @@ glowroot.controller('ConfigCapturePointCtrl', [
     $scope.delete = function (deferred) {
       if ($scope.config.version) {
         $http.post('backend/config/capture-points/remove', '"' + $scope.config.version + '"')
-            .success(function (data) {
+            .success(function () {
               $scope.$parent.removeCapturePoint($scope.capturePoint);
               $scope.page.dirty = true;
               deferred.resolve('Deleted');
@@ -251,7 +252,10 @@ glowroot.controller('ConfigCapturePointCtrl', [
               $scope.selectedMethodSignature = undefined;
             }
           })
-          .error(httpErrors.handler($scope));
+          .error(function (data, status) {
+            $scope.methodSignaturesLoading = false;
+            httpErrors.handler($scope)(data, status);
+          });
     }
 
     $scope.$watch('config.captureKind', function (value) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package org.glowroot.transaction.model;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 
 import org.glowroot.api.ErrorMessage;
@@ -108,22 +107,6 @@ public class TraceEntry {
 
     public void setStackTrace(ImmutableList<StackTraceElement> stackTrace) {
         this.stackTrace = stackTrace;
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("message", messageSupplier == null ? null : messageSupplier.get())
-                .add("errorMessage", errorMessage)
-                .add("startTick", startTick)
-                .add("completed", completed)
-                .add("endTick", endTick)
-                .add("nestingLevel", nestingLevel)
-                .add("transactionMetric", transactionMetric)
-                .add("stackTrace", stackTrace)
-                .add("limitExceededMarker", isLimitExceededMarker())
-                .add("limitExtendedMarker", isLimitExtendedMarker())
-                .toString();
     }
 
     static TraceEntry getLimitExceededMarker() {

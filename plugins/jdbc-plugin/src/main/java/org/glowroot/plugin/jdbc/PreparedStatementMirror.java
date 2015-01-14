@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ class PreparedStatementMirror extends StatementMirror {
             batchedParameters = Queues.newConcurrentLinkedQueue();
         }
         batchedParameters.add(parameters);
-        parameters = new BindParameterList(parameters.size());
+        parametersCopied = true;
     }
 
     public ImmutableList<BindParameterList> getBatchedParametersCopy() {
@@ -72,7 +72,7 @@ class PreparedStatementMirror extends StatementMirror {
     }
 
     // remember parameterIndex starts at 1 not 0
-    public void setParameterValue(int parameterIndex, Object object) {
+    public void setParameterValue(int parameterIndex, @Nullable Object object) {
         if (parametersCopied) {
             parameters = BindParameterList.copyOf(parameters);
             parametersCopied = false;

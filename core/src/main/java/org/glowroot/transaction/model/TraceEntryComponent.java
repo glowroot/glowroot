@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import java.util.Deque;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -193,17 +192,5 @@ class TraceEntryComponent {
                 logger.error("popped entire stack, never found entry: {}", entry);
             }
         }
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("activeEntries", activeEntries)
-                .add("startTick", startTick)
-                .add("completed", completed)
-                .add("endTick", endTick)
-                .add("rootTraceEntry", rootTraceEntry)
-                .add("entries", getEntriesCopy())
-                .toString();
     }
 }

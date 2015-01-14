@@ -57,6 +57,8 @@ public abstract class PropertyDescriptor {
         }
         Object value = defaultValue.value();
         if (value == null) {
+            // this actually shouldn't occur since immutables unmarshals null defaultValue as null
+            // as opposed to new PropertyValue(null)
             return PropertyValue.getDefaultValue(type());
         }
         if (isValidType(value, type())) {

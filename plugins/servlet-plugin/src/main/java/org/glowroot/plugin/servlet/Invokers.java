@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,12 +37,45 @@ public class Invokers {
         }
         try {
             return clazz.getMethod(methodName, parameterTypes);
-        } catch (SecurityException e) {
+        } catch (Exception e) {
             logger.warn(e.getMessage(), e);
             return null;
-        } catch (NoSuchMethodException e) {
-            logger.warn(e.getMessage(), e);
-            return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T> T invoke(@Nullable Method method, Object obj, T defaultValue) {
+        if (method == null) {
+            return defaultValue;
+        }
+        try {
+            Object value = method.invoke(obj);
+            if (value == null) {
+                return defaultValue;
+            }
+            return (T) value;
+        } catch (Throwable t) {
+            logger.warn("error calling {}.{}()", method.getDeclaringClass().getName(),
+                    method.getName(), t);
+            return defaultValue;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T> T invoke(@Nullable Method method, Object obj, @Nullable Object arg, T defaultValue) {
+        if (method == null) {
+            return defaultValue;
+        }
+        try {
+            Object value = method.invoke(obj, arg);
+            if (value == null) {
+                return defaultValue;
+            }
+            return (T) value;
+        } catch (Throwable t) {
+            logger.warn("error calling {}.{}()", method.getDeclaringClass().getName(),
+                    method.getName(), t);
+            return defaultValue;
         }
     }
 

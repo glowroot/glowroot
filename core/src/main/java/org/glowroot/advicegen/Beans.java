@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Reflections;
-import org.glowroot.common.Reflections.ReflectiveException;
 
 class Beans {
 
@@ -45,10 +44,7 @@ class Beans {
         try {
             SENTINEL_ACCESSOR =
                     Accessor.fromMethod(Beans.class.getDeclaredMethod("sentinelMethod"));
-        } catch (NoSuchMethodException e) {
-            // unrecoverable error
-            throw new AssertionError(e);
-        } catch (SecurityException e) {
+        } catch (Exception e) {
             // unrecoverable error
             throw new AssertionError(e);
         }
@@ -71,11 +67,12 @@ class Beans {
 
     private Beans() {}
 
-    static @Nullable Object value(@Nullable Object obj, String[] path) {
+    static @Nullable Object value(@Nullable Object obj, String[] path) throws Exception {
         return value(obj, path, 0);
     }
 
-    private static @Nullable Object value(@Nullable Object obj, String[] path, int currIndex) {
+    private static @Nullable Object value(@Nullable Object obj, String[] path, int currIndex)
+            throws Exception {
         if (obj == null) {
             return null;
         }
@@ -86,27 +83,21 @@ class Beans {
         if (obj instanceof Map) {
             return value(((Map<?, ?>) obj).get(curr), path, currIndex + 1);
         }
-        try {
-            Accessor accessor = getAccessor(obj.getClass(), curr);
-            if (accessor.equals(SENTINEL_ACCESSOR)) {
-                // no appropriate method found, dynamic paths that may or may not resolve
-                // correctly are ok, just return null
-                return null;
-            }
-            Object currItem = accessor.evaluate(obj);
-            return value(currItem, path, currIndex + 1);
-        } catch (ReflectiveException e) {
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
-            return "<could not access>";
+        Accessor accessor = getAccessor(obj.getClass(), curr);
+        if (accessor.equals(SENTINEL_ACCESSOR)) {
+            // no appropriate method found, dynamic paths that may or may not resolve
+            // correctly are ok, just return null
+            return null;
         }
+        Object currItem = accessor.evaluate(obj);
+        return value(currItem, path, currIndex + 1);
     }
 
     private static Accessor getAccessor(Class<?> clazz, String name) {
         ConcurrentMap<String, Accessor> accessorsForType = getters.getUnchecked(clazz);
         Accessor accessor = accessorsForType.get(name);
         if (accessor == null) {
-            accessor = findAccessor(clazz, name);
+            accessor = loadPossiblyArrayBasedAccessor(clazz, name);
             if (accessor == null) {
                 accessor = SENTINEL_ACCESSOR;
             }
@@ -115,7 +106,7 @@ class Beans {
         return accessor;
     }
 
-    static @Nullable Accessor findAccessor(Class<?> clazz, String name) {
+    static @Nullable Accessor loadPossiblyArrayBasedAccessor(Class<?> clazz, String name) {
         if (clazz.getComponentType() != null && name.equals("length")) {
             return Accessor.arrayLength();
         }
@@ -123,40 +114,41 @@ class Beans {
         while (componentType.getComponentType() != null) {
             componentType = componentType.getComponentType();
         }
+        return loadAccessor(componentType, name);
+    }
+
+    private static @Nullable Accessor loadAccessor(Class<?> clazz, String name) {
         String capitalizedName = Character.toUpperCase(name.charAt(0)) + name.substring(1);
         try {
-            Method method = Reflections.getAnyMethod(componentType, "get" + capitalizedName);
+            Method method = Reflections.getAnyMethod(clazz, "get" + capitalizedName);
             return Accessor.fromMethod(method);
-        } catch (ReflectiveException e) {
+        } catch (Exception e) {
             // log exception at trace level
             logger.trace(e.getMessage(), e);
         }
-        // fall back to "is" prefix
         try {
-            Method method = Reflections.getAnyMethod(componentType, "is" + capitalizedName);
+            Method method = Reflections.getAnyMethod(clazz, "is" + capitalizedName);
             return Accessor.fromMethod(method);
-        } catch (ReflectiveException f) {
+        } catch (Exception f) {
             // log exception at trace level
             logger.trace(f.getMessage(), f);
         }
-        // fall back to no prefix
         try {
-            Method method = Reflections.getAnyMethod(componentType, name);
+            Method method = Reflections.getAnyMethod(clazz, name);
             return Accessor.fromMethod(method);
-        } catch (ReflectiveException g) {
+        } catch (Exception g) {
             // log exception at trace level
             logger.trace(g.getMessage(), g);
         }
-        // fall back to field access
         try {
-            Field field = Reflections.getAnyField(componentType, name);
+            Field field = Reflections.getAnyField(clazz, name);
             return Accessor.fromField(field);
-        } catch (ReflectiveException h) {
+        } catch (Exception h) {
             // log exception at trace level
             logger.trace(h.getMessage(), h);
         }
         // log general failure message at debug level
-        logger.debug("no accessor found for {} in class {}", name, componentType.getName());
+        logger.debug("no accessor found for {} in class {}", name, clazz.getName());
         return null;
     }
 

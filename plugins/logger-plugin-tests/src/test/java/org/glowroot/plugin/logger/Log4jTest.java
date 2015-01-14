@@ -277,24 +277,51 @@ public class Log4jTest {
         TraceEntry warnEntry = entries.get(1);
         assertThat(warnEntry.getMessage().getText())
                 .isEqualTo("log warn (localized): def____ [d, e, f]");
-        assertThat(warnEntry.getError().getText())
-                .isEqualTo("456__");
+        assertThat(warnEntry.getError().getText()).isEqualTo("456__");
         assertThat(warnEntry.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
 
         TraceEntry errorEntry = entries.get(2);
         assertThat(errorEntry.getMessage().getText())
                 .isEqualTo("log error (localized): efg____ [e, f, g]");
-        assertThat(errorEntry.getError().getText())
-                .isEqualTo("567__");
+        assertThat(errorEntry.getError().getText()).isEqualTo("567__");
         assertThat(errorEntry.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
 
         TraceEntry fatalEntry = entries.get(3);
         assertThat(fatalEntry.getMessage().getText())
                 .isEqualTo("log fatal (localized): fgh____ [f, g, h]");
-        assertThat(fatalEntry.getError().getText())
-                .isEqualTo("678__");
+        assertThat(fatalEntry.getError().getText()).isEqualTo("678__");
+        assertThat(fatalEntry.getError().getException().getStackTrace().get(0))
+                .contains("traceMarker");
+    }
+
+    @Test
+    public void testLocalizedLogWithEmptyParameters() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ShouldLocalizedLogWithEmptyParameters.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(trace.getError()).isEqualTo("efg____");
+        assertThat(entries).hasSize(4);
+
+        TraceEntry warnEntry = entries.get(1);
+        assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn (localized): def____");
+        assertThat(warnEntry.getError().getText()).isEqualTo("456__");
+        assertThat(warnEntry.getError().getException().getStackTrace().get(0))
+                .contains("traceMarker");
+
+        TraceEntry errorEntry = entries.get(2);
+        assertThat(errorEntry.getMessage().getText()).isEqualTo("log error (localized): efg____");
+        assertThat(errorEntry.getError().getText()).isEqualTo("567__");
+        assertThat(errorEntry.getError().getException().getStackTrace().get(0))
+                .contains("traceMarker");
+
+        TraceEntry fatalEntry = entries.get(3);
+        assertThat(fatalEntry.getMessage().getText()).isEqualTo("log fatal (localized): fgh____");
+        assertThat(fatalEntry.getError().getText()).isEqualTo("678__");
         assertThat(fatalEntry.getError().getException().getStackTrace().get(0))
                 .contains("traceMarker");
     }
@@ -335,6 +362,46 @@ public class Log4jTest {
         // when
         container.executeAppUnderTest(ShouldLog.class);
         // then
+        assertNoLogTraceEntries();
+        // when
+        container.executeAppUnderTest(ShouldLogWithThrowable.class);
+        // then
+        assertNoLogTraceEntries();
+        // when
+        container.executeAppUnderTest(ShouldLogWithNullThrowable.class);
+        // then
+        assertNoLogTraceEntries();
+        // when
+        container.executeAppUnderTest(ShouldLogWithPriority.class);
+        // then
+        assertNoLogTraceEntries();
+        // when
+        container.executeAppUnderTest(ShouldLogWithPriorityAndThrowable.class);
+        // then
+        assertNoLogTraceEntries();
+        // when
+        container.executeAppUnderTest(ShouldLogWithPriorityAndNullThrowable.class);
+        // then
+        assertNoLogTraceEntries();
+        // when
+        container.executeAppUnderTest(ShouldLocalizedLogWithNullThrowable.class);
+        // then
+        assertNoLogTraceEntries();
+        // when
+        container.executeAppUnderTest(ShouldLocalizedLogWithParameters.class);
+        // then
+        assertNoLogTraceEntries();
+        // when
+        container.executeAppUnderTest(ShouldLocalizedLogWithEmptyParameters.class);
+        // then
+        assertNoLogTraceEntries();
+        // when
+        container.executeAppUnderTest(ShouldLocalizedLogWithParametersAndNullThrowable.class);
+        // then
+        assertNoLogTraceEntries();
+    }
+
+    private static void assertNoLogTraceEntries() throws Exception {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
@@ -399,6 +466,14 @@ public class Log4jTest {
         }
         @Override
         public void traceMarker() {
+            try {
+                logger.log(null, "abc__");
+            } catch (NullPointerException e) {
+                // re-throw if it does not originate from log4j
+                if (!e.getStackTrace()[0].getClassName().startsWith("org.apache.log4j.")) {
+                    throw e;
+                }
+            }
             logger.log(Level.TRACE, "abc__");
             logger.log(Level.DEBUG, "bcd__");
             logger.log(Level.INFO, "cde__");
@@ -417,6 +492,14 @@ public class Log4jTest {
         }
         @Override
         public void traceMarker() {
+            try {
+                logger.log(null, "abc___", new IllegalStateException("123_"));
+            } catch (NullPointerException e) {
+                // re-throw if it does not originate from log4j
+                if (!e.getStackTrace()[0].getClassName().startsWith("org.apache.log4j.")) {
+                    throw e;
+                }
+            }
             logger.log(Level.TRACE, "abc___", new IllegalStateException("123_"));
             logger.log(Level.DEBUG, "bcd___", new IllegalStateException("234_"));
             logger.log(Level.INFO, "cde___", new IllegalStateException("345_"));
@@ -452,6 +535,14 @@ public class Log4jTest {
         }
         @Override
         public void traceMarker() {
+            try {
+                logger.l7dlog(null, "abc____", new IllegalStateException("123__"));
+            } catch (NullPointerException e) {
+                // re-throw if it does not originate from log4j
+                if (!e.getStackTrace()[0].getClassName().startsWith("org.apache.log4j.")) {
+                    throw e;
+                }
+            }
             logger.l7dlog(Level.TRACE, "abc____", new IllegalStateException("123__"));
             logger.l7dlog(Level.DEBUG, "bcd____", new IllegalStateException("234__"));
             logger.l7dlog(Level.INFO, "cde____", new IllegalStateException("345__"));
@@ -488,6 +579,15 @@ public class Log4jTest {
         }
         @Override
         public void traceMarker() {
+            try {
+                logger.l7dlog(null, "abc____", new Object[] {"a", "b", "c"},
+                        new IllegalStateException("123__"));
+            } catch (NullPointerException e) {
+                // re-throw if it does not originate from log4j
+                if (!e.getStackTrace()[0].getClassName().startsWith("org.apache.log4j.")) {
+                    throw e;
+                }
+            }
             logger.l7dlog(Level.TRACE, "abc____", new Object[] {"a", "b", "c"},
                     new IllegalStateException("123__"));
             logger.l7dlog(Level.DEBUG, "bcd____", new Object[] {"b", "c", "d"},
@@ -499,6 +599,39 @@ public class Log4jTest {
             logger.l7dlog(Level.ERROR, "efg____", new Object[] {"e", "f", "g"},
                     new IllegalStateException("567__"));
             logger.l7dlog(Level.FATAL, "fgh____", new Object[] {"f", "g", "h"},
+                    new IllegalStateException("678__"));
+        }
+    }
+
+    public static class ShouldLocalizedLogWithEmptyParameters implements AppUnderTest, TraceMarker {
+        private static final Logger logger =
+                Logger.getLogger(ShouldLocalizedLogWithEmptyParameters.class);
+        @Override
+        public void executeApp() {
+            traceMarker();
+        }
+        @Override
+        public void traceMarker() {
+            try {
+                logger.l7dlog(null, "abc____", new Object[] {"a", "b", "c"},
+                        new IllegalStateException("123__"));
+            } catch (NullPointerException e) {
+                // re-throw if it does not originate from log4j
+                if (!e.getStackTrace()[0].getClassName().startsWith("org.apache.log4j.")) {
+                    throw e;
+                }
+            }
+            logger.l7dlog(Level.TRACE, "abc____", new Object[] {},
+                    new IllegalStateException("123__"));
+            logger.l7dlog(Level.DEBUG, "bcd____", new Object[] {},
+                    new IllegalStateException("234__"));
+            logger.l7dlog(Level.INFO, "cde____", new Object[] {},
+                    new IllegalStateException("345__"));
+            logger.l7dlog(Level.WARN, "def____", new Object[] {},
+                    new IllegalStateException("456__"));
+            logger.l7dlog(Level.ERROR, "efg____", new Object[] {},
+                    new IllegalStateException("567__"));
+            logger.l7dlog(Level.FATAL, "fgh____", new Object[] {},
                     new IllegalStateException("678__"));
         }
     }

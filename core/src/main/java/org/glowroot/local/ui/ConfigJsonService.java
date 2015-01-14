@@ -16,7 +16,6 @@
 package org.glowroot.local.ui;
 
 import java.io.File;
-import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.Map;
 
@@ -56,6 +55,7 @@ import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.transaction.TransactionModule;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static org.jboss.netty.handler.codec.http.HttpResponseStatus.PRECONDITION_FAILED;
 
 @JsonService
@@ -207,47 +207,17 @@ class ConfigJsonService {
     String updateUserInterfaceConfig(String content, HttpResponse response) throws Exception {
         // this code cannot be reached when httpServer is null
         checkNotNull(httpServer);
-        UserInterfaceConfigDto configDto =
-                Marshaling.fromJson(content, UserInterfaceConfigDto.class);
-        ImmutableUserInterfaceConfig.Builder builder = ImmutableUserInterfaceConfig.builder()
-                .defaultTransactionType(configDto.defaultTransactionType())
-                .port(configDto.port())
-                .sessionTimeoutMinutes(configDto.sessionTimeoutMinutes());
-        UserInterfaceConfig priorConfig = configService.getUserInterfaceConfig();
-        if (configDto.currentPassword().length() > 0 || configDto.newPassword().length() > 0) {
-            try {
-                builder.passwordHash(verifyAndGenerateNewPasswordHash(configDto.currentPassword(),
-                        configDto.newPassword(), priorConfig.passwordHash()));
-            } catch (CurrentPasswordIncorrectException e) {
-                return "{\"currentPasswordIncorrect\":true}";
-            }
-        } else {
-            builder.passwordHash(priorConfig.passwordHash());
-        }
-        UserInterfaceConfig config = builder.build();
         try {
-            configService.updateUserInterfaceConfig(config, configDto.version());
+            updateUserInterfaceConfigInternal(content, response);
+            return getUserInterface(false);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
+        } catch (CurrentPasswordIncorrectException e) {
+            return "{\"currentPasswordIncorrect\":true}";
+        } catch (PortChangeFailedException e) {
+            logger.error(e.getMessage(), e);
+            return getUserInterface(true);
         }
-        // only create/delete session on successful update
-        if (!priorConfig.passwordEnabled() && config.passwordEnabled()) {
-            httpSessionManager.createSession(response);
-        } else if (priorConfig.passwordEnabled() && !config.passwordEnabled()) {
-            httpSessionManager.clearAllSessions();
-            httpSessionManager.deleteSessionCookie(response);
-        }
-        // lastly deal with ui port change
-        if (priorConfig.port() != config.port()) {
-            try {
-                httpServer.changePort(config.port());
-                response.headers().set("Glowroot-Port-Changed", "true");
-            } catch (PortChangeFailedException e) {
-                logger.error(e.getMessage(), e);
-                return getUserInterface(true);
-            }
-        }
-        return getUserInterface(false);
     }
 
     @POST("/backend/config/advanced")
@@ -273,6 +243,39 @@ class ConfigJsonService {
     }
 
     @RequiresNonNull("httpServer")
+    private void updateUserInterfaceConfigInternal(String content, HttpResponse response)
+            throws Exception {
+        UserInterfaceConfigDto configDto =
+                Marshaling.fromJson(content, UserInterfaceConfigDto.class);
+        UserInterfaceConfig priorConfig = configService.getUserInterfaceConfig();
+        ImmutableUserInterfaceConfig.Builder builder = ImmutableUserInterfaceConfig.builder()
+                .defaultTransactionType(configDto.defaultTransactionType())
+                .port(configDto.port())
+                .sessionTimeoutMinutes(configDto.sessionTimeoutMinutes());
+        if (configDto.currentPassword().length() > 0 || configDto.newPassword().length() > 0) {
+            PasswordHelper passwordHelper = new PasswordHelper(configDto.currentPassword(),
+                    configDto.newPassword(), priorConfig.passwordHash());
+            builder.passwordHash(passwordHelper.verifyAndGenerateNewPasswordHash());
+        } else {
+            builder.passwordHash(priorConfig.passwordHash());
+        }
+        UserInterfaceConfig config = builder.build();
+        configService.updateUserInterfaceConfig(config, configDto.version());
+        // only create/delete session on successful update
+        if (!priorConfig.passwordEnabled() && config.passwordEnabled()) {
+            httpSessionManager.createSession(response);
+        } else if (priorConfig.passwordEnabled() && !config.passwordEnabled()) {
+            httpSessionManager.clearAllSessions();
+            httpSessionManager.deleteSessionCookie(response);
+        }
+        // lastly deal with ui port change
+        if (priorConfig.port() != config.port()) {
+            httpServer.changePort(config.port());
+            response.headers().set("Glowroot-Port-Changed", "true");
+        }
+    }
+
+    @RequiresNonNull("httpServer")
     private String getUserInterface(boolean portChangeFailed) {
         UserInterfaceConfig config = configService.getUserInterfaceConfig();
         UserInterfaceConfigDto configDto = ImmutableUserInterfaceConfigDto.builder()
@@ -289,31 +292,48 @@ class ConfigJsonService {
                 .build());
     }
 
-    private static String verifyAndGenerateNewPasswordHash(String currentPassword,
-            String newPassword, String originalPasswordHash) throws GeneralSecurityException,
-            CurrentPasswordIncorrectException {
-        if (currentPassword.isEmpty() && !newPassword.isEmpty()) {
-            // enabling password
-            if (!originalPasswordHash.isEmpty()) {
+    private static class PasswordHelper {
+
+        private final String currentPassword;
+        private final String newPassword;
+        private final String originalPasswordHash;
+
+        private PasswordHelper(String currentPassword, String newPassword,
+                String originalPasswordHash) {
+            this.currentPassword = currentPassword;
+            this.newPassword = newPassword;
+            this.originalPasswordHash = originalPasswordHash;
+        }
+
+        private String verifyAndGenerateNewPasswordHash() throws Exception {
+            if (enablePassword()) {
                 // UI validation prevents this from happening
-                throw new IllegalStateException("Password is already enabled");
+                checkState(originalPasswordHash.isEmpty(), "Password is already enabled");
+                return PasswordHash.createHash(newPassword);
             }
-            return PasswordHash.createHash(newPassword);
-        } else if (!currentPassword.isEmpty() && newPassword.isEmpty()) {
-            // disabling password
             if (!PasswordHash.validatePassword(currentPassword, originalPasswordHash)) {
                 throw new CurrentPasswordIncorrectException();
             }
-            return "";
-        } else if (currentPassword.isEmpty() && newPassword.isEmpty()) {
+            if (disablePassword()) {
+                return "";
+            }
+            if (changePassword()) {
+                return PasswordHash.createHash(newPassword);
+            }
             // UI validation prevents this from happening
             throw new IllegalStateException("Current and new password are both empty");
-        } else {
-            // changing password
-            if (!PasswordHash.validatePassword(currentPassword, originalPasswordHash)) {
-                throw new CurrentPasswordIncorrectException();
-            }
-            return PasswordHash.createHash(newPassword);
+        }
+
+        private boolean enablePassword() {
+            return currentPassword.isEmpty() && !newPassword.isEmpty();
+        }
+
+        private boolean disablePassword() {
+            return !currentPassword.isEmpty() && newPassword.isEmpty();
+        }
+
+        private boolean changePassword() {
+            return !currentPassword.isEmpty() && !newPassword.isEmpty();
         }
     }
 

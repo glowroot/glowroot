@@ -36,6 +36,33 @@ public class GaugeTest extends WebDriverTest {
         configSidebar.getGaugesLink().click();
 
         // when
+        createGauge(gaugeListPage);
+    }
+
+    @Test
+    public void shouldAddDuplicateGauge() throws Exception {
+        // given
+        App app = new App(driver, "http://localhost:" + container.getUiPort());
+        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+        GaugeListPage gaugeListPage = new GaugeListPage(driver);
+
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getGaugesLink().click();
+
+        createGauge(gaugeListPage);
+
+        // when
+        int numSections = gaugeListPage.getNumSections();
+        gaugeListPage.getAddGaugeButton().click();
+        GaugeSection gaugeSection = gaugeListPage.getSection(numSections);
+        gaugeSection.getMBeanObjectNameTextField().sendKeys("ClassLoading");
+        gaugeSection.clickMBeanObjectNameAutoCompleteItem("java.lang:type=ClassLoading");
+        gaugeSection.getDuplicateMBeanMessage();
+    }
+
+    private void createGauge(GaugeListPage gaugeListPage) {
         int numSections = gaugeListPage.getNumSections();
         gaugeListPage.getAddGaugeButton().click();
         GaugeSection gaugeSection = gaugeListPage.getSection(numSections);

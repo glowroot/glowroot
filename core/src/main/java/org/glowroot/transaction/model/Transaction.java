@@ -21,7 +21,6 @@ import java.util.List;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -41,6 +40,8 @@ import org.glowroot.common.Ticker;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.transaction.model.GcInfoComponent.GcInfo;
 import org.glowroot.transaction.model.ThreadInfoComponent.ThreadInfoData;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 // contains all data that has been captured for a given transaction (e.g. a servlet request)
 //
@@ -164,11 +165,9 @@ public class Transaction {
     public String getHeadline() {
         MessageSupplier messageSupplier =
                 traceEntryComponent.getRootTraceEntry().getMessageSupplier();
-        if (messageSupplier == null) {
-            // this should be impossible since entry.getMessageSupplier() is only null when the
-            // entry was created using addErrorEntry()
-            throw new AssertionError("Somehow got hold of an error entry??");
-        }
+        // messageSupplier should never be null since entry.getMessageSupplier() is only null when
+        // the entry was created using addErrorEntry()
+        checkNotNull(messageSupplier);
         return ((ReadableMessage) messageSupplier.get()).getText();
     }
 
@@ -393,27 +392,5 @@ public class Transaction {
 
     public long getCaptureTime() {
         return captureTime;
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("id", id)
-                .add("startTime", startTime)
-                .add("transactionType", transactionType)
-                .add("explicitSetTransactionType", explicitSetTransactionType)
-                .add("transactionName", transactionName)
-                .add("explicitSetTransactionName", explicitSetTransactionName)
-                .add("error", error)
-                .add("user", user)
-                .add("customAttributes", customAttributes)
-                .add("rootMetric", rootMetric)
-                .add("threadInfoComponent", threadInfoComponent)
-                .add("gcInfoComponent", gcInfoComponent)
-                .add("traceEntryComponent", traceEntryComponent)
-                .add("profile", profile)
-                .add("userProfileRunnable", userProfileRunnable)
-                .add("immedateTraceStoreRunnable", immedateTraceStoreRunnable)
-                .toString();
     }
 }

@@ -20,6 +20,8 @@ import java.util.Enumeration;
 
 import javax.annotation.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
 import org.glowroot.plugin.servlet.Invokers.EmptyStringEnumeration;
@@ -32,44 +34,26 @@ public class SessionInvoker {
     private final @Nullable Method getAttributeNamesMethod;
 
     public SessionInvoker(Class<?> clazz) {
-        Class<?> httpSessionClass = null;
-        try {
-            httpSessionClass =
-                    Class.forName("javax.servlet.http.HttpSession", false, clazz.getClassLoader());
-        } catch (ClassNotFoundException e) {
-            logger.warn(e.getMessage(), e);
-        }
+        Class<?> httpSessionClass = getHttpSessionClass(clazz);
         getAttributeMethod = Invokers.getMethod(httpSessionClass, "getAttribute", String.class);
         getAttributeNamesMethod = Invokers.getMethod(httpSessionClass, "getAttributeNames");
     }
 
     public @Nullable Object getAttribute(Object session, String name) {
-        if (getAttributeMethod == null) {
-            return null;
-        }
-        try {
-            return getAttributeMethod.invoke(session, name);
-        } catch (Throwable t) {
-            logger.warn("error calling HttpSession.getAttribute()", t);
-            return null;
-        }
+        return Invokers.invoke(getAttributeMethod, session, name, null);
     }
 
-    @SuppressWarnings("unchecked")
     public Enumeration<String> getAttributeNames(Object session) {
-        if (getAttributeNamesMethod == null) {
-            return EmptyStringEnumeration.INSTANCE;
-        }
+        return Invokers.invoke(getAttributeNamesMethod, session, EmptyStringEnumeration.INSTANCE);
+    }
+
+    @VisibleForTesting
+    static @Nullable Class<?> getHttpSessionClass(Class<?> clazz) {
         try {
-            Enumeration<String> attributeNames =
-                    (Enumeration<String>) getAttributeNamesMethod.invoke(session);
-            if (attributeNames == null) {
-                return EmptyStringEnumeration.INSTANCE;
-            }
-            return attributeNames;
-        } catch (Throwable t) {
-            logger.warn("error calling HttpSession.getAttributeNames()", t);
-            return EmptyStringEnumeration.INSTANCE;
+            return Class.forName("javax.servlet.http.HttpSession", false, clazz.getClassLoader());
+        } catch (ClassNotFoundException e) {
+            logger.warn(e.getMessage(), e);
         }
+        return null;
     }
 }

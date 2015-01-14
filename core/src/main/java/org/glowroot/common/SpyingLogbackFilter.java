@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.markers.OnlyUsedByTests;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 // this is needed in glowroot-core so that the references to logback classes will be shaded whenever
 // glowroot-core is shaded
@@ -87,19 +89,19 @@ public class SpyingLogbackFilter extends Filter<ILoggingEvent> {
         }
     }
 
+    public static boolean active() {
+        return getSpyingLogbackFilter() != null;
+    }
+
     public static void addExpectedMessage(String loggerName, String partialMessage) {
         SpyingLogbackFilter spyingLogbackFilter = getSpyingLogbackFilter();
-        if (spyingLogbackFilter == null) {
-            throw new IllegalStateException("SpyingLogbackFilter.init() was never called");
-        }
+        checkNotNull(spyingLogbackFilter, "SpyingLogbackFilter.init() was never called");
         spyingLogbackFilter.expectedMessages.add(new ExpectedMessage(loggerName, partialMessage));
     }
 
     public static MessageCount clearMessages() {
         SpyingLogbackFilter spyingLogbackFilter = getSpyingLogbackFilter();
-        if (spyingLogbackFilter == null) {
-            throw new IllegalStateException("SpyingLogbackFilter.init() was never called");
-        }
+        checkNotNull(spyingLogbackFilter, "SpyingLogbackFilter.init() was never called");
         MessageCount counts = new MessageCount(spyingLogbackFilter.expectedMessages.size(),
                 spyingLogbackFilter.unexpectedMessageCount.get());
         spyingLogbackFilter.expectedMessages.clear();

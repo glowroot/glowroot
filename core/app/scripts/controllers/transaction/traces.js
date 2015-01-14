@@ -30,10 +30,6 @@ glowroot.controller('TracesCtrl', [
 
     $scope.$parent.activeTabItem = 'traces';
 
-    // this is needed when click occurs on sidebar b/c it doesn't reload template in that case but still need
-    // to update transactionName
-    $scope.$parent.transactionName = $location.search()['transaction-name'];
-
     var plot;
 
     var currentRefreshId = 0;
@@ -117,10 +113,6 @@ glowroot.controller('TracesCtrl', [
           })
           .error(function (data, status) {
             $scope.showChartSpinner--;
-            if (refreshId !== currentRefreshId) {
-              return;
-            }
-            $scope.chartLimitExceeded = false;
             httpErrors.handler($scope, deferred)(data, status);
           });
     }
@@ -268,7 +260,6 @@ glowroot.controller('TracesCtrl', [
     $chart.bind('plotclick', function (event, pos, item) {
       if (item) {
         plot.unhighlight();
-        // TODO highlight with bolder or larger outline
         plot.highlight(item.series, item.datapoint);
         showTrace(item);
       }
