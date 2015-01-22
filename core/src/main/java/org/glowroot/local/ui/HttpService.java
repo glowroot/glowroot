@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,12 @@ package org.glowroot.local.ui;
 
 import javax.annotation.Nullable;
 
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponse;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpRequest;
 
 interface HttpService {
 
     @Nullable
-    HttpResponse handleRequest(HttpRequest request, Channel channel) throws Exception;
+    FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request) throws Exception;
 }

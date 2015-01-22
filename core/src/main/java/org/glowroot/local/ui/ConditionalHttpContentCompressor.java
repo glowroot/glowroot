@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,23 +18,21 @@ package org.glowroot.local.ui;
 import javax.annotation.Nullable;
 
 import com.google.common.net.MediaType;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.handler.codec.embedder.EncoderEmbedder;
-import org.jboss.netty.handler.codec.http.HttpContentCompressor;
-import org.jboss.netty.handler.codec.http.HttpMessage;
+import io.netty.handler.codec.http.HttpContentCompressor;
+import io.netty.handler.codec.http.HttpResponse;
 
-import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
+import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 
 class ConditionalHttpContentCompressor extends HttpContentCompressor {
 
     @Override
-    protected @Nullable EncoderEmbedder<ChannelBuffer> newContentEncoder(HttpMessage msg,
-            String acceptEncoding) throws Exception {
-        String contentType = msg.headers().get(CONTENT_TYPE);
+    protected @Nullable Result beginEncode(HttpResponse response, String acceptEncoding)
+            throws Exception {
+        String contentType = response.headers().get(CONTENT_TYPE);
         if (contentType != null && contentType.equals(MediaType.ZIP.toString())) {
             // don't compress already zipped content
             return null;
         }
-        return super.newContentEncoder(msg, acceptEncoding);
+        return super.beginEncode(response, acceptEncoding);
     }
 }

@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
@@ -60,11 +61,11 @@ public class LocalContainer implements Container {
     private final GlowrootModule glowrootModule;
 
     public static Container createWithFileDb(File dataDir) throws Exception {
-        return new LocalContainer(dataDir, true, 0, false);
+        return new LocalContainer(dataDir, true, 0, false, ImmutableMap.<String, String>of());
     }
 
-    public LocalContainer(@Nullable File dataDir, boolean useFileDb, int port, boolean shared)
-            throws Exception {
+    public LocalContainer(@Nullable File dataDir, boolean useFileDb, int port, boolean shared,
+            Map<String, String> extraProperties) throws Exception {
         if (dataDir == null) {
             this.dataDir = TempDirs.createTempDir("glowroot-test-datadir");
             deleteDataDirOnClose = true;
@@ -83,6 +84,7 @@ public class LocalContainer implements Container {
         if (!useFileDb) {
             properties.put("internal.h2.memdb", "true");
         }
+        properties.putAll(extraProperties);
         try {
             MainEntryPoint.start(properties);
         } catch (org.glowroot.GlowrootModule.StartupFailedException e) {

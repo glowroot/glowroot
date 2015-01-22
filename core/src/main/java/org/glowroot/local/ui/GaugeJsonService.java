@@ -49,7 +49,7 @@ import org.glowroot.config.ImmutableGauge;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
+import static io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
 
 @JsonService
 class GaugeJsonService {

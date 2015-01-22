@@ -68,7 +68,7 @@
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
-      <version>1.4.184</version>
+      <version>1.4.185</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -86,7 +86,7 @@
     <dependency>
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-jdbc</artifactId>
-      <version>8.0.15</version>
+      <version>8.0.17</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

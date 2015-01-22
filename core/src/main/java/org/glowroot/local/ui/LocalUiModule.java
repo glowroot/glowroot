@@ -61,7 +61,7 @@ public class LocalUiModule {
             ConfigModule configModule, StorageModule storageModule,
             CollectorModule collectorModule, TransactionModule transactionModule,
             @Nullable Instrumentation instrumentation, Map<String, String> properties,
-            String version) {
+            String version) throws InterruptedException {
 
         ConfigService configService = configModule.getConfigService();
 

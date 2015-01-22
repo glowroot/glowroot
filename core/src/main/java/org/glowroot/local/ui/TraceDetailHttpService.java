@@ -15,24 +15,27 @@
  */
 package org.glowroot.local.ui;
 
-import java.io.StringReader;
 import java.util.List;
 
 import javax.annotation.Nullable;
 
 import com.google.common.io.CharSource;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
-import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponse;
-import org.jboss.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaders.Names;
+import io.netty.handler.codec.http.HttpHeaders.Values;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
-import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 class TraceDetailHttpService implements HttpService {
 
@@ -45,28 +48,27 @@ class TraceDetailHttpService implements HttpService {
     }
 
     @Override
-    public @Nullable HttpResponse handleRequest(HttpRequest request, Channel channel)
+    public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
             throws Exception {
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
-        String path = decoder.getPath();
+        String path = decoder.path();
         String traceComponent = path.substring(path.lastIndexOf('/') + 1);
-        List<String> traceIds = decoder.getParameters().get("trace-id");
+        List<String> traceIds = decoder.parameters().get("trace-id");
         checkNotNull(traceIds, "Missing trace id in query string: %s", request.getUri());
         String traceId = traceIds.get(0);
         logger.debug("handleRequest(): traceComponent={}, traceId={}", traceComponent, traceId);
 
-        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        response.headers().set(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
         CharSource charSource = getDetailCharSource(traceComponent, traceId);
-        HttpServices.preventCaching(response);
-        response.setChunked(true);
-        channel.write(response);
         if (charSource == null) {
-            // UI checks entriesExistence/profileExistence so should not end up here
-            channel.write(ChunkedInputs.fromReader(new StringReader("null")));
-        } else {
-            channel.write(ChunkedInputs.fromReader(charSource.openStream()));
+            return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
         }
+        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+        response.headers().set(Names.TRANSFER_ENCODING, Values.CHUNKED);
+        response.headers().set(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+        HttpServices.preventCaching(response);
+        ctx.write(response);
+        ctx.write(ChunkedInputs.fromReader(charSource.openStream()));
+        // return null to indicate streaming
         return null;
     }
 

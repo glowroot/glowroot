@@ -1,25 +1,23 @@
 import org.checkerframework.checker.nullness.qual.*;
 
 /* ========================================================================== */
-package org.jboss.netty.handler.codec.http;
+package io.netty.handler.codec.http;
 
 public interface HttpHeaders {
     @Nullable String get(String name);
 }
 
 public class HttpContentEncoder {
-    @Nullable EncoderEmbedder<ChannelBuffer> newContentEncoder(HttpMessage msg,
-            String acceptEncoding);
+    @Nullable Result beginEncode(HttpResponse headers, String acceptEncoding);
 }
 
 public class HttpContentCompressor {
-    @Nullable EncoderEmbedder<ChannelBuffer> newContentEncoder(HttpMessage msg,
-            String acceptEncoding);
+    @Nullable Result beginEncode(HttpResponse headers, String acceptEncoding);
 }
 
 /* ========================================================================== */
-package org.jboss.netty.handler.stream;
+package io.netty.handler.stream;
 
-public interface ChunkedInput {
-    @Nullable Object nextChunk();
+public interface ChunkedInput<B> {
+    @Nullable B readChunk(ChannelHandlerContext ctx);
 }

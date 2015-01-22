@@ -17,14 +17,14 @@ package org.glowroot.local.ui;
 
 import java.lang.instrument.Instrumentation;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.ImmutableMap;
-import org.jboss.netty.channel.ChannelException;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +86,7 @@ class LazyHttpServer {
         });
     }
 
-    void initNonLazy(ConfigJsonService configJsonService) {
+    void initNonLazy(ConfigJsonService configJsonService) throws InterruptedException {
         HttpServer httpServer = build();
         initialized = true;
         if (httpServer != null) {
@@ -113,33 +113,25 @@ class LazyHttpServer {
     }
 
     // httpServer is only null if it could not even bind to port 0 (any available port)
-    private @Nullable HttpServer build() {
-        String resourceBase = "org/glowroot/local/ui/app-dist";
-        ImmutableMap.Builder<Pattern, Object> uriMappings = ImmutableMap.builder();
-        // pages
-        uriMappings.put(Pattern.compile("^/$"), indexHtmlHttpService);
-        uriMappings.put(Pattern.compile("^/transaction/.*$"), indexHtmlHttpService);
-        uriMappings.put(Pattern.compile("^/error/.*$"), indexHtmlHttpService);
-        uriMappings.put(Pattern.compile("^/jvm/.*$"), indexHtmlHttpService);
-        uriMappings.put(Pattern.compile("^/config/.*$"), indexHtmlHttpService);
-        uriMappings.put(Pattern.compile("^/login$"), indexHtmlHttpService);
-        // internal resources
-        uriMappings.put(Pattern.compile("^/scripts/(.*)$"), resourceBase + "/scripts/$1");
-        uriMappings.put(Pattern.compile("^/styles/(.*)$"), resourceBase + "/styles/$1");
-        uriMappings.put(Pattern.compile("^/fonts/(.*)$"), resourceBase + "/fonts/$1");
-        uriMappings.put(Pattern.compile("^/favicon\\.([0-9a-f]+)\\.ico$"),
-                resourceBase + "/favicon.$1.ico");
-        uriMappings.put(Pattern.compile("^/sources/(.*)$"), resourceBase + "/sources/$1");
-        // services
+    private @Nullable HttpServer build() throws InterruptedException {
+        Map<Pattern, HttpService> httpServices = Maps.newHashMap();
+        // http services
+        httpServices.put(Pattern.compile("^/$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/transaction/.*$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/error/.*$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/jvm/.*$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/config/.*$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/login$"), indexHtmlHttpService);
         // export service is not bound under /backend since the export url is visible to users
         // as the download url for the export file
-        uriMappings.put(Pattern.compile("^/export/trace/.*$"), traceExportHttpService);
-        uriMappings.put(Pattern.compile("^/backend/trace/entries$"), traceDetailHttpService);
-        uriMappings.put(Pattern.compile("^/backend/trace/profile$"), traceDetailHttpService);
+        httpServices.put(Pattern.compile("^/export/trace/.*$"), traceExportHttpService);
+        httpServices.put(Pattern.compile("^/backend/trace/entries$"), traceDetailHttpService);
+        httpServices.put(Pattern.compile("^/backend/trace/profile$"), traceDetailHttpService);
+        // services
         try {
             return new HttpServer(bindAddress, port, numWorkerThreads, layoutJsonService,
-                    uriMappings.build(), httpSessionManager, jsonServices);
-        } catch (ChannelException e) {
+                    httpServices, httpSessionManager, jsonServices);
+        } catch (Exception e) {
             // binding to the specified port failed and binding to port 0 (any port) failed
             logger.error("error binding to any port, the user interface will not be available", e);
             return null;

@@ -15,7 +15,6 @@
  */
 package org.glowroot.local.ui;
 
-import java.io.IOException;
 import java.net.URL;
 
 import javax.annotation.Nullable;
@@ -23,15 +22,16 @@ import javax.annotation.Nullable;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.io.Resources;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
-import org.jboss.netty.handler.codec.http.HttpHeaders.Names;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponse;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaders.Names;
+import io.netty.handler.codec.http.HttpRequest;
 
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
-import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 class IndexHtmlHttpService implements HttpService {
 
@@ -59,7 +59,8 @@ class IndexHtmlHttpService implements HttpService {
     }
 
     @Override
-    public HttpResponse handleRequest(HttpRequest request, Channel channel) throws IOException {
+    public FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
+            throws Exception {
         URL url = Resources.getResource("org/glowroot/local/ui/app-dist/index.html");
         String indexHtml = Resources.toString(url, Charsets.UTF_8);
         String layout;
@@ -89,14 +90,14 @@ class IndexHtmlHttpService implements HttpService {
                     + "ga('create', '" + googleAnalyticsTrackingId + "', 'auto');"
                     + "</script>\n</body>");
         }
-        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+        ByteBuf content = Unpooled.copiedBuffer(indexHtml, Charsets.ISO_8859_1);
+        FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, content);
         HttpServices.preventCaching(response);
         response.headers().set(Names.CONTENT_TYPE, "text/html; charset=UTF-8");
         response.headers().set(Names.CONTENT_LENGTH, indexHtml.length());
         // X-UA-Compatible must be set via header (as opposed to via meta tag)
         // see https://github.com/h5bp/html5-boilerplate/blob/master/doc/html.md#x-ua-compatible
         response.headers().set("X-UA-Compatible", "IE=edge");
-        response.setContent(ChannelBuffers.copiedBuffer(indexHtml, Charsets.UTF_8));
         return response;
     }
 }

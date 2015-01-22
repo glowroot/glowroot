@@ -28,7 +28,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Maps;
-import org.jboss.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.handler.codec.http.QueryStringDecoder;
 
 import org.glowroot.common.Reflections;
 
@@ -55,7 +55,7 @@ class QueryStrings {
         Class<?> immutableBuilderClass = builder.getClass();
         Map<String, Method> setters = settersCache.getUnchecked(immutableBuilderClass);
         QueryStringDecoder decoder = new QueryStringDecoder('?' + queryString);
-        for (Entry<String, List<String>> entry : decoder.getParameters().entrySet()) {
+        for (Entry<String, List<String>> entry : decoder.parameters().entrySet()) {
             String key = entry.getKey();
             key = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, key);
             // special rule for "-mbean" so that it will convert to "...MBean"

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,26 +28,29 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.handler.codec.http.Cookie;
-import org.jboss.netty.handler.codec.http.CookieDecoder;
-import org.jboss.netty.handler.codec.http.CookieEncoder;
-import org.jboss.netty.handler.codec.http.DefaultCookie;
-import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponse;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.Cookie;
+import io.netty.handler.codec.http.CookieDecoder;
+import io.netty.handler.codec.http.DefaultCookie;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.ServerCookieEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigService;
 
+import static io.netty.handler.codec.http.HttpHeaders.Names.COOKIE;
+import static io.netty.handler.codec.http.HttpHeaders.Names.SET_COOKIE;
+import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.COOKIE;
-import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.SET_COOKIE;
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
-import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 class HttpSessionManager {
 
@@ -67,27 +70,26 @@ class HttpSessionManager {
         this.layoutJsonService = layoutJsonService;
     }
 
-    HttpResponse login(HttpRequest request) throws IOException {
+    FullHttpResponse login(FullHttpRequest request) throws IOException {
         boolean success;
-        String password = request.getContent().toString(Charsets.ISO_8859_1);
+        String password = request.content().toString(Charsets.ISO_8859_1);
         try {
             success = validatePassword(password,
                     configService.getUserInterfaceConfig().passwordHash());
         } catch (GeneralSecurityException e) {
             logger.error(e.getMessage(), e);
-            return new DefaultHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
+            return new DefaultFullHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }
         if (success) {
-            HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-            createSession(response);
             String text = layoutJsonService.getLayout();
-            response.setContent(ChannelBuffers.copiedBuffer(text, Charsets.ISO_8859_1));
+            ByteBuf content = Unpooled.copiedBuffer(text, Charsets.ISO_8859_1);
+            FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, content);
+            createSession(response);
             return response;
         } else {
-            HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
             String text = "{\"incorrectPassword\":true}";
-            response.setContent(ChannelBuffers.copiedBuffer(text, Charsets.ISO_8859_1));
-            return response;
+            ByteBuf content = Unpooled.copiedBuffer(text, Charsets.ISO_8859_1);
+            return new DefaultFullHttpResponse(HTTP_1_1, OK, content);
         }
     }
 
@@ -112,36 +114,32 @@ class HttpSessionManager {
         }
     }
 
-    HttpResponse signOut(HttpRequest request) {
+    FullHttpResponse signOut(HttpRequest request) {
         String sessionId = getSessionId(request);
         if (sessionId != null) {
             sessionExpirations.remove(sessionId);
         }
-        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+        FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK);
         deleteSessionCookie(response);
         return response;
     }
 
     void createSession(HttpResponse response) {
-        CookieEncoder cookieEncoder = new CookieEncoder(true);
         String sessionId = new BigInteger(130, secureRandom).toString(32);
         updateExpiration(sessionId);
         Cookie cookie = new DefaultCookie("GLOWROOT_SESSION_ID", sessionId);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
-        cookieEncoder.addCookie(cookie);
-        response.headers().add(SET_COOKIE, cookieEncoder.encode());
+        response.headers().add(SET_COOKIE, ServerCookieEncoder.encode(cookie));
         purgeExpiredSessions();
     }
 
     void deleteSessionCookie(HttpResponse response) {
-        CookieEncoder cookieEncoder = new CookieEncoder(true);
         Cookie cookie = new DefaultCookie("GLOWROOT_SESSION_ID", "");
         cookie.setHttpOnly(true);
         cookie.setMaxAge(0);
         cookie.setPath("/");
-        cookieEncoder.addCookie(cookie);
-        response.headers().add(SET_COOKIE, cookieEncoder.encode());
+        response.headers().add(SET_COOKIE, ServerCookieEncoder.encode(cookie));
     }
 
     void clearAllSessions() {
@@ -154,7 +152,7 @@ class HttpSessionManager {
         if (cookieHeader == null) {
             return null;
         }
-        Set<Cookie> cookies = new CookieDecoder().decode(cookieHeader);
+        Set<Cookie> cookies = CookieDecoder.decode(cookieHeader);
         for (Cookie cookie : cookies) {
             if (cookie.getName().equals("GLOWROOT_SESSION_ID")) {
                 return cookie.getValue();

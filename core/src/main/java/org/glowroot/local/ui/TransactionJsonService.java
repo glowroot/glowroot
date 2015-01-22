@@ -33,7 +33,6 @@ import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.LazyHistogram;
@@ -131,9 +130,7 @@ class TransactionJsonService {
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeObjectField("profile", profile);
-        jg.writeEndObject();
+        jg.writeObject(profile);
         jg.close();
         return sb.toString();
     }
@@ -203,11 +200,6 @@ class TransactionJsonService {
         AggregateProfileNode profile = aggregateCommonService.getProfile(
                 request.transactionType(), request.transactionName(), request.from(),
                 request.to(), request.truncateLeafPercentage());
-        if (profile == null) {
-            // this should not happen as the user interface checks profile sample count before
-            // sending this request
-            throw new JsonServiceException(HttpResponseStatus.NOT_FOUND, "Profile data not found");
-        }
         AggregateProfileNode interestingNode = profile;
         while (interestingNode.getChildNodes().size() == 1) {
             interestingNode = interestingNode.getChildNodes().get(0);

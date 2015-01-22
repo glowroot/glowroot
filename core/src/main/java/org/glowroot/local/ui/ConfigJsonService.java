@@ -19,13 +19,17 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.FullHttpResponse;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.common.marshal.Marshaling;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
-import org.jboss.netty.handler.codec.http.HttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +60,9 @@ import org.glowroot.transaction.TransactionModule;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.PRECONDITION_FAILED;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpResponseStatus.PRECONDITION_FAILED;
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 @JsonService
 class ConfigJsonService {
@@ -204,20 +210,34 @@ class ConfigJsonService {
     }
 
     @POST("/backend/config/user-interface")
-    String updateUserInterfaceConfig(String content, HttpResponse response) throws Exception {
+    Object updateUserInterfaceConfig(String content) throws Exception {
         // this code cannot be reached when httpServer is null
         checkNotNull(httpServer);
+        UserInterfaceConfigDto configDto =
+                Marshaling.fromJson(content, UserInterfaceConfigDto.class);
+        UserInterfaceConfig priorConfig = configService.getUserInterfaceConfig();
+        ImmutableUserInterfaceConfig.Builder builder = ImmutableUserInterfaceConfig.builder()
+                .defaultTransactionType(configDto.defaultTransactionType())
+                .port(configDto.port())
+                .sessionTimeoutMinutes(configDto.sessionTimeoutMinutes());
+        if (configDto.currentPassword().length() > 0 || configDto.newPassword().length() > 0) {
+            PasswordHelper passwordHelper = new PasswordHelper(configDto.currentPassword(),
+                    configDto.newPassword(), priorConfig.passwordHash());
+            try {
+                builder.passwordHash(passwordHelper.verifyAndGenerateNewPasswordHash());
+            } catch (CurrentPasswordIncorrectException e) {
+                return "{\"currentPasswordIncorrect\":true}";
+            }
+        } else {
+            builder.passwordHash(priorConfig.passwordHash());
+        }
+        UserInterfaceConfig config = builder.build();
         try {
-            updateUserInterfaceConfigInternal(content, response);
-            return getUserInterface(false);
+            configService.updateUserInterfaceConfig(config, configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
-        } catch (CurrentPasswordIncorrectException e) {
-            return "{\"currentPasswordIncorrect\":true}";
-        } catch (PortChangeFailedException e) {
-            logger.error(e.getMessage(), e);
-            return getUserInterface(true);
         }
+        return onSuccessfulUserInterfaceUpdate(priorConfig, config);
     }
 
     @POST("/backend/config/advanced")
@@ -243,24 +263,25 @@ class ConfigJsonService {
     }
 
     @RequiresNonNull("httpServer")
-    private void updateUserInterfaceConfigInternal(String content, HttpResponse response)
-            throws Exception {
-        UserInterfaceConfigDto configDto =
-                Marshaling.fromJson(content, UserInterfaceConfigDto.class);
-        UserInterfaceConfig priorConfig = configService.getUserInterfaceConfig();
-        ImmutableUserInterfaceConfig.Builder builder = ImmutableUserInterfaceConfig.builder()
-                .defaultTransactionType(configDto.defaultTransactionType())
-                .port(configDto.port())
-                .sessionTimeoutMinutes(configDto.sessionTimeoutMinutes());
-        if (configDto.currentPassword().length() > 0 || configDto.newPassword().length() > 0) {
-            PasswordHelper passwordHelper = new PasswordHelper(configDto.currentPassword(),
-                    configDto.newPassword(), priorConfig.passwordHash());
-            builder.passwordHash(passwordHelper.verifyAndGenerateNewPasswordHash());
-        } else {
-            builder.passwordHash(priorConfig.passwordHash());
+    private Object onSuccessfulUserInterfaceUpdate(UserInterfaceConfig priorConfig,
+            UserInterfaceConfig config) {
+        boolean portChangedSucceeded = false;
+        boolean portChangedFailed = false;
+        if (priorConfig.port() != config.port()) {
+            try {
+                httpServer.changePort(config.port());
+                portChangedSucceeded = true;
+            } catch (PortChangeFailedException e) {
+                logger.error(e.getMessage(), e);
+                portChangedFailed = true;
+            }
         }
-        UserInterfaceConfig config = builder.build();
-        configService.updateUserInterfaceConfig(config, configDto.version());
+        String responseText = getUserInterface(portChangedFailed);
+        ByteBuf responseContent = Unpooled.copiedBuffer(responseText, Charsets.ISO_8859_1);
+        FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, responseContent);
+        if (portChangedSucceeded) {
+            response.headers().set("Glowroot-Port-Changed", "true");
+        }
         // only create/delete session on successful update
         if (!priorConfig.passwordEnabled() && config.passwordEnabled()) {
             httpSessionManager.createSession(response);
@@ -268,11 +289,7 @@ class ConfigJsonService {
             httpSessionManager.clearAllSessions();
             httpSessionManager.deleteSessionCookie(response);
         }
-        // lastly deal with ui port change
-        if (priorConfig.port() != config.port()) {
-            httpServer.changePort(config.port());
-            response.headers().set("Glowroot-Port-Changed", "true");
-        }
+        return response;
     }
 
     @RequiresNonNull("httpServer")

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package org.glowroot.local.ui;
 
 import java.lang.annotation.Retention;
 
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpResponseStatus;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
@@ -44,7 +44,7 @@ class JsonServiceException extends RuntimeException {
     private final HttpResponseStatus status;
 
     JsonServiceException(HttpResponseStatus status, Throwable cause) {
-        super(cause);
+        super("", cause);
         this.status = status;
     }
 

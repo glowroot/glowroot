@@ -29,21 +29,26 @@ import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import com.google.common.io.Resources;
 import com.google.common.net.MediaType;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponse;
-import org.jboss.netty.handler.stream.ChunkedInput;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpHeaders.Names;
+import io.netty.handler.codec.http.HttpHeaders.Values;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.stream.ChunkedInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.Trace;
 import org.glowroot.local.ui.TraceCommonService.TraceExport;
 
-import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.OK;
-import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
+import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 class TraceExportHttpService implements HttpService {
 
@@ -56,7 +61,7 @@ class TraceExportHttpService implements HttpService {
     }
 
     @Override
-    public @Nullable HttpResponse handleRequest(HttpRequest request, Channel channel)
+    public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
             throws Exception {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf('/') + 1);
@@ -64,22 +69,22 @@ class TraceExportHttpService implements HttpService {
         TraceExport export = traceCommonService.getExport(id);
         if (export == null) {
             logger.warn("no trace found for id: {}", id);
-            return new DefaultHttpResponse(HTTP_1_1, NOT_FOUND);
+            return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
         }
-        ChunkedInput in = getExportChunkedInput(export);
+        ChunkedInput<HttpContent> in = getExportChunkedInput(export);
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+        response.headers().set(Names.TRANSFER_ENCODING, Values.CHUNKED);
         response.headers().set(CONTENT_TYPE, MediaType.ZIP.toString());
         response.headers().set("Content-Disposition",
                 "attachment; filename=" + getFilename(export.getTrace()) + ".zip");
         HttpServices.preventCaching(response);
-        response.setChunked(true);
-        channel.write(response);
-        channel.write(in);
+        ctx.write(response);
+        ctx.write(in);
         // return null to indicate streaming
         return null;
     }
 
-    private ChunkedInput getExportChunkedInput(TraceExport export) throws IOException {
+    private ChunkedInput<HttpContent> getExportChunkedInput(TraceExport export) throws IOException {
         CharSource charSource = render(export);
         return ChunkedInputs.fromReaderToZipFileDownload(charSource.openStream(),
                 getFilename(export.getTrace()));

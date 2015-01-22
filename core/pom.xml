@@ -68,7 +68,13 @@
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
-      <artifactId>netty</artifactId>
+      <artifactId>netty-all</artifactId>
+    </dependency>
+    <dependency>
+      <!-- optional netty dependency that is required by HttpContentCompressor -->
+      <groupId>com.jcraft</groupId>
+      <artifactId>jzlib</artifactId>
+      <version>1.1.2</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -98,7 +104,7 @@
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
-      <version>1.4.184</version>
+      <version>1.4.185</version>
     </dependency>
     <dependency>
       <groupId>com.ning</groupId>
@@ -163,7 +169,7 @@
       <!-- this is included to test weaving against jdk 1.7 bytecode -->
       <groupId>io.undertow</groupId>
       <artifactId>undertow-core</artifactId>
-      <version>1.2.0.Beta7</version>
+      <version>1.2.0.Beta8</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -399,12 +405,10 @@
                       </excludes>
                     </filter>
                     <filter>
-                      <artifact>io.netty:netty</artifact>
+                      <artifact>io.netty:netty-all</artifact>
                       <excludes>
-                        <exclude>META-INF/jboss-beans.xml</exclude>
-                        <exclude>META-INF/LICENSE.txt</exclude>
-                        <exclude>META-INF/NOTICE.txt</exclude>
-                        <exclude>META-INF/license/**</exclude>
+                        <exclude>META-INF/io.netty.versions.properties</exclude>
+                        <exclude>META-INF/native/**</exclude>
                       </excludes>
                     </filter>
                     <filter>
@@ -489,8 +493,12 @@
                       <shadedPattern>org.glowroot.shaded.fasterxml.jackson</shadedPattern>
                     </relocation>
                     <relocation>
-                      <pattern>org.jboss.netty</pattern>
-                      <shadedPattern>org.glowroot.shaded.jboss.netty</shadedPattern>
+                      <pattern>io.netty</pattern>
+                      <shadedPattern>org.glowroot.shaded.netty</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <pattern>com.jcraft.jzlib</pattern>
+                      <shadedPattern>org.glowroot.shaded.jcraft.jzlib</shadedPattern>
                     </relocation>
                     <relocation>
                       <pattern>org.slf4j</pattern>

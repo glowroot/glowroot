@@ -68,8 +68,8 @@ import static org.objectweb.asm.Opcodes.ACC_NATIVE;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.ASM5;
 
-// TODO need to remove items from classpathURIs and classNames when class loaders are no longer
-// present, e.g. in wildfly after undeploying an application
+// TODO remove items from classpathURIs and classNames when class loaders are no longer present,
+// e.g. in wildfly after undeploying an application
 class ClasspathCache {
 
     private static final Logger logger = LoggerFactory.getLogger(ClasspathCache.class);

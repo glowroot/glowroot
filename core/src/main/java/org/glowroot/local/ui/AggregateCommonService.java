@@ -69,7 +69,6 @@ class AggregateCommonService {
         return new HistogramMergedAggregate(histogram, transactionCount, totalMicros);
     }
 
-    @Nullable
     AggregateProfileNode getProfile(String transactionType, @Nullable String transactionName,
             long from, long to, double truncateLeafPercentage) throws Exception {
         List<CharSource> profiles;
@@ -102,7 +101,7 @@ class AggregateCommonService {
         }
     }
 
-    private @Nullable AggregateProfileNode getProfile(List<CharSource> profiles,
+    private AggregateProfileNode getProfile(List<CharSource> profiles,
             double truncateLeafPercentage) throws IOException {
         AggregateProfileNode syntheticRootNode = AggregateProfileNode.createSyntheticRootNode();
         for (CharSource profile : profiles) {
@@ -124,9 +123,7 @@ class AggregateCommonService {
             int minSamples = (int) (syntheticRootNode.getSampleCount() * truncateLeafPercentage);
             truncateLeafs(syntheticRootNode, minSamples);
         }
-        if (syntheticRootNode.getChildNodes().isEmpty()) {
-            return null;
-        } else if (syntheticRootNode.getChildNodes().size() == 1) {
+        if (syntheticRootNode.getChildNodes().size() == 1) {
             // strip off synthetic root node since only one real root node
             return syntheticRootNode.getChildNodes().get(0);
         } else {

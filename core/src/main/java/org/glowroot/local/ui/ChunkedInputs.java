@@ -27,40 +27,39 @@ import java.util.zip.ZipOutputStream;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.handler.codec.http.DefaultHttpChunk;
-import org.jboss.netty.handler.stream.ChunkedInput;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.DefaultHttpContent;
+import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.stream.ChunkedInput;
 
 class ChunkedInputs {
 
-    static ChunkedInput fromReader(Reader reader) {
+    static ChunkedInput<HttpContent> fromReader(Reader reader) {
         return new ReaderChunkedInput(reader);
     }
 
-    static ChunkedInput fromReaderToZipFileDownload(Reader reader, String filename)
+    static ChunkedInput<HttpContent> fromReaderToZipFileDownload(Reader reader, String filename)
             throws IOException {
         return new ZipFileChunkedInput(reader, filename);
     }
 
     private ChunkedInputs() {}
 
-    private abstract static class BaseChunkedInput implements ChunkedInput {
+    private abstract static class BaseChunkedInput implements ChunkedInput<HttpContent> {
 
         private boolean hasSentTerminatingChunk;
 
         @Override
-        public boolean hasNextChunk() {
-            return !hasSentTerminatingChunk;
-        }
-
-        @Override
-        public @Nullable Object nextChunk() throws IOException {
+        public @Nullable HttpContent readChunk(ChannelHandlerContext ctx) throws IOException {
             if (hasMoreBytes()) {
-                return readNextChunk();
+                return new DefaultHttpContent(readNextChunk());
             } else if (!hasSentTerminatingChunk) {
                 // chunked transfer encoding must be terminated by a final chunk of length zero
                 hasSentTerminatingChunk = true;
-                return new DefaultHttpChunk(ChannelBuffers.EMPTY_BUFFER);
+                return LastHttpContent.EMPTY_LAST_CONTENT;
             } else {
                 return null;
             }
@@ -68,12 +67,12 @@ class ChunkedInputs {
 
         @Override
         public boolean isEndOfInput() {
-            return !hasNextChunk();
+            return hasSentTerminatingChunk;
         }
 
         protected abstract boolean hasMoreBytes() throws IOException;
 
-        protected abstract Object readNextChunk() throws IOException;
+        protected abstract ByteBuf readNextChunk() throws IOException;
 
         private static boolean hasMoreBytes(PushbackReader reader) throws IOException {
             int b = reader.read();
@@ -123,10 +122,9 @@ class ChunkedInputs {
         }
 
         @Override
-        protected Object readNextChunk() throws IOException {
+        public ByteBuf readNextChunk() throws IOException {
             int len = BaseChunkedInput.readFully(reader, buffer);
-            return new DefaultHttpChunk(ChannelBuffers.copiedBuffer(buffer, 0, len,
-                    Charsets.UTF_8));
+            return Unpooled.copiedBuffer(buffer, 0, len, Charsets.ISO_8859_1);
         }
     }
 
@@ -160,7 +158,7 @@ class ChunkedInputs {
         }
 
         @Override
-        protected Object readNextChunk() throws IOException {
+        protected ByteBuf readNextChunk() throws IOException {
             int len = BaseChunkedInput.readFully(reader, buffer);
             // no need to flush, there's no buffering except in ZipOutputStream, and that buffering
             // is for compression and doesn't respond to flush() anyways
@@ -175,7 +173,7 @@ class ChunkedInputs {
             // toByteArray returns a copy so it's ok to reset the ByteArrayOutputStream afterwards
             byte[] bytes = baos.toByteArray();
             baos.reset();
-            return new DefaultHttpChunk(ChannelBuffers.wrappedBuffer(bytes));
+            return Unpooled.wrappedBuffer(bytes);
         }
     }
 }

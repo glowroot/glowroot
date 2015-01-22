@@ -55,7 +55,8 @@ public class UiSandboxMain {
             container = new JavaagentContainer(dataDir, true, 4000, false, false, false,
                     ImmutableList.<String>of());
         } else {
-            container = new LocalContainer(dataDir, true, 4000, false);
+            container = new LocalContainer(dataDir, true, 4000, false,
+                    ImmutableMap.<String, String>of());
         }
         if (initConfig) {
             ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();

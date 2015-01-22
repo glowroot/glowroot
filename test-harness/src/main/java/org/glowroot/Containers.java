@@ -20,6 +20,7 @@ import java.io.File;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +88,7 @@ public class Containers {
         LocalContainer container =
                 (LocalContainer) SharedContainerRunListener.getSharedLocalContainer();
         if (container == null) {
-            container = new LocalContainer(null, false, 0, true);
+            container = new LocalContainer(null, false, 0, true, ImmutableMap.<String, String>of());
             SharedContainerRunListener.setSharedLocalContainer(container);
         } else {
             container.reopen();
@@ -116,7 +117,8 @@ public class Containers {
             case LOCAL:
                 // this is the easiest way to run/debug tests inside of Eclipse
                 logger.debug("create(): using local container");
-                return new LocalContainer(dataDir, useFileDb, 0, shared);
+                return new LocalContainer(dataDir, useFileDb, 0, shared,
+                        ImmutableMap.<String, String>of());
             default:
                 throw new IllegalStateException("Unexpected harness enum value: " + harness);
         }

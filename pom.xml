@@ -75,25 +75,22 @@
       <dependency>
         <groupId>org.immutables</groupId>
         <artifactId>value</artifactId>
-        <version>1.2-SNAPSHOT</version>
+        <version>1.1.2</version>
       </dependency>
       <dependency>
         <groupId>org.immutables</groupId>
         <artifactId>common</artifactId>
-        <version>1.2-SNAPSHOT</version>
+        <version>1.1.2</version>
       </dependency>
       <dependency>
         <groupId>org.immutables</groupId>
         <artifactId>value-standalone</artifactId>
-        <version>1.2-SNAPSHOT</version>
+        <version>1.1.2</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
-        <artifactId>netty</artifactId>
-        <!-- TODO upgrade to netty 4 -->
-        <!-- netty 3.10.0 introduces incompatibility with async-http-client 1.8.15
-             (and async-http-client -->
-        <version>3.9.6.Final</version>
+        <artifactId>netty-all</artifactId>
+        <version>4.0.25.Final</version>
       </dependency>
       <dependency>
         <groupId>com.google.code.findbugs</groupId>
@@ -164,12 +161,12 @@
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-core</artifactId>
-        <version>1.4.1</version>
+        <version>1.4.2</version>
       </dependency>
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-generator-annprocess</artifactId>
-        <version>1.4.1</version>
+        <version>1.4.2</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -419,7 +416,7 @@
         <dependency>
           <groupId>org.immutables</groupId>
           <artifactId>value-standalone</artifactId>
-          <version>1.1</version>
+          <version>1.1.2</version>
           <optional>true</optional>
         </dependency>
       </dependencies>
