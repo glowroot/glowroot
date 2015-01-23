@@ -143,7 +143,7 @@ class LazyHttpServer {
         while (stopwatch.elapsed(SECONDS) < 60) {
             Thread.sleep(100);
             for (Class<?> clazz : instrumentation.getInitiatedClasses(null)) {
-                if (clazz.getName().equals("sun.launcher.LauncherHelper")) {
+                if (clazz.getName().equals("sun.misc.Launcher")) {
                     return;
                 }
             }
