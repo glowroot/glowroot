@@ -59,7 +59,7 @@ public class DataSource {
     private volatile boolean closing = false;
 
     private final LoadingCache</*@Untainted*/String, PreparedStatement> preparedStatementCache =
-            CacheBuilder.newBuilder().weakKeys()
+            CacheBuilder.newBuilder().weakValues()
                     .build(new CacheLoader</*@Untainted*/String, PreparedStatement>() {
                         @Override
                         public PreparedStatement load(@Untainted String sql) throws SQLException {
