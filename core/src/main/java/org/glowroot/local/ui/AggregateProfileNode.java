@@ -15,13 +15,18 @@
  */
 package org.glowroot.local.ui;
 
+import java.io.IOException;
 import java.util.List;
 
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
 
 import org.glowroot.markers.UsedByJsonBinding;
@@ -30,6 +35,7 @@ import static org.glowroot.local.ui.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.local.ui.ObjectMappers.orEmpty;
 
 @UsedByJsonBinding
+@JsonSerialize(using = AggregateProfileNode.Serializer.class)
 class AggregateProfileNode {
 
     // null for synthetic root only
@@ -42,10 +48,6 @@ class AggregateProfileNode {
 
     static AggregateProfileNode createSyntheticRootNode() {
         return new AggregateProfileNode("<multiple root nodes>");
-    }
-
-    static AggregateProfileNode createEllipsedNode() {
-        return new AggregateProfileNode("...");
     }
 
     private AggregateProfileNode(@Nullable String stackTraceElement,
@@ -115,5 +117,41 @@ class AggregateProfileNode {
         checkRequiredProperty(sampleCount, "sampleCount");
         return new AggregateProfileNode(stackTraceElement, leafThreadState, sampleCount,
                 metricNames, childNodes);
+    }
+
+    // optimized serializer, don't output unnecessary false booleans and empty collections
+    static class Serializer extends JsonSerializer<AggregateProfileNode> {
+        @Override
+        public void serialize(AggregateProfileNode value, JsonGenerator gen,
+                SerializerProvider serializers) throws IOException {
+            gen.writeStartObject();
+            gen.writeStringField("stackTraceElement", value.getStackTraceElement());
+            String leafThreadState = value.getLeafThreadState();
+            if (leafThreadState != null) {
+                gen.writeStringField("leafThreadState", value.getLeafThreadState());
+            }
+            gen.writeNumberField("sampleCount", value.getSampleCount());
+            List<String> metricNames = value.getMetricNames();
+            if (!metricNames.isEmpty()) {
+                gen.writeArrayFieldStart("metricNames");
+                for (String metricName : metricNames) {
+                    gen.writeString(metricName);
+                }
+                gen.writeEndArray();
+            }
+            List<AggregateProfileNode> childNodes = value.getChildNodes();
+            if (!childNodes.isEmpty()) {
+                gen.writeArrayFieldStart("childNodes");
+                for (AggregateProfileNode childNode : childNodes) {
+                    serialize(childNode, gen, serializers);
+                }
+                gen.writeEndArray();
+            }
+            boolean ellipsed = value.isEllipsed();
+            if (ellipsed) {
+                gen.writeBooleanField("ellipsed", ellipsed);
+            }
+            gen.writeEndObject();
+        }
     }
 }
