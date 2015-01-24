@@ -203,7 +203,7 @@ public class ConfigTest extends WebDriverTest {
         configSidebar.getAdvancedLink().click();
         // need to give angular view a chance to render before assertions
         Thread.sleep(200);
-        assertThat(page.getMetricWrapperMethodsCheckBox().isSelected()).isFalse();
+        assertThat(page.getMetricWrapperMethodsCheckBox().isSelected()).isTrue();
         assertThat(page.getImmediatePartialStoreThresholdTextField().getAttribute("value"))
                 .isEqualTo("1234");
         assertThat(page.getMaxTraceEntriesPerTransactionTextField().getAttribute("value"))
