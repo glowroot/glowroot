@@ -21,7 +21,9 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.Ordering;
 import com.google.common.hash.Hashing;
+import com.google.common.primitives.Ints;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
 
@@ -29,10 +31,14 @@ import org.glowroot.api.weaving.MethodModifier;
 import org.glowroot.common.Marshaling2;
 import org.glowroot.config.MarshalingRoutines.LowercaseMarshaling;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 @Value.Immutable
 @Json.Marshaled
 @Json.Import(MarshalingRoutines.class)
 public abstract class CapturePoint {
+
+    public static final Ordering<CapturePoint> defaultOrdering = new CapturePointOrdering();
 
     public abstract String className();
     public abstract String methodName();
@@ -107,5 +113,35 @@ public abstract class CapturePoint {
 
     public static enum CaptureKind implements LowercaseMarshaling {
         METRIC, TRACE_ENTRY, TRANSACTION, OTHER
+    }
+
+    private static class CapturePointOrdering extends Ordering<CapturePoint> {
+        @Override
+        public int compare(@Nullable CapturePoint left, @Nullable CapturePoint right) {
+            checkNotNull(left);
+            checkNotNull(right);
+            int compare = left.className().compareToIgnoreCase(right.className());
+            if (compare != 0) {
+                return compare;
+            }
+            compare = left.methodName().compareToIgnoreCase(right.methodName());
+            if (compare != 0) {
+                return compare;
+            }
+            compare = Ints.compare(left.methodParameterTypes().size(),
+                    right.methodParameterTypes().size());
+            if (compare != 0) {
+                return compare;
+            }
+            List<String> leftParameterTypes = left.methodParameterTypes();
+            List<String> rightParameterTypes = left.methodParameterTypes();
+            for (int i = 0; i < leftParameterTypes.size(); i++) {
+                compare = leftParameterTypes.get(i).compareToIgnoreCase(rightParameterTypes.get(i));
+                if (compare != 0) {
+                    return compare;
+                }
+            }
+            return 0;
+        }
     }
 }

@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.immutables.common.marshal.Marshaling;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
@@ -48,6 +49,7 @@ import org.glowroot.local.ui.UiAnalyzedMethod.UiAnalyzedMethodOrdering;
 import org.glowroot.transaction.AdviceCache;
 import org.glowroot.transaction.TransactionModule;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
 
@@ -72,17 +74,27 @@ class CapturePointJsonService {
 
     @GET("/backend/config/capture-points")
     String getCapturePoint() throws Exception {
-        List<CapturePoint> configs = configService.getCapturePoints();
-        List<CapturePointDto> configDtos = Lists.newArrayList();
-        for (CapturePoint config : configs) {
-            configDtos.add(CapturePointDto.fromConfig(config));
+        List<CapturePoint> capturePoints = configService.getCapturePoints();
+        capturePoints = CapturePoint.defaultOrdering.immutableSortedCopy(capturePoints);
+        List<CapturePointDto> dtos = Lists.newArrayList();
+        for (CapturePoint capturePoint : capturePoints) {
+            dtos.add(CapturePointDto.fromConfig(capturePoint));
         }
         return Marshaling2.toJson(ImmutableCapturePointResponse.builder()
-                .addAllConfigs(configDtos)
+                .addAllConfigs(dtos)
                 .jvmOutOfSync(adviceCache.isOutOfSync(configService.getCapturePoints()))
                 .jvmRetransformClassesSupported(
                         transactionModule.isJvmRetransformClassesSupported())
                 .build());
+    }
+
+    @GET("/backend/config/capture-points/([0-9a-f]{40})")
+    String getGauge(String version) {
+        CapturePoint capturePoint = configService.getCapturePoint(version);
+        if (capturePoint == null) {
+            throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
+        }
+        return Marshaling2.toJson(CapturePointDto.fromConfig(capturePoint));
     }
 
     // this is marked as @GET so it can be used without update rights (e.g. demo instance)
@@ -160,7 +172,9 @@ class CapturePointJsonService {
     String updateCapturePoint(String content) throws IOException {
         CapturePointDto capturePointDto = Marshaling.fromJson(content, CapturePointDto.class);
         CapturePoint capturePoint = capturePointDto.toConfig();
-        configService.updateCapturePoint(capturePoint, capturePointDto.version().get());
+        String version = capturePointDto.version();
+        checkNotNull(version, "Missing required request property: version");
+        configService.updateCapturePoint(capturePoint, version);
         return Marshaling2.toJson(CapturePointDto.fromConfig(capturePoint));
     }
 
@@ -263,7 +277,7 @@ class CapturePointJsonService {
         abstract @Nullable Long traceStoreThresholdMillis();
         abstract Optional<String> enabledProperty();
         abstract Optional<String> traceEntryEnabledProperty();
-        abstract Optional<String> version(); // null for insert operations
+        abstract @Nullable String version(); // null for insert operations
 
         private static CapturePointDto fromConfig(CapturePoint config) {
             return ImmutableCapturePointDto.builder()
@@ -310,7 +324,6 @@ class CapturePointJsonService {
                     .enabledProperty(enabledProperty().or(""))
                     .traceEntryEnabledProperty(traceEntryEnabledProperty().or(""))
                     .build();
-
         }
     }
 }

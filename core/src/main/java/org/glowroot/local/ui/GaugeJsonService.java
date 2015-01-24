@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.immutables.common.marshal.Marshaling;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
@@ -67,12 +68,25 @@ class GaugeJsonService {
     }
 
     @GET("/backend/config/gauges")
-    String getGauges() {
-        List<GaugeResponse> responses = Lists.newArrayList();
-        for (Gauge gauge : configService.getGauges()) {
-            responses.add(buildResponse(gauge));
+    String getGaugeList() {
+        List<GaugeWithWarningMessages> responses = Lists.newArrayList();
+        List<Gauge> gauges = configService.getGauges();
+        gauges = Gauge.orderingByName.immutableSortedCopy(gauges);
+        for (Gauge gauge : gauges) {
+            responses.add(ImmutableGaugeWithWarningMessages.builder()
+                    .config(GaugeDto.fromConfig(gauge))
+                    .build());
         }
-        return Marshaling2.toJson(responses, GaugeResponse.class);
+        return Marshaling2.toJson(responses, GaugeWithWarningMessages.class);
+    }
+
+    @GET("/backend/config/gauges/([0-9a-f]{40})")
+    String getGauge(String version) {
+        Gauge gauge = configService.getGauge(version);
+        if (gauge == null) {
+            throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
+        }
+        return Marshaling2.toJson(buildResponse(gauge));
     }
 
     @GET("/backend/config/matching-mbean-objects")
@@ -136,8 +150,8 @@ class GaugeJsonService {
     String updateGauge(String content) throws IOException {
         GaugeDto gaugeDto = Marshaling.fromJson(content, GaugeDto.class);
         Gauge gauge = gaugeDto.toConfig();
-        String version = checkNotNull(gaugeDto.version(),
-                "Missing required request property: version");
+        String version = gaugeDto.version();
+        checkNotNull(version, "Missing required request property: version");
         configService.updateGauge(gauge, version);
         return Marshaling2.toJson(buildResponse(gauge));
     }
@@ -236,6 +250,13 @@ class GaugeJsonService {
 
     @Value.Immutable
     @Json.Marshaled
+    abstract static class GaugeWithWarningMessages {
+        abstract GaugeDto config();
+        abstract List<String> warningMessages();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
     abstract static class MBeanObjectNameRequest {
         abstract String partialMBeanObjectName();
         abstract int limit();
@@ -282,12 +303,12 @@ class GaugeJsonService {
         abstract List<String> mbeanAttributeNames();
         abstract @Nullable String version(); // null for insert operations
 
-        private static GaugeDto fromConfig(Gauge config) {
+        private static GaugeDto fromConfig(Gauge gauge) {
             return ImmutableGaugeDto.builder()
-                    .name(config.name())
-                    .mbeanObjectName(config.mbeanObjectName())
-                    .addAllMbeanAttributeNames(config.mbeanAttributeNames())
-                    .version(config.version())
+                    .name(gauge.name())
+                    .mbeanObjectName(gauge.mbeanObjectName())
+                    .addAllMbeanAttributeNames(gauge.mbeanAttributeNames())
+                    .version(gauge.version())
                     .build();
         }
 

@@ -96,8 +96,26 @@ public class ConfigService {
         return config.gauges();
     }
 
+    public @Nullable Gauge getGauge(String version) {
+        for (Gauge gauge : config.gauges()) {
+            if (gauge.version().equals(version)) {
+                return gauge;
+            }
+        }
+        return null;
+    }
+
     public List<CapturePoint> getCapturePoints() {
         return config.capturePoints();
+    }
+
+    public @Nullable CapturePoint getCapturePoint(String version) {
+        for (CapturePoint capturePoint : config.capturePoints()) {
+            if (capturePoint.version().equals(version)) {
+                return capturePoint;
+            }
+        }
+        return null;
     }
 
     public void addConfigListener(ConfigListener listener) {

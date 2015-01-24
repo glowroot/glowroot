@@ -328,15 +328,25 @@ glowroot.config([
         }
       }
     });
-    $stateProvider.state('config.capturePoints', {
-      url: '/capture-points',
+    $stateProvider.state('config.capturePointList', {
+      url: '/capture-point-list',
       templateUrl: 'views/config/capture-point-list.html',
       controller: 'ConfigCapturePointListCtrl'
     });
-    $stateProvider.state('config.gauges', {
-      url: '/gauges',
+    $stateProvider.state('config.capturePoint', {
+      url: '/capture-point?v',
+      templateUrl: 'views/config/capture-point.html',
+      controller: 'ConfigCapturePointCtrl'
+    });
+    $stateProvider.state('config.gaugeList', {
+      url: '/gauge-list',
       templateUrl: 'views/config/gauge-list.html',
       controller: 'ConfigGaugeListCtrl'
+    });
+    $stateProvider.state('config.gauge', {
+      url: '/gauge',
+      templateUrl: 'views/config/gauge.html',
+      controller: 'ConfigGaugeCtrl'
     });
     $stateProvider.state('config.storage', {
       url: '/storage',

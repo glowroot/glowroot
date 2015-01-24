@@ -26,14 +26,12 @@ import org.glowroot.tests.webdriver.Utils;
 
 import static org.openqa.selenium.By.xpath;
 
-public class GaugeSection {
+public class GaugePage {
 
     private final WebDriver driver;
-    private final WebElement form;
 
-    GaugeSection(WebDriver driver, WebElement form) {
+    public GaugePage(WebDriver driver) {
         this.driver = driver;
-        this.form = form;
     }
 
     public WebElement getMBeanObjectNameTextField() {
@@ -65,7 +63,7 @@ public class GaugeSection {
     }
 
     private WebElement withWait(By by) {
-        return Utils.withWait(driver, form, by);
+        return Utils.withWait(driver, by);
     }
 
     private void clickTypeAheadItem(String label, final String text) {
@@ -73,7 +71,7 @@ public class GaugeSection {
         new WebDriverWait(driver, 30).until(new Predicate<WebDriver>() {
             @Override
             public boolean apply(WebDriver driver) {
-                for (WebElement element : form.findElements(xpath)) {
+                for (WebElement element : driver.findElements(xpath)) {
                     if (element.getText().equals(text)) {
                         try {
                             element.click();

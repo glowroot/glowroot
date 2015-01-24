@@ -18,8 +18,9 @@ package org.glowroot.tests.webdriver;
 import org.junit.Test;
 
 import org.glowroot.tests.webdriver.config.ConfigSidebar;
-import org.glowroot.tests.webdriver.config.GaugeListPage;
-import org.glowroot.tests.webdriver.config.GaugeSection;
+import org.glowroot.tests.webdriver.config.GaugePage;
+
+import static org.openqa.selenium.By.xpath;
 
 public class GaugeTest extends WebDriverTest {
 
@@ -29,14 +30,13 @@ public class GaugeTest extends WebDriverTest {
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        GaugeListPage gaugeListPage = new GaugeListPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getGaugesLink().click();
 
         // when
-        createGauge(gaugeListPage);
+        createGauge();
     }
 
     @Test
@@ -45,33 +45,28 @@ public class GaugeTest extends WebDriverTest {
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        GaugeListPage gaugeListPage = new GaugeListPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getGaugesLink().click();
 
-        createGauge(gaugeListPage);
+        createGauge();
 
         // when
-        int numSections = gaugeListPage.getNumSections();
-        gaugeListPage.getAddGaugeButton().click();
-        GaugeSection gaugeSection = gaugeListPage.getSection(numSections);
-        gaugeSection.getMBeanObjectNameTextField().sendKeys("ClassLoading");
-        gaugeSection.clickMBeanObjectNameAutoCompleteItem("java.lang:type=ClassLoading");
-        gaugeSection.getDuplicateMBeanMessage();
+        Utils.withWait(driver, xpath("//button[@ng-click='addNew()']")).click();
+        GaugePage gaugePage = new GaugePage(driver);
+        gaugePage.getMBeanObjectNameTextField().sendKeys("ClassLoading");
+        gaugePage.clickMBeanObjectNameAutoCompleteItem("java.lang:type=ClassLoading");
+        gaugePage.getDuplicateMBeanMessage();
     }
 
-    private void createGauge(GaugeListPage gaugeListPage) {
-        int numSections = gaugeListPage.getNumSections();
-        gaugeListPage.getAddGaugeButton().click();
-        GaugeSection gaugeSection = gaugeListPage.getSection(numSections);
-        gaugeSection.getMBeanObjectNameTextField().sendKeys("ClassLoading");
-        gaugeSection.clickMBeanObjectNameAutoCompleteItem("java.lang:type=ClassLoading");
-        gaugeSection.getMBeanAttributeCheckBox("LoadedClassCount").click();
-        gaugeSection.getMBeanAttributeCheckBox("TotalLoadedClassCount").click();
-        gaugeSection.getAddButton().click();
-        // getSaveButton() waits for the Save button to become visible (after adding is successful)
-        gaugeSection.getSaveButton();
+    private void createGauge() {
+        Utils.withWait(driver, xpath("//button[@ng-click='addNew()']")).click();
+        GaugePage gaugePage = new GaugePage(driver);
+        gaugePage.getMBeanObjectNameTextField().sendKeys("ClassLoading");
+        gaugePage.clickMBeanObjectNameAutoCompleteItem("java.lang:type=ClassLoading");
+        gaugePage.getMBeanAttributeCheckBox("LoadedClassCount").click();
+        gaugePage.getMBeanAttributeCheckBox("TotalLoadedClassCount").click();
+        gaugePage.getAddButton().click();
     }
 }

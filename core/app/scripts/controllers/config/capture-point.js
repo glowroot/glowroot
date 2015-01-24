@@ -18,20 +18,32 @@
 
 glowroot.controller('ConfigCapturePointCtrl', [
   '$scope',
+  '$location',
   '$http',
+  '$rootScope',
   '$timeout',
   'confirmIfHasChanges',
   'httpErrors',
   'queryStrings',
   'conversions',
-  function ($scope, $http, $timeout, confirmIfHasChanges, httpErrors, queryStrings) {
-    // don't initialize page binding object since it is inherited from pointcut-list.js
+  function ($scope, $location, $http, $rootScope, $timeout, confirmIfHasChanges, httpErrors, queryStrings) {
+
+    var version = $location.search().v;
 
     function onNewData(data) {
       $scope.config = data;
       $scope.originalConfig = angular.copy(data);
 
+      function simpleName(className) {
+        var splitIndex = className.lastIndexOf('.');
+        if (splitIndex !== -1) {
+          return className.substring(splitIndex + 1);
+        }
+        return className;
+      }
+
       if (data.className) {
+        $scope.heading = simpleName(data.className) + '::' + data.methodName;
         var methodSignature = {
           name: data.methodName,
           parameterTypes: data.methodParameterTypes,
@@ -49,6 +61,7 @@ glowroot.controller('ConfigCapturePointCtrl', [
         $scope.showTraceEntryStackThreshold = captureKind === 'trace-entry';
         $scope.loadMethodSignatures = true;
       } else {
+        $scope.heading = '<New capture point>';
         $timeout(function () {
           // focus on class name
           $scope.isFocus = true;
@@ -56,13 +69,27 @@ glowroot.controller('ConfigCapturePointCtrl', [
       }
     }
 
-    onNewData($scope.capturePoint.config);
+    if (version) {
+      $http.get('backend/config/capture-points/' + version)
+          .success(function (data) {
+            $scope.loaded = true;
+            onNewData(data);
+          })
+          .error(httpErrors.handler($scope));
+    } else {
+      $scope.loaded = true;
+      onNewData({
+        config: {
+          captureKind: 'metric'
+        }
+      });
+    }
 
     $scope.hasChanges = function () {
-      return ($scope.config.className || $scope.originalConfig.className)
+      return $scope.config && ($scope.config.className || $scope.originalConfig.className)
           && !angular.equals($scope.config, $scope.originalConfig);
     };
-    $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
+    var removeConfirmIfHasChangesListener = $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
     $scope.showClassNameSpinner = 0;
     $scope.showMethodNameSpinner = 0;
@@ -188,8 +215,7 @@ glowroot.controller('ConfigCapturePointCtrl', [
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
       var url;
-      var update = $scope.config.version;
-      if (update) {
+      if (version) {
         url = 'backend/config/capture-points/update';
       } else {
         url = 'backend/config/capture-points/add';
@@ -197,25 +223,26 @@ glowroot.controller('ConfigCapturePointCtrl', [
       $http.post(url, postData)
           .success(function (data) {
             onNewData(data);
-            $scope.page.dirty = true;
-            deferred.resolve(update ? 'Saved' : 'Added');
+            deferred.resolve(version ? 'Saved' : 'Added');
+            version = data.version;
+            // fix current url (with updated version) before returning to list page in case back button is used later
+            $timeout(function () {
+              $location.search({v: version}).replace();
+              $timeout(function () {
+                $location.url('/config/capture-point-list');
+              });
+            });
           })
           .error(httpErrors.handler($scope, deferred));
     };
 
     $scope.delete = function (deferred) {
-      if ($scope.config.version) {
-        $http.post('backend/config/capture-points/remove', '"' + $scope.config.version + '"')
-            .success(function () {
-              $scope.$parent.removeCapturePoint($scope.capturePoint);
-              $scope.page.dirty = true;
-              deferred.resolve('Deleted');
-            })
-            .error(httpErrors.handler($scope, deferred));
-      } else {
-        $scope.$parent.removeCapturePoint($scope.capturePoint);
-        deferred.resolve('Deleted');
-      }
+      $http.post('backend/config/capture-points/remove', '"' + $scope.config.version + '"')
+          .success(function () {
+            removeConfirmIfHasChangesListener();
+            $location.url('/config/capture-point-list').replace();
+          })
+          .error(httpErrors.handler($scope, deferred));
     };
 
     function matchingMethods(methodName, keepSelectedMethodSignature) {
@@ -258,32 +285,36 @@ glowroot.controller('ConfigCapturePointCtrl', [
           });
     }
 
-    $scope.$watch('config.captureKind', function (value) {
-      $scope.captureKindTransaction = value === 'transaction';
-      $scope.showMetric = value === 'metric' || value === 'trace-entry' || value === 'transaction';
-      $scope.showTraceEntry = value === 'trace-entry' || value === 'transaction';
-      $scope.showTraceEntryStackThreshold = value === 'trace-entry';
-      if (!$scope.showMetric) {
-        $scope.config.metricName = '';
-      }
-      if (!$scope.showTraceEntry) {
-        $scope.config.traceEntryTemplate = '';
-        $scope.config.traceEntryCaptureSelfNested = false;
-      }
-      if (!$scope.showTraceEntryStackThreshold) {
-        $scope.config.traceEntryStackThresholdMillis = '';
+    $scope.$watch('config.captureKind', function (newValue, oldValue) {
+      if (newValue !== oldValue) {
+        $scope.captureKindTransaction = newValue === 'transaction';
+        $scope.showMetric = newValue === 'metric' || newValue === 'trace-entry' || newValue === 'transaction';
+        $scope.showTraceEntry = newValue === 'trace-entry' || newValue === 'transaction';
+        $scope.showTraceEntryStackThreshold = newValue === 'trace-entry';
+        if (!$scope.showMetric) {
+          $scope.config.metricName = '';
+        }
+        if (!$scope.showTraceEntry) {
+          $scope.config.traceEntryTemplate = '';
+          $scope.config.traceEntryCaptureSelfNested = false;
+        }
+        if (!$scope.showTraceEntryStackThreshold) {
+          $scope.config.traceEntryStackThresholdMillis = '';
+        }
       }
     });
 
-    $scope.$watch('selectedMethodSignature', function (newValue) {
-      if (newValue) {
-        $scope.config.methodParameterTypes = newValue.parameterTypes;
-        $scope.config.methodReturnType = '';
-        $scope.config.methodModifiers = [];
-      } else {
-        $scope.config.methodParameterTypes = [];
-        $scope.config.methodReturnType = '';
-        $scope.config.methodModifiers = [];
+    $scope.$watch('selectedMethodSignature', function (newValue, oldValue) {
+      if (newValue !== oldValue) {
+        if (newValue) {
+          $scope.config.methodParameterTypes = newValue.parameterTypes;
+          $scope.config.methodReturnType = '';
+          $scope.config.methodModifiers = [];
+        } else {
+          $scope.config.methodParameterTypes = [];
+          $scope.config.methodReturnType = '';
+          $scope.config.methodModifiers = [];
+        }
       }
     });
 

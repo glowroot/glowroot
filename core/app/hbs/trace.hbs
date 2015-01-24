@@ -19,7 +19,7 @@
     <strong style="font-size: 16px;">Background</strong>
   </div>
 {{/if}}
-<div class="gt-second-line-indent">
+<div class="gt-break-word gt-second-line-indent">
   <strong style="font-size: 16px;">{{headline}}</strong>
   {{#if showExport}}
     <button class="gt-flat-btn gt-flat-btn-big gt-link-color download-trace">
@@ -27,11 +27,11 @@
     </button>
   {{/if}}
 </div>
-<div class="gt-second-line-indent">
+<div class="gt-break-word gt-second-line-indent">
   <span class="gt-bold">Transaction type:</span>
   {{transactionType}}
 </div>
-<div class="gt-second-line-indent">
+<div class="gt-break-word gt-second-line-indent">
   <span class="gt-bold">Transaction name:</span>
   {{transactionName}}
 </div>
@@ -44,19 +44,19 @@
   {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds
 </div>
 {{#if error}}
-  <div class="gt-second-line-indent">
+  <div class="gt-break-word gt-second-line-indent">
     <span class="gt-bold">Error:</span>
     {{error}}
   </div>
 {{/if}}
 {{#if user}}
-  <div class="gt-second-line-indent">
+  <div class="gt-break-word gt-second-line-indent">
     <span class="gt-bold">User:</span>
     {{user}}
   </div>
 {{/if}}
 {{#eachKeyValuePair customAttributes}}
-  <div class="gt-second-line-indent">
+  <div class="gt-break-word gt-second-line-indent">
     <span class="gt-bold">{{key}}:</span>
     {{value}}
   </div>
@@ -86,7 +86,7 @@
       <tr class="align-top">
         <td style="text-align: left;">
           <div style="margin-left: {{metricIndent .}}em;">
-            <div class="gt-second-line-indent">{{name}}</div>
+            <div class="gt-break-word gt-second-line-indent">{{name}}</div>
           </div>
         </td>
         <td>{{nanosToMillis total}}{{#if active}}..{{/if}}</td>
@@ -119,7 +119,7 @@
       <tr class="align-top">
         <td style="text-align: left;">
           <div style="margin-left: {{metricIndent .}}em;">
-            <div class="gt-second-line-indent">{{name}}</div>
+            <div class="gt-break-word gt-second-line-indent">{{name}}</div>
           </div>
         </td>
         <td>{{nanosToMillis total}}{{#if active}}..{{/if}}</td>

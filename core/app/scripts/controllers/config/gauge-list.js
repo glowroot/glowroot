@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,14 @@
 
 glowroot.controller('ConfigGaugeListCtrl', [
   '$scope',
+  '$location',
   '$http',
   'httpErrors',
-  function ($scope, $http, httpErrors) {
+  function ($scope, $location, $http, httpErrors) {
+
+    $scope.addNew = function () {
+      $location.url('config/gauge?new');
+    };
 
     $http.get('backend/config/gauges')
         .success(function (data) {
@@ -28,21 +33,5 @@ glowroot.controller('ConfigGaugeListCtrl', [
           $scope.gauges = data;
         })
         .error(httpErrors.handler($scope));
-
-    $scope.addGauge = function () {
-      $scope.gauges.push({
-        config: {},
-        mbeanAvailable: false,
-        mbeanAvailableAttributeNames: []
-      });
-    };
-
-    // this is called by child controller
-    $scope.removeGauge = function (gauge) {
-      var index = $scope.gauges.indexOf(gauge);
-      if (index !== -1) {
-        $scope.gauges.splice(index, 1);
-      }
-    };
   }
 ]);

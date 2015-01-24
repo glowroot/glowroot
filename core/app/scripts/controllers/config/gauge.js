@@ -18,12 +18,15 @@
 
 glowroot.controller('ConfigGaugeCtrl', [
   '$scope',
+  '$location',
   '$http',
   '$timeout',
   'confirmIfHasChanges',
   'httpErrors',
   'queryStrings',
-  function ($scope, $http, $timeout, confirmIfHasChanges, httpErrors, queryStrings) {
+  function ($scope, $location, $http, $timeout, confirmIfHasChanges, httpErrors, queryStrings) {
+
+    var version = $location.search().v;
 
     function onNewData(data) {
       // need to sort attribute names to keep hasChanges() consistent
@@ -35,6 +38,10 @@ glowroot.controller('ConfigGaugeCtrl', [
 
       if (data.config.mbeanObjectName) {
         $scope.heading = data.config.name;
+        // \u200b is zero width space and \u00a0 is non-breaking space
+        // these are used to change wrapping behavior on smaller screens (or larger mbean names)
+        $scope.heading = $scope.heading.replace(/\//g, '\u200b/');
+        $scope.heading = $scope.heading.replace(/ /g, '\u00a0');
         $scope.selectedMBeanObjectName = data.config.mbeanObjectName;
         $scope.mbeanUnavailable = data.mbeanUnavailable;
         var allMBeanAttributes = {};
@@ -73,22 +80,41 @@ glowroot.controller('ConfigGaugeCtrl', [
       }
     }
 
-    onNewData($scope.gauge);
-    $scope.$watch('allMBeanAttributes', function () {
-      $scope.config.mbeanAttributeNames = [];
-      angular.forEach($scope.allMBeanAttributes, function (mbeanAttribute) {
-        if (mbeanAttribute.checked) {
-          $scope.config.mbeanAttributeNames.push(mbeanAttribute.name);
-        }
+    if (version) {
+      $http.get('backend/config/gauges/' + version)
+          .success(function (data) {
+            $scope.loaded = true;
+            onNewData(data);
+          })
+          .error(httpErrors.handler($scope));
+    } else {
+      $scope.loaded = true;
+      onNewData({
+        config: {
+          mbeanAttributeNames: []
+        },
+        mbeanAvailable: false,
+        mbeanAvailableAttributeNames: []
       });
-      // need to sort attribute names to keep hasChanges() consistent
-      $scope.config.mbeanAttributeNames.sort();
+    }
+
+    $scope.$watch('allMBeanAttributes', function (newValue, oldValue) {
+      if (newValue !== oldValue) {
+        $scope.config.mbeanAttributeNames = [];
+        angular.forEach($scope.allMBeanAttributes, function (mbeanAttribute) {
+          if (mbeanAttribute.checked) {
+            $scope.config.mbeanAttributeNames.push(mbeanAttribute.name);
+          }
+        });
+        // need to sort attribute names to keep hasChanges() consistent
+        $scope.config.mbeanAttributeNames.sort();
+      }
     }, true);
 
     $scope.hasChanges = function () {
       return !angular.equals($scope.config, $scope.originalConfig);
     };
-    $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
+    var removeConfirmIfHasChangesListener = $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
     $scope.showMBeanObjectNameSpinner = 0;
 
@@ -155,7 +181,7 @@ glowroot.controller('ConfigGaugeCtrl', [
     }
 
     $scope.hasMBeanObjectNameError = function () {
-      return !$scope.config.mbeanObjectName || $scope.mbeanUnavailable || $scope.duplicateMBean;
+      return $scope.config && (!$scope.config.mbeanObjectName || $scope.mbeanUnavailable || $scope.duplicateMBean);
     };
 
     $scope.saveDisabled = function () {
@@ -164,7 +190,7 @@ glowroot.controller('ConfigGaugeCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      // java.lang:name=PS Eden Space,type=MemoryPool
+      // e.g. java.lang:name=PS Eden Space,type=MemoryPool
       var parts = postData.mbeanObjectName.split(/[:,]/);
       postData.name = parts[0];
       for (var i = 1; i < parts.length; i++) {
@@ -177,7 +203,6 @@ glowroot.controller('ConfigGaugeCtrl', [
         }
       });
       var url;
-      var version = $scope.config.version;
       if (version) {
         url = 'backend/config/gauges/update';
       } else {
@@ -187,6 +212,14 @@ glowroot.controller('ConfigGaugeCtrl', [
           .success(function (data) {
             onNewData(data);
             deferred.resolve(version ? 'Saved' : 'Added');
+            version = data.config.version;
+            // fix current url (with updated version) before returning to list page in case back button is used later
+            $timeout(function () {
+              $location.search({v: version}).replace();
+              $timeout(function () {
+                $location.url('/config/gauge-list');
+              });
+            });
           })
           .error(function (data, status) {
             if (status === 409 && data.message === 'mbeanObjectName') {
@@ -199,17 +232,12 @@ glowroot.controller('ConfigGaugeCtrl', [
     };
 
     $scope.delete = function (deferred) {
-      if ($scope.config.version) {
-        $http.post('backend/config/gauges/remove', '"' + $scope.config.version + '"')
-            .success(function () {
-              $scope.$parent.removeGauge($scope.gauge);
-              deferred.resolve('Deleted');
-            })
-            .error(httpErrors.handler($scope, deferred));
-      } else {
-        $scope.$parent.removeGauge($scope.gauge);
-        deferred.resolve('Deleted');
-      }
+      $http.post('backend/config/gauges/remove', '"' + $scope.config.version + '"')
+          .success(function () {
+            removeConfirmIfHasChangesListener();
+            $location.url('/config/gauge-list').replace();
+          })
+          .error(httpErrors.handler($scope, deferred));
     };
   }
 ]);

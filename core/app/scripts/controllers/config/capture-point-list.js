@@ -18,50 +18,49 @@
 
 glowroot.controller('ConfigCapturePointListCtrl', [
   '$scope',
+  '$location',
   '$http',
   '$timeout',
   'httpErrors',
-  function ($scope, $http, $timeout, httpErrors) {
-    // initialize page binding object
-    $scope.page = {};
+  function ($scope, $location, $http, $timeout, httpErrors) {
+
+    $scope.display = function (capturePoint) {
+      return capturePoint.className + '::' + capturePoint.methodName;
+    };
+
+    $scope.displayExtra = function (capturePoint) {
+      var captureKind = capturePoint.captureKind;
+      if (captureKind === 'metric') {
+        return 'Metric';
+      } else if (captureKind === 'trace-entry') {
+        return 'Trace entry';
+      } else if (captureKind === 'transaction') {
+        return 'Transaction';
+      } else {
+        return 'Other';
+      }
+    };
+
+    $scope.addNew = function () {
+      $location.url('config/capture-point?new');
+    };
 
     $http.get('backend/config/capture-points')
         .success(function (data) {
           $scope.loaded = true;
-          $scope.capturePoints = [];
-          for (var i = 0; i < data.configs.length; i++) {
-            $scope.capturePoints.push({
-              config: data.configs[i]
-            });
-          }
+          $scope.capturePoints = data.configs;
           // use object so dirty flag can be updated by child controllers
-          $scope.page.dirty = data.jvmOutOfSync;
+          $scope.dirty = data.jvmOutOfSync;
           $scope.jvmRetransformClassesSupported = data.jvmRetransformClassesSupported;
           // preload cache for class name and method name auto completion
           $http.get('backend/config/preload-classpath-cache');
         })
         .error(httpErrors.handler($scope));
 
-    $scope.addCapturePoint = function () {
-      $scope.capturePoints.push({
-        config: {
-          captureKind: 'metric'
-        }
-      });
-    };
-
-    // this is called by child controller
-    $scope.removeCapturePoint = function (capturePoint) {
-      var index = $scope.capturePoints.indexOf(capturePoint);
-      if (index !== -1) {
-        $scope.capturePoints.splice(index, 1);
-      }
-    };
-
     $scope.retransformClasses = function (deferred) {
       $http.post('backend/admin/reweave-capture-points', '')
           .success(function (data) {
-            $scope.page.dirty = false;
+            $scope.dirty = false;
             if (data.classes) {
               var msg = 're-transformed ' + data.classes + ' class' + (data.classes > 1 ? 'es' : '');
               deferred.resolve('Success (' + msg + ')');

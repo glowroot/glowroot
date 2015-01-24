@@ -20,11 +20,12 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import org.glowroot.tests.webdriver.config.CapturePointListPage;
-import org.glowroot.tests.webdriver.config.CapturePointSection;
+import org.glowroot.tests.webdriver.config.CapturePointPage;
 import org.glowroot.tests.webdriver.config.ConfigSidebar;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.openqa.selenium.By.partialLinkText;
+import static org.openqa.selenium.By.xpath;
 
 public class CapturePointTest extends WebDriverTest {
 
@@ -34,39 +35,37 @@ public class CapturePointTest extends WebDriverTest {
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        CapturePointListPage capturePointListPage = new CapturePointListPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getCapturePointsLink().click();
 
         // when
-        createTraceCapturePoint(capturePointListPage);
+        createTransactionCapturePoint();
 
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getCapturePointsLink().click();
-        CapturePointSection capturePointSection = capturePointListPage.getSection(0);
+        Utils.withWait(driver, partialLinkText("org.glowroot.container.Container")).click();
+        CapturePointPage capturePointPage = new CapturePointPage(driver);
         // need to give angular view a chance to render before assertions
         Thread.sleep(100);
-        assertThat(capturePointSection.getClassNameTextField().getAttribute("value"))
+        assertThat(capturePointPage.getClassNameTextField().getAttribute("value"))
                 .isEqualTo("org.glowroot.container.Container");
-        assertThat(capturePointSection.getMethodNameTextField().getAttribute("value"))
+        assertThat(capturePointPage.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeAppUnderTest");
-        assertThat(capturePointSection.getCaptureKindTransactionRadioButton().isSelected())
+        assertThat(capturePointPage.getCaptureKindTransactionRadioButton().isSelected())
                 .isTrue();
-        assertThat(capturePointSection.getMetricNameTextField().getAttribute("value"))
+        assertThat(capturePointPage.getMetricNameTextField().getAttribute("value"))
                 .isEqualTo("a metric");
-        assertThat(capturePointSection.getTraceEntryTemplateTextField().getAttribute("value"))
+        assertThat(capturePointPage.getTraceEntryTemplateTextField().getAttribute("value"))
                 .isEqualTo("a trace entry");
-        assertThat(capturePointSection.getTraceEntryStackThresholdTextField()
-                .getAttribute("value")).isEqualTo("");
-        assertThat(capturePointSection.getTransactionTypeTextField().getAttribute("value"))
+        assertThat(capturePointPage.getTransactionTypeTextField().getAttribute("value"))
                 .isEqualTo("a type");
-        assertThat(capturePointSection.getTransactionNameTemplateTextField().getAttribute("value"))
+        assertThat(capturePointPage.getTransactionNameTemplateTextField().getAttribute("value"))
                 .isEqualTo("a trace");
-        assertThat(capturePointSection.getTraceStoreThresholdMillisTextField()
+        assertThat(capturePointPage.getTraceStoreThresholdMillisTextField()
                 .getAttribute("value")).isEqualTo("123");
     }
 
@@ -76,22 +75,22 @@ public class CapturePointTest extends WebDriverTest {
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        CapturePointListPage capturePointListPage = new CapturePointListPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getCapturePointsLink().click();
-        createTraceCapturePoint(capturePointListPage);
+        createTransactionCapturePoint();
 
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getCapturePointsLink().click();
-        CapturePointSection capturePointSection = capturePointListPage.getSection(0);
-        WebElement classNameTextField = capturePointSection.getClassNameTextField();
+        Utils.withWait(driver, partialLinkText("org.glowroot.container.Container")).click();
+        CapturePointPage capturePointPage = new CapturePointPage(driver);
+        WebElement classNameTextField = capturePointPage.getClassNameTextField();
 
         // when
-        Utils.clearInput(capturePointSection.getMetricNameTextField());
-        capturePointSection.getDeleteButton().click();
+        Utils.clearInput(capturePointPage.getMetricNameTextField());
+        capturePointPage.getDeleteButton().click();
 
         // then
         new WebDriverWait(driver, 30).until(ExpectedConditions.stalenessOf(classNameTextField));
@@ -103,32 +102,32 @@ public class CapturePointTest extends WebDriverTest {
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        CapturePointListPage capturePointListPage = new CapturePointListPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getCapturePointsLink().click();
 
         // when
-        createTraceEntryCapturePoint(capturePointListPage);
+        createTraceEntryCapturePoint();
 
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getCapturePointsLink().click();
-        CapturePointSection capturePointSection = capturePointListPage.getSection(0);
+        Utils.withWait(driver, partialLinkText("org.glowroot.container.Container")).click();
+        CapturePointPage capturePointPage = new CapturePointPage(driver);
         // need to give angular view a chance to render before assertions
         Thread.sleep(100);
-        assertThat(capturePointSection.getClassNameTextField().getAttribute("value"))
+        assertThat(capturePointPage.getClassNameTextField().getAttribute("value"))
                 .isEqualTo("org.glowroot.container.Container");
-        assertThat(capturePointSection.getMethodNameTextField().getAttribute("value"))
+        assertThat(capturePointPage.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeAppUnderTest");
-        assertThat(capturePointSection.getCaptureKindTraceEntryRadioButton().isSelected()).isTrue();
-        assertThat(capturePointSection.getMetricNameTextField().getAttribute("value"))
+        assertThat(capturePointPage.getCaptureKindTraceEntryRadioButton().isSelected()).isTrue();
+        assertThat(capturePointPage.getMetricNameTextField().getAttribute("value"))
                 .isEqualTo("a metric");
-        assertThat(capturePointSection.getTraceEntryTemplateTextField().getAttribute("value"))
+        assertThat(capturePointPage.getTraceEntryTemplateTextField().getAttribute("value"))
                 .isEqualTo("a trace entry");
-        assertThat(capturePointSection.getTraceEntryStackThresholdTextField()
+        assertThat(capturePointPage.getTraceEntryStackThresholdTextField()
                 .getAttribute("value")).isEqualTo("");
     }
 
@@ -138,90 +137,84 @@ public class CapturePointTest extends WebDriverTest {
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        CapturePointListPage capturePointListPage = new CapturePointListPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getCapturePointsLink().click();
 
         // when
-        createMetricCapturePoint(capturePointListPage);
+        createMetricCapturePoint();
 
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getCapturePointsLink().click();
-        CapturePointSection capturePointSection = capturePointListPage.getSection(0);
+        Utils.withWait(driver, partialLinkText("org.glowroot.container.Container")).click();
+        CapturePointPage capturePointPage = new CapturePointPage(driver);
         // need to give angular view a chance to render before assertions
         Thread.sleep(100);
-        assertThat(capturePointSection.getClassNameTextField().getAttribute("value"))
+        assertThat(capturePointPage.getClassNameTextField().getAttribute("value"))
                 .isEqualTo("org.glowroot.container.Container");
-        assertThat(capturePointSection.getMethodNameTextField().getAttribute("value"))
+        assertThat(capturePointPage.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeAppUnderTest");
-        assertThat(capturePointSection.getCaptureKindMetricRadioButton().isSelected()).isTrue();
-        assertThat(capturePointSection.getMetricNameTextField().getAttribute("value"))
+        assertThat(capturePointPage.getCaptureKindMetricRadioButton().isSelected()).isTrue();
+        assertThat(capturePointPage.getMetricNameTextField().getAttribute("value"))
                 .isEqualTo("a metric");
     }
 
-    private void createTraceCapturePoint(CapturePointListPage capturePointListPage) {
-        capturePointListPage.getAddCapturePointButton().click();
-        CapturePointSection capturePointSection = capturePointListPage.getSection(0);
-        capturePointSection.getClassNameTextField().sendKeys("container.Container");
-        capturePointSection.clickClassNameAutoCompleteItem("org.glowroot.container.Container");
-        capturePointSection.getMethodNameTextField().sendKeys("exec");
-        capturePointSection.clickMethodNameAutoCompleteItem("executeAppUnderTest");
-        capturePointSection.getCaptureKindTransactionRadioButton().click();
-        capturePointSection.getMetricNameTextField().clear();
-        capturePointSection.getMetricNameTextField().sendKeys("a metric");
-        capturePointSection.getTraceEntryTemplateTextField().clear();
-        capturePointSection.getTraceEntryTemplateTextField().sendKeys("a trace entry");
-        capturePointSection.getTransactionTypeTextField().clear();
-        capturePointSection.getTransactionTypeTextField().sendKeys("a type");
-        capturePointSection.getTransactionNameTemplateTextField().clear();
-        capturePointSection.getTransactionNameTemplateTextField().sendKeys("a trace");
-        capturePointSection.getTraceStoreThresholdMillisTextField().clear();
-        capturePointSection.getTraceStoreThresholdMillisTextField().sendKeys("123");
-        capturePointSection.getAddButton().click();
-        // getSaveButton() waits for the Save button to become visible (after adding is successful)
-        capturePointSection.getSaveButton();
+    private void createTransactionCapturePoint() {
+        Utils.withWait(driver, xpath("//button[@ng-click='addNew()']")).click();
+        CapturePointPage capturePointPage = new CapturePointPage(driver);
+        capturePointPage.getClassNameTextField().sendKeys("container.Container");
+        capturePointPage.clickClassNameAutoCompleteItem("org.glowroot.container.Container");
+        capturePointPage.getMethodNameTextField().sendKeys("exec");
+        capturePointPage.clickMethodNameAutoCompleteItem("executeAppUnderTest");
+        capturePointPage.getCaptureKindTransactionRadioButton().click();
+        capturePointPage.getMetricNameTextField().clear();
+        capturePointPage.getMetricNameTextField().sendKeys("a metric");
+        capturePointPage.getTraceEntryTemplateTextField().clear();
+        capturePointPage.getTraceEntryTemplateTextField().sendKeys("a trace entry");
+        capturePointPage.getTransactionTypeTextField().clear();
+        capturePointPage.getTransactionTypeTextField().sendKeys("a type");
+        capturePointPage.getTransactionNameTemplateTextField().clear();
+        capturePointPage.getTransactionNameTemplateTextField().sendKeys("a trace");
+        capturePointPage.getTraceStoreThresholdMillisTextField().clear();
+        capturePointPage.getTraceStoreThresholdMillisTextField().sendKeys("123");
+        capturePointPage.getAddButton().click();
     }
 
-    private void createTraceEntryCapturePoint(CapturePointListPage capturePointListPage) {
-        capturePointListPage.getAddCapturePointButton().click();
-        CapturePointSection capturePointSection = capturePointListPage.getSection(0);
+    private void createTraceEntryCapturePoint() {
+        Utils.withWait(driver, xpath("//button[@ng-click='addNew()']")).click();
+        CapturePointPage capturePointPage = new CapturePointPage(driver);
         // exercise limit first
-        capturePointSection.getClassNameTextField().sendKeys("java.io.File");
-        capturePointSection.clickClassNameAutoCompleteItem("java.io.File");
-        capturePointSection.getMethodNameTextField().sendKeys("a");
-        capturePointSection.clickMethodNameAutoCompleteItem("canExecute");
-        capturePointSection.getClassNameTextField().clear();
+        capturePointPage.getClassNameTextField().sendKeys("java.io.File");
+        capturePointPage.clickClassNameAutoCompleteItem("java.io.File");
+        capturePointPage.getMethodNameTextField().sendKeys("a");
+        capturePointPage.clickMethodNameAutoCompleteItem("canExecute");
+        capturePointPage.getClassNameTextField().clear();
         // now do the real thing
-        capturePointSection.getClassNameTextField().sendKeys("container.Container");
-        capturePointSection.clickClassNameAutoCompleteItem("org.glowroot.container.Container");
-        capturePointSection.getMethodNameTextField().sendKeys("exec");
-        capturePointSection.clickMethodNameAutoCompleteItem("executeAppUnderTest");
-        capturePointSection.getCaptureKindTraceEntryRadioButton().click();
-        capturePointSection.getMetricNameTextField().clear();
-        capturePointSection.getMetricNameTextField().sendKeys("a metric");
-        capturePointSection.getTraceEntryTemplateTextField().clear();
-        capturePointSection.getTraceEntryTemplateTextField().sendKeys("a trace entry");
-        capturePointSection.getAddButton().click();
-        // getSaveButton() waits for the Save button to become visible (after adding is successful)
-        capturePointSection.getSaveButton();
+        capturePointPage.getClassNameTextField().sendKeys("container.Container");
+        capturePointPage.clickClassNameAutoCompleteItem("org.glowroot.container.Container");
+        capturePointPage.getMethodNameTextField().sendKeys("exec");
+        capturePointPage.clickMethodNameAutoCompleteItem("executeAppUnderTest");
+        capturePointPage.getCaptureKindTraceEntryRadioButton().click();
+        capturePointPage.getMetricNameTextField().clear();
+        capturePointPage.getMetricNameTextField().sendKeys("a metric");
+        capturePointPage.getTraceEntryTemplateTextField().clear();
+        capturePointPage.getTraceEntryTemplateTextField().sendKeys("a trace entry");
+        capturePointPage.getAddButton().click();
     }
 
-    private void createMetricCapturePoint(CapturePointListPage capturePointListPage) {
-        capturePointListPage.getAddCapturePointButton().click();
-        CapturePointSection capturePointSection = capturePointListPage.getSection(0);
-        capturePointSection.getClassNameTextField().sendKeys("container.Container");
-        capturePointSection.clickClassNameAutoCompleteItem("org.glowroot.container.Container");
-        capturePointSection.getMethodNameTextField().sendKeys("exec");
-        capturePointSection.clickMethodNameAutoCompleteItem("executeAppUnderTest");
-        capturePointSection.getCaptureKindMetricRadioButton().click();
-        capturePointSection.getMetricNameTextField().clear();
-        capturePointSection.getMetricNameTextField().sendKeys("a metric");
-        capturePointSection.getAddButton().click();
-        // getSaveButton() waits for the Save button to become visible (after adding is successful)
-        capturePointSection.getSaveButton();
+    private void createMetricCapturePoint() {
+        Utils.withWait(driver, xpath("//button[@ng-click='addNew()']")).click();
+        CapturePointPage capturePointPage = new CapturePointPage(driver);
+        capturePointPage.getClassNameTextField().sendKeys("container.Container");
+        capturePointPage.clickClassNameAutoCompleteItem("org.glowroot.container.Container");
+        capturePointPage.getMethodNameTextField().sendKeys("exec");
+        capturePointPage.clickMethodNameAutoCompleteItem("executeAppUnderTest");
+        capturePointPage.getCaptureKindMetricRadioButton().click();
+        capturePointPage.getMetricNameTextField().clear();
+        capturePointPage.getMetricNameTextField().sendKeys("a metric");
+        capturePointPage.getAddButton().click();
     }
 }

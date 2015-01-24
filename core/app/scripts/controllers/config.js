@@ -18,8 +18,8 @@
 
 glowroot.controller('ConfigCtrl', [
   '$scope',
-  '$state',
-  function ($scope) {
+  '$location',
+  function ($scope, $location) {
     // \u00b7 is &middot;
     document.title = 'Configuration \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'config';
@@ -31,6 +31,14 @@ glowroot.controller('ConfigCtrl', [
       integer: /^(0|[1-9][0-9]*)$/,
       // missing whole (.2) and missing decimal (2.)
       double: /^(0|[1-9][0-9]*)?(\.[0-9]*)?$/
+    };
+
+    $scope.isCapturePoint = function () {
+      return $location.path() === '/config/capture-point-list' || $location.path() === '/config/capture-point';
+    };
+
+    $scope.isGauge = function () {
+      return $location.path() === '/config/gauge-list' || $location.path() === '/config/gauge';
     };
   }
 ]);

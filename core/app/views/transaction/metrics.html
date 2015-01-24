@@ -61,7 +61,7 @@
         ng-repeat="flattenedMetric in flattenedMetrics">
       <td style="text-align: left;">
         <div>
-          <div class="gt-second-line-indent">{{flattenedMetric.name}}</div>
+          <div class="gt-break-word gt-second-line-indent">{{flattenedMetric.name}}</div>
         </div>
       </td>
       <td>{{flattenedMetric.totalMicros / (1000 * mergedAggregate.transactionCount) | gtNumber}}</td>
@@ -92,7 +92,7 @@
         ng-repeat="treeMetric in treeMetrics">
       <td style="text-align: left;">
         <div ng-style="{'margin-left': treeMetric.nestingLevel + 'em'}">
-          <div class="gt-second-line-indent">{{treeMetric.name}} {{treeMetric.metricIndent}}</div>
+          <div class="gt-break-word gt-second-line-indent">{{treeMetric.name}} {{treeMetric.metricIndent}}</div>
         </div>
       </td>
       <td>{{treeMetric.totalMicros / (1000 * mergedAggregate.transactionCount) | gtNumber}}</td>

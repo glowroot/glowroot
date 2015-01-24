@@ -53,6 +53,11 @@ class JsonServiceException extends RuntimeException {
         this.status = status;
     }
 
+    JsonServiceException(HttpResponseStatus status) {
+        super();
+        this.status = status;
+    }
+
     HttpResponseStatus getStatus() {
         return status;
     }

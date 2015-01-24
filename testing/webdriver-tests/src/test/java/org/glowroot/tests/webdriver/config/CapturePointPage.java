@@ -26,14 +26,12 @@ import org.glowroot.tests.webdriver.Utils;
 
 import static org.openqa.selenium.By.xpath;
 
-public class CapturePointSection {
+public class CapturePointPage {
 
     private final WebDriver driver;
-    private final WebElement form;
 
-    CapturePointSection(WebDriver driver, WebElement form) {
+    public CapturePointPage(WebDriver driver) {
         this.driver = driver;
-        this.form = form;
     }
 
     public WebElement getClassNameTextField() {
@@ -109,7 +107,7 @@ public class CapturePointSection {
     }
 
     private WebElement withWait(By by) {
-        return Utils.withWait(driver, form, by);
+        return Utils.withWait(driver, by);
     }
 
     private void clickTypeAheadItem(String label, final String text) {
@@ -117,7 +115,7 @@ public class CapturePointSection {
         new WebDriverWait(driver, 30).until(new Predicate<WebDriver>() {
             @Override
             public boolean apply(WebDriver driver) {
-                for (WebElement element : form.findElements(xpath)) {
+                for (WebElement element : driver.findElements(xpath)) {
                     if (element.getText().equals(text)) {
                         try {
                             element.click();

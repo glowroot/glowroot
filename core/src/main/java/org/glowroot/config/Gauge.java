@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,30 @@ package org.glowroot.config;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Charsets;
+import com.google.common.collect.Ordering;
 import com.google.common.hash.Hashing;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
 
 import org.glowroot.common.Marshaling2;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 @Value.Immutable
 @Json.Marshaled
 public abstract class Gauge {
+
+    public static final Ordering<Gauge> orderingByName = new Ordering<Gauge>() {
+        @Override
+        public int compare(@Nullable Gauge left, @Nullable Gauge right) {
+            checkNotNull(left);
+            checkNotNull(right);
+            return left.name().compareToIgnoreCase(right.name());
+        }
+    };
 
     public abstract String name();
     public abstract String mbeanObjectName();
