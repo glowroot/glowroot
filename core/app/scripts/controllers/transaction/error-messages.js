@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, $ */
+/* global glowroot, moment, $ */
 
 glowroot.controller('ErrorMessagesCtrl', [
   '$scope',
@@ -208,8 +208,23 @@ glowroot.controller('ErrorMessagesCtrl', [
             // this is synthetic point for initial upslope, gap or final downslope
             return 'No errors';
           }
-          return 'Error percentage: ' + yval.toFixed(1) + '<br>Error count: ' + dataSeriesExtra[xval][0] +
+          function smartFormat(millis) {
+            if (millis % 60000 === 0) {
+              return moment(millis).format('LT');
+            } else {
+              return moment(millis).format('LTS');
+            }
+          }
+          var fixedAggregateIntervalMillis = 1000 * $scope.layout.fixedAggregateIntervalSeconds;
+          var from = xval - fixedAggregateIntervalMillis;
+          // this math is to deal with active aggregate
+          from = Math.ceil(from / fixedAggregateIntervalMillis) * fixedAggregateIntervalMillis;
+          var to = xval;
+          var html = '<strong>' + smartFormat(from) + ' to ' + smartFormat(to) +
+              '</strong><br>Error percentage: ' + yval.toFixed(1) +
+              '<br>Error count: ' + dataSeriesExtra[xval][0] +
               '<br>Transaction count: ' + dataSeriesExtra[xval][1];
+          return html;
         }
       }
     };

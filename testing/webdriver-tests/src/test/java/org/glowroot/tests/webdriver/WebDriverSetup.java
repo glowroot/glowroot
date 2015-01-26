@@ -41,7 +41,6 @@ public class WebDriverSetup {
     private static final TestName testNameWatcher = new TestName();
 
     static {
-        System.setProperty("glowroot.internal.aggregateInterval", "2");
         System.setProperty("glowroot.internal.gaugeInterval", "1");
         System.setProperty("glowroot.internal.gaugeRollup1", "2");
     }

@@ -42,8 +42,8 @@ public class BasicSmokeTest extends WebDriverTest {
         profilingConfig.setIntervalMillis(10);
         container.getConfigService().updateProfilingConfig(profilingConfig);
         Stopwatch stopwatch = Stopwatch.createStarted();
-        // wait for aggregation to occur, need to wait extra long b/c of slow travis builds
-        while (stopwatch.elapsed(SECONDS) < 10) {
+        // wait for some aggregation to occur
+        while (stopwatch.elapsed(SECONDS) < 1) {
             container.executeAppUnderTest(JdbcServlet.class);
             container.executeAppUnderTest(ErrorServlet.class);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ public class QueryResult<T> {
         return moreAvailable;
     }
 
-    static </*@NonNull*/T> QueryResult<T> from(ImmutableList<T> records, int limit) {
+    public static </*@NonNull*/T> QueryResult<T> from(ImmutableList<T> records, int limit) {
         if (records.size() > limit) {
             return new QueryResult<T>(records.subList(0, limit), true);
         } else {

@@ -267,17 +267,16 @@ public class TraceDao implements TraceRepository {
         List<Object> args = Lists.newArrayList();
         sql += " where error = ?";
         args.add(true);
-        String transactionType = query.transactionType();
+        sql += " and transaction_type = ?";
+        args.add(query.transactionType());
         String transactionName = query.transactionName();
-        if (transactionType != null && transactionName != null) {
-            sql += " and transaction_type = ? and transaction_name = ?";
-            args.add(transactionType);
+        if (transactionName != null) {
+            sql += " and transaction_name = ?";
             args.add(transactionName);
         }
-        sql += " and capture_time >= ? and capture_time <= ? and error = ?";
+        sql += " and capture_time >= ? and capture_time <= ?";
         args.add(query.from());
         args.add(query.to());
-        args.add(true);
         for (String include : query.includes()) {
             sql += " and upper(error_message) like ?";
             args.add('%' + include.toUpperCase(Locale.ENGLISH) + '%');

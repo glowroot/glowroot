@@ -28,6 +28,7 @@ import org.junit.Test;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.ImmutableAggregate;
+import org.glowroot.collector.TransactionSummary;
 import org.glowroot.common.Ticker;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
 

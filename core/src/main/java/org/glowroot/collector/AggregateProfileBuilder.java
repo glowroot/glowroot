@@ -17,8 +17,6 @@ package org.glowroot.collector;
 
 import java.util.List;
 
-import javax.annotation.concurrent.GuardedBy;
-
 import com.google.common.base.Objects;
 
 import org.glowroot.transaction.model.Profile;
@@ -26,27 +24,18 @@ import org.glowroot.transaction.model.ProfileNode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+// must be used under an appropriate lock
 class AggregateProfileBuilder {
 
-    private final Object lock = new Object();
-    @GuardedBy("lock")
     private final ProfileNode syntheticRootNode = ProfileNode.createSyntheticRoot();
 
-    Object getLock() {
-        return lock;
-    }
-
-    // must be holding lock to call and can only use resulting node tree inside the same
-    // synchronized block
     ProfileNode getSyntheticRootNode() {
         return syntheticRootNode;
     }
 
     void addProfile(Profile profile) {
-        synchronized (lock) {
-            synchronized (profile.getLock()) {
-                mergeNode(syntheticRootNode, profile.getSyntheticRootNode());
-            }
+        synchronized (profile.getLock()) {
+            mergeNode(syntheticRootNode, profile.getSyntheticRootNode());
         }
     }
 

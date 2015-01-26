@@ -75,6 +75,10 @@ public class CollectorModule {
         return transactionCollector;
     }
 
+    public @Nullable AggregateCollector getAggregateCollector() {
+        return aggregateCollector;
+    }
+
     public long getFixedAggregateIntervalSeconds() {
         return fixedAggregateIntervalSeconds;
     }

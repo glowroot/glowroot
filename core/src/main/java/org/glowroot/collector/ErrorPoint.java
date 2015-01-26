@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.local.store;
+package org.glowroot.collector;
 
 import org.immutables.value.Value;
 

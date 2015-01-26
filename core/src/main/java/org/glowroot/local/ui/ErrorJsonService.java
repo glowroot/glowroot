@@ -15,7 +15,6 @@
  */
 package org.glowroot.local.ui;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +23,6 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -32,18 +30,16 @@ import com.google.common.io.CharStreams;
 import org.immutables.value.Json;
 import org.immutables.value.Value;
 
+import org.glowroot.collector.ErrorPoint;
+import org.glowroot.collector.ErrorSummary;
+import org.glowroot.collector.ErrorSummaryMarshaler;
+import org.glowroot.collector.ImmutableErrorPoint;
 import org.glowroot.common.Clock;
-import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregateDao.ErrorSummarySortOrder;
 import org.glowroot.local.store.ErrorMessageCount;
 import org.glowroot.local.store.ErrorMessageCountMarshaler;
 import org.glowroot.local.store.ErrorMessageQuery;
-import org.glowroot.local.store.ErrorPoint;
-import org.glowroot.local.store.ErrorSummary;
-import org.glowroot.local.store.ErrorSummaryMarshaler;
 import org.glowroot.local.store.ImmutableErrorMessageQuery;
-import org.glowroot.local.store.ImmutableErrorPoint;
-import org.glowroot.local.store.ImmutableErrorSummaryQuery;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.store.TraceErrorPoint;
@@ -58,14 +54,14 @@ class ErrorJsonService {
         mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
     }
 
-    private final AggregateDao aggregateDao;
+    private final ErrorCommonService errorCommonService;
     private final TraceDao traceDao;
     private final long fixedAggregateIntervalMillis;
     private final DataSeriesHelper dataSeriesHelper;
 
-    ErrorJsonService(AggregateDao aggregateDao, TraceDao traceDao, Clock clock,
+    ErrorJsonService(ErrorCommonService errorCommonService, TraceDao traceDao, Clock clock,
             long fixedAggregateIntervalSeconds) {
-        this.aggregateDao = aggregateDao;
+        this.errorCommonService = errorCommonService;
         this.traceDao = traceDao;
         fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
         dataSeriesHelper = new DataSeriesHelper(clock, fixedAggregateIntervalMillis);
@@ -84,12 +80,9 @@ class ErrorJsonService {
                 .addAllExcludes(request.excludes())
                 .limit(request.errorMessageLimit())
                 .build();
-        // requested from is in aggregate terms, so need to subtract aggregate interval to get
-        // real timing interval which is needed for trace queries
-        ImmutableErrorMessageQuery traceDaoQuery =
-                query.withFrom(query.from() - fixedAggregateIntervalMillis);
-        QueryResult<ErrorMessageCount> queryResult = traceDao.readErrorMessageCounts(traceDaoQuery);
-        List<ErrorPoint> unfilteredErrorPoints = getUnfilteredErrorPoints(query);
+        QueryResult<ErrorMessageCount> queryResult = traceDao.readErrorMessageCounts(query);
+        List<ErrorPoint> unfilteredErrorPoints = errorCommonService.readErrorPoints(
+                query.transactionType(), query.transactionName(), query.from(), query.to());
         DataSeries dataSeries = new DataSeries(null);
         Map<Long, Long[]> dataSeriesExtra = Maps.newHashMap();
         if (query.includes().isEmpty() && query.excludes().isEmpty()) {
@@ -101,7 +94,7 @@ class ErrorJsonService {
                         unfilteredErrorPoint.transactionCount());
             }
             ImmutableList<TraceErrorPoint> traceErrorPoints =
-                    traceDao.readErrorPoints(traceDaoQuery, fixedAggregateIntervalMillis);
+                    traceDao.readErrorPoints(query, fixedAggregateIntervalMillis);
             List<ErrorPoint> errorPoints = Lists.newArrayList();
             for (TraceErrorPoint traceErrorPoint : traceErrorPoints) {
                 Long transactionCount = transactionCountMap.get(traceErrorPoint.captureTime());
@@ -128,20 +121,13 @@ class ErrorJsonService {
 
     @GET("/backend/error/summaries")
     String getSummaries(String queryString) throws Exception {
-        ErrorSummaryRequest request =
-                QueryStrings.decode(queryString, ErrorSummaryRequest.class);
+        ErrorSummaryRequest request = QueryStrings.decode(queryString, ErrorSummaryRequest.class);
 
-        ImmutableErrorSummaryQuery summaryQuery = ImmutableErrorSummaryQuery.builder()
-                .transactionType(request.transactionType())
-                .from(request.from())
-                .to(request.to())
-                .sortOrder(request.sortOrder())
-                .limit(request.limit())
-                .build();
-        ErrorSummary overallSummary = aggregateDao.readOverallErrorSummary(
+        ErrorSummary overallSummary = errorCommonService.readOverallErrorSummary(
                 request.transactionType(), request.from(), request.to());
         QueryResult<ErrorSummary> queryResult =
-                aggregateDao.readTransactionErrorSummaries(summaryQuery);
+                errorCommonService.readTransactionErrorSummaries(request.transactionType(),
+                        request.from(), request.to(), request.sortOrder(), request.limit());
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -158,8 +144,7 @@ class ErrorJsonService {
 
     @GET("/backend/error/tab-bar-data")
     String getTabBarData(String queryString) throws Exception {
-        TabBarDataRequest request =
-                QueryStrings.decode(queryString, TabBarDataRequest.class);
+        TabBarDataRequest request = QueryStrings.decode(queryString, TabBarDataRequest.class);
 
         String transactionName = request.transactionName();
         // requested from is in aggregate terms, so need to subtract aggregate interval to get
@@ -183,21 +168,6 @@ class ErrorJsonService {
         jg.close();
         return sb.toString();
     }
-
-    private List<ErrorPoint> getUnfilteredErrorPoints(ErrorMessageQuery query)
-            throws SQLException {
-        String transactionName = query.transactionName();
-        List<ErrorPoint> unfilteredErrorPoints;
-        if (Strings.isNullOrEmpty(transactionName)) {
-            unfilteredErrorPoints = aggregateDao.readOverallErrorPoints(query.transactionType(),
-                    query.from(), query.to());
-        } else {
-            unfilteredErrorPoints = aggregateDao.readTransactionErrorPoints(
-                    query.transactionType(), transactionName, query.from(), query.to());
-        }
-        return unfilteredErrorPoints;
-    }
-
     private void populateDataSeries(ErrorMessageQuery request, List<ErrorPoint> errorPoints,
             DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra) {
         ErrorPoint lastErrorPoint = null;

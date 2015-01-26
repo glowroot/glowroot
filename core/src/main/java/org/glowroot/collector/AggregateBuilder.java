@@ -95,6 +95,38 @@ class AggregateBuilder {
                 .build();
     }
 
+    TransactionSummary getLiveTransactionSummary() {
+        return ImmutableTransactionSummary.builder()
+                .transactionName(transactionName)
+                .totalMicros(totalMicros)
+                .transactionCount(transactionCount)
+                .build();
+    }
+
+    ErrorSummary getLiveErrorSummary() {
+        return ImmutableErrorSummary.builder()
+                .transactionName(transactionName)
+                .errorCount(errorCount)
+                .transactionCount(transactionCount)
+                .build();
+    }
+
+    ErrorPoint buildErrorPoint(long captureTime) {
+        return ImmutableErrorPoint.builder()
+                .captureTime(captureTime)
+                .errorCount(errorCount)
+                .transactionCount(transactionCount)
+                .build();
+    }
+
+    long getTransactionCount() {
+        return transactionCount;
+    }
+
+    long getProfileSampleCount() {
+        return profileSampleCount;
+    }
+
     private void addToMetrics(TransactionMetricImpl transactionMetric,
             AggregateMetric parentAggregateMetric) {
         String name = transactionMetric.getName();
@@ -118,11 +150,9 @@ class AggregateBuilder {
         return sb.toString();
     }
 
-    private @Nullable String getProfileJson() throws IOException {
-        synchronized (aggregateProfile.getLock()) {
-            return ProfileCharSourceCreator.createProfileJson(
-                    aggregateProfile.getSyntheticRootNode());
-        }
+    @Nullable
+    String getProfileJson() throws IOException {
+        return ProfileCharSourceCreator.createProfileJson(aggregateProfile.getSyntheticRootNode());
     }
 
     private void writeMetric(JsonGenerator jg, AggregateMetric aggregateMetric)

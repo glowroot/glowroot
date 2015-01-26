@@ -48,13 +48,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class LocalUiModule {
 
-    // only stored/exposed for tests
-    private final AggregateCommonService aggregateCommonService;
-    // only stored/exposed for tests
-    private final TraceCommonService traceCommonService;
-    // only stored/exposed for tests
-    private final TraceExportHttpService traceExportHttpService;
-
     private final LazyHttpServer lazyHttpServer;
 
     public LocalUiModule(Ticker ticker, Clock clock, File dataDir, JvmModule jvmModule,
@@ -84,20 +77,24 @@ public class LocalUiModule {
                 new HttpSessionManager(configService, clock, layoutJsonService);
         IndexHtmlHttpService indexHtmlHttpService =
                 new IndexHtmlHttpService(httpSessionManager, layoutJsonService);
-        aggregateCommonService = new AggregateCommonService(aggregateDao);
-        traceCommonService = new TraceCommonService(traceDao, transactionRegistry,
-                transactionCollector, clock, ticker);
+        TransactionCommonService transactionCommonService = new TransactionCommonService(
+                aggregateDao, collectorModule.getAggregateCollector());
+        TraceCommonService traceCommonService = new TraceCommonService(traceDao,
+                transactionRegistry, transactionCollector, clock, ticker);
         TransactionJsonService transactionJsonService = new TransactionJsonService(
-                aggregateCommonService, storageModule.getAggregateDao(), traceDao, clock,
+                transactionCommonService, traceDao, clock,
                 collectorModule.getFixedAggregateIntervalSeconds());
         TracePointJsonService tracePointJsonService = new TracePointJsonService(traceDao,
                 transactionRegistry, transactionCollector, ticker, clock);
         TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);
         TraceDetailHttpService traceDetailHttpService =
                 new TraceDetailHttpService(traceCommonService);
-        traceExportHttpService = new TraceExportHttpService(traceCommonService);
-        ErrorJsonService errorJsonService = new ErrorJsonService(aggregateDao, traceDao, clock,
-                collectorModule.getFixedAggregateIntervalSeconds());
+        TraceExportHttpService traceExportHttpService =
+                new TraceExportHttpService(traceCommonService);
+        ErrorCommonService errorCommonService = new ErrorCommonService(
+                aggregateDao, collectorModule.getAggregateCollector());
+        ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService, traceDao,
+                clock, collectorModule.getFixedAggregateIntervalSeconds());
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
                 gaugePointDao, configService, jvmModule.getThreadAllocatedBytes(),
                 jvmModule.getHeapDumps(), jvmModule.getProcessId(),

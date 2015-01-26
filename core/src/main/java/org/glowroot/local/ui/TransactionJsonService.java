@@ -17,7 +17,6 @@ package org.glowroot.local.ui;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -36,16 +35,14 @@ import org.immutables.value.Value;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.LazyHistogram;
+import org.glowroot.collector.TransactionSummary;
+import org.glowroot.collector.TransactionSummaryMarshaler;
 import org.glowroot.common.Clock;
-import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
-import org.glowroot.local.store.ImmutableTransactionSummaryQuery;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;
-import org.glowroot.local.store.TransactionSummary;
-import org.glowroot.local.store.TransactionSummaryMarshaler;
-import org.glowroot.local.ui.AggregateCommonService.HistogramMergedAggregate;
-import org.glowroot.local.ui.AggregateCommonService.MetricMergedAggregate;
+import org.glowroot.local.ui.TransactionCommonService.HistogramMergedAggregate;
+import org.glowroot.local.ui.TransactionCommonService.MetricMergedAggregate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -55,16 +52,13 @@ class TransactionJsonService {
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final double MICROSECONDS_PER_SECOND = 1000000.0;
 
-    private final AggregateCommonService aggregateCommonService;
-    private final AggregateDao aggregateDao;
+    private final TransactionCommonService transactionCommonService;
     private final TraceDao traceDao;
     private final DataSeriesHelper dataSeriesHelper;
 
-    TransactionJsonService(AggregateCommonService aggregateCommonService,
-            AggregateDao aggregateDao,
-            TraceDao traceDao, Clock clock, long fixedAggregateIntervalSeconds) {
-        this.aggregateCommonService = aggregateCommonService;
-        this.aggregateDao = aggregateDao;
+    TransactionJsonService(TransactionCommonService transactionCommonService, TraceDao traceDao,
+            Clock clock, long fixedAggregateIntervalSeconds) {
+        this.transactionCommonService = transactionCommonService;
         this.traceDao = traceDao;
         dataSeriesHelper = new DataSeriesHelper(clock, fixedAggregateIntervalSeconds * 1000);
     }
@@ -74,7 +68,8 @@ class TransactionJsonService {
         TransactionDataRequest request =
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
 
-        List<Aggregate> aggregates = getAggregates(request);
+        List<Aggregate> aggregates = transactionCommonService.getAggregates(
+                request.transactionType(), request.transactionName(), request.from(), request.to());
         List<DataSeries> dataSeriesList = getDataSeriesForOverviewChart(request, aggregates);
         if (!aggregates.isEmpty() && aggregates.get(0).captureTime() == request.from()) {
             // the left most aggregate is not really in the requested interval since it is for
@@ -82,7 +77,7 @@ class TransactionJsonService {
             aggregates = aggregates.subList(1, aggregates.size());
         }
         HistogramMergedAggregate histogramMergedAggregate =
-                aggregateCommonService.getHistogramMergedAggregate(aggregates);
+                transactionCommonService.getHistogramMergedAggregate(aggregates);
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -99,7 +94,8 @@ class TransactionJsonService {
         TransactionDataRequest request =
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
 
-        List<Aggregate> aggregates = getAggregates(request);
+        List<Aggregate> aggregates = transactionCommonService.getAggregates(
+                request.transactionType(), request.transactionName(), request.from(), request.to());
         List<DataSeries> dataSeriesList = getDataSeriesForMetricsChart(request, aggregates);
         if (!aggregates.isEmpty() && aggregates.get(0).captureTime() == request.from()) {
             // the left most aggregate is not really in the requested interval since it is for
@@ -107,7 +103,7 @@ class TransactionJsonService {
             aggregates = aggregates.subList(1, aggregates.size());
         }
         MetricMergedAggregate metricMergedAggregate =
-                aggregateCommonService.getMetricMergedAggregate(aggregates);
+                transactionCommonService.getMetricMergedAggregate(aggregates);
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -124,10 +120,9 @@ class TransactionJsonService {
         TransactionProfileRequest request =
                 QueryStrings.decode(queryString, TransactionProfileRequest.class);
 
-        AggregateProfileNode profile = aggregateCommonService.getProfile(request.transactionType(),
-                request.transactionName(), request.from(), request.to(),
+        AggregateProfileNode profile = transactionCommonService.getProfile(
+                request.transactionType(), request.transactionName(), request.from(), request.to(),
                 request.truncateLeafPercentage());
-
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeObject(profile);
@@ -140,16 +135,11 @@ class TransactionJsonService {
         TransactionSummaryRequest request =
                 QueryStrings.decode(queryString, TransactionSummaryRequest.class);
 
-        TransactionSummary overallSummary = aggregateDao.readOverallTransactionSummary(
+        TransactionSummary overallSummary = transactionCommonService.readOverallTransactionSummary(
                 request.transactionType(), request.from(), request.to());
-        ImmutableTransactionSummaryQuery query = ImmutableTransactionSummaryQuery.builder()
-                .transactionType(request.transactionType())
-                .from(request.from())
-                .to(request.to())
-                .sortOrder(request.sortOrder())
-                .limit(request.limit())
-                .build();
-        QueryResult<TransactionSummary> queryResult = aggregateDao.readTransactionSummaries(query);
+        QueryResult<TransactionSummary> queryResult =
+                transactionCommonService.readTransactionSummaries(request.transactionType(),
+                        request.from(), request.to(), request.sortOrder(), request.limit());
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -170,16 +160,13 @@ class TransactionJsonService {
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
 
         String transactionName = request.transactionName();
-        long profileSampleCount;
+        long profileSampleCount = transactionCommonService.getProfileSampleCount(
+                request.transactionType(), transactionName, request.from(), request.to());
         long traceCount;
         if (transactionName == null) {
-            profileSampleCount = aggregateDao.readOverallProfileSampleCount(
-                    request.transactionType(), request.from(), request.to());
             traceCount = traceDao.readOverallCount(request.transactionType(), request.from(),
                     request.to());
         } else {
-            profileSampleCount = aggregateDao.readTransactionProfileSampleCount(
-                    request.transactionType(), transactionName, request.from(), request.to());
             traceCount = traceDao.readTransactionCount(request.transactionType(),
                     transactionName, request.from(), request.to());
         }
@@ -197,7 +184,7 @@ class TransactionJsonService {
     @GET("/backend/transaction/flame-graph")
     String getFlameGraph(String queryString) throws Exception {
         FlameGraphRequest request = QueryStrings.decode(queryString, FlameGraphRequest.class);
-        AggregateProfileNode profile = aggregateCommonService.getProfile(
+        AggregateProfileNode profile = transactionCommonService.getProfile(
                 request.transactionType(), request.transactionName(), request.from(),
                 request.to(), request.truncateLeafPercentage());
         AggregateProfileNode interestingNode = profile;
@@ -220,17 +207,6 @@ class TransactionJsonService {
         jg.writeEndObject();
         jg.close();
         return sb.toString();
-    }
-
-    private List<Aggregate> getAggregates(TransactionDataRequest request) throws SQLException {
-        String transactionName = request.transactionName();
-        if (transactionName == null) {
-            return aggregateDao.readOverallAggregates(request.transactionType(), request.from(),
-                    request.to());
-        } else {
-            return aggregateDao.readTransactionAggregates(request.transactionType(),
-                    transactionName, request.from(), request.to());
-        }
     }
 
     private List<DataSeries> getDataSeriesForOverviewChart(TransactionDataRequest request,
@@ -293,7 +269,7 @@ class TransactionJsonService {
             dataSeriesList.add(new DataSeries(metricNames.get(i)));
         }
         // need 'other' data series even if < topX metrics in order to capture root metrics,
-        // e.g. time spent in 'servlet' metric but not in any nested metric
+        // e.g. time spent in 'servlet' metric but not i)n any nested metric
         DataSeries otherDataSeries = new DataSeries(null);
         Aggregate lastAggregate = null;
         for (StackedPoint stackedPoint : stackedPoints) {

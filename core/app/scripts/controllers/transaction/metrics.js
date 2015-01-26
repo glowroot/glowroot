@@ -115,8 +115,11 @@ glowroot.controller('TransactionMetricsCtrl', [
           if (total === 0) {
             return 'No data';
           }
-          var from = xval - 1000 * $scope.layout.fixedAggregateIntervalSeconds / 2;
-          var to = xval + 1000 * $scope.layout.fixedAggregateIntervalSeconds / 2;
+          var fixedAggregateIntervalMillis = 1000 * $scope.layout.fixedAggregateIntervalSeconds;
+          var from = xval - fixedAggregateIntervalMillis;
+          // this math is to deal with active aggregate
+          from = Math.ceil(from / fixedAggregateIntervalMillis) * fixedAggregateIntervalMillis;
+          var to = xval;
           return charts.renderTooltipHtml(from, to, flotItem.dataIndex, flotItem.seriesIndex, chartState,
               function (value) {
                 return (100 * value / total).toFixed(1) + ' %';

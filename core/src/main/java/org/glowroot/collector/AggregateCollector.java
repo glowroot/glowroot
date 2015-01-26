@@ -16,34 +16,29 @@
 package org.glowroot.collector;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 
-import javax.annotation.concurrent.GuardedBy;
-
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.AggregateBuilder.ScratchBuffer;
 import org.glowroot.common.Clock;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.Transaction;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-class AggregateCollector {
+public class AggregateCollector {
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionProcessor.class);
 
-    @GuardedBy("lock")
-    private volatile IntervalCollector currentIntervalCollector;
-    private final Object lock = new Object();
+    private volatile AggregateIntervalCollector activeIntervalCollector;
+    private final CopyOnWriteArrayList<AggregateIntervalCollector> pendingIntervalCollectors =
+            Lists.newCopyOnWriteArrayList();
 
     private final ScheduledExecutorService scheduledExecutor;
     private final AggregateRepository aggregateRepository;
@@ -56,6 +51,8 @@ class AggregateCollector {
 
     private final Thread processingThread;
 
+    private final Object lock = new Object();
+
     AggregateCollector(ScheduledExecutorService scheduledExecutor,
             AggregateRepository aggregateRepository, Clock clock,
             long fixedAggregateIntervalSeconds) {
@@ -63,7 +60,8 @@ class AggregateCollector {
         this.aggregateRepository = aggregateRepository;
         this.clock = clock;
         this.fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
-        currentIntervalCollector = new IntervalCollector(clock.currentTimeMillis());
+        activeIntervalCollector = new AggregateIntervalCollector(clock.currentTimeMillis(),
+                fixedAggregateIntervalMillis, clock);
         // dedicated thread to aggregating transaction data
         processingThread = new Thread(new TransactionProcessor());
         processingThread.setDaemon(true);
@@ -79,6 +77,33 @@ class AggregateCollector {
             long captureTime = clock.currentTimeMillis();
             pendingTransactionQueue.add(new PendingTransaction(captureTime, transaction));
             return captureTime;
+        }
+    }
+
+    public List<AggregateIntervalCollector> getIntervalCollectorsInRange(long from, long to) {
+        List<AggregateIntervalCollector> intervalCollectors = Lists.newArrayList();
+        for (AggregateIntervalCollector intervalCollector : getAllIntervalCollectors()) {
+            long endTime = intervalCollector.getEndTime();
+            if (endTime >= from && endTime <= to) {
+                intervalCollectors.add(intervalCollector);
+            }
+        }
+        return intervalCollectors;
+    }
+
+    private List<AggregateIntervalCollector> getAllIntervalCollectors() {
+        // grab active first then pending (and de-dup) to make sure one is not missed between states
+        AggregateIntervalCollector activeIntervalCollector = this.activeIntervalCollector;
+        List<AggregateIntervalCollector> intervalCollectors =
+                Lists.newArrayList(pendingIntervalCollectors);
+        if (intervalCollectors.isEmpty()) {
+            // common case
+            return ImmutableList.of(activeIntervalCollector);
+        } else if (!intervalCollectors.contains(activeIntervalCollector)) {
+            intervalCollectors.add(activeIntervalCollector);
+            return intervalCollectors;
+        } else {
+            return intervalCollectors;
         }
     }
 
@@ -105,24 +130,24 @@ class AggregateCollector {
         }
 
         private void processOne() throws InterruptedException {
-            long timeToCurrentIntervalEndTime =
-                    Math.max(0, currentIntervalCollector.endTime - clock.currentTimeMillis());
+            long timeToActiveIntervalEndTime =
+                    Math.max(0, activeIntervalCollector.getEndTime() - clock.currentTimeMillis());
             PendingTransaction pendingTransaction =
-                    pendingTransactionQueue.poll(timeToCurrentIntervalEndTime + 1000, MILLISECONDS);
+                    pendingTransactionQueue.poll(timeToActiveIntervalEndTime + 1000, MILLISECONDS);
             if (pendingTransaction == null) {
                 maybeEndOfInterval();
                 return;
             }
-            if (pendingTransaction.getCaptureTime() > currentIntervalCollector.endTime) {
+            if (pendingTransaction.getCaptureTime() > activeIntervalCollector.getEndTime()) {
                 // flush in separate thread to avoid pending transactions from piling up quickly
-                scheduledExecutor.execute(new IntervalFlusher(currentIntervalCollector));
-                currentIntervalCollector =
-                        new IntervalCollector(pendingTransaction.getCaptureTime());
+                scheduledExecutor.execute(new IntervalFlusher(activeIntervalCollector));
+                activeIntervalCollector = new AggregateIntervalCollector(
+                        pendingTransaction.getCaptureTime(), fixedAggregateIntervalMillis, clock);
             }
             // the synchronized block is to ensure visibility of updates to this particular
-            // currentIntervalCollector
-            synchronized (currentIntervalCollector) {
-                currentIntervalCollector.add(pendingTransaction.getTransaction());
+            // activeIntervalCollector
+            synchronized (activeIntervalCollector) {
+                activeIntervalCollector.add(pendingTransaction.getTransaction());
             }
         }
 
@@ -130,19 +155,20 @@ class AggregateCollector {
             synchronized (lock) {
                 if (pendingTransactionQueue.peek() != null) {
                     // something just crept into the queue, possibly still something from
-                    // current interval, it will get picked up right away and if it is in
-                    // next interval it will force current aggregate to be flushed anyways
+                    // active interval, it will get picked up right away and if it is in
+                    // next interval it will force active aggregate to be flushed anyways
                     return;
                 }
                 // this should be true since poll timed out above, but checking again to be sure
                 long currentTime = clock.currentTimeMillis();
-                if (currentTime > currentIntervalCollector.endTime) {
+                if (currentTime > activeIntervalCollector.getEndTime()) {
                     // safe to flush, no other pending transactions can enter queue with later
                     // time (since under same lock that they use)
                     //
                     // flush in separate thread to avoid pending transactions from piling up quickly
-                    scheduledExecutor.execute(new IntervalFlusher(currentIntervalCollector));
-                    currentIntervalCollector = new IntervalCollector(currentTime);
+                    scheduledExecutor.execute(new IntervalFlusher(activeIntervalCollector));
+                    activeIntervalCollector = new AggregateIntervalCollector(currentTime,
+                            fixedAggregateIntervalMillis, clock);
                 }
             }
         }
@@ -150,99 +176,26 @@ class AggregateCollector {
 
     private class IntervalFlusher implements Runnable {
 
-        private final IntervalCollector intervalCollector;
+        private final AggregateIntervalCollector intervalCollector;
 
-        private IntervalFlusher(IntervalCollector intervalCollector) {
+        private IntervalFlusher(AggregateIntervalCollector intervalCollector) {
             this.intervalCollector = intervalCollector;
+            pendingIntervalCollectors.add(intervalCollector);
         }
 
         @Override
         public void run() {
             // this synchronized block is to ensure visibility of updates to this particular
-            // currentIntervalCollector
+            // activeIntervalCollector
             synchronized (intervalCollector) {
                 try {
-                    runInternal();
+                    intervalCollector.flush(aggregateRepository);
                 } catch (Throwable t) {
                     // log and terminate successfully
                     logger.error(t.getMessage(), t);
+                } finally {
+                    pendingIntervalCollectors.remove(intervalCollector);
                 }
-            }
-        }
-
-        private void runInternal() throws Exception {
-            List<Aggregate> overallAggregates = Lists.newArrayList();
-            List<Aggregate> transactionAggregates = Lists.newArrayList();
-            Map<String, IntervalTypeCollector> typeCollectors = intervalCollector.typeCollectors;
-            ScratchBuffer scratchBuffer = new ScratchBuffer();
-            for (Entry<String, IntervalTypeCollector> e : typeCollectors.entrySet()) {
-                IntervalTypeCollector intervalTypeCollector = e.getValue();
-                overallAggregates.add(intervalTypeCollector.overallBuilder.build(
-                        intervalCollector.endTime, scratchBuffer));
-                Map<String, AggregateBuilder> transactionBuilders =
-                        intervalTypeCollector.transactionBuilders;
-                for (Entry<String, AggregateBuilder> f : transactionBuilders.entrySet()) {
-                    transactionAggregates.add(f.getValue().build(intervalCollector.endTime,
-                            scratchBuffer));
-                }
-            }
-            aggregateRepository.store(overallAggregates, transactionAggregates);
-        }
-    }
-
-    private class IntervalCollector {
-
-        private final long endTime;
-        private final Map<String, IntervalTypeCollector> typeCollectors = Maps.newHashMap();
-
-        private IntervalCollector(long currentTime) {
-            this.endTime = (long) Math.ceil(currentTime / (double) fixedAggregateIntervalMillis)
-                    * fixedAggregateIntervalMillis;
-        }
-
-        private void add(Transaction transaction) {
-            IntervalTypeCollector typeBuilder = getTypeBuilder(transaction.getTransactionType());
-            typeBuilder.add(transaction);
-        }
-
-        private IntervalTypeCollector getTypeBuilder(String transactionType) {
-            IntervalTypeCollector typeBuilder;
-            typeBuilder = typeCollectors.get(transactionType);
-            if (typeBuilder == null) {
-                typeBuilder = new IntervalTypeCollector(transactionType);
-                typeCollectors.put(transactionType, typeBuilder);
-            }
-            return typeBuilder;
-        }
-    }
-
-    private static class IntervalTypeCollector {
-
-        private final String transactionType;
-        private final AggregateBuilder overallBuilder;
-        private final Map<String, AggregateBuilder> transactionBuilders = Maps.newHashMap();
-
-        private IntervalTypeCollector(String transactionType) {
-            this.transactionType = transactionType;
-            overallBuilder = new AggregateBuilder(transactionType, null);
-        }
-
-        private void add(Transaction transaction) {
-            overallBuilder.add(transaction.getDuration(), transaction.getError() != null);
-            AggregateBuilder transactionBuilder =
-                    transactionBuilders.get(transaction.getTransactionName());
-            if (transactionBuilder == null) {
-                transactionBuilder =
-                        new AggregateBuilder(transactionType, transaction.getTransactionName());
-                transactionBuilders.put(transaction.getTransactionName(), transactionBuilder);
-            }
-            transactionBuilder.add(transaction.getDuration(), transaction.getError() != null);
-            overallBuilder.addToMetrics(transaction.getRootMetric());
-            transactionBuilder.addToMetrics(transaction.getRootMetric());
-            Profile profile = transaction.getProfile();
-            if (profile != null) {
-                overallBuilder.addToProfile(profile);
-                transactionBuilder.addToProfile(profile);
             }
         }
     }

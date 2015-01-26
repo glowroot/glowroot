@@ -31,7 +31,13 @@ import org.immutables.value.Value;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.AggregateRepository;
+import org.glowroot.collector.ErrorPoint;
+import org.glowroot.collector.ErrorSummary;
 import org.glowroot.collector.ImmutableAggregate;
+import org.glowroot.collector.ImmutableErrorPoint;
+import org.glowroot.collector.ImmutableErrorSummary;
+import org.glowroot.collector.ImmutableTransactionSummary;
+import org.glowroot.collector.TransactionSummary;
 import org.glowroot.config.MarshalingRoutines;
 import org.glowroot.config.MarshalingRoutines.LowercaseMarshaling;
 import org.glowroot.local.store.DataSource.BatchAdder;

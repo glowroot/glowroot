@@ -198,18 +198,27 @@ glowroot.factory('charts', [
     }
 
     function renderTooltipHtml(from, to, dataIndex, highlightSeriesIndex, chartState, display) {
+      function smartFormat(millis) {
+        if (millis % 60000 === 0) {
+          return moment(millis).format('LT');
+        } else {
+          return moment(millis).format('LTS');
+        }
+      }
       var html = '<table><thead><tr><td colspan="3" class="legendLabel" style="font-weight: 700;">';
-      html += moment(from).format('LT');
+      html += smartFormat(from);
       html += ' to ';
-      html += moment(to).format('LT');
+      html += smartFormat(to);
       html += '</td></tr></thead><tbody>';
       var plotData = chartState.plot.getData();
       var seriesIndex;
       var dataSeries;
       var value;
+      var total = 0;
       for (seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
         dataSeries = plotData[seriesIndex];
         value = dataSeries.data[dataIndex][1];
+        total += value;
         html += '<tr';
         if (seriesIndex === highlightSeriesIndex) {
           html += ' style="background-color: #eee;"';
@@ -222,6 +231,9 @@ glowroot.factory('charts', [
         '<td class="legendLabel" style="padding-right: 10px;">' + dataSeries.label + '</td>' +
         '<td style="font-weight: 700;">' + display(value) + '</td>' +
         '</tr>';
+      }
+      if (total === 0) {
+        return 'No data';
       }
       html += '</tbody></table>';
       return html;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ public class AggregateCollectorTest {
         TransactionMetricImpl transactionMetric = mock(TransactionMetricImpl.class);
         when(transactionMetric.getName()).thenReturn("test 123");
         when(transaction.getTransactionType()).thenReturn("a type");
+        when(transaction.getTransactionName()).thenReturn("a name");
         when(transaction.getDuration()).thenReturn(MILLISECONDS.toNanos(123));
         when(transaction.getRootMetric()).thenReturn(transactionMetric);
         // when
