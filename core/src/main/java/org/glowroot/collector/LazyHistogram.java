@@ -74,17 +74,7 @@ public class LazyHistogram {
         return histogram.getValueAtPercentile(percentile);
     }
 
-    void add(long value) {
-        ensureCapacity(size + 1);
-        if (histogram != null) {
-            histogram.recordValue(value);
-        } else {
-            values[size++] = value;
-            sorted = false;
-        }
-    }
-
-    int getNeededByteBufferCapacity() {
+    public int getNeededByteBufferCapacity() {
         if (histogram == null) {
             return 8 + size * 8;
         } else {
@@ -92,7 +82,7 @@ public class LazyHistogram {
         }
     }
 
-    void encodeIntoByteBuffer(ByteBuffer targetBuffer) {
+    public void encodeIntoByteBuffer(ByteBuffer targetBuffer) {
         if (histogram == null) {
             targetBuffer.putInt(0);
             // write the size so can pre-allocate correctly sized array when reading
@@ -108,6 +98,16 @@ public class LazyHistogram {
         } else {
             targetBuffer.putInt(1);
             histogram.encodeIntoCompressedByteBuffer(targetBuffer);
+        }
+    }
+
+    void add(long value) {
+        ensureCapacity(size + 1);
+        if (histogram != null) {
+            histogram.recordValue(value);
+        } else {
+            values[size++] = value;
+            sorted = false;
         }
     }
 

@@ -158,7 +158,8 @@ class GaugeJsonService {
 
     @POST("/backend/config/gauges/remove")
     void removeGauge(String content) throws IOException {
-        String version = ObjectMappers.readRequiredValue(mapper, content, String.class);
+        String version = mapper.readValue(content, String.class);
+        checkNotNull(version);
         configService.deleteGauge(version);
     }
 

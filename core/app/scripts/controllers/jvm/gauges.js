@@ -136,7 +136,7 @@ glowroot.controller('JvmGaugesCtrl', [
       var chartTo = $scope.chartTo;
       var plusMinus;
       var rollupLevel = newRollupLevel(chartFrom, chartTo);
-      if (newRollupLevel === 0) {
+      if (rollupLevel === 0) {
         plusMinus = fixedGaugeIntervalMillis;
       } else {
         plusMinus = fixedGaugeRollupMillis;
@@ -161,6 +161,11 @@ glowroot.controller('JvmGaugesCtrl', [
               date.getTime(),
               date.getTime() + 24 * 60 * 60 * 1000
             ];
+            if (rollupLevel === 0) {
+              plot.getAxes().xaxis.options.borderGridLock = fixedGaugeIntervalMillis;
+            } else {
+              plot.getAxes().xaxis.options.borderGridLock = fixedGaugeRollupMillis;
+            }
             var plotData = data;
             plotGaugeNames = [];
             angular.forEach(query.gaugeNames, function (gaugeName) {
@@ -498,7 +503,7 @@ glowroot.controller('JvmGaugesCtrl', [
       };
       // render chart with no data points
       plot = $.plot($chart, [[]], options);
-      plot.getAxes().xaxis.options.borderGridLock = 1;
+      plot.getAxes().xaxis.options.borderGridLock = fixedGaugeIntervalMillis;
     })();
 
     plot.getAxes().yaxis.options.max = undefined;

@@ -17,7 +17,6 @@ package org.glowroot.collector;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.collect.ImmutableList;
@@ -37,7 +36,7 @@ public class AggregateCollector {
     private static final Logger logger = LoggerFactory.getLogger(TransactionProcessor.class);
 
     private volatile AggregateIntervalCollector activeIntervalCollector;
-    private final CopyOnWriteArrayList<AggregateIntervalCollector> pendingIntervalCollectors =
+    private final List<AggregateIntervalCollector> pendingIntervalCollectors =
             Lists.newCopyOnWriteArrayList();
 
     private final ScheduledExecutorService scheduledExecutor;
@@ -80,9 +79,10 @@ public class AggregateCollector {
         }
     }
 
-    public List<AggregateIntervalCollector> getIntervalCollectorsInRange(long from, long to) {
+    public List<AggregateIntervalCollector> getOrderedIntervalCollectorsInRange(long from,
+            long to) {
         List<AggregateIntervalCollector> intervalCollectors = Lists.newArrayList();
-        for (AggregateIntervalCollector intervalCollector : getAllIntervalCollectors()) {
+        for (AggregateIntervalCollector intervalCollector : getOrderedAllIntervalCollectors()) {
             long endTime = intervalCollector.getEndTime();
             if (endTime >= from && endTime <= to) {
                 intervalCollectors.add(intervalCollector);
@@ -91,7 +91,7 @@ public class AggregateCollector {
         return intervalCollectors;
     }
 
-    private List<AggregateIntervalCollector> getAllIntervalCollectors() {
+    private List<AggregateIntervalCollector> getOrderedAllIntervalCollectors() {
         // grab active first then pending (and de-dup) to make sure one is not missed between states
         AggregateIntervalCollector activeIntervalCollector = this.activeIntervalCollector;
         List<AggregateIntervalCollector> intervalCollectors =

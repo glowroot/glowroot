@@ -34,6 +34,7 @@ glowroot.controller('TransactionOverviewCtrl', [
     });
 
     function onRefreshData(data, query) {
+      $scope.transactionCounts = data.transactionCounts;
       $scope.lastDurationMillis = query.to - query.from + 1000 * $scope.layout.fixedAggregateIntervalSeconds;
       $scope.mergedAggregate = data.mergedAggregate;
     }
@@ -48,13 +49,12 @@ glowroot.controller('TransactionOverviewCtrl', [
       },
       tooltipOpts: {
         content: function (label, xval, yval, flotItem) {
-          var fixedAggregateIntervalMillis = 1000 * $scope.layout.fixedAggregateIntervalSeconds;
-          var from = xval - fixedAggregateIntervalMillis;
+          var from = xval - chartState.dataPointIntervalMillis;
           // this math is to deal with active aggregate
-          from = Math.ceil(from / fixedAggregateIntervalMillis) * fixedAggregateIntervalMillis;
+          from = Math.ceil(from / chartState.dataPointIntervalMillis) * chartState.dataPointIntervalMillis;
           var to = xval;
-          return charts.renderTooltipHtml(from, to, flotItem.dataIndex, flotItem.seriesIndex, chartState,
-              function (value) {
+          return charts.renderTooltipHtml(from, to, $scope.transactionCounts[xval], flotItem.dataIndex,
+              flotItem.seriesIndex, chartState, function (value) {
                 return value.toFixed(3) + ' seconds';
               });
         }

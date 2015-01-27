@@ -30,6 +30,7 @@ glowroot.controller('ErrorMessagesCtrl', [
     var chartState = charts.createState();
 
     $scope.showChartOverlay = 0;
+    $scope.showChartSpinner = 0;
 
     var errorMessageLimit = 25;
     var dataSeriesExtra;
@@ -42,7 +43,6 @@ glowroot.controller('ErrorMessagesCtrl', [
 
     function refreshData(deferred) {
       var date = $scope.filterDate;
-      var refreshId = ++chartState.currentRefreshId;
       var query = {
         from: $scope.chartFrom,
         to: $scope.chartTo,
@@ -64,7 +64,7 @@ glowroot.controller('ErrorMessagesCtrl', [
             } else {
               $scope.showChartSpinner--;
             }
-            if (refreshId !== chartState.currentRefreshId) {
+            if ($scope.showChartOverlay || $scope.showChartSpinner) {
               return;
             }
             $scope.chartNoData = !data.dataSeries.data.length;
@@ -75,6 +75,12 @@ glowroot.controller('ErrorMessagesCtrl', [
               date.getTime(),
               date.getTime() + 24 * 60 * 60 * 1000
             ];
+            var newRollupLevel = charts.rollupLevel(query.from, query.to);
+            if (newRollupLevel === 0) {
+              chartState.dataPointIntervalMillis = $scope.layout.fixedAggregateIntervalSeconds * 1000;
+            } else {
+              chartState.dataPointIntervalMillis = $scope.layout.fixedAggregateRollupSeconds * 1000;
+            }
             if (data.dataSeries.data.length) {
               chartState.plot.setData([{data: data.dataSeries.data}]);
             } else {
@@ -215,10 +221,9 @@ glowroot.controller('ErrorMessagesCtrl', [
               return moment(millis).format('LTS');
             }
           }
-          var fixedAggregateIntervalMillis = 1000 * $scope.layout.fixedAggregateIntervalSeconds;
-          var from = xval - fixedAggregateIntervalMillis;
+          var from = xval - chartState.dataPointIntervalMillis;
           // this math is to deal with active aggregate
-          from = Math.ceil(from / fixedAggregateIntervalMillis) * fixedAggregateIntervalMillis;
+          from = Math.ceil(from / chartState.dataPointIntervalMillis) * chartState.dataPointIntervalMillis;
           var to = xval;
           var html = '<strong>' + smartFormat(from) + ' to ' + smartFormat(to) +
               '</strong><br>Error percentage: ' + yval.toFixed(1) +

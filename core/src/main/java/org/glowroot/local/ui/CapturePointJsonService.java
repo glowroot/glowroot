@@ -180,7 +180,8 @@ class CapturePointJsonService {
 
     @POST("/backend/config/capture-points/remove")
     void removeCapturePoint(String content) throws IOException {
-        String version = ObjectMappers.readRequiredValue(mapper, content, String.class);
+        String version = mapper.readValue(content, String.class);
+        checkNotNull(version);
         configService.deleteCapturePoint(version);
     }
 

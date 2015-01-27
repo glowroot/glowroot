@@ -25,6 +25,9 @@ glowroot.controller('TransactionTabCtrl', [
   'httpErrors',
   'shortName',
   function ($scope, $location, $http, $timeout, queryStrings, httpErrors, shortName) {
+
+    var concurrentUpdateCount = 0;
+
     $scope.$watchGroup(['chartFrom', 'chartTo', 'transactionName'], function (oldValues, newValues) {
       if (newValues !== oldValues) {
         updateTabBarData();
@@ -44,8 +47,13 @@ glowroot.controller('TransactionTabCtrl', [
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName
       };
+      concurrentUpdateCount++;
       $http.get('backend/' + shortName + '/tab-bar-data' + queryStrings.encodeObject(query))
           .success(function (data) {
+            concurrentUpdateCount--;
+            if (concurrentUpdateCount) {
+              return;
+            }
             $scope.tabBarData = data;
           })
           .error(httpErrors.handler($scope));

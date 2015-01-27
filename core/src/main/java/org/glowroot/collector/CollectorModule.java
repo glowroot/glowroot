@@ -32,7 +32,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class CollectorModule {
 
     private static final long fixedAggregateIntervalSeconds =
-            Long.getLong("glowroot.internal.aggregateInterval", 300);
+            Long.getLong("glowroot.internal.aggregateInterval", 60);
     private static final long fixedGaugeIntervalSeconds =
             Long.getLong("glowroot.internal.gaugeInterval", 5);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.collector;
+package org.glowroot.common;
 
-import java.util.List;
+import java.nio.ByteBuffer;
 
-public interface AggregateRepository {
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-    void store(List<Aggregate> overallAggregates, List<Aggregate> transactionAggregates,
-            long captureTime) throws Exception;
+public class ScratchBuffer {
+
+    private @MonotonicNonNull ByteBuffer buffer;
+
+    public ByteBuffer getBuffer(int capacity) {
+        if (buffer == null || buffer.capacity() < capacity) {
+            buffer = ByteBuffer.allocate(capacity);
+        }
+        return buffer;
+    }
 }

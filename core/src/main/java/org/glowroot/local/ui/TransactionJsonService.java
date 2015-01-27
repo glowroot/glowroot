@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
@@ -28,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Json;
@@ -38,11 +40,17 @@ import org.glowroot.collector.LazyHistogram;
 import org.glowroot.collector.TransactionSummary;
 import org.glowroot.collector.TransactionSummaryMarshaler;
 import org.glowroot.common.Clock;
+import org.glowroot.local.store.AggregateDao;
+import org.glowroot.local.store.AggregateDao.TransactionSummaryQuery;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
+import org.glowroot.local.store.AggregateMerging;
+import org.glowroot.local.store.AggregateMerging.HistogramMergedAggregate;
+import org.glowroot.local.store.AggregateMerging.MetricMergedAggregate;
+import org.glowroot.local.store.AggregateMetric;
+import org.glowroot.local.store.AggregateProfileNode;
+import org.glowroot.local.store.ImmutableTransactionSummaryQuery;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;
-import org.glowroot.local.ui.TransactionCommonService.HistogramMergedAggregate;
-import org.glowroot.local.ui.TransactionCommonService.MetricMergedAggregate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -54,13 +62,18 @@ class TransactionJsonService {
 
     private final TransactionCommonService transactionCommonService;
     private final TraceDao traceDao;
-    private final DataSeriesHelper dataSeriesHelper;
+    private final Clock clock;
+
+    private final long fixedAggregateIntervalMillis;
+    private final long fixedAggregateRollupMillis;
 
     TransactionJsonService(TransactionCommonService transactionCommonService, TraceDao traceDao,
-            Clock clock, long fixedAggregateIntervalSeconds) {
+            Clock clock, long fixedAggregateIntervalSeconds, long fixedAggregateRollupSeconds) {
         this.transactionCommonService = transactionCommonService;
         this.traceDao = traceDao;
-        dataSeriesHelper = new DataSeriesHelper(clock, fixedAggregateIntervalSeconds * 1000);
+        this.clock = clock;
+        this.fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
+        this.fixedAggregateRollupMillis = fixedAggregateRollupSeconds * 1000;
     }
 
     @GET("/backend/transaction/overview")
@@ -71,22 +84,32 @@ class TransactionJsonService {
         List<Aggregate> aggregates = transactionCommonService.getAggregates(
                 request.transactionType(), request.transactionName(), request.from(), request.to());
         List<DataSeries> dataSeriesList = getDataSeriesForOverviewChart(request, aggregates);
+        Map<Long, Long> transactionCounts = getTransactionCounts(aggregates);
         if (!aggregates.isEmpty() && aggregates.get(0).captureTime() == request.from()) {
             // the left most aggregate is not really in the requested interval since it is for
             // prior capture times
             aggregates = aggregates.subList(1, aggregates.size());
         }
         HistogramMergedAggregate histogramMergedAggregate =
-                transactionCommonService.getHistogramMergedAggregate(aggregates);
+                AggregateMerging.getHistogramMergedAggregate(aggregates);
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeObjectField("dataSeries", dataSeriesList);
+        jg.writeObjectField("transactionCounts", transactionCounts);
         jg.writeObjectField("mergedAggregate", histogramMergedAggregate);
         jg.writeEndObject();
         jg.close();
         return sb.toString();
+    }
+
+    private Map<Long, Long> getTransactionCounts(List<Aggregate> aggregates) {
+        Map<Long, Long> transactionCounts = Maps.newHashMap();
+        for (Aggregate aggregate : aggregates) {
+            transactionCounts.put(aggregate.captureTime(), aggregate.transactionCount());
+        }
+        return transactionCounts;
     }
 
     @GET("/backend/transaction/metrics")
@@ -97,18 +120,20 @@ class TransactionJsonService {
         List<Aggregate> aggregates = transactionCommonService.getAggregates(
                 request.transactionType(), request.transactionName(), request.from(), request.to());
         List<DataSeries> dataSeriesList = getDataSeriesForMetricsChart(request, aggregates);
+        Map<Long, Long> transactionCounts = getTransactionCounts(aggregates);
         if (!aggregates.isEmpty() && aggregates.get(0).captureTime() == request.from()) {
             // the left most aggregate is not really in the requested interval since it is for
             // prior capture times
             aggregates = aggregates.subList(1, aggregates.size());
         }
         MetricMergedAggregate metricMergedAggregate =
-                transactionCommonService.getMetricMergedAggregate(aggregates);
+                AggregateMerging.getMetricMergedAggregate(aggregates);
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeObjectField("dataSeries", dataSeriesList);
+        jg.writeObjectField("transactionCounts", transactionCounts);
         jg.writeObjectField("mergedAggregate", metricMergedAggregate);
         jg.writeEndObject();
         jg.close();
@@ -135,11 +160,18 @@ class TransactionJsonService {
         TransactionSummaryRequest request =
                 QueryStrings.decode(queryString, TransactionSummaryRequest.class);
 
-        TransactionSummary overallSummary = transactionCommonService.readOverallTransactionSummary(
-                request.transactionType(), request.from(), request.to());
+        TransactionSummary overallSummary = transactionCommonService.readOverallSummary(
+                request.transactionType(), request.from() + 1, request.to());
+
+        TransactionSummaryQuery query = ImmutableTransactionSummaryQuery.builder()
+                .transactionType(request.transactionType())
+                .from(request.from() + 1)
+                .to(request.to())
+                .sortOrder(request.sortOrder())
+                .limit(request.limit())
+                .build();
         QueryResult<TransactionSummary> queryResult =
-                transactionCommonService.readTransactionSummaries(request.transactionType(),
-                        request.from(), request.to(), request.sortOrder(), request.limit());
+                transactionCommonService.readTransactionSummaries(query);
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -214,6 +246,8 @@ class TransactionJsonService {
         if (aggregates.isEmpty()) {
             return Lists.newArrayList();
         }
+        DataSeriesHelper dataSeriesHelper =
+                new DataSeriesHelper(clock, getDataPointIntervalMillis(request));
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         DataSeries dataSeries1 = new DataSeries("50th percentile");
         DataSeries dataSeries2 = new DataSeries("95th percentile");
@@ -262,6 +296,8 @@ class TransactionJsonService {
 
     private List<DataSeries> getMetricDataSeries(TransactionDataRequest request,
             List<StackedPoint> stackedPoints) {
+        DataSeriesHelper dataSeriesHelper =
+                new DataSeriesHelper(clock, getDataPointIntervalMillis(request));
         final int topX = 5;
         List<String> metricNames = getTopMetricNames(stackedPoints, topX + 1);
         List<DataSeries> dataSeriesList = Lists.newArrayList();
@@ -314,8 +350,16 @@ class TransactionJsonService {
         return dataSeriesList;
     }
 
+    private long getDataPointIntervalMillis(TransactionDataRequest request) {
+        if (request.to() - request.from() > AggregateDao.ROLLUP_THRESHOLD_MILLIS) {
+            return fixedAggregateRollupMillis;
+        } else {
+            return fixedAggregateIntervalMillis;
+        }
+    }
+
     // calculate top 5 metrics
-    private List<String> getTopMetricNames(List<StackedPoint> stackedPoints, int topX) {
+    private static List<String> getTopMetricNames(List<StackedPoint> stackedPoints, int topX) {
         MutableLongMap<String> metricTotals = new MutableLongMap<String>();
         for (StackedPoint stackedPoint : stackedPoints) {
             for (Entry<String, MutableLong> entry : stackedPoint.getStackedMetrics().entrySet()) {

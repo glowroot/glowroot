@@ -15,6 +15,7 @@
  */
 package org.glowroot.local.ui;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +30,10 @@ import org.glowroot.collector.AggregateCollector;
 import org.glowroot.collector.AggregateIntervalCollector;
 import org.glowroot.collector.ErrorPoint;
 import org.glowroot.collector.ErrorSummary;
+import org.glowroot.collector.ImmutableErrorPoint;
 import org.glowroot.collector.ImmutableErrorSummary;
 import org.glowroot.local.store.AggregateDao;
+import org.glowroot.local.store.AggregateDao.ErrorSummaryQuery;
 import org.glowroot.local.store.AggregateDao.ErrorSummarySortOrder;
 import org.glowroot.local.store.ImmutableErrorSummaryQuery;
 import org.glowroot.local.store.QueryResult;
@@ -42,25 +45,26 @@ class ErrorCommonService {
     private final AggregateDao aggregateDao;
     private final @Nullable AggregateCollector aggregateCollector;
 
-    ErrorCommonService(AggregateDao aggregateDao,
-            @Nullable AggregateCollector aggregateCollector) {
+    private final long fixedRollupMillis;
+
+    ErrorCommonService(AggregateDao aggregateDao, @Nullable AggregateCollector aggregateCollector,
+            long fixedRollupSeconds) {
         this.aggregateDao = aggregateDao;
         this.aggregateCollector = aggregateCollector;
+        this.fixedRollupMillis = fixedRollupSeconds * 1000;
     }
 
     ErrorSummary readOverallErrorSummary(String transactionType, long from, long to)
             throws SQLException {
-        List<AggregateIntervalCollector> intervalCollectors =
-                getIntervalCollectorsInRange(from, to);
-        long possiblyRevisedTo = to;
-        if (!intervalCollectors.isEmpty()) {
-            // -1 since query 'to' is inclusive
-            // this way don't need to worry about de-dupping with stored aggregates
-            possiblyRevisedTo = getMinEndTime(intervalCollectors) - 1;
+        List<AggregateIntervalCollector> orderedIntervalCollectors =
+                getOrderedIntervalCollectorsInRange(from, to);
+        if (orderedIntervalCollectors.isEmpty()) {
+            return aggregateDao.readOverallErrorSummary(transactionType, from, to);
         }
-        ErrorSummary overallSummary = aggregateDao.readOverallErrorSummary(
-                transactionType, from, possiblyRevisedTo);
-        for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
+        long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
+        ErrorSummary overallSummary =
+                aggregateDao.readOverallErrorSummary(transactionType, from, revisedTo);
+        for (AggregateIntervalCollector intervalCollector : orderedIntervalCollectors) {
             ErrorSummary liveOverallSummary =
                     intervalCollector.getLiveOverallErrorSummary(transactionType);
             if (liveOverallSummary != null) {
@@ -70,28 +74,144 @@ class ErrorCommonService {
         return overallSummary;
     }
 
-    QueryResult<ErrorSummary> readTransactionErrorSummaries(String transactionType, long from,
-            long to, ErrorSummarySortOrder sortOrder, int limit) throws SQLException {
-        List<AggregateIntervalCollector> intervalCollectors =
-                getIntervalCollectorsInRange(from, to);
-        long possiblyRevisedTo = to;
-        if (!intervalCollectors.isEmpty()) {
-            // -1 since query 'to' is inclusive
-            // this way don't need to worry about de-dupping with stored aggregates
-            possiblyRevisedTo = getMinEndTime(intervalCollectors) - 1;
+    QueryResult<ErrorSummary> readTransactionErrorSummaries(ErrorSummaryQuery query)
+            throws SQLException {
+        List<AggregateIntervalCollector> orderedIntervalCollectors =
+                getOrderedIntervalCollectorsInRange(query.from(), query.to());
+        if (orderedIntervalCollectors.isEmpty()) {
+            return aggregateDao.readTransactionErrorSummaries(query);
         }
-        ImmutableErrorSummaryQuery query = ImmutableErrorSummaryQuery.builder()
-                .transactionType(transactionType)
-                .from(from)
-                .to(possiblyRevisedTo)
-                .sortOrder(sortOrder)
-                .limit(limit)
-                .build();
+        long revisedTo = getRevisedTo(query.to(), orderedIntervalCollectors);
+        ErrorSummaryQuery revisedQuery = ((ImmutableErrorSummaryQuery) query).withTo(revisedTo);
         QueryResult<ErrorSummary> queryResult =
-                aggregateDao.readTransactionErrorSummaries(query);
-        if (intervalCollectors.isEmpty()) {
+                aggregateDao.readTransactionErrorSummaries(revisedQuery);
+        if (orderedIntervalCollectors.isEmpty()) {
             return queryResult;
         }
+        return mergeInLiveTransactionErrorSummaries(revisedQuery, queryResult,
+                orderedIntervalCollectors);
+    }
+
+    List<ErrorPoint> readErrorPoints(String transactionType, @Nullable String transactionName,
+            long from, long to) throws Exception {
+        int rollupLevel = getRollupLevel(from, to);
+        List<AggregateIntervalCollector> orderedIntervalCollectors =
+                getOrderedIntervalCollectorsInRange(from, to);
+        long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
+        List<ErrorPoint> errorPoints = readErrorPointsFromDao(transactionType, transactionName,
+                from, revisedTo, rollupLevel);
+        if (rollupLevel == 0) {
+            errorPoints = Lists.newArrayList(errorPoints);
+            errorPoints.addAll(getLiveErrorPoints(transactionType, transactionName,
+                    orderedIntervalCollectors));
+            return errorPoints;
+        }
+        long revisedFrom = revisedTo - AggregateDao.ROLLUP_THRESHOLD_MILLIS;
+        if (!errorPoints.isEmpty()) {
+            long lastRolledUpTime = errorPoints.get(errorPoints.size() - 1).captureTime();
+            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
+        }
+        List<ErrorPoint> orderedNonRolledUpErrorPoints = Lists.newArrayList();
+        orderedNonRolledUpErrorPoints.addAll(readErrorPointsFromDao(transactionType,
+                transactionName, revisedFrom, revisedTo, 0));
+        orderedNonRolledUpErrorPoints.addAll(getLiveErrorPoints(transactionType, transactionName,
+                orderedIntervalCollectors));
+        errorPoints = Lists.newArrayList(errorPoints);
+        errorPoints.addAll(rollUp(orderedNonRolledUpErrorPoints));
+        return errorPoints;
+    }
+
+    private List<AggregateIntervalCollector> getOrderedIntervalCollectorsInRange(long from,
+            long to) {
+        if (aggregateCollector == null) {
+            return ImmutableList.of();
+        }
+        return aggregateCollector.getOrderedIntervalCollectorsInRange(from, to);
+    }
+
+    private List<ErrorPoint> rollUp(List<ErrorPoint> orderedNonRolledUpErrorPoints) {
+        List<ErrorPoint> rolledUpErrorPoints = Lists.newArrayList();
+        long currRollupTime = Long.MIN_VALUE;
+        long currCaptureTime = Long.MIN_VALUE;
+        long currErrorCount = 0;
+        long currTransactionCount = 0;
+        for (ErrorPoint errorPoint : orderedNonRolledUpErrorPoints) {
+            long rollupTime = (long) Math.ceil(errorPoint.captureTime()
+                    / (double) fixedRollupMillis) * fixedRollupMillis;
+            if (rollupTime != currRollupTime && currTransactionCount != 0) {
+                rolledUpErrorPoints.add(ImmutableErrorPoint.of(currCaptureTime, currErrorCount,
+                        currTransactionCount));
+                currErrorCount = 0;
+                currTransactionCount = 0;
+            }
+            currRollupTime = rollupTime;
+            currCaptureTime = errorPoint.captureTime();
+            currErrorCount += errorPoint.errorCount();
+            currTransactionCount += errorPoint.transactionCount();
+        }
+        if (currTransactionCount != 0) {
+            rolledUpErrorPoints.add(
+                    ImmutableErrorPoint.of(currCaptureTime, currErrorCount, currTransactionCount));
+        }
+        return rolledUpErrorPoints;
+    }
+
+    private static int getRollupLevel(long from, long to) {
+        if (to - from <= AggregateDao.ROLLUP_THRESHOLD_MILLIS) {
+            return 0;
+        } else {
+            return 1;
+        }
+    }
+
+    private List<ErrorPoint> readErrorPointsFromDao(String transactionType,
+            @Nullable String transactionName, long from, long to, int rollupLevel)
+            throws SQLException {
+        if (transactionName == null) {
+            return aggregateDao.readOverallErrorPoints(transactionType, from, to, rollupLevel);
+        } else {
+            return aggregateDao.readTransactionErrorPoints(transactionType, transactionName, from,
+                    to, rollupLevel);
+        }
+    }
+
+    private static long getRevisedTo(long to,
+            List<AggregateIntervalCollector> orderedIntervalCollectors) {
+        if (orderedIntervalCollectors.isEmpty()) {
+            return to;
+        } else {
+            // -1 since query 'to' is inclusive
+            // this way don't need to worry about de-dupping between live and stored aggregates
+            return orderedIntervalCollectors.get(0).getEndTime() - 1;
+        }
+    }
+
+    private static List<ErrorPoint> getLiveErrorPoints(String transactionType,
+            @Nullable String transactionName, List<AggregateIntervalCollector> intervalCollectors)
+            throws IOException {
+        List<ErrorPoint> errorPoints = Lists.newArrayList();
+        for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
+            ErrorPoint liveErrorPoint =
+                    intervalCollector.getLiveErrorPoint(transactionType, transactionName);
+            if (liveErrorPoint != null) {
+                errorPoints.add(liveErrorPoint);
+            }
+        }
+        return errorPoints;
+    }
+
+    private static ErrorSummary combineErrorSummaries(
+            @Nullable String transactionName, ErrorSummary summary1, ErrorSummary summary2) {
+        return ImmutableErrorSummary.builder()
+                .transactionName(transactionName)
+                .errorCount(summary1.errorCount() + summary2.errorCount())
+                .transactionCount(summary1.transactionCount() + summary2.transactionCount())
+                .build();
+    }
+
+    private static QueryResult<ErrorSummary> mergeInLiveTransactionErrorSummaries(
+            ErrorSummaryQuery query, QueryResult<ErrorSummary> queryResult,
+            List<AggregateIntervalCollector> intervalCollectors) {
         List<ErrorSummary> errorSummaries = queryResult.records();
         Map<String, ErrorSummary> errorSummaryMap = Maps.newHashMap();
         for (ErrorSummary errorSummary : errorSummaries) {
@@ -102,7 +222,7 @@ class ErrorCommonService {
         }
         for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
             List<ErrorSummary> liveErrorSummaries =
-                    intervalCollector.getLiveTransactionErrorSummaries(transactionType);
+                    intervalCollector.getLiveTransactionErrorSummaries(query.transactionType());
             for (ErrorSummary liveErrorSummary : liveErrorSummaries) {
                 String transactionName = liveErrorSummary.transactionName();
                 // transaction name is only null for overall summary
@@ -116,68 +236,13 @@ class ErrorCommonService {
                 }
             }
         }
-        errorSummaries = sortErrorSummaries(errorSummaryMap.values(), sortOrder);
+        errorSummaries = sortErrorSummaries(errorSummaryMap.values(), query.sortOrder());
         boolean moreAvailable = queryResult.moreAvailable();
-        if (errorSummaries.size() > limit) {
+        if (errorSummaries.size() > query.limit()) {
             moreAvailable = true;
-            errorSummaries = errorSummaries.subList(0, limit);
+            errorSummaries = errorSummaries.subList(0, query.limit());
         }
         return new QueryResult<ErrorSummary>(errorSummaries, moreAvailable);
-    }
-
-    List<ErrorPoint> readErrorPoints(String transactionType, @Nullable String transactionName,
-            long from, long to) throws Exception {
-        List<AggregateIntervalCollector> intervalCollectors =
-                getIntervalCollectorsInRange(from, to);
-        long possiblyRevisedTo = to;
-        if (!intervalCollectors.isEmpty()) {
-            // -1 since query 'to' is inclusive
-            // this way don't need to worry about de-dupping with stored aggregates
-            possiblyRevisedTo = getMinEndTime(intervalCollectors) - 1;
-        }
-        List<ErrorPoint> errorPoints;
-        if (transactionName == null) {
-            errorPoints = aggregateDao.readOverallErrorPoints(transactionType, from,
-                    possiblyRevisedTo);
-        } else {
-            errorPoints = aggregateDao.readTransactionErrorPoints(transactionType, transactionName,
-                    from, possiblyRevisedTo);
-        }
-        if (!intervalCollectors.isEmpty()) {
-            errorPoints = Lists.newArrayList(errorPoints);
-            for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
-                ErrorPoint liveErrorPoint =
-                        intervalCollector.getLiveErrorPoint(transactionType, transactionName);
-                if (liveErrorPoint != null) {
-                    errorPoints.add(liveErrorPoint);
-                }
-            }
-        }
-        return errorPoints;
-    }
-
-    private List<AggregateIntervalCollector> getIntervalCollectorsInRange(long from, long to) {
-        if (aggregateCollector == null) {
-            return ImmutableList.of();
-        }
-        return aggregateCollector.getIntervalCollectorsInRange(from, to);
-    }
-
-    private static long getMinEndTime(List<AggregateIntervalCollector> intervalCollectors) {
-        long min = Long.MAX_VALUE;
-        for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
-            min = Math.min(intervalCollector.getEndTime(), min);
-        }
-        return min;
-    }
-
-    private static ErrorSummary combineErrorSummaries(
-            @Nullable String transactionName, ErrorSummary summary1, ErrorSummary summary2) {
-        return ImmutableErrorSummary.builder()
-                .transactionName(transactionName)
-                .errorCount(summary1.errorCount() + summary2.errorCount())
-                .transactionCount(summary1.transactionCount() + summary2.transactionCount())
-                .build();
     }
 
     private static List<ErrorSummary> sortErrorSummaries(Iterable<ErrorSummary> errorSummaries,

@@ -26,8 +26,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import org.glowroot.collector.AggregateBuilder.ScratchBuffer;
 import org.glowroot.common.Clock;
+import org.glowroot.common.ScratchBuffer;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.Transaction;
 
@@ -37,8 +37,7 @@ public class AggregateIntervalCollector {
     private final Map<String, IntervalTypeCollector> typeCollectors = Maps.newConcurrentMap();
     private final Clock clock;
 
-    AggregateIntervalCollector(long currentTime, long fixedAggregateIntervalMillis,
-            Clock clock) {
+    AggregateIntervalCollector(long currentTime, long fixedAggregateIntervalMillis, Clock clock) {
         this.endTime = (long) Math.ceil(currentTime / (double) fixedAggregateIntervalMillis)
                 * fixedAggregateIntervalMillis;
         this.clock = clock;
@@ -65,7 +64,7 @@ public class AggregateIntervalCollector {
                 transactionAggregates.add(build(f.getValue(), scratchBuffer));
             }
         }
-        aggregateRepository.store(overallAggregates, transactionAggregates);
+        aggregateRepository.store(overallAggregates, transactionAggregates, endTime);
     }
 
     public @Nullable TransactionSummary getLiveOverallSummary(String transactionType) {
@@ -129,8 +128,8 @@ public class AggregateIntervalCollector {
         if (aggregateBuilder == null) {
             return null;
         }
-        long capturedAt = Math.min(clock.currentTimeMillis(), endTime);
         synchronized (aggregateBuilder) {
+            long capturedAt = Math.min(clock.currentTimeMillis(), endTime);
             return aggregateBuilder.build(capturedAt, new ScratchBuffer());
         }
     }
@@ -142,8 +141,8 @@ public class AggregateIntervalCollector {
         if (aggregateBuilder == null) {
             return null;
         }
-        long capturedAt = Math.min(clock.currentTimeMillis(), endTime);
         synchronized (aggregateBuilder) {
+            long capturedAt = Math.min(clock.currentTimeMillis(), endTime);
             return aggregateBuilder.buildErrorPoint(capturedAt);
         }
     }

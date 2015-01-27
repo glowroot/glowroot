@@ -29,8 +29,6 @@ glowroot.factory('charts', [
     function createState() {
       return {
         plot: undefined,
-        currentRefreshId: 0,
-        currentZoomId: 0,
         keyedColorPool: keyedColorPools.create()
       };
     }
@@ -45,36 +43,20 @@ glowroot.factory('charts', [
         chartState.plot.draw();
       });
 
-      $chart.bind('plotzoom', function (event, plot) {
+      $chart.bind('plotzoom', function (event, plot, args) {
+        var zoomingOut = args.amount && args.amount < 1;
         $scope.$apply(function () {
-          // throw up spinner right away
-          $scope.showChartSpinner++;
-          // need to call setupGrid on each zoom to handle rapid zooming
           plot.setupGrid();
-          var zoomId = ++chartState.currentZoomId;
-          // use 100 millisecond delay to handle rapid zooming
-          $timeout(function () {
-            if (zoomId === chartState.currentZoomId) {
-              $scope.$parent.chartFrom = plot.getAxes().xaxis.min;
-              $scope.$parent.chartTo = plot.getAxes().xaxis.max;
-              $scope.$parent.chartFromToDefault = false;
-              $location.search($scope.buildQueryObject()).replace();
-            }
-            $scope.showChartSpinner--;
-          }, 100);
+          updateRange($scope, plot, plot.getAxes().xaxis.min, plot.getAxes().xaxis.max, zoomingOut);
+          $location.search($scope.buildQueryObject()).replace();
         });
       });
 
       $chart.bind('plotselected', function (event, ranges) {
         $scope.$apply(function () {
           chartState.plot.clearSelection();
-          // perform the zoom
-          chartState.plot.getAxes().xaxis.options.min = ranges.xaxis.from;
-          chartState.plot.getAxes().xaxis.options.max = ranges.xaxis.to;
-          chartState.plot.setupGrid();
-          $scope.$parent.chartFrom = chartState.plot.getAxes().xaxis.min;
-          $scope.$parent.chartTo = chartState.plot.getAxes().xaxis.max;
-          $scope.$parent.chartFromToDefault = false;
+          // unlike plotzoom, plotselected should shrink down
+          updateRange($scope, chartState.plot, ranges.xaxis.from, ranges.xaxis.to);
           $location.search($scope.buildQueryObject()).replace();
         });
       });
@@ -140,7 +122,6 @@ glowroot.factory('charts', [
         }
       };
       chartState.plot = $.plot($chart, data, $.extend(true, options, chartOptions));
-      chartState.plot.getAxes().xaxis.options.borderGridLock = 1000 * $scope.layout.fixedAggregateIntervalSeconds;
       chartState.plot.getAxes().yaxis.options.max = undefined;
     }
 
@@ -153,11 +134,11 @@ glowroot.factory('charts', [
       };
       var date = $scope.filterDate;
       $scope.showChartSpinner++;
-      var refreshId = ++chartState.currentRefreshId;
       $http.get(url + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.showChartSpinner--;
-            if (refreshId !== chartState.currentRefreshId) {
+            if ($scope.showChartSpinner) {
+              // ignore this response, another response has been stacked
               return;
             }
             $scope.chartNoData = !data.dataSeries.length;
@@ -168,6 +149,12 @@ glowroot.factory('charts', [
               date.getTime(),
               date.getTime() + 24 * 60 * 60 * 1000
             ];
+            var newRollupLevel = rollupLevel(query.from, query.to);
+            if (newRollupLevel === 0) {
+              chartState.dataPointIntervalMillis = $scope.layout.fixedAggregateIntervalSeconds * 1000;
+            } else {
+              chartState.dataPointIntervalMillis = $scope.layout.fixedAggregateRollupSeconds * 1000;
+            }
             var plotData = [];
             var labels = [];
             angular.forEach(data.dataSeries, function (dataSeries) {
@@ -197,7 +184,55 @@ glowroot.factory('charts', [
           });
     }
 
-    function renderTooltipHtml(from, to, dataIndex, highlightSeriesIndex, chartState, display) {
+    function updateRange($scope, plot, from, to, zoomingOut) {
+      var dataPointIntervalMillis;
+      var newRollupLevel = rollupLevel(from, to);
+      if (newRollupLevel === 0) {
+        dataPointIntervalMillis = $scope.layout.fixedAggregateIntervalSeconds * 1000;
+      } else {
+        dataPointIntervalMillis = $scope.layout.fixedAggregateRollupSeconds * 1000;
+      }
+      var revisedFrom;
+      var revisedTo;
+      if (zoomingOut) {
+        revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
+        revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
+      } else {
+        revisedFrom = Math.ceil(from / dataPointIntervalMillis) * dataPointIntervalMillis;
+        revisedTo = Math.floor(to / dataPointIntervalMillis) * dataPointIntervalMillis;
+        if (revisedTo <= revisedFrom) {
+          // shrunk too far
+          if (revisedFrom - from < to - revisedTo) {
+            // 'from' was not revised as much as 'to'
+            revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
+            revisedTo = revisedFrom + dataPointIntervalMillis;
+          } else {
+            revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
+            revisedFrom = revisedTo - dataPointIntervalMillis;
+          }
+        }
+      }
+      if (revisedFrom === $scope.$parent.chartFrom && revisedTo === $scope.$parent.chartTo) {
+        // no change, so chart won't be refreshed, so need to correct the range manually
+        plot.getAxes().xaxis.options.min = revisedFrom;
+        plot.getAxes().xaxis.options.max = revisedTo;
+        plot.setupGrid();
+      } else {
+        $scope.$parent.chartFrom = revisedFrom;
+        $scope.$parent.chartTo = revisedTo;
+        $scope.$parent.chartFromToDefault = false;
+      }
+    }
+
+    function rollupLevel(from, to) {
+      if (to - from <= 2 * 3600 * 1000) {
+        return 0;
+      } else {
+        return 1;
+      }
+    }
+
+    function renderTooltipHtml(from, to, transactionCount, dataIndex, highlightSeriesIndex, chartState, display) {
       function smartFormat(millis) {
         if (millis % 60000 === 0) {
           return moment(millis).format('LT');
@@ -205,10 +240,14 @@ glowroot.factory('charts', [
           return moment(millis).format('LTS');
         }
       }
+
       var html = '<table><thead><tr><td colspan="3" class="legendLabel" style="font-weight: 700;">';
       html += smartFormat(from);
       html += ' to ';
       html += smartFormat(to);
+      html += '</td></tr><tr><td colspan="3" class="legendLabel">';
+      html += transactionCount;
+      html += ' transactions';
       html += '</td></tr></thead><tbody>';
       var plotData = chartState.plot.getData();
       var seriesIndex;
@@ -244,7 +283,8 @@ glowroot.factory('charts', [
       init: init,
       plot: plot,
       refreshData: refreshData,
-      renderTooltipHtml: renderTooltipHtml
+      renderTooltipHtml: renderTooltipHtml,
+      rollupLevel: rollupLevel
     };
   }
 ]);

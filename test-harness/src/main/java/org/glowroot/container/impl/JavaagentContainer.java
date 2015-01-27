@@ -27,6 +27,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
@@ -322,14 +323,21 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
         if (!useFileDb) {
             command.add("-Dglowroot.internal.h2.memdb=true");
         }
-        Integer aggregateInterval = Integer.getInteger("glowroot.internal.aggregateInterval");
-        if (aggregateInterval != null) {
-            command.add("-Dglowroot.internal.aggregateInterval=" + aggregateInterval);
+        for (Entry<Object, Object> entry : System.getProperties().entrySet()) {
+            Object keyObject = entry.getKey();
+            if (!(keyObject instanceof String)) {
+                continue;
+            }
+            String key = (String) keyObject;
+            if (key.startsWith("glowroot.internal.")) {
+                command.add("-D" + key + "=" + entry.getValue());
+            }
         }
         command.add(JavaagentMain.class.getName());
         command.add(Integer.toString(containerPort));
         return command;
     }
+
     private static List<String> getJacocoArgsFromCurrentJvm() {
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
         List<String> arguments = runtimeMXBean.getInputArguments();

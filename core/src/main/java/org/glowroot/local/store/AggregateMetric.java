@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.local.ui;
+package org.glowroot.local.store;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,8 +27,8 @@ import com.google.common.collect.Lists;
 
 import org.glowroot.markers.UsedByJsonBinding;
 
-import static org.glowroot.local.ui.ObjectMappers.checkRequiredProperty;
-import static org.glowroot.local.ui.ObjectMappers.orEmpty;
+import static org.glowroot.local.store.ObjectMappers.checkRequiredProperty;
+import static org.glowroot.local.store.ObjectMappers.orEmpty;
 
 @UsedByJsonBinding
 public class AggregateMetric {
@@ -39,7 +39,7 @@ public class AggregateMetric {
     private long count;
     private final List<AggregateMetric> nestedMetrics;
 
-    static AggregateMetric createSyntheticRootMetric() {
+    public static AggregateMetric createSyntheticRootMetric() {
         return new AggregateMetric("<multiple root nodes>", 0, 0, new ArrayList<AggregateMetric>());
     }
 
@@ -51,12 +51,24 @@ public class AggregateMetric {
         this.nestedMetrics = Lists.newArrayList(nestedMetrics);
     }
 
-    void incrementCount(long num) {
-        count += num;
-    }
-
-    void incrementTotalMicros(long num) {
-        totalMicros += num;
+    public void mergeMatchedMetric(AggregateMetric aggregateMetric) {
+        count += aggregateMetric.getCount();
+        totalMicros += aggregateMetric.getTotalMicros();
+        for (AggregateMetric toBeMergedNestedMetric : aggregateMetric.getNestedMetrics()) {
+            // for each to-be-merged child node look for a match
+            AggregateMetric foundMatchingChildMetric = null;
+            for (AggregateMetric childMetric : nestedMetrics) {
+                if (toBeMergedNestedMetric.getName().equals(childMetric.getName())) {
+                    foundMatchingChildMetric = childMetric;
+                    break;
+                }
+            }
+            if (foundMatchingChildMetric == null) {
+                nestedMetrics.add(toBeMergedNestedMetric);
+            } else {
+                foundMatchingChildMetric.mergeMatchedMetric(toBeMergedNestedMetric);
+            }
+        }
     }
 
     public String getName() {

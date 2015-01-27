@@ -364,14 +364,15 @@ glowroot.directive('gtSpinner', function () {
     scope.$watch(iAttrs.gtShow,
         function (newValue) {
           if (newValue) {
-            if (spinner === undefined) {
-              var left;
-              if (iAttrs.gtSpinnerInline) {
-                left = 10;
-              }
-              // z-index should be less than navbar (which is 1030)
-              spinner = new Spinner({lines: 9, radius: 8, width: 5, left: left, zIndex: 1020});
+            if (spinner) {
+              return;
             }
+            var left;
+            if (iAttrs.gtSpinnerInline) {
+              left = 10;
+            }
+            // z-index should be less than navbar (which is 1030)
+            spinner = new Spinner({lines: 9, radius: 8, width: 5, left: left, zIndex: 1020});
             if (iAttrs.gtNoDelay) {
               iElement.removeClass('hide');
               spinner.spin(iElement[0]);
@@ -390,6 +391,7 @@ glowroot.directive('gtSpinner', function () {
             clearTimeout(timer);
             iElement.addClass('hide');
             spinner.stop();
+            spinner = undefined;
           }
         });
   };

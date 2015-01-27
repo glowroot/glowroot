@@ -32,9 +32,6 @@ glowroot.controller('TracesCtrl', [
 
     var plot;
 
-    var currentRefreshId = 0;
-    var currentZoomId = 0;
-
     var $chart = $('#chart');
 
     var appliedFilter;
@@ -69,7 +66,6 @@ glowroot.controller('TracesCtrl', [
       var limit = appliedFilter.limit;
       var durationLow = appliedFilter.durationLow;
       var durationHigh = appliedFilter.durationHigh;
-      var refreshId = ++currentRefreshId;
       var query = angular.copy(appliedFilter);
       // convert duration from seconds to nanoseconds
       query.durationLow = Math.ceil(query.durationLow * 1000000000);
@@ -87,7 +83,7 @@ glowroot.controller('TracesCtrl', [
       $http.get('backend/trace/points' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.showChartSpinner--;
-            if (refreshId !== currentRefreshId) {
+            if ($scope.showChartSpinner) {
               return;
             }
             $scope.chartNoData = !data.normalPoints.length && !data.errorPoints.length && !data.activePoints.length;
@@ -132,38 +128,24 @@ glowroot.controller('TracesCtrl', [
 
     $chart.bind('plotzoom', function (event, plot, args) {
       $scope.$apply(function () {
-        // throw up spinner right away
-        $scope.showChartSpinner++;
         var zoomingOut = args.amount && args.amount < 1;
         if (zoomingOut) {
           plot.getAxes().yaxis.options.min = 0;
           plot.getAxes().yaxis.options.realMax = undefined;
         }
+        plot.setupGrid();
         if (zoomingOut || $scope.chartLimitExceeded) {
-          // need to call setupGrid on each zoom to handle rapid zooming
-          plot.setupGrid();
-          var zoomId = ++currentZoomId;
-          // use 100 millisecond delay to handle rapid zooming
-          $timeout(function () {
-            if (zoomId === currentZoomId) {
-              afterZoom(zoomingOut);
-              filterFromToDefault = false;
-              updateLocation();
-              refreshChart();
-            }
-            $scope.showChartSpinner--;
-          }, 100);
-        } else {
-          // no need to fetch new data
-          plot.setData(getFilteredData());
-          plot.setupGrid();
-          plot.draw();
           afterZoom(zoomingOut);
           filterFromToDefault = false;
           updateLocation();
-          // increment currentRefreshId to cancel any refresh in action
-          currentRefreshId++;
-          $scope.showChartSpinner--;
+          refreshChart();
+        } else {
+          afterZoom(zoomingOut);
+          filterFromToDefault = false;
+          updateLocation();
+          // no need to fetch new data
+          plot.setData(getFilteredData());
+          plot.draw();
         }
       });
     });
@@ -177,21 +159,19 @@ glowroot.controller('TracesCtrl', [
         plot.getAxes().xaxis.options.max = ranges.xaxis.to;
         plot.getAxes().yaxis.options.min = ranges.yaxis.from;
         plot.getAxes().yaxis.options.realMax = ranges.yaxis.to;
+        plot.setupGrid();
         if ($scope.chartLimitExceeded) {
-          refreshChart();
           afterZoom();
           filterFromToDefault = false;
           updateLocation();
+          refreshChart();
         } else {
-          plot.setData(getFilteredData());
-          plot.setupGrid();
-          plot.draw();
           afterZoom();
           filterFromToDefault = false;
           updateLocation();
           // no need to fetch new data
-          // increment currentRefreshId to cancel any refresh in action
-          currentRefreshId++;
+          plot.setData(getFilteredData());
+          plot.draw();
         }
       });
     });

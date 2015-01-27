@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,32 +24,32 @@ import org.glowroot.common.Clock;
 class DataSeriesHelper {
 
     private final Clock clock;
-    private final long fixedAggregateIntervalMillis;
+    private final long dataPointIntervalMillis;
 
-    DataSeriesHelper(Clock clock, long fixedAggregateIntervalMillis) {
+    DataSeriesHelper(Clock clock, long dataPointIntervalMillis) {
         this.clock = clock;
-        this.fixedAggregateIntervalMillis = fixedAggregateIntervalMillis;
+        this.dataPointIntervalMillis = dataPointIntervalMillis;
     }
 
     void addInitialUpslope(long requestFrom, long captureTime, List<DataSeries> dataSeriesList,
             @Nullable DataSeries otherDataSeries) {
-        long millisecondsFromEdge = captureTime - requestFrom;
-        if (millisecondsFromEdge < fixedAggregateIntervalMillis / 2) {
+        if (captureTime == requestFrom) {
             return;
         }
         // bring up from zero
+        long priorCaptureTime = getPriorCaptureTime(captureTime);
         for (DataSeries dataSeries : dataSeriesList) {
-            dataSeries.add(captureTime - fixedAggregateIntervalMillis / 2, 0);
+            dataSeries.add(priorCaptureTime, 0);
         }
         if (otherDataSeries != null) {
-            otherDataSeries.add(captureTime - fixedAggregateIntervalMillis / 2, 0);
+            otherDataSeries.add(priorCaptureTime, 0);
         }
     }
 
     void addGapIfNeeded(long lastCaptureTime, long captureTime, List<DataSeries> dataSeriesList,
             @Nullable DataSeries otherDataSeries) {
         long millisecondsSinceLastPoint = captureTime - lastCaptureTime;
-        if (millisecondsSinceLastPoint < fixedAggregateIntervalMillis * 1.5) {
+        if (millisecondsSinceLastPoint <= dataPointIntervalMillis) {
             return;
         }
         // gap between points, bring down to zero and then back up from zero to show gap
@@ -64,57 +64,76 @@ class DataSeriesHelper {
     void addFinalDownslope(long requestCaptureTimeTo, List<DataSeries> dataSeriesList,
             @Nullable DataSeries otherDataSeries, long lastCaptureTime) {
         long millisecondsAgoFromNow = clock.currentTimeMillis() - lastCaptureTime;
-        if (millisecondsAgoFromNow < fixedAggregateIntervalMillis * 1.5) {
+        if (millisecondsAgoFromNow < dataPointIntervalMillis * 1.5) {
             return;
         }
-        long millisecondsFromEdge = requestCaptureTimeTo - lastCaptureTime;
-        if (millisecondsFromEdge < fixedAggregateIntervalMillis / 2) {
+        if (lastCaptureTime == requestCaptureTimeTo) {
             return;
         }
         // bring down to zero
+        //
+        // this cannot be an active point that doesn't line up on data point interval since
+        // it active point would have met condition above (millisecondsAgoFromNow)
         for (DataSeries dataSeries : dataSeriesList) {
-            dataSeries.add(lastCaptureTime + fixedAggregateIntervalMillis / 2, 0);
+            dataSeries.add(lastCaptureTime + dataPointIntervalMillis, 0);
         }
         if (otherDataSeries != null) {
-            otherDataSeries.add(lastCaptureTime + fixedAggregateIntervalMillis / 2, 0);
+            otherDataSeries.add(lastCaptureTime + dataPointIntervalMillis, 0);
         }
     }
 
     void addInitialUpslope(long requestFrom, long captureTime, DataSeries dataSeries) {
-        long millisecondsFromEdge = captureTime - requestFrom;
-        if (millisecondsFromEdge < fixedAggregateIntervalMillis / 2) {
+        if (captureTime == requestFrom) {
             return;
         }
         // bring up from zero
-        dataSeries.add(captureTime - fixedAggregateIntervalMillis / 2, 0);
+        long priorCaptureTime = getPriorCaptureTime(captureTime);
+        dataSeries.add(priorCaptureTime, 0);
     }
 
     void addGapIfNeeded(long lastCaptureTime, long captureTime, DataSeries dataSeries) {
         long millisecondsSinceLastPoint = captureTime - lastCaptureTime;
-        if (millisecondsSinceLastPoint < fixedAggregateIntervalMillis * 1.5) {
+        if (millisecondsSinceLastPoint <= dataPointIntervalMillis) {
             return;
         }
         // gap between points, bring down to zero and then back up from zero to show gap
         addGap(dataSeries, lastCaptureTime, captureTime);
     }
 
-    void addFinalDownslope(long requestCaptureTimeTo, DataSeries dataSeries,
-            long lastCaptureTime) {
+    void addFinalDownslope(long requestCaptureTimeTo, DataSeries dataSeries, long lastCaptureTime) {
         long millisecondsAgoFromNow = clock.currentTimeMillis() - lastCaptureTime;
-        if (millisecondsAgoFromNow < fixedAggregateIntervalMillis * 1.5) {
+        if (millisecondsAgoFromNow < dataPointIntervalMillis * 1.5) {
             return;
         }
-        long millisecondsFromEdge = requestCaptureTimeTo - lastCaptureTime;
-        if (millisecondsFromEdge < fixedAggregateIntervalMillis / 2) {
+        if (lastCaptureTime == requestCaptureTimeTo) {
             return;
         }
         // bring down to zero
-        dataSeries.add(lastCaptureTime + fixedAggregateIntervalMillis / 2, 0);
+        //
+        // this cannot be an active point that doesn't line up on data point interval since
+        // it active point would have met condition above (millisecondsAgoFromNow)
+        dataSeries.add(lastCaptureTime + dataPointIntervalMillis, 0);
     }
 
     private void addGap(DataSeries dataSeries, long lastCaptureTime, long captureTime) {
-        dataSeries.add(lastCaptureTime + fixedAggregateIntervalMillis / 2, 0);
-        dataSeries.addNull();
-        dataSeries.add(captureTime - fixedAggregateIntervalMillis / 2, 0);
+        long currentCaptureTime = getCurrentCaptureTime(captureTime);
+        if (currentCaptureTime - lastCaptureTime == 2 * dataPointIntervalMillis) {
+            // only a single missing point
+            dataSeries.add(lastCaptureTime + dataPointIntervalMillis, 0);
+        } else {
+            dataSeries.add(lastCaptureTime + dataPointIntervalMillis, 0);
+            dataSeries.addNull();
+            dataSeries.add(currentCaptureTime - dataPointIntervalMillis, 0);
+        }
+    }
+
+    private long getPriorCaptureTime(long captureTime) {
+        return getCurrentCaptureTime(captureTime) - dataPointIntervalMillis;
+    }
+
+    // captureTime may be for active point which doesn't line up on data point interval
+    private long getCurrentCaptureTime(long captureTime) {
+        return (long) Math.ceil(captureTime / (double) dataPointIntervalMillis)
+                * dataPointIntervalMillis;
     }
 }

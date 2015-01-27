@@ -356,7 +356,7 @@ public class DataSource {
     }
 
     interface ResultSetExtractor<T extends /*@Nullable*/Object> {
-        T extractData(ResultSet resultSet) throws SQLException;
+        T extractData(ResultSet resultSet) throws Exception;
     }
 
     // this replaces H2's default shutdown hook (see jdbc connection db_close_on_exit=false above)

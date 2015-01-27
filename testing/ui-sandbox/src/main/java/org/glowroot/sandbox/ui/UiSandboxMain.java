@@ -38,7 +38,6 @@ public class UiSandboxMain {
     private static final boolean useReverseProxy = false;
 
     static {
-        System.setProperty("glowroot.internal.aggregateInterval", "60");
         if (useReverseProxy) {
             System.setProperty("glowroot.ui.base", "http://localhost:9000/xyzzy/");
         }

@@ -16,6 +16,7 @@
 package org.glowroot.local.store;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -55,7 +56,7 @@ public class AggregateDaoTest {
         scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         cappedDatabase = new CappedDatabase(cappedFile, 1000000, scheduledExecutor,
                 Ticker.systemTicker());
-        aggregateDao = new AggregateDao(dataSource, cappedDatabase);
+        aggregateDao = new AggregateDao(dataSource, cappedDatabase, 15);
     }
 
     @After
@@ -76,8 +77,8 @@ public class AggregateDaoTest {
                 .totalMicros(1000000)
                 .errorCount(0)
                 .transactionCount(10)
-                .metrics("")
-                .histogram(new byte[0])
+                .metrics(getFakeMetrics())
+                .histogram(getFakeHistogram())
                 .profileSampleCount(0)
                 .build();
         List<Aggregate> transactionAggregates = Lists.newArrayList();
@@ -88,8 +89,8 @@ public class AggregateDaoTest {
                 .totalMicros(100000)
                 .errorCount(0)
                 .transactionCount(1)
-                .metrics("")
-                .histogram(new byte[0])
+                .metrics(getFakeMetrics())
+                .histogram(getFakeHistogram())
                 .profileSampleCount(0)
                 .build());
         transactionAggregates.add(ImmutableAggregate.builder()
@@ -99,8 +100,8 @@ public class AggregateDaoTest {
                 .totalMicros(300000)
                 .errorCount(0)
                 .transactionCount(2)
-                .metrics("")
-                .histogram(new byte[0])
+                .metrics(getFakeMetrics())
+                .histogram(getFakeHistogram())
                 .profileSampleCount(0)
                 .build());
         transactionAggregates.add(ImmutableAggregate.builder()
@@ -110,11 +111,11 @@ public class AggregateDaoTest {
                 .totalMicros(1400000)
                 .errorCount(0)
                 .transactionCount(7)
-                .metrics("")
-                .histogram(new byte[0])
+                .metrics(getFakeMetrics())
+                .histogram(getFakeHistogram())
                 .profileSampleCount(0)
                 .build());
-        aggregateDao.store(ImmutableList.of(overallAggregate), transactionAggregates);
+        aggregateDao.store(ImmutableList.of(overallAggregate), transactionAggregates, 10000);
 
         Aggregate overallAggregate2 = ImmutableAggregate.builder()
                 .transactionType("a type")
@@ -123,8 +124,8 @@ public class AggregateDaoTest {
                 .totalMicros(1000000)
                 .errorCount(0)
                 .transactionCount(10)
-                .metrics("")
-                .histogram(new byte[0])
+                .metrics(getFakeMetrics())
+                .histogram(getFakeHistogram())
                 .profileSampleCount(0)
                 .build();
         List<Aggregate> transactionAggregates2 = Lists.newArrayList();
@@ -135,8 +136,8 @@ public class AggregateDaoTest {
                 .totalMicros(100000)
                 .errorCount(0)
                 .transactionCount(1)
-                .metrics("")
-                .histogram(new byte[0])
+                .metrics(getFakeMetrics())
+                .histogram(getFakeHistogram())
                 .profileSampleCount(0)
                 .build());
         transactionAggregates2.add(ImmutableAggregate.builder()
@@ -146,8 +147,8 @@ public class AggregateDaoTest {
                 .totalMicros(300000)
                 .errorCount(0)
                 .transactionCount(2)
-                .metrics("")
-                .histogram(new byte[0])
+                .metrics(getFakeMetrics())
+                .histogram(getFakeHistogram())
                 .profileSampleCount(0)
                 .build());
         transactionAggregates2.add(ImmutableAggregate.builder()
@@ -157,14 +158,15 @@ public class AggregateDaoTest {
                 .totalMicros(1400000)
                 .errorCount(0)
                 .transactionCount(7)
-                .metrics("")
-                .histogram(new byte[0])
+                .metrics(getFakeMetrics())
+                .histogram(getFakeHistogram())
                 .profileSampleCount(0)
                 .build());
 
-        aggregateDao.store(ImmutableList.of(overallAggregate2), transactionAggregates2);
+        aggregateDao.store(ImmutableList.of(overallAggregate2), transactionAggregates2, 20000);
         // when
-        List<Aggregate> overallAggregates = aggregateDao.readOverallAggregates("a type", 0, 100000);
+        List<Aggregate> overallAggregates =
+                aggregateDao.readOverallAggregates("a type", 0, 100000, 0);
         ImmutableTransactionSummaryQuery query = ImmutableTransactionSummaryQuery.builder()
                 .transactionType("a type")
                 .from(0)
@@ -186,5 +188,19 @@ public class AggregateDaoTest {
         assertThat(queryResult.records().get(2).transactionName()).isEqualTo("one");
         assertThat(queryResult.records().get(2).totalMicros()).isEqualTo(200000);
         assertThat(queryResult.records().get(2).transactionCount()).isEqualTo(2);
+    }
+
+    private static String getFakeMetrics() {
+        return "{\"name\":\"xyz root\",\"totalMicros\":111,\"count\":5}";
+    }
+
+    private static byte[] getFakeHistogram() {
+        ByteBuffer buffer = ByteBuffer.allocate(24);
+        buffer.putInt(0);
+        buffer.putInt(2);
+        buffer.putLong(123);
+        buffer.putLong(456);
+        buffer.flip();
+        return buffer.array();
     }
 }

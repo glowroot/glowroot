@@ -28,6 +28,7 @@ glowroot.controller('TransactionSidebarCtrl', [
 
     var lastSortOrder;
     var lastDurationMillis;
+    var concurrentUpdateCount = 0;
 
     $scope.summarySortOrders = summarySortOrders;
     $scope.backendSummariesUrl = 'backend/' + $scope.shortName + '/summaries';
@@ -81,6 +82,7 @@ glowroot.controller('TransactionSidebarCtrl', [
       } else {
         $scope.summariesRefreshing++;
       }
+      concurrentUpdateCount++;
       $http.get($scope.backendSummariesUrl + queryStrings.encodeObject(query))
           .success(function (data) {
             if (initialLoading) {
@@ -89,6 +91,10 @@ glowroot.controller('TransactionSidebarCtrl', [
               $scope.summariesLoadingMore--;
             } else {
               $scope.summariesRefreshing--;
+            }
+            concurrentUpdateCount--;
+            if (concurrentUpdateCount) {
+              return;
             }
             lastSortOrder = query.sortOrder;
             lastDurationMillis = query.to - query.from + 1000 * $scope.layout.fixedAggregateIntervalSeconds;

@@ -16,16 +16,12 @@
 package org.glowroot.local.ui;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.sql.SQLException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -35,10 +31,14 @@ import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.AggregateCollector;
 import org.glowroot.collector.AggregateIntervalCollector;
 import org.glowroot.collector.ImmutableTransactionSummary;
-import org.glowroot.collector.LazyHistogram;
 import org.glowroot.collector.TransactionSummary;
+import org.glowroot.common.ScratchBuffer;
 import org.glowroot.local.store.AggregateDao;
+import org.glowroot.local.store.AggregateDao.MergedAggregate;
+import org.glowroot.local.store.AggregateDao.TransactionSummaryQuery;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
+import org.glowroot.local.store.AggregateMerging;
+import org.glowroot.local.store.AggregateProfileNode;
 import org.glowroot.local.store.ImmutableTransactionSummaryQuery;
 import org.glowroot.local.store.QueryResult;
 
@@ -46,30 +46,29 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 class TransactionCommonService {
 
-    private static final ObjectMapper mapper = new ObjectMapper();
-
     private final AggregateDao aggregateDao;
     private final @Nullable AggregateCollector aggregateCollector;
 
+    private final long fixedRollupMillis;
+
     TransactionCommonService(AggregateDao aggregateDao,
-            @Nullable AggregateCollector aggregateCollector) {
+            @Nullable AggregateCollector aggregateCollector, long fixedRollupSeconds) {
         this.aggregateDao = aggregateDao;
         this.aggregateCollector = aggregateCollector;
+        this.fixedRollupMillis = fixedRollupSeconds * 1000;
     }
 
-    TransactionSummary readOverallTransactionSummary(String transactionType, long from, long to)
+    TransactionSummary readOverallSummary(String transactionType, long from, long to)
             throws SQLException {
-        List<AggregateIntervalCollector> intervalCollectors =
-                getIntervalCollectorsInRange(from, to);
-        long possiblyRevisedTo = to;
-        if (!intervalCollectors.isEmpty()) {
-            // -1 since query 'to' is inclusive
-            // this way don't need to worry about de-dupping with stored aggregates
-            possiblyRevisedTo = getMinEndTime(intervalCollectors) - 1;
+        List<AggregateIntervalCollector> orderedIntervalCollectors =
+                getOrderedIntervalCollectorsInRange(from, to);
+        if (orderedIntervalCollectors.isEmpty()) {
+            return aggregateDao.readOverallTransactionSummary(transactionType, from, to);
         }
-        TransactionSummary overallSummary = aggregateDao.readOverallTransactionSummary(
-                transactionType, from, possiblyRevisedTo);
-        for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
+        long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
+        TransactionSummary overallSummary =
+                aggregateDao.readOverallTransactionSummary(transactionType, from, revisedTo);
+        for (AggregateIntervalCollector intervalCollector : orderedIntervalCollectors) {
             TransactionSummary liveOverallSummary =
                     intervalCollector.getLiveOverallSummary(transactionType);
             if (liveOverallSummary != null) {
@@ -80,27 +79,191 @@ class TransactionCommonService {
         return overallSummary;
     }
 
-    QueryResult<TransactionSummary> readTransactionSummaries(String transactionType, long from,
-            long to, TransactionSummarySortOrder sortOrder, int limit) throws SQLException {
-        List<AggregateIntervalCollector> intervalCollectors =
-                getIntervalCollectorsInRange(from, to);
-        long possiblyRevisedTo = to;
-        if (!intervalCollectors.isEmpty()) {
-            // -1 since query 'to' is inclusive
-            // this way don't need to worry about de-dupping with stored aggregates
-            possiblyRevisedTo = getMinEndTime(intervalCollectors) - 1;
+    QueryResult<TransactionSummary> readTransactionSummaries(TransactionSummaryQuery query)
+            throws SQLException {
+        List<AggregateIntervalCollector> orderedIntervalCollectors =
+                getOrderedIntervalCollectorsInRange(query.from(), query.to());
+        if (orderedIntervalCollectors.isEmpty()) {
+            return aggregateDao.readTransactionSummaries(query);
         }
-        ImmutableTransactionSummaryQuery query = ImmutableTransactionSummaryQuery.builder()
-                .transactionType(transactionType)
-                .from(from)
-                .to(possiblyRevisedTo)
-                .sortOrder(sortOrder)
-                .limit(limit)
-                .build();
-        QueryResult<TransactionSummary> queryResult = aggregateDao.readTransactionSummaries(query);
-        if (intervalCollectors.isEmpty()) {
+        long revisedTo = getRevisedTo(query.to(), orderedIntervalCollectors);
+        TransactionSummaryQuery revisedQuery =
+                ((ImmutableTransactionSummaryQuery) query).withTo(revisedTo);
+        QueryResult<TransactionSummary> queryResult =
+                aggregateDao.readTransactionSummaries(revisedQuery);
+        if (orderedIntervalCollectors.isEmpty()) {
             return queryResult;
         }
+        return mergeInLiveTransactionSummaries(revisedQuery, queryResult,
+                orderedIntervalCollectors);
+    }
+
+    long getProfileSampleCount(String transactionType, @Nullable String transactionName, long from,
+            long to) throws SQLException {
+        List<AggregateIntervalCollector> orderedIntervalCollectors =
+                getOrderedIntervalCollectorsInRange(from, to);
+        if (orderedIntervalCollectors.isEmpty()) {
+            return getProfileSampleCountFromDao(transactionType, transactionName, from, to);
+        }
+        long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
+        long profileSampleCount =
+                getProfileSampleCountFromDao(transactionType, transactionName, from, revisedTo);
+        for (AggregateIntervalCollector intervalCollector : orderedIntervalCollectors) {
+            profileSampleCount += intervalCollector.getLiveProfileSampleCount(transactionType,
+                    transactionName);
+        }
+        return profileSampleCount;
+    }
+
+    List<Aggregate> getAggregates(String transactionType, @Nullable String transactionName,
+            long from, long to) throws Exception {
+        int rollupLevel = getRollupLevel(from, to);
+        List<AggregateIntervalCollector> orderedIntervalCollectors =
+                getOrderedIntervalCollectorsInRange(from, to);
+        long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
+        List<Aggregate> aggregates = getAggregatesFromDao(transactionType, transactionName, from,
+                revisedTo, rollupLevel);
+        if (rollupLevel == 0) {
+            aggregates = Lists.newArrayList(aggregates);
+            aggregates.addAll(getLiveAggregates(transactionType, transactionName,
+                    orderedIntervalCollectors));
+            return aggregates;
+        }
+        long revisedFrom = revisedTo - AggregateDao.ROLLUP_THRESHOLD_MILLIS;
+        if (!aggregates.isEmpty()) {
+            long lastRolledUpTime = aggregates.get(aggregates.size() - 1).captureTime();
+            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
+        }
+        List<Aggregate> orderedNonRolledUpAggregates = Lists.newArrayList();
+        orderedNonRolledUpAggregates.addAll(getAggregatesFromDao(transactionType, transactionName,
+                revisedFrom, revisedTo, 0));
+        orderedNonRolledUpAggregates.addAll(getLiveAggregates(transactionType, transactionName,
+                orderedIntervalCollectors));
+        aggregates = Lists.newArrayList(aggregates);
+        aggregates.addAll(rollUp(transactionType, transactionName, orderedNonRolledUpAggregates));
+        return aggregates;
+    }
+
+    AggregateProfileNode getProfile(String transactionType, @Nullable String transactionName,
+            long from, long to, double truncateLeafPercentage) throws Exception {
+        List<CharSource> profiles = getProfiles(transactionType, transactionName, from, to);
+        return AggregateMerging.getProfile(profiles, truncateLeafPercentage);
+    }
+
+    private List<AggregateIntervalCollector> getOrderedIntervalCollectorsInRange(long from,
+            long to) {
+        if (aggregateCollector == null) {
+            return ImmutableList.of();
+        }
+        return aggregateCollector.getOrderedIntervalCollectorsInRange(from, to);
+    }
+
+    private long getProfileSampleCountFromDao(String transactionType,
+            @Nullable String transactionName, long from, long to) throws SQLException {
+        if (transactionName == null) {
+            return aggregateDao.readOverallProfileSampleCount(transactionType, from, to);
+        } else {
+            return aggregateDao.readTransactionProfileSampleCount(transactionType, transactionName,
+                    from, to);
+        }
+    }
+
+    private List<Aggregate> getAggregatesFromDao(String transactionType,
+            @Nullable String transactionName, long from, long to, int rollupLevel)
+            throws SQLException {
+        if (transactionName == null) {
+            return aggregateDao.readOverallAggregates(transactionType, from, to, rollupLevel);
+        } else {
+            return aggregateDao.readTransactionAggregates(transactionType, transactionName, from,
+                    to, rollupLevel);
+        }
+    }
+
+    private List<CharSource> getProfiles(String transactionType, @Nullable String transactionName,
+            long from, long to) throws Exception {
+        List<AggregateIntervalCollector> orderedIntervalCollectors =
+                getOrderedIntervalCollectorsInRange(from, to);
+        if (orderedIntervalCollectors.isEmpty()) {
+            return getProfilesFromDao(transactionType, transactionName, from, to);
+        }
+        long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
+        List<CharSource> profiles =
+                getProfilesFromDao(transactionType, transactionName, from, revisedTo);
+        profiles = Lists.newArrayList(profiles);
+        for (AggregateIntervalCollector intervalCollector : orderedIntervalCollectors) {
+            String profile =
+                    intervalCollector.getLiveProfileJson(transactionType, transactionName);
+            if (profile != null) {
+                profiles.add(CharSource.wrap(profile));
+            }
+        }
+        return profiles;
+    }
+
+    private List<CharSource> getProfilesFromDao(String transactionType,
+            @Nullable String transactionName, long from, long to) throws SQLException {
+        if (transactionName == null) {
+            return aggregateDao.readOverallProfiles(transactionType, from, to);
+        } else {
+            return aggregateDao.readTransactionProfiles(transactionType, transactionName, from, to);
+        }
+    }
+
+    private List<Aggregate> rollUp(String transactionType, @Nullable String transactionName,
+            List<Aggregate> orderedNonRolledUpAggregates) throws Exception {
+        List<Aggregate> rolledUpAggregates = Lists.newArrayList();
+        ScratchBuffer scratchBuffer = new ScratchBuffer();
+        MergedAggregate currMergedAggregate = null;
+        long currRollupTime = Long.MIN_VALUE;
+        for (Aggregate nonRolledUpAggregate : orderedNonRolledUpAggregates) {
+            long rollupTime = (long) Math.ceil(nonRolledUpAggregate.captureTime()
+                    / (double) fixedRollupMillis) * fixedRollupMillis;
+            if (rollupTime != currRollupTime && currMergedAggregate != null) {
+                rolledUpAggregates.add(currMergedAggregate.toAggregate(scratchBuffer));
+                currMergedAggregate = new MergedAggregate(0, transactionType, transactionName);
+            }
+            if (currMergedAggregate == null) {
+                currMergedAggregate = new MergedAggregate(0, transactionType, transactionName);
+            }
+            currRollupTime = rollupTime;
+            // capture time is the largest of the ordered aggregate capture times
+            currMergedAggregate.setCaptureTime(nonRolledUpAggregate.captureTime());
+            currMergedAggregate.addTotalMicros(nonRolledUpAggregate.totalMicros());
+            currMergedAggregate.addErrorCount(nonRolledUpAggregate.errorCount());
+            currMergedAggregate.addTransactionCount(nonRolledUpAggregate.transactionCount());
+            currMergedAggregate.addProfileSampleCount(nonRolledUpAggregate.profileSampleCount());
+            currMergedAggregate.addMetrics(nonRolledUpAggregate.metrics());
+            currMergedAggregate.addHistogram(nonRolledUpAggregate.histogram());
+        }
+        if (currMergedAggregate != null) {
+            // roll up final one
+            rolledUpAggregates.add(currMergedAggregate.toAggregate(scratchBuffer));
+        }
+        return rolledUpAggregates;
+    }
+
+    private static int getRollupLevel(long from, long to) {
+        if (to - from <= AggregateDao.ROLLUP_THRESHOLD_MILLIS) {
+            return 0;
+        } else {
+            return 1;
+        }
+    }
+
+    private static long getRevisedTo(long to,
+            List<AggregateIntervalCollector> orderedIntervalCollectors) {
+        if (orderedIntervalCollectors.isEmpty()) {
+            return to;
+        } else {
+            // -1 since query 'to' is inclusive
+            // this way don't need to worry about de-dupping between live and stored aggregates
+            return orderedIntervalCollectors.get(0).getEndTime() - 1;
+        }
+    }
+
+    private static QueryResult<TransactionSummary> mergeInLiveTransactionSummaries(
+            TransactionSummaryQuery query, QueryResult<TransactionSummary> queryResult,
+            List<AggregateIntervalCollector> intervalCollectors) {
         List<TransactionSummary> transactionSummaries = queryResult.records();
         Map<String, TransactionSummary> transactionSummaryMap = Maps.newHashMap();
         for (TransactionSummary transactionSummary : transactionSummaries) {
@@ -111,7 +274,7 @@ class TransactionCommonService {
         }
         for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
             List<TransactionSummary> liveTransactionSummaries =
-                    intervalCollector.getLiveTransactionSummaries(transactionType);
+                    intervalCollector.getLiveTransactionSummaries(query.transactionType());
             for (TransactionSummary liveTransactionSummary : liveTransactionSummaries) {
                 String transactionName = liveTransactionSummary.transactionName();
                 // transaction name is only null for overall summary
@@ -126,143 +289,28 @@ class TransactionCommonService {
                 }
             }
         }
-        transactionSummaries = sortTransactionSummaries(transactionSummaryMap.values(), sortOrder);
+        transactionSummaries =
+                sortTransactionSummaries(transactionSummaryMap.values(), query.sortOrder());
         boolean moreAvailable = queryResult.moreAvailable();
-        if (transactionSummaries.size() > limit) {
+        if (transactionSummaries.size() > query.limit()) {
             moreAvailable = true;
-            transactionSummaries = transactionSummaries.subList(0, limit);
+            transactionSummaries = transactionSummaries.subList(0, query.limit());
         }
         return new QueryResult<TransactionSummary>(transactionSummaries, moreAvailable);
     }
 
-    long getProfileSampleCount(String transactionType, @Nullable String transactionName, long from,
-            long to) throws SQLException {
-        List<AggregateIntervalCollector> intervalCollectors =
-                getIntervalCollectorsInRange(from, to);
-        long possiblyRevisedTo = to;
-        if (!intervalCollectors.isEmpty()) {
-            // -1 since query 'to' is inclusive
-            // this way don't need to worry about de-dupping with stored aggregates
-            possiblyRevisedTo = getMinEndTime(intervalCollectors) - 1;
-        }
-        long profileSampleCount;
-        if (transactionName == null) {
-            profileSampleCount = aggregateDao.readOverallProfileSampleCount(transactionType, from,
-                    possiblyRevisedTo);
-        } else {
-            profileSampleCount = aggregateDao.readTransactionProfileSampleCount(transactionType,
-                    transactionName, from, possiblyRevisedTo);
-        }
+    private static List<Aggregate> getLiveAggregates(String transactionType,
+            @Nullable String transactionName, List<AggregateIntervalCollector> intervalCollectors)
+            throws IOException {
+        List<Aggregate> aggregates = Lists.newArrayList();
         for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
-            profileSampleCount += intervalCollector.getLiveProfileSampleCount(transactionType,
-                    transactionName);
-        }
-        return profileSampleCount;
-    }
-
-    List<Aggregate> getAggregates(String transactionType, @Nullable String transactionName,
-            long from, long to) throws Exception {
-        List<AggregateIntervalCollector> intervalCollectors =
-                getIntervalCollectorsInRange(from, to);
-        long possiblyRevisedTo = to;
-        if (!intervalCollectors.isEmpty()) {
-            // -1 since query 'to' is inclusive
-            // this way don't need to worry about de-dupping with stored aggregates
-            possiblyRevisedTo = getMinEndTime(intervalCollectors) - 1;
-        }
-        List<Aggregate> aggregates;
-        if (transactionName == null) {
-            aggregates = aggregateDao.readOverallAggregates(transactionType, from,
-                    possiblyRevisedTo);
-        } else {
-            aggregates = aggregateDao.readTransactionAggregates(transactionType, transactionName,
-                    from, possiblyRevisedTo);
-        }
-        if (!intervalCollectors.isEmpty()) {
-            aggregates = Lists.newArrayList(aggregates);
-            for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
-                Aggregate liveAggregate =
-                        intervalCollector.getLiveAggregate(transactionType, transactionName);
-                if (liveAggregate != null) {
-                    aggregates.add(liveAggregate);
-                }
+            Aggregate liveAggregate =
+                    intervalCollector.getLiveAggregate(transactionType, transactionName);
+            if (liveAggregate != null) {
+                aggregates.add(liveAggregate);
             }
         }
         return aggregates;
-    }
-
-    MetricMergedAggregate getMetricMergedAggregate(List<Aggregate> aggregates) throws Exception {
-        long transactionCount = 0;
-        AggregateMetric syntheticRootMetric = AggregateMetric.createSyntheticRootMetric();
-        for (Aggregate aggregate : aggregates) {
-            transactionCount += aggregate.transactionCount();
-            AggregateMetric toBeMergedSyntheticRootMetric =
-                    mapper.readValue(aggregate.metrics(), AggregateMetric.class);
-            mergeMatchedMetric(toBeMergedSyntheticRootMetric, syntheticRootMetric);
-        }
-        AggregateMetric rootMetric = syntheticRootMetric;
-        if (syntheticRootMetric.getNestedMetrics().size() == 1) {
-            rootMetric = syntheticRootMetric.getNestedMetrics().get(0);
-        }
-        return new MetricMergedAggregate(rootMetric, transactionCount);
-    }
-
-    HistogramMergedAggregate getHistogramMergedAggregate(List<Aggregate> aggregates)
-            throws Exception {
-        long transactionCount = 0;
-        long totalMicros = 0;
-        LazyHistogram histogram = new LazyHistogram();
-        for (Aggregate aggregate : aggregates) {
-            transactionCount += aggregate.transactionCount();
-            totalMicros += aggregate.totalMicros();
-            histogram.decodeFromByteBuffer(ByteBuffer.wrap(aggregate.histogram()));
-        }
-        return new HistogramMergedAggregate(histogram, transactionCount, totalMicros);
-    }
-
-    AggregateProfileNode getProfile(String transactionType, @Nullable String transactionName,
-            long from, long to, double truncateLeafPercentage) throws Exception {
-        List<AggregateIntervalCollector> intervalCollectors =
-                getIntervalCollectorsInRange(from, to);
-        long possiblyRevisedTo = to;
-        if (!intervalCollectors.isEmpty()) {
-            // -1 since query 'to' is inclusive
-            // this way don't need to worry about de-dupping with stored aggregates
-            possiblyRevisedTo = getMinEndTime(intervalCollectors) - 1;
-        }
-        List<CharSource> profiles;
-        if (transactionName == null) {
-            profiles = aggregateDao.readOverallProfiles(transactionType, from, possiblyRevisedTo);
-        } else {
-            profiles = aggregateDao.readTransactionProfiles(transactionType, transactionName, from,
-                    possiblyRevisedTo);
-        }
-        if (!intervalCollectors.isEmpty()) {
-            profiles = Lists.newArrayList(profiles);
-            for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
-                String profile =
-                        intervalCollector.getLiveProfileJson(transactionType, transactionName);
-                if (profile != null) {
-                    profiles.add(CharSource.wrap(profile));
-                }
-            }
-        }
-        return getProfile(profiles, truncateLeafPercentage);
-    }
-
-    private List<AggregateIntervalCollector> getIntervalCollectorsInRange(long from, long to) {
-        if (aggregateCollector == null) {
-            return ImmutableList.of();
-        }
-        return aggregateCollector.getIntervalCollectorsInRange(from, to);
-    }
-
-    private static long getMinEndTime(List<AggregateIntervalCollector> intervalCollectors) {
-        long min = Long.MAX_VALUE;
-        for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
-            min = Math.min(intervalCollector.getEndTime(), min);
-        }
-        return min;
     }
 
     private static TransactionSummary combineTransactionSummaries(@Nullable String transactionName,
@@ -289,165 +337,6 @@ class TransactionCommonService {
                         transactionSummaries);
             default:
                 throw new AssertionError("Unexpected sort order: " + sortOrder);
-        }
-    }
-
-    private static void mergeMatchedMetric(AggregateMetric toBeMergedMetric,
-            AggregateMetric metric) {
-        metric.incrementCount(toBeMergedMetric.getCount());
-        metric.incrementTotalMicros(toBeMergedMetric.getTotalMicros());
-        for (AggregateMetric toBeMergedNestedMetric : toBeMergedMetric.getNestedMetrics()) {
-            // for each to-be-merged child node look for a match
-            AggregateMetric foundMatchingChildMetric = null;
-            for (AggregateMetric childMetric : metric.getNestedMetrics()) {
-                if (toBeMergedNestedMetric.getName().equals(childMetric.getName())) {
-                    foundMatchingChildMetric = childMetric;
-                    break;
-                }
-            }
-            if (foundMatchingChildMetric == null) {
-                metric.getNestedMetrics().add(toBeMergedNestedMetric);
-            } else {
-                mergeMatchedMetric(toBeMergedNestedMetric, foundMatchingChildMetric);
-            }
-        }
-    }
-
-    private static AggregateProfileNode getProfile(List<CharSource> profiles,
-            double truncateLeafPercentage) throws IOException {
-        AggregateProfileNode syntheticRootNode = AggregateProfileNode.createSyntheticRootNode();
-        for (CharSource profile : profiles) {
-            String profileContent = profile.read();
-            if (profileContent.equals(AggregateDao.OVERWRITTEN)) {
-                continue;
-            }
-            AggregateProfileNode toBeMergedRootNode = ObjectMappers.readRequiredValue(mapper,
-                    profileContent, AggregateProfileNode.class);
-            if (toBeMergedRootNode.getStackTraceElement() == null) {
-                // to-be-merged root node is already synthetic
-                mergeMatchedNode(toBeMergedRootNode, syntheticRootNode);
-            } else {
-                syntheticRootNode.incrementSampleCount(toBeMergedRootNode.getSampleCount());
-                mergeChildNodeIntoParent(toBeMergedRootNode, syntheticRootNode);
-            }
-        }
-        if (truncateLeafPercentage != 0) {
-            int minSamples = (int) (syntheticRootNode.getSampleCount() * truncateLeafPercentage);
-            truncateLeafs(syntheticRootNode, minSamples);
-        }
-        if (syntheticRootNode.getChildNodes().size() == 1) {
-            // strip off synthetic root node since only one real root node
-            return syntheticRootNode.getChildNodes().get(0);
-        } else {
-            return syntheticRootNode;
-        }
-    }
-
-    private static void mergeMatchedNode(AggregateProfileNode toBeMergedNode,
-            AggregateProfileNode node) {
-        node.incrementSampleCount(toBeMergedNode.getSampleCount());
-        // the metric names for a given stack element should always match, unless
-        // the line numbers aren't available and overloaded methods are matched up, or
-        // the stack trace was captured while one of the synthetic $glowroot$metric$ methods was
-        // executing in which case one of the metric names may be a subset of the other,
-        // in which case, the superset wins:
-        List<String> metricNames = toBeMergedNode.getMetricNames();
-        if (metricNames.size() > node.getMetricNames().size()) {
-            node.setMetricNames(metricNames);
-        }
-        for (AggregateProfileNode toBeMergedChildNode : toBeMergedNode.getChildNodes()) {
-            mergeChildNodeIntoParent(toBeMergedChildNode, node);
-        }
-    }
-
-    private static void mergeChildNodeIntoParent(AggregateProfileNode toBeMergedChildNode,
-            AggregateProfileNode parentNode) {
-        // for each to-be-merged child node look for a match
-        AggregateProfileNode foundMatchingChildNode = null;
-        for (AggregateProfileNode childNode : parentNode.getChildNodes()) {
-            if (matches(toBeMergedChildNode, childNode)) {
-                foundMatchingChildNode = childNode;
-                break;
-            }
-        }
-        if (foundMatchingChildNode == null) {
-            parentNode.getChildNodes().add(toBeMergedChildNode);
-        } else {
-            mergeMatchedNode(toBeMergedChildNode, foundMatchingChildNode);
-        }
-    }
-
-    private static boolean matches(AggregateProfileNode node1, AggregateProfileNode node2) {
-        return Objects.equal(node1.getStackTraceElement(), node2.getStackTraceElement())
-                && Objects.equal(node1.getLeafThreadState(), node2.getLeafThreadState());
-    }
-
-    private static void truncateLeafs(AggregateProfileNode node, int minSamples) {
-        for (Iterator<AggregateProfileNode> i = node.getChildNodes().iterator(); i.hasNext();) {
-            AggregateProfileNode childNode = i.next();
-            if (childNode.getSampleCount() < minSamples) {
-                i.remove();
-                node.setEllipsed();
-            } else {
-                truncateLeafs(childNode, minSamples);
-            }
-        }
-    }
-
-    // could use @Value.Immutable, but it's not technically immutable since it contains
-    // non-immutable state (AggregateMetric)
-    public static class MetricMergedAggregate {
-
-        private final AggregateMetric rootMetric;
-        private final long transactionCount;
-
-        private MetricMergedAggregate(AggregateMetric rootMetric, long transactionCount) {
-            this.rootMetric = rootMetric;
-            this.transactionCount = transactionCount;
-        }
-
-        public AggregateMetric getMetrics() {
-            return rootMetric;
-        }
-
-        public long getTransactionCount() {
-            return transactionCount;
-        }
-    }
-
-    // could use @Value.Immutable, but it's not technically immutable since it contains
-    // non-immutable state (Histogram)
-    public static class HistogramMergedAggregate {
-
-        private final long totalMicros;
-        private final long transactionCount;
-        private final LazyHistogram histogram;
-
-        private HistogramMergedAggregate(LazyHistogram histogram, long transactionCount,
-                long totalMicros) {
-            this.histogram = histogram;
-            this.transactionCount = transactionCount;
-            this.totalMicros = totalMicros;
-        }
-
-        public long getTransactionCount() {
-            return transactionCount;
-        }
-
-        public long getTotalMicros() {
-            return totalMicros;
-        }
-
-        public long getPercentile1() {
-            return histogram.getValueAtPercentile(50);
-        }
-
-        public long getPercentile2() {
-            return histogram.getValueAtPercentile(95);
-        }
-
-        public long getPercentile3() {
-            return histogram.getValueAtPercentile(99);
         }
     }
 }

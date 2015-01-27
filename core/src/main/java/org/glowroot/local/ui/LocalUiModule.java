@@ -71,6 +71,7 @@ public class LocalUiModule {
         LayoutJsonService layoutJsonService = new LayoutJsonService(version, configService,
                 configModule.getPluginDescriptors(), jvmModule.getHeapDumps(),
                 collectorModule.getFixedAggregateIntervalSeconds(),
+                storageModule.getFixedAggregateRollupSeconds(),
                 collectorModule.getFixedGaugeIntervalSeconds(),
                 storageModule.getFixedGaugeRollupSeconds());
         HttpSessionManager httpSessionManager =
@@ -78,12 +79,14 @@ public class LocalUiModule {
         IndexHtmlHttpService indexHtmlHttpService =
                 new IndexHtmlHttpService(httpSessionManager, layoutJsonService);
         TransactionCommonService transactionCommonService = new TransactionCommonService(
-                aggregateDao, collectorModule.getAggregateCollector());
+                aggregateDao, collectorModule.getAggregateCollector(),
+                storageModule.getFixedAggregateRollupSeconds());
         TraceCommonService traceCommonService = new TraceCommonService(traceDao,
                 transactionRegistry, transactionCollector, clock, ticker);
         TransactionJsonService transactionJsonService = new TransactionJsonService(
                 transactionCommonService, traceDao, clock,
-                collectorModule.getFixedAggregateIntervalSeconds());
+                collectorModule.getFixedAggregateIntervalSeconds(),
+                storageModule.getFixedAggregateRollupSeconds());
         TracePointJsonService tracePointJsonService = new TracePointJsonService(traceDao,
                 transactionRegistry, transactionCollector, ticker, clock);
         TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);
@@ -92,9 +95,11 @@ public class LocalUiModule {
         TraceExportHttpService traceExportHttpService =
                 new TraceExportHttpService(traceCommonService);
         ErrorCommonService errorCommonService = new ErrorCommonService(
-                aggregateDao, collectorModule.getAggregateCollector());
+                aggregateDao, collectorModule.getAggregateCollector(),
+                storageModule.getFixedAggregateRollupSeconds());
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService, traceDao,
-                clock, collectorModule.getFixedAggregateIntervalSeconds());
+                clock, collectorModule.getFixedAggregateIntervalSeconds(),
+                storageModule.getFixedAggregateRollupSeconds());
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
                 gaugePointDao, configService, jvmModule.getThreadAllocatedBytes(),
                 jvmModule.getHeapDumps(), jvmModule.getProcessId(),

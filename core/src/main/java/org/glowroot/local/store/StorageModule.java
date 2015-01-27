@@ -39,6 +39,8 @@ public class StorageModule {
 
     private static final long fixedGaugeRollupSeconds =
             Long.getLong("glowroot.internal.gaugeRollup1", 60);
+    private static final long fixedAggregateRollupSeconds =
+            Long.getLong("glowroot.internal.aggregateRollup1", 900);
 
     private final DataSource dataSource;
     private final CappedDatabase cappedDatabase;
@@ -72,7 +74,7 @@ public class StorageModule {
         int cappedDatabaseSizeMb = configService.getStorageConfig().cappedDatabaseSizeMb();
         cappedDatabase = new CappedDatabase(new File(dataDir, "glowroot.capped.db"),
                 cappedDatabaseSizeMb * 1024, scheduledExecutor, ticker);
-        aggregateDao = new AggregateDao(dataSource, cappedDatabase);
+        aggregateDao = new AggregateDao(dataSource, cappedDatabase, fixedAggregateRollupSeconds);
         traceDao = new TraceDao(dataSource, cappedDatabase);
         gaugePointDao = new GaugePointDao(dataSource, clock, fixedGaugeRollupSeconds);
         PreInitializeStorageShutdownClasses.preInitializeClasses();
@@ -112,6 +114,10 @@ public class StorageModule {
 
     public CappedDatabase getCappedDatabase() {
         return cappedDatabase;
+    }
+
+    public long getFixedAggregateRollupSeconds() {
+        return fixedAggregateRollupSeconds;
     }
 
     public long getFixedGaugeRollupSeconds() {

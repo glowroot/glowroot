@@ -22,6 +22,7 @@ import java.sql.Types;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.collector.GaugePoint;
 import org.glowroot.collector.GaugePointRepository;
@@ -58,18 +59,19 @@ public class GaugePointDao implements GaugePointRepository {
 
     private final DataSource dataSource;
     private final Clock clock;
-    private final long fixedRollupIntervalMillis;
+    private final long fixedRollupMillis;
     private volatile long lastRollupTime;
 
-    GaugePointDao(DataSource dataSource, Clock clock, long fixedRollupIntervalSeconds)
+    GaugePointDao(DataSource dataSource, Clock clock, long fixedRollupSeconds)
             throws SQLException {
         this.dataSource = dataSource;
         this.clock = clock;
-        this.fixedRollupIntervalMillis = fixedRollupIntervalSeconds * 1000;
+        fixedRollupMillis = fixedRollupSeconds * 1000;
         dataSource.syncTable("gauge_point", gaugePointColumns);
         dataSource.syncIndexes("gauge_point", gaugePointIndexes);
         dataSource.syncTable("gauge_point_rollup_1", gaugePointRollupColumns);
         dataSource.syncIndexes("gauge_point_rollup_1", gaugePointRollupIndexes);
+        // TODO initial rollup in case store is not called in a reasonable time
         lastRollupTime = dataSource.queryForLong(
                 "select ifnull(max(capture_time), 0) from gauge_point_rollup_1");
     }
@@ -98,8 +100,8 @@ public class GaugePointDao implements GaugePointRepository {
         //
         // TODO this clock logic will fail if remote collectors are introduced
         long safeRollupTime = clock.currentTimeMillis() - 1;
-        safeRollupTime = (long) Math.floor(safeRollupTime / (double) fixedRollupIntervalMillis)
-                * fixedRollupIntervalMillis;
+        safeRollupTime =
+                (long) Math.floor(safeRollupTime / (double) fixedRollupMillis) * fixedRollupMillis;
         if (safeRollupTime > lastRollupTime) {
             rollup(lastRollupTime, safeRollupTime);
             lastRollupTime = safeRollupTime;
@@ -123,21 +125,24 @@ public class GaugePointDao implements GaugePointRepository {
     }
 
     void deleteBefore(long captureTime) throws SQLException {
+        deleteBefore("gauge_point", captureTime);
+        deleteBefore("gauge_point_rollup_1", captureTime);
+    }
+
+    private void deleteBefore(@Untainted String tableName, long captureTime) throws SQLException {
         // delete 100 at a time, which is both faster than deleting all at once, and doesn't
         // lock the single jdbc connection for one large chunk of time
-        while (true) {
-            int deleted = dataSource.update("delete from gauge_point where capture_time < ?",
-                    captureTime);
-            if (deleted == 0) {
-                break;
-            }
-        }
+        int deleted;
+        do {
+            deleted = dataSource.update("delete from " + tableName
+                    + " where capture_time < ? limit 100", captureTime);
+        } while (deleted != 0);
     }
 
     private void rollup(long lastRollupTime, long safeRollupTime) throws SQLException {
         // need ".0" to force double result
-        String captureTimeSql = castUntainted("ceil(capture_time / " + fixedRollupIntervalMillis
-                + ".0) * " + fixedRollupIntervalMillis);
+        String captureTimeSql = castUntainted("ceil(capture_time / " + fixedRollupMillis + ".0) * "
+                + fixedRollupMillis);
         dataSource.update("insert into gauge_point_rollup_1 (gauge_name, capture_time, value,"
                 + " count) select gauge_name, " + captureTimeSql + " ceil_capture_time,"
                 + " avg(value), count(*) from gauge_point where capture_time > ?"

@@ -35,11 +35,14 @@ import org.glowroot.collector.ErrorSummary;
 import org.glowroot.collector.ErrorSummaryMarshaler;
 import org.glowroot.collector.ImmutableErrorPoint;
 import org.glowroot.common.Clock;
+import org.glowroot.local.store.AggregateDao;
+import org.glowroot.local.store.AggregateDao.ErrorSummaryQuery;
 import org.glowroot.local.store.AggregateDao.ErrorSummarySortOrder;
 import org.glowroot.local.store.ErrorMessageCount;
 import org.glowroot.local.store.ErrorMessageCountMarshaler;
 import org.glowroot.local.store.ErrorMessageQuery;
 import org.glowroot.local.store.ImmutableErrorMessageQuery;
+import org.glowroot.local.store.ImmutableErrorSummaryQuery;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.store.TraceErrorPoint;
@@ -56,22 +59,25 @@ class ErrorJsonService {
 
     private final ErrorCommonService errorCommonService;
     private final TraceDao traceDao;
+    private final Clock clock;
+
     private final long fixedAggregateIntervalMillis;
-    private final DataSeriesHelper dataSeriesHelper;
+    private final long fixedAggregateRollupMillis;
 
     ErrorJsonService(ErrorCommonService errorCommonService, TraceDao traceDao, Clock clock,
-            long fixedAggregateIntervalSeconds) {
+            long fixedAggregateIntervalSeconds, long fixedAggregateRollupSeconds) {
         this.errorCommonService = errorCommonService;
         this.traceDao = traceDao;
+        this.clock = clock;
         fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
-        dataSeriesHelper = new DataSeriesHelper(clock, fixedAggregateIntervalMillis);
+        fixedAggregateRollupMillis = fixedAggregateRollupSeconds * 1000;
     }
 
     @GET("/backend/error/messages")
     String getData(String queryString) throws Exception {
         ErrorMessageRequest request = QueryStrings.decode(queryString, ErrorMessageRequest.class);
 
-        ImmutableErrorMessageQuery query = ImmutableErrorMessageQuery.builder()
+        ErrorMessageQuery query = ImmutableErrorMessageQuery.builder()
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
@@ -94,7 +100,7 @@ class ErrorJsonService {
                         unfilteredErrorPoint.transactionCount());
             }
             ImmutableList<TraceErrorPoint> traceErrorPoints =
-                    traceDao.readErrorPoints(query, fixedAggregateIntervalMillis);
+                    traceDao.readErrorPoints(query, getDataPointIntervalMillis(query));
             List<ErrorPoint> errorPoints = Lists.newArrayList();
             for (TraceErrorPoint traceErrorPoint : traceErrorPoints) {
                 Long transactionCount = transactionCountMap.get(traceErrorPoint.captureTime());
@@ -124,10 +130,17 @@ class ErrorJsonService {
         ErrorSummaryRequest request = QueryStrings.decode(queryString, ErrorSummaryRequest.class);
 
         ErrorSummary overallSummary = errorCommonService.readOverallErrorSummary(
-                request.transactionType(), request.from(), request.to());
+                request.transactionType(), request.from() + 1, request.to());
+
+        ErrorSummaryQuery query = ImmutableErrorSummaryQuery.builder()
+                .transactionType(request.transactionType())
+                .from(request.from() + 1)
+                .to(request.to())
+                .sortOrder(request.sortOrder())
+                .limit(request.limit())
+                .build();
         QueryResult<ErrorSummary> queryResult =
-                errorCommonService.readTransactionErrorSummaries(request.transactionType(),
-                        request.from(), request.to(), request.sortOrder(), request.limit());
+                errorCommonService.readTransactionErrorSummaries(query);
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -147,17 +160,13 @@ class ErrorJsonService {
         TabBarDataRequest request = QueryStrings.decode(queryString, TabBarDataRequest.class);
 
         String transactionName = request.transactionName();
-        // requested from is in aggregate terms, so need to subtract aggregate interval to get
-        // real timing interval which is needed for trace queries
-        long from = request.from() - fixedAggregateIntervalMillis;
-
         long traceCount;
         if (transactionName == null) {
-            traceCount = traceDao.readOverallErrorCount(request.transactionType(), from,
+            traceCount = traceDao.readOverallErrorCount(request.transactionType(), request.from(),
                     request.to());
         } else {
             traceCount = traceDao.readTransactionErrorCount(request.transactionType(),
-                    transactionName, from, request.to());
+                    transactionName, request.from(), request.to());
         }
 
         StringBuilder sb = new StringBuilder();
@@ -168,8 +177,11 @@ class ErrorJsonService {
         jg.close();
         return sb.toString();
     }
+
     private void populateDataSeries(ErrorMessageQuery request, List<ErrorPoint> errorPoints,
             DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra) {
+        DataSeriesHelper dataSeriesHelper =
+                new DataSeriesHelper(clock, getDataPointIntervalMillis(request));
         ErrorPoint lastErrorPoint = null;
         for (ErrorPoint errorPoint : errorPoints) {
             if (lastErrorPoint == null) {
@@ -190,6 +202,14 @@ class ErrorJsonService {
         if (lastErrorPoint != null) {
             dataSeriesHelper.addFinalDownslope(request.to(), dataSeries,
                     lastErrorPoint.captureTime());
+        }
+    }
+
+    private long getDataPointIntervalMillis(ErrorMessageQuery request) {
+        if (request.to() - request.from() > AggregateDao.ROLLUP_THRESHOLD_MILLIS) {
+            return fixedAggregateRollupMillis;
+        } else {
+            return fixedAggregateIntervalMillis;
         }
     }
 

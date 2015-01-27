@@ -25,8 +25,8 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
+import org.glowroot.common.ScratchBuffer;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.TransactionMetricImpl;
 
@@ -65,7 +65,9 @@ class AggregateBuilder {
     }
 
     void addToMetrics(TransactionMetricImpl rootTransactionMetric) {
-        addToMetrics(rootTransactionMetric, syntheticRootMetric);
+        syntheticRootMetric.totalMicros += NANOSECONDS.toMicros(rootTransactionMetric.getTotal());
+        syntheticRootMetric.count += rootTransactionMetric.getCount();
+        mergeAsChildMetric(syntheticRootMetric, rootTransactionMetric);
     }
 
     void addToProfile(Profile profile) {
@@ -127,8 +129,8 @@ class AggregateBuilder {
         return profileSampleCount;
     }
 
-    private void addToMetrics(TransactionMetricImpl transactionMetric,
-            AggregateMetric parentAggregateMetric) {
+    private void mergeAsChildMetric(AggregateMetric parentAggregateMetric,
+            TransactionMetricImpl transactionMetric) {
         String name = transactionMetric.getName();
         AggregateMetric aggregateMetric = parentAggregateMetric.nestedMetrics.get(name);
         if (aggregateMetric == null) {
@@ -138,7 +140,7 @@ class AggregateBuilder {
         aggregateMetric.totalMicros += NANOSECONDS.toMicros(transactionMetric.getTotal());
         aggregateMetric.count += transactionMetric.getCount();
         for (TransactionMetricImpl nestedTransactionMetric : transactionMetric.getNestedMetrics()) {
-            addToMetrics(nestedTransactionMetric, aggregateMetric);
+            mergeAsChildMetric(aggregateMetric, nestedTransactionMetric);
         }
     }
 
@@ -155,8 +157,7 @@ class AggregateBuilder {
         return ProfileCharSourceCreator.createProfileJson(aggregateProfile.getSyntheticRootNode());
     }
 
-    private void writeMetric(JsonGenerator jg, AggregateMetric aggregateMetric)
-            throws IOException {
+    private void writeMetric(JsonGenerator jg, AggregateMetric aggregateMetric) throws IOException {
         jg.writeStartObject();
         jg.writeStringField("name", aggregateMetric.name);
         jg.writeNumberField("totalMicros", aggregateMetric.totalMicros);
@@ -169,18 +170,6 @@ class AggregateBuilder {
             jg.writeEndArray();
         }
         jg.writeEndObject();
-    }
-
-    static class ScratchBuffer {
-
-        private @MonotonicNonNull ByteBuffer buffer;
-
-        ByteBuffer getBuffer(int capacity) {
-            if (buffer == null || buffer.capacity() < capacity) {
-                buffer = ByteBuffer.allocate(capacity);
-            }
-            return buffer;
-        }
     }
 
     private static class AggregateMetric {
