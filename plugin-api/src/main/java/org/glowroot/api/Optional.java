@@ -85,7 +85,7 @@ public abstract class Optional</*@NonNull*/T> {
      * If {@code nullableReference} is non-{@code null}, returns an {@code Optional} instance
      * containing that reference; otherwise returns {@link Optional#absent}.
      */
-    public static <T> Optional</*@NonNull*/T> fromNullable(T nullableReference) {
+    public static </*@NonNull*/T> Optional<T> fromNullable(@Nullable T nullableReference) {
         if (nullableReference == null) {
             return absent();
         } else {
