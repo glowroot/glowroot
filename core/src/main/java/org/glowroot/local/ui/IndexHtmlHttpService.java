@@ -81,6 +81,10 @@ class IndexHtmlHttpService implements HttpService {
                         + " + document.getElementsByTagName(\"base\")[0].href"
                         + " + 'favicon.$1.ico\">');</script>");
         if (googleAnalyticsTrackingId != null) {
+            // this is for demo.glowroot.org
+            indexHtml = indexHtml.replaceFirst(
+                    "<div class=\"navbar-brand\">(\\s*)Glowroot(\\s*)</div>",
+                    "<a href=\"https://glowroot.org\" class=\"navbar-brand\">$1Glowroot$2</a>");
             indexHtml = indexHtml.replaceFirst("</body>", "  <script>"
                     + "(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]"
                     + "||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();"
