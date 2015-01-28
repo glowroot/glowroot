@@ -33,7 +33,7 @@ glowroot.controller('TransactionHeaderCtrl', [
       var today = new Date();
       today.setHours(0, 0, 0, 0);
       $scope.$parent.filterDate = today;
-      // show 2 hour interval, but nothing prior to today (e.g. if 'now' is 1am) or after today
+      // show 4 hour interval, but nothing prior to today (e.g. if 'now' is 1am) or after today
       // (e.g. if 'now' is 11:55pm)
       var now = new Date();
       now.setSeconds(0, 0);
@@ -44,8 +44,8 @@ glowroot.controller('TransactionHeaderCtrl', [
             fixedAggregateIntervalMinutes * Math.floor(now.getMinutes() / fixedAggregateIntervalMinutes);
         now.setMinutes(minutesRoundedDownToNearestAggregationInterval);
       }
-      $scope.$parent.chartFrom = Math.max(now.getTime() - 105 * 60 * 1000, today.getTime());
-      $scope.$parent.chartTo = Math.min($scope.chartFrom + 120 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
+      $scope.$parent.chartFrom = Math.max(now.getTime() - 225 * 60 * 1000, today.getTime());
+      $scope.$parent.chartTo = Math.min($scope.chartFrom + 240 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
     }
 
     $scope.timeDisplay = function () {

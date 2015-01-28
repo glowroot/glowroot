@@ -63,7 +63,7 @@ import static org.glowroot.common.Checkers.castUntainted;
 
 public class AggregateDao implements AggregateRepository {
 
-    public static final long ROLLUP_THRESHOLD_MILLIS = HOURS.toMillis(2);
+    public static final long ROLLUP_THRESHOLD_MILLIS = HOURS.toMillis(1);
 
     public static final String OVERWRITTEN = "{\"overwritten\":true}";
 

@@ -40,7 +40,7 @@ public class StorageModule {
     private static final long fixedGaugeRollupSeconds =
             Long.getLong("glowroot.internal.gaugeRollup1", 60);
     private static final long fixedAggregateRollupSeconds =
-            Long.getLong("glowroot.internal.aggregateRollup1", 900);
+            Long.getLong("glowroot.internal.aggregateRollup1", 300);
 
     private final DataSource dataSource;
     private final CappedDatabase cappedDatabase;

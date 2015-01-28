@@ -225,7 +225,7 @@ glowroot.factory('charts', [
     }
 
     function rollupLevel(from, to) {
-      if (to - from <= 2 * 3600 * 1000) {
+      if (to - from <= 3600 * 1000) {
         return 0;
       } else {
         return 1;
