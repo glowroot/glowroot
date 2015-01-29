@@ -18,6 +18,8 @@ package org.glowroot.collector;
 import java.io.IOException;
 import java.util.Locale;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.io.CharStreams;
@@ -53,11 +55,10 @@ public class TraceWriter {
             jg.writeFieldName("metrics");
             jg.writeRawValue(metrics);
         }
-        String threadInfo = trace.threadInfo();
-        if (threadInfo != null) {
-            jg.writeFieldName("threadInfo");
-            jg.writeRawValue(threadInfo);
-        }
+        writeOptionalNumberField(jg, "threadCpuTime", trace.threadCpuTime());
+        writeOptionalNumberField(jg, "threadBlockedTime", trace.threadBlockedTime());
+        writeOptionalNumberField(jg, "threadWaitedTime", trace.threadWaitedTime());
+        writeOptionalNumberField(jg, "threadAllocatedBytes", trace.threadAllocatedBytes());
         String gcInfos = trace.gcInfos();
         if (gcInfos != null) {
             jg.writeFieldName("gcInfos");
@@ -72,5 +73,12 @@ public class TraceWriter {
         jg.writeEndObject();
         jg.close();
         return sb.toString();
+    }
+
+    private static void writeOptionalNumberField(JsonGenerator jg, String fieldName,
+            @Nullable Long value) throws IOException {
+        if (value != null) {
+            jg.writeNumberField(fieldName, value);
+        }
     }
 }

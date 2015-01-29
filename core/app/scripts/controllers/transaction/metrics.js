@@ -36,6 +36,7 @@ glowroot.controller('TransactionMetricsCtrl', [
     function onRefreshData(data) {
       $scope.transactionCounts = data.transactionCounts;
       $scope.mergedAggregate = data.mergedAggregate;
+      $scope.threadInfoAggregate = data.threadInfoAggregate;
       if ($scope.mergedAggregate.transactionCount) {
         updateTreeMetrics();
         updateFlattenedMetrics();

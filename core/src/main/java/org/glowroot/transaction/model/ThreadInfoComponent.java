@@ -24,12 +24,12 @@ import javax.annotation.concurrent.GuardedBy;
 
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
-import org.immutables.value.Json;
 import org.immutables.value.Value;
 
 import org.glowroot.jvm.ThreadAllocatedBytes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class ThreadInfoComponent {
 
@@ -58,8 +58,8 @@ public class ThreadInfoComponent {
             builder.threadCpuTime(threadMXBean.getCurrentThreadCpuTime());
         }
         if (isThreadContentionMonitoringSupported) {
-            builder.threadBlockedTime(threadInfo.getBlockedTime());
-            builder.threadWaitedTime(threadInfo.getWaitedTime());
+            builder.threadBlockedTimeMillis(threadInfo.getBlockedTime());
+            builder.threadWaitedTimeMillis(threadInfo.getWaitedTime());
         }
         if (threadAllocatedBytes != null) {
             builder.threadAllocatedBytes(
@@ -122,13 +122,15 @@ public class ThreadInfoComponent {
             ThreadInfo threadInfo) {
         // getBlockedTime() and getWaitedTime() return -1 if thread contention monitoring is
         // disabled (which is different than whether or not it is supported)
-        long threadBlockedTime = threadInfo.getBlockedTime();
-        if (startingSnapshot.threadBlockedTime() != -1 && threadBlockedTime != -1) {
-            builder.threadBlockedTime(threadBlockedTime - startingSnapshot.threadBlockedTime());
+        long threadBlockedTimeMillis = threadInfo.getBlockedTime();
+        if (startingSnapshot.threadBlockedTimeMillis() != -1 && threadBlockedTimeMillis != -1) {
+            builder.threadBlockedTime(MILLISECONDS.toNanos(threadBlockedTimeMillis
+                    - startingSnapshot.threadBlockedTimeMillis()));
         }
-        long threadWaitedTime = threadInfo.getWaitedTime();
-        if (startingSnapshot.threadWaitedTime() != -1 && threadWaitedTime != -1) {
-            builder.threadWaitedTime(threadWaitedTime - startingSnapshot.threadWaitedTime());
+        long threadWaitedTimeMillis = threadInfo.getWaitedTime();
+        if (startingSnapshot.threadWaitedTimeMillis() != -1 && threadWaitedTimeMillis != -1) {
+            builder.threadWaitedTime(MILLISECONDS.toNanos(threadWaitedTimeMillis
+                    - startingSnapshot.threadWaitedTimeMillis()));
         }
     }
 
@@ -142,18 +144,17 @@ public class ThreadInfoComponent {
     }
 
     @Value.Immutable
-    @Json.Marshaled
     abstract static class ThreadInfoSnapshot {
         @Value.Default
-        long threadCpuTime() {
+        long threadCpuTime() { // nanoseconds
             return -1;
         }
         @Value.Default
-        long threadBlockedTime() {
+        long threadBlockedTimeMillis() { // milliseconds (native resolution from jvm)
             return -1;
         }
         @Value.Default
-        long threadWaitedTime() {
+        long threadWaitedTimeMillis() { // nanoseconds (native resolution from jvm)
             return -1;
         }
         @Value.Default
@@ -163,15 +164,10 @@ public class ThreadInfoComponent {
     }
 
     @Value.Immutable
-    @Json.Marshaled
     public abstract static class ThreadInfoData {
-        abstract @Nullable Long threadCpuTime();
-        abstract @Nullable Long threadBlockedTime();
-        abstract @Nullable Long threadWaitedTime();
-        abstract @Nullable Long threadAllocatedBytes();
-        public boolean isEmpty() {
-            return threadCpuTime() == null && threadBlockedTime() == null
-                    && threadWaitedTime() == null && threadAllocatedBytes() == null;
-        }
+        public abstract @Nullable Long threadCpuTime(); // nanoseconds
+        public abstract @Nullable Long threadBlockedTime(); // nanoseconds (for consistency)
+        public abstract @Nullable Long threadWaitedTime(); // nanoseconds (for consistency)
+        public abstract @Nullable Long threadAllocatedBytes();
     }
 }

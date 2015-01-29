@@ -29,6 +29,10 @@ public abstract class Aggregate {
     public abstract long totalMicros();
     public abstract long errorCount();
     public abstract long transactionCount();
+    public abstract @Nullable Long totalCpuMicros();
+    public abstract @Nullable Long totalBlockedMicros();
+    public abstract @Nullable Long totalWaitedMicros();
+    public abstract @Nullable Long totalAllocatedBytes();
     public abstract long profileSampleCount();
     public abstract String metrics();
     public abstract byte[] histogram();

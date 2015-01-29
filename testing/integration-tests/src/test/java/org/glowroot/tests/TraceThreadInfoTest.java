@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,8 +61,7 @@ public class TraceThreadInfoTest {
         container.executeAppUnderTest(ShouldUseCpu.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadInfo().getThreadCpuTime())
-                .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(10));
+        assertThat(trace.getThreadCpuTime()).isGreaterThanOrEqualTo(MILLISECONDS.toNanos(10));
     }
 
     @Test
@@ -72,7 +71,7 @@ public class TraceThreadInfoTest {
         container.executeAppUnderTest(ShouldWait.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadInfo().getThreadWaitedTime()).isGreaterThanOrEqualTo(5);
+        assertThat(trace.getThreadWaitedTime()).isGreaterThanOrEqualTo(5);
     }
 
     @Test
@@ -82,7 +81,7 @@ public class TraceThreadInfoTest {
         container.executeAppUnderTest(ShouldBlock.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadInfo().getThreadBlockedTime()).isGreaterThanOrEqualTo(5);
+        assertThat(trace.getThreadBlockedTime()).isGreaterThanOrEqualTo(5);
     }
 
     public static class ShouldUseCpu implements AppUnderTest, TraceMarker {

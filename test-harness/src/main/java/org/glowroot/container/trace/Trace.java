@@ -46,7 +46,10 @@ public class Trace {
     private final @Nullable String user;
     private final ImmutableSetMultimap<String, String> customAttributes;
     private final TraceMetric rootMetric;
-    private final @Nullable TraceThreadInfo threadInfo;
+    private final @Nullable Long threadCpuTime;
+    private final @Nullable Long threadBlockedTime;
+    private final @Nullable Long threadWaitedTime;
+    private final @Nullable Long threadAllocatedBytes;
     private final ImmutableList<TraceGcInfo> gcInfos;
     private final long entryCount;
     private final long profileSampleCount;
@@ -57,8 +60,10 @@ public class Trace {
             long duration, String transactionType, String transactionName, String headline,
             @Nullable String error, @Nullable String user,
             ImmutableSetMultimap<String, String> customAttributes, TraceMetric rootMetric,
-            @Nullable TraceThreadInfo threadInfo, List<TraceGcInfo> gcInfos, long entryCount,
-            long profileSampleCount, Existence entriesExistence, Existence profileExistence) {
+            @Nullable Long threadCpuTime, @Nullable Long threadBlockedTime,
+            @Nullable Long threadWaitedTime, @Nullable Long threadAllocatedBytes,
+            List<TraceGcInfo> gcInfos, long entryCount, long profileSampleCount,
+            Existence entriesExistence, Existence profileExistence) {
         this.id = id;
         this.active = active;
         this.partial = partial;
@@ -72,7 +77,10 @@ public class Trace {
         this.user = user;
         this.customAttributes = customAttributes;
         this.rootMetric = rootMetric;
-        this.threadInfo = threadInfo;
+        this.threadCpuTime = threadCpuTime;
+        this.threadBlockedTime = threadBlockedTime;
+        this.threadWaitedTime = threadWaitedTime;
+        this.threadAllocatedBytes = threadAllocatedBytes;
         this.gcInfos = ImmutableList.copyOf(gcInfos);
         this.entryCount = entryCount;
         this.profileSampleCount = profileSampleCount;
@@ -132,8 +140,20 @@ public class Trace {
         return rootMetric;
     }
 
-    public @Nullable TraceThreadInfo getThreadInfo() {
-        return threadInfo;
+    public @Nullable Long getThreadCpuTime() {
+        return threadCpuTime;
+    }
+
+    public @Nullable Long getThreadBlockedTime() {
+        return threadBlockedTime;
+    }
+
+    public @Nullable Long getThreadWaitedTime() {
+        return threadWaitedTime;
+    }
+
+    public @Nullable Long getThreadAllocatedBytes() {
+        return threadAllocatedBytes;
     }
 
     public ImmutableList<TraceGcInfo> getGcInfos() {
@@ -172,7 +192,10 @@ public class Trace {
                 .add("user", user)
                 .add("customAttributes", customAttributes)
                 .add("rootMetric", rootMetric)
-                .add("threadInfo", threadInfo)
+                .add("threadCpuTime", threadCpuTime)
+                .add("threadBlockedTime", threadBlockedTime)
+                .add("threadWaitedTime", threadWaitedTime)
+                .add("threadAllocatedBytes", threadAllocatedBytes)
                 .add("gcInfos", gcInfos)
                 .add("entryCount", entryCount)
                 .add("profileSampleCount", profileSampleCount)
@@ -196,7 +219,10 @@ public class Trace {
             @JsonProperty("user") @Nullable String user,
             @JsonProperty("customAttributes") @Nullable Map<String, /*@Nullable*/List</*@Nullable*/String>> customAttributes,
             @JsonProperty("metrics") @Nullable TraceMetric rootMetric,
-            @JsonProperty("threadInfo") @Nullable TraceThreadInfo threadInfo,
+            @JsonProperty("threadCpuTime") @Nullable Long threadCpuTime,
+            @JsonProperty("threadBlockedTime") @Nullable Long threadBlockedTime,
+            @JsonProperty("threadWaitedTime") @Nullable Long threadWaitedTime,
+            @JsonProperty("threadAllocatedBytes") @Nullable Long threadAllocatedBytes,
             @JsonProperty("gcInfos") @Nullable List</*@Nullable*/TraceGcInfo> gcInfosUnchecked,
             @JsonProperty("entryCount") @Nullable Long entryCount,
             @JsonProperty("profileSampleCount") @Nullable Long profileSampleCount,
@@ -234,8 +260,8 @@ public class Trace {
         }
         return new Trace(id, active, partial, startTime, captureTime, duration, transactionType,
                 transactionName, headline, error, user, theCustomAttributes.build(), rootMetric,
-                threadInfo, gcInfos, entryCount, profileSampleCount, entriesExistence,
-                profileExistence);
+                threadCpuTime, threadBlockedTime, threadWaitedTime, threadAllocatedBytes, gcInfos,
+                entryCount, profileSampleCount, entriesExistence, profileExistence);
     }
 
     public enum Existence {

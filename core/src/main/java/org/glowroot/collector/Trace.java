@@ -42,7 +42,10 @@ public abstract class Trace {
     public abstract @Nullable String user();
     public abstract @Nullable String customAttributes(); // json data
     public abstract @Nullable String metrics(); // json data
-    public abstract @Nullable String threadInfo(); // json data
+    public abstract @Nullable Long threadCpuTime(); // nanoseconds
+    public abstract @Nullable Long threadBlockedTime(); // nanoseconds
+    public abstract @Nullable Long threadWaitedTime(); // nanoseconds
+    public abstract @Nullable Long threadAllocatedBytes();
     public abstract @Nullable String gcInfos(); // json data
     public abstract long entryCount();
     public abstract long profileSampleCount();

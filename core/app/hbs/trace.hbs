@@ -132,35 +132,35 @@
     </tbody>
   </table>
 </div>
-{{#if threadInfo}}
+{{#ifAnyThreadInfo .}}
   <div class="gt-bold">
-    Thread info
+    JVM thread metrics
   </div>
-  {{#ifExists threadInfo.threadCpuTime}}
+  {{#ifExists threadCpuTime}}
     <div class="gt-indent2">
       <span>CPU time:</span>
-      {{nanosToMillis threadInfo.threadCpuTime}} milliseconds
+      {{nanosToMillis threadCpuTime}} milliseconds
     </div>
   {{/ifExists}}
-  {{#ifExists threadInfo.threadBlockedTime}}
+  {{#ifExists threadBlockedTime}}
     <div class="gt-indent2">
       <span>Blocked time:</span>
-      {{threadInfo.threadBlockedTime}} milliseconds
+      {{nanosToMillis threadBlockedTime}} milliseconds
     </div>
   {{/ifExists}}
-  {{#ifExists threadInfo.threadWaitedTime}}
+  {{#ifExists threadWaitedTime}}
     <div class="gt-indent2">
       <span>Waited time:</span>
-      {{threadInfo.threadWaitedTime}} milliseconds
+      {{nanosToMillis threadWaitedTime}} milliseconds
     </div>
   {{/ifExists}}
-  {{#ifExists threadInfo.threadAllocatedBytes}}
+  {{#ifExists threadAllocatedBytes}}
     <div class="gt-indent2">
       <span>Allocated memory:</span>
-      {{formatAllocatedBytes threadInfo.threadAllocatedBytes}}
+      {{formatAllocatedBytes threadAllocatedBytes}}
     </div>
   {{/ifExists}}
-{{/if}}
+{{/ifAnyThreadInfo}}
 {{#if gcInfos}}
   <div class="gt-bold">
     GC info

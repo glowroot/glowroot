@@ -215,7 +215,7 @@ public class AggregateIntervalCollector {
         void add(Transaction transaction) {
             Profile profile = transaction.getProfile();
             synchronized (overallBuilder) {
-                overallBuilder.add(transaction.getDuration(), transaction.getError() != null);
+                overallBuilder.add(transaction);
                 overallBuilder.addToMetrics(transaction.getRootMetric());
                 if (profile != null) {
                     overallBuilder.addToProfile(profile);
@@ -229,7 +229,7 @@ public class AggregateIntervalCollector {
                 transactionBuilders.put(transaction.getTransactionName(), transactionBuilder);
             }
             synchronized (transactionBuilder) {
-                transactionBuilder.add(transaction.getDuration(), transaction.getError() != null);
+                transactionBuilder.add(transaction);
                 transactionBuilder.addToMetrics(transaction.getRootMetric());
                 if (profile != null) {
                     overallBuilder.addToProfile(profile);

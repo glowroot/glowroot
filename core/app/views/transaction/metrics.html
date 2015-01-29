@@ -102,4 +102,29 @@
     </tbody>
   </table>
   <br>
+
+  <div ng-show="threadInfoAggregate">
+    <label>
+      JVM thread metrics per transaction:
+    </label>
+
+    <div class="gt-indent2">
+      <div ng-show="threadInfoAggregate.totalCpuMicros">
+        CPU time:
+        {{(threadInfoAggregate.totalCpuMicros / (1000 * mergedAggregate.transactionCount)).toFixed(1)}} ms
+      </div>
+      <div ng-show="threadInfoAggregate.totalBlockedMicros">
+        Blocked time:
+        {{(threadInfoAggregate.totalBlockedMicros / (1000 * mergedAggregate.transactionCount)).toFixed(1)}} ms
+      </div>
+      <div ng-show="threadInfoAggregate.totalWaitedMicros">
+        Waited time:
+        {{(threadInfoAggregate.totalWaitedMicros / (1000 * mergedAggregate.transactionCount)).toFixed(1)}} ms
+      </div>
+      <div ng-show="threadInfoAggregate.totalAllocatedBytes">
+        Allocated memory:
+        {{(threadInfoAggregate.totalAllocatedBytes / (1000 * mergedAggregate.transactionCount)).toFixed(1) | gtBytes}}
+      </div>
+    </div>
+  </div>
 </div>

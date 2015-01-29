@@ -77,9 +77,9 @@ public class AggregateDaoTest {
                 .totalMicros(1000000)
                 .errorCount(0)
                 .transactionCount(10)
+                .profileSampleCount(0)
                 .metrics(getFakeMetrics())
                 .histogram(getFakeHistogram())
-                .profileSampleCount(0)
                 .build();
         List<Aggregate> transactionAggregates = Lists.newArrayList();
         transactionAggregates.add(ImmutableAggregate.builder()
@@ -89,9 +89,9 @@ public class AggregateDaoTest {
                 .totalMicros(100000)
                 .errorCount(0)
                 .transactionCount(1)
+                .profileSampleCount(0)
                 .metrics(getFakeMetrics())
                 .histogram(getFakeHistogram())
-                .profileSampleCount(0)
                 .build());
         transactionAggregates.add(ImmutableAggregate.builder()
                 .transactionType("a type")
@@ -100,9 +100,9 @@ public class AggregateDaoTest {
                 .totalMicros(300000)
                 .errorCount(0)
                 .transactionCount(2)
+                .profileSampleCount(0)
                 .metrics(getFakeMetrics())
                 .histogram(getFakeHistogram())
-                .profileSampleCount(0)
                 .build());
         transactionAggregates.add(ImmutableAggregate.builder()
                 .transactionType("a type")
@@ -111,9 +111,9 @@ public class AggregateDaoTest {
                 .totalMicros(1400000)
                 .errorCount(0)
                 .transactionCount(7)
+                .profileSampleCount(0)
                 .metrics(getFakeMetrics())
                 .histogram(getFakeHistogram())
-                .profileSampleCount(0)
                 .build());
         aggregateDao.store(ImmutableList.of(overallAggregate), transactionAggregates, 10000);
 
@@ -124,9 +124,9 @@ public class AggregateDaoTest {
                 .totalMicros(1000000)
                 .errorCount(0)
                 .transactionCount(10)
+                .profileSampleCount(0)
                 .metrics(getFakeMetrics())
                 .histogram(getFakeHistogram())
-                .profileSampleCount(0)
                 .build();
         List<Aggregate> transactionAggregates2 = Lists.newArrayList();
         transactionAggregates2.add(ImmutableAggregate.builder()
@@ -136,9 +136,9 @@ public class AggregateDaoTest {
                 .totalMicros(100000)
                 .errorCount(0)
                 .transactionCount(1)
+                .profileSampleCount(0)
                 .metrics(getFakeMetrics())
                 .histogram(getFakeHistogram())
-                .profileSampleCount(0)
                 .build());
         transactionAggregates2.add(ImmutableAggregate.builder()
                 .transactionType("a type")
@@ -147,9 +147,9 @@ public class AggregateDaoTest {
                 .totalMicros(300000)
                 .errorCount(0)
                 .transactionCount(2)
+                .profileSampleCount(0)
                 .metrics(getFakeMetrics())
                 .histogram(getFakeHistogram())
-                .profileSampleCount(0)
                 .build());
         transactionAggregates2.add(ImmutableAggregate.builder()
                 .transactionType("a type")
@@ -158,9 +158,9 @@ public class AggregateDaoTest {
                 .totalMicros(1400000)
                 .errorCount(0)
                 .transactionCount(7)
+                .profileSampleCount(0)
                 .metrics(getFakeMetrics())
                 .histogram(getFakeHistogram())
-                .profileSampleCount(0)
                 .build());
 
         aggregateDao.store(ImmutableList.of(overallAggregate2), transactionAggregates2, 20000);

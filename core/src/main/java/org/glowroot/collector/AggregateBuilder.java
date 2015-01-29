@@ -28,6 +28,8 @@ import com.google.common.io.CharStreams;
 
 import org.glowroot.common.ScratchBuffer;
 import org.glowroot.transaction.model.Profile;
+import org.glowroot.transaction.model.ThreadInfoComponent.ThreadInfoData;
+import org.glowroot.transaction.model.Transaction;
 import org.glowroot.transaction.model.TransactionMetricImpl;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -43,6 +45,10 @@ class AggregateBuilder {
     private long totalMicros;
     private long errorCount;
     private long transactionCount;
+    private @Nullable Long totalCpuMicros;
+    private @Nullable Long totalBlockedMicros;
+    private @Nullable Long totalWaitedMicros;
+    private @Nullable Long totalAllocatedBytes;
     private long profileSampleCount;
     // histogram uses microseconds to reduce (or at least simplify) bucket allocations
     private final LazyHistogram histogram = new LazyHistogram();
@@ -54,13 +60,24 @@ class AggregateBuilder {
         this.transactionName = transactionName;
     }
 
-    void add(long duration, boolean error) {
-        long durationMicros = NANOSECONDS.toMicros(duration);
+    void add(Transaction transaction) {
+        long durationMicros = NANOSECONDS.toMicros(transaction.getDuration());
         totalMicros += durationMicros;
-        if (error) {
+        if (transaction.getError() != null) {
             errorCount++;
         }
         transactionCount++;
+        ThreadInfoData threadInfo = transaction.getThreadInfo();
+        if (threadInfo != null) {
+            totalCpuMicros = nullAwareAdd(totalCpuMicros,
+                    nullAwareNanosToMicros(threadInfo.threadCpuTime()));
+            totalBlockedMicros = nullAwareAdd(totalBlockedMicros,
+                    nullAwareNanosToMicros(threadInfo.threadBlockedTime()));
+            totalWaitedMicros = nullAwareAdd(totalWaitedMicros,
+                    nullAwareNanosToMicros(threadInfo.threadWaitedTime()));
+            totalAllocatedBytes = nullAwareAdd(totalAllocatedBytes,
+                    threadInfo.threadAllocatedBytes());
+        }
         histogram.add(durationMicros);
     }
 
@@ -90,6 +107,10 @@ class AggregateBuilder {
                 .totalMicros(totalMicros)
                 .errorCount(errorCount)
                 .transactionCount(transactionCount)
+                .totalCpuMicros(totalCpuMicros)
+                .totalBlockedMicros(totalBlockedMicros)
+                .totalWaitedMicros(totalWaitedMicros)
+                .totalAllocatedBytes(totalAllocatedBytes)
                 .metrics(getMetricsJson())
                 .histogram(histogram)
                 .profileSampleCount(profileSampleCount)
@@ -170,6 +191,23 @@ class AggregateBuilder {
             jg.writeEndArray();
         }
         jg.writeEndObject();
+    }
+
+    private static @Nullable Long nullAwareNanosToMicros(@Nullable Long nanoseconds) {
+        if (nanoseconds == null) {
+            return null;
+        }
+        return NANOSECONDS.toMicros(nanoseconds);
+    }
+
+    private static @Nullable Long nullAwareAdd(@Nullable Long x, @Nullable Long y) {
+        if (x == null) {
+            return y;
+        }
+        if (y == null) {
+            return x;
+        }
+        return x + y;
     }
 
     private static class AggregateMetric {

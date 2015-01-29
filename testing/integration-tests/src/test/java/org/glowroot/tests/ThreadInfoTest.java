@@ -57,9 +57,9 @@ public class ThreadInfoTest {
         container.executeAppUnderTest(Normal.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadInfo().getThreadCpuTime()).isNotNull();
-        assertThat(trace.getThreadInfo().getThreadBlockedTime()).isNotNull();
-        assertThat(trace.getThreadInfo().getThreadWaitedTime()).isNotNull();
+        assertThat(trace.getThreadCpuTime()).isNotNull();
+        assertThat(trace.getThreadBlockedTime()).isNotNull();
+        assertThat(trace.getThreadWaitedTime()).isNotNull();
     }
 
     @Test
@@ -72,7 +72,9 @@ public class ThreadInfoTest {
         container.executeAppUnderTest(Normal.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadInfo()).isNull();
+        assertThat(trace.getThreadCpuTime()).isNull();
+        assertThat(trace.getThreadBlockedTime()).isNull();
+        assertThat(trace.getThreadWaitedTime()).isNull();
     }
 
     @Test
@@ -82,9 +84,9 @@ public class ThreadInfoTest {
         container.executeAppUnderTest(ThreadCpuTimeDisabled.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadInfo().getThreadCpuTime()).isNull();
-        assertThat(trace.getThreadInfo().getThreadBlockedTime()).isNotNull();
-        assertThat(trace.getThreadInfo().getThreadWaitedTime()).isNotNull();
+        assertThat(trace.getThreadCpuTime()).isNull();
+        assertThat(trace.getThreadBlockedTime()).isNotNull();
+        assertThat(trace.getThreadWaitedTime()).isNotNull();
     }
 
     @Test
@@ -94,9 +96,9 @@ public class ThreadInfoTest {
         container.executeAppUnderTest(ThreadCpuTimeDisabledMid.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadInfo().getThreadCpuTime()).isNull();
-        assertThat(trace.getThreadInfo().getThreadBlockedTime()).isNotNull();
-        assertThat(trace.getThreadInfo().getThreadWaitedTime()).isNotNull();
+        assertThat(trace.getThreadCpuTime()).isNull();
+        assertThat(trace.getThreadBlockedTime()).isNotNull();
+        assertThat(trace.getThreadWaitedTime()).isNotNull();
     }
 
     @Test
@@ -106,9 +108,9 @@ public class ThreadInfoTest {
         container.executeAppUnderTest(ThreadCpuTimeEnabledMid.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadInfo().getThreadCpuTime()).isNull();
-        assertThat(trace.getThreadInfo().getThreadBlockedTime()).isNotNull();
-        assertThat(trace.getThreadInfo().getThreadWaitedTime()).isNotNull();
+        assertThat(trace.getThreadCpuTime()).isNull();
+        assertThat(trace.getThreadBlockedTime()).isNotNull();
+        assertThat(trace.getThreadWaitedTime()).isNotNull();
     }
 
     @Test
@@ -118,9 +120,9 @@ public class ThreadInfoTest {
         container.executeAppUnderTest(ThreadContentionMonitoringDisabled.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadInfo().getThreadCpuTime()).isNotNull();
-        assertThat(trace.getThreadInfo().getThreadBlockedTime()).isNull();
-        assertThat(trace.getThreadInfo().getThreadWaitedTime()).isNull();
+        assertThat(trace.getThreadCpuTime()).isNotNull();
+        assertThat(trace.getThreadBlockedTime()).isNull();
+        assertThat(trace.getThreadWaitedTime()).isNull();
     }
 
     @Test
@@ -130,9 +132,9 @@ public class ThreadInfoTest {
         container.executeAppUnderTest(ThreadContentionMonitoringDisabledMid.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadInfo().getThreadCpuTime()).isNotNull();
-        assertThat(trace.getThreadInfo().getThreadBlockedTime()).isNull();
-        assertThat(trace.getThreadInfo().getThreadWaitedTime()).isNull();
+        assertThat(trace.getThreadCpuTime()).isNotNull();
+        assertThat(trace.getThreadBlockedTime()).isNull();
+        assertThat(trace.getThreadWaitedTime()).isNull();
     }
 
     @Test
@@ -142,9 +144,9 @@ public class ThreadInfoTest {
         container.executeAppUnderTest(ThreadContentionMonitoringEnabledMid.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadInfo().getThreadCpuTime()).isNotNull();
-        assertThat(trace.getThreadInfo().getThreadBlockedTime()).isNull();
-        assertThat(trace.getThreadInfo().getThreadWaitedTime()).isNull();
+        assertThat(trace.getThreadCpuTime()).isNotNull();
+        assertThat(trace.getThreadBlockedTime()).isNull();
+        assertThat(trace.getThreadWaitedTime()).isNull();
     }
 
     @Test
@@ -154,9 +156,9 @@ public class ThreadInfoTest {
         container.executeAppUnderTest(BothDisabled.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadInfo().getThreadCpuTime()).isNull();
-        assertThat(trace.getThreadInfo().getThreadBlockedTime()).isNull();
-        assertThat(trace.getThreadInfo().getThreadWaitedTime()).isNull();
+        assertThat(trace.getThreadCpuTime()).isNull();
+        assertThat(trace.getThreadBlockedTime()).isNull();
+        assertThat(trace.getThreadWaitedTime()).isNull();
     }
 
     public static class Normal implements AppUnderTest {

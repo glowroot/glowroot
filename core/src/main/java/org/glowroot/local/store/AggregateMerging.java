@@ -20,8 +20,12 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.CharSource;
+import org.immutables.value.Json;
+import org.immutables.value.Value;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.LazyHistogram;
@@ -64,6 +68,26 @@ public class AggregateMerging {
         return new HistogramMergedAggregate(histogram, transactionCount, totalMicros);
     }
 
+    public static ThreadInfoAggregate getThreadInfoAggregate(List<Aggregate> aggregates) {
+        Long totalCpuMicros = null;
+        Long totalBlockedMicros = null;
+        Long totalWaitedMicros = null;
+        Long totalAllocatedBytes = null;
+        for (Aggregate aggregate : aggregates) {
+            totalCpuMicros = nullAwareAdd(totalCpuMicros, aggregate.totalCpuMicros());
+            totalBlockedMicros = nullAwareAdd(totalBlockedMicros, aggregate.totalBlockedMicros());
+            totalWaitedMicros = nullAwareAdd(totalWaitedMicros, aggregate.totalWaitedMicros());
+            totalAllocatedBytes = nullAwareAdd(totalAllocatedBytes,
+                    aggregate.totalAllocatedBytes());
+        }
+        return ImmutableThreadInfoAggregate.builder()
+                .totalCpuMicros(totalCpuMicros)
+                .totalBlockedMicros(totalBlockedMicros)
+                .totalWaitedMicros(totalWaitedMicros)
+                .totalAllocatedBytes(totalAllocatedBytes)
+                .build();
+    }
+
     public static AggregateProfileNode getProfile(List<CharSource> profiles,
             double truncateLeafPercentage) throws IOException {
         AggregateProfileNode syntheticRootNode = AggregateProfileNode.createSyntheticRootNode();
@@ -86,6 +110,16 @@ public class AggregateMerging {
         } else {
             return syntheticRootNode;
         }
+    }
+
+    private static @Nullable Long nullAwareAdd(@Nullable Long x, @Nullable Long y) {
+        if (x == null) {
+            return y;
+        }
+        if (y == null) {
+            return x;
+        }
+        return x + y;
     }
 
     private static void truncateLeafs(AggregateProfileNode node, int minSamples) {
@@ -122,7 +156,7 @@ public class AggregateMerging {
     }
 
     // could use @Value.Immutable, but it's not technically immutable since it contains
-    // non-immutable state (Histogram)
+    // non-immutable state (LazyHistogram)
     public static class HistogramMergedAggregate {
 
         private final long totalMicros;
@@ -154,6 +188,20 @@ public class AggregateMerging {
 
         public long getPercentile3() {
             return histogram.getValueAtPercentile(99);
+        }
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    public abstract static class ThreadInfoAggregate {
+        abstract @Nullable Long totalCpuMicros();
+        abstract @Nullable Long totalBlockedMicros();
+        abstract @Nullable Long totalWaitedMicros();
+        abstract @Nullable Long totalAllocatedBytes();
+
+        public boolean isEmpty() {
+            return totalCpuMicros() == null && totalBlockedMicros() == null
+                    && totalWaitedMicros() == null && totalAllocatedBytes() == null;
         }
     }
 }

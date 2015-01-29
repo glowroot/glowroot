@@ -46,10 +46,12 @@ import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
 import org.glowroot.local.store.AggregateMerging;
 import org.glowroot.local.store.AggregateMerging.HistogramMergedAggregate;
 import org.glowroot.local.store.AggregateMerging.MetricMergedAggregate;
+import org.glowroot.local.store.AggregateMerging.ThreadInfoAggregate;
 import org.glowroot.local.store.AggregateMetric;
 import org.glowroot.local.store.AggregateProfileNode;
 import org.glowroot.local.store.ImmutableTransactionSummaryQuery;
 import org.glowroot.local.store.QueryResult;
+import org.glowroot.local.store.ThreadInfoAggregateMarshaler;
 import org.glowroot.local.store.TraceDao;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -128,6 +130,8 @@ class TransactionJsonService {
         }
         MetricMergedAggregate metricMergedAggregate =
                 AggregateMerging.getMetricMergedAggregate(aggregates);
+        ThreadInfoAggregate threadInfoAggregate =
+                AggregateMerging.getThreadInfoAggregate(aggregates);
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -135,6 +139,10 @@ class TransactionJsonService {
         jg.writeObjectField("dataSeries", dataSeriesList);
         jg.writeObjectField("transactionCounts", transactionCounts);
         jg.writeObjectField("mergedAggregate", metricMergedAggregate);
+        if (!threadInfoAggregate.isEmpty()) {
+            jg.writeFieldName("threadInfoAggregate");
+            ThreadInfoAggregateMarshaler.marshal(jg, threadInfoAggregate);
+        }
         jg.writeEndObject();
         jg.close();
         return sb.toString();

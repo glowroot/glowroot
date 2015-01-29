@@ -15,14 +15,36 @@
  */
 package org.glowroot.local.store;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
+
+import javax.annotation.Nullable;
 
 import org.glowroot.collector.Existence;
 
 class RowMappers {
 
     private RowMappers() {}
+
+    static @Nullable Long getLong(ResultSet resultSet, int columnIndex) throws SQLException {
+        long value = resultSet.getLong(columnIndex);
+        if (resultSet.wasNull()) {
+            return null;
+        } else {
+            return value;
+        }
+    }
+
+    static void setLong(PreparedStatement preparedStatement, int columnIndex,
+            @Nullable Long value) throws SQLException {
+        if (value == null) {
+            preparedStatement.setNull(columnIndex, Types.BIGINT);
+        } else {
+            preparedStatement.setLong(columnIndex, value);
+        }
+    }
 
     static Existence getExistence(ResultSet resultSet, int columnIndex,
             CappedDatabase cappedDatabase) throws SQLException {
