@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,8 @@ class TraceTestData {
                 .user("j")
                 .customAttributes("{\"abc\":\"xyz\", \"xyz\":\"abc\"}")
                 .customAttributesForIndexing(ImmutableSetMultimap.of("abc", "xyz", "xyz", "abc"))
+                .entryCount(1)
+                .profileSampleCount(0)
                 .entriesExistence(Existence.NO)
                 .profileExistence(Existence.NO)
                 .build();

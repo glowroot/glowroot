@@ -67,6 +67,8 @@ public class TraceDao implements TraceRepository {
             ImmutableColumn.of("metrics", Types.VARCHAR), // json data
             ImmutableColumn.of("thread_info", Types.VARCHAR), // json data
             ImmutableColumn.of("gc_infos", Types.VARCHAR), // json data
+            ImmutableColumn.of("entry_count", Types.BIGINT),
+            ImmutableColumn.of("profile_sample_count", Types.BIGINT),
             ImmutableColumn.of("entries_capped_id", Types.VARCHAR), // capped database id
             ImmutableColumn.of("profile_capped_id", Types.VARCHAR)); // capped database id
 
@@ -120,13 +122,14 @@ public class TraceDao implements TraceRepository {
         }
         dataSource.update("merge into trace (id, partial, start_time, capture_time, duration,"
                 + " transaction_type, transaction_name, headline, error, error_message, user,"
-                + " custom_attributes, metrics, thread_info, gc_infos, entries_capped_id,"
-                + " profile_capped_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                trace.id(), trace.partial(), trace.startTime(), trace.captureTime(),
-                trace.duration(), trace.transactionType(), trace.transactionName(),
-                trace.headline(), trace.error() != null, trace.error(), trace.user(),
-                trace.customAttributes(), trace.metrics(), trace.threadInfo(), trace.gcInfos(),
-                entriesId, profileId);
+                + " custom_attributes, metrics, thread_info, gc_infos, entry_count,"
+                + " profile_sample_count, entries_capped_id, profile_capped_id) values"
+                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", trace.id(),
+                trace.partial(), trace.startTime(), trace.captureTime(), trace.duration(),
+                trace.transactionType(), trace.transactionName(), trace.headline(),
+                trace.error() != null, trace.error(), trace.user(), trace.customAttributes(),
+                trace.metrics(), trace.threadInfo(), trace.gcInfos(), trace.entryCount(),
+                trace.profileSampleCount(), entriesId, profileId);
         final ImmutableSetMultimap<String, String> customAttributesForIndexing =
                 trace.customAttributesForIndexing();
         if (!customAttributesForIndexing.isEmpty()) {
@@ -210,8 +213,9 @@ public class TraceDao implements TraceRepository {
     public @Nullable Trace readTrace(String traceId) throws SQLException {
         List<Trace> traces = dataSource.query("select id, partial, start_time, capture_time,"
                 + " duration, transaction_type, transaction_name, headline, error_message, user,"
-                + " custom_attributes, metrics, thread_info, gc_infos, entries_capped_id,"
-                + " profile_capped_id from trace where id = ?", new TraceRowMapper(), traceId);
+                + " custom_attributes, metrics, thread_info, gc_infos, entry_count,"
+                + " profile_sample_count, entries_capped_id, profile_capped_id from trace"
+                + " where id = ?", new TraceRowMapper(), traceId);
         if (traces.isEmpty()) {
             return null;
         }
@@ -348,8 +352,10 @@ public class TraceDao implements TraceRepository {
                     .metrics(resultSet.getString(12))
                     .threadInfo(resultSet.getString(13))
                     .gcInfos(resultSet.getString(14))
-                    .entriesExistence(RowMappers.getExistence(resultSet, 15, cappedDatabase))
-                    .profileExistence(RowMappers.getExistence(resultSet, 16, cappedDatabase))
+                    .entryCount(resultSet.getLong(15))
+                    .profileSampleCount(resultSet.getLong(16))
+                    .entriesExistence(RowMappers.getExistence(resultSet, 17, cappedDatabase))
+                    .profileExistence(RowMappers.getExistence(resultSet, 18, cappedDatabase))
                     .build();
         }
     }

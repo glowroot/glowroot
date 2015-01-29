@@ -72,7 +72,7 @@ class AggregateBuilder {
 
     void addToProfile(Profile profile) {
         aggregateProfile.addProfile(profile);
-        profileSampleCount += profile.getSyntheticRootNode().getSampleCount();
+        profileSampleCount += profile.getSampleCount();
     }
 
     Aggregate build(long captureTime, ScratchBuffer scratchBuffer) throws IOException {

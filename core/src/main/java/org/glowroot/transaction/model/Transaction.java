@@ -237,6 +237,14 @@ public class Transaction {
         return traceEntryComponent.getEntriesCopy();
     }
 
+    public int getProfileSampleCount() {
+        if (profile == null) {
+            return 0;
+        } else {
+            return profile.getSampleCount();
+        }
+    }
+
     public @Nullable Profile getProfile() {
         return profile;
     }

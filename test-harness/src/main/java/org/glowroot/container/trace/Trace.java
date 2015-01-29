@@ -48,6 +48,8 @@ public class Trace {
     private final TraceMetric rootMetric;
     private final @Nullable TraceThreadInfo threadInfo;
     private final ImmutableList<TraceGcInfo> gcInfos;
+    private final long entryCount;
+    private final long profileSampleCount;
     private final Existence entriesExistence;
     private final Existence profileExistence;
 
@@ -55,8 +57,8 @@ public class Trace {
             long duration, String transactionType, String transactionName, String headline,
             @Nullable String error, @Nullable String user,
             ImmutableSetMultimap<String, String> customAttributes, TraceMetric rootMetric,
-            @Nullable TraceThreadInfo threadInfo, List<TraceGcInfo> gcInfos,
-            Existence entriesExistence, Existence profileExistence) {
+            @Nullable TraceThreadInfo threadInfo, List<TraceGcInfo> gcInfos, long entryCount,
+            long profileSampleCount, Existence entriesExistence, Existence profileExistence) {
         this.id = id;
         this.active = active;
         this.partial = partial;
@@ -72,6 +74,8 @@ public class Trace {
         this.rootMetric = rootMetric;
         this.threadInfo = threadInfo;
         this.gcInfos = ImmutableList.copyOf(gcInfos);
+        this.entryCount = entryCount;
+        this.profileSampleCount = profileSampleCount;
         this.entriesExistence = entriesExistence;
         this.profileExistence = profileExistence;
     }
@@ -136,6 +140,14 @@ public class Trace {
         return gcInfos;
     }
 
+    public long getEntryCount() {
+        return entryCount;
+    }
+
+    public long getProfileSampleCount() {
+        return profileSampleCount;
+    }
+
     public Existence getEntriesExistence() {
         return entriesExistence;
     }
@@ -162,6 +174,8 @@ public class Trace {
                 .add("rootMetric", rootMetric)
                 .add("threadInfo", threadInfo)
                 .add("gcInfos", gcInfos)
+                .add("entryCount", entryCount)
+                .add("profileSampleCount", profileSampleCount)
                 .add("entriesExistence", entriesExistence)
                 .add("profileExistence", profileExistence)
                 .toString();
@@ -184,6 +198,8 @@ public class Trace {
             @JsonProperty("metrics") @Nullable TraceMetric rootMetric,
             @JsonProperty("threadInfo") @Nullable TraceThreadInfo threadInfo,
             @JsonProperty("gcInfos") @Nullable List</*@Nullable*/TraceGcInfo> gcInfosUnchecked,
+            @JsonProperty("entryCount") @Nullable Long entryCount,
+            @JsonProperty("profileSampleCount") @Nullable Long profileSampleCount,
             @JsonProperty("entriesExistence") @Nullable Existence entriesExistence,
             @JsonProperty("profileExistence") @Nullable Existence profileExistence)
             throws JsonMappingException {
@@ -198,6 +214,8 @@ public class Trace {
         checkRequiredProperty(transactionName, "transactionName");
         checkRequiredProperty(headline, "headline");
         checkRequiredProperty(rootMetric, "metrics");
+        checkRequiredProperty(entryCount, "entryCount");
+        checkRequiredProperty(profileSampleCount, "profileSampleCount");
         checkRequiredProperty(entriesExistence, "entriesExistence");
         checkRequiredProperty(profileExistence, "profileExistence");
         ImmutableSetMultimap.Builder<String, String> theCustomAttributes =
@@ -216,7 +234,8 @@ public class Trace {
         }
         return new Trace(id, active, partial, startTime, captureTime, duration, transactionType,
                 transactionName, headline, error, user, theCustomAttributes.build(), rootMetric,
-                threadInfo, gcInfos, entriesExistence, profileExistence);
+                threadInfo, gcInfos, entryCount, profileSampleCount, entriesExistence,
+                profileExistence);
     }
 
     public enum Existence {
