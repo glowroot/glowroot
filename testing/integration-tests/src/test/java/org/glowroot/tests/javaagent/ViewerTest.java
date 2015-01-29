@@ -39,8 +39,8 @@ public class ViewerTest {
         File dataDir = TempDirs.createTempDir("glowroot-test-datadir");
         Resources.asByteSource(Resources.getResource("for-upgrade-test/config.json"))
                 .copyTo(Files.asByteSink(new File(dataDir, "config.json")));
-        Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.h2.db"))
-                .copyTo(Files.asByteSink(new File(dataDir, "glowroot.h2.db")));
+        Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.mv.db"))
+                .copyTo(Files.asByteSink(new File(dataDir, "glowroot.mv.db")));
         Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.capped.db"))
                 .copyTo(Files.asByteSink(new File(dataDir, "glowroot.capped.db")));
         Container container = new JavaagentContainer(dataDir, true, 0, false, false, true,

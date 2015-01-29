@@ -24,7 +24,7 @@
     "sessionTimeoutMinutes": 30
   },
   "advanced": {
-    "metricWrapperMethods": true,
+    "metricWrapperMethods": false,
     "immediatePartialStoreThresholdSeconds": 60,
     "maxTraceEntriesPerTransaction": 2000,
     "maxStackTraceSamplesPerTransaction": 10000,
@@ -45,7 +45,8 @@
         "levelFiveEnabled": false,
         "levelFiveEntryEnabled": false,
         "anumber": null,
-        "anumberWithDefaultValue": 22.0
+        "anumberWithDefaultValue": 22.0,
+        "anumberWithExplicitNullDefaultValue": null
       }
     },
     {

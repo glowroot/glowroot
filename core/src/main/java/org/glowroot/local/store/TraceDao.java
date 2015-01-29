@@ -61,7 +61,6 @@ public class TraceDao implements TraceRepository {
             ImmutableColumn.of("transaction_name", Types.VARCHAR),
             ImmutableColumn.of("headline", Types.VARCHAR),
             ImmutableColumn.of("error", Types.BOOLEAN), // for searching only
-            ImmutableColumn.of("profiled", Types.BOOLEAN), // for searching only
             ImmutableColumn.of("error_message", Types.VARCHAR),
             ImmutableColumn.of("user", Types.VARCHAR),
             ImmutableColumn.of("custom_attributes", Types.VARCHAR), // json data
@@ -120,13 +119,12 @@ public class TraceDao implements TraceRepository {
             profileId = cappedDatabase.write(profile);
         }
         dataSource.update("merge into trace (id, partial, start_time, capture_time, duration,"
-                + " transaction_type, transaction_name, headline, error, profiled,"
-                + " error_message, user, custom_attributes, metrics, thread_info, gc_infos,"
-                + " entries_capped_id, profile_capped_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?,"
-                + " ?, ?, ?, ?, ?, ?, ?, ?, ?)", trace.id(), trace.partial(),
-                trace.startTime(), trace.captureTime(), trace.duration(),
-                trace.transactionType(), trace.transactionName(), trace.headline(),
-                trace.error() != null, profileId != null, trace.error(), trace.user(),
+                + " transaction_type, transaction_name, headline, error, error_message, user,"
+                + " custom_attributes, metrics, thread_info, gc_infos, entries_capped_id,"
+                + " profile_capped_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                trace.id(), trace.partial(), trace.startTime(), trace.captureTime(),
+                trace.duration(), trace.transactionType(), trace.transactionName(),
+                trace.headline(), trace.error() != null, trace.error(), trace.user(),
                 trace.customAttributes(), trace.metrics(), trace.threadInfo(), trace.gcInfos(),
                 entriesId, profileId);
         final ImmutableSetMultimap<String, String> customAttributesForIndexing =
