@@ -467,89 +467,233 @@ HandlebarsRendering = (function () {
       return html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    function curr(node, level, metric) {
-      var rootNodeSampleCount;
-      var nodeSampleCount;
-      if (metric) {
-        rootNodeSampleCount = rootNode.metricCounts[metric] || 0;
-        nodeSampleCount = node.metricCounts[metric] || 0;
+    function initNodeIds() {
+      var nodeId = 1;
+
+      function initNodeId(node) {
+        node.id = nodeId++;
+        if (node.childNodes) {
+          var i;
+          for (i = 0; i < node.childNodes.length; i++) {
+            initNodeId(node.childNodes[i]);
+          }
+        }
+      }
+
+      initNodeId(rootNode);
+    }
+
+    function filter(filterText) {
+      var filterTextUpper = filterText.toUpperCase();
+      if (filterText.length === 1) {
+        // don't match anything with filter length 1 char
+        filterTextUpper = '';
+      }
+
+      function highlightAndEscapeHtml(text) {
+        if (!filterTextUpper) {
+          return text;
+        }
+        var index = text.toUpperCase().indexOf(filterTextUpper);
+        if (index === -1) {
+          return text;
+        }
+        return escapeHtml(text.substring(0, index)) + '<strong>' +
+            escapeHtml(text.substring(index, index + filterTextUpper.length)) +
+            '</strong>' + highlightAndEscapeHtml(text.substring(index + filterTextUpper.length));
+      }
+
+      function filterNode(node, underMatchingNode) {
+        var nodes = [node];
+        while (node.childNodes && node.childNodes.length === 1 && !node.leafThreadState && !node.ellipsed) {
+          node = node.childNodes[0];
+          nodes.push(node);
+        }
+        var i;
+        var currMatchingNode = false;
+        for (i = 0; i < nodes.length; i++) {
+          if (nodes[i].stackTraceElement.toUpperCase().indexOf(filterTextUpper) !== -1) {
+            currMatchingNode = true;
+            break;
+          }
+        }
+        // only the last node in nodes can be a leaf
+        var lastNode = nodes[nodes.length - 1];
+        if (lastNode.leafThreadState && lastNode.leafThreadState.toUpperCase().indexOf(filterTextUpper) !== -1) {
+          currMatchingNode = true;
+        }
+        if (currMatchingNode || underMatchingNode) {
+          for (i = 0; i < nodes.length; i++) {
+            nodes[i].filteredSampleCount = nodes[i].sampleCount;
+            nodes[i].filteredEllipsed = nodes[i].ellipsed;
+          }
+          if (lastNode.childNodes) {
+            for (i = 0; i < lastNode.childNodes.length; i++) {
+              filterNode(lastNode.childNodes[i], true);
+            }
+          }
+        } else {
+          for (i = 0; i < nodes.length; i++) {
+            nodes[i].filteredSampleCount = 0;
+            nodes[i].filteredEllipsed = false;
+          }
+          if (lastNode.childNodes) {
+            for (i = 0; i < lastNode.childNodes.length; i++) {
+              lastNode.filteredSampleCount += filterNode(lastNode.childNodes[i]);
+            }
+          }
+        }
+        if (lastNode.ellipsed && lastNode.filteredEllipsed) {
+          $('#gtProfileNodeEllipsed' + lastNode.id).show();
+        } else if (lastNode.ellipsed) {
+          $('#gtProfileNodeEllipsed' + lastNode.id).hide();
+        }
+        if (lastNode.filteredSampleCount === 0) {
+          // TODO hide all nodes
+          $('#gtProfileNode' + lastNode.id).hide();
+          return 0;
+        }
+        for (i = 0; i < nodes.length; i++) {
+          var highlighted = highlightAndEscapeHtml(nodes[i].stackTraceElement);
+          $('#gtProfileNodeText' + nodes[i].id).html(highlighted);
+          if (nodes.length > 1 && i === nodes.length - 1) {
+            $('#gtProfileNodeTextUnexpanded' + lastNode.id).html(highlighted);
+          }
+        }
+        var samplePercentage = (lastNode.filteredSampleCount / rootNode.sampleCount) * 100;
+        $('#gtProfileNodePercent' + lastNode.id).text(samplePercentage.toFixed(1) + '%');
+        $('#gtProfileNode' + lastNode.id).show();
+        if (nodes.length > 1) {
+          var nodeTextParent = $('#gtProfileNodeText' + lastNode.id).parent();
+          var nodeTextParentParent = $('#gtProfileNodeText' + lastNode.id).parent().parent();
+          var unexpanded = nodeTextParentParent.find('.gt-unexpanded-content');
+          if (currMatchingNode && filterTextUpper) {
+            unexpanded.addClass('hide');
+            nodeTextParent.removeClass('hide');
+          } else {
+            unexpanded.removeClass('hide');
+            nodeTextParent.addClass('hide');
+          }
+        }
+        if (lastNode.leafThreadState) {
+          $('#gtProfileNodeThreadState' + lastNode.id).html(highlightAndEscapeHtml(lastNode.leafThreadState));
+        }
+        return lastNode.filteredSampleCount;
+      }
+
+      filterNode(rootNode);
+    }
+
+    function generateHtml(metric) {
+
+      function curr(node, level) {
+        var nodeSampleCount;
+        if (metric) {
+          nodeSampleCount = node.metricCounts[metric] || 0;
+        } else {
+          nodeSampleCount = node.sampleCount;
+        }
         if (nodeSampleCount === 0) {
           return '';
         }
-      } else {
-        rootNodeSampleCount = rootNode.sampleCount;
-        nodeSampleCount = node.sampleCount;
-      }
-      var nodes = [node];
-      while (node.childNodes && node.childNodes.length === 1) {
-        node = node.childNodes[0];
-        nodes.push(node);
-      }
-      var ret = '<span class="gt-inline-block" style="width: 4em; margin-left: ' + level + 'em;">';
-      var samplePercentage = (nodeSampleCount / rootNodeSampleCount) * 100;
-      ret += samplePercentage.toFixed(1);
-      // the space after the % is actually important when highlighting a block of stack trace
-      // elements in the ui and copy pasting into the eclipse java stack trace console, because the
-      // space gives separation between the percentage and the stack trace element and so eclipse is
-      // still able to understand the stack trace
-      ret += '% </span>';
-      if (nodes.length === 1) {
-        ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-        ret += '<span class="gt-inline-block" style="padding: 1px 1em;">';
-        ret += escapeHtml(node.stackTraceElement);
-        ret += '</span><br>';
-      } else {
-        ret += '<span>';
-        ret += '<span class="gt-inline-block gt-unexpanded-content" style="vertical-align: top;">';
-        ret += '<span class="gt-link-color"><strong>...</strong> </span>';
-        ret += escapeHtml(nodes[nodes.length - 1].stackTraceElement) + '<br>';
-        ret += '</span>';
-        ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-        ret += '<span class="gt-inline-block gt-expanded-content hide" style="vertical-align: top;">';
-        $.each(nodes, function (index, node) {
-          ret += escapeHtml(node.stackTraceElement) + '<br>';
-        });
-        ret += '</span>';
-        ret += '</span><br>';
-      }
-      if (node.leafThreadState) {
-        ret += '<span class="gt-inline-block" style="width: 4em; margin-left: ' + (level + 2) + 'em;">';
-        ret += '</span>';
-        ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-        ret += '<span class="gt-inline-block" style="padding: 1px 1em;">';
-        ret += escapeHtml(node.leafThreadState);
-        ret += '</span><br>';
-      }
-      if (node.childNodes) {
-        var childNodes = node.childNodes;
-        // order child nodes by sampleCount (descending)
-        childNodes.sort(function (a, b) {
-          if (metric) {
-            return (b.metricCounts[metric] || 0) - (a.metricCounts[metric] || 0);
-          }
-          return b.sampleCount - a.sampleCount;
-        });
-        for (var i = 0; i < childNodes.length; i++) {
-          ret += curr(childNodes[i], level + 1, metric);
+        var nodes = [node];
+        while (node.childNodes && node.childNodes.length === 1 && !node.leafThreadState && !node.ellipsed) {
+          node = node.childNodes[0];
+          nodes.push(node);
         }
-      }
-      if (node.ellipsed) {
-        ret += '<span class="gt-inline-block" style="width: 4em; margin-left: ' + (level + 1) + 'em;">';
+        var ret = '<span id="gtProfileNode' + node.id + '">';
+        ret += '<span class="gt-inline-block" style="width: 4em; margin-left: ' + level + 'em;"';
+        ret += ' id="gtProfileNodePercent' + node.id + '">';
+        var samplePercentage = (nodeSampleCount / rootNode.sampleCount) * 100;
+        ret += samplePercentage.toFixed(1);
+        // the space after the % is actually important when highlighting a block of stack trace
+        // elements in the ui and copy pasting into the eclipse java stack trace console, because the
+        // space gives separation between the percentage and the stack trace element and so eclipse is
+        // still able to understand the stack trace
+        ret += '% </span>';
+        if (nodes.length === 1) {
+          ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
+          ret += '<span class="gt-inline-block" style="padding: 1px 1em;">';
+          ret += '<span id="gtProfileNodeText' + node.id + '">' + escapeHtml(node.stackTraceElement);
+          ret += '</span></span><br>';
+        } else {
+          ret += '<span>';
+          ret += '<span class="gt-inline-block gt-unexpanded-content" style="vertical-align: top;">';
+          ret += '<span class="gt-link-color"><strong>...</strong> </span>';
+          ret += '<span id="gtProfileNodeTextUnexpanded' + nodes[nodes.length - 1].id + '">';
+          ret += escapeHtml(nodes[nodes.length - 1].stackTraceElement) + '</span><br></span>';
+          ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
+          ret += '<span class="gt-inline-block gt-expanded-content hide" style="vertical-align: top;">';
+          $.each(nodes, function (index, node) {
+            ret += '<span id="gtProfileNodeText' + node.id + '">' + escapeHtml(node.stackTraceElement) + '</span><br>';
+          });
+          ret += '</span></span><br>';
+        }
+        if (node.leafThreadState) {
+          ret += '<span class="gt-inline-block" style="width: 4em; margin-left: ' + (level + 2) + 'em;"></span>';
+          ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
+          ret += '<span class="gt-inline-block" style="padding: 1px 1em;"';
+          ret += ' id="gtProfileNodeThreadState' + node.id + '">';
+          ret += escapeHtml(node.leafThreadState);
+          ret += '</span><br>';
+        }
+        if (node.childNodes) {
+          var childNodes = node.childNodes;
+          // order child nodes by sampleCount (descending)
+          childNodes.sort(function (a, b) {
+            if (metric) {
+              return (b.metricCounts[metric] || 0) - (a.metricCounts[metric] || 0);
+            } else {
+              return b.sampleCount - a.sampleCount;
+            }
+          });
+          for (var i = 0; i < childNodes.length; i++) {
+            ret += curr(childNodes[i], level + 1);
+          }
+        }
+        if (node.ellipsed) {
+          ret += '<div id="gtProfileNodeEllipsed' + node.id + '">';
+          ret += '<span class="gt-inline-block" style="width: 4em; margin-left: ' + (level + 1) + 'em;"></span>';
+          ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
+          ret += '<span class="gt-inline-block" style="padding: 1px 1em;">(some branches < 0.1%)</span></div>';
+        }
         ret += '</span>';
-        ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-        ret += '<span class="gt-inline-block" style="padding: 1px 1em;">(some branches < 0.1%)</span><br>';
+        return ret;
       }
-      return ret;
+
+      return curr(rootNode, 0);
     }
 
     var $selector = $(selector);
     // first time only, process merged stack tree and populate dropdown
     // build initial merged stack tree
-    var html = curr(rootNode, 0);
+    initNodeIds();
+    var html = generateHtml();
     $selector.find('.gt-profile').html(html);
 
     var mergedCounts = calculateMetricCounts(rootNode);
-    if (!$.isEmptyObject(mergedCounts)) {
+    if ($.isEmptyObject(mergedCounts)) {
+      // display filter text input
+      var $profileTextFilter = $selector.find('.gt-profile-text-filter');
+      $profileTextFilter.removeClass('hide');
+      var timer;
+      $profileTextFilter.off('input.gtProfileFilter');
+      $profileTextFilter.on('input.gtProfileFilter', function () {
+        // primarily timer is used to deal with lagging when holding down backspace to clear out filter
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+          // update merged stack tree based on filter
+          var filterText = $profileTextFilter.val();
+          filter(filterText);
+        }, 50);
+      });
+      // apply initial filter text if any (e.g. user changes Last 30 min to Last 60 min) triggering profile refresh
+      // but filter text stays the same (which seems good)
+      var filterText = $profileTextFilter.val();
+      if (filterText) {
+        filter(filterText);
+      }
+    } else {
       // build tree
       var tree = {name: '', childNodes: {}};
       $.each(rootNode.metricCounts, function (metric) {
@@ -604,7 +748,7 @@ HandlebarsRendering = (function () {
       });
       $profileFilter.change(function () {
         // update merged stack tree based on filter
-        var html = curr(rootNode, 0, $(this).val());
+        var html = generateHtml($(this).val());
         $selector.find('.gt-profile').html(html);
       });
     }
