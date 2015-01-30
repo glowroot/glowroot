@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
+import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 import static org.glowroot.container.common.ObjectMappers.orEmpty;
 
 public class Trace {
@@ -45,6 +46,7 @@ public class Trace {
     private final @Nullable String error;
     private final @Nullable String user;
     private final ImmutableSetMultimap<String, String> customAttributes;
+    private final Map<String, /*@Nullable*/Object> customDetail;
     private final TraceMetric rootMetric;
     private final @Nullable Long threadCpuTime;
     private final @Nullable Long threadBlockedTime;
@@ -59,7 +61,8 @@ public class Trace {
     private Trace(String id, boolean active, boolean partial, long startTime, long captureTime,
             long duration, String transactionType, String transactionName, String headline,
             @Nullable String error, @Nullable String user,
-            ImmutableSetMultimap<String, String> customAttributes, TraceMetric rootMetric,
+            ImmutableSetMultimap<String, String> customAttributes,
+            Map<String, /*@Nullable*/Object> customDetail, TraceMetric rootMetric,
             @Nullable Long threadCpuTime, @Nullable Long threadBlockedTime,
             @Nullable Long threadWaitedTime, @Nullable Long threadAllocatedBytes,
             List<TraceGcInfo> gcInfos, long entryCount, long profileSampleCount,
@@ -76,6 +79,7 @@ public class Trace {
         this.error = error;
         this.user = user;
         this.customAttributes = customAttributes;
+        this.customDetail = customDetail;
         this.rootMetric = rootMetric;
         this.threadCpuTime = threadCpuTime;
         this.threadBlockedTime = threadBlockedTime;
@@ -134,6 +138,10 @@ public class Trace {
 
     public ImmutableSetMultimap<String, String> getCustomAttributes() {
         return customAttributes;
+    }
+
+    public Map<String, /*@Nullable*/Object> getCustomDetail() {
+        return customDetail;
     }
 
     public TraceMetric getRootMetric() {
@@ -218,6 +226,7 @@ public class Trace {
             @JsonProperty("error") @Nullable String error,
             @JsonProperty("user") @Nullable String user,
             @JsonProperty("customAttributes") @Nullable Map<String, /*@Nullable*/List</*@Nullable*/String>> customAttributes,
+            @JsonProperty("customDetail") @Nullable Map<String, /*@Nullable*/Object> customDetail,
             @JsonProperty("metrics") @Nullable TraceMetric rootMetric,
             @JsonProperty("threadCpuTime") @Nullable Long threadCpuTime,
             @JsonProperty("threadBlockedTime") @Nullable Long threadBlockedTime,
@@ -259,9 +268,10 @@ public class Trace {
             }
         }
         return new Trace(id, active, partial, startTime, captureTime, duration, transactionType,
-                transactionName, headline, error, user, theCustomAttributes.build(), rootMetric,
-                threadCpuTime, threadBlockedTime, threadWaitedTime, threadAllocatedBytes, gcInfos,
-                entryCount, profileSampleCount, entriesExistence, profileExistence);
+                transactionName, headline, error, user, theCustomAttributes.build(),
+                nullToEmpty(customDetail), rootMetric, threadCpuTime, threadBlockedTime,
+                threadWaitedTime, threadAllocatedBytes, gcInfos, entryCount, profileSampleCount,
+                entriesExistence, profileExistence);
     }
 
     public enum Existence {

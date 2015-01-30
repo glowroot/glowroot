@@ -44,6 +44,7 @@ class TraceTestData {
                 .user("j")
                 .customAttributes("{\"abc\":\"xyz\", \"xyz\":\"abc\"}")
                 .customAttributesForIndexing(ImmutableSetMultimap.of("abc", "xyz", "xyz", "abc"))
+                .customDetail("{\"abc1\":\"xyz1\", \"xyz2\":\"abc2\"}")
                 .entryCount(1)
                 .profileSampleCount(0)
                 .entriesExistence(Existence.NO)

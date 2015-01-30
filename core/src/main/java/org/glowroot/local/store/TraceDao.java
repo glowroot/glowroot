@@ -64,6 +64,7 @@ public class TraceDao implements TraceRepository {
             ImmutableColumn.of("error_message", Types.VARCHAR),
             ImmutableColumn.of("user", Types.VARCHAR),
             ImmutableColumn.of("custom_attributes", Types.VARCHAR), // json data
+            ImmutableColumn.of("custom_detail", Types.VARCHAR), // json data
             ImmutableColumn.of("metrics", Types.VARCHAR), // json data
             ImmutableColumn.of("thread_cpu_time", Types.BIGINT), // nanoseconds
             ImmutableColumn.of("thread_blocked_time", Types.BIGINT), // nanoseconds
@@ -125,17 +126,17 @@ public class TraceDao implements TraceRepository {
         }
         dataSource.update("merge into trace (id, partial, start_time, capture_time, duration,"
                 + " transaction_type, transaction_name, headline, error, error_message, user,"
-                + " custom_attributes, metrics, thread_cpu_time, thread_blocked_time,"
-                + " thread_waited_time, thread_allocated_bytes, gc_infos, entry_count,"
-                + " entries_capped_id, profile_sample_count, profile_capped_id) values"
-                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                + " custom_attributes, custom_detail, metrics, thread_cpu_time,"
+                + " thread_blocked_time, thread_waited_time, thread_allocated_bytes, gc_infos,"
+                + " entry_count, entries_capped_id, profile_sample_count, profile_capped_id)"
+                + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 trace.id(), trace.partial(), trace.startTime(), trace.captureTime(),
                 trace.duration(), trace.transactionType(), trace.transactionName(),
                 trace.headline(), trace.error() != null, trace.error(), trace.user(),
-                trace.customAttributes(), trace.metrics(), trace.threadCpuTime(),
-                trace.threadBlockedTime(), trace.threadWaitedTime(), trace.threadAllocatedBytes(),
-                trace.gcInfos(), trace.entryCount(), entriesId, trace.profileSampleCount(),
-                profileId);
+                trace.customAttributes(), trace.customDetail(), trace.metrics(),
+                trace.threadCpuTime(), trace.threadBlockedTime(), trace.threadWaitedTime(),
+                trace.threadAllocatedBytes(), trace.gcInfos(), trace.entryCount(), entriesId,
+                trace.profileSampleCount(), profileId);
         final ImmutableSetMultimap<String, String> customAttributesForIndexing =
                 trace.customAttributesForIndexing();
         if (!customAttributesForIndexing.isEmpty()) {
@@ -219,10 +220,10 @@ public class TraceDao implements TraceRepository {
     public @Nullable Trace readTrace(String traceId) throws SQLException {
         List<Trace> traces = dataSource.query("select id, partial, start_time, capture_time,"
                 + " duration, transaction_type, transaction_name, headline, error_message, user,"
-                + " custom_attributes, metrics, thread_cpu_time, thread_blocked_time,"
-                + " thread_waited_time, thread_allocated_bytes, gc_infos, entry_count,"
-                + " entries_capped_id, profile_sample_count, profile_capped_id from trace"
-                + " where id = ?", new TraceRowMapper(), traceId);
+                + " custom_attributes, custom_detail, metrics, thread_cpu_time,"
+                + " thread_blocked_time, thread_waited_time, thread_allocated_bytes, gc_infos,"
+                + " entry_count, entries_capped_id, profile_sample_count, profile_capped_id"
+                + " from trace where id = ?", new TraceRowMapper(), traceId);
         if (traces.isEmpty()) {
             return null;
         }
@@ -340,32 +341,36 @@ public class TraceDao implements TraceRepository {
 
         @Override
         public Trace mapRow(ResultSet resultSet) throws SQLException {
-            String id = resultSet.getString(1);
+            int columnIndex = 1;
+            String id = resultSet.getString(columnIndex++);
             // this checkNotNull is safe since id is the primary key and cannot be null
             checkNotNull(id);
             return ImmutableTrace.builder()
                     .id(id)
                     .active(false)
-                    .partial(resultSet.getBoolean(2))
-                    .startTime(resultSet.getLong(3))
-                    .captureTime(resultSet.getLong(4))
-                    .duration(resultSet.getLong(5))
-                    .transactionType(Strings.nullToEmpty(resultSet.getString(6)))
-                    .transactionName(Strings.nullToEmpty(resultSet.getString(7)))
-                    .headline(Strings.nullToEmpty(resultSet.getString(8)))
-                    .error(resultSet.getString(9))
-                    .user(resultSet.getString(10))
-                    .customAttributes(resultSet.getString(11))
-                    .metrics(resultSet.getString(12))
-                    .threadCpuTime(RowMappers.getLong(resultSet, 13))
-                    .threadBlockedTime(RowMappers.getLong(resultSet, 14))
-                    .threadWaitedTime(RowMappers.getLong(resultSet, 15))
-                    .threadAllocatedBytes(RowMappers.getLong(resultSet, 16))
-                    .gcInfos(resultSet.getString(17))
-                    .entryCount(resultSet.getLong(18))
-                    .entriesExistence(RowMappers.getExistence(resultSet, 19, cappedDatabase))
-                    .profileSampleCount(resultSet.getLong(20))
-                    .profileExistence(RowMappers.getExistence(resultSet, 21, cappedDatabase))
+                    .partial(resultSet.getBoolean(columnIndex++))
+                    .startTime(resultSet.getLong(columnIndex++))
+                    .captureTime(resultSet.getLong(columnIndex++))
+                    .duration(resultSet.getLong(columnIndex++))
+                    .transactionType(Strings.nullToEmpty(resultSet.getString(columnIndex++)))
+                    .transactionName(Strings.nullToEmpty(resultSet.getString(columnIndex++)))
+                    .headline(Strings.nullToEmpty(resultSet.getString(columnIndex++)))
+                    .error(resultSet.getString(columnIndex++))
+                    .user(resultSet.getString(columnIndex++))
+                    .customAttributes(resultSet.getString(columnIndex++))
+                    .customDetail(resultSet.getString(columnIndex++))
+                    .metrics(resultSet.getString(columnIndex++))
+                    .threadCpuTime(RowMappers.getLong(resultSet, columnIndex++))
+                    .threadBlockedTime(RowMappers.getLong(resultSet, columnIndex++))
+                    .threadWaitedTime(RowMappers.getLong(resultSet, columnIndex++))
+                    .threadAllocatedBytes(RowMappers.getLong(resultSet, columnIndex++))
+                    .gcInfos(resultSet.getString(columnIndex++))
+                    .entryCount(resultSet.getLong(columnIndex++))
+                    .entriesExistence(
+                            RowMappers.getExistence(resultSet, columnIndex++, cappedDatabase))
+                    .profileSampleCount(resultSet.getLong(columnIndex++))
+                    .profileExistence(
+                            RowMappers.getExistence(resultSet, columnIndex++, cappedDatabase))
                     .build();
         }
     }

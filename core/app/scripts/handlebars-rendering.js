@@ -185,26 +185,40 @@ HandlebarsRendering = (function () {
     return options.inverse(this);
   });
 
+  // this is for the trace header customDetail
+  Handlebars.registerHelper('customDetailHtml', function (detail) {
+    return messageDetailHtml(detail, true);
+  });
+
   Handlebars.registerHelper('messageDetailHtml', function (detail) {
-    var messageDetailHtml = function (detail) {
-      var ret = '';
-      $.each(detail, function (propName, propVal) {
-        if ($.isArray(propVal)) {
-          // array values are supported to simulate multimaps, e.g. for http request parameters and http headers, both
-          // of which can have multiple values for the same key
-          $.each(propVal, function (i, propVal) {
-            ret += '<div class="gt-break-word gt-second-line-indent">' + propName + ': ' + propVal + '</div>';
-          });
-        } else if (typeof propVal === 'object' && propVal !== null) {
-          ret += propName + ':<br><div class="gt-indent1">' + messageDetailHtml(propVal) + '</div>';
-        } else {
-          ret += '<div class="gt-break-word gt-second-line-indent">' + propName + ': ' + propVal + '</div>';
-        }
-      });
-      return ret;
-    };
     return messageDetailHtml(detail);
   });
+
+  function messageDetailHtml(detail, bold) {
+    function maybeBoldPropName(propName) {
+      if (bold) {
+        return '<span class="gt-bold">' + propName + ':</span> ';
+      } else {
+        return propName + ': ';
+      }
+    }
+
+    var ret = '';
+    $.each(detail, function (propName, propVal) {
+      if ($.isArray(propVal)) {
+        // array values are supported to simulate multimaps, e.g. for http request parameters and http headers, both
+        // of which can have multiple values for the same key
+        $.each(propVal, function (i, propVal) {
+          ret += '<div class="gt-break-word gt-second-line-indent">' + maybeBoldPropName(propName) + propVal + '</div>';
+        });
+      } else if (typeof propVal === 'object' && propVal !== null) {
+        ret += maybeBoldPropName(propName) + '<br><div class="gt-indent1">' + messageDetailHtml(propVal) + '</div>';
+      } else {
+        ret += '<div class="gt-break-word gt-second-line-indent">' + maybeBoldPropName(propName) + propVal + '</div>';
+      }
+    });
+    return ret;
+  }
 
   Handlebars.registerHelper('ifLongMessage', function (message, options) {
     if (message.length > traceEntryLineLength) {

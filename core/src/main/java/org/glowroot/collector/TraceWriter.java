@@ -50,6 +50,11 @@ public class TraceWriter {
             jg.writeFieldName("customAttributes");
             jg.writeRawValue(customAttributes);
         }
+        String customDetail = trace.customDetail();
+        if (customDetail != null) {
+            jg.writeFieldName("customDetail");
+            jg.writeRawValue(customDetail);
+        }
         String metrics = trace.metrics();
         if (metrics != null) {
             jg.writeFieldName("metrics");

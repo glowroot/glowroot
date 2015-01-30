@@ -17,6 +17,7 @@ package org.glowroot.transaction.model;
 
 import java.lang.management.ThreadInfo;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
@@ -200,8 +201,13 @@ public class Transaction {
         return ImmutableSetMultimap.copyOf(orderedCustomAttributes);
     }
 
-    private boolean readMemoryBarrier() {
-        return memoryBarrier;
+    public Map<String, ? extends /*@Nullable*/Object> getCustomDetail() {
+        MessageSupplier messageSupplier =
+                traceEntryComponent.getRootTraceEntry().getMessageSupplier();
+        // messageSupplier should never be null since entry.getMessageSupplier() is only null when
+        // the entry was created using addErrorEntry()
+        checkNotNull(messageSupplier);
+        return ((ReadableMessage) messageSupplier.get()).getDetail();
     }
 
     // this is called from a non-transaction thread
@@ -400,5 +406,9 @@ public class Transaction {
 
     public long getCaptureTime() {
         return captureTime;
+    }
+
+    private boolean readMemoryBarrier() {
+        return memoryBarrier;
     }
 }

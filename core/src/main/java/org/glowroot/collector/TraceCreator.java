@@ -18,6 +18,7 @@ package org.glowroot.collector;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
@@ -76,6 +77,7 @@ public class TraceCreator {
         builder.user(transaction.getUser());
         builder.customAttributes(writeCustomAttributesAsString(transaction.getCustomAttributes()));
         builder.customAttributesForIndexing(transaction.getCustomAttributes());
+        builder.customDetail(writeCustomDetailAsString(transaction.getCustomDetail()));
         builder.metrics(writeMetricsAsString(transaction.getRootMetric()));
         ThreadInfoData threadInfo = transaction.getThreadInfo();
         if (threadInfo != null) {
@@ -115,6 +117,18 @@ public class TraceCreator {
             jg.writeEndArray();
         }
         jg.writeEndObject();
+        jg.close();
+        return sb.toString();
+    }
+
+    private static @Nullable String writeCustomDetailAsString(
+            Map<String, ? extends /*@Nullable*/Object> customDetail) throws IOException {
+        if (customDetail == null) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
+        new DetailMapWriter(jg).write(customDetail);
         jg.close();
         return sb.toString();
     }

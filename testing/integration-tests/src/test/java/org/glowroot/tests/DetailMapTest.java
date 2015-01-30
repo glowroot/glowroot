@@ -63,6 +63,11 @@ public class DetailMapTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("Level One");
+        assertThat(trace.getCustomDetail()).isEqualTo(
+                ImmutableMap.of("arg1", "a", "arg2", "b", "nested1",
+                        ImmutableMap.of("nestedkey11", "a", "nestedkey12", "b", "subnested1",
+                                ImmutableMap.of("subnestedkey1", "a", "subnestedkey2", "b")),
+                        "nested2", ImmutableMap.of("nestedkey21", "a", "nestedkey22", "b")));
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
         assertThat(trace.getRootMetric().getName()).isEqualTo("level one");
         assertThat(trace.getRootMetric().getNestedMetricNames())
@@ -158,14 +163,12 @@ public class DetailMapTest {
     @Test
     public void shouldReadDetailMapWithBadType() throws Exception {
         // given
-        container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
-                "detail map has unexpected value type: java.io.File");
-        container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
-                "detail map has unexpected value type: java.io.File");
-        container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
-                "detail map has unexpected value type: java.io.File");
-        container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
-                "detail map has unexpected value type: java.io.File");
+        for (int i = 0; i < 4; i++) {
+            container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
+                    "detail map has unexpected value type: java.io.File");
+            container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
+                    "detail map has unexpected value type: java.io.File");
+        }
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithBadType.class);
         // then
@@ -183,10 +186,10 @@ public class DetailMapTest {
     @Test
     public void shouldReadDetailMapWithNullKey() throws Exception {
         // given
-        container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
-                "detail map has null key");
-        container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
-                "detail map has null key");
+        for (int i = 0; i < 4; i++) {
+            container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
+                    "detail map has null key");
+        }
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNullKey.class);
         // then
@@ -207,14 +210,12 @@ public class DetailMapTest {
     @Test
     public void shouldReadDetailMapWithBadKeyType() throws Exception {
         // given
-        container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
-                "detail map has unexpected key type: java.io.File");
-        container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
-                "detail map has unexpected value type: java.io.File");
-        container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
-                "detail map has unexpected key type: java.io.File");
-        container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
-                "detail map has unexpected value type: java.io.File");
+        for (int i = 0; i < 4; i++) {
+            container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
+                    "detail map has unexpected key type: java.io.File");
+            container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
+                    "detail map has unexpected value type: java.io.File");
+        }
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithBadKeyType.class);
         // then
