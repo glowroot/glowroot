@@ -293,7 +293,7 @@ glowroot.directive('gtNavbarItem', [
 glowroot.directive('gtSidebarItem', [
   '$location',
   '$state',
-  function ($location, $state) {
+  function ($location) {
     return {
       scope: {
         gtDisplay: '@',
@@ -311,16 +311,6 @@ glowroot.directive('gtSidebarItem', [
         };
         scope.isActive = function () {
           return iAttrs.gtActive ? scope.gtActive() : $location.path() === '/' + scope.gtUrl;
-        };
-        scope.ngClick = function (event) {
-          if ($location.path() === '/' + scope.gtUrl && !event.ctrlKey) {
-            $state.go($state.$current, null, {reload: true});
-            // suppress normal link
-            event.preventDefault();
-            return false;
-          }
-          // blur navbar item so it doesn't have highlight around it
-          document.activeElement.blur();
         };
       }
     };
