@@ -67,6 +67,10 @@ glowroot.controller('TransactionSidebarCtrl', [
       }
     });
 
+    $scope.currentTabUrl = function () {
+      return $location.path();
+    };
+
     function updateSummaries(initialLoading, moreLoading) {
       var query = {
         from: $scope.chartFrom,

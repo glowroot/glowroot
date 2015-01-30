@@ -23,7 +23,8 @@ glowroot.config([
   function ($provide, $stateProvider, $urlRouterProvider) {
     var waitForLayout;
     if (window.layout) {
-      waitForLayout = function () {};
+      waitForLayout = function () {
+      };
     } else {
       // some controllers need to wait for layout when running under grunt serve
       waitForLayout = ['$q', '$rootScope', function ($q, $rootScope) {
