@@ -161,12 +161,12 @@
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-core</artifactId>
-        <version>1.5</version>
+        <version>1.5.1</version>
       </dependency>
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-generator-annprocess</artifactId>
-        <version>1.5</version>
+        <version>1.5.1</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -404,13 +404,13 @@
       <properties>
         <checker.qual.group.id>org.checkerframework</checker.qual.group.id>
         <checker.qual.artifact.id>checker-qual</checker.qual.artifact.id>
-        <checker.qual.version>1.8.9</checker.qual.version>
+        <checker.qual.version>1.8.10</checker.qual.version>
       </properties>
       <dependencies>
         <dependency>
           <groupId>org.checkerframework</groupId>
           <artifactId>checker</artifactId>
-          <version>1.8.9</version>
+          <version>1.8.10</version>
           <optional>true</optional>
         </dependency>
         <dependency>
