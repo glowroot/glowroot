@@ -61,15 +61,11 @@ glowroot.controller('TransactionSidebarCtrl', [
       updateSummaries(false, true);
     };
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'summarySortOrder'], function (oldValues, newValues) {
+    $scope.$watchGroup(['chartFrom', 'chartTo', 'summarySortOrder', 'chartRefresh'], function (oldValues, newValues) {
       if (newValues !== oldValues) {
         updateSummaries();
       }
     });
-
-    $scope.currentTabUrl = function () {
-      return $location.path();
-    };
 
     function updateSummaries(initialLoading, moreLoading) {
       var query = {

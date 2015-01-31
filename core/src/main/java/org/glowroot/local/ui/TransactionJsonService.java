@@ -267,7 +267,7 @@ class TransactionJsonService {
         for (Aggregate aggregate : aggregates) {
             if (lastAggregate == null) {
                 // first aggregate
-                dataSeriesHelper.addInitialUpslope(request.from(), aggregate.captureTime(),
+                dataSeriesHelper.addInitialUpslopeIfNeeded(request.from(), aggregate.captureTime(),
                         dataSeriesList, null);
             } else {
                 dataSeriesHelper.addGapIfNeeded(lastAggregate.captureTime(),
@@ -284,7 +284,7 @@ class TransactionJsonService {
                     histogram.getValueAtPercentile(99) / MICROSECONDS_PER_SECOND);
         }
         if (lastAggregate != null) {
-            dataSeriesHelper.addFinalDownslope(request.to(), dataSeriesList, null,
+            dataSeriesHelper.addFinalDownslopeIfNeeded(request.to(), dataSeriesList, null,
                     lastAggregate.captureTime());
         }
         return dataSeriesList;
@@ -320,7 +320,7 @@ class TransactionJsonService {
             Aggregate aggregate = stackedPoint.getAggregate();
             if (lastAggregate == null) {
                 // first aggregate
-                dataSeriesHelper.addInitialUpslope(request.from(), aggregate.captureTime(),
+                dataSeriesHelper.addInitialUpslopeIfNeeded(request.from(), aggregate.captureTime(),
                         dataSeriesList, otherDataSeries);
             } else {
                 dataSeriesHelper.addGapIfNeeded(lastAggregate.captureTime(),
@@ -351,8 +351,8 @@ class TransactionJsonService {
             }
         }
         if (lastAggregate != null) {
-            dataSeriesHelper.addFinalDownslope(request.to(), dataSeriesList, otherDataSeries,
-                    lastAggregate.captureTime());
+            dataSeriesHelper.addFinalDownslopeIfNeeded(request.to(), dataSeriesList,
+                    otherDataSeries, lastAggregate.captureTime());
         }
         dataSeriesList.add(otherDataSeries);
         return dataSeriesList;

@@ -14,42 +14,103 @@
  * limitations under the License.
  */
 
-/* global glowroot, moment */
+/* global glowroot, moment, $ */
 
 glowroot.controller('TransactionHeaderCtrl', [
   '$scope',
   '$location',
   'queryStrings',
-  function ($scope, $location, queryStrings) {
+  'charts',
+  function ($scope, $location, queryStrings, charts) {
 
+    $scope.$parent.last = Number($location.search().last);
     $scope.$parent.chartFrom = Number($location.search().from);
     $scope.$parent.chartTo = Number($location.search().to);
+    $scope.$parent.chartRefresh = 0;
+
     // both from and to must be supplied or neither will take effect
     if ($scope.chartFrom && $scope.chartTo) {
-      $scope.$parent.filterDate = new Date($scope.chartFrom);
-      $scope.$parent.filterDate.setHours(0, 0, 0, 0);
-    } else {
-      $scope.$parent.chartFromToDefault = true;
-      var today = new Date();
-      today.setHours(0, 0, 0, 0);
-      $scope.$parent.filterDate = today;
-      // show 4 hour interval, but nothing prior to today (e.g. if 'now' is 1am) or after today
-      // (e.g. if 'now' is 11:55pm)
-      var now = new Date();
-      now.setSeconds(0, 0);
-      var fixedAggregateIntervalMinutes = $scope.layout.fixedAggregateIntervalSeconds / 60;
-      if (fixedAggregateIntervalMinutes > 1) {
-        // this is the normal case since default aggregate interval is 5 min
-        var minutesRoundedDownToNearestAggregationInterval =
-            fixedAggregateIntervalMinutes * Math.floor(now.getMinutes() / fixedAggregateIntervalMinutes);
-        now.setMinutes(minutesRoundedDownToNearestAggregationInterval);
-      }
-      $scope.$parent.chartFrom = Math.max(now.getTime() - 225 * 60 * 1000, today.getTime());
-      $scope.$parent.chartTo = Math.min($scope.chartFrom + 240 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
+      $scope.$parent.last = 0;
+    } else if (!$scope.$parent.last) {
+      $scope.$parent.last = 4 * 60 * 60 * 1000;
     }
 
+    applyLast();
+
+    function applyLast() {
+      if (!$scope.last) {
+        return;
+      }
+      var dataPointIntervalMillis = charts.getDataPointIntervalMillis(0, $scope.last);
+      var now = moment().startOf('second').valueOf();
+      var from = now - $scope.last;
+      var to = now + $scope.last / 10;
+      from = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
+      to = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
+      $scope.$parent.chartFrom = from;
+      $scope.$parent.chartTo = to;
+    }
+
+    $scope.$watchGroup(['last', 'chartFrom', 'chartTo'], function (oldValues, newValues) {
+      if (newValues !== oldValues) {
+        applyLast();
+        $location.search($scope.buildQueryObject()).replace();
+      }
+    });
+
+    function fancyDate(date) {
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+      var dateDate = new Date(date);
+      dateDate.setHours(0, 0, 0, 0);
+      if (dateDate.getTime() === today.getTime()) {
+        return 'Today';
+      }
+      if (dateDate.getTime() === today.getTime() - 24 * 60 * 60 * 1000) {
+        return 'Yesterday';
+      }
+      return moment(date).format('l');
+    }
+
+    $scope.lastDisplay = function (last) {
+      if (last === 60 * 60 * 1000) {
+        return 'Last 60 minutes'; // instead of Last 1 hour
+      }
+      if (last === 24 * 60 * 60 * 1000) {
+        return 'Last 24 hours'; // instead of Last 1 day
+      }
+
+      var display = 'Last';
+
+      function append(num, label) {
+        if (num) {
+          display += ' ' + num + ' ' + label;
+          if (num !== 1) {
+            display += 's';
+          }
+        }
+      }
+
+      var duration = moment.duration(last);
+      append(Math.floor(duration.asDays()), 'day');
+      append(duration.hours(), 'hour');
+      append(duration.minutes(), 'minute');
+      append(duration.seconds(), 'second');
+      return display;
+    };
+
     $scope.timeDisplay = function () {
-      return moment($scope.chartFrom).format('LT') + ' to ' + moment($scope.chartTo).format('LT');
+      if ($scope.last) {
+        return $scope.lastDisplay($scope.last);
+      }
+      var fromDate = fancyDate($scope.chartFrom);
+      var toDate = fancyDate($scope.chartTo);
+      if (fromDate === toDate) {
+        return fromDate + ', ' + moment($scope.chartFrom).format('LT') + ' to ' + moment($scope.chartTo).format('LT');
+      } else {
+        return fromDate + ' ' + moment($scope.chartFrom).format('LT') + ' to ' + toDate + ' ' +
+            moment($scope.chartTo).format('LT');
+      }
     };
 
     $scope.headerQueryString = function (transactionType) {
@@ -58,28 +119,111 @@ glowroot.controller('TransactionHeaderCtrl', [
       if (transactionType !== $scope.layout.defaultTransactionType) {
         query['transaction-type'] = transactionType;
       }
-      if (!$scope.chartFromToDefault) {
+      if ($scope.last) {
+        query.last = $scope.last;
+      } else {
         query.from = $scope.chartFrom;
         query.to = $scope.chartTo;
       }
       return queryStrings.encodeObject(query);
     };
 
-    $scope.$watch('filterDate', function (newValue, oldValue) {
-      if (newValue !== oldValue) {
-        if (!$scope.filterDate) {
-          return;
-        }
-        $scope.$parent.filterDate = $scope.filterDate;
-        var midnight = new Date($scope.chartFrom).setHours(0, 0, 0, 0);
-        if (midnight !== $scope.filterDate.getTime()) {
-          // filterDate has changed
-          $scope.$parent.chartFromToDefault = false;
-          $scope.$parent.chartFrom = $scope.filterDate.getTime() + ($scope.chartFrom - midnight);
-          $scope.$parent.chartTo = $scope.filterDate.getTime() + ($scope.chartTo - midnight);
-          $location.search($scope.buildQueryObject()).replace();
-        }
+    $scope.headerRangeQueryString = function (last) {
+      var query = $scope.buildQueryObject();
+      delete query.from;
+      delete query.to;
+      query.last = last;
+      return queryStrings.encodeObject(query);
+    };
+
+    $scope.updateLast = function (last, event) {
+      if (event.ctrlKey) {
+        return;
       }
-    });
+      if (last === $scope.$parent.last) {
+        // no change, force refresh
+        $scope.$parent.chartRefresh++;
+      } else {
+        $scope.$parent.last = last;
+      }
+    };
+
+    $scope.rangeSelections = [
+      30 * 60 * 1000, // 30 minutes
+      60 * 60 * 1000, // 60 minutes
+      2 * 60 * 60 * 1000, // 2 hours
+      4 * 60 * 60 * 1000, // 4 hours
+      8 * 60 * 60 * 1000, // 8 hours
+      24 * 60 * 60 * 1000, // 24 hours
+      2 * 24 * 60 * 60 * 1000, // 2 days
+      7 * 24 * 60 * 60 * 1000 // 7 days
+    ];
+
+    $scope.openCustomRange = function () {
+      // center modal vertically in window
+      // see http://stackoverflow.com/questions/18053408/vertically-centering-bootstrap-modal-window/20444744#20444744
+      $('#customDateRangeModal').on('show.bs.modal', function () {
+        $(this).css('display', 'block');
+        var $dialog = $(this).find('.modal-dialog');
+        var offset = ($(window).height() - $dialog.height()) / 2;
+        $dialog.css('margin-top', offset);
+      });
+      $('#customDateRangeModal').modal();
+      var $body = $('body');
+      $('.navbar-fixed-top').css('padding-right', $body.css('padding-right'));
+      $('.navbar-fixed-bottom').css('padding-right', $body.css('padding-right'));
+      $('#customDateRangeModal').on('hide.bs.modal', function () {
+        $('.navbar-fixed-top').css('padding-right', '');
+        $('.navbar-fixed-bottom').css('padding-right', '');
+      });
+
+      var icons = {
+        time: 'fa fa-clock-o',
+        date: 'fa fa-calendar',
+        up: 'fa fa-chevron-up',
+        down: 'fa fa-chevron-down',
+        previous: 'fa fa-chevron-left gt-datepicker-arrows',
+        next: 'fa fa-chevron-right gt-datepicker-arrows'
+      };
+      var from = $scope.chartFrom;
+      var to = $scope.chartTo;
+      $('#customDateRangeFromDate').datetimepicker({
+        icons: icons,
+        format: 'L'
+      });
+      $('#customDateRangeFromTime').datetimepicker({
+        icons: icons,
+        format: 'LT'
+      });
+      $('#customDateRangeToDate').datetimepicker({
+        icons: icons,
+        format: 'L'
+      });
+      $('#customDateRangeToTime').datetimepicker({
+        icons: icons,
+        format: 'LT'
+      });
+      $('#customDateRangeFromDate').data('DateTimePicker').date(moment(from).startOf('day'));
+      $('#customDateRangeFromTime').data('DateTimePicker').date(moment(from));
+      $('#customDateRangeToDate').data('DateTimePicker').date(moment(to).startOf('day'));
+      $('#customDateRangeToTime').data('DateTimePicker').date(moment(to));
+      $('#customDateRangeFromDate').find('input').focus();
+    };
+
+    $scope.applyCustomDateRange = function () {
+      function timeComponent(dateTime) {
+        var startOfDay = dateTime.clone().startOf('day');
+        return dateTime.valueOf() - startOfDay;
+      }
+      var fromDate = $('#customDateRangeFromDate').data('DateTimePicker').date();
+      var fromTime = $('#customDateRangeFromTime').data('DateTimePicker').date();
+      var toDate = $('#customDateRangeToDate').data('DateTimePicker').date();
+      var toTime = $('#customDateRangeToTime').data('DateTimePicker').date();
+      $scope.$parent.chartFrom = fromDate + timeComponent(fromTime);
+      $scope.$parent.chartTo = toDate + timeComponent(toTime);
+      $scope.$parent.last = 0;
+      $scope.$parent.chartRefresh++;
+      $('#customDateRangeModal').modal('hide');
+    };
   }
 ]);

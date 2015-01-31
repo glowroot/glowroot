@@ -186,7 +186,7 @@ class ErrorJsonService {
         for (ErrorPoint errorPoint : errorPoints) {
             if (lastErrorPoint == null) {
                 // first aggregate
-                dataSeriesHelper.addInitialUpslope(request.from(), errorPoint.captureTime(),
+                dataSeriesHelper.addInitialUpslopeIfNeeded(request.from(), errorPoint.captureTime(),
                         dataSeries);
             } else {
                 dataSeriesHelper.addGapIfNeeded(lastErrorPoint.captureTime(),
@@ -200,7 +200,7 @@ class ErrorJsonService {
                     new Long[] {errorPoint.errorCount(), transactionCount});
         }
         if (lastErrorPoint != null) {
-            dataSeriesHelper.addFinalDownslope(request.to(), dataSeries,
+            dataSeriesHelper.addFinalDownslopeIfNeeded(request.to(), dataSeries,
                     lastErrorPoint.captureTime());
         }
     }

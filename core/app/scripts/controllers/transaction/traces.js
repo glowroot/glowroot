@@ -22,11 +22,12 @@ glowroot.controller('TracesCtrl', [
   '$http',
   '$q',
   '$timeout',
+  'charts',
   'httpErrors',
   'traceModal',
   'queryStrings',
   'errorOnly',
-  function ($scope, $location, $http, $q, $timeout, httpErrors, traceModal, queryStrings, errorOnly) {
+  function ($scope, $location, $http, $q, $timeout, charts, httpErrors, traceModal, queryStrings, errorOnly) {
 
     $scope.$parent.activeTabItem = 'traces';
 
@@ -36,10 +37,7 @@ glowroot.controller('TracesCtrl', [
 
     var appliedFilter;
 
-    var filterFromToDefault;
     var filterLimitDefault;
-
-    var fixedAggregateIntervalMillis = 1000 * $scope.layout.fixedAggregateIntervalSeconds;
 
     $scope.$watchGroup(['containerWidth', 'windowHeight'], function () {
       plot.resize();
@@ -50,11 +48,20 @@ glowroot.controller('TracesCtrl', [
     $scope.showChartSpinner = 0;
     $scope.showErrorFilter = errorOnly;
 
-    $scope.$watch('filterDate', function (newValue, oldValue) {
-      if (newValue !== oldValue) {
-        // date filter in transaction-header was changed
-        appliedFilter.from = $scope.chartFrom;
-        appliedFilter.to = $scope.chartTo;
+    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function (newValues, oldValues) {
+      if (newValues !== oldValues) {
+        if ($scope.suppressChartRefresh) {
+          $scope.suppressChartRefresh = false;
+          return;
+        }
+        if ($scope.useRealChartFromTo) {
+          appliedFilter.from = $scope.realChartFrom;
+          appliedFilter.to = $scope.realChartTo;
+          $scope.useRealChartFromTo = false;
+        } else {
+          appliedFilter.from = $scope.chartFrom;
+          appliedFilter.to = $scope.chartTo;
+        }
         updateLocation();
         refreshChart();
       }
@@ -94,11 +101,6 @@ glowroot.controller('TracesCtrl', [
             plot.getAxes().xaxis.options.max = to;
             plot.getAxes().yaxis.options.min = durationLow;
             plot.getAxes().yaxis.options.realMax = durationHigh;
-            var midnight = new Date(from).setHours(0, 0, 0, 0);
-            plot.getAxes().xaxis.options.zoomRange = [
-              midnight,
-              midnight + 24 * 60 * 60 * 1000
-            ];
             plot.setData([data.normalPoints, data.errorPoints, data.activePoints]);
             // setupGrid is needed in case yaxis.max === undefined
             plot.setupGrid();
@@ -113,104 +115,94 @@ glowroot.controller('TracesCtrl', [
           });
     }
 
-    $scope.clickRefreshButton = function (deferred) {
-      var midnight = new Date(appliedFilter.from).setHours(0, 0, 0, 0);
-      if (midnight !== $scope.filterDate.getTime()) {
-        // filterDate has changed
-        filterFromToDefault = false;
-        appliedFilter.from = $scope.filterDate.getTime() + (appliedFilter.from - midnight);
-        appliedFilter.to = $scope.filterDate.getTime() + (appliedFilter.to - midnight);
-      }
+    $scope.refreshButtonClick = function (deferred) {
       angular.extend(appliedFilter, $scope.filter);
       updateLocation();
       refreshChart(deferred);
     };
 
     $chart.bind('plotzoom', function (event, plot, args) {
+      var zoomingOut = args.amount && args.amount < 1;
       $scope.$apply(function () {
-        var zoomingOut = args.amount && args.amount < 1;
+        var from = plot.getAxes().xaxis.options.min;
+        var to = plot.getAxes().xaxis.options.max;
+        updateFilter(from, to);
+        charts.updateRange($scope, from, to, false, zoomingOut);
         if (zoomingOut) {
-          plot.getAxes().yaxis.options.min = 0;
-          plot.getAxes().yaxis.options.realMax = undefined;
-        }
-        plot.setupGrid();
-        if (zoomingOut || $scope.chartLimitExceeded) {
-          afterZoom(zoomingOut);
-          filterFromToDefault = false;
-          updateLocation();
-          refreshChart();
+          // scroll zooming out, reset duration limits
+          updateFilter(from, to, 0, undefined);
         } else {
-          afterZoom(zoomingOut);
-          filterFromToDefault = false;
+          // only update from/to
+          appliedFilter.from = from;
+          appliedFilter.to = to;
+        }
+        if (zoomingOut || $scope.chartLimitExceeded) {
+          $scope.useRealChartFromTo = true;
+          $scope.realChartFrom = from;
+          $scope.realChartTo = to;
           updateLocation();
+        } else {
+          $scope.suppressChartRefresh = true;
           // no need to fetch new data
           plot.setData(getFilteredData());
+          plot.setupGrid();
           plot.draw();
+          updateLocation();
         }
       });
     });
 
     $chart.bind('plotselected', function (event, ranges) {
       $scope.$apply(function () {
-        filterFromToDefault = false;
         plot.clearSelection();
-        // perform the zoom
-        plot.getAxes().xaxis.options.min = ranges.xaxis.from;
-        plot.getAxes().xaxis.options.max = ranges.xaxis.to;
-        plot.getAxes().yaxis.options.min = ranges.yaxis.from;
-        plot.getAxes().yaxis.options.realMax = ranges.yaxis.to;
-        plot.setupGrid();
+        var from = ranges.xaxis.from;
+        var to = ranges.xaxis.to;
+        updateFilter(from, to, ranges.yaxis.from, ranges.yaxis.to);
+        charts.updateRange($scope, from, to, true);
         if ($scope.chartLimitExceeded) {
-          afterZoom();
-          filterFromToDefault = false;
+          $scope.useRealChartFromTo = true;
+          $scope.realChartFrom = from;
+          $scope.realChartTo = to;
           updateLocation();
-          refreshChart();
         } else {
-          afterZoom();
-          filterFromToDefault = false;
-          updateLocation();
+          $scope.suppressChartRefresh = true;
+          plot.getAxes().xaxis.options.min = ranges.xaxis.from;
+          plot.getAxes().xaxis.options.max = ranges.xaxis.to;
+          plot.getAxes().yaxis.options.min = ranges.yaxis.from;
+          plot.getAxes().yaxis.options.realMax = ranges.yaxis.to;
           // no need to fetch new data
           plot.setData(getFilteredData());
+          // setupGrid needs to be after setData
+          plot.setupGrid();
           plot.draw();
+          updateLocation();
         }
       });
     });
 
     $scope.zoomOut = function () {
-      // need to execute this outside of $apply since code assumes it needs to do its own $apply
-      $timeout(function () {
-        plot.zoomOut();
-      });
+      var currMin = $scope.chartFrom;
+      var currMax = $scope.chartTo;
+      var currRange = currMax - currMin;
+      charts.updateRange($scope, currMin - currRange / 2, currMax + currRange / 2, false, true);
     };
 
-    function afterZoom(zoomingOut) {
-      // update filter
-      var from = plot.getAxes().xaxis.min;
-      var to = plot.getAxes().xaxis.max;
-      var durationLow = plot.getAxes().yaxis.min;
-      var durationHigh = plot.getAxes().yaxis.options.realMax;
+    $scope.refresh = function () {
+      $scope.$parent.chartRefresh++;
+    };
+
+    function updateFilter(from, to, durationLow, durationHigh) {
       appliedFilter.from = from;
       appliedFilter.to = to;
-      $scope.$parent.chartFrom = fixedAggregateIntervalMillis * Math.floor(from / fixedAggregateIntervalMillis);
-      $scope.$parent.chartTo = fixedAggregateIntervalMillis * Math.ceil(to / fixedAggregateIntervalMillis);
-      $scope.$parent.chartFromToDefault = false;
-      if (zoomingOut) {
-        // scroll zooming out, reset duration limits
-        $scope.filterDurationComparator = 'greater';
-        // set both appliedFilter and $scope.filter durationLow/durationHigh
-        appliedFilter.durationLow = $scope.filter.durationLow = 0;
-        appliedFilter.durationHigh = $scope.filter.durationHigh = undefined;
+      // set both appliedFilter and $scope.filter durationLow/durationHigh
+      appliedFilter.durationLow = $scope.filter.durationLow = durationLow;
+      appliedFilter.durationHigh = $scope.filter.durationHigh = durationHigh;
+      if (durationHigh && durationLow !== 0) {
+        $scope.filterDurationComparator = 'between';
+      } else if (durationHigh) {
+        $scope.filterDurationComparator = 'less';
       } else {
-        // set both appliedFilter and $scope.filter durationLow/durationHigh
-        appliedFilter.durationLow = $scope.filter.durationLow = durationLow;
-        appliedFilter.durationHigh = $scope.filter.durationHigh = durationHigh;
-        if (durationHigh && durationLow !== 0) {
-          $scope.filterDurationComparator = 'between';
-        } else if (durationHigh) {
-          $scope.filterDurationComparator = 'less';
-        } else {
-          $scope.filterDurationComparator = 'greater';
-        }
+        $scope.filterDurationComparator = 'greater';
       }
     }
 
@@ -378,7 +370,6 @@ glowroot.controller('TracesCtrl', [
     }
 
     (function () {
-      var fromMidnight = new Date(appliedFilter.from).setHours(0, 0, 0, 0);
       var options = {
         legend: {
           show: false
@@ -406,11 +397,6 @@ glowroot.controller('TracesCtrl', [
           borderGridLock: 1000,
           min: appliedFilter.from,
           max: appliedFilter.to,
-          absoluteZoomRange: true,
-          zoomRange: [
-            fromMidnight,
-            fromMidnight + 24 * 60 * 60 * 1000
-          ],
           reserveSpace: false
         },
         yaxis: {
@@ -424,6 +410,7 @@ glowroot.controller('TracesCtrl', [
         },
         zoom: {
           interactive: true,
+          ctrlKey: true,
           amount: 2,
           skipDraw: true
         },
@@ -437,9 +424,7 @@ glowroot.controller('TracesCtrl', [
         }
       };
       // render chart with no data points
-      plot = $.plot($chart, [
-        []
-      ], options);
+      plot = $.plot($chart, [[]], options);
     })();
 
     plot.getAxes().yaxis.options.max = undefined;

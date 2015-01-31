@@ -35,14 +35,13 @@ glowroot.controller('ErrorMessagesCtrl', [
     var errorMessageLimit = 25;
     var dataSeriesExtra;
 
-    $scope.$watchGroup(['chartFrom', 'chartTo'], function (oldValues, newValues) {
+    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function (oldValues, newValues) {
       if (newValues !== oldValues) {
         refreshData();
       }
     });
 
     function refreshData(deferred) {
-      var date = $scope.filterDate;
       var query = {
         from: $scope.chartFrom,
         to: $scope.chartTo,
@@ -71,16 +70,7 @@ glowroot.controller('ErrorMessagesCtrl', [
             // reset axis in case user changed the date and then zoomed in/out to trigger this refresh
             chartState.plot.getAxes().xaxis.options.min = query.from;
             chartState.plot.getAxes().xaxis.options.max = query.to;
-            chartState.plot.getAxes().xaxis.options.zoomRange = [
-              date.getTime(),
-              date.getTime() + 24 * 60 * 60 * 1000
-            ];
-            var newRollupLevel = charts.rollupLevel(query.from, query.to);
-            if (newRollupLevel === 0) {
-              chartState.dataPointIntervalMillis = $scope.layout.fixedAggregateIntervalSeconds * 1000;
-            } else {
-              chartState.dataPointIntervalMillis = $scope.layout.fixedAggregateRollupSeconds * 1000;
-            }
+            chartState.dataPointIntervalMillis = charts.getDataPointIntervalMillis(query.from, query.to);
             if (data.dataSeries.data.length) {
               chartState.plot.setData([{data: data.dataSeries.data}]);
             } else {

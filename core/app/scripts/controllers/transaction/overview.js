@@ -27,7 +27,7 @@ glowroot.controller('TransactionOverviewCtrl', [
 
     var chartState = charts.createState();
 
-    $scope.$watchGroup(['chartFrom', 'chartTo'], function (oldValues, newValues) {
+    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function (oldValues, newValues) {
       if (newValues !== oldValues) {
         charts.refreshData('backend/transaction/overview', chartState, $scope, onRefreshData);
       }

@@ -27,39 +27,58 @@
       <div ng-hide="allGaugeNames.length" style="font-size: 16px; margin-top: 20px;">
         No gauges configured. See <a href="config/mbean-gauges">Gauge configuration</a>.
       </div>
-      <div ng-form
-           gt-form-with-primary-button
-           ng-show="allGaugeNames.length">
-        <div class="form-group"
-             style="margin-bottom: 0;">
-          <div style="float: left; padding-right: 10px;">
-            <label class="control-label"
+      <div ng-show="allGaugeNames.length">
+        <div ng-form
+             gt-form-with-primary-button
+             style="margin-bottom: 10px;">
+          <div class="form-group"
+               style="margin-bottom: 0;">
+            <label class="control-label pull-left"
                    for="filterDate"
-                   style="padding: 0 10px 0 40px;">
+                   style="padding: 7px 10px 0 40px; vertical-align: middle;">
               Date
             </label>
-            <div gt-datepicker
-                 gt-model="filterDate"
-                 gt-id="filterDate"
-                 style="display: inline-block;">
+
+            <div class="pull-left" style="padding: 0 8px 0 4px; width: 10em;">
+              <div gt-datepicker
+                   gt-model="filterDate"
+                   gt-id="filterDate">
+              </div>
+            </div>
+            <div gt-button
+                 gt-label="Refresh"
+                 gt-click="refreshButtonClick(deferred)"
+                 gt-no-spinner="true"
+                 id="refreshButtonContainer">
             </div>
           </div>
-          <div gt-button
-               gt-label="Refresh"
-               gt-click="refreshButtonClick(deferred)"
-               gt-no-spinner="true">
+        </div>
+        <!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
+        <div class="clearfix" style="position: relative; z-index: 800;">
+          <div class="pull-right" style="margin-top: -20px; margin-bottom: -8px; font-size: 22px;">
+            <button class="gt-chart-button"
+                    ng-click="zoomOut()"
+                    style="border: none;">
+              <i title="Zoom out"
+                 class="fa fa-search-minus"></i>
+            </button>
+            <button class="gt-chart-button"
+                    ng-click="refreshButtonClick()"
+                    style="border: none;">
+              <i title="Refresh"
+                 class="fa fa-refresh"></i>
+            </button>
+            <button popover-window="template/help/chart.html"
+                    popover-window-placement="left"
+                    popover-window-trigger="focus"
+                    class="gt-chart-button"
+                    style="border: none;">
+              <i title="Help"
+                 class="fa fa-question-circle"></i>
+            </button>
           </div>
         </div>
         <div class="gt-chart-container">
-          <button popover-window="template/help/chart.html"
-                  popover-window-placement="left"
-                  popover-window-trigger="focus"
-                  class="gt-chart-help-button"
-                  style="position: absolute; right: 0; top: -26px; border: none;">
-            <i title="Help"
-               class="fa fa-question-circle"
-               style="font-size: 28px;"></i>
-          </button>
           <!-- pointer-events: none is to allow scrollwheel events to pass through to flot in order to handle rapid
                zooming -->
           <div gt-spinner
@@ -79,6 +98,7 @@
           </div>
         </div>
         <br>
+
         <div>
           <div ng-repeat="gaugeName in keyedColorPool.keys() | orderBy"
                class="gt-inline-block"
@@ -92,6 +112,7 @@
           </div>
         </div>
         <br>
+
         <div>
           Filter
           <input type="text"

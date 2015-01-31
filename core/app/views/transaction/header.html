@@ -47,28 +47,103 @@
       {{headerDisplay}}
     </div>
   </div>
-  <div class="pull-right"
+  <div class="gt-header-page-name pull-right"
        ng-form
        gt-form-with-primary-button>
-    <span style="font-size: 20px; padding-right: 15px; vertical-align: middle; color: #555;">
-      {{timeDisplay()}}
+    <span class="gt-inline-block gt-header-menu">
+      <span class="dropdown">
+        <div data-toggle="dropdown"
+             class="dropdown-toggle"
+             style="font-size: 24px;">
+          <span style="padding-right: 15px; vertical-align: middle; color: #555;">
+            {{timeDisplay()}}
+          </span>
+          <span class="gt-large-caret"></span>
+        </div>
+        <ul class="dropdown-menu">
+          <li ng-repeat="last in rangeSelections">
+            <a ng-href="{{currentTabUrl()}}{{headerRangeQueryString(last)}}"
+               ng-click="updateLast(last, $event)">
+              {{lastDisplay(last)}}
+            </a>
+          </li>
+          <li>
+            <a ng-click="openCustomRange()">Custom range...</a>
+          </li>
+        </ul>
+      </span>
     </span>
-    <!-- height 42px is needed to force IE to use the "right" height, otherwise it is 2 pixels off and date text
-         doesn't line up with time text -->
-    <span gt-datepicker
-          gt-model="filterDate"
-          gt-id="filterDate"
-          gt-max-width="7em"
-          style="height: 42px; display: inline-block; vertical-align: middle;">
-    </span>
-    <button popover-window="template/help/chart.html"
-            popover-window-placement="left"
-            popover-window-trigger="focus"
-            class="gt-chart-help-button gt-inline-block"
-            style="border: none;">
-      <i title="Help"
-         class="fa fa-question-circle"
-         style="font-size: 28px; vertical-align: middle; margin-left: 8px;"></i>
-    </button>
+  </div>
+</div>
+<div class="modal" id="customDateRangeModal" tabindex="-1">
+  <div class="gt-modal-vertical-alignment-helper">
+    <div class="modal-dialog gt-modal-vertical-align-center"
+         style="width: 500px;">
+      <div class="modal-content gt-modal-content">
+        <div ng-form
+             gt-form-with-primary-button>
+          <div class="modal-header">
+            <button type="button"
+                    class="close"
+                    data-dismiss="modal">
+              &times;
+            </button>
+            <h4 class="modal-title" id="myModalLabel">Custom date range</h4>
+          </div>
+          <div class="modal-body">
+            <div class="container">
+              <div class="form-group">
+                <label class="control-label">
+                  From
+                </label>
+
+                <div class="clearfix">
+                  <div style="width: 12em; float: left;">
+                    <div class="input-group date" id="customDateRangeFromDate">
+                      <input type="text"
+                             class="form-control">
+                      <span class="input-group-addon"><span class="fa fa-calendar"></span></span>
+                    </div>
+                  </div>
+                  <div style="width: 10em; float: left; margin-left: 10px;">
+                    <div class="input-group date" id="customDateRangeFromTime">
+                      <input type="text"
+                             class="form-control">
+                      <span class="input-group-addon"><span class="fa fa-clock-o"></span></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="control-label">
+                  To
+                </label>
+
+                <div class="clearfix">
+                  <div style="width: 12em; float: left;">
+                    <div class="input-group date" id="customDateRangeToDate">
+                      <input type="text"
+                             class="form-control">
+                      <span class="input-group-addon"><span class="fa fa-calendar"></span></span>
+                    </div>
+                  </div>
+                  <div style="width: 10em; float: left; margin-left: 10px;">
+                    <div class="input-group date" id="customDateRangeToTime">
+                      <input type="text"
+                             class="form-control">
+                      <span class="input-group-addon"><span class="fa fa-clock-o"></span></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" ng-click="applyCustomDateRange()">Apply</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>

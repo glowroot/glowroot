@@ -35,11 +35,6 @@
   height: 100%;
 }
 
-.gt-chart-spinner {
-  pointer-events: none;
-  .gt-chart-dimensions;
-}
-
 .gt-chart-warning {
   padding: 10px 30px;
   color: @gt-red;
@@ -53,9 +48,6 @@
   width: 250px;
   left: 50%;
   margin-top: 100px;
-  // include padding in margin-left
-  //margin-left: -(250px / 2 + 35px);
-  pointer-events: none;
   .gt-chart-warning;
 }
 
@@ -98,4 +90,9 @@
 
 .flot-text {
   font-size: 13px !important;
+}
+
+.gt-zoom-out:focus {
+  text-decoration: none;
+  color: @gt-blue;
 }

@@ -26,12 +26,12 @@ glowroot.factory('traceModal', [
     function displayModal(traceId) {
 
       var spinner;
-      var $modalContent = $('#modalContent');
+      var $modalContent = $('#traceModal .modal-body');
 
-      $('#modal').modal();
+      $('#traceModal').modal();
       $('.navbar-fixed-top').css('padding-right', $body.css('padding-right'));
       $('.navbar-fixed-bottom').css('padding-right', $body.css('padding-right'));
-      $('#modal').on('hide.bs.modal', function () {
+      $('#traceModal').on('hide.bs.modal', function () {
         $('.navbar-fixed-top').css('padding-right', '');
         $('.navbar-fixed-bottom').css('padding-right', '');
       });
@@ -45,10 +45,10 @@ glowroot.factory('traceModal', [
               HandlebarsRendering.renderTrace(data, $modalContent);
               // need to focus on something inside the modal, otherwise keyboard events won't be captured,
               // in particular, page up / page down won't scroll the modal and escape won't close it
-              $('#modalContent > div:first-of-type').attr('tabIndex', -1);
-              $('#modalContent > div:first-of-type').css('outline', 'none');
-              $('#modalContent > div:first-of-type').focus();
-              $('#modalContent button.download-trace').click(function () {
+              $('#traceModal .modal-body > div:first-of-type').attr('tabIndex', -1);
+              $('#traceModal .modal-body > div:first-of-type').css('outline', 'none');
+              $('#traceModal .modal-body > div:first-of-type').focus();
+              $('#traceModal .modal-body button.download-trace').click(function () {
                 var $traceParent = $(this).parents('.gt-trace-parent');
                 var traceId = $traceParent.data('gtTraceId');
                 window.location = 'export/trace/' + traceId;

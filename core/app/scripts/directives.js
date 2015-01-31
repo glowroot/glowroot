@@ -196,21 +196,28 @@ glowroot.directive('gtDatepicker', function () {
   return {
     scope: {
       gtModel: '=',
-      gtId: '@',
-      gtMaxWidth: '@'
+      gtId: '@'
     },
-    template: '<input type="text" class="form-control gt-datepicker" ng-class="gtClass" id="{{gtId}}"' +
-    ' ng-style="{\'max-width\': gtMaxWidth, \'height\': \'auto\'}">',
+    templateUrl: 'template/gt-datepicker.html',
     link: function (scope, iElement) {
-      if (!scope.gtMaxWidth) {
-        scope.gtMaxWidth = '10em';
-      }
-      var $input = $(iElement).find('input');
-      $input.datepicker({format: 'mm/dd/yyyy', autoclose: true, todayHighlight: true});
-      $input.datepicker('setDate', scope.gtModel);
-      $input.on('changeDate', function (event) {
+      var icons = {
+        time: 'fa fa-clock-o',
+        date: 'fa fa-calendar',
+        up: 'fa fa-chevron-up',
+        down: 'fa fa-chevron-down',
+        previous: 'fa fa-chevron-left gt-datepicker-arrows',
+        next: 'fa fa-chevron-right gt-datepicker-arrows'
+      };
+      var $element = iElement.find('input');
+      $element.datetimepicker({
+        icons: icons,
+        defaultDate: scope.gtModel,
+        format: 'L'
+      });
+      $element.on('dp.change', function (e) {
         scope.$apply(function () {
-          scope.gtModel = event.date;
+          scope.gtModel = e.date.toDate();
+          document.activeElement.blur();
         });
       });
     }

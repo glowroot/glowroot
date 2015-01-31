@@ -13,9 +13,34 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+<!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
+<div class="clearfix" style="position: relative; z-index: 800;">
+  <div class="pull-right" style="margin-top: -20px; margin-bottom: -8px; font-size: 22px;">
+    <button class="gt-chart-button"
+            ng-click="zoomOut()"
+            style="border: none;">
+      <i title="Zoom out"
+         class="fa fa-search-minus"></i>
+    </button>
+    <button class="gt-chart-button"
+            ng-click="refresh()"
+            style="border: none;">
+      <i title="Refresh"
+         class="fa fa-refresh"></i>
+    </button>
+    <button popover-window="template/help/chart.html"
+            popover-window-placement="left"
+            popover-window-trigger="focus"
+            class="gt-chart-button"
+            style="border: none;">
+      <i title="Help"
+         class="fa fa-question-circle"></i>
+    </button>
+  </div>
+</div>
 <div class="gt-chart-container">
-  <!-- pointer-events: none is to allow scrollwheel events
-       to pass through to flot in order to handle rapid zooming -->
+  <!-- pointer-events: none is to allow scrollwheel events to pass through to flot in order to handle rapid zooming
+       and to prevent the browser from intercepting rapid ctrl + scrollwheel and doing browser level zoom -->
   <div gt-spinner
        gt-show="showChartSpinner"
        gt-no-delay="true"

@@ -21,10 +21,11 @@ glowroot.factory('charts', [
   '$http',
   '$location',
   '$timeout',
+  '$rootScope',
   'keyedColorPools',
   'queryStrings',
   'httpErrors',
-  function ($http, $location, $timeout, keyedColorPools, queryStrings, httpErrors) {
+  function ($http, $location, $timeout, $rootScope, keyedColorPools, queryStrings, httpErrors) {
 
     function createState() {
       return {
@@ -46,27 +47,112 @@ glowroot.factory('charts', [
       $chart.bind('plotzoom', function (event, plot, args) {
         var zoomingOut = args.amount && args.amount < 1;
         $scope.$apply(function () {
-          plot.setupGrid();
-          updateRange($scope, plot, plot.getAxes().xaxis.min, plot.getAxes().xaxis.max, zoomingOut);
-          $location.search($scope.buildQueryObject()).replace();
+          var from = plot.getAxes().xaxis.options.min;
+          var to = plot.getAxes().xaxis.options.max;
+          updateRange($scope, from, to, false, zoomingOut);
         });
       });
 
       $chart.bind('plotselected', function (event, ranges) {
         $scope.$apply(function () {
           chartState.plot.clearSelection();
-          // unlike plotzoom, plotselected should shrink down
-          updateRange($scope, chartState.plot, ranges.xaxis.from, ranges.xaxis.to);
-          $location.search($scope.buildQueryObject()).replace();
+          var from = ranges.xaxis.from;
+          var to = ranges.xaxis.to;
+          updateRange($scope, from, to, true);
         });
       });
 
       $scope.zoomOut = function () {
-        // need to execute this outside of $apply since code assumes it needs to do its own $apply
-        $timeout(function () {
-          chartState.plot.zoomOut();
-        });
+        var currMin = $scope.chartFrom;
+        var currMax = $scope.chartTo;
+        var currRange = currMax - currMin;
+        updateRange($scope, currMin - currRange / 2, currMax + currRange / 2, false, true);
       };
+
+      $scope.refresh = function () {
+        $scope.$parent.chartRefresh++;
+      };
+    }
+
+    function updateRange($scope, from, to, selection, zoomingOut) {
+      // force chart refresh even if chartFrom/chartTo don't change (e.g. trying to zoom in beyond single interval)
+      $scope.$parent.chartRefresh++;
+
+      if (zoomingOut && $scope.last) {
+        $scope.$parent.last = roundUpLast($scope.last * 2);
+        return;
+      }
+
+      var dataPointIntervalMillis = getDataPointIntervalMillis(from, to);
+      var revisedFrom;
+      var revisedTo;
+      if (zoomingOut) {
+        revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
+        revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
+      } else {
+        revisedFrom = Math.ceil(from / dataPointIntervalMillis) * dataPointIntervalMillis;
+        revisedTo = Math.floor(to / dataPointIntervalMillis) * dataPointIntervalMillis;
+        if (revisedTo <= revisedFrom) {
+          // shrunk too far
+          if (revisedFrom - from < to - revisedTo) {
+            // 'from' was not revised as much as 'to'
+            revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
+            revisedTo = revisedFrom + dataPointIntervalMillis;
+          } else {
+            revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
+            revisedFrom = revisedTo - dataPointIntervalMillis;
+          }
+        }
+      }
+      var now = new Date().getTime();
+      // need to compare original 'to' in case it was revised below 'now'
+      if (revisedTo > now || to > now) {
+        if (!zoomingOut && !selection && $scope.last) {
+          // double-click or scrollwheel zooming in, need special case here, otherwise might zoom in a bit too much
+          // due to shrinking the zoom to data point interval, which could result in strange 2 days --> 22 hours
+          // instead of the more obvious 2 days --> 1 day
+          $scope.$parent.last = roundUpLast($scope.last / 2);
+          return;
+        }
+        $scope.$parent.last = roundUpLast(now - revisedFrom, selection);
+      } else {
+        $scope.$parent.chartFrom = revisedFrom;
+        $scope.$parent.chartTo = revisedTo;
+        $scope.$parent.last = 0;
+      }
+    }
+
+    function roundUpLast(last, morePrecise) {
+      var hour = 60 * 60 * 1000;
+      var day = 24 * hour;
+      if (last > day) {
+        if (morePrecise) {
+          // round up to nearest hour
+          return Math.ceil(last / hour) * hour;
+        } else {
+          // round up to nearest day
+          return Math.ceil(last / day) * day;
+        }
+      }
+      if (last > hour && !morePrecise) {
+        // round up to nearest hour
+        return Math.ceil(last / hour) * hour;
+      }
+      // round up to nearest minute
+      var minute = 60 * 1000;
+      return Math.ceil(last / minute) * minute;
+    }
+
+    function getDataPointIntervalMillis(from, to) {
+      var rollupLevel = 0;
+      if (to - from > 3600 * 1000) {
+        rollupLevel = 1;
+      }
+      if (rollupLevel === 0) {
+        return $rootScope.layout.fixedAggregateIntervalSeconds * 1000;
+      } else {
+        return $rootScope.layout.fixedAggregateRollupSeconds * 1000;
+      }
     }
 
     function plot(data, chartOptions, chartState, $chart, $scope) {
@@ -87,11 +173,6 @@ glowroot.factory('charts', [
           ticks: 5,
           min: $scope.chartFrom,
           max: $scope.chartTo,
-          absoluteZoomRange: true,
-          zoomRange: [
-            $scope.filterDate.getTime(),
-            $scope.filterDate.getTime() + 24 * 60 * 60 * 1000
-          ],
           reserveSpace: false
         },
         yaxis: {
@@ -104,6 +185,7 @@ glowroot.factory('charts', [
         },
         zoom: {
           interactive: true,
+          ctrlKey: true,
           amount: 2,
           skipDraw: true
         },
@@ -132,7 +214,6 @@ glowroot.factory('charts', [
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName
       };
-      var date = $scope.filterDate;
       $scope.showChartSpinner++;
       $http.get(url + queryStrings.encodeObject(query))
           .success(function (data) {
@@ -145,16 +226,7 @@ glowroot.factory('charts', [
             // reset axis in case user changed the date and then zoomed in/out to trigger this refresh
             chartState.plot.getAxes().xaxis.options.min = query.from;
             chartState.plot.getAxes().xaxis.options.max = query.to;
-            chartState.plot.getAxes().xaxis.options.zoomRange = [
-              date.getTime(),
-              date.getTime() + 24 * 60 * 60 * 1000
-            ];
-            var newRollupLevel = rollupLevel(query.from, query.to);
-            if (newRollupLevel === 0) {
-              chartState.dataPointIntervalMillis = $scope.layout.fixedAggregateIntervalSeconds * 1000;
-            } else {
-              chartState.dataPointIntervalMillis = $scope.layout.fixedAggregateRollupSeconds * 1000;
-            }
+            chartState.dataPointIntervalMillis = getDataPointIntervalMillis(query.from, query.to);
             var plotData = [];
             var labels = [];
             angular.forEach(data.dataSeries, function (dataSeries) {
@@ -182,54 +254,6 @@ glowroot.factory('charts', [
             $scope.showChartSpinner--;
             httpErrors.handler($scope)(data, status);
           });
-    }
-
-    function updateRange($scope, plot, from, to, zoomingOut) {
-      var dataPointIntervalMillis;
-      var newRollupLevel = rollupLevel(from, to);
-      if (newRollupLevel === 0) {
-        dataPointIntervalMillis = $scope.layout.fixedAggregateIntervalSeconds * 1000;
-      } else {
-        dataPointIntervalMillis = $scope.layout.fixedAggregateRollupSeconds * 1000;
-      }
-      var revisedFrom;
-      var revisedTo;
-      if (zoomingOut) {
-        revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
-        revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
-      } else {
-        revisedFrom = Math.ceil(from / dataPointIntervalMillis) * dataPointIntervalMillis;
-        revisedTo = Math.floor(to / dataPointIntervalMillis) * dataPointIntervalMillis;
-        if (revisedTo <= revisedFrom) {
-          // shrunk too far
-          if (revisedFrom - from < to - revisedTo) {
-            // 'from' was not revised as much as 'to'
-            revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
-            revisedTo = revisedFrom + dataPointIntervalMillis;
-          } else {
-            revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
-            revisedFrom = revisedTo - dataPointIntervalMillis;
-          }
-        }
-      }
-      if (revisedFrom === $scope.$parent.chartFrom && revisedTo === $scope.$parent.chartTo) {
-        // no change, so chart won't be refreshed, so need to correct the range manually
-        plot.getAxes().xaxis.options.min = revisedFrom;
-        plot.getAxes().xaxis.options.max = revisedTo;
-        plot.setupGrid();
-      } else {
-        $scope.$parent.chartFrom = revisedFrom;
-        $scope.$parent.chartTo = revisedTo;
-        $scope.$parent.chartFromToDefault = false;
-      }
-    }
-
-    function rollupLevel(from, to) {
-      if (to - from <= 3600 * 1000) {
-        return 0;
-      } else {
-        return 1;
-      }
     }
 
     function renderTooltipHtml(from, to, transactionCount, dataIndex, highlightSeriesIndex, chartState, display) {
@@ -284,7 +308,9 @@ glowroot.factory('charts', [
       plot: plot,
       refreshData: refreshData,
       renderTooltipHtml: renderTooltipHtml,
-      rollupLevel: rollupLevel
+      updateRange: updateRange,
+      getDataPointIntervalMillis: getDataPointIntervalMillis
     };
   }
-]);
+])
+;

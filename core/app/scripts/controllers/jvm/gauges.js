@@ -180,6 +180,14 @@ glowroot.controller('JvmGaugesCtrl', [
           });
     }
 
+    $scope.$watch('filterDate', function(newValue, oldValue) {
+      if (newValue !== oldValue) {
+        $timeout(function() {
+          $('#refreshButtonContainer button').click();
+        });
+      }
+    });
+
     $scope.refreshButtonClick = function (deferred) {
       var midnight = new Date($scope.chartFrom).setHours(0, 0, 0, 0);
       if (midnight !== $scope.filterDate.getTime()) {
@@ -460,6 +468,7 @@ glowroot.controller('JvmGaugesCtrl', [
           ticks: 5,
           min: $scope.chartFrom,
           max: $scope.chartTo,
+          // TODO after changing gauges to be more like other charts, can remove custom flot code for absoluteZoomRange
           absoluteZoomRange: true,
           zoomRange: [
             $scope.filterDate.getTime(),
@@ -476,6 +485,7 @@ glowroot.controller('JvmGaugesCtrl', [
         },
         zoom: {
           interactive: true,
+          ctrlKey: true,
           amount: 2,
           skipDraw: true
         },

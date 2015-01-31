@@ -52,7 +52,9 @@ glowroot.controller('TransactionCtrl', [
         query['transaction-type'] = $scope.transactionType;
       }
       query['transaction-name'] = $scope.transactionName;
-      if (!$scope.chartFromToDefault) {
+      if ($scope.last) {
+        query.last = $scope.last;
+      } else {
         query.from = $scope.chartFrom;
         query.to = $scope.chartTo;
       }
@@ -62,8 +64,12 @@ glowroot.controller('TransactionCtrl', [
       return query;
     };
 
-    $scope.$watch('summarySortOrder', function (oldValues, newValues) {
-      if (newValues !== oldValues) {
+    $scope.currentTabUrl = function () {
+      return $location.path();
+    };
+
+    $scope.$watch('summarySortOrder', function (oldValue, newValue) {
+      if (newValue !== oldValue) {
         $location.search($scope.buildQueryObject()).replace();
       }
     });

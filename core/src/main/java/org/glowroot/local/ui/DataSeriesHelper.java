@@ -31,7 +31,8 @@ class DataSeriesHelper {
         this.dataPointIntervalMillis = dataPointIntervalMillis;
     }
 
-    void addInitialUpslope(long requestFrom, long captureTime, List<DataSeries> dataSeriesList,
+    void addInitialUpslopeIfNeeded(long requestFrom, long captureTime,
+            List<DataSeries> dataSeriesList,
             @Nullable DataSeries otherDataSeries) {
         if (captureTime == requestFrom) {
             return;
@@ -61,28 +62,22 @@ class DataSeriesHelper {
         }
     }
 
-    void addFinalDownslope(long requestCaptureTimeTo, List<DataSeries> dataSeriesList,
+    void addFinalDownslopeIfNeeded(long requestCaptureTimeTo, List<DataSeries> dataSeriesList,
             @Nullable DataSeries otherDataSeries, long lastCaptureTime) {
-        long millisecondsAgoFromNow = clock.currentTimeMillis() - lastCaptureTime;
-        if (millisecondsAgoFromNow < dataPointIntervalMillis * 1.5) {
-            return;
-        }
-        if (lastCaptureTime == requestCaptureTimeTo) {
-            return;
-        }
-        // bring down to zero
-        //
-        // this cannot be an active point that doesn't line up on data point interval since
-        // it active point would have met condition above (millisecondsAgoFromNow)
-        for (DataSeries dataSeries : dataSeriesList) {
-            dataSeries.add(lastCaptureTime + dataPointIntervalMillis, 0);
-        }
-        if (otherDataSeries != null) {
-            otherDataSeries.add(lastCaptureTime + dataPointIntervalMillis, 0);
+        long downslopeCaptureTime =
+                finalDownslopeCaptureTime(requestCaptureTimeTo, lastCaptureTime);
+        if (downslopeCaptureTime != 0) {
+            // bring down to zero
+            for (DataSeries dataSeries : dataSeriesList) {
+                dataSeries.add(downslopeCaptureTime, 0);
+            }
+            if (otherDataSeries != null) {
+                otherDataSeries.add(downslopeCaptureTime, 0);
+            }
         }
     }
 
-    void addInitialUpslope(long requestFrom, long captureTime, DataSeries dataSeries) {
+    void addInitialUpslopeIfNeeded(long requestFrom, long captureTime, DataSeries dataSeries) {
         if (captureTime == requestFrom) {
             return;
         }
@@ -100,19 +95,14 @@ class DataSeriesHelper {
         addGap(dataSeries, lastCaptureTime, captureTime);
     }
 
-    void addFinalDownslope(long requestCaptureTimeTo, DataSeries dataSeries, long lastCaptureTime) {
-        long millisecondsAgoFromNow = clock.currentTimeMillis() - lastCaptureTime;
-        if (millisecondsAgoFromNow < dataPointIntervalMillis * 1.5) {
-            return;
+    void addFinalDownslopeIfNeeded(long requestCaptureTimeTo, DataSeries dataSeries,
+            long lastCaptureTime) {
+        long downslopeCaptureTime =
+                finalDownslopeCaptureTime(requestCaptureTimeTo, lastCaptureTime);
+        if (downslopeCaptureTime != 0) {
+            // bring down to zero
+            dataSeries.add(downslopeCaptureTime, 0);
         }
-        if (lastCaptureTime == requestCaptureTimeTo) {
-            return;
-        }
-        // bring down to zero
-        //
-        // this cannot be an active point that doesn't line up on data point interval since
-        // it active point would have met condition above (millisecondsAgoFromNow)
-        dataSeries.add(lastCaptureTime + dataPointIntervalMillis, 0);
     }
 
     private void addGap(DataSeries dataSeries, long lastCaptureTime, long captureTime) {
@@ -124,6 +114,27 @@ class DataSeriesHelper {
             dataSeries.add(lastCaptureTime + dataPointIntervalMillis, 0);
             dataSeries.addNull();
             dataSeries.add(currentCaptureTime - dataPointIntervalMillis, 0);
+        }
+    }
+
+    // returns 0 if final downslope is not needed
+    private long finalDownslopeCaptureTime(long requestCaptureTimeTo, long lastCaptureTime) {
+        if (lastCaptureTime == requestCaptureTimeTo) {
+            return 0;
+        }
+        long now = clock.currentTimeMillis();
+        long lastCaptureAgoFromNow = now - lastCaptureTime;
+        if (lastCaptureAgoFromNow < dataPointIntervalMillis / 5) {
+            // last capture time is within 20% of data point interval
+            // probably lastCaptureTime is live data point already
+            // and even if not, final steep downslope would be more distracting than helpful
+            return 0;
+        }
+        if (lastCaptureAgoFromNow > dataPointIntervalMillis) {
+            return lastCaptureTime + dataPointIntervalMillis;
+        } else {
+            // capturing live data
+            return now;
         }
     }
 
