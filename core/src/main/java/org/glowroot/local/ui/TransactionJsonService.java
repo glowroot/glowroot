@@ -394,12 +394,9 @@ class TransactionJsonService {
     private static void writeFlameGraphNode(AggregateProfileNode node, JsonGenerator jg)
             throws IOException {
         jg.writeObjectFieldStart(Strings.nullToEmpty(node.getStackTraceElement()));
-        long svUnique = 0;
-        if (node.getLeafThreadState() != null) {
-            svUnique = node.getSampleCount();
-            for (AggregateProfileNode childNode : node.getChildNodes()) {
-                svUnique -= childNode.getSampleCount();
-            }
+        int svUnique = node.getSampleCount();
+        for (AggregateProfileNode childNode : node.getChildNodes()) {
+            svUnique -= childNode.getSampleCount();
         }
         jg.writeNumberField("svUnique", svUnique);
         jg.writeNumberField("svTotal", node.getSampleCount());
