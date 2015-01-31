@@ -101,6 +101,8 @@ public class Transaction {
     private volatile @Nullable ScheduledRunnable userProfileRunnable;
     private volatile @Nullable ScheduledRunnable immedateTraceStoreRunnable;
 
+    private volatile boolean partiallyStored;
+
     private long captureTime;
 
     // memory barrier is used to ensure memory visibility of entries and metrics at key points,
@@ -267,6 +269,10 @@ public class Transaction {
         return immedateTraceStoreRunnable;
     }
 
+    public boolean isPartiallyStored() {
+        return partiallyStored;
+    }
+
     public long getThreadId() {
         return threadId;
     }
@@ -336,6 +342,10 @@ public class Transaction {
                     + " immedateTraceStoreRunnable");
         }
         this.immedateTraceStoreRunnable = scheduledRunnable;
+    }
+
+    public void setPartiallyStored() {
+        partiallyStored = true;
     }
 
     public TraceEntry pushEntry(long startTick, MessageSupplier messageSupplier,

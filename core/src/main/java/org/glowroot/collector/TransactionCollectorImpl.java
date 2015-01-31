@@ -74,7 +74,7 @@ public class TransactionCollectorImpl implements TransactionCollector {
     }
 
     public boolean shouldStore(Transaction transaction) {
-        if (!transaction.isCompleted() || transaction.getError() != null) {
+        if (transaction.isPartiallyStored() || transaction.getError() != null) {
             return true;
         }
         // check if should store for user recording
@@ -153,6 +153,7 @@ public class TransactionCollectorImpl implements TransactionCollector {
         try {
             Trace trace = TraceCreator.createPartialTrace(transaction, clock.currentTimeMillis(),
                     ticker.read());
+            transaction.setPartiallyStored();
             if (!transaction.isCompleted()) {
                 store(trace, transaction);
             }

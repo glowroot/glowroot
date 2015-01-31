@@ -45,7 +45,6 @@ public class TraceCreator {
         return createTrace(transaction, true, false, captureTime, captureTick);
     }
 
-    // "partial" means "partial stored" but no longer currently active
     public static Trace createPartialTrace(Transaction transaction, long captureTime,
             long captureTick) throws IOException {
         // doesn't really matter whether pass true or false for "active" since this method is only
