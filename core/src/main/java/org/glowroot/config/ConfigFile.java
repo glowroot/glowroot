@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -186,16 +186,6 @@ class ConfigFile {
                 .name("java.lang/Memory")
                 .mbeanObjectName("java.lang:type=Memory")
                 .addMbeanAttributeNames("HeapMemoryUsage.used")
-                .build());
-        defaultGauges.add(ImmutableGauge.builder()
-                .name("java.lang/MemoryPool/PS Old Gen")
-                .mbeanObjectName("java.lang:type=MemoryPool,name=PS Old Gen")
-                .addMbeanAttributeNames("Usage.used")
-                .build());
-        defaultGauges.add(ImmutableGauge.builder()
-                .name("java.lang/MemoryPool/PS Eden Space")
-                .mbeanObjectName("java.lang:type=MemoryPool,name=PS Eden Space")
-                .addMbeanAttributeNames("Usage.used")
                 .build());
         ImmutableGauge.Builder operatingSystemMBean = ImmutableGauge.builder()
                 .name("java.lang/OperatingSystem")

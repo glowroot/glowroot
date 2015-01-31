@@ -63,20 +63,6 @@
       ]
     },
     {
-      "name": "java.lang/MemoryPool/PS Old Gen",
-      "mbeanObjectName": "java.lang:type=MemoryPool,name=PS Old Gen",
-      "mbeanAttributeNames": [
-        "Usage.used"
-      ]
-    },
-    {
-      "name": "java.lang/MemoryPool/PS Eden Space",
-      "mbeanObjectName": "java.lang:type=MemoryPool,name=PS Eden Space",
-      "mbeanAttributeNames": [
-        "Usage.used"
-      ]
-    },
-    {
       "name": "java.lang/OperatingSystem",
       "mbeanObjectName": "java.lang:type=OperatingSystem",
       "mbeanAttributeNames": [

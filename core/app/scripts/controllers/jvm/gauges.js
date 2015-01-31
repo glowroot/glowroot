@@ -65,9 +65,6 @@ glowroot.controller('JvmGaugesCtrl', [
             if ($scope.allGaugeNames.indexOf('java.lang/Memory/HeapMemoryUsage.used') !== -1) {
               gaugeNames.push('java.lang/Memory/HeapMemoryUsage.used');
             }
-            if ($scope.allGaugeNames.indexOf('java.lang/MemoryPool/PS Old Gen/Usage.used') !== -1) {
-              gaugeNames.push('java.lang/MemoryPool/PS Old Gen/Usage.used');
-            }
           }
           if (angular.isArray(gaugeNames)) {
             angular.forEach(gaugeNames, function (gaugeName) {
