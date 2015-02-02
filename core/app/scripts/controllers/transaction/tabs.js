@@ -28,7 +28,7 @@ glowroot.controller('TransactionTabCtrl', [
 
     var concurrentUpdateCount = 0;
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'transactionName', 'chartRefresh'], function (oldValues, newValues) {
+    $scope.$watchGroup(['chartFrom', 'chartTo', 'transactionName', 'chartRefresh'], function (newValues, oldValues) {
       if (newValues !== oldValues) {
         updateTabBarData();
       }

@@ -20,11 +20,12 @@ glowroot.controller('TransactionSidebarCtrl', [
   '$scope',
   '$location',
   '$http',
+  '$timeout',
   'queryStrings',
   'httpErrors',
   'summarySortOrders',
   'summaryValueFn',
-  function ($scope, $location, $http, queryStrings, httpErrors, summarySortOrders, summaryValueFn) {
+  function ($scope, $location, $http, $timeout, queryStrings, httpErrors, summarySortOrders, summaryValueFn) {
 
     var lastSortOrder;
     var lastDurationMillis;
@@ -37,8 +38,6 @@ glowroot.controller('TransactionSidebarCtrl', [
     $scope.summariesLoadingMore = 0;
     $scope.summariesRefreshing = 0;
 
-    $scope.summarySortOrder = $location.search()['summary-sort-order'] || $scope.defaultSummarySortOrder;
-
     $scope.overallSummaryValue = function () {
       if ($scope.overallSummary) {
         return summaryValueFn($scope.overallSummary, lastSortOrder, $scope.overallSummary, lastDurationMillis);
@@ -50,7 +49,7 @@ glowroot.controller('TransactionSidebarCtrl', [
     };
 
     $scope.sidebarQueryString = function (transactionName) {
-      var query = $scope.buildQueryObject();
+      var query = $scope.buildQueryObject({});
       query['transaction-name'] = transactionName;
       return queryStrings.encodeObject(query);
     };
@@ -61,7 +60,7 @@ glowroot.controller('TransactionSidebarCtrl', [
       updateSummaries(false, true);
     };
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'summarySortOrder', 'chartRefresh'], function (oldValues, newValues) {
+    $scope.$watchGroup(['chartFrom', 'chartTo', 'summarySortOrder', 'chartRefresh'], function (newValues, oldValues) {
       if (newValues !== oldValues) {
         updateSummaries();
       }

@@ -35,7 +35,7 @@ glowroot.controller('ErrorMessagesCtrl', [
     var errorMessageLimit = 25;
     var dataSeriesExtra;
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function (oldValues, newValues) {
+    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function (newValues, oldValues) {
       if (newValues !== oldValues) {
         refreshData();
       }

@@ -40,7 +40,7 @@ glowroot.controller('TransactionProfileCtrl', [
       return queryStrings.encodeObject(query);
     };
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function (oldValues, newValues) {
+    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function (newValues, oldValues) {
       if (newValues !== oldValues) {
         refreshData();
       }

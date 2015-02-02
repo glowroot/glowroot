@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-/* global glowroot */
+/* global glowroot, angular, moment */
 
 glowroot.controller('TransactionCtrl', [
   '$scope',
   '$location',
+  '$timeout',
   'queryStrings',
+  'charts',
   'headerDisplay',
   'shortName',
   'defaultTabUrl',
   'defaultSummarySortOrder',
-  function ($scope, $location, queryStrings, headerDisplay, shortName, defaultTabUrl, defaultSummarySortOrder) {
+  function ($scope, $location, $timeout, queryStrings, charts, headerDisplay, shortName, defaultTabUrl,
+            defaultSummarySortOrder) {
     // \u00b7 is &middot;
     document.title = headerDisplay + ' \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = shortName;
@@ -34,32 +37,80 @@ glowroot.controller('TransactionCtrl', [
     $scope.defaultTabUrl = defaultTabUrl;
     $scope.defaultSummarySortOrder = defaultSummarySortOrder;
 
-    $scope.transactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
-    $scope.transactionName = $location.search()['transaction-name'];
-    // this is needed when click occurs on sidebar b/c it doesn't reload TransactionCtrl in that case but still need
-    // to update transactionName
-    $scope.$on('$stateChangeSuccess', function () {
+    $scope.applyLast = function () {
+      if (!$scope.last) {
+        return;
+      }
+      var dataPointIntervalMillis = charts.getDataPointIntervalMillis(0, 1.1 * $scope.last);
+      var now = moment().startOf('second').valueOf();
+      var from = now - $scope.last;
+      var to = now + $scope.last / 10;
+      var revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
+      var revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
+      var revisedDataPointIntervalMillis = charts.getDataPointIntervalMillis(revisedFrom, revisedTo);
+      if (revisedDataPointIntervalMillis !== dataPointIntervalMillis) {
+        // expanded out to larger rollup threshold so need to re-adjust
+        // ok to use original from/to instead of revisedFrom/revisedTo
+        revisedFrom = Math.floor(from / revisedDataPointIntervalMillis) * revisedDataPointIntervalMillis;
+        revisedTo = Math.ceil(to / revisedDataPointIntervalMillis) * revisedDataPointIntervalMillis;
+      }
+      $scope.chartFrom = revisedFrom;
+      $scope.chartTo = revisedTo;
+    };
+
+    function onLocationChangeSuccess() {
+      $scope.transactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
       $scope.transactionName = $location.search()['transaction-name'];
+      $scope.last = Number($location.search().last);
+      $scope.chartFrom = Number($location.search().from);
+      $scope.chartTo = Number($location.search().to);
+      // both from and to must be supplied or neither will take effect
+      if ($scope.chartFrom && $scope.chartTo) {
+        $scope.last = 0;
+      } else if (!$scope.last) {
+        $scope.last = 4 * 60 * 60 * 1000;
+      }
+      $scope.applyLast();
+      $scope.summarySortOrder = $location.search()['summary-sort-order'] || $scope.defaultSummarySortOrder;
+    }
+
+    // need to defer listener registration, otherwise captures initial location change sometimes
+    $timeout(function () {
+      $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
+    });
+    onLocationChangeSuccess();
+
+    $scope.$watchGroup(['last', 'chartFrom', 'chartTo', 'summarySortOrder'], function (newValues, oldValues) {
+      if (newValues !== oldValues) {
+        $location.search($scope.buildQueryObject());
+      }
     });
 
     $scope.tabQueryString = function () {
-      return queryStrings.encodeObject($scope.buildQueryObject());
+      return queryStrings.encodeObject($scope.buildQueryObject({}));
     };
 
-    $scope.buildQueryObject = function () {
-      var query = {};
+    $scope.buildQueryObject = function (baseQuery) {
+      var query = baseQuery || angular.copy($location.search());
       if ($scope.transactionType !== $scope.layout.defaultTransactionType) {
         query['transaction-type'] = $scope.transactionType;
+      } else {
+        delete query['transaction-type'];
       }
       query['transaction-name'] = $scope.transactionName;
-      if ($scope.last) {
-        query.last = $scope.last;
-      } else {
+      if (!$scope.last) {
         query.from = $scope.chartFrom;
         query.to = $scope.chartTo;
+        delete query.last;
+      } else if ($scope.last !== 4 * 60 * 60 * 1000) {
+        query.last = $scope.last;
+        delete query.from;
+        delete query.to;
       }
       if ($scope.summarySortOrder !== $scope.defaultSummarySortOrder) {
         query['summary-sort-order'] = $scope.summarySortOrder;
+      } else {
+        delete query['summary-sort-order'];
       }
       return query;
     };
@@ -67,11 +118,5 @@ glowroot.controller('TransactionCtrl', [
     $scope.currentTabUrl = function () {
       return $location.path();
     };
-
-    $scope.$watch('summarySortOrder', function (oldValue, newValue) {
-      if (newValue !== oldValue) {
-        $location.search($scope.buildQueryObject()).replace();
-      }
-    });
   }
 ]);

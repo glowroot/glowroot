@@ -19,44 +19,11 @@
 glowroot.controller('TransactionHeaderCtrl', [
   '$scope',
   '$location',
+  '$timeout',
   'queryStrings',
-  'charts',
-  function ($scope, $location, queryStrings, charts) {
+  function ($scope, $location, $timeout, queryStrings) {
 
-    $scope.$parent.last = Number($location.search().last);
-    $scope.$parent.chartFrom = Number($location.search().from);
-    $scope.$parent.chartTo = Number($location.search().to);
     $scope.$parent.chartRefresh = 0;
-
-    // both from and to must be supplied or neither will take effect
-    if ($scope.chartFrom && $scope.chartTo) {
-      $scope.$parent.last = 0;
-    } else if (!$scope.$parent.last) {
-      $scope.$parent.last = 4 * 60 * 60 * 1000;
-    }
-
-    applyLast();
-
-    function applyLast() {
-      if (!$scope.last) {
-        return;
-      }
-      var dataPointIntervalMillis = charts.getDataPointIntervalMillis(0, $scope.last);
-      var now = moment().startOf('second').valueOf();
-      var from = now - $scope.last;
-      var to = now + $scope.last / 10;
-      from = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
-      to = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
-      $scope.$parent.chartFrom = from;
-      $scope.$parent.chartTo = to;
-    }
-
-    $scope.$watchGroup(['last', 'chartFrom', 'chartTo'], function (oldValues, newValues) {
-      if (newValues !== oldValues) {
-        applyLast();
-        $location.search($scope.buildQueryObject()).replace();
-      }
-    });
 
     function fancyDate(date) {
       var today = new Date();
@@ -145,6 +112,7 @@ glowroot.controller('TransactionHeaderCtrl', [
         $scope.$parent.chartRefresh++;
       } else {
         $scope.$parent.last = last;
+        $scope.applyLast();
       }
     };
 
@@ -215,6 +183,7 @@ glowroot.controller('TransactionHeaderCtrl', [
         var startOfDay = dateTime.clone().startOf('day');
         return dateTime.valueOf() - startOfDay;
       }
+
       var fromDate = $('#customDateRangeFromDate').data('DateTimePicker').date();
       var fromTime = $('#customDateRangeFromTime').data('DateTimePicker').date();
       var toDate = $('#customDateRangeToDate').data('DateTimePicker').date();

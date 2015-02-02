@@ -180,9 +180,9 @@ glowroot.controller('JvmGaugesCtrl', [
           });
     }
 
-    $scope.$watch('filterDate', function(newValue, oldValue) {
+    $scope.$watch('filterDate', function (newValue, oldValue) {
       if (newValue !== oldValue) {
-        $timeout(function() {
+        $timeout(function () {
           $('#refreshButtonContainer button').click();
         });
       }
@@ -417,25 +417,32 @@ glowroot.controller('JvmGaugesCtrl', [
       });
     };
 
-    $scope.filter = {};
-    $scope.chartFrom = Number($location.search().from);
-    $scope.chartTo = Number($location.search().to);
-    // both from and to must be supplied or neither will take effect
-    if ($scope.chartFrom && $scope.chartTo) {
-      $scope.filterDate = new Date($scope.chartFrom);
-      $scope.filterDate.setHours(0, 0, 0, 0);
-    } else {
-      chartFromToDefault = true;
-      var today = new Date();
-      today.setHours(0, 0, 0, 0);
-      $scope.filterDate = today;
-      // show 4 hour interval, but nothing prior to today (e.g. if 'now' is 1am) or after today
-      // (e.g. if 'now' is 11:55pm)
-      var now = new Date();
-      now.setSeconds(0, 0);
-      $scope.chartFrom = Math.max(now.getTime() - 225 * 60 * 1000, today.getTime());
-      $scope.chartTo = Math.min($scope.chartFrom + 240 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
+    function onLocationChangeSuccess() {
+      $scope.chartFrom = Number($location.search().from);
+      $scope.chartTo = Number($location.search().to);
+      // both from and to must be supplied or neither will take effect
+      if ($scope.chartFrom && $scope.chartTo) {
+        $scope.filterDate = new Date($scope.chartFrom);
+        $scope.filterDate.setHours(0, 0, 0, 0);
+      } else {
+        chartFromToDefault = true;
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+        $scope.filterDate = today;
+        // show 4 hour interval, but nothing prior to today (e.g. if 'now' is 1am) or after today
+        // (e.g. if 'now' is 11:55pm)
+        var now = new Date();
+        now.setSeconds(0, 0);
+        $scope.chartFrom = Math.max(now.getTime() - 225 * 60 * 1000, today.getTime());
+        $scope.chartTo = Math.min($scope.chartFrom + 240 * 60 * 1000, today.getTime() + 24 * 60 * 60 * 1000);
+      }
     }
+
+    // need to defer listener registration, otherwise captures initial location change sometimes
+    $timeout(function () {
+      $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
+    });
+    onLocationChangeSuccess();
 
     function updateLocation() {
       var query = {};
@@ -444,7 +451,7 @@ glowroot.controller('JvmGaugesCtrl', [
         query.to = $scope.chartTo;
       }
       query['gauge-name'] = keyedColorPool.keys();
-      $location.search(query).replace();
+      $location.search(query);
     }
 
     (function () {

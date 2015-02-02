@@ -80,6 +80,7 @@ glowroot.factory('charts', [
 
       if (zoomingOut && $scope.last) {
         $scope.$parent.last = roundUpLast($scope.last * 2);
+        $scope.applyLast();
         return;
       }
 
@@ -89,6 +90,13 @@ glowroot.factory('charts', [
       if (zoomingOut) {
         revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
         revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
+        var revisedDataPointIntervalMillis = getDataPointIntervalMillis(revisedFrom, revisedTo);
+        if (revisedDataPointIntervalMillis !== dataPointIntervalMillis) {
+          // expanded out to larger rollup threshold so need to re-adjust
+          // ok to use original from/to instead of revisedFrom/revisedTo
+          revisedFrom = Math.floor(from / revisedDataPointIntervalMillis) * revisedDataPointIntervalMillis;
+          revisedTo = Math.ceil(to / revisedDataPointIntervalMillis) * revisedDataPointIntervalMillis;
+        }
       } else {
         revisedFrom = Math.ceil(from / dataPointIntervalMillis) * dataPointIntervalMillis;
         revisedTo = Math.floor(to / dataPointIntervalMillis) * dataPointIntervalMillis;
@@ -112,9 +120,11 @@ glowroot.factory('charts', [
           // due to shrinking the zoom to data point interval, which could result in strange 2 days --> 22 hours
           // instead of the more obvious 2 days --> 1 day
           $scope.$parent.last = roundUpLast($scope.last / 2);
+          $scope.applyLast();
           return;
         }
         $scope.$parent.last = roundUpLast(now - revisedFrom, selection);
+        $scope.applyLast();
       } else {
         $scope.$parent.chartFrom = revisedFrom;
         $scope.$parent.chartTo = revisedTo;

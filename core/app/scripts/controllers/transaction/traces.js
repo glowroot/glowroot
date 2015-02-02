@@ -367,7 +367,7 @@ glowroot.controller('TracesCtrl', [
       if (!filterLimitDefault) {
         query.limit = appliedFilter.limit;
       }
-      $location.search(query).replace();
+      $location.search(query);
     }
 
     (function () {

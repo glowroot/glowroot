@@ -16,9 +16,10 @@
 <div class="gt-sidebar hidden-print">
   <div class="panel panel-default">
     <ul class="list-group">
-      <select selectpicker="{width: '100%', style: 'gt-transaction-sidebar-by'}"
-              ng-model="summarySortOrder">
-        <option ng-repeat="(value, display) in summarySortOrders" value="{{value}}">{{display}}</option>
+      <select gt-selectpicker
+              gt-selectpicker-options="{width: '100%', style: 'gt-transaction-sidebar-by'}"
+              ng-model="$parent.summarySortOrder"
+              ng-options="value as display for (value, display) in summarySortOrders">
       </select>
 
       <div style="position: relative;">
