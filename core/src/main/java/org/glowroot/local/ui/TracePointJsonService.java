@@ -320,7 +320,8 @@ class TracePointJsonService {
         }
 
         private String writeResponse(List<TracePoint> points, List<Transaction> activeTraces,
-                long captureTime, long captureTick, boolean limitExceeded) throws IOException {
+                long captureTime, long captureTick, boolean limitExceeded) throws IOException,
+                SQLException {
             StringBuilder sb = new StringBuilder();
             JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
             jg.writeStartObject();

@@ -202,6 +202,11 @@ class TransactionJsonService {
         String transactionName = request.transactionName();
         long profileSampleCount = transactionCommonService.getProfileSampleCount(
                 request.transactionType(), transactionName, request.from(), request.to());
+        boolean profileExpired = false;
+        if (profileSampleCount == 0) {
+            profileExpired = transactionCommonService.shouldHaveProfiles(request.transactionType(),
+                    transactionName, request.from(), request.to());
+        }
         long traceCount;
         if (transactionName == null) {
             traceCount = traceDao.readOverallCount(request.transactionType(), request.from(),
@@ -210,12 +215,19 @@ class TransactionJsonService {
             traceCount = traceDao.readTransactionCount(request.transactionType(),
                     transactionName, request.from(), request.to());
         }
+        boolean tracesExpired = false;
+        if (traceCount == 0) {
+            tracesExpired = transactionCommonService.shouldHaveTraces(request.transactionType(),
+                    transactionName, request.from(), request.to());
+        }
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeNumberField("profileSampleCount", profileSampleCount);
+        jg.writeBooleanField("profileExpired", profileExpired);
         jg.writeNumberField("traceCount", traceCount);
+        jg.writeBooleanField("tracesExpired", tracesExpired);
         jg.writeEndObject();
         jg.close();
         return sb.toString();

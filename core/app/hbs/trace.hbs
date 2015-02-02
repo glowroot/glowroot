@@ -187,42 +187,45 @@
   <div style="margin: 10px 0;">
     <div id="sps"></div>
   </div>
+  {{#ifExistenceYes profileExistence}}
+    <div>
+      <button class="gt-flat-btn gt-flat-btn-big-pad1aligned gt-profile-toggle">
+        <span class="gt-link-color">Profile ({{profileSampleCount}})</span>
+      </button>
+      {{! spinner is not used in export file }}
+      <div>
+        <div class="hide gt-trace-detail-spinner"></div>
+      </div>
+    </div>
+    <div class="gt-nowrap hide" id="profileOuter" style="margin: 10px 0;">
+      <div style="padding-bottom: 10px;">
+        <input class="form-control gt-profile-text-filter"
+               style="width: 25em;"
+               placeholder="filter the profile tree">
+      </div>
+      <select class="form-control gt-profile-filter gt-input-xlarge hide" onchange="this.blur()"
+              style="margin: 4px 0 10px;">
+      </select>
+
+      <div class="gt-profile gt-indent1"></div>
+    </div>
+  {{/ifExistenceYes}}
 {{/ifExistenceYes}}
 {{#ifExistenceExpired entriesExistence}}
-  <div>
-    <strong>
-      Entries no longer exists for this trace
-    </strong>
-    <em>(see Glowroot > Configuration &gt; Storage &gt; Spans/profiles capped db)</em>
-  </div>
-{{/ifExistenceExpired}}
-{{#ifExistenceYes profileExistence}}
-  <div>
-    <button class="gt-flat-btn gt-flat-btn-big-pad1aligned gt-profile-toggle">
-      <span class="gt-link-color">Profile ({{profileSampleCount}})</span>
-    </button>
-    {{! spinner is not used in export file }}
-    <div>
-      <div class="hide gt-trace-detail-spinner"></div>
+  {{#ifExistenceExpired profileExistence}}
+    <div style="margin: 10px 0;">
+      <strong>
+        Entries and profile for this trace have expired
+      </strong>
+      <em>(see Configuration &gt; Storage &gt; Profiles/trace entries capped db)</em>
     </div>
-  </div>
-  <div class="gt-nowrap hide" id="profileOuter" style="margin: 10px 0;">
-    <div style="padding-bottom: 10px;">
-      <input class="form-control gt-profile-text-filter"
-             style="width: 25em;"
-             placeholder="filter the profile tree">
+  {{/ifExistenceExpired}}
+  {{#ifExistenceNo profileExistence}}
+    <div style="margin: 10px 0;">
+      <strong>
+        Entries for this trace have expired
+      </strong>
+      <em>(see Configuration &gt; Storage &gt; Profiles/trace entries capped db)</em>
     </div>
-    <select class="form-control gt-profile-filter gt-input-xlarge hide" onchange="this.blur()"
-            style="margin: 4px 0 10px;">
-    </select>
-    <div class="gt-profile gt-indent1"></div>
-  </div>
-{{/ifExistenceYes}}
-{{#ifExistenceExpired profileExistence}}
-  <div>
-    <strong>
-      Profile no longer exists for this trace
-    </strong>
-    <em>(see Glowroot > Configuration &gt; Storage &gt; Trace entries/profiles capped db)</em>
-  </div>
+  {{/ifExistenceNo}}
 {{/ifExistenceExpired}}

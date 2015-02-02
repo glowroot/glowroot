@@ -40,6 +40,26 @@ glowroot.controller('TransactionTabCtrl', [
       }
     });
 
+    $scope.profileSampleCount = function () {
+      if (!$scope.tabBarData) {
+        return '...';
+      }
+      if ($scope.tabBarData.profileExpired) {
+        return '*';
+      }
+      return $scope.tabBarData.profileSampleCount;
+    };
+
+    $scope.traceCount = function () {
+      if (!$scope.tabBarData) {
+        return '...';
+      }
+      if ($scope.tabBarData.tracesExpired) {
+        return '*';
+      }
+      return $scope.tabBarData.traceCount;
+    };
+
     function updateTabBarData() {
       var query = {
         from: $scope.chartFrom,
@@ -54,7 +74,8 @@ glowroot.controller('TransactionTabCtrl', [
             if (concurrentUpdateCount) {
               return;
             }
-            $scope.tabBarData = data;
+            // set in parent scope so profiles tab and traces tab can access profileExpired and tracesExpired
+            $scope.$parent.tabBarData = data;
           })
           .error(httpErrors.handler($scope));
     }

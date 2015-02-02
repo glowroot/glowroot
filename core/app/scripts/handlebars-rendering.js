@@ -178,6 +178,13 @@ HandlebarsRendering = (function () {
     return options.inverse(this);
   });
 
+  Handlebars.registerHelper('ifExistenceNo', function (existence, options) {
+    if (existence === 'no') {
+      return options.fn(this);
+    }
+    return options.inverse(this);
+  });
+
   Handlebars.registerHelper('ifAnyThreadInfo', function (trace, options) {
     if (trace.threadCpuTime || trace.threadBlockedTime || trace.threadWaitedTime || trace.threadAllocatedBytes) {
       return options.fn(this);

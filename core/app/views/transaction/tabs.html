@@ -22,12 +22,12 @@
   </li>
   <li ng-class="{active: activeTabItem === 'profile'}">
     <a ng-href="transaction/profile{{tabQueryString()}}">
-      Profile <span ng-show="tabBarData">({{tabBarData.profileSampleCount}})</span>
+      Profile ({{profileSampleCount()}})
     </a>
   </li>
   <li ng-class="{active: activeTabItem === 'traces'}">
     <a ng-href="transaction/traces{{tabQueryString()}}">
-      Traces <span ng-show="tabBarData">({{tabBarData.traceCount}})</span>
+      Traces ({{traceCount()}})
     </a>
   </li>
 </ul>

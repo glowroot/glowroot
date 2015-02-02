@@ -34,6 +34,7 @@ public abstract class Aggregate {
     public abstract @Nullable Long totalWaitedMicros();
     public abstract @Nullable Long totalAllocatedBytes();
     public abstract long profileSampleCount();
+    public abstract long traceCount();
     public abstract String metrics();
     public abstract byte[] histogram();
     public abstract @Nullable String profile();

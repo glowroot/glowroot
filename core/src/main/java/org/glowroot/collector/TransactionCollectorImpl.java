@@ -107,13 +107,16 @@ public class TransactionCollectorImpl implements TransactionCollector {
         //
         // this is a reasonable place to get the capture time since this code is still being
         // executed by the transaction thread
+        boolean store = shouldStore(transaction);
         final long captureTime;
         if (aggregateCollector == null) {
             captureTime = clock.currentTimeMillis();
         } else {
+            if (store) {
+                transaction.setWillBeStored();
+            }
             captureTime = aggregateCollector.add(transaction);
         }
-        boolean store = shouldStore(transaction);
         if (store) {
             // onCompleteAndShouldStore must be called by the transaction thread, and needs to be
             // called before putting the transaction into the pendingTransactions (since it can be

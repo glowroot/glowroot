@@ -115,6 +115,36 @@ class TransactionCommonService {
         return profileSampleCount;
     }
 
+    boolean shouldHaveProfiles(String transactionType, @Nullable String transactionName, long from,
+            long to) throws SQLException {
+        if (transactionName == null) {
+            return aggregateDao.shouldHaveOverallProfiles(transactionType, from, to);
+        } else {
+            return aggregateDao.shouldHaveTransactionProfiles(transactionType, transactionName,
+                    from, to);
+        }
+    }
+
+    boolean shouldHaveTraces(String transactionType, @Nullable String transactionName, long from,
+            long to) throws SQLException {
+        if (transactionName == null) {
+            return aggregateDao.shouldHaveOverallTraces(transactionType, from, to);
+        } else {
+            return aggregateDao.shouldHaveTransactionTraces(transactionType, transactionName, from,
+                    to);
+        }
+    }
+
+    boolean shouldHaveErrorTraces(String transactionType, @Nullable String transactionName,
+            long from, long to) throws SQLException {
+        if (transactionName == null) {
+            return aggregateDao.shouldHaveOverallErrorTraces(transactionType, from, to);
+        } else {
+            return aggregateDao.shouldHaveTransactionErrorTraces(transactionType, transactionName,
+                    from, to);
+        }
+    }
+
     List<Aggregate> getAggregates(String transactionType, @Nullable String transactionName,
             long from, long to) throws Exception {
         int rollupLevel = getRollupLevel(from, to);

@@ -138,6 +138,21 @@ public class DataSource {
         }
     }
 
+    boolean queryForExists(final @Untainted String sql, Object... args) throws SQLException {
+        debug(sql, args);
+        synchronized (lock) {
+            if (closing) {
+                return false;
+            }
+            return queryUnderLock(sql, args, new ResultSetExtractor<Boolean>() {
+                @Override
+                public Boolean extractData(ResultSet resultSet) throws SQLException {
+                    return resultSet.next();
+                }
+            });
+        }
+    }
+
     </*@NonNull*/T> ImmutableList<T> query(@Untainted String sql, RowMapper<T> rowMapper,
             Object... args) throws SQLException {
         debug(sql, args);

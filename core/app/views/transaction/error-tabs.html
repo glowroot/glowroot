@@ -19,7 +19,7 @@
   </li>
   <li ng-class="{active: activeTabItem === 'traces'}">
     <a ng-href="error/traces{{tabQueryString()}}">
-      Traces <span ng-show="tabBarData">({{tabBarData.traceCount}})</span>
+      Traces ({{traceCount()}})
     </a>
   </li>
 </ul>

@@ -97,8 +97,9 @@ public class LocalUiModule {
         ErrorCommonService errorCommonService = new ErrorCommonService(
                 aggregateDao, collectorModule.getAggregateCollector(),
                 storageModule.getFixedAggregateRollupSeconds());
-        ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService, traceDao,
-                clock, collectorModule.getFixedAggregateIntervalSeconds(),
+        ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService,
+                transactionCommonService, traceDao, clock,
+                collectorModule.getFixedAggregateIntervalSeconds(),
                 storageModule.getFixedAggregateRollupSeconds());
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
                 gaugePointDao, configService, jvmModule.getThreadAllocatedBytes(),

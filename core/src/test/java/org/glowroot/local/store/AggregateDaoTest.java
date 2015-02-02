@@ -78,6 +78,7 @@ public class AggregateDaoTest {
                 .errorCount(0)
                 .transactionCount(10)
                 .profileSampleCount(0)
+                .traceCount(0)
                 .metrics(getFakeMetrics())
                 .histogram(getFakeHistogram())
                 .build();
@@ -90,6 +91,7 @@ public class AggregateDaoTest {
                 .errorCount(0)
                 .transactionCount(1)
                 .profileSampleCount(0)
+                .traceCount(0)
                 .metrics(getFakeMetrics())
                 .histogram(getFakeHistogram())
                 .build());
@@ -101,6 +103,7 @@ public class AggregateDaoTest {
                 .errorCount(0)
                 .transactionCount(2)
                 .profileSampleCount(0)
+                .traceCount(0)
                 .metrics(getFakeMetrics())
                 .histogram(getFakeHistogram())
                 .build());
@@ -112,6 +115,7 @@ public class AggregateDaoTest {
                 .errorCount(0)
                 .transactionCount(7)
                 .profileSampleCount(0)
+                .traceCount(0)
                 .metrics(getFakeMetrics())
                 .histogram(getFakeHistogram())
                 .build());
@@ -125,6 +129,7 @@ public class AggregateDaoTest {
                 .errorCount(0)
                 .transactionCount(10)
                 .profileSampleCount(0)
+                .traceCount(0)
                 .metrics(getFakeMetrics())
                 .histogram(getFakeHistogram())
                 .build();
@@ -137,6 +142,7 @@ public class AggregateDaoTest {
                 .errorCount(0)
                 .transactionCount(1)
                 .profileSampleCount(0)
+                .traceCount(0)
                 .metrics(getFakeMetrics())
                 .histogram(getFakeHistogram())
                 .build());
@@ -148,6 +154,7 @@ public class AggregateDaoTest {
                 .errorCount(0)
                 .transactionCount(2)
                 .profileSampleCount(0)
+                .traceCount(0)
                 .metrics(getFakeMetrics())
                 .histogram(getFakeHistogram())
                 .build());
@@ -159,6 +166,7 @@ public class AggregateDaoTest {
                 .errorCount(0)
                 .transactionCount(7)
                 .profileSampleCount(0)
+                .traceCount(0)
                 .metrics(getFakeMetrics())
                 .histogram(getFakeHistogram())
                 .build());

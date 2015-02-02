@@ -50,6 +50,7 @@ class AggregateBuilder {
     private @Nullable Long totalWaitedMicros;
     private @Nullable Long totalAllocatedBytes;
     private long profileSampleCount;
+    private long traceCount;
     // histogram uses microseconds to reduce (or at least simplify) bucket allocations
     private final LazyHistogram histogram = new LazyHistogram();
     private final AggregateMetric syntheticRootMetric = new AggregateMetric("");
@@ -65,6 +66,9 @@ class AggregateBuilder {
         totalMicros += durationMicros;
         if (transaction.getError() != null) {
             errorCount++;
+        }
+        if (transaction.willBeStored()) {
+            traceCount++;
         }
         transactionCount++;
         ThreadInfoData threadInfo = transaction.getThreadInfo();
@@ -114,6 +118,7 @@ class AggregateBuilder {
                 .metrics(getMetricsJson())
                 .histogram(histogram)
                 .profileSampleCount(profileSampleCount)
+                .traceCount(traceCount)
                 .profile(getProfileJson())
                 .build();
     }
