@@ -21,7 +21,8 @@ glowroot.controller('TransactionHeaderCtrl', [
   '$location',
   '$timeout',
   'queryStrings',
-  function ($scope, $location, $timeout, queryStrings) {
+  'modals',
+  function ($scope, $location, $timeout, queryStrings, modals) {
 
     $scope.$parent.chartRefresh = 0;
 
@@ -128,22 +129,7 @@ glowroot.controller('TransactionHeaderCtrl', [
     ];
 
     $scope.openCustomRange = function () {
-      // center modal vertically in window
-      // see http://stackoverflow.com/questions/18053408/vertically-centering-bootstrap-modal-window/20444744#20444744
-      $('#customDateRangeModal').on('show.bs.modal', function () {
-        $(this).css('display', 'block');
-        var $dialog = $(this).find('.modal-dialog');
-        var offset = ($(window).height() - $dialog.height()) / 2;
-        $dialog.css('margin-top', offset);
-      });
-      $('#customDateRangeModal').modal();
-      var $body = $('body');
-      $('.navbar-fixed-top').css('padding-right', $body.css('padding-right'));
-      $('.navbar-fixed-bottom').css('padding-right', $body.css('padding-right'));
-      $('#customDateRangeModal').on('hide.bs.modal', function () {
-        $('.navbar-fixed-top').css('padding-right', '');
-        $('.navbar-fixed-bottom').css('padding-right', '');
-      });
+      modals.display('#customDateRangeModal', true);
 
       var icons = {
         time: 'fa fa-clock-o',

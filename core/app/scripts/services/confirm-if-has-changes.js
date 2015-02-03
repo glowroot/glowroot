@@ -14,30 +14,27 @@
  * limitations under the License.
  */
 
-/* global glowroot, swal */
+/* global glowroot, $ */
 
 glowroot.factory('confirmIfHasChanges', [
   '$location',
-  function ($location) {
+  'modals',
+  function ($location, modals) {
     return function ($scope) {
       var confirmed;
       return function (event, newUrl) {
         if (!$scope.httpError && !confirmed && $scope.hasChanges()) {
           event.preventDefault();
-          swal({
-            title: 'You have unsaved changes',
-            text: 'Are you sure you want to navigate away from this page?',
-            type: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#DD6B55',
-            confirmButtonText: 'Yes'
-          }, function (isConfirm) {
-            if (isConfirm) {
-              $scope.$apply(function () {
-                confirmed = true;
-                $location.$$parse(newUrl);
-              });
-            }
+
+          modals.display('#unsavedChangesModal', true);
+
+          $('#unsavedChangesConfirm').off('click');
+          $('#unsavedChangesConfirm').on('click', function () {
+            $scope.$apply(function () {
+              confirmed = true;
+              $('#unsavedChangesModal').modal('hide');
+              $location.$$parse(newUrl);
+            });
           });
         }
       };

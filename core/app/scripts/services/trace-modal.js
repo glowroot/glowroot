@@ -19,7 +19,8 @@
 glowroot.factory('traceModal', [
   '$rootScope',
   '$http',
-  function ($rootScope, $http) {
+  'modals',
+  function ($rootScope, $http, modals) {
 
     var $body = $('body');
 
@@ -28,13 +29,7 @@ glowroot.factory('traceModal', [
       var spinner;
       var $modalContent = $('#traceModal .modal-body');
 
-      $('#traceModal').modal();
-      $('.navbar-fixed-top').css('padding-right', $body.css('padding-right'));
-      $('.navbar-fixed-bottom').css('padding-right', $body.css('padding-right'));
-      $('#traceModal').on('hide.bs.modal', function () {
-        $('.navbar-fixed-top').css('padding-right', '');
-        $('.navbar-fixed-bottom').css('padding-right', '');
-      });
+      modals.display('#traceModal');
       $http.get('backend/trace/header/' + traceId)
           .success(function (data) {
             spinner.stop();

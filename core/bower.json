@@ -4,7 +4,7 @@
     "angular": "1.3.11",
     "angular-ui-bootstrap": "trask/angular-ui-bootstrap#a2f26d4b65d89205a573c3047d108ae6c09a8241",
     "angular-ui-router": "0.2.13",
-    "bootstrap": "3.3.2",
+    "bootstrap": "trask/bootstrap#8365135713763f547151c439722e1a1e532816af",
     "bootstrap-select": "trask/bootstrap-select#ccc64eaacbafdcbc1e5d78376b48a777049b0343",
     "d3": "2.10.3",
     "eonasdan-bootstrap-datetimepicker": "4.0.0",
@@ -15,7 +15,6 @@
     "jquery": "2.1.3",
     "moment": "2.9.0",
     "spinjs": "2.0.2",
-    "stackvis": "trask/node-stackvis#1b4231badff79e31d29cf487993bbb23b586d9d2",
-    "sweetalert": "0.4.1"
+    "stackvis": "trask/node-stackvis#1b4231badff79e31d29cf487993bbb23b586d9d2"
   }
 }
