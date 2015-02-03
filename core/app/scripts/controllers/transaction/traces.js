@@ -74,6 +74,10 @@ glowroot.controller('TracesCtrl', [
       var durationLow = appliedFilter.durationLow;
       var durationHigh = appliedFilter.durationHigh;
       var query = angular.copy(appliedFilter);
+      if ($scope.transactionName) {
+        query.transactionNameComparator = 'equals';
+        query.transactionName = $scope.transactionName;
+      }
       // convert duration from seconds to nanoseconds
       query.durationLow = Math.ceil(query.durationLow * 1000000000);
       if (query.durationHigh) {
@@ -81,10 +85,6 @@ glowroot.controller('TracesCtrl', [
       }
       if (errorOnly) {
         query.errorOnly = true;
-      }
-      if ($scope.transactionName) {
-        query.transactionName = $scope.transactionName;
-        query.transactionNameComparator = 'equals';
       }
       $scope.showChartSpinner++;
       $http.get('backend/trace/points' + queryStrings.encodeObject(query))
@@ -289,8 +289,6 @@ glowroot.controller('TracesCtrl', [
     appliedFilter.to = $scope.chartTo;
     appliedFilter.durationLow = Number($location.search()['duration-low']) || 0;
     appliedFilter.durationHigh = Number($location.search()['duration-high']) || undefined;
-    appliedFilter.transactionNameComparator = $location.search()['transaction-name-comparator'] || 'begins';
-    appliedFilter.transactionName = $location.search()['transaction-name'] || '';
     appliedFilter.headlineComparator = $location.search()['headline-comparator'] || 'begins';
     appliedFilter.headline = $location.search().headline || '';
     appliedFilter.errorComparator = $location.search()['error-comparator'] || 'begins';
@@ -344,10 +342,6 @@ glowroot.controller('TracesCtrl', [
       if (appliedFilter.headline) {
         query['headline-comparator'] = appliedFilter.headlineComparator;
         query.headline = appliedFilter.headline;
-      }
-      if (appliedFilter.transactionName) {
-        query['transaction-name-comparator'] = appliedFilter.transactionNameComparator;
-        query['transaction-name'] = appliedFilter.transactionName;
       }
       if (appliedFilter.error) {
         query['error-comparator'] = appliedFilter.errorComparator;
