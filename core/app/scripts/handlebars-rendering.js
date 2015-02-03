@@ -304,7 +304,13 @@ HandlebarsRendering = (function () {
     mousedownPageY = e.pageY;
   });
   $(document).on('click', '.gt-metric-view-toggle', function () {
-    $(this).parents('.gt-trace-metrics').children('table').toggleClass('hide');
+    var $traceMetrics = $(this).parents('.gt-trace-metrics');
+    $traceMetrics.children('table').toggleClass('hide');
+    // re-focus on visible element, otherwise up/down/pgup/pgdown/ESC don't work
+    var $metricViewToggle = $traceMetrics.find('.gt-metric-view-toggle:visible');
+    $metricViewToggle.attr('tabindex', -1);
+    $metricViewToggle.css('outline', 'none');
+    $metricViewToggle.focus();
   });
   $(document).on('click', '.gt-unexpanded-content, .gt-expanded-content', function (e, keyboard) {
     smartToggle($(this).parent(), e, keyboard);
@@ -470,9 +476,14 @@ HandlebarsRendering = (function () {
     var unexpanded = parent.find('.gt-unexpanded-content');
     unexpanded.toggleClass('hide');
     expanded.toggleClass('hide');
+    // re-focus on visible element, otherwise up/down/pgup/pgdown/ESC don't work
     if (unexpanded.hasClass('hide')) {
+      expanded.attr('tabindex', -1);
+      expanded.css('outline', 'none');
       expanded.focus();
     } else {
+      unexpanded.attr('tabindex', -1);
+      unexpanded.css('outline', 'none');
       unexpanded.focus();
     }
   }
@@ -486,8 +497,7 @@ HandlebarsRendering = (function () {
       // not a simple single click, probably highlighting text
       return;
     }
-    parent.find('.gt-expanded-content').toggleClass('hide');
-    parent.find('.gt-unexpanded-content').toggleClass('hide');
+    basicToggle(parent);
   }
 
   function buildMergedStackTree(rootNode, selector) {
