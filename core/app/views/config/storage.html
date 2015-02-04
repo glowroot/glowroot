@@ -29,29 +29,18 @@
         <label class="col-lg-3 control-label" for="aggregateExpirationDays">
           Keep aggregates for
         </label>
+
         <div class="col-lg-9">
-          <div class="row">
-            <div class="col-sm-4">
-              <div class="input-group">
-                <input type="text"
-                       class="form-control"
-                       ng-model="page.aggregateExpirationDays"
-                       name="aggregateExpirationDays"
-                       id="aggregateExpirationDays"
-                       ng-pattern="pattern.integer"
-                       ng-required="loaded"
-                       style="width: 7em;">
-                <span class="input-group-addon">days</span>
-              </div>
-            </div>
-            <div class="col-sm-8">
-              <div gt-button
-                   gt-label="Delete All"
-                   gt-click="deleteAllAggregates(deferred)"
-                   gt-btn-class="btn-config-delete-all"
-                   gt-dont-validate-form="true">
-              </div>
-            </div>
+          <div class="input-group">
+            <input type="text"
+                   class="form-control"
+                   ng-model="page.aggregateExpirationDays"
+                   name="aggregateExpirationDays"
+                   id="aggregateExpirationDays"
+                   ng-pattern="pattern.integer"
+                   ng-required="loaded"
+                   style="width: 7em;">
+            <span class="input-group-addon">days</span>
           </div>
           <div class="help-block">
             Defines how long aggregates should be retained.
@@ -63,29 +52,18 @@
         <label class="col-lg-3 control-label" for="traceExpirationDays">
           Keep traces for
         </label>
+
         <div class="col-lg-9">
-          <div class="row">
-            <div class="col-sm-4">
-              <div class="input-group">
-                <input type="text"
-                       class="form-control"
-                       ng-model="page.traceExpirationDays"
-                       name="traceExpirationDays"
-                       id="traceExpirationDays"
-                       ng-pattern="pattern.integer"
-                       ng-required="loaded"
-                       style="width: 7em;">
-                <span class="input-group-addon">days</span>
-              </div>
-            </div>
-            <div class="col-sm-8">
-              <div gt-button
-                   gt-label="Delete All"
-                   gt-click="deleteAllTraces(deferred)"
-                   gt-btn-class="btn-config-delete-all"
-                   gt-dont-validate-form="true">
-              </div>
-            </div>
+          <div class="input-group">
+            <input type="text"
+                   class="form-control"
+                   ng-model="page.traceExpirationDays"
+                   name="traceExpirationDays"
+                   id="traceExpirationDays"
+                   ng-pattern="pattern.integer"
+                   ng-required="loaded"
+                   style="width: 7em;">
+            <span class="input-group-addon">days</span>
           </div>
           <div class="help-block">
             Defines how long traces should be retained.
@@ -110,10 +88,12 @@
       </div>
       <div class="form-group">
         <label class="col-lg-3 control-label">Data directory</label>
+
         <div class="col-lg-9">
           <p class="form-control-static">
             {{dataDir}}
           </p>
+
           <div class="help-block">
             The data directory where the H2 data file and the capped database are stored.
             The default value is the directory where the glowroot.jar resides.
@@ -124,10 +104,20 @@
       </div>
       <div class="form-group gt-form-buttons">
         <div class="col-lg-offset-3 col-lg-9">
-          <div gt-button
-               gt-label="Save changes"
-               gt-click="save(deferred)"
-               gt-disabled="!hasChanges() || formCtrl.$invalid">
+          <div gt-button-group>
+            <div gt-button
+                 class="gt-inline-block"
+                 gt-label="Save changes"
+                 gt-click="save(deferred)"
+                 gt-disabled="!hasChanges() || formCtrl.$invalid">
+            </div>
+            <div gt-button
+                 class="gt-inline-block"
+                 gt-label="Delete all data"
+                 gt-click="deleteAllData(deferred)"
+                 gt-btn-class="btn-danger"
+                 gt-dont-validate-form="true">
+            </div>
           </div>
         </div>
       </div>

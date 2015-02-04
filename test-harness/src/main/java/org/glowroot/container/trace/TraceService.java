@@ -176,8 +176,7 @@ public class TraceService {
     }
 
     public void deleteAll() throws Exception {
-        httpClient.post("/backend/admin/delete-all-aggregates", "");
-        httpClient.post("/backend/admin/delete-all-traces", "");
+        httpClient.post("/backend/admin/delete-all-data", "");
     }
 
     public void assertNoActiveTransactions() throws Exception {

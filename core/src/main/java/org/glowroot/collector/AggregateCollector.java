@@ -68,17 +68,6 @@ public class AggregateCollector {
         processingThread.start();
     }
 
-    long add(Transaction transaction) {
-        // this synchronized block is to ensure traces are placed into processing queue in the
-        // order of captureTime (so that queue reader can assume if captureTime indicates time to
-        // flush, then no new traces will come in with prior captureTime)
-        synchronized (lock) {
-            long captureTime = clock.currentTimeMillis();
-            pendingTransactionQueue.add(new PendingTransaction(captureTime, transaction));
-            return captureTime;
-        }
-    }
-
     public List<AggregateIntervalCollector> getOrderedIntervalCollectorsInRange(long from,
             long to) {
         List<AggregateIntervalCollector> intervalCollectors = Lists.newArrayList();
@@ -92,6 +81,22 @@ public class AggregateCollector {
             }
         }
         return intervalCollectors;
+    }
+
+    public void clearAll() {
+        activeIntervalCollector.clear();
+        pendingIntervalCollectors.clear();
+    }
+
+    long add(Transaction transaction) {
+        // this synchronized block is to ensure traces are placed into processing queue in the
+        // order of captureTime (so that queue reader can assume if captureTime indicates time to
+        // flush, then no new traces will come in with prior captureTime)
+        synchronized (lock) {
+            long captureTime = clock.currentTimeMillis();
+            pendingTransactionQueue.add(new PendingTransaction(captureTime, transaction));
+            return captureTime;
+        }
     }
 
     private List<AggregateIntervalCollector> getOrderedAllIntervalCollectors() {

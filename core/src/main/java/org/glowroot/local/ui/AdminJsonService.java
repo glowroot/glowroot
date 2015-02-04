@@ -28,6 +28,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
+import org.glowroot.collector.AggregateCollector;
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.config.CapturePoint;
 import org.glowroot.config.ConfigService;
@@ -49,6 +50,7 @@ class AdminJsonService {
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
     private final GaugePointDao gaugePointDao;
+    private final @Nullable AggregateCollector aggregateCollector;
     private final ConfigService configService;
     private final AdviceCache adviceCache;
     private final AnalyzedWorld analyzedWorld;
@@ -58,13 +60,15 @@ class AdminJsonService {
     private final TransactionRegistry transactionRegistry;
 
     AdminJsonService(AggregateDao aggregateDao, TraceDao traceDao, GaugePointDao gaugePointDao,
-            ConfigService configService, AdviceCache adviceCache, AnalyzedWorld analyzedWorld,
+            @Nullable AggregateCollector aggregateCollector, ConfigService configService,
+            AdviceCache adviceCache, AnalyzedWorld analyzedWorld,
             @Nullable Instrumentation instrumentation,
             TransactionCollectorImpl transactionCollector, DataSource dataSource,
             TransactionRegistry transactionRegistry) {
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
         this.gaugePointDao = gaugePointDao;
+        this.aggregateCollector = aggregateCollector;
         this.configService = configService;
         this.adviceCache = adviceCache;
         this.analyzedWorld = analyzedWorld;
@@ -74,15 +78,16 @@ class AdminJsonService {
         this.transactionRegistry = transactionRegistry;
     }
 
-    @POST("/backend/admin/delete-all-aggregates")
-    void deleteAllAggregates() throws SQLException {
-        aggregateDao.deleteAll();
-    }
-
-    @POST("/backend/admin/delete-all-traces")
-    void deleteAllTraces() throws SQLException {
+    @POST("/backend/admin/delete-all-data")
+    void deleteAllData() throws SQLException {
+        // clear in memory aggregates first
+        if (aggregateCollector != null) {
+            aggregateCollector.clearAll();
+        }
+        // TODO optimize by just deleting and re-creating h2 db
         traceDao.deleteAll();
         gaugePointDao.deleteAll();
+        aggregateDao.deleteAll();
     }
 
     @POST("/backend/admin/reweave-capture-points")

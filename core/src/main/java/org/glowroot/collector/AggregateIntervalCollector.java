@@ -178,6 +178,10 @@ public class AggregateIntervalCollector {
         }
     }
 
+    void clear() {
+        typeCollectors.clear();
+    }
+
     private IntervalTypeCollector getTypeBuilder(String transactionType) {
         IntervalTypeCollector typeBuilder;
         typeBuilder = typeCollectors.get(transactionType);

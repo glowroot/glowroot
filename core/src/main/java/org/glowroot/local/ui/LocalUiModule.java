@@ -116,8 +116,9 @@ public class LocalUiModule {
         GaugeJsonService gaugeJsonService =
                 new GaugeJsonService(configService, jvmModule.getLazyPlatformMBeanServer());
         AdminJsonService adminJsonService = new AdminJsonService(aggregateDao, traceDao,
-                gaugePointDao, configService, transactionModule.getAdviceCache(), analyzedWorld,
-                instrumentation, transactionCollector, dataSource, transactionRegistry);
+                gaugePointDao, collectorModule.getAggregateCollector(), configService,
+                transactionModule.getAdviceCache(), analyzedWorld, instrumentation,
+                transactionCollector, dataSource, transactionRegistry);
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(layoutJsonService);

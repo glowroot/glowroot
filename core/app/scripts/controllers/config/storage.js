@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,16 +61,8 @@ glowroot.controller('ConfigStorageCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $scope.deleteAllAggregates = function (deferred) {
-      $http.post('backend/admin/delete-all-aggregates')
-          .success(function () {
-            deferred.resolve('Deleted');
-          })
-          .error(httpErrors.handler($scope, deferred));
-    };
-
-    $scope.deleteAllTraces = function (deferred) {
-      $http.post('backend/admin/delete-all-traces')
+    $scope.deleteAllData = function (deferred) {
+      $http.post('backend/admin/delete-all-data')
           .success(function () {
             deferred.resolve('Deleted');
           })
