@@ -29,8 +29,8 @@ import org.slf4j.Logger;
 import org.glowroot.common.Clock;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.Gauge;
-import org.glowroot.config.ImmutableGauge;
+import org.glowroot.config.GaugeConfig;
+import org.glowroot.config.ImmutableGaugeConfig;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,12 +74,12 @@ public class GaugeCollectorTest {
     @Test
     public void shouldHandleInvalidMBeanObjectName() {
         // given
-        Gauge gauge = ImmutableGauge.builder()
+        GaugeConfig gaugeConfigs = ImmutableGaugeConfig.builder()
                 .name("abc")
                 .mbeanObjectName("invalid mbean object name")
                 .build();
         // when
-        List<GaugePoint> gaugePoints = gaugeCollector.runInternal(gauge);
+        List<GaugePoint> gaugePoints = gaugeCollector.runInternal(gaugeConfigs);
         // then
         assertThat(gaugePoints).isEmpty();
         verify(logger).debug(anyString(), any(Exception.class));
@@ -91,7 +91,7 @@ public class GaugeCollectorTest {
     @SuppressWarnings("unchecked")
     public void shouldHandleMBeanInstanceNotFoundBeforeLoggingDelay() throws Exception {
         // given
-        Gauge gauge = ImmutableGauge.builder()
+        GaugeConfig gaugeConfigs = ImmutableGaugeConfig.builder()
                 .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
                 .addMbeanAttributeNames("ccc")
@@ -101,7 +101,7 @@ public class GaugeCollectorTest {
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(InstanceNotFoundException.class);
         // when
-        List<GaugePoint> gaugePoints = gaugeCollector.runInternal(gauge);
+        List<GaugePoint> gaugePoints = gaugeCollector.runInternal(gaugeConfigs);
         // then
         assertThat(gaugePoints).isEmpty();
         verify(logger).debug(anyString(), any(Exception.class));
@@ -111,7 +111,7 @@ public class GaugeCollectorTest {
     @SuppressWarnings("unchecked")
     public void shouldHandleMBeanInstanceNotFoundAfterLoggingDelay() throws Exception {
         // given
-        Gauge gauge = ImmutableGauge.builder()
+        GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
                 .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
                 .addMbeanAttributeNames("ccc")
@@ -121,7 +121,7 @@ public class GaugeCollectorTest {
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(InstanceNotFoundException.class);
         // when
-        List<GaugePoint> gaugePoints = gaugeCollector.runInternal(gauge);
+        List<GaugePoint> gaugePoints = gaugeCollector.runInternal(gaugeConfig);
         // then
         assertThat(gaugePoints).isEmpty();
         verify(logger).debug(anyString(), any(Exception.class));
@@ -132,7 +132,7 @@ public class GaugeCollectorTest {
     @SuppressWarnings("unchecked")
     public void shouldHandleMBeanInstanceNotFoundBeforeAndAfterLoggingDelay() throws Exception {
         // given
-        Gauge gauge = ImmutableGauge.builder()
+        GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
                 .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
                 .addMbeanAttributeNames("ccc")
@@ -142,11 +142,11 @@ public class GaugeCollectorTest {
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(InstanceNotFoundException.class);
         // when
-        gaugeCollector.runInternal(gauge);
-        gaugeCollector.runInternal(gauge);
-        gaugeCollector.runInternal(gauge);
-        gaugeCollector.runInternal(gauge);
-        gaugeCollector.runInternal(gauge);
+        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.runInternal(gaugeConfig);
         // then
         verify(logger, times(5)).debug(anyString(), any(Exception.class));
         verify(logger).warn("mbean not found: {} (waited {} seconds after jvm startup before"
@@ -159,7 +159,7 @@ public class GaugeCollectorTest {
     @SuppressWarnings("unchecked")
     public void shouldHandleMBeanAttributeNotFound() throws Exception {
         // given
-        Gauge gauge = ImmutableGauge.builder()
+        GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
                 .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
                 .addMbeanAttributeNames("ccc")
@@ -168,11 +168,11 @@ public class GaugeCollectorTest {
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(AttributeNotFoundException.class);
         // when
-        gaugeCollector.runInternal(gauge);
-        gaugeCollector.runInternal(gauge);
-        gaugeCollector.runInternal(gauge);
-        gaugeCollector.runInternal(gauge);
-        gaugeCollector.runInternal(gauge);
+        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.runInternal(gaugeConfig);
         // then
         verify(logger, times(10)).debug(anyString(), any(Exception.class));
         verify(logger).warn("mbean attribute {} not found: {}", "ccc", "xyz:aaa=bbb");
@@ -182,7 +182,7 @@ public class GaugeCollectorTest {
     @Test
     public void shouldHandleMBeanAttributeOtherException() throws Exception {
         // given
-        Gauge gauge = ImmutableGauge.builder()
+        GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
                 .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
                 .addMbeanAttributeNames("ccc")
@@ -191,11 +191,11 @@ public class GaugeCollectorTest {
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(new RuntimeException("A msg"));
         // when
-        gaugeCollector.runInternal(gauge);
-        gaugeCollector.runInternal(gauge);
-        gaugeCollector.runInternal(gauge);
-        gaugeCollector.runInternal(gauge);
-        gaugeCollector.runInternal(gauge);
+        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.runInternal(gaugeConfig);
         // then
         verify(logger, times(10)).debug(anyString(), any(Exception.class));
         verify(logger).warn("error accessing mbean attribute {} {}: {}", "xyz:aaa=bbb", "ccc",
@@ -207,7 +207,7 @@ public class GaugeCollectorTest {
     @Test
     public void shouldHandleMBeanAttributeNotANumber() throws Exception {
         // given
-        Gauge gauge = ImmutableGauge.builder()
+        GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
                 .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
                 .addMbeanAttributeNames("ccc")
@@ -216,11 +216,11 @@ public class GaugeCollectorTest {
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenReturn("not a number");
         // when
-        gaugeCollector.runInternal(gauge);
-        gaugeCollector.runInternal(gauge);
-        gaugeCollector.runInternal(gauge);
-        gaugeCollector.runInternal(gauge);
-        gaugeCollector.runInternal(gauge);
+        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.runInternal(gaugeConfig);
         // then
         verify(logger).warn("error accessing mbean attribute {} {}: {}", "xyz:aaa=bbb", "ccc",
                 "MBean attribute value is not a number");

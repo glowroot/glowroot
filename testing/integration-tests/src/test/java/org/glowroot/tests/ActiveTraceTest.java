@@ -31,7 +31,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.config.ProfilingConfig;
+import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.trace.ProfileNode;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
@@ -72,9 +72,9 @@ public class ActiveTraceTest {
     private Trace shouldReadActiveTrace(final Class<? extends AppUnderTest> appUnderTest,
             boolean stuckOnNonRoot) throws Exception {
         // given
-        ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
-        profilingConfig.setIntervalMillis(10);
-        container.getConfigService().updateProfilingConfig(profilingConfig);
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+        generalConfig.setProfilingIntervalMillis(10);
+        container.getConfigService().updateGeneralConfig(generalConfig);
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Void> future = executorService.submit(new Callable<Void>() {

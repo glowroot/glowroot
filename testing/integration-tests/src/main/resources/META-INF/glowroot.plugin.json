@@ -69,7 +69,7 @@
       "label": "A number with explicit null default value"
     }
   ],
-  "capturePoints": [
+  "instrumentation": [
     {
       "className": "org.glowroot.tests.LevelFour",
       "methodName": "call",

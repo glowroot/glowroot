@@ -15,25 +15,17 @@
 -->
 <div class="panel panel-default">
   <div class="panel-heading">
-    <h2>Gauges</h2>
+    <h2>Plugins</h2>
   </div>
   <div class="panel-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div style="margin: 15px;">
-      <div ng-repeat="gauge in gauges"
+      <div ng-repeat="plugin in plugins"
            class="gt-second-line-indent"
            style="padding-bottom: 8px;">
-        <a ng-href="config/gauge?v={{gauge.config.version}}">{{gauge.config.name}}</a>
-      </div>
-      <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
-           before it gets pushed down by existing gauge sections -->
-      <div ng-show="loaded"
-           style="margin-top: 30px;">
-        <a class="btn btn-primary"
-           href="config/gauge?new">
-          Add new
-        </a>
+        <a ng-href="config/plugin?id={{plugin.id}}">{{plugin.name}}</a>
+        <span style="margin-left: 20px;">{{plugin.enabled ? 'Enabled' : 'Disabled'}}</span>
       </div>
     </div>
   </div>

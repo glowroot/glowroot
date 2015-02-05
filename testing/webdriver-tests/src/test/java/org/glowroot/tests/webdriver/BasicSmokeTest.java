@@ -27,7 +27,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import org.glowroot.container.config.ProfilingConfig;
+import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.tests.webdriver.jvm.JvmSidebar;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -37,10 +37,9 @@ public class BasicSmokeTest extends WebDriverTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        ProfilingConfig profilingConfig =
-                container.getConfigService().getProfilingConfig();
-        profilingConfig.setIntervalMillis(10);
-        container.getConfigService().updateProfilingConfig(profilingConfig);
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+        generalConfig.setProfilingIntervalMillis(10);
+        container.getConfigService().updateGeneralConfig(generalConfig);
         Stopwatch stopwatch = Stopwatch.createStarted();
         // wait for some aggregation to occur
         while (stopwatch.elapsed(SECONDS) < 1) {
@@ -146,6 +145,7 @@ public class BasicSmokeTest extends WebDriverTest {
         Utils.withWait(driver, By.xpath("//div[@ng-show='checkDiskSpaceResponse']"));
         jvmSidebar.getProcessInfoLink().click();
         jvmSidebar.getSystemPropertiesLink().click();
-        jvmSidebar.getCapabilitiesLink().click();
+        // jvm capabilities is not accessible via config sidebar currently
+        driver.navigate().to("http://localhost:" + container.getUiPort() + "/jvm/capabilities");
     }
 }

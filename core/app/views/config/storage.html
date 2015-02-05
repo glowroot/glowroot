@@ -25,50 +25,30 @@
          gt-form-autofocus-on-first-input
          class="form-horizontal"
          name="formCtrl">
-      <div class="form-group" ng-class="{'has-error': formCtrl.aggregateExpirationDays.$invalid}">
-        <label class="col-lg-3 control-label" for="aggregateExpirationDays">
-          Keep aggregates for
-        </label>
-
-        <div class="col-lg-9">
-          <div class="input-group">
-            <input type="text"
-                   class="form-control"
-                   ng-model="page.aggregateExpirationDays"
-                   name="aggregateExpirationDays"
-                   id="aggregateExpirationDays"
-                   ng-pattern="pattern.integer"
-                   ng-required="loaded"
-                   style="width: 7em;">
-            <span class="input-group-addon">days</span>
-          </div>
-          <div class="help-block">
-            Defines how long aggregates should be retained.
-            Aggregate profiles may expire sooner than this, see <em>Profiles/trace entries capped db</em> below.
-          </div>
+      <div gt-form-group
+           gt-label="Keep aggregates for"
+           gt-model="page.aggregateExpirationDays"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-required="loaded"
+           gt-width="7em"
+           gt-addon="days">
+        <div class="help-block">
+          Defines how long aggregates should be retained.
+          Aggregate profiles may expire sooner than this, see <em>Profiles/trace entries capped db</em> below.
         </div>
       </div>
-      <div class="form-group" ng-class="{'has-error': formCtrl.traceExpirationDays.$invalid}">
-        <label class="col-lg-3 control-label" for="traceExpirationDays">
-          Keep traces for
-        </label>
-
-        <div class="col-lg-9">
-          <div class="input-group">
-            <input type="text"
-                   class="form-control"
-                   ng-model="page.traceExpirationDays"
-                   name="traceExpirationDays"
-                   id="traceExpirationDays"
-                   ng-pattern="pattern.integer"
-                   ng-required="loaded"
-                   style="width: 7em;">
-            <span class="input-group-addon">days</span>
-          </div>
-          <div class="help-block">
-            Defines how long traces should be retained.
-            Profiles and trace entries may expire sooner than this, see <em>Profiles/trace entries capped db</em> below.
-          </div>
+      <div gt-form-group
+           gt-label="Keep traces for"
+           gt-model="page.traceExpirationDays"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-required="loaded"
+           gt-width="7em"
+           gt-addon="days">
+        <div class="help-block">
+          Defines how long traces should be retained.
+          Profiles and trace entries may expire sooner than this, see <em>Profiles/trace entries capped db</em> below.
         </div>
       </div>
       <div gt-form-group
@@ -84,22 +64,6 @@
           and capped disk usage.
           Once this capped database grows to its maximum size, new profiles and trace entries start overwriting
           the oldest ones.
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="col-lg-3 control-label">Data directory</label>
-
-        <div class="col-lg-9">
-          <p class="form-control-static">
-            {{dataDir}}
-          </p>
-
-          <div class="help-block">
-            The data directory where the H2 data file and the capped database are stored.
-            The default value is the directory where the glowroot.jar resides.
-            This can only be changed on the command line, using
-            <span class="gt-nowrap">-Dglowroot.data.dir=&lt;folder&gt;</span>.
-          </div>
         </div>
       </div>
       <div class="form-group gt-form-buttons">

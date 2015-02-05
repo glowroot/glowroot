@@ -21,6 +21,7 @@ import java.util.Map;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
@@ -37,21 +38,19 @@ import org.glowroot.common.Marshaling2;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ConfigService.OptimisticLockException;
+import org.glowroot.config.GeneralConfig;
 import org.glowroot.config.ImmutableAdvancedConfig;
+import org.glowroot.config.ImmutableGeneralConfig;
 import org.glowroot.config.ImmutablePluginConfig;
-import org.glowroot.config.ImmutableProfilingConfig;
 import org.glowroot.config.ImmutableStorageConfig;
-import org.glowroot.config.ImmutableTraceConfig;
 import org.glowroot.config.ImmutableUserInterfaceConfig;
 import org.glowroot.config.ImmutableUserRecordingConfig;
 import org.glowroot.config.MarshalingRoutines;
 import org.glowroot.config.PluginConfig;
 import org.glowroot.config.PluginDescriptor;
-import org.glowroot.config.ProfilingConfig;
 import org.glowroot.config.PropertyDescriptor;
 import org.glowroot.config.PropertyValue;
 import org.glowroot.config.StorageConfig;
-import org.glowroot.config.TraceConfig;
 import org.glowroot.config.UserInterfaceConfig;
 import org.glowroot.config.UserRecordingConfig;
 import org.glowroot.local.store.CappedDatabase;
@@ -93,19 +92,11 @@ class ConfigJsonService {
         this.httpServer = httpServer;
     }
 
-    @GET("/backend/config/trace")
-    String getTraceConfig() throws Exception {
-        TraceConfig config = configService.getTraceConfig();
-        return Marshaling2.toJson(ImmutableTraceConfigResponse.builder()
-                .config(TraceConfigDto.fromConfig(config))
-                .build());
-    }
-
-    @GET("/backend/config/profiling")
-    String getProfilingConfig() throws Exception {
-        ProfilingConfig config = configService.getProfilingConfig();
-        return Marshaling2.toJson(ImmutableProfilingConfigResponse.builder()
-                .config(ProfilingConfigDto.fromConfig(config))
+    @GET("/backend/config/general")
+    String getGeneralConfig() throws Exception {
+        GeneralConfig config = configService.getGeneralConfig();
+        return Marshaling2.toJson(ImmutableGeneralConfigResponse.builder()
+                .config(GeneralConfigDto.fromConfig(config))
                 .build());
     }
 
@@ -126,11 +117,26 @@ class ConfigJsonService {
                 .build());
     }
 
-    @GET("/backend/config/user-interface")
+    @GET("/backend/config/ui")
     String getUserInterface() throws Exception {
         // this code cannot be reached when httpServer is null
         checkNotNull(httpServer);
         return getUserInterface(false);
+    }
+
+    @GET("/backend/config/plugins")
+    String getPlugins() throws Exception {
+        List<PluginResponse> pluginResponses = Lists.newArrayList();
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
+            PluginConfig pluginConfig = configService.getPluginConfig(pluginDescriptor.id());
+            checkNotNull(pluginConfig);
+            pluginResponses.add(ImmutablePluginResponse.builder()
+                    .id(pluginDescriptor.id())
+                    .name(pluginDescriptor.name())
+                    .enabled(pluginConfig.enabled())
+                    .build());
+        }
+        return Marshaling2.toJson(pluginResponses, PluginResponse.class);
     }
 
     @GET("/backend/config/advanced")
@@ -162,26 +168,15 @@ class ConfigJsonService {
                 .build());
     }
 
-    @POST("/backend/config/trace")
-    String updateTraceConfig(String content) throws Exception {
-        TraceConfigDto configDto = Marshaling.fromJson(content, TraceConfigDto.class);
+    @POST("/backend/config/general")
+    String updateGeneralConfig(String content) throws Exception {
+        GeneralConfigDto configDto = Marshaling.fromJson(content, GeneralConfigDto.class);
         try {
-            configService.updateTraceConfig(configDto.toConfig(), configDto.version());
+            configService.updateGeneralConfig(configDto.toConfig(), configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getTraceConfig();
-    }
-
-    @POST("/backend/config/profiling")
-    String updateProfilingConfig(String content) throws Exception {
-        ProfilingConfigDto configDto = Marshaling.fromJson(content, ProfilingConfigDto.class);
-        try {
-            configService.updateProfilingConfig(configDto.toConfig(), configDto.version());
-        } catch (OptimisticLockException e) {
-            throw new JsonServiceException(PRECONDITION_FAILED, e);
-        }
-        return getProfilingConfig();
+        return getGeneralConfig();
     }
 
     @POST("/backend/config/user-recording")
@@ -209,7 +204,7 @@ class ConfigJsonService {
         return getStorage();
     }
 
-    @POST("/backend/config/user-interface")
+    @POST("/backend/config/ui")
     Object updateUserInterfaceConfig(String content) throws Exception {
         // this code cannot be reached when httpServer is null
         checkNotNull(httpServer);
@@ -217,7 +212,6 @@ class ConfigJsonService {
                 Marshaling.fromJson(content, UserInterfaceConfigDto.class);
         UserInterfaceConfig priorConfig = configService.getUserInterfaceConfig();
         ImmutableUserInterfaceConfig.Builder builder = ImmutableUserInterfaceConfig.builder()
-                .defaultTransactionType(configDto.defaultTransactionType())
                 .port(configDto.port())
                 .sessionTimeoutMinutes(configDto.sessionTimeoutMinutes());
         if (configDto.currentPassword().length() > 0 || configDto.newPassword().length() > 0) {
@@ -296,7 +290,6 @@ class ConfigJsonService {
     private String getUserInterface(boolean portChangeFailed) {
         UserInterfaceConfig config = configService.getUserInterfaceConfig();
         UserInterfaceConfigDto configDto = ImmutableUserInterfaceConfigDto.builder()
-                .defaultTransactionType(config.defaultTransactionType())
                 .port(config.port())
                 .passwordEnabled(config.passwordEnabled())
                 .sessionTimeoutMinutes(config.sessionTimeoutMinutes())
@@ -356,14 +349,8 @@ class ConfigJsonService {
 
     @Value.Immutable
     @Json.Marshaled
-    abstract static class TraceConfigResponse {
-        abstract TraceConfigDto config();
-    }
-
-    @Value.Immutable
-    @Json.Marshaled
-    abstract static class ProfilingConfigResponse {
-        abstract ProfilingConfigDto config();
+    abstract static class GeneralConfigResponse {
+        abstract GeneralConfigDto config();
     }
 
     @Value.Immutable
@@ -389,9 +376,10 @@ class ConfigJsonService {
 
     @Value.Immutable
     @Json.Marshaled
-    abstract static class AdvancedConfigResponse {
-        abstract AdvancedConfigDto config();
-        abstract boolean metricWrapperMethodsActive();
+    abstract static class PluginResponse {
+        abstract String id();
+        abstract String name();
+        abstract boolean enabled();
     }
 
     @Value.Immutable
@@ -403,53 +391,42 @@ class ConfigJsonService {
         abstract List<PropertyDescriptor> propertyDescriptors();
     }
 
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class AdvancedConfigResponse {
+        abstract AdvancedConfigDto config();
+        abstract boolean metricWrapperMethodsActive();
+    }
+
     // these DTOs are only different from underlying config objects in that they contain the version
     // attribute, and that they have no default attribute values
 
     @Value.Immutable
     @Json.Marshaled
-    abstract static class TraceConfigDto {
+    abstract static class GeneralConfigDto {
 
         abstract boolean enabled();
-        abstract int storeThresholdMillis();
+        abstract int traceStoreThresholdMillis();
+        abstract int profilingIntervalMillis();
+        abstract String defaultTransactionType();
         abstract String version();
 
-        private static TraceConfigDto fromConfig(TraceConfig config) {
-            return ImmutableTraceConfigDto.builder()
+        private static GeneralConfigDto fromConfig(GeneralConfig config) {
+            return ImmutableGeneralConfigDto.builder()
                     .enabled(config.enabled())
-                    .storeThresholdMillis(config.storeThresholdMillis())
+                    .traceStoreThresholdMillis(config.traceStoreThresholdMillis())
+                    .profilingIntervalMillis(config.profilingIntervalMillis())
+                    .defaultTransactionType(config.defaultTransactionType())
                     .version(config.version())
                     .build();
         }
 
-        private TraceConfig toConfig() {
-            return ImmutableTraceConfig.builder()
+        private GeneralConfig toConfig() {
+            return ImmutableGeneralConfig.builder()
                     .enabled(enabled())
-                    .storeThresholdMillis(storeThresholdMillis())
-                    .build();
-        }
-    }
-
-    @Value.Immutable
-    @Json.Marshaled
-    abstract static class ProfilingConfigDto {
-
-        abstract boolean enabled();
-        abstract int intervalMillis();
-        abstract String version();
-
-        private static ProfilingConfigDto fromConfig(ProfilingConfig config) {
-            return ImmutableProfilingConfigDto.builder()
-                    .enabled(config.enabled())
-                    .intervalMillis(config.intervalMillis())
-                    .version(config.version())
-                    .build();
-        }
-
-        private ProfilingConfig toConfig() {
-            return ImmutableProfilingConfig.builder()
-                    .enabled(enabled())
-                    .intervalMillis(intervalMillis())
+                    .traceStoreThresholdMillis(traceStoreThresholdMillis())
+                    .profilingIntervalMillis(profilingIntervalMillis())
+                    .defaultTransactionType(defaultTransactionType())
                     .build();
         }
     }
@@ -512,7 +489,6 @@ class ConfigJsonService {
     @Json.Marshaled
     abstract static class UserInterfaceConfigDto {
 
-        abstract String defaultTransactionType();
         abstract int port();
         abstract boolean passwordEnabled();
         // only used for requests

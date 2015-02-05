@@ -67,15 +67,15 @@ class ConfigFile {
 
     private Config readValue(String content) throws IOException {
         Config config = Marshaling.fromJson(content, Config.class);
-        UserInterfaceConfig userInterfaceConfig = config.userInterfaceConfig();
-        if (userInterfaceConfig.defaultTransactionType().isEmpty()) {
-            userInterfaceConfig = ((ImmutableUserInterfaceConfig) userInterfaceConfig)
-                    .withDefaultTransactionType(getDefaultTransactionType(config.capturePoints()));
-            config = ((ImmutableConfig) config).withUserInterfaceConfig(userInterfaceConfig);
+        GeneralConfig generalConfig = config.generalConfig();
+        if (generalConfig.defaultTransactionType().isEmpty()) {
+            generalConfig = ((ImmutableGeneralConfig) generalConfig).withDefaultTransactionType(
+                    getDefaultTransactionType(config.instrumentationConfigs()));
+            config = ((ImmutableConfig) config).withGeneralConfig(generalConfig);
         }
         if (!mapper.readTree(content).has("gauges")) {
-            List<Gauge> defaultGauges = getDefaultGauges();
-            config = ((ImmutableConfig) config).withGauges(defaultGauges);
+            List<GaugeConfig> defaultGauges = getDefaultGaugeConfigs();
+            config = ((ImmutableConfig) config).withGaugeConfigs(defaultGauges);
         }
         Map<String, PluginConfig> filePluginConfigs = Maps.newHashMap();
         for (PluginConfig pluginConfig : config.pluginConfigs()) {
@@ -145,15 +145,15 @@ class ConfigFile {
         return config;
     }
 
-    private String getDefaultTransactionType(List<CapturePoint> capturePoints) {
+    private String getDefaultTransactionType(List<InstrumentationConfig> configs) {
         for (PluginDescriptor descriptor : pluginDescriptors) {
             if (!descriptor.transactionTypes().isEmpty()) {
                 return descriptor.transactionTypes().get(0);
             }
         }
-        for (CapturePoint capturePoint : capturePoints) {
-            if (!capturePoint.transactionType().isEmpty()) {
-                return capturePoint.transactionType();
+        for (InstrumentationConfig config : configs) {
+            if (!config.transactionType().isEmpty()) {
+                return config.transactionType();
             }
         }
         return "";
@@ -172,7 +172,7 @@ class ConfigFile {
     Config getDefaultConfig() {
         return ImmutableConfig.builder()
                 .addAllPluginConfigs(getDefaultPluginConfigs(pluginDescriptors))
-                .addAllGauges(getDefaultGauges())
+                .addAllGaugeConfigs(getDefaultGaugeConfigs())
                 .build();
     }
 
@@ -180,14 +180,14 @@ class ConfigFile {
         Files.write(writeValueAsString(config), file, Charsets.UTF_8);
     }
 
-    private static List<Gauge> getDefaultGauges() {
-        List<Gauge> defaultGauges = Lists.newArrayList();
-        defaultGauges.add(ImmutableGauge.builder()
+    private static List<GaugeConfig> getDefaultGaugeConfigs() {
+        List<GaugeConfig> defaultGaugeConfigs = Lists.newArrayList();
+        defaultGaugeConfigs.add(ImmutableGaugeConfig.builder()
                 .name("java.lang/Memory")
                 .mbeanObjectName("java.lang:type=Memory")
                 .addMbeanAttributeNames("HeapMemoryUsage.used")
                 .build());
-        ImmutableGauge.Builder operatingSystemMBean = ImmutableGauge.builder()
+        ImmutableGaugeConfig.Builder operatingSystemMBean = ImmutableGaugeConfig.builder()
                 .name("java.lang/OperatingSystem")
                 .mbeanObjectName("java.lang:type=OperatingSystem")
                 .addMbeanAttributeNames("FreePhysicalMemorySize");
@@ -196,8 +196,8 @@ class ConfigFile {
             operatingSystemMBean.addMbeanAttributeNames("ProcessCpuLoad");
             operatingSystemMBean.addMbeanAttributeNames("SystemCpuLoad");
         }
-        defaultGauges.add(operatingSystemMBean.build());
-        return defaultGauges;
+        defaultGaugeConfigs.add(operatingSystemMBean.build());
+        return defaultGaugeConfigs;
     }
 
     private static String writeValueAsString(Config config) throws IOException {

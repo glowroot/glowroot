@@ -16,17 +16,17 @@
 
 /* global glowroot */
 
-glowroot.controller('ConfigGaugeListCtrl', [
+glowroot.controller('ConfigPluginListCtrl', [
   '$scope',
   '$location',
   '$http',
   'httpErrors',
   function ($scope, $location, $http, httpErrors) {
 
-    $http.get('backend/config/gauges')
+    $http.get('backend/config/plugins')
         .success(function (data) {
           $scope.loaded = true;
-          $scope.gauges = data;
+          $scope.plugins = data;
         })
         .error(httpErrors.handler($scope));
   }

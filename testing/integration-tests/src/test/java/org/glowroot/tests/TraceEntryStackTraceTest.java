@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
+import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.config.PluginConfig;
-import org.glowroot.container.config.TraceConfig;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 
@@ -57,8 +57,8 @@ public class TraceEntryStackTraceTest {
     @Test
     public void shouldReadTraceEntryStackTrace() throws Exception {
         // given
-        TraceConfig traceConfig = container.getConfigService().getTraceConfig();
-        container.getConfigService().updateTraceConfig(traceConfig);
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+        container.getConfigService().updateGeneralConfig(generalConfig);
         PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("captureTraceEntryStackTraces", true);
         container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);

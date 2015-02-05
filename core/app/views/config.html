@@ -22,34 +22,23 @@
   <div class="panel panel-default">
     <ul class="list-group">
       <div gt-sidebar-item
-           gt-display="Traces"
-           gt-url="config/traces">
+           gt-display="General"
+           gt-url="config/general">
       </div>
       <div gt-sidebar-item
-           gt-display="Profiling"
-           gt-url="config/profiling">
-      </div>
-      <div gt-sidebar-item
-           gt-display="User recording"
-           gt-url="config/user-recording">
-      </div>
-      <div gt-sidebar-item
-           gt-display="Capture points"
-           gt-url="config/capture-point-list"
-           gt-active="isCapturePoint()">
+           gt-display="Instrumentation"
+           gt-url="config/instrumentation-list"
+           gt-active="isInstrumentation()">
       </div>
       <div gt-sidebar-item
            gt-display="Gauges"
            gt-url="config/gauge-list"
-           gt-active="isGauge()">
+           gt-active="isGauges()">
       </div>
       <div gt-sidebar-item
-           gt-display="Storage"
-           gt-url="config/storage">
-      </div>
-      <div gt-sidebar-item
-           gt-display="User interface"
-           gt-url="config/user-interface">
+           gt-display="Plugins"
+           gt-url="config/plugin-list"
+           gt-active="isPlugins()">
       </div>
       <div gt-sidebar-item
            gt-display="Advanced"
@@ -59,13 +48,13 @@
   </div>
   <div class="panel panel-default">
     <ul class="list-group">
-      <li class="list-group-item gt-plugin-sidebar-name">
-        Plugins
-      </li>
-      <div ng-repeat="plugin in layout.plugins"
-           gt-sidebar-item
-           gt-display="{{plugin.name}}"
-           gt-url="config/plugin/{{plugin.id}}">
+      <div gt-sidebar-item
+           gt-display="Glowroot UI"
+           gt-url="config/ui">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Storage"
+           gt-url="config/storage">
       </div>
     </ul>
   </div>

@@ -26,7 +26,7 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.Threads;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.config.ProfilingConfig;
+import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.config.UserRecordingConfig;
 import org.glowroot.container.trace.ProfileNode;
 import org.glowroot.container.trace.Trace;
@@ -59,9 +59,9 @@ public class ProfilingTest {
     @Test
     public void shouldReadProfile() throws Exception {
         // given
-        ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
-        profilingConfig.setIntervalMillis(20);
-        container.getConfigService().updateProfilingConfig(profilingConfig);
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+        generalConfig.setProfilingIntervalMillis(20);
+        container.getConfigService().updateGeneralConfig(generalConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
         // then
@@ -75,10 +75,9 @@ public class ProfilingTest {
     @Test
     public void shouldNotReadProfile() throws Exception {
         // given
-        ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
-        profilingConfig.setIntervalMillis(20);
-        profilingConfig.setEnabled(false);
-        container.getConfigService().updateProfilingConfig(profilingConfig);
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+        generalConfig.setProfilingIntervalMillis(0);
+        container.getConfigService().updateGeneralConfig(generalConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
         // then
@@ -95,9 +94,9 @@ public class ProfilingTest {
         userRecordingConfig.setUser("able");
         userRecordingConfig.setProfileIntervalMillis(20);
         container.getConfigService().updateUserRecordingConfig(userRecordingConfig);
-        ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
-        profilingConfig.setEnabled(false);
-        container.getConfigService().updateProfilingConfig(profilingConfig);
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+        generalConfig.setProfilingIntervalMillis(0);
+        container.getConfigService().updateGeneralConfig(generalConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithProfileForAble.class);
         // then
@@ -117,9 +116,9 @@ public class ProfilingTest {
         userRecordingConfig.setUser("baker");
         userRecordingConfig.setProfileIntervalMillis(20);
         container.getConfigService().updateUserRecordingConfig(userRecordingConfig);
-        ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
-        profilingConfig.setEnabled(false);
-        container.getConfigService().updateProfilingConfig(profilingConfig);
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+        generalConfig.setProfilingIntervalMillis(0);
+        container.getConfigService().updateGeneralConfig(generalConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithProfileForAble.class);
         // then

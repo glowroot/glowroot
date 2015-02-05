@@ -101,7 +101,7 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
       if ($scope.changePassword.verifyNewPassword !== $scope.changePassword.newPassword) {
         deferred.reject('Passwords do not match');
       }
-      $http.post('backend/config/user-interface', postData)
+      $http.post('backend/config/ui', postData)
           .success(function (data) {
             if (data.currentPasswordIncorrect) {
               deferred.reject('Current password is incorrect');
@@ -136,7 +136,7 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/user-interface')
+    $http.get('backend/config/ui')
         .success(onNewData)
         .error(httpErrors.handler($scope));
   }

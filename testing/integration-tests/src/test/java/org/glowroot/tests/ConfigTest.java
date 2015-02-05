@@ -30,13 +30,12 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.Container;
 import org.glowroot.container.config.AdvancedConfig;
-import org.glowroot.container.config.CapturePoint;
-import org.glowroot.container.config.CapturePoint.CaptureKind;
-import org.glowroot.container.config.Gauge;
+import org.glowroot.container.config.GaugeConfig;
+import org.glowroot.container.config.GeneralConfig;
+import org.glowroot.container.config.InstrumentationConfig;
+import org.glowroot.container.config.InstrumentationConfig.CaptureKind;
 import org.glowroot.container.config.PluginConfig;
-import org.glowroot.container.config.ProfilingConfig;
 import org.glowroot.container.config.StorageConfig;
-import org.glowroot.container.config.TraceConfig;
 import org.glowroot.container.config.UserInterfaceConfig;
 import org.glowroot.container.config.UserRecordingConfig;
 
@@ -64,26 +63,14 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldUpdateTraceConfig() throws Exception {
+    public void shouldUpdateGeneralConfig() throws Exception {
         // given
-        TraceConfig config = container.getConfigService().getTraceConfig();
+        GeneralConfig config = container.getConfigService().getGeneralConfig();
         // when
         updateAllFields(config);
-        container.getConfigService().updateTraceConfig(config);
+        container.getConfigService().updateGeneralConfig(config);
         // then
-        TraceConfig updatedConfig = container.getConfigService().getTraceConfig();
-        assertThat(updatedConfig).isEqualTo(config);
-    }
-
-    @Test
-    public void shouldUpdateProfilingConfig() throws Exception {
-        // given
-        ProfilingConfig config = container.getConfigService().getProfilingConfig();
-        // when
-        updateAllFields(config);
-        container.getConfigService().updateProfilingConfig(config);
-        // then
-        ProfilingConfig updatedConfig = container.getConfigService().getProfilingConfig();
+        GeneralConfig updatedConfig = container.getConfigService().getGeneralConfig();
         assertThat(updatedConfig).isEqualTo(config);
     }
 
@@ -180,52 +167,56 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldInsertCapturePoint() throws Exception {
+    public void shouldInsertInstrumentationConfig() throws Exception {
         // given
-        CapturePoint config = createCapturePoint();
+        InstrumentationConfig config = createInstrumentationConfig();
         // when
-        container.getConfigService().addCapturePoint(config);
+        container.getConfigService().addInstrumentationConfig(config);
         // then
-        List<CapturePoint> configs = container.getConfigService().getCapturePoints();
+        List<InstrumentationConfig> configs =
+                container.getConfigService().getInstrumentationConfigs();
         assertThat(configs).hasSize(1);
         assertThat(configs.get(0)).isEqualTo(config);
     }
 
     @Test
-    public void shouldUpdateCapturePoint() throws Exception {
+    public void shouldUpdateInstrumentationConfig() throws Exception {
         // given
-        CapturePoint config = createCapturePoint();
-        config = container.getConfigService().addCapturePoint(config);
+        InstrumentationConfig config = createInstrumentationConfig();
+        config = container.getConfigService().addInstrumentationConfig(config);
         // when
         updateAllFields(config);
-        container.getConfigService().updateCapturePoint(config);
+        container.getConfigService().updateInstrumentationConfig(config);
         // then
-        List<CapturePoint> configs = container.getConfigService().getCapturePoints();
+        List<InstrumentationConfig> configs =
+                container.getConfigService().getInstrumentationConfigs();
         assertThat(configs).hasSize(1);
         assertThat(configs.get(0)).isEqualTo(config);
     }
 
     @Test
-    public void shouldDeleteCapturePoint() throws Exception {
+    public void shouldDeleteInstrumentationConfig() throws Exception {
         // given
-        CapturePoint config = createCapturePoint();
-        config = container.getConfigService().addCapturePoint(config);
+        InstrumentationConfig config = createInstrumentationConfig();
+        config = container.getConfigService().addInstrumentationConfig(config);
         // when
-        container.getConfigService().removeCapturePoint(config.getVersion());
+        container.getConfigService().removeInstrumentationConfig(config.getVersion());
         // then
-        List<CapturePoint> configs = container.getConfigService().getCapturePoints();
+        List<InstrumentationConfig> configs =
+                container.getConfigService().getInstrumentationConfigs();
         assertThat(configs).isEmpty();
     }
 
     @Test
     public void shouldInsertMBeanGauge() throws Exception {
         // given
-        List<? extends Gauge> originalConfigs = container.getConfigService().getGauges();
-        Gauge config = createMBeanGauge();
+        List<? extends GaugeConfig> originalConfigs =
+                container.getConfigService().getGaugeConfigs();
+        GaugeConfig config = createMBeanGauge();
         // when
-        container.getConfigService().addGauge(config);
+        container.getConfigService().addGaugeConfig(config);
         // then
-        List<Gauge> configs = container.getConfigService().getGauges();
+        List<GaugeConfig> configs = container.getConfigService().getGaugeConfigs();
         assertThat(configs).hasSize(originalConfigs.size() + 1);
         assertThat(configs.get(configs.size() - 1)).isEqualTo(config);
     }
@@ -233,14 +224,15 @@ public class ConfigTest {
     @Test
     public void shouldUpdateMBeanGauge() throws Exception {
         // given
-        List<? extends Gauge> originalConfigs = container.getConfigService().getGauges();
-        Gauge config = createMBeanGauge();
-        config = container.getConfigService().addGauge(config);
+        List<? extends GaugeConfig> originalConfigs =
+                container.getConfigService().getGaugeConfigs();
+        GaugeConfig config = createMBeanGauge();
+        config = container.getConfigService().addGaugeConfig(config);
         // when
         updateAllFields(config);
-        container.getConfigService().updateGauge(config);
+        container.getConfigService().updateGaugeConfig(config);
         // then
-        List<Gauge> configs = container.getConfigService().getGauges();
+        List<GaugeConfig> configs = container.getConfigService().getGaugeConfigs();
         assertThat(configs).hasSize(originalConfigs.size() + 1);
         assertThat(configs.get(configs.size() - 1)).isEqualTo(config);
     }
@@ -248,13 +240,14 @@ public class ConfigTest {
     @Test
     public void shouldDeleteMBeanGauge() throws Exception {
         // given
-        List<? extends Gauge> originalConfigs = container.getConfigService().getGauges();
-        Gauge config = createMBeanGauge();
-        config = container.getConfigService().addGauge(config);
+        List<? extends GaugeConfig> originalConfigs =
+                container.getConfigService().getGaugeConfigs();
+        GaugeConfig config = createMBeanGauge();
+        config = container.getConfigService().addGaugeConfig(config);
         // when
-        container.getConfigService().removeGauge(config.getVersion());
+        container.getConfigService().removeGaugeConfig(config.getVersion());
         // then
-        List<? extends Gauge> configs = container.getConfigService().getGauges();
+        List<? extends GaugeConfig> configs = container.getConfigService().getGaugeConfigs();
         assertThat(configs).isEqualTo(originalConfigs);
     }
 
@@ -282,14 +275,11 @@ public class ConfigTest {
         assertThat(updatedConfig).isEqualTo(config);
     }
 
-    private static void updateAllFields(TraceConfig config) {
+    private static void updateAllFields(GeneralConfig config) {
         config.setEnabled(!config.isEnabled());
-        config.setStoreThresholdMillis(config.getStoreThresholdMillis() + 1);
-    }
-
-    private static void updateAllFields(ProfilingConfig config) {
-        config.setEnabled(!config.isEnabled());
-        config.setIntervalMillis(config.getIntervalMillis() + 1);
+        config.setTraceStoreThresholdMillis(config.getTraceStoreThresholdMillis() + 1);
+        config.setProfilingIntervalMillis(config.getProfilingIntervalMillis() + 1);
+        config.setDefaultTransactionType(config.getDefaultTransactionType() + "a");
     }
 
     private static void updateAllFields(UserRecordingConfig config) {
@@ -306,7 +296,6 @@ public class ConfigTest {
 
     private static void updateAllFields(UserInterfaceConfig config) {
         // changing the port and password are tested elsewhere
-        config.setDefaultTransactionType(config.getDefaultTransactionType() + "a");
         config.setSessionTimeoutMinutes(config.getSessionTimeoutMinutes() + 1);
     }
 
@@ -336,8 +325,8 @@ public class ConfigTest {
         config.setProperty("captureTraceEntryStackTraces", !captureTraceEntryStackTraces);
     }
 
-    private static CapturePoint createCapturePoint() {
-        CapturePoint config = new CapturePoint();
+    private static InstrumentationConfig createInstrumentationConfig() {
+        InstrumentationConfig config = new InstrumentationConfig();
         config.setClassName("java.util.Collections");
         config.setMethodName("yak");
         config.setMethodParameterTypes(Lists.newArrayList("java.lang.String", "java.util.List"));
@@ -353,7 +342,7 @@ public class ConfigTest {
         return config;
     }
 
-    private static void updateAllFields(CapturePoint config) {
+    private static void updateAllFields(InstrumentationConfig config) {
         config.setClassName(config.getClassName() + "a");
         config.setMethodName(config.getMethodName() + "b");
         if (config.getMethodParameterTypes().size() == 0) {
@@ -394,8 +383,8 @@ public class ConfigTest {
         config.setTraceEntryEnabledProperty(config.getTraceEntryEnabledProperty() + "l");
     }
 
-    private static Gauge createMBeanGauge() {
-        Gauge config = new Gauge();
+    private static GaugeConfig createMBeanGauge() {
+        GaugeConfig config = new GaugeConfig();
         config.setName("test");
         config.setMBeanObjectName("java.lang:type=ClassLoading");
         config.setMBeanAttributeNames(Lists.newArrayList("LoadedClassCount",
@@ -403,7 +392,7 @@ public class ConfigTest {
         return config;
     }
 
-    private static void updateAllFields(Gauge config) {
+    private static void updateAllFields(GaugeConfig config) {
         config.setName(config.getName() + "a");
         config.setMBeanObjectName("java.lang:type=Compilation");
         config.setMBeanAttributeNames(Lists.newArrayList("TotalCompilationTime"));

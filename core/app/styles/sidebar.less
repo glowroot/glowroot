@@ -74,26 +74,34 @@
 @media screen and (min-width: @screen-md-min) {
   .gt-sidebar {
     display: inline-block;
-    width: 200px;
     vertical-align: top;
   }
 
   .gt-main-column {
     display: inline-block;
-    width: 720px;
     // this makes total 20px gap between sidebar and main
     margin-left: 16px;
   }
 }
 
+@media screen and (min-width: @screen-md-min) {
+  .gt-sidebar {
+    width: 220px;
+  }
+
+  .gt-main-column {
+    width: 700px;
+  }
+}
+
 @media screen and (min-width: @screen-lg-min) {
   .gt-main-column {
-    width: 920px;
+    width: 900px;
   }
 }
 
 @media screen and (min-width: 1400px) {
   .gt-main-column {
-    width: 1120px;
+    width: 1100px;
   }
 }

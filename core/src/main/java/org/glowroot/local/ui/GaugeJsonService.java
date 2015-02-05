@@ -45,8 +45,8 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.Marshaling2;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ConfigService.DuplicateMBeanObjectNameException;
-import org.glowroot.config.Gauge;
-import org.glowroot.config.ImmutableGauge;
+import org.glowroot.config.GaugeConfig;
+import org.glowroot.config.ImmutableGaugeConfig;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -68,25 +68,25 @@ class GaugeJsonService {
     }
 
     @GET("/backend/config/gauges")
-    String getGaugeList() {
-        List<GaugeWithWarningMessages> responses = Lists.newArrayList();
-        List<Gauge> gauges = configService.getGauges();
-        gauges = Gauge.orderingByName.immutableSortedCopy(gauges);
-        for (Gauge gauge : gauges) {
-            responses.add(ImmutableGaugeWithWarningMessages.builder()
-                    .config(GaugeDto.fromConfig(gauge))
+    String getGaugeConfigs() {
+        List<GaugeConfigWithWarningMessages> responses = Lists.newArrayList();
+        List<GaugeConfig> gaugeConfigs = configService.getGaugeConfigs();
+        gaugeConfigs = GaugeConfig.orderingByName.immutableSortedCopy(gaugeConfigs);
+        for (GaugeConfig gaugeConfig : gaugeConfigs) {
+            responses.add(ImmutableGaugeConfigWithWarningMessages.builder()
+                    .config(GaugeConfigDto.fromConfig(gaugeConfig))
                     .build());
         }
-        return Marshaling2.toJson(responses, GaugeWithWarningMessages.class);
+        return Marshaling2.toJson(responses, GaugeConfigWithWarningMessages.class);
     }
 
     @GET("/backend/config/gauges/([0-9a-f]{40})")
-    String getGauge(String version) {
-        Gauge gauge = configService.getGauge(version);
-        if (gauge == null) {
+    String getGaugeConfig(String version) {
+        GaugeConfig gaugeConfig = configService.getGaugeConfig(version);
+        if (gaugeConfig == null) {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
         }
-        return Marshaling2.toJson(buildResponse(gauge));
+        return Marshaling2.toJson(buildResponse(gaugeConfig));
     }
 
     @GET("/backend/config/matching-mbean-objects")
@@ -113,9 +113,9 @@ class GaugeJsonService {
                 QueryStrings.decode(queryString, MBeanAttributeNamesRequest.class);
         ImmutableMBeanAttributeNamesResponse.Builder builder =
                 ImmutableMBeanAttributeNamesResponse.builder();
-        for (Gauge gauge : configService.getGauges()) {
-            if (gauge.mbeanObjectName().equals(request.mbeanObjectName())
-                    && !gauge.version().equals(request.gaugeVersion())) {
+        for (GaugeConfig gaugeConfig : configService.getGaugeConfigs()) {
+            if (gaugeConfig.mbeanObjectName().equals(request.mbeanObjectName())
+                    && !gaugeConfig.version().equals(request.gaugeVersion())) {
                 builder.duplicateMBean(true);
                 break;
             }
@@ -134,45 +134,45 @@ class GaugeJsonService {
 
     @POST("/backend/config/gauges/add")
     String addGauge(String content) throws Exception {
-        GaugeDto gaugeDto = Marshaling.fromJson(content, GaugeDto.class);
-        Gauge gauge = gaugeDto.toConfig();
+        GaugeConfigDto gaugeConfigDto = Marshaling.fromJson(content, GaugeConfigDto.class);
+        GaugeConfig gaugeConfig = gaugeConfigDto.toConfig();
         try {
-            configService.insertGauge(gauge);
+            configService.insertGaugeConfig(gaugeConfig);
         } catch (DuplicateMBeanObjectNameException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
             throw new JsonServiceException(CONFLICT, "mbeanObjectName");
         }
-        return Marshaling2.toJson(buildResponse(gauge));
+        return Marshaling2.toJson(buildResponse(gaugeConfig));
     }
 
     @POST("/backend/config/gauges/update")
     String updateGauge(String content) throws IOException {
-        GaugeDto gaugeDto = Marshaling.fromJson(content, GaugeDto.class);
-        Gauge gauge = gaugeDto.toConfig();
-        String version = gaugeDto.version();
+        GaugeConfigDto gaugeConfigDto = Marshaling.fromJson(content, GaugeConfigDto.class);
+        GaugeConfig gaugeConfig = gaugeConfigDto.toConfig();
+        String version = gaugeConfigDto.version();
         checkNotNull(version, "Missing required request property: version");
-        configService.updateGauge(gauge, version);
-        return Marshaling2.toJson(buildResponse(gauge));
+        configService.updateGaugeConfig(gaugeConfig, version);
+        return Marshaling2.toJson(buildResponse(gaugeConfig));
     }
 
     @POST("/backend/config/gauges/remove")
     void removeGauge(String content) throws IOException {
         String version = mapper.readValue(content, String.class);
         checkNotNull(version);
-        configService.deleteGauge(version);
+        configService.deleteGaugeConfig(version);
     }
 
-    private GaugeResponse buildResponse(Gauge gauge) {
+    private GaugeResponse buildResponse(GaugeConfig gaugeConfig) {
         MBeanInfo mbeanInfo = null;
         try {
-            mbeanInfo = getMBeanInfo(gauge.mbeanObjectName());
+            mbeanInfo = getMBeanInfo(gaugeConfig.mbeanObjectName());
         } catch (Exception e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
         }
         ImmutableGaugeResponse.Builder builder = ImmutableGaugeResponse.builder()
-                .config(GaugeDto.fromConfig(gauge));
+                .config(GaugeConfigDto.fromConfig(gaugeConfig));
         if (mbeanInfo == null) {
             builder.mbeanUnavailable(true);
         } else {
@@ -251,8 +251,8 @@ class GaugeJsonService {
 
     @Value.Immutable
     @Json.Marshaled
-    abstract static class GaugeWithWarningMessages {
-        abstract GaugeDto config();
+    abstract static class GaugeConfigWithWarningMessages {
+        abstract GaugeConfigDto config();
         abstract List<String> warningMessages();
     }
 
@@ -287,7 +287,7 @@ class GaugeJsonService {
     @Value.Immutable
     @Json.Marshaled
     abstract static class GaugeResponse {
-        abstract GaugeDto config();
+        abstract GaugeConfigDto config();
         @Value.Default
         boolean mbeanUnavailable() {
             return false;
@@ -297,24 +297,24 @@ class GaugeJsonService {
 
     @Value.Immutable
     @Json.Marshaled
-    abstract static class GaugeDto {
+    abstract static class GaugeConfigDto {
 
         abstract String name();
         abstract String mbeanObjectName();
         abstract List<String> mbeanAttributeNames();
         abstract @Nullable String version(); // null for insert operations
 
-        private static GaugeDto fromConfig(Gauge gauge) {
-            return ImmutableGaugeDto.builder()
-                    .name(gauge.name())
-                    .mbeanObjectName(gauge.mbeanObjectName())
-                    .addAllMbeanAttributeNames(gauge.mbeanAttributeNames())
-                    .version(gauge.version())
+        private static GaugeConfigDto fromConfig(GaugeConfig gaugeConfig) {
+            return ImmutableGaugeConfigDto.builder()
+                    .name(gaugeConfig.name())
+                    .mbeanObjectName(gaugeConfig.mbeanObjectName())
+                    .addAllMbeanAttributeNames(gaugeConfig.mbeanAttributeNames())
+                    .version(gaugeConfig.version())
                     .build();
         }
 
-        private Gauge toConfig() {
-            return ImmutableGauge.builder()
+        private GaugeConfig toConfig() {
+            return ImmutableGaugeConfig.builder()
                     .name(name())
                     .mbeanObjectName(mbeanObjectName())
                     .addAllMbeanAttributeNames(mbeanAttributeNames())

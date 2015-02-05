@@ -26,11 +26,11 @@ import org.glowroot.tests.webdriver.Utils;
 
 import static org.openqa.selenium.By.xpath;
 
-public class GaugePage {
+public class GaugeConfigPage {
 
     private final WebDriver driver;
 
-    public GaugePage(WebDriver driver) {
+    public GaugeConfigPage(WebDriver driver) {
         this.driver = driver;
     }
 

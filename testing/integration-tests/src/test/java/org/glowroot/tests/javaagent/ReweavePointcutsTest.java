@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
-import org.glowroot.tests.CapturePointTest;
+import org.glowroot.tests.ConfiguredInstrumentationTest;
 
-public class ReweavePointcutsTest extends CapturePointTest {
+public class ReweavePointcutsTest extends ConfiguredInstrumentationTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -33,18 +33,18 @@ public class ReweavePointcutsTest extends CapturePointTest {
         container.executeAppUnderTest(ShouldExecuteWithReturn.class);
         container.executeAppUnderTest(ShouldExecuteWithArgs.class);
 
-        addCapturePointForExecute1();
-        addCapturePointForExecute1MetricOnly();
-        addCapturePointForExecuteWithReturn();
-        addCapturePointForExecuteWithArgs();
-        container.getConfigService().reweavePointcuts();
+        addInstrumentationForExecute1();
+        addInstrumentationForExecute1MetricOnly();
+        addInstrumentationForExecuteWithReturn();
+        addInstrumentationForExecuteWithArgs();
+        container.getConfigService().reweave();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         // afterEachTest() will remove the pointcut configs, but still need to reweave here
         // in order to get back to square one
-        container.getConfigService().reweavePointcuts();
+        container.getConfigService().reweave();
         container.close();
     }
 

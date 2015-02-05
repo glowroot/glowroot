@@ -31,12 +31,11 @@ import com.google.common.io.CharStreams;
 
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.common.Marshaling2;
-import org.glowroot.config.CapturePoint;
+import org.glowroot.config.InstrumentationConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.OptionalService;
-import org.glowroot.local.ui.Layout.LayoutPlugin;
 
 @JsonService
 class LayoutJsonService {
@@ -116,29 +115,18 @@ class LayoutJsonService {
             List<PluginDescriptor> pluginDescriptors, @Nullable HeapDumps heapDumps,
             long fixedAggregateIntervalSeconds, long fixedAggregateRollupSeconds,
             long fixedGaugeIntervalSeconds, long fixedGaugeRollupSeconds) {
-        List<LayoutPlugin> plugins = Lists.newArrayList();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            String id = pluginDescriptor.id();
-            String name = pluginDescriptor.name();
-            // by convention, strip off trailing " Plugin"
-            if (name.endsWith(" Plugin")) {
-                name = name.substring(0, name.lastIndexOf(" Plugin"));
-            }
-            plugins.add(ImmutableLayoutPlugin.builder().id(id).name(name).build());
-        }
         // use linked hash set to maintain ordering in case there is no default transaction type
         Set<String> transactionTypes = Sets.newLinkedHashSet();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             transactionTypes.addAll(pluginDescriptor.transactionTypes());
         }
-        for (CapturePoint capturePoint : configService.getCapturePoints()) {
-            String transactionType = capturePoint.transactionType();
+        for (InstrumentationConfig config : configService.getInstrumentationConfigs()) {
+            String transactionType = config.transactionType();
             if (!transactionType.isEmpty()) {
                 transactionTypes.add(transactionType);
             }
         }
-        String defaultTransactionType = configService.getUserInterfaceConfig()
-                .defaultTransactionType();
+        String defaultTransactionType = configService.getGeneralConfig().defaultTransactionType();
         List<String> orderedTransactionTypes = Lists.newArrayList();
         if (transactionTypes.isEmpty()) {
             defaultTransactionType = "<no transaction types defined>";
@@ -161,7 +149,6 @@ class LayoutJsonService {
                 .jvmHeapDump(heapDumps != null)
                 .footerMessage("version " + version)
                 .passwordEnabled(configService.getUserInterfaceConfig().passwordEnabled())
-                .addAllPlugins(plugins)
                 .addAllTransactionTypes(orderedTransactionTypes)
                 .defaultTransactionType(defaultTransactionType)
                 .addAllTransactionCustomAttributes(transactionCustomAttributes)

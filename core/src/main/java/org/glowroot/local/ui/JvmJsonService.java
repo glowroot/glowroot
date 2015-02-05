@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.GaugePoint;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.Gauge;
+import org.glowroot.config.GaugeConfig;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.ImmutableAvailability;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
@@ -186,9 +186,9 @@ class JvmJsonService {
     @GET("/backend/jvm/all-gauge-names")
     String getAllGaugeNames() throws IOException {
         List<String> gaugeNames = Lists.newArrayList();
-        for (Gauge gauge : configService.getGauges()) {
-            for (String mbeanAttributeName : gauge.mbeanAttributeNames()) {
-                gaugeNames.add(gauge.name() + "/" + mbeanAttributeName);
+        for (GaugeConfig gaugeConfig : configService.getGaugeConfigs()) {
+            for (String mbeanAttributeName : gaugeConfig.mbeanAttributeNames()) {
+                gaugeNames.add(gaugeConfig.name() + "/" + mbeanAttributeName);
             }
         }
         ImmutableList<String> sortedGaugeNames =

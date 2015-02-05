@@ -15,33 +15,33 @@
 -->
 <div class="panel panel-default">
   <div class="panel-heading">
-    <h2>Capture points</h2>
+    <h2>Instrumentation</h2>
   </div>
   <div class="panel-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div style="margin: 15px;">
-      <div ng-repeat="capturePoint in capturePoints"
+      <div ng-repeat="config in configs"
            class="gt-second-line-indent"
-           style="font-size: 16px; padding-bottom: 8px;">
-        <a ng-href="config/capture-point?v={{capturePoint.version}}">
-          {{display(capturePoint)}}
-        </a>
-        <span style="padding-left: 20px;">
-          {{displayExtra(capturePoint)}}
+           style="padding-bottom: 8px;">
+        <span style="padding-right: 20px;">
+          {{displayExtra(config)}}
         </span>
+        <a ng-href="config/instrumentation?v={{config.version}}">
+          {{display(config)}}
+        </a>
       </div>
       <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
            before it gets pushed down by existing gauge sections -->
       <div ng-show="loaded"
            style="font-size: 16px; margin-top: 30px;">
         <div class="clearfix">
-          <button type="button"
-                  class="btn btn-primary pull-left"
-                  ng-click="addNew()"
-                  style="margin-right: 10px;">
+          <a class="btn btn-primary pull-left"
+             href="config/instrumentation?new"
+             style="margin-right: 10px;">
             Add new
-          </button>
+          </a>
+
           <div gt-button
                gt-show="jvmRetransformClassesSupported && dirty"
                gt-btn-class="btn-danger"

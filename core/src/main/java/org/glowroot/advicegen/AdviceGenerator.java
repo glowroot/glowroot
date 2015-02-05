@@ -32,8 +32,8 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.config.CapturePoint;
-import org.glowroot.config.CapturePoint.CaptureKind;
+import org.glowroot.config.InstrumentationConfig;
+import org.glowroot.config.InstrumentationConfig.CaptureKind;
 import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.AdviceBuilder;
 import org.glowroot.weaving.AdviceFlowOuterHolder;
@@ -84,37 +84,37 @@ public class AdviceGenerator {
 
     private static final AtomicInteger counter = new AtomicInteger();
 
-    private final CapturePoint capturePoint;
+    private final InstrumentationConfig config;
     private final @Nullable String pluginId;
     private final String adviceInternalName;
     private final @Nullable String methodMetaInternalName;
 
     public static ImmutableMap<Advice, LazyDefinedClass> createAdvisors(
-            List<CapturePoint> capturePoints, @Nullable String pluginId) {
+            List<InstrumentationConfig> configs, @Nullable String pluginId) {
         Map<Advice, LazyDefinedClass> advisors = Maps.newHashMap();
-        for (CapturePoint capturePoint : capturePoints) {
+        for (InstrumentationConfig config : configs) {
             try {
                 LazyDefinedClass lazyAdviceClass =
-                        new AdviceGenerator(capturePoint, pluginId).generate();
+                        new AdviceGenerator(config, pluginId).generate();
                 boolean reweavable = pluginId == null;
                 Advice advice = new AdviceBuilder(lazyAdviceClass, reweavable).build();
                 advisors.put(advice, lazyAdviceClass);
             } catch (Exception e) {
-                logger.error("error creating advice for advice config: {}", capturePoint, e);
+                logger.error("error creating advice for advice config: {}", config, e);
             }
         }
         return ImmutableMap.copyOf(advisors);
     }
 
-    private AdviceGenerator(CapturePoint capturePoint, @Nullable String pluginId) {
-        this.capturePoint = capturePoint;
+    private AdviceGenerator(InstrumentationConfig config, @Nullable String pluginId) {
+        this.config = config;
         this.pluginId = pluginId;
         int uniqueNum = counter.incrementAndGet();
         adviceInternalName = "org/glowroot/advicegen/GeneratedAdvice" + uniqueNum;
-        if (capturePoint.isTraceEntryOrGreater()
-                || !capturePoint.transactionNameTemplate().isEmpty()
-                || !capturePoint.transactionUserTemplate().isEmpty()
-                || !capturePoint.transactionCustomAttributeTemplates().isEmpty()) {
+        if (config.isTraceEntryOrGreater()
+                || !config.transactionNameTemplate().isEmpty()
+                || !config.transactionUserTemplate().isEmpty()
+                || !config.transactionCustomAttributeTemplates().isEmpty()) {
             // templates are used, so method meta is needed
             methodMetaInternalName = "org/glowroot/advicegen/GeneratedMethodMeta" + uniqueNum;
         } else {
@@ -125,12 +125,12 @@ public class AdviceGenerator {
     private LazyDefinedClass generate() throws Exception {
         LazyDefinedClass methodMetaClass = null;
         if (methodMetaInternalName != null) {
-            methodMetaClass = generateMethodMetaClass(capturePoint);
+            methodMetaClass = generateMethodMetaClass(config);
         }
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
         String[] interfaces = null;
-        if (!capturePoint.enabledProperty().isEmpty()
-                || !capturePoint.traceEntryEnabledProperty().isEmpty()) {
+        if (!config.enabledProperty().isEmpty()
+                || !config.traceEntryEnabledProperty().isEmpty()) {
             interfaces = new String[] {"org/glowroot/api/PluginServices$ConfigListener"};
         }
         cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, adviceInternalName, null, "java/lang/Object",
@@ -139,20 +139,20 @@ public class AdviceGenerator {
         addStaticFields(cw);
         addStaticInitializer(cw);
         addIsEnabledMethod(cw);
-        if (capturePoint.isTraceEntryOrGreater()) {
+        if (config.isTraceEntryOrGreater()) {
             // methodMetaInternalName is non-null when entry or greater
             checkNotNull(methodMetaInternalName);
             addOnBeforeMethod(cw);
             addOnThrowMethod(cw);
             addOnReturnMethod(cw);
-        } else if (capturePoint.captureKind() == CaptureKind.METRIC) {
+        } else if (config.captureKind() == CaptureKind.METRIC) {
             addOnBeforeMethodMetricOnly(cw);
             addOnAfterMethodMetricOnly(cw);
         } else {
             addOnBeforeMethodOther(cw);
         }
-        if (!capturePoint.enabledProperty().isEmpty()
-                || !capturePoint.traceEntryEnabledProperty().isEmpty()) {
+        if (!config.enabledProperty().isEmpty()
+                || !config.traceEntryEnabledProperty().isEmpty()) {
             addConstructor(cw);
             addOnChangeMethod(cw);
         }
@@ -169,23 +169,23 @@ public class AdviceGenerator {
     private void addClassAnnotation(ClassWriter cw) {
         AnnotationVisitor annotationVisitor =
                 cw.visitAnnotation("Lorg/glowroot/api/weaving/Pointcut;", true);
-        annotationVisitor.visit("className", capturePoint.className());
-        annotationVisitor.visit("methodName", capturePoint.methodName());
+        annotationVisitor.visit("className", config.className());
+        annotationVisitor.visit("methodName", config.methodName());
         AnnotationVisitor arrayAnnotationVisitor =
                 annotationVisitor.visitArray("methodParameterTypes");
-        for (String methodParameterType : capturePoint.methodParameterTypes()) {
+        for (String methodParameterType : config.methodParameterTypes()) {
             arrayAnnotationVisitor.visit(null, methodParameterType);
         }
         arrayAnnotationVisitor.visitEnd();
-        String metricName = capturePoint.metricName();
-        if (capturePoint.isMetricOrGreater()) {
+        String metricName = config.metricName();
+        if (config.isMetricOrGreater()) {
             if (metricName.isEmpty()) {
                 annotationVisitor.visit("metricName", "<no metric name provided>");
             } else {
                 annotationVisitor.visit("metricName", metricName);
             }
         }
-        if (capturePoint.isTraceEntryOrGreater() && !capturePoint.traceEntryCaptureSelfNested()) {
+        if (config.isTraceEntryOrGreater() && !config.traceEntryCaptureSelfNested()) {
             annotationVisitor.visit("ignoreSelfNested", true);
         }
         annotationVisitor.visitEnd();
@@ -200,16 +200,16 @@ public class AdviceGenerator {
         cw.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "pluginServices",
                 "Lorg/glowroot/api/PluginServices;", null, null)
                 .visitEnd();
-        if (capturePoint.isMetricOrGreater()) {
+        if (config.isMetricOrGreater()) {
             cw.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "metricName",
                     "Lorg/glowroot/api/MetricName;", null, null)
                     .visitEnd();
         }
-        if (!capturePoint.enabledProperty().isEmpty()) {
+        if (!config.enabledProperty().isEmpty()) {
             cw.visitField(ACC_PRIVATE + ACC_STATIC + ACC_VOLATILE, "enabled", "Z", null, null)
                     .visitEnd();
         }
-        if (!capturePoint.traceEntryEnabledProperty().isEmpty()) {
+        if (!config.traceEntryEnabledProperty().isEmpty()) {
             cw.visitField(ACC_PRIVATE + ACC_STATIC + ACC_VOLATILE, "entryEnabled", "Z", null, null)
                     .visitEnd();
         }
@@ -231,7 +231,7 @@ public class AdviceGenerator {
                 "(Ljava/lang/String;)Lorg/glowroot/api/PluginServices;", false);
         mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "pluginServices",
                 "Lorg/glowroot/api/PluginServices;");
-        if (capturePoint.isMetricOrGreater()) {
+        if (config.isMetricOrGreater()) {
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
                     "Lorg/glowroot/api/PluginServices;");
             mv.visitLdcInsn(Type.getObjectType(adviceInternalName));
@@ -240,8 +240,8 @@ public class AdviceGenerator {
             mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "metricName",
                     "Lorg/glowroot/api/MetricName;");
         }
-        if (!capturePoint.enabledProperty().isEmpty()
-                || !capturePoint.traceEntryEnabledProperty().isEmpty()) {
+        if (!config.enabledProperty().isEmpty()
+                || !config.traceEntryEnabledProperty().isEmpty()) {
             mv.visitTypeInsn(NEW, adviceInternalName);
             mv.visitInsn(DUP);
             mv.visitMethodInsn(INVOKESPECIAL, adviceInternalName, "<init>", "()V", false);
@@ -269,7 +269,7 @@ public class AdviceGenerator {
                 "Lorg/glowroot/api/PluginServices;");
         mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices", "isEnabled", "()Z",
                 false);
-        if (capturePoint.enabledProperty().isEmpty()) {
+        if (config.enabledProperty().isEmpty()) {
             mv.visitInsn(IRETURN);
         } else {
             Label label = new Label();
@@ -291,7 +291,7 @@ public class AdviceGenerator {
     private void addOnBeforeMethod(ClassWriter cw) {
         MethodVisitor mv = visitOnBeforeMethod(cw, "Lorg/glowroot/api/TraceEntry;");
         mv.visitCode();
-        if (!capturePoint.traceEntryEnabledProperty().isEmpty()) {
+        if (!config.traceEntryEnabledProperty().isEmpty()) {
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "entryEnabled", "Z");
             Label label = new Label();
             mv.visitJumpInsn(IFNE, label);
@@ -309,8 +309,8 @@ public class AdviceGenerator {
         }
         mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
                 "Lorg/glowroot/api/PluginServices;");
-        if (capturePoint.isTransaction()) {
-            String transactionType = capturePoint.transactionType();
+        if (config.isTransaction()) {
+            String transactionType = config.transactionType();
             if (transactionType.isEmpty()) {
                 mv.visitLdcInsn("<no transaction type provided>");
             } else {
@@ -342,7 +342,7 @@ public class AdviceGenerator {
                         + "Lorg/glowroot/advicegen/GenericMessageSupplier;", false);
         mv.visitFieldInsn(GETSTATIC, adviceInternalName, "metricName",
                 "Lorg/glowroot/api/MetricName;");
-        if (capturePoint.isTransaction()) {
+        if (config.isTransaction()) {
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices",
                     "startTransaction", "(Ljava/lang/String;Ljava/lang/String;"
                             + "Lorg/glowroot/api/MessageSupplier;Lorg/glowroot/api/MetricName;)"
@@ -408,14 +408,14 @@ public class AdviceGenerator {
     }
 
     private void addCodeForOptionalTraceAttributes(MethodVisitor mv) {
-        if (!capturePoint.transactionType().isEmpty() && !capturePoint.isTransaction()) {
+        if (!config.transactionType().isEmpty() && !config.isTransaction()) {
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
                     "Lorg/glowroot/api/PluginServices;");
-            mv.visitLdcInsn(capturePoint.transactionType());
+            mv.visitLdcInsn(config.transactionType());
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices",
                     "setTransactionType", "(Ljava/lang/String;)V", false);
         }
-        if (!capturePoint.transactionNameTemplate().isEmpty() && !capturePoint.isTransaction()) {
+        if (!config.transactionNameTemplate().isEmpty() && !config.isTransaction()) {
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
                     "Lorg/glowroot/api/PluginServices;");
             mv.visitVarInsn(ALOAD, 3);
@@ -435,7 +435,7 @@ public class AdviceGenerator {
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices",
                     "setTransactionName", "(Ljava/lang/String;)V", false);
         }
-        if (!capturePoint.transactionUserTemplate().isEmpty()) {
+        if (!config.transactionUserTemplate().isEmpty()) {
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
                     "Lorg/glowroot/api/PluginServices;");
             mv.visitVarInsn(ALOAD, 3);
@@ -457,7 +457,7 @@ public class AdviceGenerator {
                     "setTransactionUser", "(Ljava/lang/String;)V", false);
         }
         int i = 0;
-        for (String attrName : capturePoint.transactionCustomAttributeTemplates().keySet()) {
+        for (String attrName : config.transactionCustomAttributeTemplates().keySet()) {
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
                     "Lorg/glowroot/api/PluginServices;");
             mv.visitLdcInsn(attrName);
@@ -481,7 +481,7 @@ public class AdviceGenerator {
                     "setTransactionCustomAttribute", "(Ljava/lang/String;Ljava/lang/String;)V",
                     false);
         }
-        Long traceStoreThresholdMillis = capturePoint.traceStoreThresholdMillis();
+        Long traceStoreThresholdMillis = config.traceStoreThresholdMillis();
         if (traceStoreThresholdMillis != null) {
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
                     "Lorg/glowroot/api/PluginServices;");
@@ -511,7 +511,7 @@ public class AdviceGenerator {
     }
 
     private void addOnReturnMethod(ClassWriter cw) {
-        boolean entryOrTimer = !capturePoint.traceEntryEnabledProperty().isEmpty();
+        boolean entryOrTimer = !config.traceEntryEnabledProperty().isEmpty();
         String travelerType = entryOrTimer ? "Ljava/lang/Object;" : "Lorg/glowroot/api/TraceEntry;";
         MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn",
                 "(Lorg/glowroot/api/OptionalReturn;" + travelerType + ")V", null, null);
@@ -523,7 +523,7 @@ public class AdviceGenerator {
         mv.visitAnnotation("Lorg/glowroot/api/weaving/OnReturn;", true)
                 .visitEnd();
         mv.visitCode();
-        if (!capturePoint.traceEntryEnabledProperty().isEmpty()) {
+        if (!config.traceEntryEnabledProperty().isEmpty()) {
             mv.visitVarInsn(ALOAD, travelerParamIndex);
             mv.visitTypeInsn(INSTANCEOF, "org/glowroot/api/TransactionMetric");
             Label label = new Label();
@@ -554,7 +554,7 @@ public class AdviceGenerator {
                 "updateWithReturnValue", "(Lorg/glowroot/api/TraceEntry;Ljava/lang/Object;)V",
                 false);
         mv.visitVarInsn(ALOAD, travelerParamIndex);
-        Long stackTraceThresholdMillis = capturePoint.traceEntryStackThresholdMillis();
+        Long stackTraceThresholdMillis = config.traceEntryStackThresholdMillis();
         if (stackTraceThresholdMillis == null) {
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/TraceEntry", "end", "()V", true);
         } else {
@@ -579,7 +579,7 @@ public class AdviceGenerator {
         mv.visitParameterAnnotation(1, "Lorg/glowroot/api/weaving/BindTraveler;", true)
                 .visitEnd();
         mv.visitCode();
-        if (!capturePoint.traceEntryEnabledProperty().isEmpty()) {
+        if (!config.traceEntryEnabledProperty().isEmpty()) {
             mv.visitVarInsn(ALOAD, 1);
             Label l0 = new Label();
             mv.visitJumpInsn(IFNONNULL, l0);
@@ -611,18 +611,18 @@ public class AdviceGenerator {
     private void addOnChangeMethod(ClassWriter cw) {
         MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, "onChange", "()V", null, null);
         mv.visitCode();
-        if (!capturePoint.enabledProperty().isEmpty()) {
+        if (!config.enabledProperty().isEmpty()) {
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
                     "Lorg/glowroot/api/PluginServices;");
-            mv.visitLdcInsn(capturePoint.enabledProperty());
+            mv.visitLdcInsn(config.enabledProperty());
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices",
                     "getBooleanProperty", "(Ljava/lang/String;)Z", false);
             mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "enabled", "Z");
         }
-        if (!capturePoint.traceEntryEnabledProperty().isEmpty()) {
+        if (!config.traceEntryEnabledProperty().isEmpty()) {
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
                     "Lorg/glowroot/api/PluginServices;");
-            mv.visitLdcInsn(capturePoint.traceEntryEnabledProperty());
+            mv.visitLdcInsn(config.traceEntryEnabledProperty());
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices",
                     "getBooleanProperty", "(Ljava/lang/String;)Z", false);
             mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "entryEnabled", "Z");
@@ -633,37 +633,38 @@ public class AdviceGenerator {
     }
 
     @RequiresNonNull("methodMetaInternalName")
-    private LazyDefinedClass generateMethodMetaClass(CapturePoint capturePoint) throws Exception {
+    private LazyDefinedClass generateMethodMetaClass(InstrumentationConfig config)
+            throws Exception {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
         cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, methodMetaInternalName, null, "java/lang/Object",
                 null);
         cw.visitField(ACC_PRIVATE + ACC_FINAL, "messageTemplate",
                 "Lorg/glowroot/advicegen/MessageTemplate;", null, null)
                 .visitEnd();
-        if (!capturePoint.transactionNameTemplate().isEmpty()) {
+        if (!config.transactionNameTemplate().isEmpty()) {
             cw.visitField(ACC_PRIVATE + ACC_FINAL, "transactionNameTemplate",
                     "Lorg/glowroot/advicegen/MessageTemplate;", null, null)
                     .visitEnd();
         }
-        if (!capturePoint.transactionUserTemplate().isEmpty()) {
+        if (!config.transactionUserTemplate().isEmpty()) {
             cw.visitField(ACC_PRIVATE + ACC_FINAL, "transactionUserTemplate",
                     "Lorg/glowroot/advicegen/MessageTemplate;", null, null)
                     .visitEnd();
         }
-        for (int i = 0; i < capturePoint.transactionCustomAttributeTemplates().size(); i++) {
+        for (int i = 0; i < config.transactionCustomAttributeTemplates().size(); i++) {
             cw.visitField(ACC_PRIVATE + ACC_FINAL, "transactionCustomAttributeTemplate" + i,
                     "Lorg/glowroot/advicegen/MessageTemplate;", null, null)
                     .visitEnd();
         }
         generateMethodMetaConstructor(cw);
         generateMethodMetaGetter(cw, "messageTemplate", "getMessageTemplate");
-        if (!capturePoint.transactionNameTemplate().isEmpty()) {
+        if (!config.transactionNameTemplate().isEmpty()) {
             generateMethodMetaGetter(cw, "transactionNameTemplate", "getTransactionNameTemplate");
         }
-        if (!capturePoint.transactionUserTemplate().isEmpty()) {
+        if (!config.transactionUserTemplate().isEmpty()) {
             generateMethodMetaGetter(cw, "transactionUserTemplate", "getTransactionUserTemplate");
         }
-        for (int i = 0; i < capturePoint.transactionCustomAttributeTemplates().size(); i++) {
+        for (int i = 0; i < config.transactionCustomAttributeTemplates().size(); i++) {
             generateMethodMetaGetter(cw, "transactionCustomAttributeTemplate" + i,
                     "getTransactionCustomAttributeTemplate" + i);
         }
@@ -683,8 +684,8 @@ public class AdviceGenerator {
         mv.visitVarInsn(ALOAD, 0);
         mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
         mv.visitVarInsn(ALOAD, 0);
-        if (capturePoint.isTraceEntryOrGreater()) {
-            String traceEntryTemplate = capturePoint.traceEntryTemplate();
+        if (config.isTraceEntryOrGreater()) {
+            String traceEntryTemplate = config.traceEntryTemplate();
             if (traceEntryTemplate.isEmpty()) {
                 mv.visitLdcInsn("<no message template provided>");
             } else {
@@ -701,9 +702,9 @@ public class AdviceGenerator {
         }
         mv.visitFieldInsn(PUTFIELD, methodMetaInternalName, "messageTemplate",
                 "Lorg/glowroot/advicegen/MessageTemplate;");
-        if (!capturePoint.transactionNameTemplate().isEmpty()) {
+        if (!config.transactionNameTemplate().isEmpty()) {
             mv.visitVarInsn(ALOAD, 0);
-            mv.visitLdcInsn(capturePoint.transactionNameTemplate());
+            mv.visitLdcInsn(config.transactionNameTemplate());
             mv.visitVarInsn(ALOAD, 1);
             mv.visitVarInsn(ALOAD, 2);
             mv.visitVarInsn(ALOAD, 3);
@@ -713,9 +714,9 @@ public class AdviceGenerator {
             mv.visitFieldInsn(PUTFIELD, methodMetaInternalName, "transactionNameTemplate",
                     "Lorg/glowroot/advicegen/MessageTemplate;");
         }
-        if (!capturePoint.transactionUserTemplate().isEmpty()) {
+        if (!config.transactionUserTemplate().isEmpty()) {
             mv.visitVarInsn(ALOAD, 0);
-            mv.visitLdcInsn(capturePoint.transactionUserTemplate());
+            mv.visitLdcInsn(config.transactionUserTemplate());
             mv.visitVarInsn(ALOAD, 1);
             mv.visitVarInsn(ALOAD, 2);
             mv.visitVarInsn(ALOAD, 3);
@@ -726,7 +727,7 @@ public class AdviceGenerator {
                     "Lorg/glowroot/advicegen/MessageTemplate;");
         }
         int i = 0;
-        for (String attrTemplate : capturePoint.transactionCustomAttributeTemplates().values()) {
+        for (String attrTemplate : config.transactionCustomAttributeTemplates().values()) {
             mv.visitVarInsn(ALOAD, 0);
             mv.visitLdcInsn(attrTemplate);
             mv.visitVarInsn(ALOAD, 1);

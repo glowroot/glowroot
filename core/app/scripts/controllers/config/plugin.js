@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,10 @@ glowroot.controller('ConfigPluginCtrl', [
   '$scope',
   '$stateParams',
   '$http',
+  '$location',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $stateParams, $http, confirmIfHasChanges, httpErrors) {
+  function ($scope, $stateParams, $http, $location, confirmIfHasChanges, httpErrors) {
 
     function onNewData(data) {
       $scope.loaded = true;
@@ -54,15 +55,16 @@ glowroot.controller('ConfigPluginCtrl', [
         var property = $scope.config.properties[i];
         postData.properties[property.name] = property.value;
       }
-      $http.post('backend/config/plugin/' + $stateParams.pluginId, postData)
+      $http.post('backend/config/plugin/' + $stateParams.id, postData)
           .success(function (data) {
             onNewData(data);
             deferred.resolve('Saved');
+            $location.url('config/plugin-list');
           })
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/config/plugin/' + $stateParams.pluginId)
+    $http.get('backend/config/plugin/' + $stateParams.id)
         .success(function (data) {
           onNewData(data);
         })

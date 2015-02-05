@@ -109,8 +109,8 @@
                gt-navbar-item
                gt-display=""
                gt-item-name="config"
-               gt-url="config/traces"
-               gt-state="config.traces">
+               gt-url="config/general"
+               gt-state="config.general">
             <i title="Configuration"
                class="fa fa-gears"
                style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -3px;"></i>
@@ -156,7 +156,7 @@
 <script src="bower_components/angular-ui-bootstrap/src/buttons/buttons.js"></script>
 <!-- dropdown is used by the trace search form (e.g. begins with / equals / ends with / contains) -->
 <script src="bower_components/angular-ui-bootstrap/src/dropdown/dropdown.js"></script>
-<!-- typeahead is used by capture pointcut view -->
+<!-- typeahead is used by instrumentation view -->
 <script src="bower_components/angular-ui-bootstrap/src/typeahead/typeahead.js"></script>
 <!-- position is needed by typeahead -->
 <script src="bower_components/angular-ui-bootstrap/src/position/position.js"></script>
@@ -223,10 +223,11 @@
 <script src="scripts/controllers/config/common.js"></script>
 <script src="scripts/controllers/config/gauge-list.js"></script>
 <script src="scripts/controllers/config/gauge.js"></script>
-<script src="scripts/controllers/config/capture-point-list.js"></script>
-<script src="scripts/controllers/config/capture-point.js"></script>
+<script src="scripts/controllers/config/instrumentation-list.js"></script>
+<script src="scripts/controllers/config/instrumentation.js"></script>
 <script src="scripts/controllers/config/user-interface.js"></script>
 <script src="scripts/controllers/config/storage.js"></script>
+<script src="scripts/controllers/config/plugin-list.js"></script>
 <script src="scripts/controllers/config/plugin.js"></script>
 <script src="scripts/controllers/login.js"></script>
 <!-- handlebars-templates.js is generated at build time by grunt-contrib-handlebars -->

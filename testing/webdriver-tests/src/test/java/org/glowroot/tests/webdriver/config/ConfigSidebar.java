@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,36 +31,28 @@ public class ConfigSidebar {
         this.driver = driver;
     }
 
-    public WebElement getTracesLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("Traces"));
-    }
-
     public WebElement getProfilingLink() {
         return Utils.withWait(driver, getSidebar(), linkText("Profiling"));
     }
 
-    public WebElement getUserRecordingLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("User recording"));
-    }
-
-    public WebElement getCapturePointsLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("Capture points"));
+    public WebElement getInstrumentationLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("Instrumentation"));
     }
 
     public WebElement getGaugesLink() {
         return Utils.withWait(driver, getSidebar(), linkText("Gauges"));
     }
 
-    public WebElement getStorageLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("Storage"));
+    public WebElement getAdvancedLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("Advanced"));
     }
 
     public WebElement getUserInterfaceLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("User interface"));
+        return Utils.withWait(driver, getSidebar(), linkText("Glowroot UI"));
     }
 
-    public WebElement getAdvancedLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("Advanced"));
+    public WebElement getStorageLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("Storage"));
     }
 
     private WebElement getSidebar() {

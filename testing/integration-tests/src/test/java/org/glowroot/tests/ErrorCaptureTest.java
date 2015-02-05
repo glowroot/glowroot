@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.config.TraceConfig;
+import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.trace.ExceptionInfo;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
@@ -60,9 +60,9 @@ public class ErrorCaptureTest {
     @Test
     public void shouldCaptureError() throws Exception {
         // given
-        TraceConfig traceConfig = container.getConfigService().getTraceConfig();
-        traceConfig.setStoreThresholdMillis(10000);
-        container.getConfigService().updateTraceConfig(traceConfig);
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+        generalConfig.setTraceStoreThresholdMillis(10000);
+        container.getConfigService().updateGeneralConfig(generalConfig);
         // when
         container.executeAppUnderTest(ShouldCaptureError.class);
         // then

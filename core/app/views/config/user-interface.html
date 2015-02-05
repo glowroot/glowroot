@@ -15,7 +15,7 @@
 -->
 <div class="panel panel-default">
   <div class="panel-heading">
-    <h2>User interface</h2>
+    <h2>Glowroot UI</h2>
   </div>
   <div class="panel-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
@@ -25,27 +25,6 @@
          gt-form-autofocus-on-first-input
          class="form-horizontal"
          name="formCtrl">
-      <div class="form-group">
-        <label class="col-lg-3 control-label"
-               for="defaultTransactionType">
-          Default transaction type
-        </label>
-        <div class="col-lg-9">
-          <select ng-model="config.defaultTransactionType"
-                  class="form-control"
-                  id="defaultTransactionType"
-                  style="width: auto;">
-            <option ng-repeat="transactionType in layout.transactionTypes"
-                    value="{{transactionType}}"
-                    ng-selected="transactionType === config.defaultTransactionType">
-              {{transactionType}}
-            </option>
-          </select>
-          <div class="help-block">
-            The default transaction type displayed on the transactions and errors page.
-          </div>
-        </div>
-      </div>
       <div gt-form-group
            gt-label="Port"
            gt-model="config.port"

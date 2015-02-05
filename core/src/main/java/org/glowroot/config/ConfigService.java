@@ -59,12 +59,8 @@ public class ConfigService {
         }
     }
 
-    public TraceConfig getTraceConfig() {
-        return config.traceConfig();
-    }
-
-    public ProfilingConfig getProfilingConfig() {
-        return config.profilingConfig();
+    public GeneralConfig getGeneralConfig() {
+        return config.generalConfig();
     }
 
     public UserRecordingConfig getUserRecordingConfig() {
@@ -92,27 +88,27 @@ public class ConfigService {
         return null;
     }
 
-    public List<Gauge> getGauges() {
-        return config.gauges();
+    public List<GaugeConfig> getGaugeConfigs() {
+        return config.gaugeConfigs();
     }
 
-    public @Nullable Gauge getGauge(String version) {
-        for (Gauge gauge : config.gauges()) {
-            if (gauge.version().equals(version)) {
-                return gauge;
+    public @Nullable GaugeConfig getGaugeConfig(String version) {
+        for (GaugeConfig gaugeConfig : config.gaugeConfigs()) {
+            if (gaugeConfig.version().equals(version)) {
+                return gaugeConfig;
             }
         }
         return null;
     }
 
-    public List<CapturePoint> getCapturePoints() {
-        return config.capturePoints();
+    public List<InstrumentationConfig> getInstrumentationConfigs() {
+        return config.instrumentationConfigs();
     }
 
-    public @Nullable CapturePoint getCapturePoint(String version) {
-        for (CapturePoint capturePoint : config.capturePoints()) {
-            if (capturePoint.version().equals(version)) {
-                return capturePoint;
+    public @Nullable InstrumentationConfig getInstrumentationConfig(String version) {
+        for (InstrumentationConfig instrumentationConfig : config.instrumentationConfigs()) {
+            if (instrumentationConfig.version().equals(version)) {
+                return instrumentationConfig;
             }
         }
         return null;
@@ -126,33 +122,22 @@ public class ConfigService {
         pluginConfigListeners.put(pluginId, listener);
     }
 
-    public String updateTraceConfig(TraceConfig traceConfig, String priorVersion) throws Exception {
+    public String updateGeneralConfig(GeneralConfig generalConfig, String priorVersion)
+            throws Exception {
         boolean notifyPluginConfigListeners;
         synchronized (writeLock) {
-            checkVersionsEqual(config.traceConfig().version(), priorVersion);
-            boolean previousEnabled = config.traceConfig().enabled();
-            Config updatedConfig = ((ImmutableConfig) config).withTraceConfig(traceConfig);
+            checkVersionsEqual(config.generalConfig().version(), priorVersion);
+            boolean previousEnabled = config.generalConfig().enabled();
+            Config updatedConfig = ((ImmutableConfig) config).withGeneralConfig(generalConfig);
             configFile.write(updatedConfig);
             config = updatedConfig;
-            notifyPluginConfigListeners = config.traceConfig().enabled() != previousEnabled;
+            notifyPluginConfigListeners = config.generalConfig().enabled() != previousEnabled;
         }
         notifyConfigListeners();
         if (notifyPluginConfigListeners) {
             notifyAllPluginConfigListeners();
         }
-        return traceConfig.version();
-    }
-
-    public String updateProfilingConfig(ProfilingConfig profilingConfig, String priorVersion)
-            throws Exception {
-        synchronized (writeLock) {
-            checkVersionsEqual(config.profilingConfig().version(), priorVersion);
-            Config updatedConfig = ((ImmutableConfig) config).withProfilingConfig(profilingConfig);
-            configFile.write(updatedConfig);
-            config = updatedConfig;
-        }
-        notifyConfigListeners();
-        return profilingConfig.version();
+        return generalConfig.version();
     }
 
     public String updateUserRecordingConfig(UserRecordingConfig userRecordingConfig,
@@ -228,81 +213,29 @@ public class ConfigService {
         return pluginConfig.version();
     }
 
-    public String insertGauge(Gauge gauge) throws Exception {
-        synchronized (writeLock) {
-            List<Gauge> gauges = Lists.newArrayList(config.gauges());
-            // check for duplicate mbeanObjectName
-            for (Gauge loopGauge : gauges) {
-                if (loopGauge.mbeanObjectName().equals(gauge.mbeanObjectName())) {
-                    throw new DuplicateMBeanObjectNameException();
-                }
-            }
-            gauges.add(gauge);
-            Config updatedConfig = ((ImmutableConfig) config).withGauges(gauges);
-            configFile.write(updatedConfig);
-            config = updatedConfig;
-        }
-        return gauge.version();
-    }
-
-    public String updateGauge(Gauge gauge, String priorVersion)
+    public String insertInstrumentationConfig(InstrumentationConfig instrumentationConfig)
             throws IOException {
         synchronized (writeLock) {
-            List<Gauge> gauges = Lists.newArrayList(config.gauges());
-            boolean found = false;
-            for (ListIterator<Gauge> i = gauges.listIterator(); i.hasNext();) {
-                if (priorVersion.equals(i.next().version())) {
-                    i.set(gauge);
-                    found = true;
-                    break;
-                }
-            }
-            checkState(found, "Gauge config not found: %s", priorVersion);
-            Config updatedConfig = ((ImmutableConfig) config).withGauges(gauges);
-            configFile.write(updatedConfig);
-            config = updatedConfig;
-        }
-        return gauge.version();
-    }
-
-    public void deleteGauge(String version) throws IOException {
-        synchronized (writeLock) {
-            List<Gauge> gauges = Lists.newArrayList(config.gauges());
-            boolean found = false;
-            for (ListIterator<Gauge> i = gauges.listIterator(); i.hasNext();) {
-                if (version.equals(i.next().version())) {
-                    i.remove();
-                    found = true;
-                    break;
-                }
-            }
-            checkState(found, "Gauge config not found: %s", version);
-            Config updatedConfig = ((ImmutableConfig) config).withGauges(gauges);
-            configFile.write(updatedConfig);
-            config = updatedConfig;
-        }
-    }
-
-    public String insertCapturePoint(CapturePoint capturePoint) throws IOException {
-        synchronized (writeLock) {
-            List<CapturePoint> capturePoints = Lists.newArrayList(config.capturePoints());
-            capturePoints.add(capturePoint);
-            Config updatedConfig = ((ImmutableConfig) config).withCapturePoints(capturePoints);
+            List<InstrumentationConfig> configs =
+                    Lists.newArrayList(config.instrumentationConfigs());
+            configs.add(instrumentationConfig);
+            Config updatedConfig = ((ImmutableConfig) config).withInstrumentationConfigs(configs);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
-        return capturePoint.version();
+        return instrumentationConfig.version();
     }
 
-    public String updateCapturePoint(CapturePoint capturePoint, String priorVersion)
-            throws IOException {
+    public String updateInstrumentationConfig(InstrumentationConfig instrumentationConfig,
+            String priorVersion) throws IOException {
         synchronized (writeLock) {
-            List<CapturePoint> capturePoints = Lists.newArrayList(config.capturePoints());
+            List<InstrumentationConfig> configs =
+                    Lists.newArrayList(config.instrumentationConfigs());
             boolean found = false;
-            for (ListIterator<CapturePoint> i = capturePoints.listIterator(); i.hasNext();) {
+            for (ListIterator<InstrumentationConfig> i = configs.listIterator(); i.hasNext();) {
                 if (priorVersion.equals(i.next().version())) {
-                    i.set(capturePoint);
+                    i.set(instrumentationConfig);
                     found = true;
                     break;
                 }
@@ -311,19 +244,20 @@ public class ConfigService {
                 logger.warn("aspect config unique hash not found: {}", priorVersion);
                 return priorVersion;
             }
-            Config updatedConfig = ((ImmutableConfig) config).withCapturePoints(capturePoints);
+            Config updatedConfig = ((ImmutableConfig) config).withInstrumentationConfigs(configs);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
-        return capturePoint.version();
+        return instrumentationConfig.version();
     }
 
-    public void deleteCapturePoint(String version) throws IOException {
+    public void deleteInstrumentationConfig(String version) throws IOException {
         synchronized (writeLock) {
-            List<CapturePoint> capturePoints = Lists.newArrayList(config.capturePoints());
+            List<InstrumentationConfig> configs =
+                    Lists.newArrayList(config.instrumentationConfigs());
             boolean found = false;
-            for (ListIterator<CapturePoint> i = capturePoints.listIterator(); i.hasNext();) {
+            for (ListIterator<InstrumentationConfig> i = configs.listIterator(); i.hasNext();) {
                 if (version.equals(i.next().version())) {
                     i.remove();
                     found = true;
@@ -334,11 +268,66 @@ public class ConfigService {
                 logger.warn("aspect config version not found: {}", version);
                 return;
             }
-            Config updatedConfig = ((ImmutableConfig) config).withCapturePoints(capturePoints);
+            Config updatedConfig = ((ImmutableConfig) config).withInstrumentationConfigs(configs);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
+    }
+
+    public String insertGaugeConfig(GaugeConfig gaugeConfig) throws Exception {
+        synchronized (writeLock) {
+            List<GaugeConfig> gaugeConfigs = Lists.newArrayList(config.gaugeConfigs());
+            // check for duplicate mbeanObjectName
+            for (GaugeConfig loopGauge : gaugeConfigs) {
+                if (loopGauge.mbeanObjectName().equals(gaugeConfig.mbeanObjectName())) {
+                    throw new DuplicateMBeanObjectNameException();
+                }
+            }
+            gaugeConfigs.add(gaugeConfig);
+            Config updatedConfig = ((ImmutableConfig) config).withGaugeConfigs(gaugeConfigs);
+            configFile.write(updatedConfig);
+            config = updatedConfig;
+        }
+        return gaugeConfig.version();
+    }
+
+    public String updateGaugeConfig(GaugeConfig gaugeConfig, String priorVersion)
+            throws IOException {
+        synchronized (writeLock) {
+            List<GaugeConfig> gaugeConfigs = Lists.newArrayList(config.gaugeConfigs());
+            boolean found = false;
+            for (ListIterator<GaugeConfig> i = gaugeConfigs.listIterator(); i.hasNext();) {
+                if (priorVersion.equals(i.next().version())) {
+                    i.set(gaugeConfig);
+                    found = true;
+                    break;
+                }
+            }
+            checkState(found, "Gauge config not found: %s", priorVersion);
+            Config updatedConfig = ((ImmutableConfig) config).withGaugeConfigs(gaugeConfigs);
+            configFile.write(updatedConfig);
+            config = updatedConfig;
+        }
+        return gaugeConfig.version();
+    }
+
+    public void deleteGaugeConfig(String version) throws IOException {
+        synchronized (writeLock) {
+            List<GaugeConfig> gaugeConfigs = Lists.newArrayList(config.gaugeConfigs());
+            boolean found = false;
+            for (ListIterator<GaugeConfig> i = gaugeConfigs.listIterator(); i.hasNext();) {
+                if (version.equals(i.next().version())) {
+                    i.remove();
+                    found = true;
+                    break;
+                }
+            }
+            checkState(found, "Gauge config not found: %s", version);
+            Config updatedConfig = ((ImmutableConfig) config).withGaugeConfigs(gaugeConfigs);
+            configFile.write(updatedConfig);
+            config = updatedConfig;
+        }
     }
 
     private void checkVersionsEqual(String version, String priorVersion)

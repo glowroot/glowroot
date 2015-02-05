@@ -1,11 +1,9 @@
 {
-  "trace": {
+  "general": {
     "enabled": true,
-    "storeThresholdMillis": 0
-  },
-  "profiling": {
-    "enabled": true,
-    "intervalMillis": 2000
+    "traceStoreThresholdMillis": 0,
+    "profilingIntervalMillis": 2000,
+    "defaultTransactionType": "Integration test"
   },
   "userRecording": {
     "enabled": false,
@@ -18,7 +16,6 @@
     "cappedDatabaseSizeMb": 1000
   },
   "ui": {
-    "defaultTransactionType": "Integration test",
     "port": 0,
     "passwordHash": "",
     "sessionTimeoutMinutes": 30

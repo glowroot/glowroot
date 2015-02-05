@@ -26,7 +26,7 @@ import org.junit.Test;
 
 import org.glowroot.Containers;
 import org.glowroot.container.Container;
-import org.glowroot.container.config.ProfilingConfig;
+import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.tests.DetailMapTest.ShouldGenerateTraceWithNestedEntries;
 import org.glowroot.tests.ProfilingTest.ShouldGenerateTraceWithProfile;
@@ -66,9 +66,9 @@ public class ExportTest {
     @Test
     public void shouldExportTraceWithProfile() throws Exception {
         // given
-        ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
-        profilingConfig.setIntervalMillis(20);
-        container.getConfigService().updateProfilingConfig(profilingConfig);
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+        generalConfig.setProfilingIntervalMillis(20);
+        container.getConfigService().updateGeneralConfig(generalConfig);
         container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
         // when
         Trace trace = container.getTraceService().getLastTrace();

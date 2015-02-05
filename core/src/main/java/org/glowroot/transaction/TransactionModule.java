@@ -63,8 +63,8 @@ public class TransactionModule {
         ConfigService configService = configModule.getConfigService();
         transactionRegistry = new TransactionRegistry();
         adviceCache = new AdviceCache(configModule.getPluginDescriptors(),
-                configModule.getPluginJars(), configService.getCapturePoints(), instrumentation,
-                dataDir);
+                configModule.getPluginJars(), configService.getInstrumentationConfigs(),
+                instrumentation, dataDir);
         analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
                 adviceCache.getMixinTypes(), extraBootResourceFinder);
         final MetricNameCache metricNameCache = new MetricNameCache();

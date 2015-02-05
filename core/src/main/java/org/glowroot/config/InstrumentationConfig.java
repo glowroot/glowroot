@@ -36,9 +36,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Value.Immutable
 @Json.Marshaled
 @Json.Import(MarshalingRoutines.class)
-public abstract class CapturePoint {
+public abstract class InstrumentationConfig {
 
-    public static final Ordering<CapturePoint> defaultOrdering = new CapturePointOrdering();
+    public static final Ordering<InstrumentationConfig> defaultOrdering =
+            new InstrumentationConfigOrdering();
 
     public abstract String className();
     public abstract String methodName();
@@ -115,9 +116,10 @@ public abstract class CapturePoint {
         METRIC, TRACE_ENTRY, TRANSACTION, OTHER
     }
 
-    private static class CapturePointOrdering extends Ordering<CapturePoint> {
+    private static class InstrumentationConfigOrdering extends Ordering<InstrumentationConfig> {
         @Override
-        public int compare(@Nullable CapturePoint left, @Nullable CapturePoint right) {
+        public int compare(@Nullable InstrumentationConfig left,
+                @Nullable InstrumentationConfig right) {
             checkNotNull(left);
             checkNotNull(right);
             int compare = left.className().compareToIgnoreCase(right.className());

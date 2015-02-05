@@ -110,7 +110,7 @@ public class LocalUiModule {
                 cappedDatabase, configModule.getPluginDescriptors(), dataDir, httpSessionManager,
                 transactionModule);
         ClasspathCache classpathCache = new ClasspathCache(analyzedWorld, instrumentation);
-        CapturePointJsonService capturePointJsonService = new CapturePointJsonService(
+        InstrumentationJsonService instrumentationJsonService = new InstrumentationJsonService(
                 configService, transactionModule.getAdviceCache(), classpathCache,
                 transactionModule);
         GaugeJsonService gaugeJsonService =
@@ -128,7 +128,7 @@ public class LocalUiModule {
         jsonServices.add(errorJsonService);
         jsonServices.add(jvmJsonService);
         jsonServices.add(configJsonService);
-        jsonServices.add(capturePointJsonService);
+        jsonServices.add(instrumentationJsonService);
         jsonServices.add(gaugeJsonService);
         jsonServices.add(adminJsonService);
 

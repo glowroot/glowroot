@@ -27,11 +27,6 @@ import org.glowroot.common.Marshaling2;
 public class UserInterfaceConfig {
 
     @Value.Default
-    public String defaultTransactionType() {
-        return "";
-    }
-
-    @Value.Default
     public int port() {
         return 4000;
     }

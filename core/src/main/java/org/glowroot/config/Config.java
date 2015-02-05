@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,21 +25,15 @@ import org.immutables.value.Value;
 abstract class Config {
 
     @Value.Default
-    @Json.Named("trace")
-    TraceConfig traceConfig() {
-        return ImmutableTraceConfig.builder().build();
+    @Json.Named("general")
+    GeneralConfig generalConfig() {
+        return ImmutableGeneralConfig.builder().build();
     }
 
     @Value.Default
-    @Json.Named("profiling")
-    ProfilingConfig profilingConfig() {
-        return ImmutableProfilingConfig.builder().build();
-    }
-
-    @Value.Default
-    @Json.Named("userRecording")
-    UserRecordingConfig userRecordingConfig() {
-        return ImmutableUserRecordingConfig.builder().build();
+    @Json.Named("ui")
+    UserInterfaceConfig userInterfaceConfig() {
+        return ImmutableUserInterfaceConfig.builder().build();
     }
 
     @Value.Default
@@ -49,9 +43,9 @@ abstract class Config {
     }
 
     @Value.Default
-    @Json.Named("ui")
-    UserInterfaceConfig userInterfaceConfig() {
-        return ImmutableUserInterfaceConfig.builder().build();
+    @Json.Named("userRecording")
+    UserRecordingConfig userRecordingConfig() {
+        return ImmutableUserRecordingConfig.builder().build();
     }
 
     @Value.Default
@@ -63,6 +57,9 @@ abstract class Config {
     @Json.Named("plugins")
     abstract List<PluginConfig> pluginConfigs();
 
-    abstract List<Gauge> gauges();
-    abstract List<CapturePoint> capturePoints();
+    @Json.Named("instrumentation")
+    abstract List<InstrumentationConfig> instrumentationConfigs();
+
+    @Json.Named("gauges")
+    abstract List<GaugeConfig> gaugeConfigs();
 }

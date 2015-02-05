@@ -32,7 +32,7 @@ import static org.glowroot.container.common.ObjectMappers.checkNotNullValuesForP
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.container.common.ObjectMappers.orEmpty;
 
-public class CapturePoint {
+public class InstrumentationConfig {
 
     private @Nullable String className;
     private @Nullable String methodName;
@@ -57,18 +57,18 @@ public class CapturePoint {
     private @Nullable String enabledProperty;
     private @Nullable String traceEntryEnabledProperty;
 
-    // null for new CapturePoint records that haven't been sent to server yet
+    // null for new instrumentation config records that haven't been sent to server yet
     private @Nullable final String version;
 
-    // used to create new CapturePoint records that haven't been sent to server yet
-    public CapturePoint() {
+    // used to create new instrumentation config records that haven't been sent to server yet
+    public InstrumentationConfig() {
         methodParameterTypes = ImmutableList.of();
         methodModifiers = ImmutableList.of();
         transactionCustomAttributeTemplates = ImmutableMap.of();
         version = null;
     }
 
-    public CapturePoint(String version) {
+    public InstrumentationConfig(String version) {
         methodParameterTypes = ImmutableList.of();
         methodModifiers = ImmutableList.of();
         transactionCustomAttributeTemplates = ImmutableMap.of();
@@ -218,8 +218,8 @@ public class CapturePoint {
 
     @Override
     public boolean equals(@Nullable Object obj) {
-        if (obj instanceof CapturePoint) {
-            CapturePoint that = (CapturePoint) obj;
+        if (obj instanceof InstrumentationConfig) {
+            InstrumentationConfig that = (InstrumentationConfig) obj;
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
@@ -284,7 +284,7 @@ public class CapturePoint {
     }
 
     @JsonCreator
-    static CapturePoint readValue(
+    static InstrumentationConfig readValue(
             @JsonProperty("className") @Nullable String className,
             @JsonProperty("methodName") @Nullable String methodName,
             @JsonProperty("methodParameterTypes") @Nullable List</*@Nullable*/String> uncheckedMethodParameterTypes,
@@ -327,7 +327,7 @@ public class CapturePoint {
         checkRequiredProperty(enabledProperty, "enabledProperty");
         checkRequiredProperty(traceEntryEnabledProperty, "traceEntryEnabledProperty");
         checkRequiredProperty(version, "version");
-        CapturePoint config = new CapturePoint(version);
+        InstrumentationConfig config = new InstrumentationConfig(version);
         config.setClassName(className);
         config.setMethodName(methodName);
         config.setMethodParameterTypes(methodParameterTypes);

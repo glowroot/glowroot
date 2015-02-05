@@ -3,7 +3,7 @@
     "Since you cannot dynamically generate the name attribute of input elements using interpolation, you have
      to wrap each set of repeated inputs in an ngForm directive and nest these in an outer form element."
 -->
-<div ng-form="formGroupCtrl" class="form-group" ng-class="{'has-error': formGroupCtrl['property'].$invalid}">
+<div ng-form="formGroupCtrl" class="form-group" ng-class="{'has-error': formGroupCtrl.property.$invalid}">
   <div ng-switch="gtType">
     <div ng-switch-when="checkbox">
       <label class="control-label col-lg-3"

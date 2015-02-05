@@ -18,10 +18,10 @@
     <h2>
       <a class="pull-right"
          style="font-size: 16px; padding-top: 14px;"
-         href="config/capture-point-list">
+         href="config/instrumentation-list">
         Return to list
       </a>
-      Capture points
+      Instrumentation
       <span class="gt-inline-block gt-separator">
         |
       </span>
@@ -36,9 +36,9 @@
          class="form-horizontal"
          name="formCtrl">
       <fieldset>
-        <legend>Where to capture</legend>
+        <legend>What method(s) to instrument</legend>
         <div class="form-group"
-             ng-class="{'has-error': formCtrl.className.$invalid}">
+             ng-class="{'has-error': loaded && formCtrl.className.$invalid}">
           <label class="col-lg-3 control-label"
                  for="className{{$id}}">
             Class name
@@ -63,12 +63,12 @@
                  class="gt-inline-spinner">
             </div>
             <div class="help-block">
-              The class or interface containing the method(s) where the capture point will be applied.
+              The class or interface containing the method(s) to instrument.
             </div>
           </div>
         </div>
         <div class="form-group"
-             ng-class="{'has-error': formCtrl.methodName.$invalid}">
+             ng-class="{'has-error': loaded && formCtrl.methodName.$invalid}">
           <label class="col-lg-3 control-label"
                  for="methodName{{$id}}">
             Method name
@@ -92,8 +92,8 @@
                  class="gt-inline-spinner">
             </div>
             <div class="help-block">
-              The method(s) where the capture point will be applied.
-              The capture point will also be applied to all overriding methods
+              The method(s) to instrument.
+              All overriding methods will also be instrumented
               (including all implementations of the method if the class above is an interface).
             </div>
             <div class="help-block">
@@ -105,37 +105,32 @@
           </div>
         </div>
         <div class="form-group"
-             ng-class="{'has-error': formCtrl.selectedMethodSignature.$invalid}">
+             ng-class="{'has-error': loaded && hasMethodSignatureError()}">
           <label class="col-lg-3 control-label">
             Method signature
           </label>
           <div class="col-lg-9">
-            <div gt-spinner
-                 gt-show="methodSignaturesLoading && !httpError"
-                 gt-no-delay="true"
-                 class="gt-inline-spinner hide"
-                 style="height: 50px;">
-            </div>
-            <div ng-if="loadMethodSignatures">
-              {{methodSignatureText(methodSignatures[0])}}
-              <a href="" ng-click="onSelectMethodName()" style="padding-left: 20px;">expand</a>
-            </div>
-            <div ng-repeat="methodSignature in methodSignatures"
-                 ng-hide="loadMethodSignatures">
+            <div ng-repeat="methodSignature in methodSignatures">
               <div class="radio">
                 <label>
                   <!-- need $parent.selectedSignature since ng-repeat creates a new scope
                     see https://github.com/angular/angular.js/issues/1100 -->
                   <input type="radio"
+                         name="selectedMethodSignature"
                          ng-model="$parent.selectedMethodSignature"
                          ng-value="methodSignature"
                          ng-required="true">
                   {{methodSignatureText(methodSignature)}}
+                  <div class="gt-red"
+                       ng-show="methodSignature.notAvailable">
+                    Warning: this signature could not be found in the runtime classpath
+                  </div>
                 </label>
               </div>
             </div>
             <div class="help-block">
-              Only the method name and parameter types are used in the capture point definition.
+              Only the method name and parameter types are used when evaluating what to instrument
+              (the return type and access modifiers are ignored).
             </div>
           </div>
         </div>
@@ -173,7 +168,7 @@
                 <input type="radio"
                        ng-model="config.captureKind"
                        value="other">
-                Other (used for optional items only)
+                Optional transaction overrides only
               </label>
             </div>
           </div>
@@ -182,12 +177,13 @@
              gt-label="{{captureKindTransaction ? 'Root metric name' : 'Metric name'}}"
              gt-model="config.metricName"
              gt-pattern="/^[a-zA-Z0-9 ]*$/"
-             gt-required="showMetric"
+             gt-required="loaded && showMetric"
              gt-width="20em"
              ng-show="showMetric"
              style="margin-top: 40px;">
           <div class="help-block">
-            Multiple capturePoints can share the same metric name, in which case their metrics are aggregated together.
+            Multiple instrumentation definitions can share the same metric name,
+            in which case their metrics are aggregated together.
           </div>
         </div>
         <div gt-form-group
@@ -236,10 +232,10 @@
              gt-type="checkbox"
              ng-show="showTraceEntry">
           <div class="help-block">
-            If checked, and the capture point is encountered within one of its own trace entries,
+            If checked, and this custom instrumentation is encountered within one of its own trace entries,
             a nested trace entry <em>will</em> be captured.
-            This can sometimes lead to a lot of extra noise, e.g. in a fairly common case where the capture point
-            matches several overloaded methods that cascade to each other.
+            This can sometimes lead to a lot of extra noise, e.g. in a fairly common case where the
+            custom instrumentation matches several overloaded methods that cascade to each other.
           </div>
         </div>
         <div gt-form-group
@@ -282,7 +278,7 @@
         </div>
       </fieldset>
       <fieldset>
-        <legend>Optional items to override</legend>
+        <legend>Optional transaction overrides</legend>
         <div gt-form-group
              gt-label="Transaction type"
              gt-model="config.transactionType"
@@ -290,7 +286,7 @@
              ng-hide="captureKindTransaction">
           <div class="help-block">
             This will override the transaction type for the containing transaction.
-            If more than one capture point overrides the transaction type for a given transaction,
+            If the transaction type is overridden more than once for a given transaction,
             the first non-null/non-empty value will be used.
           </div>
         </div>
@@ -301,7 +297,7 @@
              ng-hide="captureKindTransaction">
           <div class="help-block">
             This will override the transaction name for the containing transaction.
-            If more than one capture point overrides the transaction name for a given transaction,
+            If the transaction name is overridden more than once for a given transaction,
             the first non-null/non-empty value will be used.
           </div>
           <div ng-non-bindable
@@ -321,7 +317,7 @@
             This will override the general trace store threshold for the containing transaction.
             The value can be smaller than the general threshold to force transaction traces to be stored more often,
             or larger to force transaction traces to be stored less often.
-            If more than one capture point overrides the trace store threshold for a given transaction,
+            If the trace store threshold is overridden more than once for a given transaction,
             the smallest override value will be used.
           </div>
         </div>

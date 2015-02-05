@@ -25,8 +25,6 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -40,10 +38,10 @@ import org.immutables.value.Value;
 
 import org.glowroot.api.weaving.MethodModifier;
 import org.glowroot.common.Marshaling2;
-import org.glowroot.config.CapturePoint;
-import org.glowroot.config.CapturePoint.CaptureKind;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.ImmutableCapturePoint;
+import org.glowroot.config.ImmutableInstrumentationConfig;
+import org.glowroot.config.InstrumentationConfig;
+import org.glowroot.config.InstrumentationConfig.CaptureKind;
 import org.glowroot.config.MarshalingRoutines;
 import org.glowroot.local.ui.UiAnalyzedMethod.UiAnalyzedMethodOrdering;
 import org.glowroot.transaction.AdviceCache;
@@ -54,7 +52,7 @@ import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
 
 @JsonService
-class CapturePointJsonService {
+class InstrumentationJsonService {
 
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final Splitter splitter = Splitter.on(' ').omitEmptyStrings();
@@ -64,7 +62,7 @@ class CapturePointJsonService {
     private final TransactionModule transactionModule;
     private final ClasspathCache classpathCache;
 
-    CapturePointJsonService(ConfigService configService, AdviceCache adviceCache,
+    InstrumentationJsonService(ConfigService configService, AdviceCache adviceCache,
             ClasspathCache classpathCache, TransactionModule transactionModule) {
         this.configService = configService;
         this.adviceCache = adviceCache;
@@ -72,29 +70,34 @@ class CapturePointJsonService {
         this.transactionModule = transactionModule;
     }
 
-    @GET("/backend/config/capture-points")
-    String getCapturePoint() throws Exception {
-        List<CapturePoint> capturePoints = configService.getCapturePoints();
-        capturePoints = CapturePoint.defaultOrdering.immutableSortedCopy(capturePoints);
-        List<CapturePointDto> dtos = Lists.newArrayList();
-        for (CapturePoint capturePoint : capturePoints) {
-            dtos.add(CapturePointDto.fromConfig(capturePoint));
+    @GET("/backend/config/instrumentation")
+    String getInstrumentationConfigs() throws Exception {
+        List<InstrumentationConfig> configs = configService.getInstrumentationConfigs();
+        configs = InstrumentationConfig.defaultOrdering.immutableSortedCopy(configs);
+        List<InstrumentationConfigDto> dtos = Lists.newArrayList();
+        for (InstrumentationConfig config : configs) {
+            dtos.add(InstrumentationConfigDto.fromConfig(config));
         }
-        return Marshaling2.toJson(ImmutableCapturePointResponse.builder()
+        return Marshaling2.toJson(ImmutableInstrumentationListResponse.builder()
                 .addAllConfigs(dtos)
-                .jvmOutOfSync(adviceCache.isOutOfSync(configService.getCapturePoints()))
+                .jvmOutOfSync(adviceCache.isOutOfSync(configService.getInstrumentationConfigs()))
                 .jvmRetransformClassesSupported(
                         transactionModule.isJvmRetransformClassesSupported())
                 .build());
     }
 
-    @GET("/backend/config/capture-points/([0-9a-f]{40})")
-    String getGauge(String version) {
-        CapturePoint capturePoint = configService.getCapturePoint(version);
-        if (capturePoint == null) {
+    @GET("/backend/config/instrumentation/([0-9a-f]{40})")
+    String getInstrumentationConfig(String version) {
+        InstrumentationConfig config = configService.getInstrumentationConfig(version);
+        if (config == null) {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
         }
-        return Marshaling2.toJson(CapturePointDto.fromConfig(capturePoint));
+        List<MethodSignature> methodSignatures =
+                getMethodSignatures(config.className(), config.methodName());
+        return Marshaling2.toJson(ImmutableInstrumentationConfigResponse.builder()
+                .config(InstrumentationConfigDto.fromConfig(config))
+                .addAllMethodSignatures(methodSignatures)
+                .build());
     }
 
     // this is marked as @GET so it can be used without update rights (e.g. demo instance)
@@ -134,55 +137,36 @@ class CapturePointJsonService {
     String getMethodSignatures(String queryString) throws Exception {
         MethodSignaturesRequest request =
                 QueryStrings.decode(queryString, MethodSignaturesRequest.class);
-        List<UiAnalyzedMethod> analyzedMethods =
-                getAnalyzedMethods(request.className(), request.methodName());
-        ArrayNode matchingMethods = mapper.createArrayNode();
-        for (UiAnalyzedMethod analyzedMethod : analyzedMethods) {
-            ObjectNode matchingMethod = mapper.createObjectNode();
-            matchingMethod.put("name", analyzedMethod.name());
-            ArrayNode parameterTypes = mapper.createArrayNode();
-            for (String parameterType : analyzedMethod.parameterTypes()) {
-                parameterTypes.add(parameterType);
-            }
-            matchingMethod.set("parameterTypes", parameterTypes);
-            matchingMethod.put("returnType", analyzedMethod.returnType());
-            ArrayNode modifiers = mapper.createArrayNode();
-            // strip final and synchronized from displayed modifiers since they have no impact on
-            // the weaver's method matching
-            int reducedModifiers = analyzedMethod.modifiers() & ~ACC_FINAL & ~ACC_SYNCHRONIZED;
-            String modifierNames = Modifier.toString(reducedModifiers);
-            for (String modifier : splitter.split(modifierNames)) {
-                modifiers.add(modifier.toLowerCase(Locale.ENGLISH));
-            }
-            matchingMethod.set("modifiers", modifiers);
-            matchingMethods.add(matchingMethod);
-        }
-        return mapper.writeValueAsString(matchingMethods);
+        List<MethodSignature> methodSignatures =
+                getMethodSignatures(request.className(), request.methodName());
+        return Marshaling2.toJson(methodSignatures, MethodSignature.class);
     }
 
-    @POST("/backend/config/capture-points/add")
-    String addCapturePoint(String content) throws Exception {
-        CapturePointDto capturePointDto = Marshaling.fromJson(content, CapturePointDto.class);
-        CapturePoint capturePoint = capturePointDto.toConfig();
-        configService.insertCapturePoint(capturePoint);
-        return Marshaling2.toJson(CapturePointDto.fromConfig(capturePoint));
+    @POST("/backend/config/instrumentation/add")
+    String addInstrumentationConfig(String content) throws Exception {
+        InstrumentationConfigDto configDto =
+                Marshaling.fromJson(content, InstrumentationConfigDto.class);
+        InstrumentationConfig config = configDto.toConfig();
+        String version = configService.insertInstrumentationConfig(config);
+        return getInstrumentationConfig(version);
     }
 
-    @POST("/backend/config/capture-points/update")
-    String updateCapturePoint(String content) throws IOException {
-        CapturePointDto capturePointDto = Marshaling.fromJson(content, CapturePointDto.class);
-        CapturePoint capturePoint = capturePointDto.toConfig();
-        String version = capturePointDto.version();
+    @POST("/backend/config/instrumentation/update")
+    String updateInstrumentationConfig(String content) throws IOException {
+        InstrumentationConfigDto configDto =
+                Marshaling.fromJson(content, InstrumentationConfigDto.class);
+        InstrumentationConfig config = configDto.toConfig();
+        String version = configDto.version();
         checkNotNull(version, "Missing required request property: version");
-        configService.updateCapturePoint(capturePoint, version);
-        return Marshaling2.toJson(CapturePointDto.fromConfig(capturePoint));
+        version = configService.updateInstrumentationConfig(config, version);
+        return getInstrumentationConfig(version);
     }
 
-    @POST("/backend/config/capture-points/remove")
-    void removeCapturePoint(String content) throws IOException {
+    @POST("/backend/config/instrumentation/remove")
+    void removeInstrumentationConfig(String content) throws IOException {
         String version = mapper.readValue(content, String.class);
         checkNotNull(version);
-        configService.deleteCapturePoint(version);
+        configService.deleteInstrumentationConfig(version);
     }
 
     // returns the first <limit> matching method names, ordered alphabetically (case-insensitive)
@@ -209,6 +193,29 @@ class CapturePointJsonService {
         } else {
             return sortedMethodNames;
         }
+    }
+
+    private List<MethodSignature> getMethodSignatures(String className, String methodName) {
+        if (methodName.contains("*") || methodName.contains("|")) {
+            return ImmutableList.of();
+        }
+        List<UiAnalyzedMethod> analyzedMethods = getAnalyzedMethods(className, methodName);
+        List<MethodSignature> methodSignatures = Lists.newArrayList();
+        for (UiAnalyzedMethod analyzedMethod : analyzedMethods) {
+            ImmutableMethodSignature.Builder builder = ImmutableMethodSignature.builder();
+            builder.name(analyzedMethod.name());
+            builder.addAllParameterTypes(analyzedMethod.parameterTypes());
+            builder.returnType(analyzedMethod.returnType());
+            // strip final and synchronized from displayed modifiers since they have no impact on
+            // the weaver's method matching
+            int reducedModifiers = analyzedMethod.modifiers() & ~ACC_FINAL & ~ACC_SYNCHRONIZED;
+            String modifierNames = Modifier.toString(reducedModifiers);
+            for (String modifier : splitter.split(modifierNames)) {
+                builder.addModifiers(modifier.toLowerCase(Locale.ENGLISH));
+            }
+            methodSignatures.add(builder.build());
+        }
+        return methodSignatures;
     }
 
     private List<UiAnalyzedMethod> getAnalyzedMethods(String className, String methodName) {
@@ -244,17 +251,33 @@ class CapturePointJsonService {
 
     @Value.Immutable
     @Json.Marshaled
-    abstract static class CapturePointResponse {
+    abstract static class MethodSignature {
+        abstract String name();
+        abstract List<String> parameterTypes();
+        abstract String returnType();
+        abstract List<String> modifiers();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class InstrumentationListResponse {
         @Json.ForceEmpty
-        abstract List<CapturePointDto> configs();
+        abstract List<InstrumentationConfigDto> configs();
         abstract boolean jvmOutOfSync();
         abstract boolean jvmRetransformClassesSupported();
     }
 
     @Value.Immutable
     @Json.Marshaled
+    abstract static class InstrumentationConfigResponse {
+        abstract InstrumentationConfigDto config();
+        abstract List<MethodSignature> methodSignatures();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
     @Json.Import(MarshalingRoutines.class)
-    abstract static class CapturePointDto {
+    abstract static class InstrumentationConfigDto {
 
         abstract String className();
         abstract String methodName();
@@ -280,8 +303,8 @@ class CapturePointJsonService {
         abstract Optional<String> traceEntryEnabledProperty();
         abstract @Nullable String version(); // null for insert operations
 
-        private static CapturePointDto fromConfig(CapturePoint config) {
-            return ImmutableCapturePointDto.builder()
+        private static InstrumentationConfigDto fromConfig(InstrumentationConfig config) {
+            return ImmutableInstrumentationConfigDto.builder()
                     .className(config.className())
                     .methodName(config.methodName())
                     .addAllMethodParameterTypes(config.methodParameterTypes())
@@ -304,8 +327,8 @@ class CapturePointJsonService {
                     .build();
         }
 
-        private CapturePoint toConfig() {
-            return ImmutableCapturePoint.builder()
+        private InstrumentationConfig toConfig() {
+            return ImmutableInstrumentationConfig.builder()
                     .className(className())
                     .methodName(methodName())
                     .addAllMethodParameterTypes(methodParameterTypes())

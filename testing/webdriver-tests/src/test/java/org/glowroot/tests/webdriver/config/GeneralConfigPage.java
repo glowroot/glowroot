@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,11 @@ import org.glowroot.tests.webdriver.Utils;
 
 import static org.openqa.selenium.By.xpath;
 
-public class ProfilingConfigPage {
+public class GeneralConfigPage {
 
     private final WebDriver driver;
 
-    public ProfilingConfigPage(WebDriver driver) {
+    public GeneralConfigPage(WebDriver driver) {
         this.driver = driver;
     }
 
@@ -41,8 +41,14 @@ public class ProfilingConfigPage {
                 + "//label[@btn-radio='false']"));
     }
 
-    public WebElement getIntervalTextField() {
-        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Interval']//input"));
+    public WebElement getStoreThresholdTextField() {
+        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Trace store threshold']"
+                + "//input"));
+    }
+
+    public WebElement getProfilingIntervalTextField() {
+        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Profiling interval']"
+                + "//input"));
     }
 
     public WebElement getSaveButton() {

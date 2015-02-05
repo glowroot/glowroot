@@ -25,7 +25,7 @@ import org.glowroot.api.PluginServices;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.config.TraceConfig;
+import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.trace.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -63,9 +63,9 @@ public class SetTraceStoreThresholdTest {
     @Test
     public void shouldReadTrace() throws Exception {
         // given
-        TraceConfig config = container.getConfigService().getTraceConfig();
-        config.setStoreThresholdMillis(Integer.MAX_VALUE);
-        container.getConfigService().updateTraceConfig(config);
+        GeneralConfig config = container.getConfigService().getGeneralConfig();
+        config.setTraceStoreThresholdMillis(Integer.MAX_VALUE);
+        container.getConfigService().updateGeneralConfig(config);
         // when
         container.executeAppUnderTest(SetLargeAndThenSmallTraceStoreThreshold.class);
         // then
@@ -76,9 +76,9 @@ public class SetTraceStoreThresholdTest {
     @Test
     public void shouldReadTrace2() throws Exception {
         // given
-        TraceConfig config = container.getConfigService().getTraceConfig();
-        config.setStoreThresholdMillis(Integer.MAX_VALUE);
-        container.getConfigService().updateTraceConfig(config);
+        GeneralConfig config = container.getConfigService().getGeneralConfig();
+        config.setTraceStoreThresholdMillis(Integer.MAX_VALUE);
+        container.getConfigService().updateGeneralConfig(config);
         // when
         container.executeAppUnderTest(SetSmallAndThenLargeTraceStoreThreshold.class);
         // then

@@ -47,7 +47,6 @@ glowroot.controller('ConfigStorageCtrl', [
       $scope.config = data.config;
       $scope.originalConfig = angular.copy(data.config);
 
-      $scope.dataDir = data.dataDir;
       $scope.page.aggregateExpirationDays = data.config.aggregateExpirationHours / 24;
       $scope.page.traceExpirationDays = data.config.traceExpirationHours / 24;
     }

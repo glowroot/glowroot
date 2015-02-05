@@ -21,9 +21,8 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.glowroot.tests.webdriver.config.AdvancedConfigPage;
 import org.glowroot.tests.webdriver.config.ConfigSidebar;
-import org.glowroot.tests.webdriver.config.ProfilingConfigPage;
+import org.glowroot.tests.webdriver.config.GeneralConfigPage;
 import org.glowroot.tests.webdriver.config.StorageConfigPage;
-import org.glowroot.tests.webdriver.config.TraceConfigPage;
 import org.glowroot.tests.webdriver.config.UserRecordingConfigPage;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,11 +30,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ConfigTest extends WebDriverTest {
 
     @Test
-    public void shouldUpdateTraceConfig() throws Exception {
+    public void shouldUpdateGeneralConfig() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
-        TraceConfigPage page = new TraceConfigPage(driver);
+        GeneralConfigPage page = new GeneralConfigPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
@@ -44,6 +43,8 @@ public class ConfigTest extends WebDriverTest {
         page.getEnabledSwitchOff().click();
         page.getStoreThresholdTextField().clear();
         page.getStoreThresholdTextField().sendKeys("2345");
+        page.getProfilingIntervalTextField().clear();
+        page.getProfilingIntervalTextField().sendKeys("3456");
         page.getSaveButton().click();
         // wait for save to complete
         new WebDriverWait(driver, 30).until(ExpectedConditions.not(
@@ -58,39 +59,7 @@ public class ConfigTest extends WebDriverTest {
                 .doesNotContain("active");
         assertThat(page.getEnabledSwitchOff().getAttribute("class").split(" ")).contains("active");
         assertThat(page.getStoreThresholdTextField().getAttribute("value")).isEqualTo("2345");
-    }
-
-    @Test
-    public void shouldUpdateProfilingConfig() throws Exception {
-        // given
-        App app = new App(driver, "http://localhost:" + container.getUiPort());
-        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
-        ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        ProfilingConfigPage page = new ProfilingConfigPage(driver);
-
-        app.open();
-        globalNavbar.getConfigurationLink().click();
-        configSidebar.getProfilingLink().click();
-
-        // when
-        page.getEnabledSwitchOff().click();
-        page.getIntervalTextField().clear();
-        page.getIntervalTextField().sendKeys("2345");
-        page.getSaveButton().click();
-        // wait for save to complete
-        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
-                ExpectedConditions.elementToBeClickable(page.getSaveButton())));
-
-        // then
-        app.open();
-        globalNavbar.getConfigurationLink().click();
-        configSidebar.getProfilingLink().click();
-        // need to give angular view a chance to render before assertions
-        Thread.sleep(200);
-        assertThat(page.getEnabledSwitchOn().getAttribute("class").split(" "))
-                .doesNotContain("active");
-        assertThat(page.getEnabledSwitchOff().getAttribute("class").split(" ")).contains("active");
-        assertThat(page.getIntervalTextField().getAttribute("value")).isEqualTo("2345");
+        assertThat(page.getProfilingIntervalTextField().getAttribute("value")).isEqualTo("3456");
     }
 
     @Test
@@ -98,12 +67,13 @@ public class ConfigTest extends WebDriverTest {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
-        ConfigSidebar configSidebar = new ConfigSidebar(driver);
         UserRecordingConfigPage page = new UserRecordingConfigPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getUserRecordingLink().click();
+        // user recording config is not accessible via config sidebar currently
+        driver.navigate().to("http://localhost:" + container.getUiPort()
+                + "/config/user-recording");
 
         // when
         page.getEnabledSwitchOff().click();
@@ -119,7 +89,9 @@ public class ConfigTest extends WebDriverTest {
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
-        configSidebar.getUserRecordingLink().click();
+        // user recording config is not accessible via config sidebar currently
+        driver.navigate().to("http://localhost:" + container.getUiPort()
+                + "/config/user-recording");
         // need to give angular view a chance to render before assertions
         Thread.sleep(200);
         assertThat(page.getEnabledSwitchOn().getAttribute("class").split(" "))
@@ -144,8 +116,8 @@ public class ConfigTest extends WebDriverTest {
         // when
         page.getAggregateExpirationTextField().clear();
         page.getAggregateExpirationTextField().sendKeys("44");
-        page.getTracesExpirationTextField().clear();
-        page.getTracesExpirationTextField().sendKeys("55");
+        page.getTraceExpirationTextField().clear();
+        page.getTraceExpirationTextField().sendKeys("55");
         page.getCappedDatabaseSizeTextField().clear();
         page.getCappedDatabaseSizeTextField().sendKeys("678");
         page.getSaveButton().click();
@@ -161,7 +133,7 @@ public class ConfigTest extends WebDriverTest {
         Thread.sleep(200);
         assertThat(page.getAggregateExpirationTextField().getAttribute("value"))
                 .isEqualTo("44");
-        assertThat(page.getTracesExpirationTextField().getAttribute("value")).isEqualTo("55");
+        assertThat(page.getTraceExpirationTextField().getAttribute("value")).isEqualTo("55");
         assertThat(page.getCappedDatabaseSizeTextField().getAttribute("value"))
                 .isEqualTo("678");
     }

@@ -23,9 +23,8 @@ import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.config.ProfilingConfig;
+import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.config.StorageConfig;
-import org.glowroot.container.config.UserInterfaceConfig;
 import org.glowroot.container.impl.JavaagentContainer;
 import org.glowroot.container.impl.LocalContainer;
 
@@ -58,19 +57,16 @@ public class UiSandboxMain {
                     ImmutableMap.<String, String>of());
         }
         if (initConfig) {
-            ProfilingConfig profilingConfig = container.getConfigService().getProfilingConfig();
-            profilingConfig.setEnabled(true);
-            profilingConfig.setIntervalMillis(100);
-            container.getConfigService().updateProfilingConfig(profilingConfig);
+            GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+            generalConfig.setEnabled(true);
+            generalConfig.setProfilingIntervalMillis(100);
+            generalConfig.setDefaultTransactionType("Sandbox");
+            container.getConfigService().updateGeneralConfig(generalConfig);
             if (rollOverQuickly) {
                 StorageConfig storageConfig = container.getConfigService().getStorageConfig();
                 storageConfig.setCappedDatabaseSizeMb(10);
                 container.getConfigService().updateStorageConfig(storageConfig);
             }
-            UserInterfaceConfig userInterfaceConfig =
-                    container.getConfigService().getUserInterfaceConfig();
-            userInterfaceConfig.setDefaultTransactionType("Sandbox");
-            container.getConfigService().updateUserInterfaceConfig(userInterfaceConfig);
         }
         container.executeAppUnderTest(GenerateTraces.class);
     }

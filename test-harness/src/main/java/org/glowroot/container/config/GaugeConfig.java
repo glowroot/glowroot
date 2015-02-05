@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import com.google.common.base.Objects;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
-public class Gauge {
+public class GaugeConfig {
 
     private @Nullable String name;
     private @Nullable String mbeanObjectName;
@@ -37,11 +37,11 @@ public class Gauge {
     private @Nullable final String version;
 
     // used to create new Gauge records that haven't been sent to server yet
-    public Gauge() {
+    public GaugeConfig() {
         version = null;
     }
 
-    public Gauge(String version) {
+    public GaugeConfig(String version) {
         this.version = version;
     }
 
@@ -75,8 +75,8 @@ public class Gauge {
 
     @Override
     public boolean equals(@Nullable Object obj) {
-        if (obj instanceof Gauge) {
-            Gauge that = (Gauge) obj;
+        if (obj instanceof GaugeConfig) {
+            GaugeConfig that = (GaugeConfig) obj;
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
@@ -106,7 +106,7 @@ public class Gauge {
     }
 
     @JsonCreator
-    static Gauge readValue(
+    static GaugeConfig readValue(
             @JsonProperty("name") @Nullable String name,
             @JsonProperty("mbeanObjectName") @Nullable String mbeanObjectName,
             @JsonProperty("mbeanAttributeNames") @Nullable List<String> mbeanAttributeNames,
@@ -115,7 +115,7 @@ public class Gauge {
         checkRequiredProperty(mbeanObjectName, "mbeanObjectName");
         checkRequiredProperty(mbeanAttributeNames, "mbeanAttributeNames");
         checkRequiredProperty(version, "version");
-        Gauge config = new Gauge(version);
+        GaugeConfig config = new GaugeConfig(version);
         config.setName(name);
         config.setMBeanObjectName(mbeanObjectName);
         config.setMBeanAttributeNames(mbeanAttributeNames);

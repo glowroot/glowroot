@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.config.CapturePoint;
-import org.glowroot.container.config.CapturePoint.CaptureKind;
+import org.glowroot.container.config.InstrumentationConfig;
+import org.glowroot.container.config.InstrumentationConfig.CaptureKind;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,7 +42,7 @@ public class ReweaveCountTest {
     public static void tearDown() throws Exception {
         // afterEachTest() will remove the pointcut configs, but still need to reweave here
         // in order to get back to square one
-        container.getConfigService().reweavePointcuts();
+        container.getConfigService().reweave();
         container.close();
     }
 
@@ -54,18 +54,18 @@ public class ReweaveCountTest {
     @Test
     public void shouldCalculateCorrectReweaveCount() throws Exception {
         container.executeAppUnderTest(ShouldLoadClassesForWeaving.class);
-        CapturePoint config = new CapturePoint();
+        InstrumentationConfig config = new InstrumentationConfig();
         config.setClassName("org.glowroot.tests.javaagent.ReweaveCountTest$AAA");
         config.setMethodName("x");
         config.setMethodParameterTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
         config.setCaptureKind(CaptureKind.METRIC);
         config.setMetricName("x");
-        config = container.getConfigService().addCapturePoint(config);
-        int reweaveCount = container.getConfigService().reweavePointcuts();
+        config = container.getConfigService().addInstrumentationConfig(config);
+        int reweaveCount = container.getConfigService().reweave();
         assertThat(reweaveCount).isEqualTo(2);
-        container.getConfigService().removeCapturePoint(config.getVersion());
-        reweaveCount = container.getConfigService().reweavePointcuts();
+        container.getConfigService().removeInstrumentationConfig(config.getVersion());
+        reweaveCount = container.getConfigService().reweave();
         assertThat(reweaveCount).isEqualTo(2);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,16 +24,36 @@ import org.glowroot.common.Marshaling2;
 
 @Value.Immutable
 @Json.Marshaled
-public class ProfilingConfig {
+public abstract class GeneralConfig {
 
+    // if tracing is disabled mid-trace there should be no issue
+    // active traces will not accumulate additional entries
+    // but they will be stored if they exceed the defined thresholds
+    //
+    // if tracing is enabled mid-trace there should be no issue
+    // active traces that were not captured at their start will
+    // continue not to accumulate entries
+    // and they will not be stored even if they exceed the defined thresholds
     @Value.Default
     public boolean enabled() {
         return true;
     }
 
+    // 0 means store all traces, -1 means store no traces
     @Value.Default
-    public int intervalMillis() {
+    public int traceStoreThresholdMillis() {
+        return 3000;
+    }
+
+    // 0 means profiling disabled
+    @Value.Default
+    public int profilingIntervalMillis() {
         return 2000;
+    }
+
+    @Value.Default
+    public String defaultTransactionType() {
+        return "";
     }
 
     @Value.Derived

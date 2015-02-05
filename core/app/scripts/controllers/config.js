@@ -33,12 +33,16 @@ glowroot.controller('ConfigCtrl', [
       double: /^(0|[1-9][0-9]*)?(\.[0-9]*)?$/
     };
 
-    $scope.isCapturePoint = function () {
-      return $location.path() === '/config/capture-point-list' || $location.path() === '/config/capture-point';
+    $scope.isInstrumentation = function () {
+      return $location.path() === '/config/instrumentation-list' || $location.path() === '/config/instrumentation';
     };
 
-    $scope.isGauge = function () {
+    $scope.isGauges = function () {
       return $location.path() === '/config/gauge-list' || $location.path() === '/config/gauge';
+    };
+
+    $scope.isPlugins = function () {
+      return $location.path() === '/config/plugin-list' || $location.path() === '/config/plugin';
     };
   }
 ]);

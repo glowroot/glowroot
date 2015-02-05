@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.advicegen.AdviceGenerator;
 import org.glowroot.api.weaving.Mixin;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.config.CapturePoint;
+import org.glowroot.config.InstrumentationConfig;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.weaving.Advice;
@@ -66,13 +66,13 @@ public class AdviceCache {
     private final File dataDir;
 
     private volatile ImmutableList<Advice> reweavableAdvisors;
-    private volatile ImmutableSet<String> reweavableCapturePointVersions;
+    private volatile ImmutableSet<String> reweavableConfigVersions;
 
     private volatile ImmutableList<Advice> allAdvisors;
 
     AdviceCache(List<PluginDescriptor> pluginDescriptors, List<File> pluginJars,
-            List<CapturePoint> reweavableCapturePoints, @Nullable Instrumentation instrumentation,
-            File dataDir) throws Exception {
+            List<InstrumentationConfig> reweavableConfigs,
+            @Nullable Instrumentation instrumentation, File dataDir) throws Exception {
 
         List<Advice> pluginAdvisors = Lists.newArrayList();
         List<MixinType> mixinTypes = Lists.newArrayList();
@@ -95,7 +95,7 @@ public class AdviceCache {
                 }
             }
             lazyAdvisors.putAll(AdviceGenerator.createAdvisors(
-                    pluginDescriptor.capturePoints(), pluginDescriptor.id()));
+                    pluginDescriptor.instrumentationConfigs(), pluginDescriptor.id()));
         }
         for (Entry<Advice, LazyDefinedClass> entry : lazyAdvisors.entrySet()) {
             pluginAdvisors.add(entry.getKey());
@@ -119,7 +119,7 @@ public class AdviceCache {
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.instrumentation = instrumentation;
         this.dataDir = dataDir;
-        updateAdvisors(reweavableCapturePoints, true);
+        updateAdvisors(reweavableConfigs, true);
     }
 
     Supplier<List<Advice>> getAdvisorsSupplier() {
@@ -136,11 +136,11 @@ public class AdviceCache {
         return mixinTypes;
     }
 
-    @EnsuresNonNull({"reweavableAdvisors", "reweavableCapturePointVersions", "allAdvisors"})
+    @EnsuresNonNull({"reweavableAdvisors", "reweavableConfigVersions", "allAdvisors"})
     public void updateAdvisors(/*>>>@UnknownInitialization(AdviceCache.class) AdviceCache this,*/
-            List<CapturePoint> reweavableCapturePoints, boolean cleanTmpDir) throws Exception {
+            List<InstrumentationConfig> reweavableConfigs, boolean cleanTmpDir) throws Exception {
         ImmutableMap<Advice, LazyDefinedClass> advisors =
-                AdviceGenerator.createAdvisors(reweavableCapturePoints, null);
+                AdviceGenerator.createAdvisors(reweavableConfigs, null);
         if (instrumentation == null) {
             // this is for tests that don't run with javaagent container
             ClassLoader loader = Thread.currentThread().getContextClassLoader();
@@ -164,17 +164,16 @@ public class AdviceCache {
             }
         }
         reweavableAdvisors = advisors.keySet().asList();
-        reweavableCapturePointVersions =
-                createReweavableCapturePointVersions(reweavableCapturePoints);
+        reweavableConfigVersions = createReweavableConfigVersions(reweavableConfigs);
         allAdvisors = ImmutableList.copyOf(Iterables.concat(pluginAdvisors, reweavableAdvisors));
     }
 
-    public boolean isOutOfSync(List<CapturePoint> reweavableCapturePoints) {
+    public boolean isOutOfSync(List<InstrumentationConfig> reweavableConfigs) {
         Set<String> versions = Sets.newHashSet();
-        for (CapturePoint reweavableCapturePoint : reweavableCapturePoints) {
-            versions.add(reweavableCapturePoint.version());
+        for (InstrumentationConfig reweavableConfig : reweavableConfigs) {
+            versions.add(reweavableConfig.version());
         }
-        return !versions.equals(this.reweavableCapturePointVersions);
+        return !versions.equals(this.reweavableConfigVersions);
     }
 
     private static List<Advice> getAdvisors(Class<?> aspectClass) {
@@ -202,11 +201,11 @@ public class AdviceCache {
         return mixinTypes;
     }
 
-    private static ImmutableSet<String> createReweavableCapturePointVersions(
-            List<CapturePoint> reweavableCapturePoints) {
+    private static ImmutableSet<String> createReweavableConfigVersions(
+            List<InstrumentationConfig> reweavableConfigs) {
         Set<String> versions = Sets.newHashSet();
-        for (CapturePoint reweavableCapturePoint : reweavableCapturePoints) {
-            versions.add(reweavableCapturePoint.version());
+        for (InstrumentationConfig reweavableConfig : reweavableConfigs) {
+            versions.add(reweavableConfig.version());
         }
         return ImmutableSet.copyOf(versions);
     }

@@ -94,7 +94,7 @@ public class Transaction {
 
     // overrides general store threshold
     // -1 means don't override the general store threshold
-    private volatile int storeThresholdMillisOverride = USE_GENERAL_STORE_THRESHOLD;
+    private volatile int traceStoreThresholdMillisOverride = USE_GENERAL_STORE_THRESHOLD;
 
     // these are stored in the trace so they are only scheduled a single time, and also so they can
     // be canceled at trace completion
@@ -258,8 +258,8 @@ public class Transaction {
         return profile;
     }
 
-    public int getStoreThresholdMillisOverride() {
-        return storeThresholdMillisOverride;
+    public int getTraceStoreThresholdMillisOverride() {
+        return traceStoreThresholdMillisOverride;
     }
 
     public @Nullable ScheduledRunnable getUserProfileRunnable() {
@@ -323,14 +323,14 @@ public class Transaction {
         }
     }
 
-    public void setStoreThresholdMillisOverride(int storeThresholdMillisOverride) {
-        if (this.storeThresholdMillisOverride == -1) {
+    public void setTraceStoreThresholdMillisOverride(int traceStoreThresholdMillisOverride) {
+        if (this.traceStoreThresholdMillisOverride == -1) {
             // first call to this method for this trace, this is normal case
-            this.storeThresholdMillisOverride = storeThresholdMillisOverride;
+            this.traceStoreThresholdMillisOverride = traceStoreThresholdMillisOverride;
         } else {
             // use the minimum threshold passed to this method
-            this.storeThresholdMillisOverride =
-                    Math.min(this.storeThresholdMillisOverride, storeThresholdMillisOverride);
+            this.traceStoreThresholdMillisOverride = Math.min(
+                    this.traceStoreThresholdMillisOverride, traceStoreThresholdMillisOverride);
         }
     }
 

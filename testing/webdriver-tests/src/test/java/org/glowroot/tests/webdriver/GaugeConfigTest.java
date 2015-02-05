@@ -18,11 +18,11 @@ package org.glowroot.tests.webdriver;
 import org.junit.Test;
 
 import org.glowroot.tests.webdriver.config.ConfigSidebar;
-import org.glowroot.tests.webdriver.config.GaugePage;
+import org.glowroot.tests.webdriver.config.GaugeConfigPage;
 
 import static org.openqa.selenium.By.xpath;
 
-public class GaugeTest extends WebDriverTest {
+public class GaugeConfigTest extends WebDriverTest {
 
     @Test
     public void shouldAddGauge() throws Exception {
@@ -53,16 +53,16 @@ public class GaugeTest extends WebDriverTest {
         createGauge();
 
         // when
-        Utils.withWait(driver, xpath("//button[@ng-click='addNew()']")).click();
-        GaugePage gaugePage = new GaugePage(driver);
+        Utils.withWait(driver, xpath("//a[@href='config/gauge?new']")).click();
+        GaugeConfigPage gaugePage = new GaugeConfigPage(driver);
         gaugePage.getMBeanObjectNameTextField().sendKeys("ClassLoading");
         gaugePage.clickMBeanObjectNameAutoCompleteItem("java.lang:type=ClassLoading");
         gaugePage.getDuplicateMBeanMessage();
     }
 
     private void createGauge() {
-        Utils.withWait(driver, xpath("//button[@ng-click='addNew()']")).click();
-        GaugePage gaugePage = new GaugePage(driver);
+        Utils.withWait(driver, xpath("//a[@href='config/gauge?new']")).click();
+        GaugeConfigPage gaugePage = new GaugeConfigPage(driver);
         gaugePage.getMBeanObjectNameTextField().sendKeys("ClassLoading");
         gaugePage.clickMBeanObjectNameAutoCompleteItem("java.lang:type=ClassLoading");
         gaugePage.getMBeanAttributeCheckBox("LoadedClassCount").click();

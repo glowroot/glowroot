@@ -30,8 +30,8 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
 import org.glowroot.collector.AggregateCollector;
 import org.glowroot.collector.TransactionCollectorImpl;
-import org.glowroot.config.CapturePoint;
 import org.glowroot.config.ConfigService;
+import org.glowroot.config.InstrumentationConfig;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.GaugePointDao;
@@ -90,15 +90,15 @@ class AdminJsonService {
         aggregateDao.deleteAll();
     }
 
-    @POST("/backend/admin/reweave-capture-points")
-    String reweaveCapturePoints() throws Exception {
+    @POST("/backend/admin/reweave")
+    String reweave() throws Exception {
         // this command is filtered out of the UI when instrumentation is null (which is only in dev
         // mode anyways)
         checkNotNull(instrumentation);
         // this command is filtered out of the UI when retransform classes is not supported
         checkState(instrumentation.isRetransformClassesSupported(),
                 "Retransform classes is not supported");
-        int count = reweaveCapturePointsInternal();
+        int count = reweaveInternal();
         return "{\"classes\":" + count + "}";
     }
 
@@ -133,12 +133,12 @@ class AdminJsonService {
     }
 
     @RequiresNonNull("instrumentation")
-    private int reweaveCapturePointsInternal() throws Exception {
-        List<CapturePoint> capturePoints = configService.getCapturePoints();
-        adviceCache.updateAdvisors(capturePoints, false);
+    private int reweaveInternal() throws Exception {
+        List<InstrumentationConfig> configs = configService.getInstrumentationConfigs();
+        adviceCache.updateAdvisors(configs, false);
         Set<String> classNames = Sets.newHashSet();
-        for (CapturePoint capturePoint : capturePoints) {
-            classNames.add(capturePoint.className());
+        for (InstrumentationConfig config : configs) {
+            classNames.add(config.className());
         }
         Set<Class<?>> classes = Sets.newHashSet();
         List<Class<?>> possibleNewReweavableClasses = getExistingSubClasses(classNames);

@@ -31,11 +31,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 @Value.Immutable
 @Json.Marshaled
-public abstract class Gauge {
+public abstract class GaugeConfig {
 
-    public static final Ordering<Gauge> orderingByName = new Ordering<Gauge>() {
+    public static final Ordering<GaugeConfig> orderingByName = new Ordering<GaugeConfig>() {
         @Override
-        public int compare(@Nullable Gauge left, @Nullable Gauge right) {
+        public int compare(@Nullable GaugeConfig left, @Nullable GaugeConfig right) {
             checkNotNull(left);
             checkNotNull(right);
             return left.name().compareToIgnoreCase(right.name());

@@ -16,7 +16,7 @@
 
 /* global glowroot */
 
-glowroot.controller('ConfigCapturePointListCtrl', [
+glowroot.controller('ConfigInstrumentationListCtrl', [
   '$scope',
   '$location',
   '$http',
@@ -24,12 +24,12 @@ glowroot.controller('ConfigCapturePointListCtrl', [
   'httpErrors',
   function ($scope, $location, $http, $timeout, httpErrors) {
 
-    $scope.display = function (capturePoint) {
-      return capturePoint.className + '::' + capturePoint.methodName;
+    $scope.display = function (config) {
+      return config.className + '::' + config.methodName;
     };
 
-    $scope.displayExtra = function (capturePoint) {
-      var captureKind = capturePoint.captureKind;
+    $scope.displayExtra = function (config) {
+      var captureKind = config.captureKind;
       if (captureKind === 'metric') {
         return 'Metric';
       } else if (captureKind === 'trace-entry') {
@@ -41,14 +41,10 @@ glowroot.controller('ConfigCapturePointListCtrl', [
       }
     };
 
-    $scope.addNew = function () {
-      $location.url('config/capture-point?new');
-    };
-
-    $http.get('backend/config/capture-points')
+    $http.get('backend/config/instrumentation')
         .success(function (data) {
           $scope.loaded = true;
-          $scope.capturePoints = data.configs;
+          $scope.configs = data.configs;
           // use object so dirty flag can be updated by child controllers
           $scope.dirty = data.jvmOutOfSync;
           $scope.jvmRetransformClassesSupported = data.jvmRetransformClassesSupported;
@@ -58,7 +54,7 @@ glowroot.controller('ConfigCapturePointListCtrl', [
         .error(httpErrors.handler($scope));
 
     $scope.retransformClasses = function (deferred) {
-      $http.post('backend/admin/reweave-capture-points', '')
+      $http.post('backend/admin/reweave', '')
           .success(function (data) {
             $scope.dirty = false;
             if (data.classes) {

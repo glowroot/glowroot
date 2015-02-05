@@ -299,23 +299,13 @@ glowroot.config([
       templateUrl: 'views/config.html',
       controller: 'ConfigCtrl'
     });
-    $stateProvider.state('config.traces', {
-      url: '/traces',
-      templateUrl: 'views/config/traces.html',
+    $stateProvider.state('config.general', {
+      url: '/general',
+      templateUrl: 'views/config/general.html',
       controller: 'ConfigCommonCtrl',
       resolve: {
         backendUrl: function () {
-          return 'backend/config/trace';
-        }
-      }
-    });
-    $stateProvider.state('config.profiling', {
-      url: '/profiling',
-      templateUrl: 'views/config/profiling.html',
-      controller: 'ConfigCommonCtrl',
-      resolve: {
-        backendUrl: function () {
-          return 'backend/config/profiling';
+          return 'backend/config/general';
         }
       }
     });
@@ -329,15 +319,15 @@ glowroot.config([
         }
       }
     });
-    $stateProvider.state('config.capturePointList', {
-      url: '/capture-point-list',
-      templateUrl: 'views/config/capture-point-list.html',
-      controller: 'ConfigCapturePointListCtrl'
+    $stateProvider.state('config.instrumentationList', {
+      url: '/instrumentation-list',
+      templateUrl: 'views/config/instrumentation-list.html',
+      controller: 'ConfigInstrumentationListCtrl'
     });
-    $stateProvider.state('config.capturePoint', {
-      url: '/capture-point?v',
-      templateUrl: 'views/config/capture-point.html',
-      controller: 'ConfigCapturePointCtrl'
+    $stateProvider.state('config.instrumentation', {
+      url: '/instrumentation?v',
+      templateUrl: 'views/config/instrumentation.html',
+      controller: 'ConfigInstrumentationCtrl'
     });
     $stateProvider.state('config.gaugeList', {
       url: '/gauge-list',
@@ -349,15 +339,15 @@ glowroot.config([
       templateUrl: 'views/config/gauge.html',
       controller: 'ConfigGaugeCtrl'
     });
-    $stateProvider.state('config.storage', {
-      url: '/storage',
-      templateUrl: 'views/config/storage.html',
-      controller: 'ConfigStorageCtrl'
+    $stateProvider.state('config.pluginList', {
+      url: '/plugin-list',
+      templateUrl: 'views/config/plugin-list.html',
+      controller: 'ConfigPluginListCtrl'
     });
-    $stateProvider.state('config.userInterface', {
-      url: '/user-interface',
-      templateUrl: 'views/config/user-interface.html',
-      controller: 'ConfigUserInterfaceCtrl'
+    $stateProvider.state('config.plugin', {
+      url: '/plugin?id',
+      templateUrl: 'views/config/plugin.html',
+      controller: 'ConfigPluginCtrl'
     });
     $stateProvider.state('config.advanced', {
       url: '/advanced',
@@ -369,10 +359,15 @@ glowroot.config([
         }
       }
     });
-    $stateProvider.state('config.plugin', {
-      url: '/plugin/:pluginId',
-      templateUrl: 'views/config/plugin.html',
-      controller: 'ConfigPluginCtrl'
+    $stateProvider.state('config.userInterface', {
+      url: '/ui',
+      templateUrl: 'views/config/user-interface.html',
+      controller: 'ConfigUserInterfaceCtrl'
+    });
+    $stateProvider.state('config.storage', {
+      url: '/storage',
+      templateUrl: 'views/config/storage.html',
+      controller: 'ConfigStorageCtrl'
     });
     $stateProvider.state('login', {
       url: '/login',

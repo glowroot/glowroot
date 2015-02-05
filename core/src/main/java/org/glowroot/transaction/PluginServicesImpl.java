@@ -44,7 +44,7 @@ import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginConfig;
 import org.glowroot.config.PluginDescriptor;
-import org.glowroot.config.TraceConfig;
+import org.glowroot.config.GeneralConfig;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.transaction.model.MetricNameImpl;
 import org.glowroot.transaction.model.Transaction;
@@ -318,7 +318,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
             int thresholdMillis = Ints.saturatedCast(unit.toMillis(threshold));
-            transaction.setStoreThresholdMillisOverride(thresholdMillis);
+            transaction.setTraceStoreThresholdMillisOverride(thresholdMillis);
         }
     }
 
@@ -329,15 +329,15 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public void onChange() {
-        TraceConfig traceConfig = configService.getTraceConfig();
+        GeneralConfig generalConfig = configService.getGeneralConfig();
         if (pluginId == null) {
-            enabled = traceConfig.enabled();
+            enabled = generalConfig.enabled();
         } else {
             PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
             // pluginConfig should not be null since pluginId was already validated
             // at construction time and plugins cannot be removed (or their ids changed) at runtime
             checkNotNull(pluginConfig);
-            enabled = traceConfig.enabled() && pluginConfig.enabled();
+            enabled = generalConfig.enabled() && pluginConfig.enabled();
             this.pluginConfig = pluginConfig;
         }
         AdvancedConfig advancedConfig = configService.getAdvancedConfig();

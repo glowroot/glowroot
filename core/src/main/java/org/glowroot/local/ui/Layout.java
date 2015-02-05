@@ -31,7 +31,6 @@ abstract class Layout {
     abstract boolean jvmHeapDump();
     abstract String footerMessage();
     abstract boolean passwordEnabled();
-    abstract List<LayoutPlugin> plugins();
     abstract List<String> transactionTypes();
     abstract String defaultTransactionType();
     abstract List<String> transactionCustomAttributes();
@@ -43,12 +42,5 @@ abstract class Layout {
     @Value.Derived
     public String version() {
         return Hashing.sha1().hashString(Marshaling2.toJson(this), Charsets.UTF_8).toString();
-    }
-
-    @Value.Immutable
-    @Json.Marshaled
-    abstract static class LayoutPlugin {
-        abstract String id();
-        abstract String name();
     }
 }

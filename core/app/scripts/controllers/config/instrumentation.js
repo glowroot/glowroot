@@ -16,7 +16,7 @@
 
 /* global glowroot, angular */
 
-glowroot.controller('ConfigCapturePointCtrl', [
+glowroot.controller('ConfigInstrumentationCtrl', [
   '$scope',
   '$location',
   '$http',
@@ -30,9 +30,11 @@ glowroot.controller('ConfigCapturePointCtrl', [
 
     var version = $location.search().v;
 
+    var onBlurDebouncer;
+
     function onNewData(data) {
-      $scope.config = data;
-      $scope.originalConfig = angular.copy(data);
+      $scope.config = data.config;
+      $scope.originalConfig = angular.copy(data.config);
 
       function simpleName(className) {
         var splitIndex = className.lastIndexOf('.');
@@ -42,26 +44,42 @@ glowroot.controller('ConfigCapturePointCtrl', [
         return className;
       }
 
-      if (data.className) {
-        $scope.heading = simpleName(data.className) + '::' + data.methodName;
-        var methodSignature = {
-          name: data.methodName,
-          parameterTypes: data.methodParameterTypes,
-          returnType: data.methodReturnType,
-          modifiers: data.methodModifiers
-        };
-        var captureKind = data.captureKind;
-        $scope.selectedClassName = data.className;
-        $scope.selectedMethodName = data.methodName;
-        $scope.selectedMethodSignature = methodSignature;
-        $scope.methodSignatures = [methodSignature];
+      if (data.config.className) {
+        $scope.heading = simpleName(data.config.className) + '::' + data.config.methodName;
+        var captureKind = data.config.captureKind;
+        $scope.selectedClassName = data.config.className;
+        $scope.selectedMethodName = data.config.methodName;
+        $scope.methodSignatures = data.methodSignatures || [];
         $scope.captureKindTransaction = captureKind === 'transaction';
         $scope.showMetric = captureKind === 'metric' || captureKind === 'trace-entry' || captureKind === 'transaction';
         $scope.showTraceEntry = captureKind === 'trace-entry' || captureKind === 'transaction';
         $scope.showTraceEntryStackThreshold = captureKind === 'trace-entry';
-        $scope.loadMethodSignatures = true;
+
+        $scope.methodSignatures.unshift({
+          name: $scope.config.methodName,
+          parameterTypes: ['..'],
+          returnType: '',
+          modifiers: []
+        });
+
+        for (var i = 0; i < $scope.methodSignatures.length; i++) {
+          if (angular.equals($scope.methodSignatures[i].parameterTypes, $scope.config.methodParameterTypes)) {
+            $scope.selectedMethodSignature = $scope.methodSignatures[i];
+            break;
+          }
+        }
+        if (!$scope.selectedMethodSignature) {
+          $scope.selectedMethodSignature = {
+            name: $scope.config.methodName,
+            parameterTypes: $scope.config.methodParameterTypes,
+            returnType: '',
+            modifiers: [],
+            notAvailable: true
+          };
+          $scope.methodSignatures.push($scope.selectedMethodSignature);
+        }
       } else {
-        $scope.heading = '<New capture point>';
+        $scope.heading = '<New>';
         $timeout(function () {
           // focus on class name
           $scope.isFocus = true;
@@ -70,7 +88,7 @@ glowroot.controller('ConfigCapturePointCtrl', [
     }
 
     if (version) {
-      $http.get('backend/config/capture-points/' + version)
+      $http.get('backend/config/instrumentation/' + version)
           .success(function (data) {
             $scope.loaded = true;
             onNewData(data);
@@ -90,6 +108,11 @@ glowroot.controller('ConfigCapturePointCtrl', [
           && !angular.equals($scope.config, $scope.originalConfig);
     };
     var removeConfirmIfHasChangesListener = $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
+
+    $scope.hasMethodSignatureError = function () {
+      return !$scope.methodSignatures || !$scope.methodSignatures.length ||
+          $scope.formCtrl.selectedMethodSignature.$invalid;
+    };
 
     $scope.showClassNameSpinner = 0;
     $scope.showMethodNameSpinner = 0;
@@ -127,7 +150,7 @@ glowroot.controller('ConfigCapturePointCtrl', [
       if (!$scope.config.className) {
         return [];
       }
-      if (suggestion.indexOf('*') !== -1) {
+      if (suggestion.indexOf('*') !== -1 || suggestion.indexOf('|') !== -1) {
         return [suggestion];
       }
       var queryData = {
@@ -148,6 +171,7 @@ glowroot.controller('ConfigCapturePointCtrl', [
     };
 
     $scope.onSelectMethodName = function () {
+      $timeout.cancel(onBlurDebouncer);
       var methodName = $scope.config.methodName;
 
       // since matchingMethods clears the trace entry text, check here if the value has really changed
@@ -158,7 +182,6 @@ glowroot.controller('ConfigCapturePointCtrl', [
       // to set the value to something that is not available in the dropdown
 
       if (methodName !== $scope.selectedMethodName) {
-        $scope.loadMethodSignatures = false;
         $scope.selectedMethodName = methodName;
         if (methodName.indexOf('*') !== -1) {
           $scope.methodSignatures = [
@@ -173,15 +196,14 @@ glowroot.controller('ConfigCapturePointCtrl', [
         } else {
           matchingMethods(methodName);
         }
-      } else if ($scope.loadMethodSignatures) {
-        $scope.loadMethodSignatures = false;
-        matchingMethods(methodName, true);
       }
     };
 
     $scope.onBlurMethodName = function () {
       if ($scope.config.methodName) {
-        $scope.onSelectMethodName();
+        onBlurDebouncer = $timeout(function () {
+          $scope.onSelectMethodName();
+        }, 100);
       } else {
         // the user cleared the text input and tabbed away
         $scope.methodSignatures = [];
@@ -191,22 +213,26 @@ glowroot.controller('ConfigCapturePointCtrl', [
 
     $scope.methodSignatureText = function (methodSignature) {
       if (methodSignature.name.indexOf('*') !== -1 || methodSignature.name.indexOf('|') !== -1) {
-        return 'match any signature';
+        return 'any signature';
       }
       if (isSignatureAll(methodSignature)) {
-        return 'match any signature';
+        return 'any signature';
       }
       var text = '';
       var i;
-      for (i = 0; i < methodSignature.modifiers.length; i++) {
-        text += methodSignature.modifiers[i] + ' ';
+      if (methodSignature.modifiers) {
+        for (i = 0; i < methodSignature.modifiers.length; i++) {
+          text += methodSignature.modifiers[i] + ' ';
+        }
       }
       text += methodSignature.returnType + ' ' + methodSignature.name + '(';
-      for (i = 0; i < methodSignature.parameterTypes.length; i++) {
-        if (i > 0) {
-          text += ', ';
+      if (methodSignature.parameterTypes) {
+        for (i = 0; i < methodSignature.parameterTypes.length; i++) {
+          if (i > 0) {
+            text += ', ';
+          }
+          text += methodSignature.parameterTypes[i];
         }
-        text += methodSignature.parameterTypes[i];
       }
       text += ')';
       return text;
@@ -216,9 +242,9 @@ glowroot.controller('ConfigCapturePointCtrl', [
       var postData = angular.copy($scope.config);
       var url;
       if (version) {
-        url = 'backend/config/capture-points/update';
+        url = 'backend/config/instrumentation/update';
       } else {
-        url = 'backend/config/capture-points/add';
+        url = 'backend/config/instrumentation/add';
       }
       $http.post(url, postData)
           .success(function (data) {
@@ -229,7 +255,7 @@ glowroot.controller('ConfigCapturePointCtrl', [
             $timeout(function () {
               $location.search({v: version}).replace();
               $timeout(function () {
-                $location.url('/config/capture-point-list');
+                $location.url('config/instrumentation-list');
               });
             });
           })
@@ -237,70 +263,56 @@ glowroot.controller('ConfigCapturePointCtrl', [
     };
 
     $scope.delete = function (deferred) {
-      $http.post('backend/config/capture-points/remove', '"' + $scope.config.version + '"')
+      $http.post('backend/config/instrumentation/remove', '"' + $scope.config.version + '"')
           .success(function () {
             removeConfirmIfHasChangesListener();
-            $location.url('/config/capture-point-list').replace();
+            $location.url('config/instrumentation-list').replace();
           })
           .error(httpErrors.handler($scope, deferred));
     };
 
-    function matchingMethods(methodName, keepSelectedMethodSignature) {
+    function matchingMethods(methodName) {
       var queryData = {
         className: $scope.config.className,
         methodName: methodName
       };
-      $scope.methodSignaturesLoading = true;
       $http.get('backend/config/method-signatures' + queryStrings.encodeObject(queryData))
           .success(function (data) {
-            $scope.methodSignaturesLoading = false;
             $scope.methodSignatures = data;
-            if (data.length !== 1) {
-              // this includes the case where data.length === 0, which is possible if the user enters a
-              // non-matching method name and clicks outside of the input field to bypass the typeahead values
-              $scope.methodSignatures.push({
-                name: methodName,
-                parameterTypes: ['..'],
-                returnType: '',
-                modifiers: []
-              });
-            }
-            if (keepSelectedMethodSignature) {
-              for (var i = 0; i < data.length; i++) {
-                if ($scope.selectedMethodSignature.name === data[i].name &&
-                    angular.equals($scope.selectedMethodSignature.parameterTypes, data[i].parameterTypes)) {
-                  $scope.selectedMethodSignature = data[i];
-                  break;
-                }
-              }
-            } else if (data.length === 1) {
+            $scope.methodSignatures.unshift({
+              name: methodName,
+              parameterTypes: ['..'],
+              returnType: '',
+              modifiers: []
+            });
+            if (data.length === 1) {
               $scope.selectedMethodSignature = data[0];
-            } else if (!keepSelectedMethodSignature) {
+            } else {
               $scope.selectedMethodSignature = undefined;
             }
           })
           .error(function (data, status) {
-            $scope.methodSignaturesLoading = false;
             httpErrors.handler($scope)(data, status);
           });
     }
 
-    $scope.$watch('config.captureKind', function (newValue, oldValue) {
-      if (newValue !== oldValue) {
-        $scope.captureKindTransaction = newValue === 'transaction';
-        $scope.showMetric = newValue === 'metric' || newValue === 'trace-entry' || newValue === 'transaction';
-        $scope.showTraceEntry = newValue === 'trace-entry' || newValue === 'transaction';
-        $scope.showTraceEntryStackThreshold = newValue === 'trace-entry';
-        if (!$scope.showMetric) {
-          $scope.config.metricName = '';
-        }
-        if (!$scope.showTraceEntry) {
-          $scope.config.traceEntryTemplate = '';
-          $scope.config.traceEntryCaptureSelfNested = false;
-        }
-        if (!$scope.showTraceEntryStackThreshold) {
-          $scope.config.traceEntryStackThresholdMillis = '';
-        }
+    $scope.$watch('config.captureKind', function (newValue) {
+      if (!$scope.config) {
+        return;
+      }
+      $scope.captureKindTransaction = newValue === 'transaction';
+      $scope.showMetric = newValue === 'metric' || newValue === 'trace-entry' || newValue === 'transaction';
+      $scope.showTraceEntry = newValue === 'trace-entry' || newValue === 'transaction';
+      $scope.showTraceEntryStackThreshold = newValue === 'trace-entry';
+      if (!$scope.showMetric) {
+        $scope.config.metricName = '';
+      }
+      if (!$scope.showTraceEntry) {
+        $scope.config.traceEntryTemplate = '';
+        $scope.config.traceEntryCaptureSelfNested = false;
+      }
+      if (!$scope.showTraceEntryStackThreshold) {
+        $scope.config.traceEntryStackThresholdMillis = '';
       }
     });
 

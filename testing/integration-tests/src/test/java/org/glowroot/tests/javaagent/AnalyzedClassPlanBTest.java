@@ -17,6 +17,7 @@ package org.glowroot.tests.javaagent;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Collections;
 import java.util.Enumeration;
 
 import com.google.common.collect.ImmutableList;
@@ -30,8 +31,8 @@ import org.glowroot.Containers;
 import org.glowroot.common.ClassNames;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.config.CapturePoint;
-import org.glowroot.container.config.CapturePoint.CaptureKind;
+import org.glowroot.container.config.InstrumentationConfig;
+import org.glowroot.container.config.InstrumentationConfig.CaptureKind;
 import org.glowroot.weaving.AnalyzedWorld;
 
 public class AnalyzedClassPlanBTest {
@@ -41,15 +42,15 @@ public class AnalyzedClassPlanBTest {
     @BeforeClass
     public static void setUp() throws Exception {
         container = Containers.getSharedJavaagentContainer();
-        addCapturePoint();
-        container.getConfigService().reweavePointcuts();
+        addInstrumentationConfig();
+        container.getConfigService().reweave();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         // afterEachTest() will remove the pointcut configs, but still need to reweave here
         // in order to get back to square one
-        container.getConfigService().reweavePointcuts();
+        container.getConfigService().reweave();
         container.close();
     }
 
@@ -77,15 +78,15 @@ public class AnalyzedClassPlanBTest {
         // then
     }
 
-    private static void addCapturePoint() throws Exception {
-        CapturePoint config = new CapturePoint();
+    private static void addInstrumentationConfig() throws Exception {
+        InstrumentationConfig config = new InstrumentationConfig();
         config.setClassName("org.glowroot.tests.javaagent.AnalyzedClassPlanBTest$Y");
         config.setMethodName("y");
         config.setMethodParameterTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
         config.setCaptureKind(CaptureKind.METRIC);
         config.setMetricName("y");
-        container.getConfigService().addCapturePoint(config);
+        container.getConfigService().addInstrumentationConfig(config);
     }
 
     public static class ShouldNotLogWarningInAnalyzedWorldPlanB implements AppUnderTest {
@@ -130,7 +131,7 @@ public class AnalyzedClassPlanBTest {
         @Override
         public Enumeration<URL> getResources(String name) throws IOException {
             // don't load .class files as resources
-            return null;
+            return Collections.enumeration(Collections.<URL>emptyList());
         }
     }
 

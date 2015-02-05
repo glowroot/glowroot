@@ -72,7 +72,7 @@ glowroot.controller('ConfigGaugeCtrl', [
           });
         });
       } else {
-        $scope.heading = '<New gauge>';
+        $scope.heading = '<New>';
         $timeout(function () {
           // focus on type name
           $scope.isFocus = true;
@@ -217,7 +217,7 @@ glowroot.controller('ConfigGaugeCtrl', [
             $timeout(function () {
               $location.search({v: version}).replace();
               $timeout(function () {
-                $location.url('/config/gauge-list');
+                $location.url('config/gauge-list');
               });
             });
           })
@@ -235,7 +235,7 @@ glowroot.controller('ConfigGaugeCtrl', [
       $http.post('backend/config/gauges/remove', '"' + $scope.config.version + '"')
           .success(function () {
             removeConfirmIfHasChangesListener();
-            $location.url('/config/gauge-list').replace();
+            $location.url('config/gauge-list').replace();
           })
           .error(httpErrors.handler($scope, deferred));
     };

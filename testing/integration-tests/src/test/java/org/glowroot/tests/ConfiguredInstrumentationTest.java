@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,16 +30,16 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.config.CapturePoint;
-import org.glowroot.container.config.CapturePoint.CaptureKind;
-import org.glowroot.container.config.CapturePoint.MethodModifier;
-import org.glowroot.container.config.TraceConfig;
+import org.glowroot.container.config.GeneralConfig;
+import org.glowroot.container.config.InstrumentationConfig;
+import org.glowroot.container.config.InstrumentationConfig.CaptureKind;
+import org.glowroot.container.config.InstrumentationConfig.MethodModifier;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CapturePointTest {
+public class ConfiguredInstrumentationTest {
 
     protected static Container container;
     private static File dataDir;
@@ -48,10 +48,10 @@ public class CapturePointTest {
     public static void setUp() throws Exception {
         dataDir = TempDirs.createTempDir("glowroot-test-datadir");
         container = Containers.createWithFileDb(dataDir);
-        addCapturePointForExecute1();
-        addCapturePointForExecute1MetricOnly();
-        addCapturePointForExecuteWithReturn();
-        addCapturePointForExecuteWithArgs();
+        addInstrumentationForExecute1();
+        addInstrumentationForExecute1MetricOnly();
+        addInstrumentationForExecuteWithReturn();
+        addInstrumentationForExecuteWithArgs();
         // re-start now with pointcut configs
         container.close();
         container = Containers.createWithFileDb(dataDir);
@@ -71,9 +71,9 @@ public class CapturePointTest {
     @Test
     public void shouldExecute1() throws Exception {
         // given
-        TraceConfig config = container.getConfigService().getTraceConfig();
-        config.setStoreThresholdMillis(Integer.MAX_VALUE);
-        container.getConfigService().updateTraceConfig(config);
+        GeneralConfig config = container.getConfigService().getGeneralConfig();
+        config.setTraceStoreThresholdMillis(Integer.MAX_VALUE);
+        container.getConfigService().updateGeneralConfig(config);
         // when
         container.executeAppUnderTest(ShouldExecute1.class);
         // then
@@ -124,9 +124,9 @@ public class CapturePointTest {
                 .isEqualTo("executeWithArgs(): abc, 123, the name");
     }
 
-    protected static void addCapturePointForExecute1() throws Exception {
-        CapturePoint config = new CapturePoint();
-        config.setClassName("org.glowroot.tests.CapturePointTest$Misc");
+    protected static void addInstrumentationForExecute1() throws Exception {
+        InstrumentationConfig config = new InstrumentationConfig();
+        config.setClassName("org.glowroot.tests.ConfiguredInstrumentationTest$Misc");
         config.setMethodName("execute1");
         config.setMethodParameterTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
@@ -138,24 +138,24 @@ public class CapturePointTest {
         config.setTransactionType("test override type");
         config.setTransactionNameTemplate("test override name");
         config.setTraceStoreThresholdMillis(0L);
-        container.getConfigService().addCapturePoint(config);
+        container.getConfigService().addInstrumentationConfig(config);
     }
 
-    protected static void addCapturePointForExecute1MetricOnly() throws Exception {
-        CapturePoint config = new CapturePoint();
-        config.setClassName("org.glowroot.tests.CapturePointTest$Misc");
+    protected static void addInstrumentationForExecute1MetricOnly() throws Exception {
+        InstrumentationConfig config = new InstrumentationConfig();
+        config.setClassName("org.glowroot.tests.ConfiguredInstrumentationTest$Misc");
         config.setMethodName("execute1");
         config.setMethodParameterTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setCaptureKind(CaptureKind.METRIC);
         config.setMetricName("execute one metric only");
-        container.getConfigService().addCapturePoint(config);
+        container.getConfigService().addInstrumentationConfig(config);
     }
 
-    protected static void addCapturePointForExecuteWithReturn() throws Exception {
-        CapturePoint config = new CapturePoint();
-        config.setClassName("org.glowroot.tests.CapturePointTest$Misc");
+    protected static void addInstrumentationForExecuteWithReturn() throws Exception {
+        InstrumentationConfig config = new InstrumentationConfig();
+        config.setClassName("org.glowroot.tests.ConfiguredInstrumentationTest$Misc");
         config.setMethodName("executeWithReturn");
         config.setMethodParameterTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
@@ -163,15 +163,15 @@ public class CapturePointTest {
         config.setCaptureKind(CaptureKind.TRACE_ENTRY);
         config.setMetricName("execute with return");
         config.setTraceEntryTemplate("executeWithReturn() => {{_}}");
-        container.getConfigService().addCapturePoint(config);
+        container.getConfigService().addInstrumentationConfig(config);
     }
 
-    protected static void addCapturePointForExecuteWithArgs() throws Exception {
-        CapturePoint config = new CapturePoint();
-        config.setClassName("org.glowroot.tests.CapturePointTest$Misc");
+    protected static void addInstrumentationForExecuteWithArgs() throws Exception {
+        InstrumentationConfig config = new InstrumentationConfig();
+        config.setClassName("org.glowroot.tests.ConfiguredInstrumentationTest$Misc");
         config.setMethodName("executeWithArgs");
         config.setMethodParameterTypes(ImmutableList.of("java.lang.String", "int",
-                "org.glowroot.tests.CapturePointTest$BasicMisc"));
+                "org.glowroot.tests.ConfiguredInstrumentationTest$BasicMisc"));
         config.setMethodReturnType("void");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setCaptureKind(CaptureKind.TRANSACTION);
@@ -179,7 +179,7 @@ public class CapturePointTest {
         config.setTraceEntryTemplate("executeWithArgs(): {{0}}, {{1}}, {{2.name}}");
         config.setTransactionType("Pointcut config test");
         config.setTransactionNameTemplate("Misc / {{methodName}}");
-        container.getConfigService().addCapturePoint(config);
+        container.getConfigService().addInstrumentationConfig(config);
     }
 
     public interface Misc {

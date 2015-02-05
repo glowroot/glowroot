@@ -26,11 +26,11 @@ import org.glowroot.tests.webdriver.Utils;
 
 import static org.openqa.selenium.By.xpath;
 
-public class CapturePointPage {
+public class InstrumentationConfigPage {
 
     private final WebDriver driver;
 
-    public CapturePointPage(WebDriver driver) {
+    public InstrumentationConfigPage(WebDriver driver) {
         this.driver = driver;
     }
 
@@ -48,6 +48,10 @@ public class CapturePointPage {
 
     public void clickMethodNameAutoCompleteItem(String methodName) {
         clickTypeAheadItem("Method name", methodName);
+    }
+
+    public void clickAnySignatureRadioButton() {
+        withWait(xpath(".//label[text()[normalize-space()='any signature']]//input")).click();
     }
 
     public WebElement getCaptureKindMetricRadioButton() {

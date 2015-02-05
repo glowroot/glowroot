@@ -30,7 +30,7 @@ import org.glowroot.common.Ticker;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptor;
-import org.glowroot.config.TraceConfig;
+import org.glowroot.config.GeneralConfig;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -52,9 +52,9 @@ public class PluginServicesImplDefensiveCheckTest {
         TransactionRegistry transactionRegistry = mock(TransactionRegistry.class);
         TransactionCollector transactionCollector = mock(TransactionCollector.class);
         ConfigService configService = mock(ConfigService.class);
-        TraceConfig traceConfig = mock(TraceConfig.class);
+        GeneralConfig generalConfig = mock(GeneralConfig.class);
         AdvancedConfig advancedConfig = mock(AdvancedConfig.class);
-        when(configService.getTraceConfig()).thenReturn(traceConfig);
+        when(configService.getGeneralConfig()).thenReturn(generalConfig);
         when(configService.getAdvancedConfig()).thenReturn(advancedConfig);
 
         MetricNameCache metricNameCache = mock(MetricNameCache.class);
@@ -73,7 +73,7 @@ public class PluginServicesImplDefensiveCheckTest {
     @After
     public void afterEachTest() {
         verify(mockConfigService).addConfigListener(any(ConfigListener.class));
-        verify(mockConfigService).getTraceConfig();
+        verify(mockConfigService).getGeneralConfig();
         verify(mockConfigService).getAdvancedConfig();
         verifyNoMoreInteractions(mocks.toArray());
     }
