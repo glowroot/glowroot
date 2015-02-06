@@ -47,26 +47,15 @@
           Profile based on {{sampleCount}} samples
         </div>
       </div>
-      <div style="padding-bottom: 10px;">
+      <div class="hide" style="margin-bottom: 10px;">
         <input class="form-control gt-profile-text-filter"
                style="width: 25em;"
                placeholder="filter the profile tree">
       </div>
-      <div class="hide" style="padding: 0 0 20px;">
-        <select class="form-control gt-profile-filter gt-input-xlarge gt-inline-block"
-                onchange="this.blur()"
-                style="vertical-align: middle;">
-        </select>
-        <button popover-window="template/help/profile-filter.html"
-                popover-window-placement="left"
-                popover-window-trigger="focus"
-                class="gt-chart-button gt-inline-block"
-                style="border: none;">
-          <i title="Help"
-             class="fa fa-question-circle"
-             style="font-size: 28px; vertical-align: middle; margin-left: 8px;"></i>
-        </button>
-      </div>
+      <select class="form-control gt-profile-filter gt-input-xlarge hide"
+              onchange="this.blur()"
+              style="vertical-align: middle; margin-bottom: 10px;">
+      </select>
 
       <!-- background-color: white is to help the text not overlap the right hand panel border -->
       <span class="gt-profile" style="background-color: white;"></span>

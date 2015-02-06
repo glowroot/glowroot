@@ -713,7 +713,7 @@ HandlebarsRendering = (function () {
     if ($.isEmptyObject(mergedCounts)) {
       // display filter text input
       var $profileTextFilter = $selector.find('.gt-profile-text-filter');
-      $profileTextFilter.removeClass('hide');
+      $profileTextFilter.parent().removeClass('hide');
       var timer;
       $profileTextFilter.off('input.gtProfileFilter');
       $profileTextFilter.on('input.gtProfileFilter', function () {
