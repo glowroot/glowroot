@@ -17,8 +17,17 @@ package org.glowroot.local.ui;
 
 import java.util.Date;
 
+import com.google.common.base.Charsets;
+import com.google.common.net.MediaType;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders.Names;
 import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 class HttpServices {
 
@@ -31,5 +40,13 @@ class HttpServices {
         response.headers().set(Names.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
         response.headers().set(Names.PRAGMA, "no-cache");
         response.headers().set(Names.EXPIRES, new Date(0));
+    }
+
+    static FullHttpResponse createJsonResponse(String content, HttpResponseStatus status) {
+        ByteBuf byteBuf = Unpooled.copiedBuffer(content, Charsets.ISO_8859_1);
+        DefaultFullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, status, byteBuf);
+        response.headers().add(Names.CONTENT_TYPE, MediaType.JSON_UTF_8);
+        HttpServices.preventCaching(response);
+        return response;
     }
 }

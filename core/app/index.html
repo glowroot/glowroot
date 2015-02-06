@@ -115,10 +115,18 @@
                class="fa fa-gears"
                style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -3px;"></i>
           </div>
-          <li class="ng-cloak" ng-show="layout.passwordEnabled">
+          <li class="ng-cloak" ng-show="showSignIn()">
+            <a href="login"
+               style="padding-top: 14px; padding-bottom: 0; height: 50px; width: 50px;">
+              <i title="Sign in"
+                 class="fa fa-sign-in"
+                 style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -3px;"></i>
+            </a>
+          </li>
+          <li class="ng-cloak" ng-show="showSignOut()">
             <a href="#"
                ng-click="signOut()"
-               style="padding-top: 14px; padding-bottom: 0; height: 50px;">
+               style="padding-top: 14px; padding-bottom: 0; height: 50px; width: 50px;">
               <i title="Sign out"
                  class="fa fa-sign-out"
                  style="display: block; font-size: 24px; margin-top: -1px; margin-bottom: -3px;"></i>

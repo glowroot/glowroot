@@ -372,7 +372,11 @@ glowroot.config([
     $stateProvider.state('login', {
       url: '/login',
       templateUrl: 'views/login.html',
-      controller: 'LoginCtrl'
+      controller: 'LoginCtrl',
+      // login controller needs to wait for layout when running under grunt serve
+      resolve: {
+        waitForLayout: waitForLayout
+      }
     });
   }
 ]);

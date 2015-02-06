@@ -22,6 +22,17 @@
      gt-form-with-primary-button
      gt-form-autofocus-on-first-input
      name="formCtrl">
+  <div class="form-group" ng-show="layout.readOnlyPasswordEnabled">
+    <select class="form-control inline-block"
+            ng-model="page.user"
+            style="max-width: 20em;">
+      <option ng-if="layout.readOnlyPasswordEnabled"
+              value="read-only">
+        Read only account
+      </option>
+      <option value="admin">Admin account</option>
+    </select>
+  </div>
   <div class="form-group">
     <input type="password"
            class="form-control gt-inline-block"

@@ -42,32 +42,88 @@
         </div>
       </div>
       <div gt-form-group
-           gt-label="Password"
-           gt-checkbox-label="Require a password to access the UI"
-           gt-model="config.passwordEnabled"
+           gt-label="Admin user"
+           gt-checkbox-label="Enable admin account"
+           gt-model="config.adminPasswordEnabled"
            gt-type="checkbox"
            class="gt-form-group-without-help-block">
-        <div ng-hide="originalConfig.passwordEnabled || !config.passwordEnabled">
-          <div class="well" style="margin-bottom: 0; margin-top: 25px;">
-            <label class="control-label" style="padding-top: 0;">Initial password</label>
+        <div ng-hide="originalConfig.adminPasswordEnabled || !config.adminPasswordEnabled">
+          <div class="well" style="margin-bottom: 0; margin-top: 15px;">
+            <label class="control-label" style="padding-top: 0;">
+              Initial admin password
+            </label>
             <input type="password"
                    class="form-control"
-                   ng-model="page.initialPassword"
+                   ng-model="page.initialAdminPassword"
                    style="max-width: 20em;">
-            <label class="control-label" style="padding-top: 10px;">Verify initial password</label>
+            <label class="control-label" style="padding-top: 10px;">Verify initial admin password</label>
             <input type="password"
                    class="form-control"
-                   ng-model="page.verifyInitialPassword"
+                   ng-model="page.verifyInitialAdminPassword"
                    style="max-width: 20em;">
           </div>
         </div>
-        <div ng-hide="!originalConfig.passwordEnabled || config.passwordEnabled">
-          <div class="well" style="margin-bottom: 0; margin-top: 25px;">
-            <label class="control-label" style="padding-top: 0;">Verify current password</label>
+        <div ng-show="originalConfig.adminPasswordEnabled && !config.adminPasswordEnabled">
+          <div class="well" style="margin-bottom: 0; margin-top: 15px;">
+            <label class="control-label" style="padding-top: 0;">
+              Verify current admin password
+              <span style="font-weight: normal;">(required when disabling admin account)</span>
+            </label>
             <input type="password"
                    class="form-control"
-                   ng-model="page.verifyCurrentPassword"
+                   ng-model="page.verifyCurrentAdminPassword"
                    style="max-width: 20em;">
+          </div>
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Read only user"
+           gt-checkbox-label="Enable read only account"
+           gt-model="config.readOnlyPasswordEnabled"
+           gt-type="checkbox"
+           gt-disabled="!config.adminPasswordEnabled">
+        <div ng-hide="originalConfig.readOnlyPasswordEnabled || !config.readOnlyPasswordEnabled">
+          <div class="well" style="margin-bottom: 0; margin-top: 15px;">
+            <label class="control-label" style="padding-top: 0;">
+              Initial read only password
+            </label>
+            <input type="password"
+                   class="form-control"
+                   ng-model="page.initialReadOnlyPassword"
+                   style="max-width: 20em;">
+            <label class="control-label" style="padding-top: 10px;">Verify initial read only password</label>
+            <input type="password"
+                   class="form-control"
+                   ng-model="page.verifyInitialReadOnlyPassword"
+                   style="max-width: 20em;">
+          </div>
+        </div>
+        <div class="help-block">
+          Read only users can view everything, including configuration, mbean tree, thread dumps, process info
+          and system properties pages.
+          Read only users cannot update any configuration data and cannot generate heap dumps.
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-lg-3 control-label"
+               for="anonymousAccess">
+          Anonymous users
+        </label>
+
+        <div class="col-lg-9">
+          <select class="form-control inline-block"
+                  ng-model="config.anonymousAccess"
+                  id="anonymousAccess"
+                  style="max-width: 12em;">
+            <option selected value="admin">Admin access</option>
+            <option value="read-only">Read only access</option>
+            <option value="none">No access</option>
+          </select>
+
+          <div class="help-block">
+            Anonymous users can be granted either admin, read only or no access. The admin account is disabled if
+            anonymous users have admin access, and the read only account is disabled if anonymous users have read only
+            access.
           </div>
         </div>
       </div>
@@ -79,29 +135,44 @@
            gt-required="loaded"
            gt-width="7em"
            gt-addon="minutes"
-           gt-disabled="!config.passwordEnabled">
+           gt-disabled="!config.adminPasswordEnabled">
         <div class="help-block">
           Session timeout only applies if password is enabled. Session timeout <code>0</code> means sessions do not time
           out, except on jvm restart at which time all sessions time out.
         </div>
       </div>
-      <fieldset ng-show="config.passwordEnabled && originalConfig.passwordEnabled">
-        <legend>Change password</legend>
+      <fieldset ng-show="showChangeAdminPassword()">
+        <legend>Change admin password</legend>
         <div gt-form-group
-             gt-label="Current password"
-             gt-model="changePassword.currentPassword"
+             gt-label="Current admin password"
+             gt-model="page.currentAdminPassword"
              gt-type="password"
              gt-width="25em">
         </div>
         <div gt-form-group
-             gt-label="New password"
-             gt-model="changePassword.newPassword"
+             gt-label="New admin password"
+             gt-model="page.newAdminPassword"
              gt-type="password"
              gt-width="25em">
         </div>
         <div gt-form-group
-             gt-label="Verify new password"
-             gt-model="changePassword.verifyNewPassword"
+             gt-label="Verify new admin password"
+             gt-model="page.verifyNewAdminPassword"
+             gt-type="password"
+             gt-width="25em">
+        </div>
+      </fieldset>
+      <fieldset ng-show="showChangeReadOnlyPassword()">
+        <legend>Change read only password</legend>
+        <div gt-form-group
+             gt-label="New read only password"
+             gt-model="page.newReadOnlyPassword"
+             gt-type="password"
+             gt-width="25em">
+        </div>
+        <div gt-form-group
+             gt-label="Verify new read only password"
+             gt-model="page.verifyNewReadOnlyPassword"
              gt-type="password"
              gt-width="25em">
         </div>

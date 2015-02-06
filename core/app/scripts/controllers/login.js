@@ -32,16 +32,23 @@ glowroot.controller('LoginCtrl', [
     // initialize page binding object
     $scope.page = {};
 
+    if ($scope.layout.readOnlyPasswordEnabled) {
+      $scope.page.user = 'read-only';
+    } else {
+      $scope.page.user = 'admin';
+    }
+
     $scope.message = login.getMessage();
     $scope.login = function (deferred) {
       $scope.message = undefined;
-      $http.post('backend/login', $scope.page.password)
+      $http.post('backend/' + $scope.page.user + '-login', $scope.page.password)
           .success(function (data) {
             if (data.incorrectPassword) {
               $('#loginPassword').select();
               deferred.reject('Password incorrect');
             } else {
               $rootScope.layout = data;
+              $rootScope.authenticatedUser = $scope.page.user;
               deferred.resolve('Success');
               login.returnToOriginalPath();
             }

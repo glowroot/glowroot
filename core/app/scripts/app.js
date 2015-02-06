@@ -96,6 +96,14 @@ glowroot.run([
   'login',
   function ($rootScope, $http, $location, login) {
 
+    $rootScope.showSignIn = function () {
+      return !$rootScope.authenticatedUser && $rootScope.layout && $rootScope.layout.adminPasswordEnabled;
+    };
+
+    $rootScope.showSignOut = function () {
+      return $rootScope.authenticatedUser && $rootScope.layout && $rootScope.layout.adminPasswordEnabled;
+    };
+
     $rootScope.signOut = function () {
       // need to collapse the navbar in mobile view
       var $navbarCollapse = $('.navbar-collapse');
@@ -103,7 +111,12 @@ glowroot.run([
       $navbarCollapse.addClass('collapse');
       $http.post('backend/sign-out')
           .success(function () {
-            login.showLogin('You have been signed out');
+            $rootScope.authenticatedUser = undefined;
+            if ($rootScope.layout.anonymousAccess === 'none') {
+              login.showLogin('You have been signed out');
+            } else {
+              $location.path('/');
+            }
           })
           .error(function () {
             // there is not an obvious placement on the screen for this error message
@@ -145,11 +158,16 @@ glowroot.run([
 
     if (window.layout) {
       setInitialLayout(window.layout);
+      $rootScope.authenticatedUser = window.authenticatedUser;
     } else {
       // running in dev under 'grunt server'
       $http.get('backend/layout')
           .success(function (data) {
             setInitialLayout(data);
+          });
+      $http.get('backend/authenticated-user')
+          .success(function (data) {
+            $rootScope.authenticatedUser = data;
           });
     }
 

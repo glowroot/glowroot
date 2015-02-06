@@ -33,6 +33,7 @@
           <label>
             <input type="checkbox"
                    ng-model="$parent.ngModel"
+                   ng-disabled="gtDisabled()"
                    name="property"
                    id="{{gtId}}">
             {{gtCheckboxLabel}}

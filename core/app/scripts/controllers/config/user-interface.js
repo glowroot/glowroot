@@ -25,31 +25,81 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
   'confirmIfHasChanges',
   'httpErrors',
   function ($scope, $http, $rootScope, $location, $timeout, confirmIfHasChanges, httpErrors) {
-    // set up objects for data binding
     $scope.page = {};
-    $scope.changePassword = {};
+
+    $scope.showChangeAdminPassword = function () {
+      return $scope.config && $scope.config.adminPasswordEnabled && $scope.originalConfig.adminPasswordEnabled;
+    };
+
+    $scope.showChangeReadOnlyPassword = function () {
+      return $scope.config && $scope.config.readOnlyPasswordEnabled && $scope.originalConfig.readOnlyPasswordEnabled &&
+          $scope.config.adminPasswordEnabled;
+    };
+
+    $scope.$watch('config.anonymousAccess', function (newValue, oldValue) {
+      if (newValue !== oldValue) {
+        $scope.config.adminPasswordEnabled = newValue !== 'admin';
+        if (newValue === 'read-only') {
+          $scope.config.readOnlyPasswordEnabled = false;
+        }
+      }
+    });
+
+    $scope.$watch('config.adminPasswordEnabled', function (newValue, oldValue) {
+      if (newValue !== oldValue) {
+        if ($scope.config.adminPasswordEnabled && $scope.config.anonymousAccess === 'admin') {
+          $scope.config.anonymousAccess = 'none';
+        } else if (!$scope.config.adminPasswordEnabled) {
+          $scope.config.anonymousAccess = 'admin';
+        }
+      }
+    });
+
+    $scope.$watch('config.readOnlyPasswordEnabled', function (newValue) {
+      if (newValue && $scope.config.anonymousAccess === 'read-only') {
+        $scope.config.anonymousAccess = 'none';
+      }
+    });
 
     $scope.hasChanges = function () {
       if (!$scope.originalConfig) {
         // hasn't loaded yet
         return false;
       }
-      if (!$scope.originalConfig.passwordEnabled && $scope.config.passwordEnabled
-          && (!$scope.page.initialPassword || !$scope.page.verifyInitialPassword)) {
-        // enabling password, require initialPassword and verifyInitialPassword fields
+      if (!$scope.originalConfig.adminPasswordEnabled && $scope.config.adminPasswordEnabled
+          && (!$scope.page.initialAdminPassword || !$scope.page.verifyInitialAdminPassword)) {
+        // enabling admin password, require initialAdminPassword and verifyInitialAdminPassword fields
         return false;
       }
-      if ($scope.originalConfig.passwordEnabled && !$scope.config.passwordEnabled
-          && !$scope.page.verifyCurrentPassword) {
-        // disabling password, require newPassword and verifyNewPassword field
+      if ($scope.originalConfig.adminPasswordEnabled && !$scope.config.adminPasswordEnabled
+          && !$scope.page.verifyCurrentAdminPassword) {
+        // disabling admin password, require verifyCurrentAdminPassword field
         return false;
       }
-      if ($scope.originalConfig.passwordEnabled && $scope.config.passwordEnabled &&
-          $scope.changePassword.currentPassword) {
-        // changing password, require newPassword and verifyNewPassword
-        return $scope.changePassword.newPassword && $scope.changePassword.verifyNewPassword;
+      if ($scope.originalConfig.adminPasswordEnabled && $scope.config.adminPasswordEnabled) {
+        // check if changing admin password, then require all three fields
+        var cap = $scope.page.currentAdminPassword;
+        var nap = $scope.page.newAdminPassword;
+        var vnap = $scope.page.verifyNewAdminPassword;
+        if ((cap || nap || vnap) && !(cap && nap && vnap)) {
+          return false;
+        }
       }
-      return !angular.equals($scope.config, $scope.originalConfig);
+      if (!$scope.originalConfig.readOnlyPasswordEnabled && $scope.config.readOnlyPasswordEnabled
+          && (!$scope.page.initialReadOnlyPassword || !$scope.page.verifyInitialReadOnlyPassword)) {
+        // enabling read only password, require initialReadOnlyPassword and verifyInitialReadOnlyPassword fields
+        return false;
+      }
+      if ($scope.originalConfig.readOnlyPasswordEnabled && $scope.config.readOnlyPasswordEnabled) {
+        // check if changing read only password, then require both fields
+        var nrop = $scope.page.newReadOnlyPassword;
+        var vnrop = $scope.page.verifyNewReadOnlyPassword;
+        if ((nrop || vnrop) && !(nrop && vnrop)) {
+          return false;
+        }
+      }
+      return !angular.equals($scope.config, $scope.originalConfig) || $scope.page.newAdminPassword ||
+          $scope.page.newReadOnlyPassword;
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
@@ -58,48 +108,62 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
       $scope.config = data.config;
       $scope.originalConfig = angular.copy(data.config);
       $scope.activePort = data.activePort;
-      $scope.page.initialPassword = '';
-      $scope.page.verifyInitialPassword = '';
-      $scope.page.verifyCurrentPassword = '';
-      $scope.changePassword = {};
+      $scope.page = {};
     }
 
     $scope.save = function (deferred) {
       // another copy to modify for the http post data
       var postData = angular.copy($scope.config);
-      var enablingPassword = false;
-      var disablingPassword = false;
-      var changingPassword = false;
+      var enablingAdminPassword = false;
+      var disablingAdminPassword = false;
       var changingPort = false;
       var previousActivePort;
-      if (!$scope.originalConfig.passwordEnabled && $scope.config.passwordEnabled) {
-        enablingPassword = true;
-        if ($scope.page.verifyInitialPassword !== $scope.page.initialPassword) {
+      if (!$scope.originalConfig.adminPasswordEnabled && $scope.config.adminPasswordEnabled) {
+        // enabling admin password
+        if ($scope.page.initialAdminPassword !== $scope.page.verifyInitialAdminPassword) {
           deferred.reject('Passwords do not match');
           return;
         }
-        postData.currentPassword = '';
-        postData.newPassword = $scope.page.initialPassword;
-      } else if ($scope.originalConfig.passwordEnabled && !$scope.config.passwordEnabled) {
-        disablingPassword = true;
-        postData.currentPassword = $scope.page.verifyCurrentPassword;
-        postData.newPassword = '';
-      } else if ($scope.originalConfig.passwordEnabled && $scope.config.passwordEnabled &&
-          $scope.changePassword.currentPassword) {
-        changingPassword = true;
-        if ($scope.changePassword.verifyNewPassword !== $scope.changePassword.newPassword) {
+        postData.currentAdminPassword = '';
+        postData.newAdminPassword = $scope.page.initialAdminPassword;
+        enablingAdminPassword = true;
+      } else if ($scope.originalConfig.adminPasswordEnabled && !$scope.config.adminPasswordEnabled) {
+        // disabling admin password
+        postData.currentAdminPassword = $scope.page.verifyCurrentAdminPassword;
+        postData.newAdminPassword = '';
+        disablingAdminPassword = true;
+      } else if ($scope.originalConfig.adminPasswordEnabled && $scope.config.adminPasswordEnabled &&
+          $scope.page.currentAdminPassword) {
+        // changing admin password
+        if ($scope.page.newAdminPassword !== $scope.page.verifyNewAdminPassword) {
           deferred.reject('Passwords do not match');
           return;
         }
-        postData.currentPassword = $scope.changePassword.currentPassword;
-        postData.newPassword = $scope.changePassword.newPassword;
+        postData.currentAdminPassword = $scope.page.currentAdminPassword;
+        postData.newAdminPassword = $scope.page.newAdminPassword;
+      }
+      if (!$scope.originalConfig.readOnlyPasswordEnabled && $scope.config.readOnlyPasswordEnabled) {
+        // enabling read only password
+        if ($scope.page.initialReadOnlyPassword !== $scope.page.verifyInitialReadOnlyPassword) {
+          deferred.reject('Passwords do not match');
+          return;
+        }
+        postData.newReadOnlyPassword = $scope.page.initialReadOnlyPassword;
+      } else if ($scope.originalConfig.readOnlyPasswordEnabled && !$scope.config.readOnlyPasswordEnabled) {
+        // disabling read only password
+        postData.newReadOnlyPassword = '';
+      } else if ($scope.originalConfig.readOnlyPasswordEnabled && $scope.config.readOnlyPasswordEnabled &&
+          $scope.page.newReadOnlyPassword) {
+        // changing read only password
+        if ($scope.page.newReadOnlyPassword !== $scope.page.verifyNewReadOnlyPassword) {
+          deferred.reject('Passwords do not match');
+          return;
+        }
+        postData.newReadOnlyPassword = $scope.page.newReadOnlyPassword;
       }
       if ($scope.originalConfig.port !== $scope.config.port) {
         changingPort = true;
         previousActivePort = $scope.activePort;
-      }
-      if ($scope.changePassword.verifyNewPassword !== $scope.changePassword.newPassword) {
-        deferred.reject('Passwords do not match');
       }
       $http.post('backend/config/ui', postData)
           .success(function (data) {
@@ -108,6 +172,12 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
               return;
             }
             onNewData(data);
+            if (enablingAdminPassword) {
+              $rootScope.authenticatedUser = 'admin';
+            }
+            if (disablingAdminPassword) {
+              $rootScope.authenticatedUser = undefined;
+            }
             if (!changingPort) {
               // normal path
               deferred.resolve('Saved');

@@ -31,13 +31,13 @@ import com.google.common.io.CharStreams;
 
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.common.Marshaling2;
-import org.glowroot.config.InstrumentationConfig;
 import org.glowroot.config.ConfigService;
+import org.glowroot.config.InstrumentationConfig;
 import org.glowroot.config.PluginDescriptor;
+import org.glowroot.config.UserInterfaceConfig;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.OptionalService;
 
-@JsonService
 class LayoutJsonService {
 
     private static final JsonFactory jsonFactory = new JsonFactory();
@@ -73,9 +73,6 @@ class LayoutJsonService {
         });
     }
 
-    // this is only accessed from the url when running under 'grunt server' and is just to get back
-    // layout data (or find out login is needed if required)
-    @GET("/backend/layout")
     String getLayout() throws IOException {
         Layout localLayout = layout;
         if (localLayout == null) {
@@ -100,7 +97,7 @@ class LayoutJsonService {
         return localLayout.version();
     }
 
-    String getUnauthenticatedLayout() throws IOException {
+    String getNeedsAuthenticationLayout() throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
@@ -145,10 +142,13 @@ class LayoutJsonService {
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             transactionCustomAttributes.addAll(pluginDescriptor.transactionCustomAttributes());
         }
+        UserInterfaceConfig userInterfaceConfig = configService.getUserInterfaceConfig();
         return ImmutableLayout.builder()
                 .jvmHeapDump(heapDumps != null)
                 .footerMessage("version " + version)
-                .passwordEnabled(configService.getUserInterfaceConfig().passwordEnabled())
+                .adminPasswordEnabled(userInterfaceConfig.adminPasswordEnabled())
+                .readOnlyPasswordEnabled(userInterfaceConfig.readOnlyPasswordEnabled())
+                .anonymousAccess(userInterfaceConfig.anonymousAccess())
                 .addAllTransactionTypes(orderedTransactionTypes)
                 .defaultTransactionType(defaultTransactionType)
                 .addAllTransactionCustomAttributes(transactionCustomAttributes)

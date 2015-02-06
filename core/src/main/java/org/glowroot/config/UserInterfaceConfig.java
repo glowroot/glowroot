@@ -21,9 +21,11 @@ import org.immutables.value.Json;
 import org.immutables.value.Value;
 
 import org.glowroot.common.Marshaling2;
+import org.glowroot.config.MarshalingRoutines.LowercaseMarshaling;
 
 @Value.Immutable
 @Json.Marshaled
+@Json.Import(MarshalingRoutines.class)
 public class UserInterfaceConfig {
 
     @Value.Default
@@ -32,8 +34,18 @@ public class UserInterfaceConfig {
     }
 
     @Value.Default
-    public String passwordHash() {
+    public String adminPasswordHash() {
         return "";
+    }
+
+    @Value.Default
+    public String readOnlyPasswordHash() {
+        return "";
+    }
+
+    @Value.Default
+    public AnonymousAccess anonymousAccess() {
+        return AnonymousAccess.ADMIN;
     }
 
     // timeout 0 means sessions do not time out (except on jvm restart)
@@ -48,7 +60,15 @@ public class UserInterfaceConfig {
         return Hashing.sha1().hashString(Marshaling2.toJson(this), Charsets.UTF_8).toString();
     }
 
-    public boolean passwordEnabled() {
-        return !passwordHash().isEmpty();
+    public boolean adminPasswordEnabled() {
+        return !adminPasswordHash().isEmpty();
+    }
+
+    public boolean readOnlyPasswordEnabled() {
+        return !readOnlyPasswordHash().isEmpty();
+    }
+
+    public static enum AnonymousAccess implements LowercaseMarshaling {
+        NONE, READ_ONLY, ADMIN
     }
 }

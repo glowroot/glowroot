@@ -28,8 +28,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.Cookie;
 import io.netty.handler.codec.http.CookieDecoder;
 import io.netty.handler.codec.http.DefaultCookie;
@@ -44,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigService;
+import org.glowroot.config.UserInterfaceConfig.AnonymousAccess;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.COOKIE;
 import static io.netty.handler.codec.http.HttpHeaders.Names.SET_COOKIE;
@@ -61,7 +60,8 @@ class HttpSessionManager {
     private final LayoutJsonService layoutJsonService;
 
     private final SecureRandom secureRandom = new SecureRandom();
-    private final Map<String, Long> sessionExpirations = Maps.newConcurrentMap();
+    private final Map<String, Long> adminSessionExpirations = Maps.newConcurrentMap();
+    private final Map<String, Long> readOnlySessionExpirations = Maps.newConcurrentMap();
 
     HttpSessionManager(ConfigService configService, Clock clock,
             LayoutJsonService layoutJsonService) {
@@ -70,63 +70,91 @@ class HttpSessionManager {
         this.layoutJsonService = layoutJsonService;
     }
 
-    FullHttpResponse login(FullHttpRequest request) throws IOException {
+    FullHttpResponse login(FullHttpRequest request, boolean admin) throws IOException {
         boolean success;
         String password = request.content().toString(Charsets.ISO_8859_1);
+        String existingPasswordHash;
+        if (admin) {
+            existingPasswordHash = configService.getUserInterfaceConfig().adminPasswordHash();
+        } else {
+            existingPasswordHash = configService.getUserInterfaceConfig().readOnlyPasswordHash();
+        }
         try {
-            success = validatePassword(password,
-                    configService.getUserInterfaceConfig().passwordHash());
+            success = validatePassword(password, existingPasswordHash);
         } catch (GeneralSecurityException e) {
             logger.error(e.getMessage(), e);
             return new DefaultFullHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }
         if (success) {
             String text = layoutJsonService.getLayout();
-            ByteBuf content = Unpooled.copiedBuffer(text, Charsets.ISO_8859_1);
-            FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, content);
-            createSession(response);
+            FullHttpResponse response = HttpServices.createJsonResponse(text, OK);
+            createSession(response, admin);
             return response;
         } else {
             String text = "{\"incorrectPassword\":true}";
-            ByteBuf content = Unpooled.copiedBuffer(text, Charsets.ISO_8859_1);
-            return new DefaultFullHttpResponse(HTTP_1_1, OK, content);
+            return HttpServices.createJsonResponse(text, OK);
         }
     }
 
-    boolean needsAuthentication(HttpRequest request) {
-        if (!configService.getUserInterfaceConfig().passwordEnabled()) {
-            return false;
+    boolean hasReadAccess(HttpRequest request) {
+        if (configService.getUserInterfaceConfig().anonymousAccess() != AnonymousAccess.NONE) {
+            return true;
         }
         String sessionId = getSessionId(request);
         if (sessionId == null) {
-            return true;
-        }
-        Long expires = sessionExpirations.get(sessionId);
-        if (expires == null) {
-            return true;
-        }
-        if (expires < clock.currentTimeMillis()) {
-            return true;
-        } else {
-            // session is valid and not expired, update expiration
-            updateExpiration(sessionId);
             return false;
         }
+        if (isValidNonExpired(sessionId, true)) {
+            return true;
+        }
+        if (isValidNonExpired(sessionId, false)) {
+            return true;
+        }
+        return false;
+    }
+
+    boolean hasAdminAccess(HttpRequest request) {
+        if (configService.getUserInterfaceConfig().anonymousAccess() == AnonymousAccess.ADMIN) {
+            // anonymous is ok
+            return true;
+        }
+        // anonymous is not ok
+        String sessionId = getSessionId(request);
+        if (sessionId == null) {
+            return false;
+        }
+        return isValidNonExpired(sessionId, true);
+    }
+
+    @Nullable
+    String getAuthenticatedUser(HttpRequest request) {
+        String sessionId = getSessionId(request);
+        if (sessionId == null) {
+            return null;
+        }
+        if (isValidNonExpired(sessionId, true)) {
+            return "admin";
+        }
+        if (isValidNonExpired(sessionId, false)) {
+            return "read-only";
+        }
+        return null;
     }
 
     FullHttpResponse signOut(HttpRequest request) {
         String sessionId = getSessionId(request);
         if (sessionId != null) {
-            sessionExpirations.remove(sessionId);
+            adminSessionExpirations.remove(sessionId);
+            readOnlySessionExpirations.remove(sessionId);
         }
         FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK);
         deleteSessionCookie(response);
         return response;
     }
 
-    void createSession(HttpResponse response) {
+    void createSession(HttpResponse response, boolean admin) {
         String sessionId = new BigInteger(130, secureRandom).toString(32);
-        updateExpiration(sessionId);
+        updateSessionExpiration(sessionId, admin);
         Cookie cookie = new DefaultCookie("GLOWROOT_SESSION_ID", sessionId);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
@@ -143,7 +171,8 @@ class HttpSessionManager {
     }
 
     void clearAllSessions() {
-        sessionExpirations.clear();
+        adminSessionExpirations.clear();
+        readOnlySessionExpirations.clear();
     }
 
     @Nullable
@@ -161,7 +190,27 @@ class HttpSessionManager {
         return null;
     }
 
-    private void updateExpiration(String sessionId) {
+    private void purgeExpiredSessions() {
+        long currentTimeMillis = clock.currentTimeMillis();
+        purgeExpiredSessions(currentTimeMillis, adminSessionExpirations);
+        purgeExpiredSessions(currentTimeMillis, readOnlySessionExpirations);
+    }
+
+    private boolean isValidNonExpired(String sessionId, boolean admin) {
+        Map<String, Long> sessionExpirations =
+                admin ? adminSessionExpirations : readOnlySessionExpirations;
+        Long expires = sessionExpirations.get(sessionId);
+        if (expires == null || clock.currentTimeMillis() > expires) {
+            return false;
+        }
+        // session is valid and not expired, update expiration
+        updateSessionExpiration(sessionId, admin);
+        return true;
+    }
+
+    private void updateSessionExpiration(String sessionId, boolean admin) {
+        Map<String, Long> sessionExpirations =
+                admin ? adminSessionExpirations : readOnlySessionExpirations;
         int timeoutMinutes = configService.getUserInterfaceConfig().sessionTimeoutMinutes();
         if (timeoutMinutes == 0) {
             sessionExpirations.put(sessionId, Long.MAX_VALUE);
@@ -171,10 +220,11 @@ class HttpSessionManager {
         }
     }
 
-    private void purgeExpiredSessions() {
+    private static void purgeExpiredSessions(long currentTimeMillis,
+            Map<String, Long> sessionExpirations) {
         Iterator<Entry<String, Long>> i = sessionExpirations.entrySet().iterator();
         while (i.hasNext()) {
-            if (i.next().getValue() < clock.currentTimeMillis()) {
+            if (i.next().getValue() < currentTimeMillis) {
                 i.remove();
             }
         }

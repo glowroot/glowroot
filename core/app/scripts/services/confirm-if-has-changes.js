@@ -17,12 +17,17 @@
 /* global glowroot, $ */
 
 glowroot.factory('confirmIfHasChanges', [
+  '$rootScope',
   '$location',
   'modals',
-  function ($location, modals) {
+  function ($rootScope, $location, modals) {
     return function ($scope) {
       var confirmed;
       return function (event, newUrl) {
+        if ($rootScope.layout.adminPasswordEnabled && $rootScope.authenticatedUser !== 'admin') {
+          // no point in confirming when user doesn't have permission to make the changes anyways
+          return;
+        }
         if (!$scope.httpError && !confirmed && $scope.hasChanges()) {
           event.preventDefault();
 

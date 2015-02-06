@@ -73,6 +73,7 @@ import org.glowroot.common.Reflections;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_MODIFIED;
@@ -202,6 +203,11 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     private void sendFullResponse(ChannelHandlerContext ctx, FullHttpRequest request,
             FullHttpResponse response) {
         boolean keepAlive = HttpHeaders.isKeepAlive(request);
+        if (httpSessionManager.getSessionId(request) != null
+                && httpSessionManager.getAuthenticatedUser(request) == null) {
+            httpSessionManager.deleteSessionCookie(response);
+        }
+        response.headers().add("Glowroot-Layout-Version", layoutJsonService.getLayoutVersion());
         if (response.headers().get("Glowroot-Port-Changed") != null) {
             // current connection is the only open channel on the old port, keepAlive=false will add
             // the listener below to close the channel after the response completes
@@ -234,11 +240,32 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
         String path = decoder.path();
         logger.debug("handleRequest(): path={}", path);
-        if (path.equals("/backend/login")) {
-            return httpSessionManager.login(request);
+        if (path.equals("/backend/authenticated-user")) {
+            // this is only used when running under 'grunt serve'
+            String authenticatedUser = httpSessionManager.getAuthenticatedUser(request);
+            if (authenticatedUser == null) {
+                return HttpServices.createJsonResponse("null", OK);
+            } else {
+                return HttpServices.createJsonResponse("\"" + authenticatedUser + "\"", OK);
+            }
+        }
+        if (path.equals("/backend/admin-login")) {
+            return httpSessionManager.login(request, true);
+        }
+        if (path.equals("/backend/read-only-login")) {
+            return httpSessionManager.login(request, false);
         }
         if (path.equals("/backend/sign-out")) {
             return httpSessionManager.signOut(request);
+        }
+        if (path.equals("/backend/layout")) {
+            String layout;
+            if (httpSessionManager.hasReadAccess(request)) {
+                layout = layoutJsonService.getLayout();
+            } else {
+                layout = layoutJsonService.getNeedsAuthenticationLayout();
+            }
+            return HttpServices.createJsonResponse(layout, OK);
         }
         HttpService httpService = getHttpService(path);
         if (httpService != null) {
@@ -265,8 +292,12 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     private @Nullable FullHttpResponse handleHttpService(ChannelHandlerContext ctx,
             FullHttpRequest request, HttpService httpService) throws Exception {
         if (!(httpService instanceof IndexHtmlHttpService)
-                && httpSessionManager.needsAuthentication(request)) {
-            return handleUnauthorized(request);
+                && !httpSessionManager.hasReadAccess(request)) {
+            return handleNotAuthenticated(request);
+        }
+        boolean isGetRequest = request.getMethod().name().equals(HttpMethod.GET.name());
+        if (!isGetRequest && !httpSessionManager.hasAdminAccess(request)) {
+            return handleNotAuthorized();
         }
         return httpService.handleRequest(ctx, request);
     }
@@ -287,8 +318,12 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     private FullHttpResponse handleJsonServiceMappings(FullHttpRequest request,
             JsonServiceMapping jsonServiceMapping, Matcher matcher) throws JsonProcessingException {
-        if (httpSessionManager.needsAuthentication(request)) {
-            return handleUnauthorized(request);
+        if (!httpSessionManager.hasReadAccess(request)) {
+            return handleNotAuthenticated(request);
+        }
+        boolean isGetRequest = request.getMethod().name().equals(HttpMethod.GET.name());
+        if (!isGetRequest && !httpSessionManager.hasAdminAccess(request)) {
+            return handleNotAuthorized();
         }
         String requestText = getRequestText(request);
         String[] args = new String[matcher.groupCount()];
@@ -325,18 +360,20 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             return new DefaultFullHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }
         response.headers().add(Names.CONTENT_TYPE, MediaType.JSON_UTF_8);
-        response.headers().add("Glowroot-Layout-Version", layoutJsonService.getLayoutVersion());
         HttpServices.preventCaching(response);
         return response;
     }
 
-    private FullHttpResponse handleUnauthorized(HttpRequest request) {
+    private FullHttpResponse handleNotAuthenticated(HttpRequest request) {
         if (httpSessionManager.getSessionId(request) != null) {
-            ByteBuf content = Unpooled.copiedBuffer("{\"timedOut\":true}", Charsets.ISO_8859_1);
-            return new DefaultFullHttpResponse(HTTP_1_1, UNAUTHORIZED, content);
+            return HttpServices.createJsonResponse("{\"timedOut\":true}", UNAUTHORIZED);
         } else {
             return new DefaultFullHttpResponse(HTTP_1_1, UNAUTHORIZED);
         }
+    }
+
+    private FullHttpResponse handleNotAuthorized() {
+        return new DefaultFullHttpResponse(HTTP_1_1, FORBIDDEN);
     }
 
     private FullHttpResponse handleStaticResource(String path, HttpRequest request)
@@ -451,10 +488,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             jg.writeStringField("message", message);
             jg.writeEndObject();
             jg.close();
-            ByteBuf content = Unpooled.copiedBuffer(sb.toString(), Charsets.ISO_8859_1);
-            FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, status, content);
-            response.headers().add(Names.CONTENT_TYPE, MediaType.JSON_UTF_8);
-            return response;
+            return HttpServices.createJsonResponse(sb.toString(), status);
         } catch (IOException f) {
             logger.error(f.getMessage(), f);
             return new DefaultFullHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
@@ -485,10 +519,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             jg.writeStringField("stackTrace", sw.toString());
             jg.writeEndObject();
             jg.close();
-            ByteBuf content = Unpooled.copiedBuffer(sb.toString(), Charsets.ISO_8859_1);
-            FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, status, content);
-            response.headers().add(Names.CONTENT_TYPE, MediaType.JSON_UTF_8);
-            return response;
+            return HttpServices.createJsonResponse(sb.toString(), status);
         } catch (IOException f) {
             logger.error(f.getMessage(), f);
             return new DefaultFullHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);

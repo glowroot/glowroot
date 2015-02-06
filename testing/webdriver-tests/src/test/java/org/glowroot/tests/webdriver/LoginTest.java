@@ -34,9 +34,9 @@ public class LoginTest extends WebDriverTest {
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getUserInterfaceLink().click();
-        page.getPasswordEnabledCheckBox().click();
-        page.getInitialPasswordTextField().sendKeys("a");
-        page.getVerifyInitialPasswordTextField().sendKeys("a");
+        page.getAdminPasswordEnabledCheckBox().click();
+        page.getInitialAdminPasswordTextField().sendKeys("a");
+        page.getVerifyInitialAdminPasswordTextField().sendKeys("a");
         page.getSaveButton().click();
 
         globalNavbar.getSignOutLink().click();
@@ -53,8 +53,8 @@ public class LoginTest extends WebDriverTest {
         // need to take password off before @After otherwise config reset code fails with 401
         globalNavbar.getConfigurationLink().click();
         configSidebar.getUserInterfaceLink().click();
-        page.getPasswordEnabledCheckBox().click();
-        page.getVerifyCurrentPasswordTextField().sendKeys("a");
+        page.getAdminPasswordEnabledCheckBox().click();
+        page.getVerifyCurrentAdminPasswordTextField().sendKeys("a");
         page.getSaveButton().click();
         // wait for save to complete
         new WebDriverWait(driver, 30).until(ExpectedConditions.not(

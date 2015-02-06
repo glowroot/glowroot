@@ -23,14 +23,19 @@ import org.immutables.value.Json;
 import org.immutables.value.Value;
 
 import org.glowroot.common.Marshaling2;
+import org.glowroot.config.MarshalingRoutines;
+import org.glowroot.config.UserInterfaceConfig.AnonymousAccess;
 
 @Value.Immutable
 @Json.Marshaled
+@Json.Import(MarshalingRoutines.class)
 abstract class Layout {
 
     abstract boolean jvmHeapDump();
     abstract String footerMessage();
-    abstract boolean passwordEnabled();
+    abstract boolean adminPasswordEnabled();
+    abstract boolean readOnlyPasswordEnabled();
+    abstract AnonymousAccess anonymousAccess();
     abstract List<String> transactionTypes();
     abstract String defaultTransactionType();
     abstract List<String> transactionCustomAttributes();

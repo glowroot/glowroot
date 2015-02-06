@@ -31,20 +31,20 @@ public class UserInterfaceConfigPage {
         this.driver = driver;
     }
 
-    public WebElement getPasswordEnabledCheckBox() {
-        return withWait(xpath(".//div[@gt-model='config.passwordEnabled']//input"));
+    public WebElement getAdminPasswordEnabledCheckBox() {
+        return withWait(xpath(".//div[@gt-model='config.adminPasswordEnabled']//input"));
     }
 
-    public WebElement getInitialPasswordTextField() {
-        return withWait(xpath(".//input[@ng-model='page.initialPassword']"));
+    public WebElement getInitialAdminPasswordTextField() {
+        return withWait(xpath(".//input[@ng-model='page.initialAdminPassword']"));
     }
 
-    public WebElement getVerifyInitialPasswordTextField() {
-        return withWait(xpath(".//input[@ng-model='page.verifyInitialPassword']"));
+    public WebElement getVerifyInitialAdminPasswordTextField() {
+        return withWait(xpath(".//input[@ng-model='page.verifyInitialAdminPassword']"));
     }
 
-    public WebElement getVerifyCurrentPasswordTextField() {
-        return withWait(xpath(".//input[@ng-model='page.verifyCurrentPassword']"));
+    public WebElement getVerifyCurrentAdminPasswordTextField() {
+        return withWait(xpath(".//input[@ng-model='page.verifyCurrentAdminPassword']"));
     }
 
     public WebElement getSaveButton() {

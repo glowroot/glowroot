@@ -64,12 +64,14 @@ class IndexHtmlHttpService implements HttpService {
         URL url = Resources.getResource("org/glowroot/local/ui/app-dist/index.html");
         String indexHtml = Resources.toString(url, Charsets.UTF_8);
         String layout;
-        if (httpSessionManager.needsAuthentication(request)) {
-            layout = layoutJsonService.getUnauthenticatedLayout();
-        } else {
+        if (httpSessionManager.hasReadAccess(request)) {
             layout = layoutJsonService.getLayout();
+        } else {
+            layout = layoutJsonService.getNeedsAuthenticationLayout();
         }
-        String layoutScript = "var layout=" + layout + ";";
+        String authenticatedUser = httpSessionManager.getAuthenticatedUser(request);
+        String layoutScript =
+                "var layout=" + layout + ";var authenticatedUser = " + authenticatedUser;
         indexHtml = indexHtml.replaceFirst("<base href=\"/\">",
                 "<base href=\"" + baseHref + "\"><script>" + layoutScript + "</script>");
         // this is to work around an issue with IE10-11 (IE9 is OK)

@@ -28,18 +28,21 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 public class UserInterfaceConfig {
 
     private int port;
-    private final boolean passwordEnabled;
+    private boolean adminPasswordEnabled;
+    private boolean readOnlyPasswordEnabled;
+    private @Nullable AnonymousAccess anonymousAccess;
     private int sessionTimeoutMinutes;
 
     // used for submitting a password change
-    private String currentPassword = "";
+    private String currentAdminPassword = "";
     // used for submitting a password change
-    private String newPassword = "";
+    private String newAdminPassword = "";
+    // used for submitting a password change
+    private String newReadOnlyPassword = "";
 
     private final String version;
 
-    public UserInterfaceConfig(boolean passwordEnabled, String version) {
-        this.passwordEnabled = passwordEnabled;
+    public UserInterfaceConfig(String version) {
         this.version = version;
     }
 
@@ -51,6 +54,22 @@ public class UserInterfaceConfig {
         this.port = port;
     }
 
+    public void setAdminPasswordEnabled(boolean adminPasswordEnabled) {
+        this.adminPasswordEnabled = adminPasswordEnabled;
+    }
+
+    public void setReadOnlyPasswordEnabled(boolean readOnlyPasswordEnabled) {
+        this.readOnlyPasswordEnabled = readOnlyPasswordEnabled;
+    }
+
+    public @Nullable AnonymousAccess getAnonymousAccess() {
+        return anonymousAccess;
+    }
+
+    public void setAnonymousAccess(AnonymousAccess anonymousAccess) {
+        this.anonymousAccess = anonymousAccess;
+    }
+
     public int getSessionTimeoutMinutes() {
         return sessionTimeoutMinutes;
     }
@@ -59,24 +78,36 @@ public class UserInterfaceConfig {
         this.sessionTimeoutMinutes = sessionTimeoutMinutes;
     }
 
-    public boolean isPasswordEnabled() {
-        return passwordEnabled;
+    public boolean isAdminPasswordEnabled() {
+        return adminPasswordEnabled;
     }
 
-    public @Nullable String getCurrentPassword() {
-        return currentPassword;
+    public boolean isReadOnlyPasswordEnabled() {
+        return readOnlyPasswordEnabled;
     }
 
-    public void setCurrentPassword(String currentPassword) {
-        this.currentPassword = currentPassword;
+    public @Nullable String getCurrentAdminPassword() {
+        return currentAdminPassword;
     }
 
-    public @Nullable String getNewPassword() {
-        return newPassword;
+    public void setCurrentAdminPassword(String currentAdminPassword) {
+        this.currentAdminPassword = currentAdminPassword;
     }
 
-    public void setNewPassword(String newPassword) {
-        this.newPassword = newPassword;
+    public @Nullable String getNewAdminPassword() {
+        return newAdminPassword;
+    }
+
+    public void setNewAdminPassword(String newAdminPassword) {
+        this.newAdminPassword = newAdminPassword;
+    }
+
+    public @Nullable String getNewReadOnlyPassword() {
+        return newReadOnlyPassword;
+    }
+
+    public void setNewReadOnlyPassword(String newReadOnlyPassword) {
+        this.newReadOnlyPassword = newReadOnlyPassword;
     }
 
     public String getVersion() {
@@ -91,10 +122,12 @@ public class UserInterfaceConfig {
             // sending to the server, and represents the current version hash when receiving from
             // the server
             //
-            // also intentionally leaving off currentPassword and newPassword since those are just
-            // used as a temporary messaging mechanism
+            // also intentionally leaving off currentAdminPassword, newAdminPassword and
+            // newReadOnlyPassword since those are just used as a temporary messaging mechanism
             return Objects.equal(port, that.port)
-                    && Objects.equal(passwordEnabled, that.passwordEnabled)
+                    && Objects.equal(adminPasswordEnabled, that.adminPasswordEnabled)
+                    && Objects.equal(readOnlyPasswordEnabled, that.readOnlyPasswordEnabled)
+                    && Objects.equal(anonymousAccess, that.anonymousAccess)
                     && Objects.equal(sessionTimeoutMinutes, that.sessionTimeoutMinutes);
         }
         return false;
@@ -108,15 +141,19 @@ public class UserInterfaceConfig {
         //
         // also intentionally leaving off currentPassword and newPassword since those are just used
         // as a temporary messaging mechanism
-        return Objects.hashCode(port, passwordEnabled, sessionTimeoutMinutes);
+        return Objects.hashCode(port, adminPasswordEnabled, readOnlyPasswordEnabled,
+                anonymousAccess, sessionTimeoutMinutes);
     }
 
     @Override
     public String toString() {
-        // leaving off currentPassword and newPassword since those are plain text passwords
+        // leaving off currentAdminPassword, newAdminPassword and newReadOnlyPassword since those
+        // are plain text passwords
         return MoreObjects.toStringHelper(this)
                 .add("port", port)
-                .add("passwordEnabled", passwordEnabled)
+                .add("adminPasswordEnabled", adminPasswordEnabled)
+                .add("passwordEnabled", adminPasswordEnabled)
+                .add("anonymousAccess", anonymousAccess)
                 .add("sessionTimeoutMinutes", sessionTimeoutMinutes)
                 .add("version", version)
                 .toString();
@@ -125,16 +162,27 @@ public class UserInterfaceConfig {
     @JsonCreator
     static UserInterfaceConfig readValue(
             @JsonProperty("port") @Nullable Integer port,
-            @JsonProperty("passwordEnabled") @Nullable Boolean passwordEnabled,
+            @JsonProperty("adminPasswordEnabled") @Nullable Boolean adminPasswordEnabled,
+            @JsonProperty("readOnlyPasswordEnabled") @Nullable Boolean readOnlyPasswordEnabled,
+            @JsonProperty("anonymousAccess") @Nullable AnonymousAccess anonymousAccess,
             @JsonProperty("sessionTimeoutMinutes") @Nullable Integer sessionTimeoutMinutes,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(port, "port");
-        checkRequiredProperty(passwordEnabled, "passwordEnabled");
+        checkRequiredProperty(adminPasswordEnabled, "adminPasswordEnabled");
+        checkRequiredProperty(readOnlyPasswordEnabled, "readOnlyPasswordEnabled");
+        checkRequiredProperty(anonymousAccess, "anonymousAccess");
         checkRequiredProperty(sessionTimeoutMinutes, "sessionTimeoutMinutes");
         checkRequiredProperty(version, "version");
-        UserInterfaceConfig config = new UserInterfaceConfig(passwordEnabled, version);
+        UserInterfaceConfig config = new UserInterfaceConfig(version);
         config.setPort(port);
+        config.setAdminPasswordEnabled(adminPasswordEnabled);
+        config.setReadOnlyPasswordEnabled(readOnlyPasswordEnabled);
+        config.setAnonymousAccess(anonymousAccess);
         config.setSessionTimeoutMinutes(sessionTimeoutMinutes);
         return config;
+    }
+
+    public static enum AnonymousAccess {
+        NONE, READ_ONLY, ADMIN
     }
 }

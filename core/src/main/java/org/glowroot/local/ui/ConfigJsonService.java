@@ -52,6 +52,7 @@ import org.glowroot.config.PropertyDescriptor;
 import org.glowroot.config.PropertyValue;
 import org.glowroot.config.StorageConfig;
 import org.glowroot.config.UserInterfaceConfig;
+import org.glowroot.config.UserInterfaceConfig.AnonymousAccess;
 import org.glowroot.config.UserRecordingConfig;
 import org.glowroot.local.store.CappedDatabase;
 import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
@@ -210,21 +211,43 @@ class ConfigJsonService {
         checkNotNull(httpServer);
         UserInterfaceConfigDto configDto =
                 Marshaling.fromJson(content, UserInterfaceConfigDto.class);
+        configDto.validate();
         UserInterfaceConfig priorConfig = configService.getUserInterfaceConfig();
         ImmutableUserInterfaceConfig.Builder builder = ImmutableUserInterfaceConfig.builder()
                 .port(configDto.port())
                 .sessionTimeoutMinutes(configDto.sessionTimeoutMinutes());
-        if (configDto.currentPassword().length() > 0 || configDto.newPassword().length() > 0) {
-            PasswordHelper passwordHelper = new PasswordHelper(configDto.currentPassword(),
-                    configDto.newPassword(), priorConfig.passwordHash());
+        if (configDto.currentAdminPassword().length() > 0
+                || configDto.newAdminPassword().length() > 0) {
+            AdminPasswordHelper adminPasswordHelper = new AdminPasswordHelper(
+                    configDto.currentAdminPassword(), configDto.newAdminPassword(),
+                    priorConfig.adminPasswordHash());
             try {
-                builder.passwordHash(passwordHelper.verifyAndGenerateNewPasswordHash());
+                builder.adminPasswordHash(adminPasswordHelper.verifyAndGenerateNewPasswordHash());
             } catch (CurrentPasswordIncorrectException e) {
                 return "{\"currentPasswordIncorrect\":true}";
             }
         } else {
-            builder.passwordHash(priorConfig.passwordHash());
+            builder.adminPasswordHash(priorConfig.adminPasswordHash());
         }
+        if (!configDto.readOnlyPasswordEnabled()) {
+            // clear read only password
+            builder.readOnlyPasswordHash("");
+        } else if (configDto.readOnlyPasswordEnabled()
+                && !configDto.newReadOnlyPassword().isEmpty()) {
+            // change read only password
+            String readOnlyPasswordHash = PasswordHash.createHash(configDto.newReadOnlyPassword());
+            builder.readOnlyPasswordHash(readOnlyPasswordHash);
+        } else {
+            // keep existing read only password
+            builder.readOnlyPasswordHash(priorConfig.readOnlyPasswordHash());
+        }
+        if (priorConfig.anonymousAccess() != AnonymousAccess.ADMIN
+                && configDto.anonymousAccess() == AnonymousAccess.ADMIN
+                && configDto.currentAdminPassword().isEmpty()) {
+            // enabling admin access for anonymous users requires admin password
+            throw new IllegalStateException();
+        }
+        builder.anonymousAccess(configDto.anonymousAccess());
         UserInterfaceConfig config = builder.build();
         try {
             configService.updateUserInterfaceConfig(config, configDto.version());
@@ -277,9 +300,9 @@ class ConfigJsonService {
             response.headers().set("Glowroot-Port-Changed", "true");
         }
         // only create/delete session on successful update
-        if (!priorConfig.passwordEnabled() && config.passwordEnabled()) {
-            httpSessionManager.createSession(response);
-        } else if (priorConfig.passwordEnabled() && !config.passwordEnabled()) {
+        if (!priorConfig.adminPasswordEnabled() && config.adminPasswordEnabled()) {
+            httpSessionManager.createSession(response, true);
+        } else if (priorConfig.adminPasswordEnabled() && !config.adminPasswordEnabled()) {
             httpSessionManager.clearAllSessions();
             httpSessionManager.deleteSessionCookie(response);
         }
@@ -291,7 +314,9 @@ class ConfigJsonService {
         UserInterfaceConfig config = configService.getUserInterfaceConfig();
         UserInterfaceConfigDto configDto = ImmutableUserInterfaceConfigDto.builder()
                 .port(config.port())
-                .passwordEnabled(config.passwordEnabled())
+                .adminPasswordEnabled(config.adminPasswordEnabled())
+                .readOnlyPasswordEnabled(config.readOnlyPasswordEnabled())
+                .anonymousAccess(config.anonymousAccess())
                 .sessionTimeoutMinutes(config.sessionTimeoutMinutes())
                 .version(config.version())
                 .build();
@@ -302,13 +327,13 @@ class ConfigJsonService {
                 .build());
     }
 
-    private static class PasswordHelper {
+    private static class AdminPasswordHelper {
 
         private final String currentPassword;
         private final String newPassword;
         private final String originalPasswordHash;
 
-        private PasswordHelper(String currentPassword, String newPassword,
+        private AdminPasswordHelper(String currentPassword, String newPassword,
                 String originalPasswordHash) {
             this.currentPassword = currentPassword;
             this.newPassword = newPassword;
@@ -487,22 +512,52 @@ class ConfigJsonService {
 
     @Value.Immutable
     @Json.Marshaled
+    @Json.Import(MarshalingRoutines.class)
     abstract static class UserInterfaceConfigDto {
 
         abstract int port();
-        abstract boolean passwordEnabled();
+        abstract boolean adminPasswordEnabled();
+        abstract boolean readOnlyPasswordEnabled();
+        abstract AnonymousAccess anonymousAccess();
         // only used for requests
         @Value.Default
-        String currentPassword() {
+        String currentAdminPassword() {
             return "";
         }
         // only used for requests
         @Value.Default
-        String newPassword() {
+        String newAdminPassword() {
+            return "";
+        }
+        // only used for requests
+        @Value.Default
+        String newReadOnlyPassword() {
             return "";
         }
         abstract int sessionTimeoutMinutes();
         abstract String version();
+
+        private void validate() {
+            if (readOnlyPasswordEnabled()) {
+                checkState(adminPasswordEnabled());
+            }
+            switch (anonymousAccess()) {
+                case ADMIN:
+                    checkState(!adminPasswordEnabled());
+                    checkState(!readOnlyPasswordEnabled());
+                    break;
+                case READ_ONLY:
+                    checkState(adminPasswordEnabled());
+                    checkState(!readOnlyPasswordEnabled());
+                    break;
+                case NONE:
+                    checkState(adminPasswordEnabled());
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected anonymous access: "
+                            + anonymousAccess());
+            }
+        }
     }
 
     @Value.Immutable

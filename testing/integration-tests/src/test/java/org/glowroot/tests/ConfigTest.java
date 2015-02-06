@@ -37,6 +37,7 @@ import org.glowroot.container.config.InstrumentationConfig.CaptureKind;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.config.StorageConfig;
 import org.glowroot.container.config.UserInterfaceConfig;
+import org.glowroot.container.config.UserInterfaceConfig.AnonymousAccess;
 import org.glowroot.container.config.UserRecordingConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -116,54 +117,60 @@ public class ConfigTest {
         UserInterfaceConfig config = container.getConfigService().getUserInterfaceConfig();
         // when
         // then
-        assertThat(config.isPasswordEnabled()).isFalse();
+        assertThat(config.isAdminPasswordEnabled()).isFalse();
     }
 
     @Test
     public void shouldEnableUserInterfacePassword() throws Exception {
         // given
         UserInterfaceConfig config = container.getConfigService().getUserInterfaceConfig();
-        config.setCurrentPassword("");
-        config.setNewPassword("abc");
+        config.setCurrentAdminPassword("");
+        config.setNewAdminPassword("abc");
         // when
         container.getConfigService().updateUserInterfaceConfig(config);
         // then
         UserInterfaceConfig updatedConfig = container.getConfigService().getUserInterfaceConfig();
-        assertThat(updatedConfig.isPasswordEnabled()).isTrue();
+        assertThat(updatedConfig.isAdminPasswordEnabled()).isTrue();
     }
 
     @Test
     public void shouldChangeUserInterfacePassword() throws Exception {
         // given
         UserInterfaceConfig config = container.getConfigService().getUserInterfaceConfig();
-        config.setCurrentPassword("");
-        config.setNewPassword("xyz");
+        config.setAdminPasswordEnabled(true);
+        config.setCurrentAdminPassword("");
+        config.setNewAdminPassword("xyz");
+        config.setAnonymousAccess(AnonymousAccess.NONE);
         container.getConfigService().updateUserInterfaceConfig(config);
         // when
         config = container.getConfigService().getUserInterfaceConfig();
-        config.setCurrentPassword("xyz");
-        config.setNewPassword("123");
+        config.setCurrentAdminPassword("xyz");
+        config.setNewAdminPassword("123");
         container.getConfigService().updateUserInterfaceConfig(config);
         // then
         UserInterfaceConfig updatedConfig = container.getConfigService().getUserInterfaceConfig();
-        assertThat(updatedConfig.isPasswordEnabled()).isTrue();
+        assertThat(updatedConfig.isAdminPasswordEnabled()).isTrue();
     }
 
     @Test
     public void shouldDisableUserInterfacePassword() throws Exception {
         // given
         UserInterfaceConfig config = container.getConfigService().getUserInterfaceConfig();
-        config.setCurrentPassword("");
-        config.setNewPassword("efg");
+        config.setAdminPasswordEnabled(true);
+        config.setCurrentAdminPassword("");
+        config.setNewAdminPassword("efg");
+        config.setAnonymousAccess(AnonymousAccess.NONE);
         container.getConfigService().updateUserInterfaceConfig(config);
         // when
         config = container.getConfigService().getUserInterfaceConfig();
-        config.setCurrentPassword("efg");
-        config.setNewPassword("");
+        config.setAdminPasswordEnabled(false);
+        config.setCurrentAdminPassword("efg");
+        config.setNewAdminPassword("");
+        config.setAnonymousAccess(AnonymousAccess.ADMIN);
         container.getConfigService().updateUserInterfaceConfig(config);
         // then
         UserInterfaceConfig updatedConfig = container.getConfigService().getUserInterfaceConfig();
-        assertThat(updatedConfig.isPasswordEnabled()).isFalse();
+        assertThat(updatedConfig.isAdminPasswordEnabled()).isFalse();
     }
 
     @Test
