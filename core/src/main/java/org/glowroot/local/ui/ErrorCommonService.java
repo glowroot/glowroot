@@ -236,13 +236,19 @@ class ErrorCommonService {
                 }
             }
         }
-        errorSummaries = sortErrorSummaries(errorSummaryMap.values(), query.sortOrder());
-        boolean moreAvailable = queryResult.moreAvailable();
-        if (errorSummaries.size() > query.limit()) {
-            moreAvailable = true;
-            errorSummaries = errorSummaries.subList(0, query.limit());
+        List<ErrorSummary> mergedErrorSummaries = Lists.newArrayList();
+        for (ErrorSummary errorSummary : errorSummaryMap.values()) {
+            if (errorSummary.errorCount() > 0) {
+                mergedErrorSummaries.add(errorSummary);
+            }
         }
-        return new QueryResult<ErrorSummary>(errorSummaries, moreAvailable);
+        mergedErrorSummaries = sortErrorSummaries(mergedErrorSummaries, query.sortOrder());
+        boolean moreAvailable = queryResult.moreAvailable();
+        if (mergedErrorSummaries.size() > query.limit()) {
+            moreAvailable = true;
+            mergedErrorSummaries = mergedErrorSummaries.subList(0, query.limit());
+        }
+        return new QueryResult<ErrorSummary>(mergedErrorSummaries, moreAvailable);
     }
 
     private static List<ErrorSummary> sortErrorSummaries(Iterable<ErrorSummary> errorSummaries,
