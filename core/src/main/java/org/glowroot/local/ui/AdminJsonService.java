@@ -88,6 +88,7 @@ class AdminJsonService {
         traceDao.deleteAll();
         gaugePointDao.deleteAll();
         aggregateDao.deleteAll();
+        dataSource.compact();
     }
 
     @POST("/backend/admin/reweave")
