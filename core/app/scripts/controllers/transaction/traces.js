@@ -119,13 +119,13 @@ glowroot.controller('TracesCtrl', [
           });
     }
 
-    $scope.refreshButtonClick = function (deferred) {
+    $scope.refreshButtonClick = function () {
+      $scope.applyLast();
       angular.extend(appliedFilter, $scope.filter);
-      updateLocation();
-      refreshChart(deferred);
+      $scope.$parent.chartRefresh++;
     };
 
-    $scope.clearCriteria = function (deferred) {
+    $scope.clearCriteria = function () {
       $scope.filter.durationLow = 0;
       $scope.filter.durationHigh = undefined;
       $scope.filterDurationComparator = 'greater';
@@ -139,7 +139,7 @@ glowroot.controller('TracesCtrl', [
       $scope.filter.customAttributeValueComparator = 'begins';
       $scope.filter.customAttributeValue = '';
       $scope.filter.limit = defaultFilterLimit;
-      $scope.refreshButtonClick(deferred);
+      $scope.refreshButtonClick();
     };
 
     $chart.bind('plotzoom', function (event, plot, args) {
@@ -206,10 +206,6 @@ glowroot.controller('TracesCtrl', [
       var currMax = $scope.chartTo;
       var currRange = currMax - currMin;
       charts.updateRange($scope, currMin - currRange / 2, currMax + currRange / 2, false, true);
-    };
-
-    $scope.refresh = function () {
-      $scope.$parent.chartRefresh++;
     };
 
     function updateFilter(from, to, durationLow, durationHigh) {

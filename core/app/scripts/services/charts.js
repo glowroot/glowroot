@@ -70,6 +70,7 @@ glowroot.factory('charts', [
       };
 
       $scope.refresh = function () {
+        $scope.applyLast();
         $scope.$parent.chartRefresh++;
       };
     }

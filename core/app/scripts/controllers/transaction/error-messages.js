@@ -127,6 +127,7 @@ glowroot.controller('ErrorMessagesCtrl', [
       if ($scope.parsingError) {
         return;
       }
+      $scope.applyLast();
       refreshData();
     };
 

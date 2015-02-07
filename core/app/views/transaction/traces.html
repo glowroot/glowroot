@@ -242,21 +242,14 @@
   </div>
   <div class="form-group">
     <div class="col-lg-offset-4 col-lg-8">
-      <div gt-button-group>
-        <div gt-button
-             class="gt-inline-block"
-             gt-label="Refresh"
-             gt-click="refreshButtonClick(deferred)"
-             gt-no-spinner="true">
-        </div>
-        <div gt-button
-             class="gt-inline-block"
-             gt-label="Clear criteria"
-             gt-btn-class="btn-default"
-             gt-click="clearCriteria(deferred)"
-             gt-no-spinner="true">
-        </div>
-      </div>
+      <button class="btn btn-primary"
+              ng-click="refreshButtonClick()">
+        Refresh
+      </button>
+      <button class="btn btn-default"
+              ng-click="clearCriteria()">
+        Clear criteria
+      </button>
     </div>
   </div>
 </div>
