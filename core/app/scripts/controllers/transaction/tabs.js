@@ -40,6 +40,13 @@ glowroot.controller('TransactionTabCtrl', [
       }
     });
 
+    $scope.$on('updateTraceTabCount', function (event, args) {
+      // only update tab count if displayed trace count is larger (since if filter criteria present it may be smaller)
+      if ($scope.tabBarData && args > $scope.tabBarData.traceCount) {
+        $scope.tabBarData.traceCount = args;
+      }
+    });
+
     $scope.profileSampleCount = function () {
       if (!$scope.tabBarData) {
         return '...';

@@ -37,6 +37,7 @@ import org.immutables.value.Value;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.LazyHistogram;
+import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.collector.TransactionSummary;
 import org.glowroot.collector.TransactionSummaryMarshaler;
 import org.glowroot.common.Clock;
@@ -53,6 +54,8 @@ import org.glowroot.local.store.ImmutableTransactionSummaryQuery;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.ThreadInfoAggregateMarshaler;
 import org.glowroot.local.store.TraceDao;
+import org.glowroot.transaction.TransactionRegistry;
+import org.glowroot.transaction.model.Transaction;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -64,15 +67,20 @@ class TransactionJsonService {
 
     private final TransactionCommonService transactionCommonService;
     private final TraceDao traceDao;
+    private final TransactionRegistry transactionRegistry;
+    private final TransactionCollectorImpl transactionCollector;
     private final Clock clock;
 
     private final long fixedAggregateIntervalMillis;
     private final long fixedAggregateRollupMillis;
 
     TransactionJsonService(TransactionCommonService transactionCommonService, TraceDao traceDao,
+            TransactionRegistry transactionRegistry, TransactionCollectorImpl transactionCollector,
             Clock clock, long fixedAggregateIntervalSeconds, long fixedAggregateRollupSeconds) {
         this.transactionCommonService = transactionCommonService;
         this.traceDao = traceDao;
+        this.transactionRegistry = transactionRegistry;
+        this.transactionCollector = transactionCollector;
         this.clock = clock;
         this.fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
         this.fixedAggregateRollupMillis = fixedAggregateRollupSeconds * 1000;
@@ -214,6 +222,17 @@ class TransactionJsonService {
         } else {
             traceCount = traceDao.readTransactionCount(request.transactionType(),
                     transactionName, request.from(), request.to());
+        }
+        boolean includeActiveTraces = shouldIncludeActiveTraces(request);
+        if (includeActiveTraces) {
+            // include active traces, this is mostly for the case where there is just a single very
+            // long running active trace and it would be misleading to display Traces (0) on the tab
+            for (Transaction transaction : transactionRegistry.getTransactions()) {
+                // don't include partially stored traces since those are already counted above
+                if (matchesActive(transaction, request) && !transaction.isPartiallyStored()) {
+                    traceCount++;
+                }
+            }
         }
         boolean tracesExpired = false;
         if (traceCount == 0) {
@@ -401,6 +420,26 @@ class TransactionJsonService {
             metricNames.add(entry.getKey());
         }
         return metricNames;
+    }
+
+    private boolean shouldIncludeActiveTraces(TransactionDataRequest request) {
+        long currentTimeMillis = clock.currentTimeMillis();
+        return (request.to() == 0 || request.to() > currentTimeMillis)
+                && request.from() < currentTimeMillis;
+    }
+
+    private boolean matchesActive(Transaction transaction, TransactionDataRequest request) {
+        if (!transactionCollector.shouldStore(transaction)) {
+            return false;
+        }
+        if (!request.transactionType().equals(transaction.getTransactionType())) {
+            return false;
+        }
+        String transactionName = request.transactionName();
+        if (transactionName != null && !transactionName.equals(transaction.getTransactionName())) {
+            return false;
+        }
+        return true;
     }
 
     private static void writeFlameGraphNode(AggregateProfileNode node, JsonGenerator jg)

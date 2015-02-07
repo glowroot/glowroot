@@ -37,7 +37,7 @@ glowroot.controller('TracesCtrl', [
 
     var appliedFilter;
 
-    var filterLimitDefault;
+    var defaultFilterLimit = 500;
 
     $scope.$watchGroup(['containerWidth', 'windowHeight'], function () {
       plot.resize();
@@ -93,10 +93,13 @@ glowroot.controller('TracesCtrl', [
             if ($scope.showChartSpinner) {
               return;
             }
-            $scope.chartNoData = !data.normalPoints.length && !data.errorPoints.length && !data.activePoints.length;
+            var traceCount = data.normalPoints.length + data.errorPoints.length + data.activePoints.length;
+            $scope.chartNoData = traceCount === 0;
             $scope.tracesExpired = data.tracesExpired;
             $scope.chartLimitExceeded = data.limitExceeded;
             $scope.chartLimit = limit;
+            // update tab bar in case viewing live data and tab bar trace count is now out of sync
+            $scope.$parent.$broadcast('updateTraceTabCount', traceCount);
             // user clicked on Refresh button, need to reset axes
             plot.getAxes().xaxis.options.min = from;
             plot.getAxes().xaxis.options.max = to;
@@ -120,6 +123,23 @@ glowroot.controller('TracesCtrl', [
       angular.extend(appliedFilter, $scope.filter);
       updateLocation();
       refreshChart(deferred);
+    };
+
+    $scope.clearCriteria = function (deferred) {
+      $scope.filter.durationLow = 0;
+      $scope.filter.durationHigh = undefined;
+      $scope.filterDurationComparator = 'greater';
+      $scope.filter.headlineComparator = 'begins';
+      $scope.filter.headline = '';
+      $scope.filter.errorComparator = 'begins';
+      $scope.filter.error = '';
+      $scope.filter.userComparator = 'begins';
+      $scope.filter.user = '';
+      $scope.filter.customAttributeName = '';
+      $scope.filter.customAttributeValueComparator = 'begins';
+      $scope.filter.customAttributeValue = '';
+      $scope.filter.limit = defaultFilterLimit;
+      $scope.refreshButtonClick(deferred);
     };
 
     $chart.bind('plotzoom', function (event, plot, args) {
@@ -298,11 +318,7 @@ glowroot.controller('TracesCtrl', [
     appliedFilter.customAttributeName = $location.search()['custom-attribute-name'] || '';
     appliedFilter.customAttributeValueComparator = $location.search()['custom-attribute-value-comparator'] || 'begins';
     appliedFilter.customAttributeValue = $location.search()['custom-attribute-value'] || '';
-    appliedFilter.limit = Number($location.search().limit);
-    if (!appliedFilter.limit) {
-      filterLimitDefault = true;
-      appliedFilter.limit = 500;
-    }
+    appliedFilter.limit = Number($location.search().limit) || defaultFilterLimit;
 
     $scope.filter = angular.copy(appliedFilter);
     // need to remove from and to so they aren't copied back during angular.extend(appliedFilter, $scope.filter)
@@ -325,14 +341,8 @@ glowroot.controller('TracesCtrl', [
       }
     });
 
-    $scope.$watch('filter.limit', function (newValue, oldValue) {
-      if (newValue !== oldValue) {
-        filterLimitDefault = false;
-      }
-    });
-
     function updateLocation() {
-      var query = $scope.buildQueryObject();
+      var query = $scope.buildQueryObject({});
       if (Number(appliedFilter.durationLow)) {
         query['duration-low'] = appliedFilter.durationLow;
       }
@@ -358,7 +368,7 @@ glowroot.controller('TracesCtrl', [
         query['custom-attribute-value-comparator'] = appliedFilter.customAttributeValueComparator;
         query['custom-attribute-value'] = appliedFilter.customAttributeValue;
       }
-      if (!filterLimitDefault) {
+      if (Number(appliedFilter.limit) !== defaultFilterLimit) {
         query.limit = appliedFilter.limit;
       }
       $location.search(query);

@@ -84,8 +84,8 @@ public class LocalUiModule {
         TraceCommonService traceCommonService = new TraceCommonService(traceDao,
                 transactionRegistry, transactionCollector, clock, ticker);
         TransactionJsonService transactionJsonService = new TransactionJsonService(
-                transactionCommonService, traceDao, clock,
-                collectorModule.getFixedAggregateIntervalSeconds(),
+                transactionCommonService, traceDao, transactionRegistry, transactionCollector,
+                clock, collectorModule.getFixedAggregateIntervalSeconds(),
                 storageModule.getFixedAggregateRollupSeconds());
         TracePointJsonService tracePointJsonService = new TracePointJsonService(traceDao,
                 transactionRegistry, transactionCollector, ticker, clock);
