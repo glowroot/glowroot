@@ -145,7 +145,7 @@ class ConfigFile {
         return config;
     }
 
-    private String getDefaultTransactionType(List<InstrumentationConfig> configs) {
+    String getDefaultTransactionType(List<InstrumentationConfig> configs) {
         for (PluginDescriptor descriptor : pluginDescriptors) {
             if (!descriptor.transactionTypes().isEmpty()) {
                 return descriptor.transactionTypes().get(0);

@@ -1,0 +1,133 @@
+<!--
+  Copyright 2015 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h2>
+      <a class="pull-right"
+         style="font-size: 16px; padding-top: 14px;"
+         href="config/alert-list">
+        Return to list
+      </a>
+      Alerts
+      <span class="gt-inline-block gt-separator">
+        |
+      </span>
+      SMTP configuration
+    </h2>
+  </div>
+  <div class="panel-body">
+    <div ng-include src="'template/gt-loading-overlay.html'"></div>
+    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+    <div ng-form
+         gt-form-with-primary-button
+         gt-form-autofocus-on-first-input
+         class="form-horizontal"
+         name="formCtrl">
+      <div gt-form-group
+           gt-label="From email address"
+           gt-model="config.fromEmailAddress"
+           gt-width="20em">
+        <div class="help-block">
+          Defaults to <em>glowroot@&lt;server name&gt;</em> (currently glowroot@{{localServerName}}).
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="From display name"
+           gt-model="config.fromName"
+           gt-width="20em">
+        <div class="help-block">
+          Defaults to <em>Glowroot</em>.
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="SMTP host"
+           gt-model="config.host"
+           gt-width="20em">
+        <div class="help-block">
+          This is required in order to send alerts.
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="SMTP port"
+           gt-model="config.port"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-width="7em">
+        <div class="help-block">
+          Defaults to port 25.
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Use SSL"
+           gt-model="config.ssl"
+           gt-type="checkbox"
+           class="gt-form-group-without-help-block">
+      </div>
+      <div gt-form-group
+           gt-label="Username"
+           gt-model="config.username"
+           gt-width="20em"
+           class="gt-form-group-without-help-block">
+      </div>
+      <div class="form-group gt-form-group-without-help-block"
+           ng-class="{'has-error': formCtrl.password.$invalid}">
+        <label class="col-lg-3 control-label"
+               for="password">
+          Password
+        </label>
+
+        <div class="col-lg-9">
+          <input type="password"
+                 class="form-control"
+                 ng-model="password"
+                 name="password"
+                 id="password"
+                 ng-change="onPasswordChange()"
+                 ng-click="onPasswordClick()"
+                 style="max-width: 20em; display: inline-block">
+        </div>
+      </div>
+      <fieldset>
+        <legend>Send test email</legend>
+        <div gt-form-group
+             gt-label="Test email recipient"
+             gt-model="testEmailRecipient"
+             gt-width="25em"
+             class="gt-form-group-without-help-block">
+        </div>
+      </fieldset>
+      <div class="form-group gt-form-buttons">
+        <div class="col-lg-offset-3 col-lg-9">
+          <div gt-button-group>
+            <div gt-button
+                 class="gt-inline-block"
+                 gt-label="Save changes"
+                 gt-click="save(deferred)"
+                 gt-disabled="!hasChanges() || formCtrl.$invalid">
+            </div>
+            <div gt-button
+                 class="gt-inline-block"
+                 gt-btn-class="btn-default"
+                 gt-label="Send test email"
+                 gt-click="sendTestEmail(deferred)"
+                 gt-disabled="!testEmailRecipient || !config.host">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

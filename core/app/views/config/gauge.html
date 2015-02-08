@@ -33,6 +33,7 @@
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-form
          gt-form-with-primary-button
+         gt-form-autofocus-on-first-input
          class="form-horizontal"
          name="formCtrl">
       <div class="form-group"
@@ -52,7 +53,6 @@
                  ng-blur="onBlurMBeanObjectName()"
                  name="mbeanObjectName"
                  id="mbeanObjectName{{$id}}"
-                 gt-set-focus="isFocus"
                  style="max-width: 40em; display: inline-block">
 
           <div gt-spinner

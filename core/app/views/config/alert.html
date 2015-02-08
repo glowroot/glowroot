@@ -1,0 +1,148 @@
+<!--
+  Copyright 2012-2015 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h2>
+      <a class="pull-right"
+         style="font-size: 16px; padding-top: 14px;"
+         href="config/alert-list">
+        Return to list
+      </a>
+      Alerts
+      <span class="gt-inline-block gt-separator">
+        |
+      </span>
+      <span style="font-size: 24px;">{{heading}}</span>
+    </h2>
+  </div>
+  <div class="panel-body">
+    <div ng-include src="'template/gt-loading-overlay.html'"></div>
+    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+    <div ng-form
+         gt-form-with-primary-button
+         gt-form-autofocus-on-first-input
+         class="form-horizontal"
+         name="formCtrl">
+      <div class="form-group" ng-class="{'has-error': formCtrl.transactionType.$invalid}">
+        <label class="col-lg-3 control-label"
+               for="transactionType">
+          Transaction type
+        </label>
+
+        <div class="col-lg-9">
+          <select ng-model="config.transactionType"
+                  class="form-control"
+                  ng-required="loaded"
+                  name="transactionType"
+                  id="transactionType"
+                  style="width: auto;">
+            <option ng-repeat="transactionType in layout.transactionTypes"
+                    value="{{transactionType}}"
+                    ng-selected="transactionType === config.transactionType">
+              {{transactionType}}
+            </option>
+          </select>
+
+          <div class="help-block">
+            The transaction type that this alert monitors.
+          </div>
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Percentile"
+           gt-model="config.percentile"
+           gt-number="true"
+           gt-pattern="pattern.double"
+           gt-required="loaded"
+           gt-width="7em"
+           gt-addon="percentile">
+        <div class="help-block">
+          <em>Percentile</em>, <em>time period</em> and <em>threshold</em> all work together.
+
+          Every minute, the given percentile (e.g. 95)
+          will be calculated over the given prior time period (e.g. the last 5 minutes) and if it exceeds the given
+          threshold (e.g. 2000 milliseconds) then the alert will be triggered.
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Time period"
+           gt-model="config.timePeriodMinutes"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-required="loaded"
+           gt-width="7em"
+           gt-addon="minutes">
+        <div class="help-block">
+          The time period over which the percentile is calculated.
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Threshold"
+           gt-model="config.thresholdMillis"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-required="loaded"
+           gt-width="7em"
+           gt-addon="milliseconds">
+        <div class="help-block">
+          The threshold that will trigger the alert.
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Minimum transaction count"
+           gt-model="config.minTransactionCount"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-required="loaded"
+           gt-width="7em">
+        <div class="help-block">
+          Time periods with very few transactions have much less reliable percentiles, so increasing this can be used to
+          suppress alerts from being generated unless the time period meets this minimum transaction count.
+        </div>
+      </div>
+      <div gt-form-group
+           gt-type="textarea"
+           gt-label="Email addresses"
+           gt-model="emailAddresses"
+           gt-required="loaded"
+           gt-width="30em">
+        <div class="help-block">
+          Comma separated list of email addresses.
+        </div>
+      </div>
+      <div class="form-group gt-form-buttons">
+        <div class="col-lg-offset-2 col-lg-10">
+          <div gt-button-group>
+            <div gt-button
+                 gt-label="{{config.version ? 'Save' : 'Add'}}"
+                 gt-click="save(deferred)"
+                 gt-disabled="saveDisabled()"
+                 class="gt-inline-block">
+            </div>
+            <div gt-button
+                 gt-show="config.version"
+                 gt-label="Delete"
+                 gt-click="delete(deferred)"
+                 gt-btn-class="btn-default"
+                 class="gt-inline-block"
+                 style="margin-left: 5px;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

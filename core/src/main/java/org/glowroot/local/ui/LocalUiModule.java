@@ -15,7 +15,6 @@
  */
 package org.glowroot.local.ui;
 
-import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +49,7 @@ public class LocalUiModule {
 
     private final LazyHttpServer lazyHttpServer;
 
-    public LocalUiModule(Ticker ticker, Clock clock, File dataDir, JvmModule jvmModule,
+    public LocalUiModule(Ticker ticker, Clock clock, JvmModule jvmModule,
             ConfigModule configModule, StorageModule storageModule,
             CollectorModule collectorModule, TransactionModule transactionModule,
             @Nullable Instrumentation instrumentation, Map<String, String> properties,
@@ -107,7 +106,7 @@ public class LocalUiModule {
                 collectorModule.getFixedGaugeIntervalSeconds(),
                 storageModule.getFixedGaugeRollupSeconds());
         ConfigJsonService configJsonService = new ConfigJsonService(configService,
-                cappedDatabase, configModule.getPluginDescriptors(), dataDir, httpSessionManager,
+                cappedDatabase, configModule.getPluginDescriptors(), httpSessionManager,
                 transactionModule);
         ClasspathCache classpathCache = new ClasspathCache(analyzedWorld, instrumentation);
         InstrumentationJsonService instrumentationJsonService = new InstrumentationJsonService(
@@ -115,6 +114,7 @@ public class LocalUiModule {
                 transactionModule);
         GaugeJsonService gaugeJsonService =
                 new GaugeJsonService(configService, jvmModule.getLazyPlatformMBeanServer());
+        AlertJsonService alertJsonService = new AlertJsonService(configService);
         AdminJsonService adminJsonService = new AdminJsonService(aggregateDao, traceDao,
                 gaugePointDao, collectorModule.getAggregateCollector(), configService,
                 transactionModule.getAdviceCache(), analyzedWorld, instrumentation,
@@ -130,6 +130,7 @@ public class LocalUiModule {
         jsonServices.add(configJsonService);
         jsonServices.add(instrumentationJsonService);
         jsonServices.add(gaugeJsonService);
+        jsonServices.add(alertJsonService);
         jsonServices.add(adminJsonService);
 
         int port = configService.getUserInterfaceConfig().port();

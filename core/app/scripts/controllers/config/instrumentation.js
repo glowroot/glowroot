@@ -80,10 +80,6 @@ glowroot.controller('ConfigInstrumentationCtrl', [
         }
       } else {
         $scope.heading = '<New>';
-        $timeout(function () {
-          // focus on class name
-          $scope.isFocus = true;
-        }, 0);
       }
     }
 

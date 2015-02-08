@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
+import com.google.common.collect.Lists;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
@@ -31,12 +32,12 @@ public class GaugeConfig {
 
     private @Nullable String name;
     private @Nullable String mbeanObjectName;
-    private @Nullable List<String> mbeanAttributeNames;
+    private List<String> mbeanAttributeNames = Lists.newArrayList();
 
-    // null for new Gauge records that haven't been sent to server yet
+    // null for new gauge config records that haven't been sent to server yet
     private @Nullable final String version;
 
-    // used to create new Gauge records that haven't been sent to server yet
+    // used to create new gauge config records that haven't been sent to server yet
     public GaugeConfig() {
         version = null;
     }
@@ -61,7 +62,7 @@ public class GaugeConfig {
         this.mbeanObjectName = mbeanObjectName;
     }
 
-    public @Nullable List<String> getMBeanAttributeNames() {
+    public List<String> getMBeanAttributeNames() {
         return mbeanAttributeNames;
     }
 

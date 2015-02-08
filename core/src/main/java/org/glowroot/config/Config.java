@@ -43,6 +43,12 @@ abstract class Config {
     }
 
     @Value.Default
+    @Json.Named("smtp")
+    SmtpConfig smtpConfig() {
+        return ImmutableSmtpConfig.builder().build();
+    }
+
+    @Value.Default
     @Json.Named("userRecording")
     UserRecordingConfig userRecordingConfig() {
         return ImmutableUserRecordingConfig.builder().build();
@@ -62,4 +68,7 @@ abstract class Config {
 
     @Json.Named("gauges")
     abstract List<GaugeConfig> gaugeConfigs();
+
+    @Json.Named("alerts")
+    abstract List<AlertConfig> alertConfigs();
 }

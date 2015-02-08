@@ -32,7 +32,6 @@ import com.google.common.io.CharStreams;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.common.Marshaling2;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.InstrumentationConfig;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.UserInterfaceConfig;
 import org.glowroot.jvm.HeapDumps;
@@ -113,19 +112,10 @@ class LayoutJsonService {
             long fixedAggregateIntervalSeconds, long fixedAggregateRollupSeconds,
             long fixedGaugeIntervalSeconds, long fixedGaugeRollupSeconds) {
         // use linked hash set to maintain ordering in case there is no default transaction type
-        Set<String> transactionTypes = Sets.newLinkedHashSet();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            transactionTypes.addAll(pluginDescriptor.transactionTypes());
-        }
-        for (InstrumentationConfig config : configService.getInstrumentationConfigs()) {
-            String transactionType = config.transactionType();
-            if (!transactionType.isEmpty()) {
-                transactionTypes.add(transactionType);
-            }
-        }
-        String defaultTransactionType = configService.getGeneralConfig().defaultTransactionType();
+        List<String> transactionTypes = Lists.newArrayList(configService.getAllTransactionTypes());
+        String defaultTransactionType = configService.getDefaultTransactionType();
         List<String> orderedTransactionTypes = Lists.newArrayList();
-        if (transactionTypes.isEmpty()) {
+        if (defaultTransactionType.isEmpty()) {
             defaultTransactionType = "<no transaction types defined>";
         } else {
             if (!transactionTypes.contains(defaultTransactionType)) {
@@ -136,8 +126,8 @@ class LayoutJsonService {
         // add default transaction type first
         orderedTransactionTypes.add(defaultTransactionType);
         // add the rest alphabetical
-        orderedTransactionTypes.addAll(Ordering.from(String.CASE_INSENSITIVE_ORDER).sortedCopy(
-                transactionTypes));
+        orderedTransactionTypes.addAll(
+                Ordering.from(String.CASE_INSENSITIVE_ORDER).sortedCopy(transactionTypes));
         Set<String> transactionCustomAttributes = Sets.newTreeSet();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             transactionCustomAttributes.addAll(pluginDescriptor.transactionCustomAttributes());

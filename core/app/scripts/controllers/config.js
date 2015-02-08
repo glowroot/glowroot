@@ -33,12 +33,32 @@ glowroot.controller('ConfigCtrl', [
       double: /^(0|[1-9][0-9]*)?(\.[0-9]*)?$/
     };
 
+    $scope.percentileSuffix = function (percentile) {
+      var text = String(percentile);
+      var lastChar = text.charAt(text.length - 1);
+      if (lastChar === '1') {
+        return 'st';
+      }
+      if (lastChar === '2') {
+        return 'nd';
+      }
+      if (lastChar === '3') {
+        return 'rd';
+      }
+      return 'th';
+    };
+
     $scope.isInstrumentation = function () {
       return $location.path() === '/config/instrumentation-list' || $location.path() === '/config/instrumentation';
     };
 
     $scope.isGauges = function () {
       return $location.path() === '/config/gauge-list' || $location.path() === '/config/gauge';
+    };
+
+    $scope.isAlerts = function () {
+      return $location.path() === '/config/alert-list' || $location.path() === '/config/alert' ||
+          $location.path() === '/config/smtp';
     };
 
     $scope.isPlugins = function () {

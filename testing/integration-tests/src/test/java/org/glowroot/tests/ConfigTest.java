@@ -20,6 +20,7 @@ import java.util.Map;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.junit.After;
@@ -30,11 +31,13 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.Container;
 import org.glowroot.container.config.AdvancedConfig;
+import org.glowroot.container.config.AlertConfig;
 import org.glowroot.container.config.GaugeConfig;
 import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.config.InstrumentationConfig;
 import org.glowroot.container.config.InstrumentationConfig.CaptureKind;
 import org.glowroot.container.config.PluginConfig;
+import org.glowroot.container.config.SmtpConfig;
 import org.glowroot.container.config.StorageConfig;
 import org.glowroot.container.config.UserInterfaceConfig;
 import org.glowroot.container.config.UserInterfaceConfig.AnonymousAccess;
@@ -72,30 +75,6 @@ public class ConfigTest {
         container.getConfigService().updateGeneralConfig(config);
         // then
         GeneralConfig updatedConfig = container.getConfigService().getGeneralConfig();
-        assertThat(updatedConfig).isEqualTo(config);
-    }
-
-    @Test
-    public void shouldUpdateUserRecordingConfig() throws Exception {
-        // given
-        UserRecordingConfig config = container.getConfigService().getUserRecordingConfig();
-        // when
-        updateAllFields(config);
-        container.getConfigService().updateUserRecordingConfig(config);
-        // then
-        UserRecordingConfig updatedConfig = container.getConfigService().getUserRecordingConfig();
-        assertThat(updatedConfig).isEqualTo(config);
-    }
-
-    @Test
-    public void shouldUpdateStorageConfig() throws Exception {
-        // given
-        StorageConfig config = container.getConfigService().getStorageConfig();
-        // when
-        updateAllFields(config);
-        container.getConfigService().updateStorageConfig(config);
-        // then
-        StorageConfig updatedConfig = container.getConfigService().getStorageConfig();
         assertThat(updatedConfig).isEqualTo(config);
     }
 
@@ -174,6 +153,66 @@ public class ConfigTest {
     }
 
     @Test
+    public void shouldUpdateStorageConfig() throws Exception {
+        // given
+        StorageConfig config = container.getConfigService().getStorageConfig();
+        // when
+        updateAllFields(config);
+        container.getConfigService().updateStorageConfig(config);
+        // then
+        StorageConfig updatedConfig = container.getConfigService().getStorageConfig();
+        assertThat(updatedConfig).isEqualTo(config);
+    }
+
+    @Test
+    public void shouldUpdateSmtpConfig() throws Exception {
+        // given
+        SmtpConfig config = container.getConfigService().getSmtpConfig();
+        // when
+        updateAllFields(config);
+        container.getConfigService().updateSmtpConfig(config);
+        // then
+        SmtpConfig updatedConfig = container.getConfigService().getSmtpConfig();
+        assertThat(updatedConfig).isEqualTo(config);
+    }
+
+    @Test
+    public void shouldUpdateUserRecordingConfig() throws Exception {
+        // given
+        UserRecordingConfig config = container.getConfigService().getUserRecordingConfig();
+        // when
+        updateAllFields(config);
+        container.getConfigService().updateUserRecordingConfig(config);
+        // then
+        UserRecordingConfig updatedConfig = container.getConfigService().getUserRecordingConfig();
+        assertThat(updatedConfig).isEqualTo(config);
+    }
+
+    @Test
+    public void shouldUpdateAdvancedConfig() throws Exception {
+        // given
+        AdvancedConfig config = container.getConfigService().getAdvancedConfig();
+        // when
+        updateAllFields(config);
+        container.getConfigService().updateAdvancedConfig(config);
+        // then
+        AdvancedConfig updatedConfig = container.getConfigService().getAdvancedConfig();
+        assertThat(updatedConfig).isEqualTo(config);
+    }
+
+    @Test
+    public void shouldUpdatePluginConfig() throws Exception {
+        // given
+        PluginConfig config = container.getConfigService().getPluginConfig(PLUGIN_ID);
+        // when
+        updateAllFields(config);
+        container.getConfigService().updatePluginConfig(PLUGIN_ID, config);
+        // then
+        PluginConfig updatedConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
+        assertThat(updatedConfig).isEqualTo(config);
+    }
+
+    @Test
     public void shouldInsertInstrumentationConfig() throws Exception {
         // given
         InstrumentationConfig config = createInstrumentationConfig();
@@ -215,11 +254,11 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldInsertMBeanGauge() throws Exception {
+    public void shouldInsertGauge() throws Exception {
         // given
         List<? extends GaugeConfig> originalConfigs =
                 container.getConfigService().getGaugeConfigs();
-        GaugeConfig config = createMBeanGauge();
+        GaugeConfig config = createGauge();
         // when
         container.getConfigService().addGaugeConfig(config);
         // then
@@ -229,11 +268,11 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldUpdateMBeanGauge() throws Exception {
+    public void shouldUpdateGauge() throws Exception {
         // given
         List<? extends GaugeConfig> originalConfigs =
                 container.getConfigService().getGaugeConfigs();
-        GaugeConfig config = createMBeanGauge();
+        GaugeConfig config = createGauge();
         config = container.getConfigService().addGaugeConfig(config);
         // when
         updateAllFields(config);
@@ -245,11 +284,11 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldDeleteMBeanGauge() throws Exception {
+    public void shouldDeleteGauge() throws Exception {
         // given
         List<? extends GaugeConfig> originalConfigs =
                 container.getConfigService().getGaugeConfigs();
-        GaugeConfig config = createMBeanGauge();
+        GaugeConfig config = createGauge();
         config = container.getConfigService().addGaugeConfig(config);
         // when
         container.getConfigService().removeGaugeConfig(config.getVersion());
@@ -259,27 +298,47 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldUpdateAdvancedConfig() throws Exception {
+    public void shouldInsertAlert() throws Exception {
         // given
-        AdvancedConfig config = container.getConfigService().getAdvancedConfig();
+        List<? extends AlertConfig> originalConfigs =
+                container.getConfigService().getAlertConfigs();
+        AlertConfig config = createAlert();
         // when
-        updateAllFields(config);
-        container.getConfigService().updateAdvancedConfig(config);
+        container.getConfigService().addAlertConfig(config);
         // then
-        AdvancedConfig updatedConfig = container.getConfigService().getAdvancedConfig();
-        assertThat(updatedConfig).isEqualTo(config);
+        List<AlertConfig> configs = container.getConfigService().getAlertConfigs();
+        assertThat(configs).hasSize(originalConfigs.size() + 1);
+        assertThat(configs.get(configs.size() - 1)).isEqualTo(config);
     }
 
     @Test
-    public void shouldUpdatePluginConfig() throws Exception {
+    public void shouldUpdateAlert() throws Exception {
         // given
-        PluginConfig config = container.getConfigService().getPluginConfig(PLUGIN_ID);
+        List<? extends AlertConfig> originalConfigs =
+                container.getConfigService().getAlertConfigs();
+        AlertConfig config = createAlert();
+        config = container.getConfigService().addAlertConfig(config);
         // when
         updateAllFields(config);
-        container.getConfigService().updatePluginConfig(PLUGIN_ID, config);
+        container.getConfigService().updateAlertConfig(config);
         // then
-        PluginConfig updatedConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
-        assertThat(updatedConfig).isEqualTo(config);
+        List<AlertConfig> configs = container.getConfigService().getAlertConfigs();
+        assertThat(configs).hasSize(originalConfigs.size() + 1);
+        assertThat(configs.get(configs.size() - 1)).isEqualTo(config);
+    }
+
+    @Test
+    public void shouldDeleteAlert() throws Exception {
+        // given
+        List<? extends AlertConfig> originalConfigs =
+                container.getConfigService().getAlertConfigs();
+        AlertConfig config = createAlert();
+        config = container.getConfigService().addAlertConfig(config);
+        // when
+        container.getConfigService().removeAlertConfig(config.getVersion());
+        // then
+        List<? extends AlertConfig> configs = container.getConfigService().getAlertConfigs();
+        assertThat(configs).isEqualTo(originalConfigs);
     }
 
     private static void updateAllFields(GeneralConfig config) {
@@ -289,10 +348,9 @@ public class ConfigTest {
         config.setDefaultTransactionType(config.getDefaultTransactionType() + "a");
     }
 
-    private static void updateAllFields(UserRecordingConfig config) {
-        config.setEnabled(!config.isEnabled());
-        config.setUser(Strings.nullToEmpty(config.getUser()) + "x");
-        config.setProfileIntervalMillis(config.getProfileIntervalMillis() + 1);
+    private static void updateAllFields(UserInterfaceConfig config) {
+        // changing the port and password are tested elsewhere
+        config.setSessionTimeoutMinutes(config.getSessionTimeoutMinutes() + 1);
     }
 
     private static void updateAllFields(StorageConfig config) {
@@ -301,9 +359,21 @@ public class ConfigTest {
         config.setCappedDatabaseSizeMb(config.getCappedDatabaseSizeMb() + 100);
     }
 
-    private static void updateAllFields(UserInterfaceConfig config) {
-        // changing the port and password are tested elsewhere
-        config.setSessionTimeoutMinutes(config.getSessionTimeoutMinutes() + 1);
+    private static void updateAllFields(SmtpConfig config) {
+        config.setFromEmailAddress(config.getFromEmailAddress() + "a");
+        config.setFromDisplayName(config.getFromDisplayName() + "b");
+        config.setHost(config.getHost() + "c");
+        config.setPort(config.getPort() == null ? 123 : config.getPort() + 1);
+        config.setSsl(!config.isSsl());
+        config.setUsername(config.getUsername() + "d");
+        config.setNewPassword("e");
+        config.setAdditionalProperties(ImmutableMap.of("1", "x", "2", "y"));
+    }
+
+    private static void updateAllFields(UserRecordingConfig config) {
+        config.setEnabled(!config.isEnabled());
+        config.setUser(Strings.nullToEmpty(config.getUser()) + "x");
+        config.setProfileIntervalMillis(config.getProfileIntervalMillis() + 1);
     }
 
     private static void updateAllFields(AdvancedConfig config) {
@@ -390,7 +460,23 @@ public class ConfigTest {
         config.setTraceEntryEnabledProperty(config.getTraceEntryEnabledProperty() + "l");
     }
 
-    private static GaugeConfig createMBeanGauge() {
+    private static void updateAllFields(GaugeConfig config) {
+        config.setName(config.getName() + "a");
+        config.setMBeanObjectName("java.lang:type=Compilation");
+        config.setMBeanAttributeNames(Lists.newArrayList("TotalCompilationTime"));
+    }
+
+    private static void updateAllFields(AlertConfig config) {
+        config.setTransactionType(config.getTransactionType() + "a");
+        config.setPercentile(config.getPercentile() / 2);
+        config.setTimePeriodMinutes(config.getTimePeriodMinutes() + 1);
+        config.setThresholdMillis(config.getThresholdMillis() + 1);
+        config.setMinTransactionCount(config.getMinTransactionCount() + 1);
+        config.setEmailAddresses(Lists.newArrayList("three@example.org"));
+
+    }
+
+    private static GaugeConfig createGauge() {
         GaugeConfig config = new GaugeConfig();
         config.setName("test");
         config.setMBeanObjectName("java.lang:type=ClassLoading");
@@ -399,9 +485,14 @@ public class ConfigTest {
         return config;
     }
 
-    private static void updateAllFields(GaugeConfig config) {
-        config.setName(config.getName() + "a");
-        config.setMBeanObjectName("java.lang:type=Compilation");
-        config.setMBeanAttributeNames(Lists.newArrayList("TotalCompilationTime"));
+    private static AlertConfig createAlert() {
+        AlertConfig config = new AlertConfig();
+        config.setTransactionType("a type");
+        config.setPercentile(99.9);
+        config.setTimePeriodMinutes(2);
+        config.setThresholdMillis(1234);
+        config.setMinTransactionCount(100);
+        config.setEmailAddresses(Lists.newArrayList("one@example.org", "two@example.org"));
+        return config;
     }
 }

@@ -22,16 +22,21 @@ import java.util.ListIterator;
 import java.util.Set;
 
 import javax.annotation.Nullable;
+import javax.crypto.SecretKey;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
+import com.google.common.io.Files;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.PluginServices.ConfigListener;
+import org.glowroot.common.Encryption;
 import org.glowroot.markers.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -41,6 +46,8 @@ public class ConfigService {
     private static final Logger logger = LoggerFactory.getLogger(ConfigService.class);
 
     private final ConfigFile configFile;
+    private final ImmutableList<PluginDescriptor> pluginDescriptors;
+    private final File secretFile;
     private final Object writeLock = new Object();
 
     private final Set<ConfigListener> configListeners = Sets.newCopyOnWriteArraySet();
@@ -49,8 +56,13 @@ public class ConfigService {
 
     private volatile Config config;
 
+    // volatile not needed as access is guarded by secretKeyFile
+    private @MonotonicNonNull SecretKey secretKey;
+
     ConfigService(File dataDir, List<PluginDescriptor> pluginDescriptors) {
         configFile = new ConfigFile(new File(dataDir, "config.json"), pluginDescriptors);
+        this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
+        secretFile = new File(dataDir, "secret");
         try {
             config = configFile.loadConfig();
         } catch (IOException e) {
@@ -63,16 +75,20 @@ public class ConfigService {
         return config.generalConfig();
     }
 
-    public UserRecordingConfig getUserRecordingConfig() {
-        return config.userRecordingConfig();
+    public UserInterfaceConfig getUserInterfaceConfig() {
+        return config.userInterfaceConfig();
     }
 
     public StorageConfig getStorageConfig() {
         return config.storageConfig();
     }
 
-    public UserInterfaceConfig getUserInterfaceConfig() {
-        return config.userInterfaceConfig();
+    public SmtpConfig getSmtpConfig() {
+        return config.smtpConfig();
+    }
+
+    public UserRecordingConfig getUserRecordingConfig() {
+        return config.userRecordingConfig();
     }
 
     public AdvancedConfig getAdvancedConfig() {
@@ -83,6 +99,19 @@ public class ConfigService {
         for (PluginConfig pluginConfig : config.pluginConfigs()) {
             if (pluginId.equals(pluginConfig.id())) {
                 return pluginConfig;
+            }
+        }
+        return null;
+    }
+
+    public List<InstrumentationConfig> getInstrumentationConfigs() {
+        return config.instrumentationConfigs();
+    }
+
+    public @Nullable InstrumentationConfig getInstrumentationConfig(String version) {
+        for (InstrumentationConfig instrumentationConfig : config.instrumentationConfigs()) {
+            if (instrumentationConfig.version().equals(version)) {
+                return instrumentationConfig;
             }
         }
         return null;
@@ -101,14 +130,14 @@ public class ConfigService {
         return null;
     }
 
-    public List<InstrumentationConfig> getInstrumentationConfigs() {
-        return config.instrumentationConfigs();
+    public List<AlertConfig> getAlertConfigs() {
+        return config.alertConfigs();
     }
 
-    public @Nullable InstrumentationConfig getInstrumentationConfig(String version) {
-        for (InstrumentationConfig instrumentationConfig : config.instrumentationConfigs()) {
-            if (instrumentationConfig.version().equals(version)) {
-                return instrumentationConfig;
+    public @Nullable AlertConfig getAlertConfig(String version) {
+        for (AlertConfig alertConfig : config.alertConfigs()) {
+            if (alertConfig.version().equals(version)) {
+                return alertConfig;
             }
         }
         return null;
@@ -140,17 +169,17 @@ public class ConfigService {
         return generalConfig.version();
     }
 
-    public String updateUserRecordingConfig(UserRecordingConfig userRecordingConfig,
+    public String updateUserInterfaceConfig(UserInterfaceConfig userInterfaceConfig,
             String priorVersion) throws Exception {
         synchronized (writeLock) {
-            checkVersionsEqual(config.userRecordingConfig().version(), priorVersion);
+            checkVersionsEqual(config.userInterfaceConfig().version(), priorVersion);
             Config updatedConfig =
-                    ((ImmutableConfig) config).withUserRecordingConfig(userRecordingConfig);
+                    ((ImmutableConfig) config).withUserInterfaceConfig(userInterfaceConfig);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
-        return userRecordingConfig.version();
+        return userInterfaceConfig.version();
     }
 
     public String updateStorageConfig(StorageConfig storageConfig, String priorVersion)
@@ -165,17 +194,28 @@ public class ConfigService {
         return storageConfig.version();
     }
 
-    public String updateUserInterfaceConfig(UserInterfaceConfig userInterfaceConfig,
-            String priorVersion) throws Exception {
+    public String updateSmtpConfig(SmtpConfig smtpConfig, String priorVersion) throws Exception {
         synchronized (writeLock) {
-            checkVersionsEqual(config.userInterfaceConfig().version(), priorVersion);
-            Config updatedConfig =
-                    ((ImmutableConfig) config).withUserInterfaceConfig(userInterfaceConfig);
+            checkVersionsEqual(config.smtpConfig().version(), priorVersion);
+            Config updatedConfig = ((ImmutableConfig) config).withSmtpConfig(smtpConfig);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
-        return userInterfaceConfig.version();
+        return smtpConfig.version();
+    }
+
+    public String updateUserRecordingConfig(UserRecordingConfig userRecordingConfig,
+            String priorVersion) throws Exception {
+        synchronized (writeLock) {
+            checkVersionsEqual(config.userRecordingConfig().version(), priorVersion);
+            Config updatedConfig =
+                    ((ImmutableConfig) config).withUserRecordingConfig(userRecordingConfig);
+            configFile.write(updatedConfig);
+            config = updatedConfig;
+        }
+        notifyConfigListeners();
+        return userRecordingConfig.version();
     }
 
     public String updateAdvancedConfig(AdvancedConfig advancedConfig, String priorVersion)
@@ -240,10 +280,7 @@ public class ConfigService {
                     break;
                 }
             }
-            if (!found) {
-                logger.warn("aspect config unique hash not found: {}", priorVersion);
-                return priorVersion;
-            }
+            checkState(found, "Instrumentation config not found: %s", priorVersion);
             Config updatedConfig = ((ImmutableConfig) config).withInstrumentationConfigs(configs);
             configFile.write(updatedConfig);
             config = updatedConfig;
@@ -264,10 +301,7 @@ public class ConfigService {
                     break;
                 }
             }
-            if (!found) {
-                logger.warn("aspect config version not found: {}", version);
-                return;
-            }
+            checkState(found, "Instrumentation config not found: %s", version);
             Config updatedConfig = ((ImmutableConfig) config).withInstrumentationConfigs(configs);
             configFile.write(updatedConfig);
             config = updatedConfig;
@@ -279,8 +313,8 @@ public class ConfigService {
         synchronized (writeLock) {
             List<GaugeConfig> gaugeConfigs = Lists.newArrayList(config.gaugeConfigs());
             // check for duplicate mbeanObjectName
-            for (GaugeConfig loopGauge : gaugeConfigs) {
-                if (loopGauge.mbeanObjectName().equals(gaugeConfig.mbeanObjectName())) {
+            for (GaugeConfig loopConfig : gaugeConfigs) {
+                if (loopConfig.mbeanObjectName().equals(gaugeConfig.mbeanObjectName())) {
                     throw new DuplicateMBeanObjectNameException();
                 }
             }
@@ -327,6 +361,92 @@ public class ConfigService {
             Config updatedConfig = ((ImmutableConfig) config).withGaugeConfigs(gaugeConfigs);
             configFile.write(updatedConfig);
             config = updatedConfig;
+        }
+    }
+
+    public String insertAlertConfig(AlertConfig alertConfig) throws Exception {
+        synchronized (writeLock) {
+            List<AlertConfig> alertConfigs = Lists.newArrayList(config.alertConfigs());
+            alertConfigs.add(alertConfig);
+            Config updatedConfig = ((ImmutableConfig) config).withAlertConfigs(alertConfigs);
+            configFile.write(updatedConfig);
+            config = updatedConfig;
+        }
+        return alertConfig.version();
+    }
+
+    public String updateAlertConfig(AlertConfig alertConfig, String priorVersion)
+            throws IOException {
+        synchronized (writeLock) {
+            List<AlertConfig> alertConfigs = Lists.newArrayList(config.alertConfigs());
+            boolean found = false;
+            for (ListIterator<AlertConfig> i = alertConfigs.listIterator(); i.hasNext();) {
+                if (priorVersion.equals(i.next().version())) {
+                    i.set(alertConfig);
+                    found = true;
+                    break;
+                }
+            }
+            checkState(found, "Alert config not found: %s", priorVersion);
+            Config updatedConfig = ((ImmutableConfig) config).withAlertConfigs(alertConfigs);
+            configFile.write(updatedConfig);
+            config = updatedConfig;
+        }
+        return alertConfig.version();
+    }
+
+    public void deleteAlertConfig(String version) throws IOException {
+        synchronized (writeLock) {
+            List<AlertConfig> alertConfigs = Lists.newArrayList(config.alertConfigs());
+            boolean found = false;
+            for (ListIterator<AlertConfig> i = alertConfigs.listIterator(); i.hasNext();) {
+                if (version.equals(i.next().version())) {
+                    i.remove();
+                    found = true;
+                    break;
+                }
+            }
+            checkState(found, "Alert config not found: %s", version);
+            Config updatedConfig = ((ImmutableConfig) config).withAlertConfigs(alertConfigs);
+            configFile.write(updatedConfig);
+            config = updatedConfig;
+        }
+    }
+
+    public String getDefaultTransactionType() {
+        String defaultTransactionType = config.generalConfig().defaultTransactionType();
+        if (!defaultTransactionType.isEmpty()) {
+            return defaultTransactionType;
+        }
+        return configFile.getDefaultTransactionType(config.instrumentationConfigs());
+    }
+
+    public ImmutableList<String> getAllTransactionTypes() {
+        Set<String> transactionTypes = Sets.newLinkedHashSet();
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
+            transactionTypes.addAll(pluginDescriptor.transactionTypes());
+        }
+        for (InstrumentationConfig config : getInstrumentationConfigs()) {
+            String transactionType = config.transactionType();
+            if (!transactionType.isEmpty()) {
+                transactionTypes.add(transactionType);
+            }
+        }
+        return ImmutableList.copyOf(transactionTypes);
+    }
+
+    // lazy create secret file only when needed
+    public SecretKey getSecretKey() throws Exception {
+        synchronized (secretFile) {
+            if (secretKey == null) {
+                if (secretFile.exists()) {
+                    secretKey = Encryption.loadKey(secretFile);
+                } else {
+                    secretKey = Encryption.generateNewKey();
+                    Files.write(secretKey.getEncoded(), secretFile);
+                }
+            }
+            return secretKey;
         }
     }
 

@@ -39,7 +39,6 @@ import org.immutables.value.Json;
 import org.immutables.value.Value;
 
 import org.glowroot.collector.Aggregate;
-import org.glowroot.collector.AggregateRepository;
 import org.glowroot.collector.ErrorPoint;
 import org.glowroot.collector.ErrorSummary;
 import org.glowroot.collector.ImmutableAggregate;
@@ -61,7 +60,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static org.glowroot.common.Checkers.castUntainted;
 
-public class AggregateDao implements AggregateRepository {
+public class AggregateDao {
 
     public static final long ROLLUP_THRESHOLD_MILLIS = HOURS.toMillis(1);
 
@@ -158,7 +157,6 @@ public class AggregateDao implements AggregateRepository {
                 "select ifnull(max(capture_time), 0) from overall_aggregate_rollup_1");
     }
 
-    @Override
     public void store(final List<Aggregate> overallAggregates,
             List<Aggregate> transactionAggregates, long captureTime) throws Exception {
         store(overallAggregates, transactionAggregates, "");

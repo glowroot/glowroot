@@ -16,6 +16,9 @@
 package org.glowroot.shaded.jul;
 
 import java.text.MessageFormat;
+import java.util.ResourceBundle;
+
+import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -39,6 +42,10 @@ public class Logger {
     @VisibleForTesting
     org.slf4j.Logger getLogger() {
         return logger;
+    }
+
+    public String getName() {
+        return logger.getName();
     }
 
     public void severe(String msg) {
@@ -157,5 +164,94 @@ public class Logger {
         } else {
             return logger.isTraceEnabled();
         }
+    }
+
+    public Level getLevel() {
+        if (logger.isErrorEnabled()) {
+            return Level.SEVERE;
+        } else if (logger.isWarnEnabled()) {
+            return Level.WARNING;
+        } else if (logger.isInfoEnabled()) {
+            return Level.CONFIG;
+        } else if (logger.isDebugEnabled()) {
+            return Level.FINE;
+        } else if (logger.isTraceEnabled()) {
+            return Level.FINEST;
+        } else {
+            return Level.OFF;
+        }
+    }
+
+    @SuppressWarnings("unused")
+    public void logp(Level level, String sourceClass, String sourceMethod, String msg) {
+        log(level, msg);
+    }
+
+    @SuppressWarnings("unused")
+    public void logp(Level level, String sourceClass, String sourceMethod, String msg,
+            Object param1) {
+        log(level, msg, param1);
+    }
+
+    @SuppressWarnings("unused")
+    public void logp(Level level, String sourceClass, String sourceMethod, String msg,
+            Object[] params) {
+        log(level, msg, params);
+    }
+
+    @SuppressWarnings("unused")
+    public void logp(Level level, String sourceClass, String sourceMethod, String msg,
+            Throwable thrown) {
+        log(level, msg, thrown);
+    }
+
+    @SuppressWarnings("unused")
+    public void logrb(Level level, String sourceClass, String sourceMethod, String bundleName,
+            String msg) {
+        log(level, msg);
+    }
+
+    @SuppressWarnings("unused")
+    public void logrb(Level level, String sourceClass, String sourceMethod, String bundleName,
+            String msg, Object param1) {
+        log(level, msg, param1);
+    }
+
+    @SuppressWarnings("unused")
+    public void logrb(Level level, String sourceClass, String sourceMethod, String bundleName,
+            String msg, Object[] params) {
+        log(level, msg, params);
+    }
+
+    @SuppressWarnings("unused")
+    public void logrb(Level level, String sourceClass, String sourceMethod, String bundleName,
+            String msg, Throwable thrown) {
+        log(level, msg, thrown);
+    }
+
+    @SuppressWarnings("unused")
+    public void entering(String sourceClass, String sourceMethod) {}
+
+    @SuppressWarnings("unused")
+    public void entering(String sourceClass, String sourceMethod, Object param1) {}
+
+    @SuppressWarnings("unused")
+    public void entering(String sourceClass, String sourceMethod, Object[] params) {}
+
+    @SuppressWarnings("unused")
+    public void exiting(String sourceClass, String sourceMethod) {}
+
+    @SuppressWarnings("unused")
+    public void exiting(String sourceClass, String sourceMethod, Object result) {}
+
+    @SuppressWarnings("unused")
+    public void throwing(String sourceClass, String sourceMethod, Throwable thrown) {}
+
+    public @Nullable ResourceBundle getResourceBundle() {
+        return null;
+    }
+
+    public @Nullable String getResourceBundleName() {
+        return null;
     }
 }

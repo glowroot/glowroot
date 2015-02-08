@@ -149,6 +149,7 @@ glowroot.directive('gtFormGroup', [
         gtPattern: '@',
         gtRequired: '&',
         gtDisabled: '&',
+        gtPlaceholder: '@',
         gtNumber: '&',
         gtRows: '@'
       },
@@ -324,17 +325,6 @@ glowroot.directive('gtSidebarItem', [
   }
 ]);
 
-glowroot.directive('gtSetFocus', function () {
-  return function (scope, iElement, iAttrs) {
-    scope.$watch(iAttrs.gtSetFocus,
-        function (newValue) {
-          if (newValue) {
-            iElement.focus();
-          }
-        }, true);
-  };
-});
-
 glowroot.directive('gtDisplayWhitespace', function () {
   return {
     scope: {
@@ -405,21 +395,23 @@ glowroot.directive('gtFormWithPrimaryButton', function () {
   };
 });
 
-glowroot.directive('gtFormAutofocusOnFirstInput', function () {
-  return function (scope, iElement) {
-    var unregisterWatch = scope.$watch(function () {
-      return iElement.find('input').length && iElement.find('input').first().is(':visible');
-    }, function (newValue) {
-      if (newValue) {
-        // setTimeout is sometimes needed for IE9, e.g. on Config > Profiling
-        setTimeout(function () {
-          iElement.find('input').first().focus();
+glowroot.directive('gtFormAutofocusOnFirstInput', [
+  '$timeout',
+  function ($timeout) {
+    return function (scope, iElement) {
+      $timeout(function () {
+        var unregisterWatch = scope.$watch(function () {
+          return iElement.find('input').length && iElement.find('input').first().is(':visible');
+        }, function (newValue) {
+          if (newValue) {
+            iElement.find('input').first().focus();
+            unregisterWatch();
+          }
         });
-        unregisterWatch();
-      }
-    });
-  };
-});
+      }, 100);
+    };
+  }
+]);
 
 glowroot.directive('gtSmartClick', function () {
   return {

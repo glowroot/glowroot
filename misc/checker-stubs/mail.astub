@@ -1,0 +1,8 @@
+import org.checkerframework.checker.nullness.qual.*;
+
+/* ========================================================================== */
+package javax.mail;
+
+public class Session {
+    public static Session getInstance(Properties props, @Nullable Authenticator authenticator);
+}

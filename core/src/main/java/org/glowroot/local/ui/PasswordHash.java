@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ class PasswordHash {
     private static final int ITERATION_COUNT = 100000;
 
     private static final SecureRandom secureRandom = new SecureRandom();
-    private static final BaseEncoding hexEncoder = BaseEncoding.base16().lowerCase();
+    private static final BaseEncoding hexEncoder = BaseEncoding.base64().omitPadding();
 
     private PasswordHash() {}
 

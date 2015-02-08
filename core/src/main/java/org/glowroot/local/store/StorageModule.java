@@ -45,6 +45,7 @@ public class StorageModule {
     private final DataSource dataSource;
     private final CappedDatabase cappedDatabase;
     private final AggregateDao aggregateDao;
+    private final AggregateRepositoryImpl aggregateRepositoryImpl;
     private final TraceDao traceDao;
     private final GaugePointDao gaugePointDao;
     private final @Nullable ReaperRunnable reaperRunnable;
@@ -75,6 +76,10 @@ public class StorageModule {
         cappedDatabase = new CappedDatabase(new File(dataDir, "glowroot.capped.db"),
                 cappedDatabaseSizeMb * 1024, scheduledExecutor, ticker);
         aggregateDao = new AggregateDao(dataSource, cappedDatabase, fixedAggregateRollupSeconds);
+        TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
+        AlertingService alertingService =
+                new AlertingService(configService, triggeredAlertDao, aggregateDao);
+        aggregateRepositoryImpl = new AggregateRepositoryImpl(aggregateDao, alertingService);
         traceDao = new TraceDao(dataSource, cappedDatabase);
         gaugePointDao = new GaugePointDao(dataSource, clock, fixedGaugeRollupSeconds);
         PreInitializeStorageShutdownClasses.preInitializeClasses();
@@ -89,7 +94,7 @@ public class StorageModule {
     }
 
     public AggregateRepository getAggregateRepository() {
-        return aggregateDao;
+        return aggregateRepositoryImpl;
     }
 
     public TraceRepository getTraceRepository() {

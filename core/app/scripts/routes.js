@@ -309,16 +309,6 @@ glowroot.config([
         }
       }
     });
-    $stateProvider.state('config.userRecording', {
-      url: '/user-recording',
-      templateUrl: 'views/config/user-recording.html',
-      controller: 'ConfigCommonCtrl',
-      resolve: {
-        backendUrl: function () {
-          return 'backend/config/user-recording';
-        }
-      }
-    });
     $stateProvider.state('config.instrumentationList', {
       url: '/instrumentation-list',
       templateUrl: 'views/config/instrumentation-list.html',
@@ -339,6 +329,20 @@ glowroot.config([
       templateUrl: 'views/config/gauge.html',
       controller: 'ConfigGaugeCtrl'
     });
+    $stateProvider.state('config.alertList', {
+      url: '/alert-list',
+      templateUrl: 'views/config/alert-list.html',
+      controller: 'ConfigAlertListCtrl'
+    });
+    $stateProvider.state('config.alert', {
+      url: '/alert',
+      templateUrl: 'views/config/alert.html',
+      controller: 'ConfigAlertCtrl',
+      // alert controller needs to wait for layout when running under grunt serve
+      resolve: {
+        waitForLayout: waitForLayout
+      }
+    });
     $stateProvider.state('config.pluginList', {
       url: '/plugin-list',
       templateUrl: 'views/config/plugin-list.html',
@@ -356,6 +360,21 @@ glowroot.config([
       resolve: {
         backendUrl: function () {
           return 'backend/config/advanced';
+        }
+      }
+    });
+    $stateProvider.state('config.smtp', {
+      url: '/smtp',
+      templateUrl: 'views/config/smtp.html',
+      controller: 'ConfigSmtpCtrl'
+    });
+    $stateProvider.state('config.userRecording', {
+      url: '/user-recording',
+      templateUrl: 'views/config/user-recording.html',
+      controller: 'ConfigCommonCtrl',
+      resolve: {
+        backendUrl: function () {
+          return 'backend/config/user-recording';
         }
       }
     });

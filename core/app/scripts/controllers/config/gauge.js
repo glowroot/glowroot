@@ -73,10 +73,6 @@ glowroot.controller('ConfigGaugeCtrl', [
         });
       } else {
         $scope.heading = '<New>';
-        $timeout(function () {
-          // focus on type name
-          $scope.isFocus = true;
-        }, 0);
       }
     }
 

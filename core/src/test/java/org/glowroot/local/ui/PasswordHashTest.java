@@ -29,21 +29,19 @@ public class PasswordHashTest {
     @Test
     public void shouldThrowOnInvalidHash() throws Exception {
         thrown.expect(GeneralSecurityException.class);
-        PasswordHash.validatePassword("abc",
-                "b2aed396b2b8d74002ad1f138bd4de55:e6a3bd63b314e238a27641c821716f52");
+        PasswordHash.validatePassword("abc", "sq7TlrK410ACrR8Ti9TeVQ:5qO9Y7MU4jiidkHIIXFvUg");
     }
 
     @Test
     public void shouldThrowOnNonHexSalt() throws Exception {
         thrown.expect(GeneralSecurityException.class);
         PasswordHash.validatePassword("abc",
-                "b2aed396b2b8d74002ad1f138bd4de55:zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz:100000");
+                "sq7TlrK410ACrR8Ti9TeVQ:!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!:100000");
     }
 
     @Test
     public void shouldThrowOnIterationCountNotANumber() throws Exception {
         thrown.expect(GeneralSecurityException.class);
-        PasswordHash.validatePassword("abc",
-                "b2aed396b2b8d74002ad1f138bd4de55:e6a3bd63b314e238a27641c821716f52:abc");
+        PasswordHash.validatePassword("abc", "sq7TlrK410ACrR8Ti9TeVQ:5qO9Y7MU4jiidkHIIXFvUg:abc");
     }
 }

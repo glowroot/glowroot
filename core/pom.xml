@@ -112,6 +112,30 @@
       <version>1.0.3</version>
     </dependency>
     <dependency>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>mailapi</artifactId>
+      <version>1.5.2</version>
+      <exclusions>
+        <exclusion>
+          <!-- JAF included in Java SE 6+ -->
+          <groupId>javax.activation</groupId>
+          <artifactId>activation</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>smtp</artifactId>
+      <version>1.5.2</version>
+      <exclusions>
+        <exclusion>
+          <!-- JAF included in Java SE 6+ -->
+          <groupId>javax.activation</groupId>
+          <artifactId>activation</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
       <!-- needed for compiling org.glowroot.testing.SpyingLogbackFilter and needed during shading,
@@ -433,6 +457,25 @@
                         <exclude>META-INF/LICENSE</exclude>
                       </excludes>
                     </filter>
+                    <filter>
+                      <artifact>com.sun.mail:mailapi</artifact>
+                      <excludes>
+                        <exclude>META-INF/gfprobe-provider.xml</exclude>
+                        <exclude>META-INF/javamail.charset.map</exclude>
+                        <exclude>META-INF/mailcap</exclude>
+                        <exclude>META-INF/LICENSE.txt</exclude>
+                      </excludes>
+                    </filter>
+                    <filter>
+                      <artifact>com.sun.mail:smtp</artifact>
+                      <excludes>
+                        <!-- javamail.address.map and javamail.providers are replaced with
+                          glowroot.javamail.address.map and glowroot.javamail.providers -->
+                        <exclude>META-INF/javamail.address.map</exclude>
+                        <exclude>META-INF/javamail.providers</exclude>
+                        <exclude>META-INF/LICENSE.txt</exclude>
+                      </excludes>
+                    </filter>
                   </filters>
                   <relocations>
                     <relocation>
@@ -499,6 +542,24 @@
                     <relocation>
                       <pattern>com.jcraft.jzlib</pattern>
                       <shadedPattern>org.glowroot.shaded.jcraft.jzlib</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <pattern>javax.mail</pattern>
+                      <shadedPattern>org.glowroot.shaded.javax.mail</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <pattern>com.sun.mail</pattern>
+                      <shadedPattern>org.glowroot.shaded.sun.mail</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <rawString>true</rawString>
+                      <pattern>^META-INF/javamail.address.map$</pattern>
+                      <shadedPattern>META-INF/glowroot.javamail.address.map</shadedPattern>
+                    </relocation>
+                    <relocation>
+                      <rawString>true</rawString>
+                      <pattern>^META-INF/javamail.providers$</pattern>
+                      <shadedPattern>META-INF/glowroot.javamail.providers</shadedPattern>
                     </relocation>
                     <relocation>
                       <pattern>org.slf4j</pattern>

@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular */
+/* global glowroot, angular, $ */
 
-glowroot.controller('ConfigCommonCtrl', [
+glowroot.controller('ConfigSmtpCtrl', [
   '$scope',
   '$http',
-  'backendUrl',
+  'modals',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, backendUrl, confirmIfHasChanges, httpErrors) {
+  function ($scope, $http, modals, confirmIfHasChanges, httpErrors) {
     $scope.hasChanges = function () {
       return $scope.originalConfig && !angular.equals($scope.config, $scope.originalConfig);
     };
@@ -30,19 +30,39 @@ glowroot.controller('ConfigCommonCtrl', [
 
     function onNewData(data) {
       $scope.loaded = true;
-      if (data.config) {
-        // originalData is used by advanced config for metricWrapperMethodsActive
-        $scope.originalData = angular.copy(data);
-        delete $scope.originalData.config;
-        $scope.config = data.config;
-      } else {
-        $scope.config = data;
+      $scope.config = data.config;
+      $scope.originalConfig = angular.copy(data.config);
+      if (data.config.passwordExists) {
+        $scope.password = '********';
       }
-      $scope.originalConfig = angular.copy($scope.config);
+      $scope.localServerName = data.localServerName;
     }
 
+    $scope.onPasswordChange = function () {
+      $scope.config.newPassword = $scope.password;
+      $scope.config.passwordExists = $scope.password !== '';
+    };
+
+    $scope.onPasswordClick = function () {
+      $('#password').select();
+    };
+
+    $scope.openTestEmailModal = function () {
+      modals.display('#sendTestEmailModal', true);
+    };
+
+    $scope.sendTestEmail = function (deferred) {
+      var postData = angular.copy($scope.config);
+      postData.testEmailRecipient = $scope.testEmailRecipient;
+      $http.post('backend/config/send-test-email', postData)
+          .success(function () {
+            deferred.resolve('Sent');
+          })
+          .error(httpErrors.handler($scope, deferred));
+    };
+
     $scope.save = function (deferred) {
-      $http.post(backendUrl, $scope.config)
+      $http.post('backend/config/smtp', $scope.config)
           .success(function (data) {
             onNewData(data);
             deferred.resolve('Saved');
@@ -50,7 +70,7 @@ glowroot.controller('ConfigCommonCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get(backendUrl)
+    $http.get('backend/config/smtp')
         .success(onNewData)
         .error(httpErrors.handler($scope));
   }
