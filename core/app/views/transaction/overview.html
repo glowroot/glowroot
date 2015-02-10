@@ -56,6 +56,22 @@
     </div>
   </div>
 </div>
+<div class="legend" id="chartLegend"
+     ng-hide="chartNoData"
+     style="text-align: center; margin-top: 10px; width: 100%;">
+  <div class="gt-inline-block" style="max-width: 600px;">
+    <div class="gt-inline-block" ng-repeat="seriesLabel in seriesLabels"
+         style="margin: 0 6px;">
+      <div class="legendColorBox gt-inline-block"
+           style="border: 1px solid rgb(204, 204, 204); padding: 1px;">
+        <div style="width: 4px; height: 0px; border: 5px solid rgb(237, 194, 64); overflow: hidden;"
+             ng-style="{'border': '5px solid ' + seriesLabel.color}">
+        </div>
+      </div>
+      <div class="legendLabel gt-inline-block">{{seriesLabel.text}}</div>
+    </div>
+  </div>
+</div>
 <div ng-show="mergedAggregate.transactionCount"
      style="position: relative; padding-top: 30px; margin-left: 40px;">
   <div class="gt-panel-overlay" ng-show="showChartSpinner"></div>

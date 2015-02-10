@@ -212,6 +212,9 @@ glowroot.factory('charts', [
           points: {
             radius: 8
           }
+        },
+        legend: {
+          show: false
         }
       };
       chartState.plot = $.plot($chart, data, $.extend(true, options, chartOptions));
@@ -259,12 +262,25 @@ glowroot.factory('charts', [
             }
             chartState.plot.setupGrid();
             chartState.plot.draw();
+            updateLegend(chartState, $scope);
             onRefreshData(data, query);
           })
           .error(function (data, status) {
             $scope.showChartSpinner--;
             httpErrors.handler($scope)(data, status);
           });
+    }
+
+    function updateLegend(chartState, $scope) {
+      var plotData = chartState.plot.getData();
+      $scope.seriesLabels = [];
+      var seriesIndex;
+      for (seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
+        $scope.seriesLabels.push({
+          color: plotData[seriesIndex].color,
+          text: plotData[seriesIndex].label
+        });
+      }
     }
 
     function renderTooltipHtml(from, to, transactionCount, dataIndex, highlightSeriesIndex, chartState, display) {
