@@ -485,6 +485,12 @@
                     <relocation>
                       <pattern>org.h2</pattern>
                       <shadedPattern>org.glowroot.shaded.h2</shadedPattern>
+                      <excludes>
+                        <!-- these resource files are actually read from org/h2/util/data.zip
+                          whose internals do not get shaded -->
+                        <exclude>/org/h2/res/*</exclude>
+                        <exclude>/org/h2/server/web/res/*</exclude>
+                      </excludes>
                     </relocation>
                     <relocation>
                       <!-- shade thread names to make it easy to identify glowroot threads -->
