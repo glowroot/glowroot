@@ -125,7 +125,8 @@ glowroot.controller('TransactionHeaderCtrl', [
       8 * 60 * 60 * 1000, // 8 hours
       24 * 60 * 60 * 1000, // 24 hours
       2 * 24 * 60 * 60 * 1000, // 2 days
-      7 * 24 * 60 * 60 * 1000 // 7 days
+      7 * 24 * 60 * 60 * 1000, // 7 days
+      30 * 24 * 60 * 60 * 1000 // 30 days
     ];
 
     $scope.openCustomRange = function () {
