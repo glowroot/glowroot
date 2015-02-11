@@ -95,7 +95,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     private static final long FIVE_MINUTES = MINUTES.toMillis(5);
 
     private static final String RESOURCE_BASE = "org/glowroot/local/ui/app-dist";
-    private static final String RESOURCE_BASE_URL_PREFIX;
+    // only null when running tests with glowroot.ui.skip=true (e.g. travis "deploy" build)
+    private static final @Nullable String RESOURCE_BASE_URL_PREFIX;
 
     private static final ImmutableSet<String> BROWSER_DISCONNECT_MESSAGES = ImmutableSet.of(
             "An existing connection was forcibly closed by the remote host",
@@ -115,8 +116,11 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     static {
         URL resourceBaseUrl = getUrlForPath(RESOURCE_BASE);
-        checkNotNull(resourceBaseUrl);
-        RESOURCE_BASE_URL_PREFIX = resourceBaseUrl.toExternalForm();
+        if (resourceBaseUrl == null) {
+            RESOURCE_BASE_URL_PREFIX = null;
+        } else {
+            RESOURCE_BASE_URL_PREFIX = resourceBaseUrl.toExternalForm();
+        }
     }
 
     private final ChannelGroup allChannels;
@@ -428,7 +432,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     private static @Nullable URL getSecureUrlForPath(String path) {
         URL url = getUrlForPath(path);
-        if (url != null && url.toExternalForm().startsWith(RESOURCE_BASE_URL_PREFIX)) {
+        if (url != null && RESOURCE_BASE_URL_PREFIX != null
+                && url.toExternalForm().startsWith(RESOURCE_BASE_URL_PREFIX)) {
             return url;
         }
         return null;
