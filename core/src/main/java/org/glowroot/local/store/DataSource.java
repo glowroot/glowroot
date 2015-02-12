@@ -323,7 +323,8 @@ public class DataSource {
     private static Connection createConnection(@Nullable File dbFile) throws SQLException {
         if (dbFile == null) {
             // db_close_on_exit=false since jvm shutdown hook is handled by DataSource
-            return new JdbcConnection("jdbc:h2:mem:;db_close_on_exit=false", new Properties());
+            return new JdbcConnection("jdbc:h2:mem:;compress=true;db_close_on_exit=false",
+                    new Properties());
         } else {
             String dbPath = dbFile.getPath();
             dbPath = dbPath.replaceFirst(".mv.db$", "");
@@ -331,7 +332,7 @@ public class DataSource {
             props.setProperty("user", "sa");
             props.setProperty("password", "");
             // db_close_on_exit=false since jvm shutdown hook is handled by DataSource
-            String url = "jdbc:h2:" + dbPath + ";db_close_on_exit=false";
+            String url = "jdbc:h2:" + dbPath + ";compress=true;db_close_on_exit=false";
             return new JdbcConnection(url, props);
         }
     }
