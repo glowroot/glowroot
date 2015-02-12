@@ -16,6 +16,7 @@
 package org.glowroot.local.ui;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.instrument.Instrumentation;
@@ -68,8 +69,8 @@ import static org.objectweb.asm.Opcodes.ACC_NATIVE;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.ASM5;
 
-// TODO remove items from classpathURIs and classNames when class loaders are no longer present,
-// e.g. in wildfly after undeploying an application
+// TODO remove items from classpathLocations and classNameLocations when class loaders are no longer
+// present, e.g. in wildfly after undeploying an application
 class ClasspathCache {
 
     private static final Logger logger = LoggerFactory.getLogger(ClasspathCache.class);
@@ -77,15 +78,13 @@ class ClasspathCache {
     private final AnalyzedWorld analyzedWorld;
     private final @Nullable Instrumentation instrumentation;
 
-    // using sets of URIs because URLs have expensive equals and hashcode methods
-    // see http://michaelscharf.blogspot.com/2006/11/javaneturlequals-and-hashcode-make.html
     @GuardedBy("this")
-    private final Set<URI> classpathURIs = Sets.newHashSet();
+    private final Set<File> classpathLocations = Sets.newHashSet();
 
     // using ImmutableMultimap because it is very space efficient
     // this is not updated often so trading space efficiency for copying the entire map on update
     @GuardedBy("this")
-    private ImmutableMultimap<String, URI> classNames = ImmutableMultimap.of();
+    private ImmutableMultimap<String, File> classNameLocations = ImmutableMultimap.of();
 
     ClasspathCache(AnalyzedWorld analyzedWorld, @Nullable Instrumentation instrumentation) {
         this.analyzedWorld = analyzedWorld;
@@ -100,7 +99,7 @@ class ClasspathCache {
         Set<String> fullMatchingClassNames = Sets.newLinkedHashSet();
         Set<String> matchingClassNames = Sets.newLinkedHashSet();
         // also check loaded classes, e.g. for groovy classes
-        Iterator<String> i = classNames.keySet().iterator();
+        Iterator<String> i = classNameLocations.keySet().iterator();
         if (instrumentation != null) {
             List<String> loadedClassNames = Lists.newArrayList();
             for (Class<?> clazz : instrumentation.getAllLoadedClasses()) {
@@ -135,10 +134,10 @@ class ClasspathCache {
         // update cache before proceeding
         updateCache();
         Set<UiAnalyzedMethod> analyzedMethods = Sets.newHashSet();
-        Collection<URI> uris = classNames.get(className);
-        for (URI uri : uris) {
+        Collection<File> locations = classNameLocations.get(className);
+        for (File location : locations) {
             try {
-                analyzedMethods.addAll(getAnalyzedMethods(uri));
+                analyzedMethods.addAll(getAnalyzedMethods(location, className));
             } catch (IOException e) {
                 logger.warn(e.getMessage(), e);
             }
@@ -156,17 +155,17 @@ class ClasspathCache {
 
     // using synchronization over concurrent structures in this cache to conserve memory
     synchronized void updateCache() {
-        Multimap<String, URI> newClassNames = HashMultimap.create();
+        Multimap<String, File> newClassNameLocations = HashMultimap.create();
         for (ClassLoader loader : getKnownClassLoaders()) {
-            updateCache(loader, newClassNames);
+            updateCache(loader, newClassNameLocations);
         }
-        updateCacheWithBootstrapClasses(newClassNames);
-        if (!newClassNames.isEmpty()) {
-            Multimap<String, URI> newMap =
+        updateCacheWithBootstrapClasses(newClassNameLocations);
+        if (!newClassNameLocations.isEmpty()) {
+            Multimap<String, File> newMap =
                     TreeMultimap.create(String.CASE_INSENSITIVE_ORDER, Ordering.natural());
-            newMap.putAll(classNames);
-            newMap.putAll(newClassNames);
-            classNames = ImmutableMultimap.copyOf(newMap);
+            newMap.putAll(classNameLocations);
+            newMap.putAll(newClassNameLocations);
+            classNameLocations = ImmutableMultimap.copyOf(newMap);
         }
     }
 
@@ -181,18 +180,36 @@ class ClasspathCache {
         return ImmutableList.copyOf(fullMatchingClassNames);
     }
 
-    private void updateCacheWithBootstrapClasses(Multimap<String, URI> newClassNames) {
+    private void updateCacheWithBootstrapClasses(Multimap<String, File> newClassNameLocations) {
         String bootClassPath = System.getProperty("sun.boot.class.path");
         if (bootClassPath == null) {
             return;
         }
         for (String path : Splitter.on(File.pathSeparatorChar).split(bootClassPath)) {
-            URI uri = new File(path).toURI();
-            if (!classpathURIs.contains(uri)) {
-                loadClassNames(uri, newClassNames);
-                classpathURIs.add(uri);
+            File file = new File(path);
+            if (!classpathLocations.contains(file)) {
+                loadClassNames(file, newClassNameLocations);
+                classpathLocations.add(file);
             }
         }
+    }
+
+    private List<UiAnalyzedMethod> getAnalyzedMethods(File location, String className)
+            throws IOException {
+        String name = className.replace('.', '/') + ".class";
+        if (location.isDirectory()) {
+            URI uri = new File(location, name).toURI();
+            return getAnalyzedMethods(uri);
+        } else if (location.exists() && location.getName().endsWith(".jar")) {
+            String path = location.getPath();
+            try {
+                URI uri = new URI("jar", "file:" + path + "!/" + name, "");
+                return getAnalyzedMethods(uri);
+            } catch (URISyntaxException e) {
+                logger.error(e.getMessage(), e);
+            }
+        }
+        return ImmutableList.of();
     }
 
     private List<UiAnalyzedMethod> getAnalyzedMethods(URI uri) throws IOException {
@@ -229,29 +246,32 @@ class ClasspathCache {
         return analyzedMethods;
     }
 
-    private void updateCache(ClassLoader loader, Multimap<String, URI> newClassNames) {
+    private void updateCache(ClassLoader loader, Multimap<String, File> newClassNameLocations) {
         List<URL> urls = getURLs(loader);
-        List<URI> uris = Lists.newArrayList();
+        List<File> locations = Lists.newArrayList();
         for (URL url : urls) {
             if (url.getProtocol().equals("vfs")) {
                 try {
-                    uris.add(getFileFromJBossVfsURL(url, loader).toURI());
+                    locations.add(getFileFromJBossVfsURL(url, loader));
                 } catch (Exception e) {
                     logger.warn(e.getMessage(), e);
                 }
             } else {
                 try {
-                    uris.add(url.toURI());
+                    URI uri = url.toURI();
+                    if (uri.getScheme().equals("file")) {
+                        locations.add(new File(uri));
+                    }
                 } catch (URISyntaxException e) {
                     // log exception at debug level
                     logger.debug(e.getMessage(), e);
                 }
             }
         }
-        for (URI uri : uris) {
-            if (!classpathURIs.contains(uri)) {
-                loadClassNames(uri, newClassNames);
-                classpathURIs.add(uri);
+        for (File location : locations) {
+            if (!classpathLocations.contains(location)) {
+                loadClassNames(location, newClassNameLocations);
+                classpathLocations.add(location);
             }
         }
     }
@@ -293,27 +313,24 @@ class ClasspathCache {
         return loaders;
     }
 
-    private static void loadClassNames(URI uri, Multimap<String, URI> newClassNames) {
-        if (!uri.getScheme().equals("file")) {
-            return;
-        }
+    private static void loadClassNames(File file, Multimap<String, File> newClassNameLocations) {
         try {
-            File file = new File(uri);
             if (file.isDirectory()) {
-                loadClassNamesFromDirectory(file, "", newClassNames);
+                loadClassNamesFromDirectory(file, "", file, newClassNameLocations);
             } else if (file.exists() && file.getName().endsWith(".jar")) {
-                loadClassNamesFromJarFile(uri, newClassNames);
+                loadClassNamesFromJarFile(file, newClassNameLocations);
             }
         } catch (IllegalArgumentException e) {
             // new File(URI) constructor can throw IllegalArgumentException
             logger.debug(e.getMessage(), e);
         } catch (IOException e) {
-            logger.debug("error reading classes from uri: {}", uri, e);
+            logger.debug("error reading classes from file: {}", file, e);
         }
     }
 
     private static void loadClassNamesFromDirectory(File dir, String prefix,
-            Multimap<String, URI> newClassNames) throws MalformedURLException {
+            File location, Multimap<String, File> newClassNameLocations)
+            throws MalformedURLException {
         File[] files = dir.listFiles();
         if (files == null) {
             return;
@@ -321,23 +338,23 @@ class ClasspathCache {
         for (File file : files) {
             String name = file.getName();
             if (file.isFile() && name.endsWith(".class")) {
-                URI fileUri = new File(dir, name).toURI();
                 String className = prefix + name.substring(0, name.lastIndexOf('.'));
-                newClassNames.put(className, fileUri);
+                newClassNameLocations.put(className, location);
             } else if (file.isDirectory()) {
-                loadClassNamesFromDirectory(file, prefix + name + ".", newClassNames);
+                loadClassNamesFromDirectory(file, prefix + name + ".", location,
+                        newClassNameLocations);
             }
         }
     }
 
-    private static void loadClassNamesFromJarFile(URI jarUri, Multimap<String, URI> newClassNames)
-            throws IOException {
+    private static void loadClassNamesFromJarFile(File jarFile,
+            Multimap<String, File> newClassNameLocations) throws IOException {
         Closer closer = Closer.create();
-        InputStream s = jarUri.toURL().openStream();
+        InputStream s = new FileInputStream(jarFile);
         JarInputStream jarIn = closer.register(new JarInputStream(s));
         try {
-            loadClassNamesFromManifestClassPath(jarIn, jarUri, newClassNames);
-            loadClassNamesFromJarInputStream(jarIn, jarUri, newClassNames);
+            loadClassNamesFromManifestClassPath(jarIn, jarFile, newClassNameLocations);
+            loadClassNamesFromJarInputStream(jarIn, jarFile, newClassNameLocations);
         } catch (Throwable t) {
             throw closer.rethrow(t);
         } finally {
@@ -345,8 +362,8 @@ class ClasspathCache {
         }
     }
 
-    private static void loadClassNamesFromManifestClassPath(JarInputStream jarIn, URI jarUri,
-            Multimap<String, URI> newClassNames) {
+    private static void loadClassNamesFromManifestClassPath(JarInputStream jarIn, File jarFile,
+            Multimap<String, File> newClassNameLocations) {
         Manifest manifest = jarIn.getManifest();
         if (manifest == null) {
             return;
@@ -355,14 +372,15 @@ class ClasspathCache {
         if (classpath == null) {
             return;
         }
+        URI baseUri = jarFile.toURI();
         for (String path : Splitter.on(' ').omitEmptyStrings().split(classpath)) {
-            URI uri = jarUri.resolve(path);
-            loadClassNames(uri, newClassNames);
+            File file = new File(baseUri.resolve(path));
+            loadClassNames(file, newClassNameLocations);
         }
     }
 
-    private static void loadClassNamesFromJarInputStream(JarInputStream jarIn,
-            URI jarUri, Multimap<String, URI> newClassNames) throws IOException {
+    private static void loadClassNamesFromJarInputStream(JarInputStream jarIn, File jarFile,
+            Multimap<String, File> newClassNameLocations) throws IOException {
         JarEntry jarEntry;
         while ((jarEntry = jarIn.getNextJarEntry()) != null) {
             if (jarEntry.isDirectory()) {
@@ -373,13 +391,7 @@ class ClasspathCache {
                 continue;
             }
             String className = name.substring(0, name.lastIndexOf('.')).replace('/', '.');
-            String path = jarUri.getPath();
-            try {
-                URI fileURI = new URI("jar", jarUri.getScheme() + ":" + path + "!/" + name, "");
-                newClassNames.put(className, fileURI);
-            } catch (URISyntaxException e) {
-                logger.error(e.getMessage(), e);
-            }
+            newClassNameLocations.put(className, jarFile);
         }
     }
 
@@ -433,6 +445,10 @@ class ClasspathCache {
                 @Nullable String signature, String /*@Nullable*/[] exceptions) {
             if ((access & ACC_SYNTHETIC) != 0 || (access & ACC_NATIVE) != 0) {
                 // don't add synthetic or native methods to the analyzed model
+                return null;
+            }
+            if (name.equals("<init>")) {
+                // don't add constructors to the analyzed model
                 return null;
             }
             ImmutableUiAnalyzedMethod.Builder builder = ImmutableUiAnalyzedMethod.builder();

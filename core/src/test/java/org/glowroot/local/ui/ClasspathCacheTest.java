@@ -110,19 +110,27 @@ public class ClasspathCacheTest {
     }
 
     @Test
-    public void shouldNotReadSyntheticMethod() {
+    public void shouldAnalyzedMethods() {
         List<UiAnalyzedMethod> methods = classpathCache.getAnalyzedMethods(A.class.getName());
-        assertThat(methods).hasSize(2);
+        assertThat(methods).hasSize(1);
     }
 
     @Test
-    public void shouldWorkWithBadClasspath() {
-        List<UiAnalyzedMethod> methods = classpathCache.getAnalyzedMethods(A.class.getName());
-        assertThat(methods).hasSize(2);
+    public void shouldAnalyzedMethodsB() {
+        List<UiAnalyzedMethod> methods = classpathCache.getAnalyzedMethods(B.class.getName());
+        assertThat(methods).hasSize(1);
     }
 
     @SuppressWarnings("serial")
     private static class A extends ArrayList<String> {
+        @Override
+        public boolean add(String str) {
+            return true;
+        }
+    }
+
+    @SuppressWarnings("serial")
+    private static class B extends ArrayList<String> {
         @Override
         public boolean add(String str) {
             return true;

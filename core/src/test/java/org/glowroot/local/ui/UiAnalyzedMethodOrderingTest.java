@@ -40,18 +40,17 @@ public class UiAnalyzedMethodOrderingTest {
         List<UiAnalyzedMethod> methods = classpathCache.getAnalyzedMethods(A.class.getName());
         // when
         methods = UiAnalyzedMethodOrdering.INSTANCE.sortedCopy(methods);
-        assertThat(methods.get(0).name()).isEqualTo("<init>");
-        assertThat(methods.get(1).name()).isEqualTo("z");
-        assertThat(methods.get(2).name()).isEqualTo("x");
-        assertThat(methods.get(3).name()).isEqualTo("y");
+        assertThat(methods.get(0).name()).isEqualTo("z");
+        assertThat(methods.get(1).name()).isEqualTo("x");
+        assertThat(methods.get(2).name()).isEqualTo("y");
+        assertThat(methods.get(3).name()).isEqualTo("a");
+        assertThat(methods.get(3).parameterTypes()).hasSize(0);
         assertThat(methods.get(4).name()).isEqualTo("a");
-        assertThat(methods.get(4).parameterTypes()).hasSize(0);
+        assertThat(methods.get(4).parameterTypes()).hasSize(1);
         assertThat(methods.get(5).name()).isEqualTo("a");
-        assertThat(methods.get(5).parameterTypes()).hasSize(1);
-        assertThat(methods.get(6).name()).isEqualTo("a");
-        assertThat(methods.get(6).parameterTypes()).hasSize(2);
-        assertThat(methods.get(7).name()).isEqualTo("b");
-        assertThat(methods.get(8).name()).isEqualTo("c");
+        assertThat(methods.get(5).parameterTypes()).hasSize(2);
+        assertThat(methods.get(6).name()).isEqualTo("b");
+        assertThat(methods.get(7).name()).isEqualTo("c");
     }
 
     @SuppressWarnings("unused")
