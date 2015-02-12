@@ -88,7 +88,7 @@ class AdminJsonService {
         traceDao.deleteAll();
         gaugePointDao.deleteAll();
         aggregateDao.deleteAll();
-        dataSource.compact();
+        dataSource.defrag();
     }
 
     @POST("/backend/admin/reweave")
@@ -103,10 +103,9 @@ class AdminJsonService {
         return "{\"classes\":" + count + "}";
     }
 
-    // this is not currectly exposed via UI, but good to keep around in case it is needed
-    @POST("/backend/admin/compact-data")
-    void compactData() throws SQLException {
-        dataSource.compact();
+    @POST("/backend/admin/defrag-data")
+    void defragData() throws SQLException {
+        dataSource.defrag();
     }
 
     @OnlyUsedByTests

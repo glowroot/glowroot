@@ -217,7 +217,7 @@ public class ConfigService {
     }
 
     public void compactData() throws Exception {
-        httpClient.post("/backend/admin/compact-data", "");
+        httpClient.post("/backend/admin/defrag-data", "");
     }
 
     public void resetAllConfig() throws Exception {

@@ -60,6 +60,14 @@ glowroot.controller('ConfigStorageCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
+    $scope.defragData = function (deferred) {
+      $http.post('backend/admin/defrag-data')
+          .success(function () {
+            deferred.resolve('Defragmented');
+          })
+          .error(httpErrors.handler($scope, deferred));
+    };
+
     $scope.deleteAllData = function (deferred) {
       $http.post('backend/admin/delete-all-data')
           .success(function () {

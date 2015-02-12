@@ -86,7 +86,7 @@ public class DataSource {
         this.queryTimeoutSeconds = queryTimeoutSeconds;
     }
 
-    public void compact() throws SQLException {
+    public void defrag() throws SQLException {
         if (dbFile == null) {
             return;
         }
