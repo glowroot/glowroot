@@ -20,6 +20,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.glowroot.tests.webdriver.Utils;
@@ -35,7 +36,7 @@ public class GaugeConfigPage {
     }
 
     public WebElement getMBeanObjectNameTextField() {
-        return withWait(xpath(".//input[@ng-model='config.mbeanObjectName']"));
+        return withWait(xpath("//input[@ng-model='config.mbeanObjectName']"));
     }
 
     public void clickMBeanObjectNameAutoCompleteItem(String className) {
@@ -43,23 +44,27 @@ public class GaugeConfigPage {
     }
 
     public WebElement getMBeanAttributeCheckBox(String label) {
-        return withWait(xpath(".//label[text()[normalize-space()='" + label + "']]//input"));
+        return withWait(xpath("//label[text()[normalize-space()='" + label + "']]//input"));
     }
 
     public WebElement getDuplicateMBeanMessage() {
-        return withWait(xpath(".//div[@ng-show='duplicateMBean']"));
+        return withWait(xpath("//div[@ng-show='duplicateMBean']"));
     }
 
     public WebElement getAddButton() {
-        return withWait(xpath(".//button[normalize-space()='Add']"));
+        return withWait(xpath("//button[normalize-space()='Add']"));
     }
 
-    public WebElement getSaveButton() {
-        return withWait(xpath(".//button[normalize-space()='Save']"));
+    public void clickSaveButton() {
+        WebElement saveButton = withWait(xpath("//button[normalize-space()='Save changes']"));
+        saveButton.click();
+        // wait for save to complete
+        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
+                ExpectedConditions.elementToBeClickable(saveButton)));
     }
 
     public WebElement getDeleteButton() {
-        return withWait(xpath(".//button[normalize-space()='Delete']"));
+        return withWait(xpath("//button[normalize-space()='Delete']"));
     }
 
     private WebElement withWait(By by) {
@@ -67,7 +72,7 @@ public class GaugeConfigPage {
     }
 
     private void clickTypeAheadItem(String label, final String text) {
-        final By xpath = xpath(".//div[label[normalize-space()='" + label + "']]//ul/li/a");
+        final By xpath = xpath("//div[label[normalize-space()='" + label + "']]//ul/li/a");
         new WebDriverWait(driver, 30).until(new Predicate<WebDriver>() {
             @Override
             public boolean apply(WebDriver driver) {

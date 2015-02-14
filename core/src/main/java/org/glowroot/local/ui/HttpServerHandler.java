@@ -208,7 +208,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             FullHttpResponse response) {
         boolean keepAlive = HttpHeaders.isKeepAlive(request);
         if (httpSessionManager.getSessionId(request) != null
-                && httpSessionManager.getAuthenticatedUser(request) == null) {
+                && httpSessionManager.getAuthenticatedUser(request) == null
+                && !response.headers().contains("Set-Cookie")) {
             httpSessionManager.deleteSessionCookie(response);
         }
         response.headers().add("Glowroot-Layout-Version", layoutJsonService.getLayoutVersion());

@@ -110,8 +110,9 @@ public class WebDriverSetup {
             // need to capture sessionId since it is needed in sauceLabsTestWatcher, after
             // driver.quit() is called
             remoteWebDriverSessionId = ((RemoteWebDriver) driver).getSessionId().toString();
+        } else {
+            screenshotOnExceptionRule.setDriver(driver);
         }
-        screenshotOnExceptionRule.setDriver(driver);
     }
 
     public void afterEachTest() throws Exception {

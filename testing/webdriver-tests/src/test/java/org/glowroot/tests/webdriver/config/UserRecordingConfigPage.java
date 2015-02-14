@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,25 +32,23 @@ public class UserRecordingConfigPage {
     }
 
     public WebElement getEnabledSwitchOn() {
-        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Enabled']"
-                + "//label[@btn-radio='true']"));
+        return withWait(xpath("//div[@gt-label='Enabled']//label[@btn-radio='true']"));
     }
 
     public WebElement getEnabledSwitchOff() {
-        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Enabled']"
-                + "//label[@btn-radio='false']"));
+        return withWait(xpath("//div[@gt-label='Enabled']//label[@btn-radio='false']"));
     }
 
     public WebElement getUserTextField() {
-        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='User']//input"));
+        return withWait(xpath("//div[@gt-label='User']//input"));
     }
 
     public WebElement getProfileIntervalTextField() {
-        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Profile interval']//input"));
+        return withWait(xpath("//div[@gt-label='Profile interval']//input"));
     }
 
     public WebElement getSaveButton() {
-        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Save changes']//button"));
+        return withWait(xpath("//div[@gt-label='Save changes']//button"));
     }
 
     private WebElement withWait(By by) {

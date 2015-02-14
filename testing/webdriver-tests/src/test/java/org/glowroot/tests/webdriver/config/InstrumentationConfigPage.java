@@ -20,6 +20,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.glowroot.tests.webdriver.Utils;
@@ -35,7 +36,7 @@ public class InstrumentationConfigPage {
     }
 
     public WebElement getClassNameTextField() {
-        return withWait(xpath(".//input[@ng-model='config.className']"));
+        return withWait(xpath("//input[@ng-model='config.className']"));
     }
 
     public void clickClassNameAutoCompleteItem(String className) {
@@ -43,7 +44,7 @@ public class InstrumentationConfigPage {
     }
 
     public WebElement getMethodNameTextField() {
-        return withWait(xpath(".//input[@ng-model='config.methodName']"));
+        return withWait(xpath("//input[@ng-model='config.methodName']"));
     }
 
     public void clickMethodNameAutoCompleteItem(String methodName) {
@@ -51,63 +52,67 @@ public class InstrumentationConfigPage {
     }
 
     public void clickAnySignatureRadioButton() {
-        withWait(xpath(".//label[text()[normalize-space()='any signature']]//input")).click();
+        withWait(xpath("//label[text()[normalize-space()='any signature']]//input")).click();
     }
 
     public WebElement getCaptureKindMetricRadioButton() {
-        return withWait(xpath(".//input[@ng-model='config.captureKind'][@value='metric']"));
+        return withWait(xpath("//input[@ng-model='config.captureKind'][@value='metric']"));
     }
 
     public WebElement getCaptureKindTraceEntryRadioButton() {
-        return withWait(xpath(".//input[@ng-model='config.captureKind'][@value='trace-entry']"));
+        return withWait(xpath("//input[@ng-model='config.captureKind'][@value='trace-entry']"));
     }
 
     public WebElement getCaptureKindTransactionRadioButton() {
-        return withWait(xpath(".//input[@ng-model='config.captureKind'][@value='transaction']"));
+        return withWait(xpath("//input[@ng-model='config.captureKind'][@value='transaction']"));
     }
 
     public WebElement getCaptureKindOtherRadioButton() {
-        return withWait(xpath(".//input[@ng-model='config.captureKind'][@value='other']"));
+        return withWait(xpath("//input[@ng-model='config.captureKind'][@value='other']"));
     }
 
     public WebElement getMetricNameTextField() {
-        return withWait(xpath(".//div[@gt-model='config.metricName']//input"));
+        return withWait(xpath("//div[@gt-model='config.metricName']//input"));
     }
 
     public WebElement getTraceEntryTemplateTextField() {
-        return withWait(xpath(".//div[@gt-model='config.traceEntryTemplate']//textarea"));
+        return withWait(xpath("//div[@gt-model='config.traceEntryTemplate']//textarea"));
     }
 
     public WebElement getTraceEntryStackThresholdTextField() {
-        return withWait(xpath(".//div[@gt-model='config.traceEntryStackThresholdMillis']//input"));
+        return withWait(xpath("//div[@gt-model='config.traceEntryStackThresholdMillis']//input"));
     }
 
     public WebElement getTraceEntryCaptureSelfNestedCheckbox() {
-        return withWait(xpath(".//div[@gt-model='config.traceEntryCaptureSelfNested']//input"));
+        return withWait(xpath("//div[@gt-model='config.traceEntryCaptureSelfNested']//input"));
     }
 
     public WebElement getTransactionTypeTextField() {
-        return withWait(xpath(".//div[@gt-model='config.transactionType']//input"));
+        return withWait(xpath("//div[@gt-model='config.transactionType']//input"));
     }
 
     public WebElement getTransactionNameTemplateTextField() {
-        return withWait(xpath(".//div[@gt-model='config.transactionNameTemplate']//input"));
+        return withWait(xpath("//div[@gt-model='config.transactionNameTemplate']//input"));
     }
 
     public WebElement getTraceStoreThresholdMillisTextField() {
-        return withWait(xpath(".//div[@gt-model='config.traceStoreThresholdMillis']//input"));
+        return withWait(xpath("//div[@gt-model='config.traceStoreThresholdMillis']//input"));
     }
 
     public WebElement getAddButton() {
-        return withWait(xpath(".//button[normalize-space()='Add']"));
+        return withWait(xpath("//button[normalize-space()='Add']"));
     }
 
-    public WebElement getSaveButton() {
-        return withWait(xpath(".//button[normalize-space()='Save']"));
+    public void clickSaveButton() {
+        WebElement saveButton = withWait(xpath("//button[normalize-space()='Save changes']"));
+        saveButton.click();
+        // wait for save to complete
+        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
+                ExpectedConditions.elementToBeClickable(saveButton)));
     }
 
     public WebElement getDeleteButton() {
-        return withWait(xpath(".//button[normalize-space()='Delete']"));
+        return withWait(xpath("//button[normalize-space()='Delete']"));
     }
 
     private WebElement withWait(By by) {
@@ -115,7 +120,7 @@ public class InstrumentationConfigPage {
     }
 
     private void clickTypeAheadItem(String label, final String text) {
-        final By xpath = xpath(".//div[label[normalize-space()='" + label + "']]//ul/li/a");
+        final By xpath = xpath("//div[label[normalize-space()='" + label + "']]//ul/li/a");
         new WebDriverWait(driver, 30).until(new Predicate<WebDriver>() {
             @Override
             public boolean apply(WebDriver driver) {

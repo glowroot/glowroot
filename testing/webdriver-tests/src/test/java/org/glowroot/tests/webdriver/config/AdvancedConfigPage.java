@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.glowroot.tests.webdriver.config;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.glowroot.tests.webdriver.Utils;
 
@@ -32,45 +34,43 @@ public class AdvancedConfigPage {
     }
 
     public WebElement getMetricWrapperMethodsCheckBox() {
-        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Metric wrapper methods']"
-                + "//input"));
+        return withWait(xpath("//div[@gt-label='Metric wrapper methods']//input"));
     }
 
     public WebElement getImmediatePartialStoreThresholdTextField() {
-        return withWait(xpath("//div[@name='formCtrl']"
-                + "//div[@gt-label='Immediate partial trace store threshold']//input"));
+        return withWait(xpath("//div[@gt-label='Immediate partial trace store threshold']//input"));
     }
 
     public WebElement getMaxTraceEntriesPerTransactionTextField() {
-        return withWait(xpath("//div[@name='formCtrl']"
-                + "//div[@gt-label='Max trace entries per transaction']//input"));
+        return withWait(xpath("//div[@gt-label='Max trace entries per transaction']//input"));
     }
 
     public WebElement getMaxStackTraceSamplesPerTransactionTextField() {
-        return withWait(xpath("//div[@name='formCtrl']"
-                + "//div[@gt-label='Max stack trace samples per transaction']//input"));
+        return withWait(xpath("//div[@gt-label='Max stack trace samples per transaction']//input"));
     }
 
     public WebElement getThreadInfoCheckBox() {
-        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Thread info']//input"));
+        return withWait(xpath("//div[@gt-label='Thread info']//input"));
     }
 
     public WebElement getGcInfoCheckBox() {
-        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='GC info']//input"));
+        return withWait(xpath("//div[@gt-label='GC info']//input"));
     }
 
     public WebElement getMBeanGaugeNotFoundDelayTextField() {
-        return withWait(xpath("//div[@name='formCtrl']"
-                + "//div[@gt-label='MBean gauge not found delay']//input"));
+        return withWait(xpath("//div[@gt-label='MBean gauge not found delay']//input"));
     }
 
     public WebElement getInternalQueryTimeoutTextField() {
-        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Internal query timeout']"
-                + "//input"));
+        return withWait(xpath("//div[@gt-label='Internal query timeout']//input"));
     }
 
-    public WebElement getSaveButton() {
-        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Save changes']//button"));
+    public void clickSaveButton() {
+        WebElement saveButton = withWait(xpath("//button[normalize-space()='Save changes']"));
+        saveButton.click();
+        // wait for save to complete
+        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
+                ExpectedConditions.elementToBeClickable(saveButton)));
     }
 
     private WebElement withWait(By by) {

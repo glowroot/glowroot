@@ -45,10 +45,7 @@ public class ConfigTest extends WebDriverTest {
         page.getStoreThresholdTextField().sendKeys("2345");
         page.getProfilingIntervalTextField().clear();
         page.getProfilingIntervalTextField().sendKeys("3456");
-        page.getSaveButton().click();
-        // wait for save to complete
-        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
-                ExpectedConditions.elementToBeClickable(page.getSaveButton())));
+        page.clickSaveButton();
 
         // then
         app.open();
@@ -72,8 +69,9 @@ public class ConfigTest extends WebDriverTest {
         app.open();
         globalNavbar.getConfigurationLink().click();
         // user recording config is not accessible via config sidebar currently
-        driver.navigate().to("http://localhost:" + container.getUiPort()
-                + "/config/user-recording");
+        String userRecordingUrl =
+                driver.getCurrentUrl().replace("/config/general", "/config/user-recording");
+        driver.navigate().to(userRecordingUrl);
 
         // when
         page.getEnabledSwitchOff().click();
@@ -90,8 +88,7 @@ public class ConfigTest extends WebDriverTest {
         app.open();
         globalNavbar.getConfigurationLink().click();
         // user recording config is not accessible via config sidebar currently
-        driver.navigate().to("http://localhost:" + container.getUiPort()
-                + "/config/user-recording");
+        driver.navigate().to(userRecordingUrl);
         // need to give angular view a chance to render before assertions
         Thread.sleep(200);
         assertThat(page.getEnabledSwitchOn().getAttribute("class").split(" "))
@@ -120,10 +117,7 @@ public class ConfigTest extends WebDriverTest {
         page.getTraceExpirationTextField().sendKeys("55");
         page.getCappedDatabaseSizeTextField().clear();
         page.getCappedDatabaseSizeTextField().sendKeys("678");
-        page.getSaveButton().click();
-        // wait for save to complete
-        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
-                ExpectedConditions.elementToBeClickable(page.getSaveButton())));
+        page.clickSaveButton();
 
         // then
         app.open();
@@ -164,10 +158,7 @@ public class ConfigTest extends WebDriverTest {
         page.getMBeanGaugeNotFoundDelayTextField().sendKeys("4567");
         page.getInternalQueryTimeoutTextField().clear();
         page.getInternalQueryTimeoutTextField().sendKeys("5678");
-        page.getSaveButton().click();
-        // wait for save to complete
-        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
-                ExpectedConditions.elementToBeClickable(page.getSaveButton())));
+        page.clickSaveButton();
 
         // then
         app.open();

@@ -18,6 +18,8 @@ package org.glowroot.tests.webdriver.config;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.glowroot.tests.webdriver.Utils;
 
@@ -32,23 +34,27 @@ public class UserInterfaceConfigPage {
     }
 
     public WebElement getAdminPasswordEnabledCheckBox() {
-        return withWait(xpath(".//div[@gt-model='config.adminPasswordEnabled']//input"));
+        return withWait(xpath("//div[@gt-model='config.adminPasswordEnabled']//input"));
     }
 
     public WebElement getInitialAdminPasswordTextField() {
-        return withWait(xpath(".//input[@ng-model='page.initialAdminPassword']"));
+        return withWait(xpath("//input[@ng-model='page.initialAdminPassword']"));
     }
 
     public WebElement getVerifyInitialAdminPasswordTextField() {
-        return withWait(xpath(".//input[@ng-model='page.verifyInitialAdminPassword']"));
+        return withWait(xpath("//input[@ng-model='page.verifyInitialAdminPassword']"));
     }
 
     public WebElement getVerifyCurrentAdminPasswordTextField() {
-        return withWait(xpath(".//input[@ng-model='page.verifyCurrentAdminPassword']"));
+        return withWait(xpath("//input[@ng-model='page.verifyCurrentAdminPassword']"));
     }
 
-    public WebElement getSaveButton() {
-        return withWait(xpath("//div[@name='formCtrl']//div[@gt-label='Save changes']//button"));
+    public void clickSaveButton() {
+        WebElement saveButton = withWait(xpath("//button[normalize-space()='Save changes']"));
+        saveButton.click();
+        // wait for save to complete
+        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
+                ExpectedConditions.elementToBeClickable(saveButton)));
     }
 
     private WebElement withWait(By by) {

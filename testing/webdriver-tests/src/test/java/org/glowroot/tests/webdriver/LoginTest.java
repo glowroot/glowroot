@@ -16,8 +16,6 @@
 package org.glowroot.tests.webdriver;
 
 import org.junit.Test;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.glowroot.tests.webdriver.config.ConfigSidebar;
 import org.glowroot.tests.webdriver.config.UserInterfaceConfigPage;
@@ -34,16 +32,20 @@ public class LoginTest extends WebDriverTest {
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getUserInterfaceLink().click();
+        // TODO sleep until initial state is loaded from backend/config/ui
+        Thread.sleep(1000);
         page.getAdminPasswordEnabledCheckBox().click();
         page.getInitialAdminPasswordTextField().sendKeys("a");
         page.getVerifyInitialAdminPasswordTextField().sendKeys("a");
-        page.getSaveButton().click();
+        page.clickSaveButton();
 
         globalNavbar.getSignOutLink().click();
         globalNavbar.getLoginPasswordTextField().sendKeys("a");
         globalNavbar.getLoginButton().click();
 
         globalNavbar.getSignOutLink().click();
+        // this is just to wait for login form to appear
+        globalNavbar.getLoginPasswordTextField();
         // F5 to refresh index.html now that un-authenticated, so layout will not be sent back
         // embedded in page (see IndexHtmlHttpService.java)
         driver.navigate().refresh();
@@ -53,11 +55,10 @@ public class LoginTest extends WebDriverTest {
         // need to take password off before @After otherwise config reset code fails with 401
         globalNavbar.getConfigurationLink().click();
         configSidebar.getUserInterfaceLink().click();
+        // TODO sleep until initial state is loaded from backend/config/ui
+        Thread.sleep(1000);
         page.getAdminPasswordEnabledCheckBox().click();
         page.getVerifyCurrentAdminPasswordTextField().sendKeys("a");
-        page.getSaveButton().click();
-        // wait for save to complete
-        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
-                ExpectedConditions.elementToBeClickable(page.getSaveButton())));
+        page.clickSaveButton();
     }
 }

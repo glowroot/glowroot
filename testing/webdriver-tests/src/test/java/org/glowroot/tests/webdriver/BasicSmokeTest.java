@@ -42,7 +42,7 @@ public class BasicSmokeTest extends WebDriverTest {
         container.getConfigService().updateGeneralConfig(generalConfig);
         Stopwatch stopwatch = Stopwatch.createStarted();
         // wait for some aggregation to occur
-        while (stopwatch.elapsed(SECONDS) < 1) {
+        while (stopwatch.elapsed(SECONDS) < 2) {
             container.executeAppUnderTest(JdbcServlet.class);
             container.executeAppUnderTest(ErrorServlet.class);
         }
@@ -146,6 +146,8 @@ public class BasicSmokeTest extends WebDriverTest {
         jvmSidebar.getProcessInfoLink().click();
         jvmSidebar.getSystemPropertiesLink().click();
         // jvm capabilities is not accessible via config sidebar currently
-        driver.navigate().to("http://localhost:" + container.getUiPort() + "/jvm/capabilities");
+        String capabilitiesUrl =
+                driver.getCurrentUrl().replace("/jvm/system-properties", "/jvm/capabilities");
+        driver.navigate().to(capabilitiesUrl);
     }
 }
