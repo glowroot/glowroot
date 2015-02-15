@@ -146,7 +146,7 @@ public class CommitRollbackTest {
                 .containsOnly("jdbc execute", "jdbc rollback");
     }
 
-    public static abstract class ExecuteJdbcCommitBase implements AppUnderTest, TraceMarker {
+    public abstract static class ExecuteJdbcCommitBase implements AppUnderTest, TraceMarker {
         protected Connection connection;
         @Override
         public void executeApp() throws Exception {
@@ -168,7 +168,7 @@ public class CommitRollbackTest {
         }
     }
 
-    public static abstract class ExecuteJdbcCommitThrowingBase implements AppUnderTest,
+    public abstract static class ExecuteJdbcCommitThrowingBase implements AppUnderTest,
             TraceMarker {
         protected Connection connection;
         @Override

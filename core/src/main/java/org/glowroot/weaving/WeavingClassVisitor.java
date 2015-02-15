@@ -728,7 +728,7 @@ class WeavingClassVisitor extends ClassVisitor {
     // AnalyzedMethod equivalence defined only in terms of method name and parameter types
     // so that overridden methods will be equivalent
     @Value.Immutable
-    static abstract class AnalyzedMethodKey {
+    abstract static class AnalyzedMethodKey {
 
         abstract String name();
         abstract List<String> parameterTypes();

@@ -41,14 +41,15 @@ glowroot.controller('LoginCtrl', [
     $scope.message = login.getMessage();
     $scope.login = function (deferred) {
       $scope.message = undefined;
-      $http.post('backend/' + $scope.page.user + '-login', $scope.page.password)
+      var user = $scope.page.user;
+      $http.post('backend/' + user + '-login', $scope.page.password)
           .success(function (data) {
             if (data.incorrectPassword) {
               $('#loginPassword').select();
               deferred.reject('Password incorrect');
             } else {
               $rootScope.layout = data;
-              $rootScope.authenticatedUser = $scope.page.user;
+              $rootScope.authenticatedUser = user;
               deferred.resolve('Success');
               login.returnToOriginalPath();
             }

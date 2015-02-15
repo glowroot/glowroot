@@ -33,7 +33,7 @@ import com.google.common.io.Files;
 public class Encryption {
 
     private static final SecureRandom secureRandom = new SecureRandom();
-    private static final BaseEncoding hexEncoder = BaseEncoding.base64().omitPadding();
+    private static final BaseEncoding encoder = BaseEncoding.base64().omitPadding();
 
     private Encryption() {}
 
@@ -54,14 +54,14 @@ public class Encryption {
         Cipher aesCipherForEncryption = Cipher.getInstance("AES/CBC/PKCS5Padding");
         aesCipherForEncryption.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(iv));
         byte[] encryptedBytes = aesCipherForEncryption.doFinal(text.getBytes(Charsets.UTF_8));
-        return hexEncoder.encode(encryptedBytes) + ':' + hexEncoder.encode(iv);
+        return encoder.encode(encryptedBytes) + ':' + encoder.encode(iv);
     }
 
     public static String decrypt(String encrypted, SecretKey secretKey)
             throws GeneralSecurityException {
         String[] parts = encrypted.split(":");
-        byte[] encryptedText = hexEncoder.decode(parts[0]);
-        byte[] iv = hexEncoder.decode(parts[1]);
+        byte[] encryptedText = encoder.decode(parts[0]);
+        byte[] iv = encoder.decode(parts[1]);
         Cipher aesCipherForDecryption = Cipher.getInstance("AES/CBC/PKCS5Padding");
         aesCipherForDecryption.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(iv));
         byte[] decryptedBytes = aesCipherForDecryption.doFinal(encryptedText);

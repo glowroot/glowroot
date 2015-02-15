@@ -460,8 +460,7 @@ class JvmJsonService {
                 // log exception at debug level
                 logger.debug(e.getMessage(), e);
                 Throwable rootCause = getRootCause(e);
-                value = "<Unavailable due to " + rootCause.getClass().getName() + ": "
-                        + rootCause.getMessage() + ">";
+                value = "<" + rootCause.getClass().getName() + ": " + rootCause.getMessage() + ">";
             }
             sortedAttributeMap.put(attribute.getName(), getMBeanAttributeValue(value));
         }

@@ -29,7 +29,7 @@ class PasswordHash {
     private static final int ITERATION_COUNT = 100000;
 
     private static final SecureRandom secureRandom = new SecureRandom();
-    private static final BaseEncoding hexEncoder = BaseEncoding.base64().omitPadding();
+    private static final BaseEncoding encoder = BaseEncoding.base64().omitPadding();
 
     private PasswordHash() {}
 
@@ -48,7 +48,7 @@ class PasswordHash {
         }
         byte[] salt;
         try {
-            salt = hexEncoder.decode(correctHashParts[1]);
+            salt = encoder.decode(correctHashParts[1]);
         } catch (IllegalArgumentException e) {
             // salt is not a valid hex encoded string
             throw new GeneralSecurityException(e);
@@ -68,6 +68,6 @@ class PasswordHash {
         KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, iterationCount, 128);
         SecretKeyFactory f = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
         byte[] hash = f.generateSecret(spec).getEncoded();
-        return hexEncoder.encode(hash) + ':' + hexEncoder.encode(salt) + ':' + ITERATION_COUNT;
+        return encoder.encode(hash) + ':' + encoder.encode(salt) + ':' + ITERATION_COUNT;
     }
 }
