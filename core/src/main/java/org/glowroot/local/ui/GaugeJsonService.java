@@ -46,6 +46,7 @@ import org.glowroot.common.Marshaling2;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ConfigService.DuplicateMBeanObjectNameException;
 import org.glowroot.config.GaugeConfig;
+import org.glowroot.config.GaugeConfig.MBeanAttribute;
 import org.glowroot.config.ImmutableGaugeConfig;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 
@@ -301,14 +302,14 @@ class GaugeJsonService {
 
         abstract String name();
         abstract String mbeanObjectName();
-        abstract List<String> mbeanAttributeNames();
+        abstract List<MBeanAttribute> mbeanAttributes();
         abstract @Nullable String version(); // null for insert operations
 
         private static GaugeConfigDto fromConfig(GaugeConfig gaugeConfig) {
             return ImmutableGaugeConfigDto.builder()
                     .name(gaugeConfig.name())
                     .mbeanObjectName(gaugeConfig.mbeanObjectName())
-                    .addAllMbeanAttributeNames(gaugeConfig.mbeanAttributeNames())
+                    .addAllMbeanAttributes(gaugeConfig.mbeanAttributes())
                     .version(gaugeConfig.version())
                     .build();
         }
@@ -317,7 +318,7 @@ class GaugeJsonService {
             return ImmutableGaugeConfig.builder()
                     .name(name())
                     .mbeanObjectName(mbeanObjectName())
-                    .addAllMbeanAttributeNames(mbeanAttributeNames())
+                    .addAllMbeanAttributes(mbeanAttributes())
                     .build();
         }
     }

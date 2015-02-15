@@ -97,38 +97,95 @@
             </div>
           </div>
         </div>
-        <br>
 
-        <div>
-          <div ng-repeat="gaugeName in keyedColorPool.keys() | orderBy"
-               class="gt-inline-block"
-               ng-style="displayFilterRowStyle(gaugeName)">
-            {{allShortGaugeNames[gaugeName]}}
-            <button type="button"
-                    class="gt-gauges-displayed-close"
-                    ng-click="removeDisplayedGauge(gaugeName)">
-              &times;
-            </button>
+        <div style="padding: 0 20px;">
+          <div class="legend" id="chartLegend"
+               ng-hide="chartNoData"
+               style="text-align: center; margin-top: 10px; width: 100%;">
+            <div class="gt-inline-block">
+              <div class="gt-inline-block" ng-repeat="seriesLabel in seriesLabels"
+                   style="margin: 0 6px;">
+                <div class="legendColorBox gt-inline-block"
+                     style="border: 1px solid rgb(204, 204, 204); padding: 1px;">
+                  <div style="width: 4px; height: 0px; border: 5px solid rgb(237, 194, 64); overflow: hidden;"
+                       ng-style="{'border': '5px solid ' + seriesLabel.color}">
+                  </div>
+                </div>
+                <div class="legendLabel gt-inline-block">{{seriesLabel.text}}</div>
+              </div>
+            </div>
           </div>
-        </div>
-        <br>
+          <br>
 
-        <div>
-          Filter
-          <input type="text"
-                 class="form-control gt-inline-block"
-                 ng-model="gaugeNameFilter"
-                 style="width: 25em; margin-left: 5px;">
-          <a href="" ng-click="selectAllGauges()" style="margin: 0 20px;">select all</a>
-          <a href="" ng-click="deselectAllGauges()">deselect all</a>
-        </div>
-        <div class="checkbox" ng-repeat="gaugeName in allGaugeNames | filter:gaugeNameFilter">
-          <label ng-style="gaugeRowStyle(gaugeName)">
-            <input type="checkbox" ng-checked="keyedColorPool.get(gaugeName)"
-                   ng-click="clickGaugeName(gaugeName)"
-                   id="{{gaugeName}}">
-            {{gaugeName}}
-          </label>
+          <table class="gt-gauge-table"
+                 style="margin-top: 10px;">
+            <thead>
+            <tr>
+              <th style="padding-left: 20px; width: 70%;">
+                Gauge
+              </th>
+              <th style="width: 100px;">
+                Color
+              </th>
+              <th style="min-width: 120px;">
+                Scale
+              </th>
+              <th style="padding-left: 0;">
+                Display&nbsp;&#916;y
+              </th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <td style="padding: 8px 20px 5px 20px;">
+                <input type="text"
+                       class="form-control gt-inline-block"
+                       ng-model="gaugeNameFilter"
+                       placeholder="filter the gauge list">
+              </td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr ng-repeat="gaugeName in allGaugeNames | filter:gaugeNameFilter">
+              <td style="padding-left: 0;">
+                <div class="checkbox gt-gauge-second-line-indent" style="margin: 0;">
+                  <label ng-style="gaugeNameStyle(gaugeName)">
+                    <input type="checkbox" ng-checked="keyedColorPool.get(gaugeName)"
+                           ng-click="clickGaugeName(gaugeName)"
+                           id="{{gaugeName}}">
+                    {{lineBreakableGaugeName(gaugeName)}}
+                  </label>
+                </div>
+              </td>
+              <td>
+                <div ng-style="gaugeColorStyle(gaugeName)">{{gaugeColorText(gaugeName)}}</div>
+              </td>
+              <td>
+                <div ng-show="hasGaugeScale(gaugeName)">
+                  {{getGaugeScale(gaugeName)}}
+                </div>
+              </td>
+              <td style="padding-left: 0; text-align: center;">
+                <button class="gt-chart-button"
+                        ng-show="hasGaugeScale(gaugeName)"
+                        ng-click="toggleDelta(gaugeName)"
+                        ng-style="deltaStyle(gaugeName)">
+                  <i class="fa fa-check-circle"
+                     style="font-size: 16px;"></i>
+                </button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+          <div style="margin-top: 20px; padding-left: 20px;">
+            <a href="" ng-click="selectAllGauges()">
+              select all {{!showingAllGauges() ? 'showing' : ''}}
+            </a>
+            <a href="" ng-click="deselectAllGauges()" style="margin-left: 20px;">
+              deselect all {{!showingAllGauges() ? 'showing' : ''}}
+            </a>
+          </div>
         </div>
       </div>
     </div>

@@ -30,8 +30,10 @@ glowroot.controller('ConfigGaugeCtrl', [
 
     function onNewData(data) {
       // need to sort attribute names to keep hasChanges() consistent
-      if (data.config.mbeanAttributeNames) {
-        data.config.mbeanAttributeNames.sort();
+      if (data.config.mbeanAttributes) {
+        data.config.mbeanAttributes.sort(function (a, b) {
+          return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+        });
       }
       $scope.config = data.config;
       $scope.originalConfig = angular.copy(data.config);
@@ -48,16 +50,19 @@ glowroot.controller('ConfigGaugeCtrl', [
         angular.forEach(data.mbeanAvailableAttributeNames, function (mbeanAttributeName) {
           allMBeanAttributes[mbeanAttributeName] = {
             checked: false,
+            everIncreasing: false,
             available: true
           };
         });
-        angular.forEach(data.config.mbeanAttributeNames, function (mbeanAttributeName) {
-          var mbeanAttribute = allMBeanAttributes[mbeanAttributeName];
+        angular.forEach(data.config.mbeanAttributes, function (mbeanAttr) {
+          var mbeanAttribute = allMBeanAttributes[mbeanAttr.name];
           if (mbeanAttribute) {
             mbeanAttribute.checked = true;
+            mbeanAttribute.everIncreasing = mbeanAttr.everIncreasing;
           } else {
-            allMBeanAttributes[mbeanAttributeName] = {
+            allMBeanAttributes[mbeanAttr.name] = {
               checked: true,
+              everIncreasing: mbeanAttr.everIncreasing,
               available: false
             };
           }
@@ -68,6 +73,7 @@ glowroot.controller('ConfigGaugeCtrl', [
           $scope.allMBeanAttributes.push({
             name: key,
             checked: value.checked,
+            everIncreasing: value.everIncreasing,
             available: value.available
           });
         });
@@ -87,7 +93,7 @@ glowroot.controller('ConfigGaugeCtrl', [
       $scope.loaded = true;
       onNewData({
         config: {
-          mbeanAttributeNames: []
+          mbeanAttributes: []
         },
         mbeanAvailable: false,
         mbeanAvailableAttributeNames: []
@@ -96,14 +102,19 @@ glowroot.controller('ConfigGaugeCtrl', [
 
     $scope.$watch('allMBeanAttributes', function (newValue, oldValue) {
       if (newValue !== oldValue) {
-        $scope.config.mbeanAttributeNames = [];
+        $scope.config.mbeanAttributes = [];
         angular.forEach($scope.allMBeanAttributes, function (mbeanAttribute) {
           if (mbeanAttribute.checked) {
-            $scope.config.mbeanAttributeNames.push(mbeanAttribute.name);
+            $scope.config.mbeanAttributes.push({
+              name: mbeanAttribute.name,
+              everIncreasing: mbeanAttribute.everIncreasing
+            });
           }
         });
         // need to sort attribute names to keep hasChanges() consistent
-        $scope.config.mbeanAttributeNames.sort();
+        $scope.config.mbeanAttributes.sort(function (a, b) {
+          return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+        });
       }
     }, true);
 
@@ -166,6 +177,7 @@ glowroot.controller('ConfigGaugeCtrl', [
               $scope.allMBeanAttributes.push({
                 name: mbeanAttribute,
                 checked: false,
+                everIncreasing: false,
                 available: true
               });
             });
@@ -192,12 +204,7 @@ glowroot.controller('ConfigGaugeCtrl', [
       for (var i = 1; i < parts.length; i++) {
         postData.name += '/' + parts[i].split('=')[1];
       }
-      postData.mbeanAttributeNames = [];
-      angular.forEach($scope.allMBeanAttributes, function (mbeanAttribute) {
-        if (mbeanAttribute.checked) {
-          postData.mbeanAttributeNames.push(mbeanAttribute.name);
-        }
-      });
+      postData.mbeanAttributes = $scope.config.mbeanAttributes;
       var url;
       if (version) {
         url = 'backend/config/gauges/update';

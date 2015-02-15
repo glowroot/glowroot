@@ -185,16 +185,18 @@ class ConfigFile {
         defaultGaugeConfigs.add(ImmutableGaugeConfig.builder()
                 .name("java.lang/Memory")
                 .mbeanObjectName("java.lang:type=Memory")
-                .addMbeanAttributeNames("HeapMemoryUsage.used")
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("HeapMemoryUsage.used", false))
                 .build());
         ImmutableGaugeConfig.Builder operatingSystemMBean = ImmutableGaugeConfig.builder()
                 .name("java.lang/OperatingSystem")
                 .mbeanObjectName("java.lang:type=OperatingSystem")
-                .addMbeanAttributeNames("FreePhysicalMemorySize");
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("FreePhysicalMemorySize", false));
         if (!JavaVersion.isJdk6()) {
             // these are only available since 1.7
-            operatingSystemMBean.addMbeanAttributeNames("ProcessCpuLoad");
-            operatingSystemMBean.addMbeanAttributeNames("SystemCpuLoad");
+            operatingSystemMBean.addMbeanAttributes(
+                    ImmutableMBeanAttribute.of("ProcessCpuLoad", false));
+            operatingSystemMBean.addMbeanAttributes(
+                    ImmutableMBeanAttribute.of("SystemCpuLoad", false));
         }
         defaultGaugeConfigs.add(operatingSystemMBean.build());
         return defaultGaugeConfigs;

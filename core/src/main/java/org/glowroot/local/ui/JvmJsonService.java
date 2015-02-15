@@ -60,8 +60,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.GaugePoint;
+import org.glowroot.common.Marshaling2;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GaugeConfig;
+import org.glowroot.config.GaugeConfig.MBeanAttribute;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.ImmutableAvailability;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
@@ -125,46 +127,6 @@ class JvmJsonService {
         this.fixedGaugeRollupMillis = fixedGaugeRollupSeconds * 1000;
     }
 
-    @GET("/backend/jvm/process-info")
-    String getProcess() throws Exception {
-        String command = System.getProperty("sun.java.command");
-        String mainClass = null;
-        List<String> arguments = ImmutableList.of();
-        if (command != null) {
-            int index = command.indexOf(' ');
-            if (index > 0) {
-                mainClass = command.substring(0, index);
-                arguments = Lists.newArrayList(
-                        Splitter.on(' ').split(command.substring(index + 1)));
-            }
-        }
-        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
-        String jvm = StandardSystemProperty.JAVA_VM_NAME.value() + " ("
-                + StandardSystemProperty.JAVA_VM_VERSION.value() + ", "
-                + System.getProperty("java.vm.info") + ")";
-        String java = "version " + StandardSystemProperty.JAVA_VERSION.value() + ", vendor "
-                + StandardSystemProperty.JAVA_VM_VENDOR.value();
-        String javaHome = StandardSystemProperty.JAVA_HOME.value();
-
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeNumberField("startTime", runtimeMXBean.getStartTime());
-        jg.writeNumberField("uptime", runtimeMXBean.getUptime());
-        jg.writeStringField("pid", MoreObjects.firstNonNull(processId, "<unknown>"));
-        jg.writeStringField("mainClass", mainClass);
-        jg.writeFieldName("mainClassArguments");
-        mapper.writeValue(jg, arguments);
-        jg.writeStringField("jvm", jvm);
-        jg.writeStringField("java", java);
-        jg.writeStringField("javaHome", javaHome);
-        jg.writeFieldName("jvmArguments");
-        mapper.writeValue(jg, runtimeMXBean.getInputArguments());
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
-    }
-
     @GET("/backend/jvm/gauge-points")
     String getGaugePoints(String queryString) throws Exception {
         GaugePointRequest request = QueryStrings.decode(queryString, GaugePointRequest.class);
@@ -183,48 +145,17 @@ class JvmJsonService {
         return mapper.writeValueAsString(series);
     }
 
-    @GET("/backend/jvm/all-gauge-names")
+    @GET("/backend/jvm/all-gauges")
     String getAllGaugeNames() throws IOException {
-        List<String> gaugeNames = Lists.newArrayList();
+        List<Gauge> gauges = Lists.newArrayList();
         for (GaugeConfig gaugeConfig : configService.getGaugeConfigs()) {
-            for (String mbeanAttributeName : gaugeConfig.mbeanAttributeNames()) {
-                gaugeNames.add(gaugeConfig.name() + "/" + mbeanAttributeName);
+            for (MBeanAttribute mbeanAttribute : gaugeConfig.mbeanAttributes()) {
+                gauges.add(ImmutableGauge.of(gaugeConfig.name() + "/" + mbeanAttribute.name(),
+                        mbeanAttribute.everIncreasing()));
             }
         }
-        ImmutableList<String> sortedGaugeNames =
-                Ordering.from(String.CASE_INSENSITIVE_ORDER).immutableSortedCopy(gaugeNames);
-        return mapper.writeValueAsString(sortedGaugeNames);
-    }
-
-    @GET("/backend/jvm/system-properties")
-    String getSystemProperties() throws IOException {
-        Properties properties = System.getProperties();
-        // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
-        // see https://code.google.com/p/guava-libraries/issues/detail?id=635
-        Map<String, String> sortedProperties =
-                new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
-        for (Enumeration<?> e = properties.propertyNames(); e.hasMoreElements();) {
-            Object obj = e.nextElement();
-            if (obj instanceof String) {
-                String propertyName = (String) obj;
-                String propertyValue = properties.getProperty(propertyName);
-                if (propertyValue != null) {
-                    sortedProperties.put(propertyName, propertyValue);
-                }
-            }
-        }
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartArray();
-        for (Entry<String, String> entry : sortedProperties.entrySet()) {
-            jg.writeStartObject();
-            jg.writeStringField("name", entry.getKey());
-            jg.writeStringField("value", entry.getValue());
-            jg.writeEndObject();
-        }
-        jg.writeEndArray();
-        jg.close();
-        return sb.toString();
+        ImmutableList<Gauge> sortedGauges = Gauge.ordering.immutableSortedCopy(gauges);
+        return Marshaling2.toJson(sortedGauges, Gauge.class);
     }
 
     @GET("/backend/jvm/mbean-tree")
@@ -372,6 +303,77 @@ class JvmJsonService {
         jg.writeStringField("filename", file.getAbsolutePath());
         jg.writeNumberField("size", file.length());
         jg.writeEndObject();
+        jg.close();
+        return sb.toString();
+    }
+
+    @GET("/backend/jvm/process-info")
+    String getProcess() throws Exception {
+        String command = System.getProperty("sun.java.command");
+        String mainClass = null;
+        List<String> arguments = ImmutableList.of();
+        if (command != null) {
+            int index = command.indexOf(' ');
+            if (index > 0) {
+                mainClass = command.substring(0, index);
+                arguments = Lists.newArrayList(
+                        Splitter.on(' ').split(command.substring(index + 1)));
+            }
+        }
+        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+        String jvm = StandardSystemProperty.JAVA_VM_NAME.value() + " ("
+                + StandardSystemProperty.JAVA_VM_VERSION.value() + ", "
+                + System.getProperty("java.vm.info") + ")";
+        String java = "version " + StandardSystemProperty.JAVA_VERSION.value() + ", vendor "
+                + StandardSystemProperty.JAVA_VM_VENDOR.value();
+        String javaHome = StandardSystemProperty.JAVA_HOME.value();
+
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeNumberField("startTime", runtimeMXBean.getStartTime());
+        jg.writeNumberField("uptime", runtimeMXBean.getUptime());
+        jg.writeStringField("pid", MoreObjects.firstNonNull(processId, "<unknown>"));
+        jg.writeStringField("mainClass", mainClass);
+        jg.writeFieldName("mainClassArguments");
+        mapper.writeValue(jg, arguments);
+        jg.writeStringField("jvm", jvm);
+        jg.writeStringField("java", java);
+        jg.writeStringField("javaHome", javaHome);
+        jg.writeFieldName("jvmArguments");
+        mapper.writeValue(jg, runtimeMXBean.getInputArguments());
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
+    }
+
+    @GET("/backend/jvm/system-properties")
+    String getSystemProperties() throws IOException {
+        Properties properties = System.getProperties();
+        // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
+        // see https://code.google.com/p/guava-libraries/issues/detail?id=635
+        Map<String, String> sortedProperties =
+                new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
+        for (Enumeration<?> e = properties.propertyNames(); e.hasMoreElements();) {
+            Object obj = e.nextElement();
+            if (obj instanceof String) {
+                String propertyName = (String) obj;
+                String propertyValue = properties.getProperty(propertyName);
+                if (propertyValue != null) {
+                    sortedProperties.put(propertyName, propertyValue);
+                }
+            }
+        }
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartArray();
+        for (Entry<String, String> entry : sortedProperties.entrySet()) {
+            jg.writeStartObject();
+            jg.writeStringField("name", entry.getKey());
+            jg.writeStringField("value", entry.getValue());
+            jg.writeEndObject();
+        }
+        jg.writeEndArray();
         jg.close();
         return sb.toString();
     }
@@ -549,6 +551,34 @@ class JvmJsonService {
         String getNodeName();
     }
 
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class GaugePointRequest {
+        abstract long from();
+        abstract long to();
+        abstract List<String> gaugeNames();
+        abstract int rollupLevel();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    public abstract static class Gauge {
+
+        static final Ordering<Gauge> ordering = new Ordering<Gauge>() {
+            @Override
+            public int compare(@Nullable Gauge left, @Nullable Gauge right) {
+                checkNotNull(left);
+                checkNotNull(right);
+                return left.name().compareToIgnoreCase(right.name());
+            }
+        };
+
+        @Value.Parameter
+        public abstract String name();
+        @Value.Parameter
+        public abstract boolean everIncreasing();
+    }
+
     @UsedByJsonBinding
     static class MBeanTreeInnerNode implements MBeanTreeNode {
 
@@ -626,21 +656,6 @@ class JvmJsonService {
 
     @Value.Immutable
     @Json.Marshaled
-    abstract static class GaugePointRequest {
-        abstract long from();
-        abstract long to();
-        abstract List<String> gaugeNames();
-        abstract int rollupLevel();
-    }
-
-    @Value.Immutable
-    @Json.Marshaled
-    abstract static class RequestWithDirectory {
-        abstract String directory();
-    }
-
-    @Value.Immutable
-    @Json.Marshaled
     abstract static class MBeanTreeRequest {
         abstract public List<String> expanded();
     }
@@ -649,5 +664,11 @@ class JvmJsonService {
     @Json.Marshaled
     abstract static class MBeanAttributeMapRequest {
         abstract String objectName();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    abstract static class RequestWithDirectory {
+        abstract String directory();
     }
 }

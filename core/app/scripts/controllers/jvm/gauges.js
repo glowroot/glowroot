@@ -37,9 +37,15 @@ glowroot.controller('JvmGaugesCtrl', [
     var currentZoomId = 0;
     var currentRollupLevel;
 
+    var originalData = {};
+
     var $chart = $('#chart');
 
     var keyedColorPool = keyedColorPools.create();
+
+    var gaugeScales = {};
+
+    var gaugeDeltas = {};
 
     var chartFromToDefault;
 
@@ -53,10 +59,17 @@ glowroot.controller('JvmGaugesCtrl', [
 
     $scope.showChartSpinner = 0;
 
-    $http.get('backend/jvm/all-gauge-names')
+    $http.get('backend/jvm/all-gauges')
         .success(function (data) {
           $scope.loaded = true;
-          $scope.allGaugeNames = data;
+          $scope.allGauges = data;
+          $scope.allGaugeNames = [];
+          angular.forEach(data, function (gauge) {
+            $scope.allGaugeNames.push(gauge.name);
+            if (gauge.everIncreasing) {
+              gaugeDeltas[gauge.name] = true;
+            }
+          });
           $scope.allShortGaugeNames = createShortGaugeNames($scope.allGaugeNames);
 
           var gaugeNames = $location.search()['gauge-name'];
@@ -163,12 +176,13 @@ glowroot.controller('JvmGaugesCtrl', [
             } else {
               plot.getAxes().xaxis.options.borderGridLock = fixedGaugeRollupMillis;
             }
-            var plotData = data;
-            plotGaugeNames = [];
-            angular.forEach(query.gaugeNames, function (gaugeName) {
-              plotGaugeNames.push(gaugeName);
-            });
-            updatePlotData(plotData);
+            plotGaugeNames = query.gaugeNames;
+            originalData = {};
+            var i;
+            for (i = 0; i < plotGaugeNames.length; i++) {
+              originalData[plotGaugeNames[i]] = data[i];
+            }
+            updatePlotData(data);
             currentRollupLevel = rollupLevel;
             if (deferred) {
               deferred.resolve('Success');
@@ -181,7 +195,7 @@ glowroot.controller('JvmGaugesCtrl', [
     }
 
     $scope.$watch('filterDate', function (newValue, oldValue) {
-      if (newValue !== oldValue) {
+      if (newValue && oldValue && newValue.getTime() !== oldValue.getTime()) {
         $timeout(function () {
           $('#refreshButtonContainer button').click();
         });
@@ -200,35 +214,116 @@ glowroot.controller('JvmGaugesCtrl', [
       updateLocation();
     };
 
+    // scale will bring max into 0..100 range
+    // not using Math.log / Math.log(10) due to floating point issues
+    function getScale(max) {
+      if (max === 0) {
+        return 1;
+      }
+      var scale = 0.000000001;
+      while (max * scale * 10 <= 100) {
+        scale *= 10;
+      }
+      // deal with floating point problems
+      scale = parseFloat(scale.toPrecision(1));
+      return scale;
+    }
+
     function updatePlotData(data) {
       var plotData = [];
-      var nodata = true;
+      // reset gauge scales
+      gaugeScales = {};
       // using plotGaugeNames.length since data.length is 1 for dummy data [[]] which is needed for flot to draw
       // gridlines
+
       if (plotGaugeNames && plotGaugeNames.length) {
         for (var i = 0; i < plotGaugeNames.length; i++) {
-          if (nodata) {
-            nodata = !data[i].length;
+          var plotGaugeName = plotGaugeNames[i];
+          var points = angular.copy(data[i]);
+          if (points.length) {
+            if (gaugeDeltas[plotGaugeName]) {
+              var deltas = [];
+              var j;
+              for (j = 1; j < points.length; j++) {
+                var point = points[j];
+                var lastPoint = points[j - 1];
+                if (point && lastPoint) {
+                  deltas[j - 1] = [point[0], point[1] - lastPoint[1]];
+                } else {
+                  deltas[j - 1] = null;
+                }
+              }
+              points = deltas;
+            }
+            var scale = scalePoints(points);
+            gaugeScales[plotGaugeName] = scale;
           }
           plotData.push({
-            data: data[i],
-            color: keyedColorPool.get(plotGaugeNames[i]),
-            label: plotGaugeNames[i]
+            data: points,
+            color: keyedColorPool.get(plotGaugeName),
+            label: plotGaugeName
           });
         }
-        $scope.chartNoData = nodata;
-      } else {
-        $scope.chartNoData = true;
       }
+      updateThePlotData(plotData);
+    }
+
+    function scalePoints(points) {
+      var max = 0;
+      var j;
+      var point;
+      for (j = 0; j < points.length; j++) {
+        point = points[j];
+        if (!point) {
+          continue;
+        }
+        var value = point[1];
+        if (value > max) {
+          max = value;
+        }
+      }
+      var scale = getScale(max);
+      if (scale !== 1) {
+        for (j = 0; j < points.length; j++) {
+          point = points[j];
+          if (point) {
+            point[1] *= scale;
+          }
+        }
+      }
+      return scale;
+    }
+
+    function updateThePlotData(plotData) {
+      var nodata = true;
+      for (var i = 0; i < plotData.length; i++) {
+        var points = plotData[i].data;
+        if (nodata) {
+          nodata = points.length === 0;
+        }
+      }
+      $scope.chartNoData = nodata;
       if (plotData.length) {
         plot.setData(plotData);
       } else {
-        plot.setData([
-          []
-        ]);
+        plot.setData([[]]);
       }
       plot.setupGrid();
       plot.draw();
+      updateLegend(plot);
+    }
+
+    function updateLegend() {
+      var plotData = plot.getData();
+      $scope.seriesLabels = [];
+      var seriesIndex;
+      for (seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
+        var label = plotData[seriesIndex].label;
+        $scope.seriesLabels.push({
+          color: plotData[seriesIndex].color,
+          text: $scope.allShortGaugeNames[label]
+        });
+      }
     }
 
     $chart.bind('plotzoom', function (event, plot, args) {
@@ -302,11 +397,12 @@ glowroot.controller('JvmGaugesCtrl', [
     function getFilteredData() {
       var from = plot.getAxes().xaxis.options.min;
       var to = plot.getAxes().xaxis.options.max;
-      var data = plot.getData();
       var filteredData = [];
       var i;
-      for (i = 0; i < data.length; i++) {
-        filteredData.push(getFilteredPoints(data[i].data, from, to));
+      for (i = 0; i < plotGaugeNames.length; i++) {
+        var plotGaugeName = plotGaugeNames[i];
+        var origData = originalData[plotGaugeName];
+        filteredData.push(getFilteredPoints(origData, from, to));
       }
       return filteredData;
     }
@@ -345,18 +441,93 @@ glowroot.controller('JvmGaugesCtrl', [
       return filteredPoints;
     }
 
-    $scope.gaugeRowStyle = function (gaugeName) {
+    $scope.lineBreakableGaugeName = function (gaugeName) {
+      // \u200b is zero width space and \u00a0 is non-breaking space
+      // these are used to change wrapping behavior on smaller screens (or larger mbean names)
+      gaugeName = gaugeName.replace(/\//g, '\u200b/');
+      gaugeName = gaugeName.replace(/ /g, '\u00a0');
+      return gaugeName;
+    };
+
+    $scope.gaugeNameStyle = function (gaugeName) {
       var color = keyedColorPool.get(gaugeName);
       if (color) {
         return {
-          color: color,
-          'font-weight': 'bold'
+          'font-weight': 'bold',
+          cursor: 'pointer'
         };
       } else {
         return {
-          'font-weight': 'normal'
+          'font-weight': 'normal',
+          cursor: 'pointer'
         };
       }
+    };
+
+    $scope.gaugeColorStyle = function (gaugeName) {
+      var style = {
+        width: '60px',
+        height: '18px',
+        'font-style': 'italic'
+      };
+      if (gaugeScales[gaugeName]) {
+        var color = keyedColorPool.get(gaugeName);
+        if (color) {
+          style['background-color'] = color;
+        }
+      }
+      return style;
+    };
+
+    $scope.gaugeColorText = function (gaugeName) {
+      if (plotGaugeNames && plotGaugeNames.indexOf(gaugeName) !== -1 && !gaugeScales[gaugeName]) {
+        return 'no data';
+      }
+      return '';
+    };
+
+    $scope.hasGaugeScale = function (gaugeName) {
+      return gaugeScales[gaugeName];
+    };
+
+    $scope.getGaugeScale = function (gaugeName) {
+      var scale = gaugeScales[gaugeName];
+      if (!scale) {
+        return '';
+      }
+      scale = scale.toString();
+      var index = scale.indexOf('e-');
+      if (index === -1) {
+        return scale;
+      }
+      var numZeros = scale.substring(index + 2) - 1;
+      scale = '0.';
+      for (var i = 0; i < numZeros; i++) {
+        scale += '0';
+      }
+      return scale + '1';
+    };
+
+    $scope.deltaStyle = function (gaugeName) {
+      var style = {
+        border: 'none',
+        padding: 0
+      };
+      if (gaugeDeltas[gaugeName]) {
+        style.color = '#417998';
+      } else {
+        style.color = '#e5e5e5';
+      }
+      return style;
+    };
+
+    $scope.toggleDelta = function (gaugeName) {
+      if (gaugeDeltas[gaugeName]) {
+        delete gaugeDeltas[gaugeName];
+      } else {
+        gaugeDeltas[gaugeName] = true;
+      }
+      updatePlotData(getFilteredData());
     };
 
     $scope.displayFilterRowStyle = function (gaugeName) {
@@ -377,19 +548,38 @@ glowroot.controller('JvmGaugesCtrl', [
       var color = keyedColorPool.get(gaugeName);
       if (color) {
         // uncheck it
-        keyedColorPool.remove(gaugeName);
+        deselectGauge(gaugeName);
+        updateThePlotData(plot.getData());
       } else {
         // check it
-        color = keyedColorPool.add(gaugeName);
+        keyedColorPool.add(gaugeName);
+        refreshChart();
       }
-      refreshChart();
       updateLocation();
     };
 
-    $scope.removeDisplayedGauge = function (gaugeName) {
+    function deselectGauge(gaugeName) {
       keyedColorPool.remove(gaugeName);
-      refreshChart();
-      updateLocation();
+      var index = plotGaugeNames.indexOf(gaugeName);
+      plotGaugeNames.splice(index, 1);
+      delete gaugeScales[gaugeName];
+      delete originalData[gaugeName];
+      var plotData = plot.getData();
+      var i;
+      for (i = 0; i < plotData.length; i++) {
+        if (plotData[i].label === gaugeName) {
+          plotData.splice(i, 1);
+          break;
+        }
+      }
+    }
+
+    $scope.showingAllGauges = function () {
+      if (!$scope.allGaugeNames) {
+        return true;
+      }
+      var gaugeNames = $filter('filter')($scope.allGaugeNames, $scope.gaugeNameFilter);
+      return gaugeNames.length === $scope.allGaugeNames.length;
     };
 
     $scope.selectAllGauges = function () {
@@ -405,8 +595,9 @@ glowroot.controller('JvmGaugesCtrl', [
       var gaugeNames = $filter('filter')($scope.allGaugeNames, $scope.gaugeNameFilter);
       angular.forEach(gaugeNames, function (gaugeName) {
         keyedColorPool.remove(gaugeName);
+        deselectGauge(gaugeName);
       });
-      refreshChart();
+      updateThePlotData(plot.getData());
       updateLocation();
     };
 
@@ -510,8 +701,38 @@ glowroot.controller('JvmGaugesCtrl', [
         tooltip: true,
         tooltipOpts: {
           content: function (label, xval, yval) {
+            function smartFormat(millis) {
+              if (millis % 60000 === 0) {
+                return moment(millis).format('LT');
+              } else {
+                return moment(millis).format('LTS');
+              }
+            }
+
+            var nonScaledValue = yval / gaugeScales[label];
             var shortLabel = $scope.allShortGaugeNames[label];
-            return moment(xval).format('h:mm:ss.SSS a (Z)') + '<br>' + shortLabel + ': ' + yval;
+            var tooltip = '<div class="gt-chart-tooltip"><div style="font-weight: 600;">';
+
+            function sixDigitsOfPrecision(value) {
+              if (value < 1000000) {
+                return parseFloat(value.toPrecision(6));
+              } else {
+                return Math.round(value);
+              }
+            }
+
+            if (currentRollupLevel === 0) {
+              if (gaugeDeltas[label]) {
+                nonScaledValue = sixDigitsOfPrecision(nonScaledValue);
+              }
+              tooltip += moment(xval).format('h:mm:ss.SSS');
+            } else {
+              tooltip += smartFormat(xval - fixedGaugeRollupMillis) + ' to ' + smartFormat(xval);
+              nonScaledValue = sixDigitsOfPrecision(nonScaledValue);
+            }
+            nonScaledValue = $filter('number')(nonScaledValue);
+            tooltip += '</div>' + shortLabel + ': <span style="font-weight: 600;">' + nonScaledValue + '</span></div>';
+            return tooltip;
           }
         }
       };

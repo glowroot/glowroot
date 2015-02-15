@@ -292,11 +292,11 @@ glowroot.factory('charts', [
         }
       }
 
-      var html = '<table><thead><tr><td colspan="3" class="legendLabel" style="font-weight: 700;">';
+      var html = '<table class="gt-chart-tooltip"><thead><tr><td colspan="3" style="font-weight: 600;">';
       html += smartFormat(from);
       html += ' to ';
       html += smartFormat(to);
-      html += '</td></tr><tr><td colspan="3" class="legendLabel">';
+      html += '</td></tr><tr><td colspan="3">';
       html += transactionCount;
       html += ' transactions';
       html += '</td></tr></thead><tbody>';
@@ -318,8 +318,8 @@ glowroot.factory('charts', [
         '<div style="border: 1px solid rgb(204, 204, 204); padding: 1px;">' +
         '<div style="width: 4px; height: 0px; border: 5px solid ' + dataSeries.color + '; overflow: hidden;">' +
         '</div></div></td>' +
-        '<td class="legendLabel" style="padding-right: 10px;">' + dataSeries.label + '</td>' +
-        '<td style="font-weight: 700;">' + display(value) + '</td>' +
+        '<td style="padding-right: 10px;">' + dataSeries.label + '</td>' +
+        '<td style="font-weight: 600;">' + display(value) + '</td>' +
         '</tr>';
       }
       if (total === 0) {

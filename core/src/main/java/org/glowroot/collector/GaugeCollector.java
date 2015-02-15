@@ -36,6 +36,7 @@ import org.glowroot.common.Clock;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GaugeConfig;
+import org.glowroot.config.GaugeConfig.MBeanAttribute;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 
 class GaugeCollector extends ScheduledRunnable {
@@ -87,7 +88,8 @@ class GaugeCollector extends ScheduledRunnable {
         }
         long captureTime = clock.currentTimeMillis();
         List<GaugePoint> gaugePoints = Lists.newArrayList();
-        for (String mbeanAttributeName : gaugeConfig.mbeanAttributeNames()) {
+        for (MBeanAttribute mbeanAttribute : gaugeConfig.mbeanAttributes()) {
+            String mbeanAttributeName = mbeanAttribute.name();
             Object attributeValue;
             try {
                 if (mbeanAttributeName.contains(".")) {

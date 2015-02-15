@@ -83,20 +83,31 @@
                class="gt-inline-spinner hide"
                style="height: 50px;">
           </div>
-          <div ng-repeat="mbeanAttribute in allMBeanAttributes | orderBy:'name'"
-               ng-show="allMBeanAttributes">
-            <div class="checkbox">
-              <label>
-                <input type="checkbox" ng-model="mbeanAttribute.checked">
-                {{mbeanAttribute.name}}
-                <span ng-show="!mbeanAttribute.available"
+          <table>
+            <tr ng-repeat="mbeanAttribute in allMBeanAttributes | orderBy:'name'"
+                ng-show="allMBeanAttributes">
+              <td class="checkbox">
+                <label>
+                  <input type="checkbox" ng-model="mbeanAttribute.checked">
+                  {{mbeanAttribute.name}}
+                <span ng-show="!mbeanAttribute.available && !mbeanUnavailable"
                       class="gt-red"
                       style="padding-left: 10px;">
                   Attribute not found
                 </span>
-              </label>
-            </div>
-          </div>
+                </label>
+              </td>
+              <td style="padding-left: 40px;">
+                <div class="checkbox"
+                     ng-show="mbeanAttribute.checked">
+                  <label>
+                    <input type="checkbox" ng-model="mbeanAttribute.everIncreasing">
+                    Ever increasing?
+                  </label>
+                </div>
+              </td>
+            </tr>
+          </table>
           <div ng-show="!allMBeanAttributes.length && !mbeanUnavailable && config.selectedMBeanObjectName"
                class="gt-red">
             There are no number-valued attributes for this MBean

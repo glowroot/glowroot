@@ -31,6 +31,7 @@ import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GaugeConfig;
 import org.glowroot.config.ImmutableGaugeConfig;
+import org.glowroot.config.ImmutableMBeanAttribute;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -94,8 +95,8 @@ public class GaugeCollectorTest {
         GaugeConfig gaugeConfigs = ImmutableGaugeConfig.builder()
                 .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
-                .addMbeanAttributeNames("ccc")
-                .addMbeanAttributeNames("ddd")
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
                 .build();
         when(clock.currentTimeMillis()).thenReturn(59999L);
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
@@ -114,8 +115,8 @@ public class GaugeCollectorTest {
         GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
                 .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
-                .addMbeanAttributeNames("ccc")
-                .addMbeanAttributeNames("ddd")
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
                 .build();
         when(clock.currentTimeMillis()).thenReturn(60000L);
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
@@ -135,8 +136,8 @@ public class GaugeCollectorTest {
         GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
                 .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
-                .addMbeanAttributeNames("ccc")
-                .addMbeanAttributeNames("ddd")
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
                 .build();
         when(clock.currentTimeMillis()).thenReturn(0L).thenReturn(30000L).thenReturn(60000L);
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
@@ -162,8 +163,8 @@ public class GaugeCollectorTest {
         GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
                 .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
-                .addMbeanAttributeNames("ccc")
-                .addMbeanAttributeNames("ddd")
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
                 .build();
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(AttributeNotFoundException.class);
@@ -185,8 +186,8 @@ public class GaugeCollectorTest {
         GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
                 .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
-                .addMbeanAttributeNames("ccc")
-                .addMbeanAttributeNames("ddd")
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
                 .build();
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(new RuntimeException("A msg"));
@@ -210,8 +211,8 @@ public class GaugeCollectorTest {
         GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
                 .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
-                .addMbeanAttributeNames("ccc")
-                .addMbeanAttributeNames("ddd")
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
                 .build();
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenReturn("not a number");

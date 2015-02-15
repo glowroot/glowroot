@@ -45,11 +45,21 @@ public abstract class GaugeConfig {
     public abstract String name();
     public abstract String mbeanObjectName();
     @Json.ForceEmpty
-    public abstract List<String> mbeanAttributeNames();
+    public abstract List<MBeanAttribute> mbeanAttributes();
 
     @Value.Derived
     @Json.Ignore
     public String version() {
         return Hashing.sha1().hashString(Marshaling2.toJson(this), Charsets.UTF_8).toString();
+    }
+
+    @Value.Immutable
+    @Json.Marshaled
+    public abstract static class MBeanAttribute {
+
+        @Value.Parameter
+        public abstract String name();
+        @Value.Parameter
+        public abstract boolean everIncreasing();
     }
 }

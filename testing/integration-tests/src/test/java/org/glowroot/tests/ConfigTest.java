@@ -33,6 +33,7 @@ import org.glowroot.container.Container;
 import org.glowroot.container.config.AdvancedConfig;
 import org.glowroot.container.config.AlertConfig;
 import org.glowroot.container.config.GaugeConfig;
+import org.glowroot.container.config.GaugeConfig.MBeanAttribute;
 import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.config.InstrumentationConfig;
 import org.glowroot.container.config.InstrumentationConfig.CaptureKind;
@@ -463,7 +464,9 @@ public class ConfigTest {
     private static void updateAllFields(GaugeConfig config) {
         config.setName(config.getName() + "a");
         config.setMBeanObjectName("java.lang:type=Compilation");
-        config.setMBeanAttributeNames(Lists.newArrayList("TotalCompilationTime"));
+        MBeanAttribute mbeanAttribute = new MBeanAttribute();
+        mbeanAttribute.setName("TotalCompilationTime");
+        config.setMBeanAttributes(Lists.newArrayList(mbeanAttribute));
     }
 
     private static void updateAllFields(AlertConfig config) {
@@ -480,8 +483,12 @@ public class ConfigTest {
         GaugeConfig config = new GaugeConfig();
         config.setName("test");
         config.setMBeanObjectName("java.lang:type=ClassLoading");
-        config.setMBeanAttributeNames(Lists.newArrayList("LoadedClassCount",
-                "TotalLoadedClassCount"));
+        MBeanAttribute mbeanAttribute1 = new MBeanAttribute();
+        mbeanAttribute1.setName("LoadedClassCount");
+        MBeanAttribute mbeanAttribute2 = new MBeanAttribute();
+        mbeanAttribute2.setName("TotalLoadedClassCount");
+        mbeanAttribute2.setEverIncreasing(true);
+        config.setMBeanAttributes(Lists.newArrayList(mbeanAttribute1, mbeanAttribute2));
         return config;
     }
 

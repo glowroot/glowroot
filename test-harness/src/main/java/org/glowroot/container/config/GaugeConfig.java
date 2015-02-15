@@ -32,7 +32,7 @@ public class GaugeConfig {
 
     private @Nullable String name;
     private @Nullable String mbeanObjectName;
-    private List<String> mbeanAttributeNames = Lists.newArrayList();
+    private List<MBeanAttribute> mbeanAttributes = Lists.newArrayList();
 
     // null for new gauge config records that haven't been sent to server yet
     private @Nullable final String version;
@@ -62,12 +62,12 @@ public class GaugeConfig {
         this.mbeanObjectName = mbeanObjectName;
     }
 
-    public List<String> getMBeanAttributeNames() {
-        return mbeanAttributeNames;
+    public List<MBeanAttribute> getMBeanAttributes() {
+        return mbeanAttributes;
     }
 
-    public void setMBeanAttributeNames(List<String> mbeanAttributeNames) {
-        this.mbeanAttributeNames = mbeanAttributeNames;
+    public void setMBeanAttributes(List<MBeanAttribute> mbeanAttributes) {
+        this.mbeanAttributes = mbeanAttributes;
     }
 
     public @Nullable String getVersion() {
@@ -83,7 +83,7 @@ public class GaugeConfig {
             // the server
             return Objects.equal(name, that.name)
                     && Objects.equal(mbeanObjectName, that.mbeanObjectName)
-                    && Objects.equal(mbeanAttributeNames, that.mbeanAttributeNames);
+                    && Objects.equal(mbeanAttributes, that.mbeanAttributes);
         }
         return false;
     }
@@ -93,7 +93,7 @@ public class GaugeConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(name, mbeanObjectName, mbeanAttributeNames);
+        return Objects.hashCode(name, mbeanObjectName, mbeanAttributes);
     }
 
     @Override
@@ -101,7 +101,7 @@ public class GaugeConfig {
         return MoreObjects.toStringHelper(this)
                 .add("name", name)
                 .add("mbeanObjectName", mbeanObjectName)
-                .add("mbeanAttributeNames", mbeanAttributeNames)
+                .add("mbeanAttributes", mbeanAttributes)
                 .add("version", version)
                 .toString();
     }
@@ -110,16 +110,73 @@ public class GaugeConfig {
     static GaugeConfig readValue(
             @JsonProperty("name") @Nullable String name,
             @JsonProperty("mbeanObjectName") @Nullable String mbeanObjectName,
-            @JsonProperty("mbeanAttributeNames") @Nullable List<String> mbeanAttributeNames,
+            @JsonProperty("mbeanAttributes") @Nullable List<MBeanAttribute> mbeanAttributes,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(name, "name");
         checkRequiredProperty(mbeanObjectName, "mbeanObjectName");
-        checkRequiredProperty(mbeanAttributeNames, "mbeanAttributeNames");
+        checkRequiredProperty(mbeanAttributes, "mbeanAttributes");
         checkRequiredProperty(version, "version");
         GaugeConfig config = new GaugeConfig(version);
         config.setName(name);
         config.setMBeanObjectName(mbeanObjectName);
-        config.setMBeanAttributeNames(mbeanAttributeNames);
+        config.setMBeanAttributes(mbeanAttributes);
         return config;
+    }
+
+    public static class MBeanAttribute {
+
+        private @Nullable String name;
+        private boolean everIncreasing;
+
+        public @Nullable String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public boolean isEverIncreasing() {
+            return everIncreasing;
+        }
+
+        public void setEverIncreasing(boolean everIncreasing) {
+            this.everIncreasing = everIncreasing;
+        }
+
+        @Override
+        public boolean equals(@Nullable Object obj) {
+            if (obj instanceof MBeanAttribute) {
+                MBeanAttribute that = (MBeanAttribute) obj;
+                return Objects.equal(name, that.name)
+                        && Objects.equal(everIncreasing, that.everIncreasing);
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(name, everIncreasing);
+        }
+
+        @Override
+        public String toString() {
+            return MoreObjects.toStringHelper(this)
+                    .add("name", name)
+                    .add("everIncreasing", everIncreasing)
+                    .toString();
+        }
+
+        @JsonCreator
+        static MBeanAttribute readValue(@JsonProperty("name") @Nullable String name,
+                @JsonProperty("everIncreasing") @Nullable Boolean everIncreasing)
+                throws JsonMappingException {
+            checkRequiredProperty(name, "name");
+            checkRequiredProperty(everIncreasing, "everIncreasing");
+            MBeanAttribute mbeanAttribute = new MBeanAttribute();
+            mbeanAttribute.setName(name);
+            mbeanAttribute.setEverIncreasing(everIncreasing);
+            return mbeanAttribute;
+        }
     }
 }
