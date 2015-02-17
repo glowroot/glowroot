@@ -24,7 +24,7 @@
       <div ng-repeat="gauge in gauges"
            class="gt-second-line-indent"
            style="padding-bottom: 8px;">
-        <a ng-href="config/gauge?v={{gauge.config.version}}">{{gauge.config.name}}</a>
+        <a ng-href="config/gauge?v={{gauge.config.version}}">{{gauge.config.display}}</a>
       </div>
       <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
            before it gets pushed down by existing gauge sections -->

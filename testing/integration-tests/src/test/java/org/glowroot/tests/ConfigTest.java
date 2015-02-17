@@ -263,9 +263,11 @@ public class ConfigTest {
         // when
         container.getConfigService().addGaugeConfig(config);
         // then
-        List<GaugeConfig> configs = container.getConfigService().getGaugeConfigs();
-        assertThat(configs).hasSize(originalConfigs.size() + 1);
-        assertThat(configs.get(configs.size() - 1)).isEqualTo(config);
+        List<GaugeConfig> configs =
+                Lists.newArrayList(container.getConfigService().getGaugeConfigs());
+        configs.removeAll(originalConfigs);
+        assertThat(configs).hasSize(1);
+        assertThat(configs.get(0)).isEqualTo(config);
     }
 
     @Test
@@ -279,9 +281,11 @@ public class ConfigTest {
         updateAllFields(config);
         container.getConfigService().updateGaugeConfig(config);
         // then
-        List<GaugeConfig> configs = container.getConfigService().getGaugeConfigs();
-        assertThat(configs).hasSize(originalConfigs.size() + 1);
-        assertThat(configs.get(configs.size() - 1)).isEqualTo(config);
+        List<GaugeConfig> configs =
+                Lists.newArrayList(container.getConfigService().getGaugeConfigs());
+        configs.removeAll(originalConfigs);
+        assertThat(configs).hasSize(1);
+        assertThat(configs.get(0)).isEqualTo(config);
     }
 
     @Test
@@ -462,7 +466,6 @@ public class ConfigTest {
     }
 
     private static void updateAllFields(GaugeConfig config) {
-        config.setName(config.getName() + "a");
         config.setMBeanObjectName("java.lang:type=Compilation");
         MBeanAttribute mbeanAttribute = new MBeanAttribute();
         mbeanAttribute.setName("TotalCompilationTime");
@@ -481,7 +484,6 @@ public class ConfigTest {
 
     private static GaugeConfig createGauge() {
         GaugeConfig config = new GaugeConfig();
-        config.setName("test");
         config.setMBeanObjectName("java.lang:type=ClassLoading");
         MBeanAttribute mbeanAttribute1 = new MBeanAttribute();
         mbeanAttribute1.setName("LoadedClassCount");

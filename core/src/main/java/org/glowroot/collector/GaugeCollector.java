@@ -92,8 +92,8 @@ class GaugeCollector extends ScheduledRunnable {
             String mbeanAttributeName = mbeanAttribute.name();
             Object attributeValue;
             try {
-                if (mbeanAttributeName.contains(".")) {
-                    String[] path = mbeanAttributeName.split("\\.");
+                if (mbeanAttributeName.contains("/")) {
+                    String[] path = mbeanAttributeName.split("\\/");
                     attributeValue = lazyPlatformMBeanServer.getAttribute(objectName, path[0]);
                     CompositeData compositeData = (CompositeData) attributeValue;
                     attributeValue = compositeData.get(path[1]);
@@ -120,7 +120,7 @@ class GaugeCollector extends ScheduledRunnable {
             if (attributeValue instanceof Number) {
                 double value = ((Number) attributeValue).doubleValue();
                 gaugePoints.add(ImmutableGaugePoint.builder()
-                        .gaugeName(gaugeConfig.name() + "/" + mbeanAttributeName)
+                        .gaugeName(gaugeConfig.mbeanObjectName() + ',' + mbeanAttributeName)
                         .captureTime(captureTime)
                         .value(value)
                         .build());

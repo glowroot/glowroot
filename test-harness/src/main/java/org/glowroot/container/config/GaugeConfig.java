@@ -30,7 +30,8 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class GaugeConfig {
 
-    private @Nullable String name;
+    // display is read-only (derived) attribute
+    private @Nullable String display;
     private @Nullable String mbeanObjectName;
     private List<MBeanAttribute> mbeanAttributes = Lists.newArrayList();
 
@@ -42,16 +43,13 @@ public class GaugeConfig {
         version = null;
     }
 
-    public GaugeConfig(String version) {
+    public GaugeConfig(String display, String version) {
+        this.display = display;
         this.version = version;
     }
 
-    public @Nullable String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    public @Nullable String getDisplay() {
+        return display;
     }
 
     public @Nullable String getMBeanObjectName() {
@@ -81,8 +79,7 @@ public class GaugeConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(name, that.name)
-                    && Objects.equal(mbeanObjectName, that.mbeanObjectName)
+            return Objects.equal(mbeanObjectName, that.mbeanObjectName)
                     && Objects.equal(mbeanAttributes, that.mbeanAttributes);
         }
         return false;
@@ -93,13 +90,12 @@ public class GaugeConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(name, mbeanObjectName, mbeanAttributes);
+        return Objects.hashCode(mbeanObjectName, mbeanAttributes);
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("name", name)
                 .add("mbeanObjectName", mbeanObjectName)
                 .add("mbeanAttributes", mbeanAttributes)
                 .add("version", version)
@@ -108,16 +104,15 @@ public class GaugeConfig {
 
     @JsonCreator
     static GaugeConfig readValue(
-            @JsonProperty("name") @Nullable String name,
+            @JsonProperty("display") @Nullable String display,
             @JsonProperty("mbeanObjectName") @Nullable String mbeanObjectName,
             @JsonProperty("mbeanAttributes") @Nullable List<MBeanAttribute> mbeanAttributes,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(name, "name");
+        checkRequiredProperty(display, "display");
         checkRequiredProperty(mbeanObjectName, "mbeanObjectName");
         checkRequiredProperty(mbeanAttributes, "mbeanAttributes");
         checkRequiredProperty(version, "version");
-        GaugeConfig config = new GaugeConfig(version);
-        config.setName(name);
+        GaugeConfig config = new GaugeConfig(display, version);
         config.setMBeanObjectName(mbeanObjectName);
         config.setMBeanAttributes(mbeanAttributes);
         return config;

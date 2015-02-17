@@ -183,12 +183,10 @@ class ConfigFile {
     private static List<GaugeConfig> getDefaultGaugeConfigs() {
         List<GaugeConfig> defaultGaugeConfigs = Lists.newArrayList();
         defaultGaugeConfigs.add(ImmutableGaugeConfig.builder()
-                .name("java.lang/Memory")
                 .mbeanObjectName("java.lang:type=Memory")
-                .addMbeanAttributes(ImmutableMBeanAttribute.of("HeapMemoryUsage.used", false))
+                .addMbeanAttributes(ImmutableMBeanAttribute.of("HeapMemoryUsage/used", false))
                 .build());
         ImmutableGaugeConfig.Builder operatingSystemMBean = ImmutableGaugeConfig.builder()
-                .name("java.lang/OperatingSystem")
                 .mbeanObjectName("java.lang:type=OperatingSystem")
                 .addMbeanAttributes(ImmutableMBeanAttribute.of("FreePhysicalMemorySize", false));
         if (!JavaVersion.isJdk6()) {

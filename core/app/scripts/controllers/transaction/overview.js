@@ -54,7 +54,7 @@ glowroot.controller('TransactionOverviewCtrl', [
           from = Math.ceil(from / chartState.dataPointIntervalMillis) * chartState.dataPointIntervalMillis;
           var to = xval;
           return charts.renderTooltipHtml(from, to, $scope.transactionCounts[xval], flotItem.dataIndex,
-              flotItem.seriesIndex, chartState, function (value) {
+              flotItem.seriesIndex, chartState.plot, function (value) {
                 return value.toFixed(3) + ' seconds';
               });
         }

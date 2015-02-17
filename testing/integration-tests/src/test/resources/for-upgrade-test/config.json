@@ -5,20 +5,30 @@
     "profilingIntervalMillis": 2000,
     "defaultTransactionType": "Integration test"
   },
-  "userRecording": {
-    "enabled": false,
-    "user": "",
-    "profileIntervalMillis": 10
+  "ui": {
+    "port": 0,
+    "adminPasswordHash": "",
+    "readOnlyPasswordHash": "",
+    "anonymousAccess": "admin",
+    "sessionTimeoutMinutes": 30
   },
   "storage": {
     "aggregateExpirationHours": 2147483647,
     "traceExpirationHours": 2147483647,
     "cappedDatabaseSizeMb": 1000
   },
-  "ui": {
-    "port": 0,
-    "passwordHash": "",
-    "sessionTimeoutMinutes": 30
+  "smtp": {
+    "fromEmailAddress": "",
+    "fromDisplayName": "",
+    "host": "",
+    "ssl": false,
+    "username": "",
+    "encryptedPassword": ""
+  },
+  "userRecording": {
+    "enabled": false,
+    "user": "",
+    "profileIntervalMillis": 10
   },
   "advanced": {
     "metricWrapperMethods": false,
@@ -53,17 +63,21 @@
   ],
   "gauges": [
     {
-      "name": "java.lang/Memory",
       "mbeanObjectName": "java.lang:type=Memory",
-      "mbeanAttributeNames": [
-        "HeapMemoryUsage.used"
+      "mbeanAttributes": [
+        {
+          "name": "HeapMemoryUsage/used",
+          "everIncreasing": false
+        }
       ]
     },
     {
-      "name": "java.lang/OperatingSystem",
       "mbeanObjectName": "java.lang:type=OperatingSystem",
-      "mbeanAttributeNames": [
-        "FreePhysicalMemorySize"
+      "mbeanAttributes": [
+        {
+          "name": "FreePhysicalMemorySize",
+          "everIncreasing": false
+        }
       ]
     }
   ]

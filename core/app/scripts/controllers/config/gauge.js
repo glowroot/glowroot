@@ -39,7 +39,7 @@ glowroot.controller('ConfigGaugeCtrl', [
       $scope.originalConfig = angular.copy(data.config);
 
       if (data.config.mbeanObjectName) {
-        $scope.heading = data.config.name;
+        $scope.heading = data.config.display;
         // \u200b is zero width space and \u00a0 is non-breaking space
         // these are used to change wrapping behavior on smaller screens (or larger mbean names)
         $scope.heading = $scope.heading.replace(/\//g, '\u200b/');
@@ -198,12 +198,6 @@ glowroot.controller('ConfigGaugeCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      // e.g. java.lang:name=PS Eden Space,type=MemoryPool
-      var parts = postData.mbeanObjectName.split(/[:,]/);
-      postData.name = parts[0];
-      for (var i = 1; i < parts.length; i++) {
-        postData.name += '/' + parts[i].split('=')[1];
-      }
       postData.mbeanAttributes = $scope.config.mbeanAttributes;
       var url;
       if (version) {

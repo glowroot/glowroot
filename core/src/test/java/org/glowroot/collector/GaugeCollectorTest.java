@@ -76,7 +76,6 @@ public class GaugeCollectorTest {
     public void shouldHandleInvalidMBeanObjectName() {
         // given
         GaugeConfig gaugeConfigs = ImmutableGaugeConfig.builder()
-                .name("abc")
                 .mbeanObjectName("invalid mbean object name")
                 .build();
         // when
@@ -93,7 +92,6 @@ public class GaugeCollectorTest {
     public void shouldHandleMBeanInstanceNotFoundBeforeLoggingDelay() throws Exception {
         // given
         GaugeConfig gaugeConfigs = ImmutableGaugeConfig.builder()
-                .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
                 .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
                 .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
@@ -113,7 +111,6 @@ public class GaugeCollectorTest {
     public void shouldHandleMBeanInstanceNotFoundAfterLoggingDelay() throws Exception {
         // given
         GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
-                .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
                 .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
                 .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
@@ -134,7 +131,6 @@ public class GaugeCollectorTest {
     public void shouldHandleMBeanInstanceNotFoundBeforeAndAfterLoggingDelay() throws Exception {
         // given
         GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
-                .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
                 .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
                 .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
@@ -161,7 +157,6 @@ public class GaugeCollectorTest {
     public void shouldHandleMBeanAttributeNotFound() throws Exception {
         // given
         GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
-                .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
                 .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
                 .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
@@ -184,7 +179,6 @@ public class GaugeCollectorTest {
     public void shouldHandleMBeanAttributeOtherException() throws Exception {
         // given
         GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
-                .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
                 .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
                 .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
@@ -209,7 +203,6 @@ public class GaugeCollectorTest {
     public void shouldHandleMBeanAttributeNotANumber() throws Exception {
         // given
         GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
-                .name("abc")
                 .mbeanObjectName("xyz:aaa=bbb")
                 .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
                 .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))

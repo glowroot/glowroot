@@ -283,7 +283,7 @@ glowroot.factory('charts', [
       }
     }
 
-    function renderTooltipHtml(from, to, transactionCount, dataIndex, highlightSeriesIndex, chartState, display) {
+    function renderTooltipHtml(from, to, transactionCount, dataIndex, highlightSeriesIndex, plot, display) {
       function smartFormat(millis) {
         if (millis % 60000 === 0) {
           return moment(millis).format('LT');
@@ -300,7 +300,7 @@ glowroot.factory('charts', [
       html += transactionCount;
       html += ' transactions';
       html += '</td></tr></thead><tbody>';
-      var plotData = chartState.plot.getData();
+      var plotData = plot.getData();
       var seriesIndex;
       var dataSeries;
       var value;

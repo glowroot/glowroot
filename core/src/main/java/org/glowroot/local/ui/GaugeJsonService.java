@@ -148,12 +148,18 @@ class GaugeJsonService {
     }
 
     @POST("/backend/config/gauges/update")
-    String updateGauge(String content) throws IOException {
+    String updateGauge(String content) throws Exception {
         GaugeConfigDto gaugeConfigDto = Marshaling.fromJson(content, GaugeConfigDto.class);
         GaugeConfig gaugeConfig = gaugeConfigDto.toConfig();
         String version = gaugeConfigDto.version();
         checkNotNull(version, "Missing required request property: version");
-        configService.updateGaugeConfig(gaugeConfig, version);
+        try {
+            configService.updateGaugeConfig(gaugeConfig, version);
+        } catch (DuplicateMBeanObjectNameException e) {
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
+            throw new JsonServiceException(CONFLICT, "mbeanObjectName");
+        }
         return Marshaling2.toJson(buildResponse(gaugeConfig));
     }
 
@@ -226,7 +232,7 @@ class GaugeJsonService {
                 continue;
             }
             if (Number.class.isAssignableFrom(clazz)) {
-                attributeNames.add(attribute.getName() + "." + itemName);
+                attributeNames.add(attribute.getName() + '/' + itemName);
             }
         }
         return attributeNames;
@@ -300,14 +306,15 @@ class GaugeJsonService {
     @Json.Marshaled
     abstract static class GaugeConfigDto {
 
-        abstract String name();
+        // name is only used in one direction since it is a derived attribute
+        abstract @Nullable String display();
         abstract String mbeanObjectName();
         abstract List<MBeanAttribute> mbeanAttributes();
         abstract @Nullable String version(); // null for insert operations
 
         private static GaugeConfigDto fromConfig(GaugeConfig gaugeConfig) {
             return ImmutableGaugeConfigDto.builder()
-                    .name(gaugeConfig.name())
+                    .display(gaugeConfig.display())
                     .mbeanObjectName(gaugeConfig.mbeanObjectName())
                     .addAllMbeanAttributes(gaugeConfig.mbeanAttributes())
                     .version(gaugeConfig.version())
@@ -316,7 +323,6 @@ class GaugeJsonService {
 
         private GaugeConfig toConfig() {
             return ImmutableGaugeConfig.builder()
-                    .name(name())
                     .mbeanObjectName(mbeanObjectName())
                     .addAllMbeanAttributes(mbeanAttributes())
                     .build();

@@ -127,6 +127,7 @@ glowroot.directive('gtButton', [
         }
         scope.onClick = function () {
           gtButtonGroup.onClick(scope.gtClick);
+          document.activeElement.blur();
         };
       }
     };
@@ -454,6 +455,22 @@ glowroot.directive('gtSelectpicker', function () {
 
       scope.$on('$destroy', function () {
         iElement.selectpicker('destroy');
+      });
+    }
+  };
+});
+
+glowroot.directive('gtClickAndBlur', function () {
+  return {
+    scope: {
+      gtClickAndBlur: '&'
+    },
+    link: function (scope, iElement) {
+      iElement.click(function () {
+        scope.$apply(function () {
+          scope.gtClickAndBlur();
+        });
+        document.activeElement.blur();
       });
     }
   };

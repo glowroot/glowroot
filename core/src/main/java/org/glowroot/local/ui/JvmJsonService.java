@@ -150,8 +150,10 @@ class JvmJsonService {
         List<Gauge> gauges = Lists.newArrayList();
         for (GaugeConfig gaugeConfig : configService.getGaugeConfigs()) {
             for (MBeanAttribute mbeanAttribute : gaugeConfig.mbeanAttributes()) {
-                gauges.add(ImmutableGauge.of(gaugeConfig.name() + "/" + mbeanAttribute.name(),
-                        mbeanAttribute.everIncreasing()));
+                gauges.add(ImmutableGauge.of(
+                        gaugeConfig.mbeanObjectName() + "," + mbeanAttribute.name(),
+                        mbeanAttribute.everIncreasing(),
+                        gaugeConfig.display() + '/' + mbeanAttribute.name()));
             }
         }
         ImmutableList<Gauge> sortedGauges = Gauge.ordering.immutableSortedCopy(gauges);
@@ -569,7 +571,7 @@ class JvmJsonService {
             public int compare(@Nullable Gauge left, @Nullable Gauge right) {
                 checkNotNull(left);
                 checkNotNull(right);
-                return left.name().compareToIgnoreCase(right.name());
+                return left.display().compareToIgnoreCase(right.display());
             }
         };
 
@@ -577,6 +579,8 @@ class JvmJsonService {
         public abstract String name();
         @Value.Parameter
         public abstract boolean everIncreasing();
+        @Value.Parameter
+        public abstract String display();
     }
 
     @UsedByJsonBinding

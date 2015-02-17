@@ -323,19 +323,22 @@ public class ConfigService {
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
+        notifyConfigListeners();
         return gaugeConfig.version();
     }
 
-    public String updateGaugeConfig(GaugeConfig gaugeConfig, String priorVersion)
-            throws IOException {
+    public String updateGaugeConfig(GaugeConfig gaugeConfig, String priorVersion) throws Exception {
         synchronized (writeLock) {
             List<GaugeConfig> gaugeConfigs = Lists.newArrayList(config.gaugeConfigs());
             boolean found = false;
             for (ListIterator<GaugeConfig> i = gaugeConfigs.listIterator(); i.hasNext();) {
-                if (priorVersion.equals(i.next().version())) {
+                GaugeConfig loopConfig = i.next();
+                if (priorVersion.equals(loopConfig.version())) {
                     i.set(gaugeConfig);
                     found = true;
                     break;
+                } else if (loopConfig.mbeanObjectName().equals(gaugeConfig.mbeanObjectName())) {
+                    throw new DuplicateMBeanObjectNameException();
                 }
             }
             checkState(found, "Gauge config not found: %s", priorVersion);
@@ -343,6 +346,7 @@ public class ConfigService {
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
+        notifyConfigListeners();
         return gaugeConfig.version();
     }
 
@@ -362,6 +366,7 @@ public class ConfigService {
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
+        notifyConfigListeners();
     }
 
     public String insertAlertConfig(AlertConfig alertConfig) throws Exception {
@@ -372,6 +377,7 @@ public class ConfigService {
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
+        notifyConfigListeners();
         return alertConfig.version();
     }
 
@@ -392,6 +398,7 @@ public class ConfigService {
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
+        notifyConfigListeners();
         return alertConfig.version();
     }
 
@@ -411,6 +418,7 @@ public class ConfigService {
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
+        notifyConfigListeners();
     }
 
     public String getDefaultTransactionType() {

@@ -32,7 +32,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -142,6 +141,8 @@ class Schemas {
             sql.append(sqlTypeName);
             if (columns.get(i) instanceof PrimaryKeyColumn) {
                 sql.append(" primary key");
+            } else if (columns.get(i) instanceof IdentityColumn) {
+                sql.append(" identity");
             }
         }
         sql.append(")");
@@ -154,9 +155,6 @@ class Schemas {
 
     private static boolean tableNeedsUpgrade(String tableName, ImmutableList<Column> columns,
             Connection connection) throws SQLException {
-        if (primaryKeyNeedsUpgrade(tableName, columns, connection)) {
-            return true;
-        }
         // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
         // see https://code.google.com/p/guava-libraries/issues/detail?id=635
         Map<String, Column> columnMap = new TreeMap<String, Column>(String.CASE_INSENSITIVE_ORDER);
@@ -173,33 +171,6 @@ class Schemas {
         } finally {
             closer.close();
         }
-    }
-
-    private static boolean primaryKeyNeedsUpgrade(String tableName, ImmutableList<Column> columns,
-            Connection connection) throws SQLException {
-        List<PrimaryKeyColumn> primaryKeyColumns =
-                ImmutableList.copyOf(Iterables.filter(columns, PrimaryKeyColumn.class));
-        ResultSet resultSet = connection.getMetaData().getPrimaryKeys(null, null,
-                tableName.toUpperCase(Locale.ENGLISH));
-        ResultSetCloser closer = new ResultSetCloser(resultSet);
-        try {
-            return !primaryKeyColumnsMatch(resultSet, primaryKeyColumns);
-        } catch (Throwable t) {
-            throw closer.rethrow(t);
-        } finally {
-            closer.close();
-        }
-    }
-
-    private static boolean primaryKeyColumnsMatch(ResultSet resultSet,
-            List<PrimaryKeyColumn> primaryKeyColumns) throws SQLException {
-        for (PrimaryKeyColumn primaryKeyColumn : primaryKeyColumns) {
-            if (!resultSet.next() || !primaryKeyColumn.name().equalsIgnoreCase(
-                    resultSet.getString("COLUMN_NAME"))) {
-                return false;
-            }
-        }
-        return !resultSet.next();
     }
 
     private static boolean columnNamesAndTypesMatch(ResultSet resultSet,
@@ -289,6 +260,9 @@ class Schemas {
 
     @Value.Immutable
     abstract static class PrimaryKeyColumn extends Column {}
+
+    @Value.Immutable
+    abstract static class IdentityColumn extends Column {}
 
     @Value.Immutable
     abstract static class Index {

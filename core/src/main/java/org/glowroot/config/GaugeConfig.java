@@ -19,7 +19,9 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Charsets;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Ordering;
 import com.google.common.hash.Hashing;
 import org.immutables.value.Json;
@@ -38,14 +40,27 @@ public abstract class GaugeConfig {
         public int compare(@Nullable GaugeConfig left, @Nullable GaugeConfig right) {
             checkNotNull(left);
             checkNotNull(right);
-            return left.name().compareToIgnoreCase(right.name());
+            return left.display().compareToIgnoreCase(right.display());
         }
     };
 
-    public abstract String name();
     public abstract String mbeanObjectName();
     @Json.ForceEmpty
     public abstract List<MBeanAttribute> mbeanAttributes();
+
+    @Value.Derived
+    @Json.Ignore
+    public String display() {
+        // e.g. java.lang:name=PS Eden Space,type=MemoryPool
+        List<String> parts = Splitter.on(CharMatcher.anyOf(":,")).splitToList(mbeanObjectName());
+        StringBuilder name = new StringBuilder();
+        name.append(parts.get(0));
+        for (int i = 1; i < parts.size(); i++) {
+            name.append('/');
+            name.append(parts.get(i).split("=")[1]);
+        }
+        return name.toString();
+    }
 
     @Value.Derived
     @Json.Ignore
