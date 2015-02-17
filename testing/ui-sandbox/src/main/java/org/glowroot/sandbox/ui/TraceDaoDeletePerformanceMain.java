@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,27 +43,27 @@ public class TraceDaoDeletePerformanceMain {
             Thread.sleep(1000);
             pendingWrites = container.getTraceService().getNumPendingCompleteTransactions();
         }
-        File dbFile = new File("target/glowroot.mv.db");
+        File dbFile = new File("target/glowroot.h2.db");
         long dbSize = dbFile.length();
-        logger.info("glowroot.mv.db: {} bytes", dbSize);
+        logger.info("glowroot.h2.db: {} bytes", dbSize);
         Stopwatch stopwatch = Stopwatch.createStarted();
         container.getTraceService().deleteAll();
         logger.info("all traces deleted in: {} millis", stopwatch.elapsed(MILLISECONDS));
-        logger.info("glowroot.mv.db: {} bytes", dbFile.length());
+        logger.info("glowroot.h2.db: {} bytes", dbFile.length());
         container.close();
-        logger.info("glowroot.mv.db: {} bytes", dbFile.length());
+        logger.info("glowroot.h2.db: {} bytes", dbFile.length());
     }
 
     public static class GenerateTraces implements AppUnderTest {
         @Override
         public void executeApp() throws InterruptedException {
-            File dbFile = new File("target/glowroot.mv.db");
+            File dbFile = new File("target/glowroot.h2.db");
             long lastSizeMb = 0;
             while (dbFile.length() < 100 * 1024 * 1024) {
                 new NestableCall(new NestableCall(10, 2, 5000), 20, 2, 5000).execute();
                 long sizeMb = dbFile.length() / (1024 * 1024);
                 if (sizeMb > lastSizeMb) {
-                    logger.info("glowroot.mv.db: {} mb", sizeMb);
+                    logger.info("glowroot.h2.db: {} mb", sizeMb);
                     lastSizeMb = sizeMb;
                 }
             }

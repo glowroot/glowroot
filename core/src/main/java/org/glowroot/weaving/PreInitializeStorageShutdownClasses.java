@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -326,10 +326,7 @@ public class PreInitializeStorageShutdownClasses {
         types.add("org.h2.util.BitField");
         types.add("org.h2.util.CloseWatcher");
         types.add("org.h2.util.DateTimeUtils");
-        types.add("org.h2.util.DateTimeUtils$1");
         types.add("org.h2.util.IOUtils");
-        types.add("org.h2.util.JdbcUtils");
-        types.add("org.h2.util.JdbcUtils$1");
         types.add("org.h2.util.MathUtils");
         types.add("org.h2.util.MathUtils$1");
         types.add("org.h2.util.NetUtils");
@@ -341,6 +338,7 @@ public class PreInitializeStorageShutdownClasses {
         types.add("org.h2.util.Task");
         types.add("org.h2.util.TempFileDeleter");
         types.add("org.h2.util.Utils");
+        types.add("org.h2.util.Utils$1");
         types.add("org.h2.util.Utils$ClassFactory");
         types.add("org.h2.value.CompareMode");
         types.add("org.h2.value.CompareModeDefault");

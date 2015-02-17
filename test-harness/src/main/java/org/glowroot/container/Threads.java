@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -154,7 +154,6 @@ public class Threads {
                 && !thread.getName().startsWith("Glowroot-")
                 && !thread.getName().startsWith("H2 File Lock Watchdog ")
                 && !thread.getName().startsWith("H2 Log Writer ")
-                && !thread.getName().startsWith("MVStore background writer")
                 && !thread.getName().equals("Generate Seed")) {
             // note: Generate Seed is an H2 thread that generates a secure random seed
             // this can take a bit of time to complete on some systems (e.g. travis-ci), but is

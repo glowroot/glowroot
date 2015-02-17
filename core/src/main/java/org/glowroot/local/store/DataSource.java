@@ -321,13 +321,18 @@ public class DataSource {
     }
 
     private static Connection createConnection(@Nullable File dbFile) throws SQLException {
+        try {
+            Class.forName("org.h2.Driver");
+        } catch (ClassNotFoundException e) {
+            throw new SQLException(e);
+        }
         if (dbFile == null) {
             // db_close_on_exit=false since jvm shutdown hook is handled by DataSource
             return new JdbcConnection("jdbc:h2:mem:;compress=true;db_close_on_exit=false",
                     new Properties());
         } else {
             String dbPath = dbFile.getPath();
-            dbPath = dbPath.replaceFirst(".mv.db$", "");
+            dbPath = dbPath.replaceFirst(".h2.db$", "");
             Properties props = new Properties();
             props.setProperty("user", "sa");
             props.setProperty("password", "");

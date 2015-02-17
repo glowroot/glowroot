@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ public class DataSourceCompactTest {
     @Test
     public void shouldCompact() throws Exception {
         // given
-        File dbFile = new File(dataDir, "glowroot.mv.db");
+        File dbFile = new File(dataDir, "glowroot.h2.db");
         // when
         container.addExpectedLogMessage("org.glowroot.collector.TransactionCollectorImpl",
                 "not storing a trace because of an excessive backlog");
