@@ -1,3 +1,4 @@
+sudo: false
 language: java
 jdk:
   - oraclejdk8
@@ -9,6 +10,10 @@ before_install:
   - sh -e /etc/init.d/xvfb start
 install: true
 script: misc/travis-build/travis-build.sh $TARGET
+cache:
+  directories:
+  - $HOME/.m2
+  - $HOME/.cache/bower
 matrix:
   include:
     - jdk: oraclejdk8

@@ -1,5 +1,8 @@
 #!/bin/bash -e
 
+# this is needed for low-entropy docker containers
+export MAVEN_OPTS=-Djava.security.egd=file:/dev/urandom
+
 case "$1" in
 
        "test") # shading is done during the package phase, so 'mvn test' is used to run tests
