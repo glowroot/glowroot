@@ -1,7 +1,7 @@
 {
   "name": "glowroot",
   "dependencies": {
-    "angular": "1.3.11",
+    "angular": "1.3.13",
     "angular-ui-bootstrap": "trask/angular-ui-bootstrap#a2f26d4b65d89205a573c3047d108ae6c09a8241",
     "angular-ui-router": "0.2.13",
     "bootstrap": "trask/bootstrap#8365135713763f547151c439722e1a1e532816af",
@@ -11,7 +11,7 @@
     "flot": "trask/flot#31a857dcf7180c837cf6ceb3680ddd0b84275cc5",
     "flot.tooltip": "0.8.4",
     "fontawesome": "4.3.0",
-    "handlebars": "2.0.0",
+    "handlebars": "3.0.0",
     "jquery": "2.1.3",
     "moment": "2.9.0",
     "spinjs": "2.0.2",

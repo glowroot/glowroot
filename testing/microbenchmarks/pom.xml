@@ -36,7 +36,7 @@
         with spring-web, and allows more of the spring-web types to be resolved -->
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
-      <version>3.0.1</version>
+      <version>3.1.0</version>
     </dependency>
     <dependency>
       <groupId>org.openjdk.jmh</groupId>

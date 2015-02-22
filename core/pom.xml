@@ -418,8 +418,8 @@
                     <filter>
                       <artifact>org.immutables:common</artifact>
                       <excludes>
-                        <exclude>META-INF/javax.ws.rs.ext.MessageBodyReader</exclude>
-                        <exclude>META-INF/javax.ws.rs.ext.MessageBodyWriter</exclude>
+                        <exclude>META-INF/services/javax.ws.rs.ext.MessageBodyReader</exclude>
+                        <exclude>META-INF/services/javax.ws.rs.ext.MessageBodyWriter</exclude>
                       </excludes>
                     </filter>
                     <filter>
