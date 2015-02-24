@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.microbenchmarks.core;
+package org.glowroot.microbenchmarks;
 
-import java.lang.reflect.Field;
 import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jmh.annotations.Benchmark;
@@ -33,56 +32,48 @@ import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.microbenchmarks.core.support.TraceEntryWorthy;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import org.glowroot.microbenchmarks.support.MetricWorthy;
 
 @BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(TimeUnit.MICROSECONDS)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Thread)
-public class StoreBenchmark {
+public class TransactionMetricWorstCaseBenchmark {
 
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-microbenchmarks");
-    private static final MetricName metricName =
-            pluginServices.getMetricName(OnlyForTheMetricName.class);
 
-    @Param({"false", "true"})
-    private boolean store;
-
-    @Param({"0", "100", "1000"})
-    private int traceEntryCount;
+    @Param
+    private PointcutType pointcutType;
 
     private TraceEntry rootTraceEntry;
+    private MetricWorthy metricWorthy;
 
     @Setup
-    public void setup() throws Exception {
-        Class<?> clazz = Class.forName("org.glowroot.collector.TransactionCollectorImpl");
-        Field field = clazz.getDeclaredField("useSynchronousStore");
-        field.setAccessible(true);
-        field.set(null, true);
+    public void setup() {
+        MetricName metricName =
+                pluginServices.getMetricName(OnlyForTheMetricName.class);
+        rootTraceEntry = pluginServices.startTransaction("Microbenchmark", "micro transaction",
+                MessageSupplier.from("micro transaction"), metricName);
+        metricWorthy = new MetricWorthy();
     }
 
     @TearDown
-    public void tearDown() throws Exception {
-        Class<?> clazz = Class.forName("org.glowroot.collector.TransactionCollectorImpl");
-        Field field = clazz.getDeclaredField("useSynchronousStore");
-        field.setAccessible(true);
-        field.set(null, false);
+    public void tearDown() {
+        rootTraceEntry.end();
     }
 
     @Benchmark
     public void execute() {
-        rootTraceEntry = pluginServices.startTransaction("Microbenchmark", "micro transaction",
-                MessageSupplier.from("micro transaction"), metricName);
-        if (store) {
-            pluginServices.setTraceStoreThreshold(0, MILLISECONDS);
+        switch (pointcutType) {
+            case API:
+                metricWorthy.doSomethingMetricWorthy();
+                metricWorthy.doSomethingMetricWorthyB();
+                break;
+            case CONFIG:
+                metricWorthy.doSomethingMetricWorthy2();
+                metricWorthy.doSomethingMetricWorthy2B();
+                break;
         }
-        TraceEntryWorthy traceEntryWorthy = new TraceEntryWorthy();
-        for (int i = 0; i < traceEntryCount; i++) {
-            traceEntryWorthy.doSomethingTraceEntryWorthy();
-        }
-        rootTraceEntry.end();
     }
 
     @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {},

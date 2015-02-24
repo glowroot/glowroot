@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,65 +13,65 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.microbenchmarks.core;
+package org.glowroot.microbenchmarks;
 
 import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OperationsPerInvocation;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
 
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.microbenchmarks.core.support.TraceEntryWorthy;
+import org.glowroot.microbenchmarks.support.MetricWorthy;
 
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Thread)
-public class TraceEntryBenchmark {
+public class TransactionMetricBenchmark {
 
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-microbenchmarks");
-    private static final MetricName metricName =
-            pluginServices.getMetricName(OnlyForTheMetricName.class);
 
     @Param
     private PointcutType pointcutType;
 
-    private TraceEntryWorthy traceEntryWorthy;
+    private TraceEntry rootTraceEntry;
+    private MetricWorthy metricWorthy;
 
     @Setup
     public void setup() {
-        traceEntryWorthy = new TraceEntryWorthy();
+        MetricName metricName =
+                pluginServices.getMetricName(OnlyForTheMetricName.class);
+        rootTraceEntry = pluginServices.startTransaction("Microbenchmark", "micro transaction",
+                MessageSupplier.from("micro transaction"), metricName);
+        metricWorthy = new MetricWorthy();
+    }
+
+    @TearDown
+    public void tearDown() {
+        rootTraceEntry.end();
     }
 
     @Benchmark
-    @OperationsPerInvocation(2000)
     public void execute() {
-        TraceEntry traceEntry = pluginServices.startTransaction("Microbenchmark",
-                "micro transaction", MessageSupplier.from("micro transaction"), metricName);
         switch (pointcutType) {
             case API:
-                for (int i = 0; i < 2000; i++) {
-                    traceEntryWorthy.doSomethingTraceEntryWorthy();
-                }
+                metricWorthy.doSomethingMetricWorthy();
                 break;
             case CONFIG:
-                for (int i = 0; i < 2000; i++) {
-                    traceEntryWorthy.doSomethingTraceEntryWorthy2();
-                }
+                metricWorthy.doSomethingMetricWorthy2();
                 break;
         }
-        traceEntry.end();
     }
 
     @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {},

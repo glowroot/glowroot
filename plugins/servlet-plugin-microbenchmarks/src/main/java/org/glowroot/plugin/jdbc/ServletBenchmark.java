@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.microbenchmarks.jdbc;
+package org.glowroot.plugin.jdbc;
 
 import java.util.concurrent.TimeUnit;
 
@@ -29,9 +29,9 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 
-import org.glowroot.microbenchmarks.jdbc.support.MockHttpRequest;
-import org.glowroot.microbenchmarks.jdbc.support.MockHttpResponse;
-import org.glowroot.microbenchmarks.jdbc.support.MockHttpServlet;
+import org.glowroot.plugin.jdbc.support.MockHttpRequest;
+import org.glowroot.plugin.jdbc.support.MockHttpResponse;
+import org.glowroot.plugin.jdbc.support.MockHttpServlet;
 
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
