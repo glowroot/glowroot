@@ -12,7 +12,8 @@ Glowroot supports Java 6+.
 
 ## Questions, bugs, feature requests
 
-Post 'em all to the [GitHub issue tracker](https://github.com/glowroot/glowroot/issues).
+ * [Google group](https://groups.google.com/forum/#!forum/glowroot)
+ * [GitHub issue tracker](https://github.com/glowroot/glowroot/issues)
 
 ## Contributing
 
@@ -78,7 +79,7 @@ from the following locations:
 
 ## Overhead
 
-Monitoring overhead depends on many factors, but is generally under 2 percent as a result of extensive microbenchmarking and microprofiling of the monitoring code. See the [glowroot-benchmark](https://github.com/glowroot/glowroot-benchmark) repository for a concrete benchmark and results.
+Monitoring overhead depends on many factors, but is generally under 2 percent as a result of extensive microbenchmarking and microprofiling of the monitoring code. See the [glowroot-benchmarks](https://github.com/glowroot/glowroot-benchmarks) repository for a concrete benchmark and results.
 
 ## Code quality
 
