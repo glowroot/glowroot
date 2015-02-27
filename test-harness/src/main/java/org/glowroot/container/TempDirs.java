@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,8 +45,7 @@ public class TempDirs {
 
     public static void deleteRecursively(File file) throws IOException {
         if (!file.exists()) {
-            throw new IOException("Could not find file to delete '" + file.getCanonicalPath()
-                    + "'");
+            throw new IOException("Could not find file to delete: " + file.getCanonicalPath());
         } else if (file.isDirectory()) {
             File[] files = file.listFiles();
             if (files == null) {
@@ -57,11 +56,10 @@ public class TempDirs {
                 deleteRecursively(f);
             }
             if (!file.delete()) {
-                throw new IOException("Could not delete directory '" + file.getCanonicalPath()
-                        + "'");
+                throw new IOException("Could not delete directory: " + file.getCanonicalPath());
             }
         } else if (!file.delete()) {
-            throw new IOException("Could not delete file '" + file.getCanonicalPath() + "'");
+            throw new IOException("Could not delete file: " + file.getCanonicalPath());
         }
     }
 }

@@ -107,7 +107,7 @@ public class GlobalCollector {
         if (!optional.isPresent()) {
             // couldn't find class
             if (expected) {
-                throw new IOException("Could not find class '" + owner + "'");
+                throw new IOException("Could not find class: " + owner);
             } else {
                 return;
             }
@@ -130,7 +130,7 @@ public class GlobalCollector {
         String methodId = rootMethod.getName() + ":" + rootMethod.getDesc();
         MethodCollector methodCollector = classCollector.getMethodCollector(methodId);
         if (expected && methodCollector == null) {
-            throw new IOException("Could not find method '" + rootMethod + "'");
+            throw new IOException("Could not find method: " + rootMethod);
         }
         if (methodCollector == null && !rootMethod.getName().equals("<clinit>")
                 && classCollector.getSuperInternalNames() != null) {
