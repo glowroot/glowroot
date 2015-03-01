@@ -44,7 +44,7 @@ public class TraceEntry {
 
     // the associated metric, stored here so it can be accessed in org.glowroot.api.TraceEntry.end()
     private final @Nullable TransactionMetricExt transactionMetric;
-    // not volatile, so depends on memory barrier in Trace for visibility
+    // not volatile, so depends on memory barrier in Transaction for visibility
     private @Nullable ImmutableList<StackTraceElement> stackTrace;
 
     TraceEntry(@Nullable MessageSupplier messageSupplier, long startTick, int nesting,

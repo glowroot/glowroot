@@ -154,7 +154,7 @@ public class ThreadInfoComponent {
             return -1;
         }
         @Value.Default
-        long threadWaitedTimeMillis() { // nanoseconds (native resolution from jvm)
+        long threadWaitedTimeMillis() { // milliseconds (native resolution from jvm)
             return -1;
         }
         @Value.Default
