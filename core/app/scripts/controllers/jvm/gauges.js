@@ -257,12 +257,13 @@ glowroot.controller('JvmGaugesCtrl', [
         for (var i = 0; i < plotGaugeNames.length; i++) {
           var plotGaugeName = plotGaugeNames[i];
           var points = angular.copy(data[i]);
+          var j;
+          var point;
           if (points.length) {
             if (gaugeDeltas[plotGaugeName]) {
               var deltas = [];
-              var j;
               for (j = 1; j < points.length; j++) {
-                var point = points[j];
+                point = points[j];
                 var lastPoint = points[j - 1];
                 if (point && lastPoint) {
                   deltas[j - 1] = [point[0], point[1] - lastPoint[1]];
@@ -272,9 +273,19 @@ glowroot.controller('JvmGaugesCtrl', [
               }
               points = deltas;
             }
-            updateYvalMap(plotGaugeName, points);
             var scale = scalePoints(points);
             gaugeScales[plotGaugeName] = scale;
+          }
+          updateYvalMap(plotGaugeName, points);
+          if (gaugeDeltas[plotGaugeName]) {
+            // now that yval map has correct (possibly negative) values for tooltip
+            // truncate negative values so they show up on the chart as 0 (tooltip will reveal true value)
+            for (j = 0; j < points.length; j++) {
+              point = points[j];
+              if (point && point[1] < 0) {
+                point[1] = 0;
+              }
+            }
           }
           plotData.push({
             data: points,
@@ -778,16 +789,15 @@ glowroot.controller('JvmGaugesCtrl', [
             var seriesIndex;
             var dataSeries;
             var value;
-            var total = 0;
+            var noData = true;
             for (seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
               dataSeries = plotData[seriesIndex];
-              var point = yvalMaps[dataSeries.label][xval];
-              if (!point) {
+              value = yvalMaps[dataSeries.label][xval];
+              if (value === undefined) {
                 // gap
                 continue;
               }
-              value = point[1];
-              total += value;
+              noData = false;
               html += '<tr';
               if (seriesIndex === flotItem.seriesIndex) {
                 html += ' style="background-color: #eee;"';
@@ -801,7 +811,7 @@ glowroot.controller('JvmGaugesCtrl', [
               '<td style="font-weight: 600;">' + display(dataSeries, value) + '</td>' +
               '</tr>';
             }
-            if (total === 0) {
+            if (noData) {
               return 'No data';
             }
             html += '</tbody></table>';
