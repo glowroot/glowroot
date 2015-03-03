@@ -49,6 +49,8 @@ public class DataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(DataSource.class);
 
+    private static final int cacheSize = Integer.getInteger("glowroot.internal.h2.cacheSize", 8192);
+
     // null means use memDb
     private final @Nullable File dbFile;
     private final Thread shutdownHookThread;
@@ -337,7 +339,8 @@ public class DataSource {
             props.setProperty("user", "sa");
             props.setProperty("password", "");
             // db_close_on_exit=false since jvm shutdown hook is handled by DataSource
-            String url = "jdbc:h2:" + dbPath + ";compress=true;db_close_on_exit=false";
+            String url = "jdbc:h2:" + dbPath + ";compress=true;db_close_on_exit=false;cache_size="
+                    + cacheSize;
             return new JdbcConnection(url, props);
         }
     }
