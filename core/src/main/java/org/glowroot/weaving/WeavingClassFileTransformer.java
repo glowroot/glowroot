@@ -69,7 +69,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             return transformInternal(loader, className, protectionDomain, bytes);
         } catch (Throwable t) {
             // see method-level comment
-            logger.error(t.getMessage(), t);
+            logger.error("error weaving {}: {}", className, t.getMessage(), t);
             return null;
         }
     }
