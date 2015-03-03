@@ -22,9 +22,14 @@
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div style="margin: 15px;">
       <div ng-repeat="gauge in gauges"
-           class="gt-second-line-indent"
            style="padding-bottom: 8px;">
-        <a ng-href="config/gauge?v={{gauge.config.version}}">{{gauge.config.display}}</a>
+        <div>
+          <a ng-href="config/gauge?v={{gauge.config.version}}">{{display(gauge)}}</a>
+        </div>
+        <div ng-repeat="mbeanAttribute in gauge.config.mbeanAttributes | orderBy:'name'"
+             style="margin-left: 40px;">
+          {{mbeanAttribute.name}}
+        </div>
       </div>
       <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
            before it gets pushed down by existing gauge sections -->
