@@ -314,6 +314,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.common.Ticker");
         types.add("org.glowroot.common.Ticker$1");
         types.add("org.glowroot.transaction.TransactionRegistry");
+        types.add("org.glowroot.transaction.TransactionRegistry$1");
+        types.add("org.glowroot.transaction.TransactionRegistry$TransactionHolder");
         types.add("org.glowroot.transaction.WeavingTimerServiceImpl");
         types.add("org.glowroot.transaction.WeavingTimerServiceImpl$1");
         types.add("org.glowroot.transaction.WeavingTimerServiceImpl$NopWeavingTimer");

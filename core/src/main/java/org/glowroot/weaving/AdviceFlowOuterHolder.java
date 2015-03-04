@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@ import org.glowroot.markers.UsedByGeneratedBytecode;
 public class AdviceFlowOuterHolder {
 
     // it is faster to use a mutable holder object and always perform ThreadLocal.get() and never
-    // use ThreadLocal.set()
+    // use ThreadLocal.set(), because the value is more likely to be found in the ThreadLocalMap
+    // direct hash slot and avoid the slow path ThreadLocalMap.getEntryAfterMiss()
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private final ThreadLocal<AdviceFlowHolder> topHolder = new ThreadLocal<AdviceFlowHolder>() {
         @Override

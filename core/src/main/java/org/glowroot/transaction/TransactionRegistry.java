@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,25 +29,39 @@ public class TransactionRegistry {
     private final Collection<Transaction> transactions = Sets.newConcurrentHashSet();
 
     // active running transaction being executed by the current thread
-    private final ThreadLocal</*@Nullable*/Transaction> currentTransaction =
-            new ThreadLocal</*@Nullable*/Transaction>();
+    //
+    // it is faster to use a mutable holder object and always perform ThreadLocal.get() and never
+    // use ThreadLocal.set(), because the value is more likely to be found in the ThreadLocalMap
+    // direct hash slot and avoid the slow path ThreadLocalMap.getEntryAfterMiss()
+    @SuppressWarnings("nullness:type.argument.type.incompatible")
+    private final ThreadLocal<TransactionHolder> currentTransaction =
+            new ThreadLocal<TransactionHolder>() {
+                @Override
+                protected TransactionHolder initialValue() {
+                    return new TransactionHolder();
+                }
+            };
 
     @Nullable
     Transaction getCurrentTransaction() {
-        return currentTransaction.get();
+        return currentTransaction.get().transaction;
     }
 
     void addTransaction(Transaction transaction) {
-        currentTransaction.set(transaction);
+        currentTransaction.get().transaction = transaction;
         transactions.add(transaction);
     }
 
     void removeTransaction(Transaction transaction) {
-        currentTransaction.remove();
+        currentTransaction.get().transaction = null;
         transactions.remove(transaction);
     }
 
     public Collection<Transaction> getTransactions() {
         return transactions;
+    }
+
+    private static class TransactionHolder {
+        private @Nullable Transaction transaction;
     }
 }
