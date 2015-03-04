@@ -87,6 +87,11 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             // sun/reflect/GeneratedMethodAccessor..
             return null;
         }
+        if (className.startsWith("com/sun/proxy/$Proxy")) {
+            // optimization, especially for jdbc plugin to avoid weaving proxy wrappers when dealing
+            // with connection pools
+            return null;
+        }
         if (loader == null && !weaveBootstrapClassLoader) {
             // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
             // loader, otherwise woven bootstrap classes will generate NoClassDefFoundError since

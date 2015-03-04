@@ -36,6 +36,7 @@ import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.plugin.jdbc.StatementAspect.HasStatementMirror;
+import org.glowroot.plugin.jdbc.message.JdbcMessageSupplier;
 
 public class ResultSetAspect {
 
@@ -88,8 +89,8 @@ public class ResultSetAspect {
                     // bizarre concurrent mis-usage of ResultSet
                     return;
                 }
-                RecordCountObject lastRecordCountObject = mirror.getLastRecordCountObject();
-                if (lastRecordCountObject == null) {
+                JdbcMessageSupplier lastJdbcMessageSupplier = mirror.getLastJdbcMessageSupplier();
+                if (lastJdbcMessageSupplier == null) {
                     // tracing must be disabled (e.g. exceeded trace entry limit)
                     return;
                 }
@@ -97,12 +98,12 @@ public class ResultSetAspect {
                     if (methodName.equals("next")) {
                         // ResultSet.getRow() is sometimes not super duper fast due to ResultSet
                         // wrapping and other checks, so this optimizes the common case
-                        lastRecordCountObject.incrementNumRows();
+                        lastJdbcMessageSupplier.incrementNumRows();
                     } else {
-                        lastRecordCountObject.updateNumRows(((ResultSet) resultSet).getRow());
+                        lastJdbcMessageSupplier.updateNumRows(((ResultSet) resultSet).getRow());
                     }
                 } else {
-                    lastRecordCountObject.setHasPerformedNavigation();
+                    lastJdbcMessageSupplier.setHasPerformedNavigation();
                 }
             } catch (SQLException e) {
                 logger.warn(e.getMessage(), e);

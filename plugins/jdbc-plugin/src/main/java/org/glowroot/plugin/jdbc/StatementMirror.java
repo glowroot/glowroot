@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import org.glowroot.plugin.jdbc.message.JdbcMessageSupplier;
+
 // used to capture and mirror the state of statements since the underlying {@link Statement} values
 // cannot be inspected after they have been set
 class StatementMirror {
@@ -32,20 +34,12 @@ class StatementMirror {
     // while that thread is adding batches into the statement and executing it
     private @Nullable List<String> batchedSql;
 
-    // the lastRecordCountObject is stored so that its numRows field can be incremented inside the
+    // the jdbcMessageSupplier is stored so that its numRows field can be incremented inside the
     // advice for ResultSet.next()
-    //
-    // PreparedStatementMirror objects are cached as long as the application server caches the
-    // PreparedStatement, so storing small RecordCountObject instead of JdbcMessageSupplier
-    // in order to avoid using WeakReference
-    //
-    // to help out gc a little, JdbcAspect clears lastRecordCountObject on Statement.close(), but
-    // can't solely rely on this in case a jdbc driver implementation closes statements in finalize
-    // by calling an internal method and not calling public close()
     //
     // ok for this field to be non-volatile since it is only temporary storage for a single thread
     // while that thread is adding batches into the statement and executing it
-    private @Nullable RecordCountObject lastRecordCountObject;
+    private @Nullable JdbcMessageSupplier lastJdbcMessageSupplier;
 
     void addBatch(String sql) {
         // synchronization isn't an issue here as this method is called only by
@@ -65,8 +59,8 @@ class StatementMirror {
     }
 
     @Nullable
-    RecordCountObject getLastRecordCountObject() {
-        return lastRecordCountObject;
+    JdbcMessageSupplier getLastJdbcMessageSupplier() {
+        return lastJdbcMessageSupplier;
     }
 
     void clearBatch() {
@@ -75,11 +69,11 @@ class StatementMirror {
         }
     }
 
-    void setLastRecordCountObject(RecordCountObject recordCountObject) {
-        this.lastRecordCountObject = recordCountObject;
+    void setLastJdbcMessageSupplier(JdbcMessageSupplier lastJdbcMessageSupplier) {
+        this.lastJdbcMessageSupplier = lastJdbcMessageSupplier;
     }
 
-    void clearLastRecordCountObject() {
-        lastRecordCountObject = null;
+    void clearLastJdbcMessageSupplier() {
+        lastJdbcMessageSupplier = null;
     }
 }

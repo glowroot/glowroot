@@ -210,6 +210,21 @@ public class PreparedStatementTest {
     }
 
     @Test
+    public void testPreparedStatementWithClear() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        // when
+        container.executeAppUnderTest(ExecutePreparedStatementWithClear.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(2);
+        TraceEntry jdbcEntry = entries.get(1);
+        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
+                "jdbc execution: select * from employee where name like ? ['john%'] => 1 row");
+    }
+
+    @Test
     public void testPreparedStatementThatHasInternalGlowrootToken() throws Exception {
         // given
         // when
@@ -459,6 +474,36 @@ public class PreparedStatementTest {
                 preparedStatement.setString(1, "jane");
                 preparedStatement.setCharacterStream(2, new StringReader("abc"));
                 preparedStatement.execute();
+            } finally {
+                preparedStatement.close();
+            }
+        }
+    }
+
+    public static class ExecutePreparedStatementWithClear implements AppUnderTest, TraceMarker {
+        private Connection connection;
+        @Override
+        public void executeApp() throws Exception {
+            connection = Connections.createConnection();
+            try {
+                traceMarker();
+            } finally {
+                Connections.closeConnection(connection);
+            }
+        }
+        @Override
+        public void traceMarker() throws Exception {
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("select * from employee where name like ?");
+            try {
+                preparedStatement.setString(1, "na%");
+                preparedStatement.clearParameters();
+                preparedStatement.setString(1, "john%");
+                preparedStatement.execute();
+                ResultSet rs = preparedStatement.getResultSet();
+                while (rs.next()) {
+                    rs.getString(1);
+                }
             } finally {
                 preparedStatement.close();
             }

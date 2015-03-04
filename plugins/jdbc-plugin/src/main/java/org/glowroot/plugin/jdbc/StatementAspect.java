@@ -42,6 +42,11 @@ import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.plugin.jdbc.PreparedStatementMirror.ByteArrayParameterValue;
 import org.glowroot.plugin.jdbc.PreparedStatementMirror.NullParameterValue;
 import org.glowroot.plugin.jdbc.PreparedStatementMirror.StreamingParameterValue;
+import org.glowroot.plugin.jdbc.message.BatchPreparedStatementMessageSupplier;
+import org.glowroot.plugin.jdbc.message.BatchStatementMessageSupplier;
+import org.glowroot.plugin.jdbc.message.JdbcMessageSupplier;
+import org.glowroot.plugin.jdbc.message.PreparedStatementMessageSupplier;
+import org.glowroot.plugin.jdbc.message.StatementMessageSupplier;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -163,7 +168,8 @@ public class StatementAspect {
                     (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
             if (mirror != null) {
                 if (x instanceof InputStream || x instanceof Reader) {
-                    mirror.setParameterValue(parameterIndex, new StreamingParameterValue(x));
+                    mirror.setParameterValue(parameterIndex,
+                            new StreamingParameterValue(x.getClass()));
                 } else if (x instanceof byte[]) {
                     boolean displayAsHex = JdbcPluginProperties.displayBinaryParameterAsHex(
                             mirror.getSql(), parameterIndex);
@@ -186,6 +192,19 @@ public class StatementAspect {
                     (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
             if (mirror != null) {
                 mirror.setParameterValue(parameterIndex, new NullParameterValue());
+            }
+        }
+    }
+
+    @Pointcut(className = "java.sql.PreparedStatement", methodName = "clearParameters",
+            methodParameterTypes = {})
+    public static class ClearParametersAdvice {
+        @OnReturn
+        public static void onReturn(@BindReceiver HasStatementMirror preparedStatement) {
+            PreparedStatementMirror mirror =
+                    (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
+            if (mirror != null) {
+                mirror.clearParameters();
             }
         }
     }
@@ -261,13 +280,13 @@ public class StatementAspect {
                 return null;
             }
             if (pluginServices.isEnabled()) {
-                JdbcMessageSupplier jdbcMessageSupplier = JdbcMessageSupplier.create(sql);
-                mirror.setLastRecordCountObject(jdbcMessageSupplier.getRecordCountObject());
+                JdbcMessageSupplier jdbcMessageSupplier = new StatementMessageSupplier(sql);
+                mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                 return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
             } else {
-                // clear lastRecordCountObject so that its numRows won't be updated if the plugin
+                // clear lastJdbcMessageSupplier so that its numRows won't be updated if the plugin
                 // is re-enabled in the middle of iterating over a different result set
-                mirror.clearLastRecordCountObject();
+                mirror.clearLastJdbcMessageSupplier();
                 return null;
             }
         }
@@ -320,16 +339,17 @@ public class StatementAspect {
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier;
                 if (captureBindParameters) {
-                    jdbcMessageSupplier = JdbcMessageSupplier.createWithParameters(mirror);
+                    jdbcMessageSupplier = new PreparedStatementMessageSupplier(mirror.getSql(),
+                            mirror.getParametersCopy());
                 } else {
-                    jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql());
+                    jdbcMessageSupplier = new StatementMessageSupplier(mirror.getSql());
                 }
-                mirror.setLastRecordCountObject(jdbcMessageSupplier.getRecordCountObject());
+                mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                 return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
             } else {
-                // clear lastRecordCountObject so that its numRows won't be updated if the plugin
+                // clear lastJdbcMessageSupplier so that its numRows won't be updated if the plugin
                 // is re-enabled in the middle of iterating over a different result set
-                mirror.clearLastRecordCountObject();
+                mirror.clearLastJdbcMessageSupplier();
                 return null;
             }
         }
@@ -406,30 +426,30 @@ public class StatementAspect {
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier;
                 if (captureBindParameters) {
-                    jdbcMessageSupplier =
-                            JdbcMessageSupplier.createWithBatchedParameters(mirror);
+                    jdbcMessageSupplier = new BatchPreparedStatementMessageSupplier(
+                            mirror.getSql(), mirror.getBatchedParametersCopy());
                 } else {
-                    jdbcMessageSupplier = JdbcMessageSupplier.create(mirror.getSql());
+                    jdbcMessageSupplier = new StatementMessageSupplier(mirror.getSql());
                 }
-                mirror.setLastRecordCountObject(jdbcMessageSupplier.getRecordCountObject());
+                mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                 return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
             } else {
-                // clear lastRecordCountObject so that its numRows won't be updated if the
+                // clear lastJdbcMessageSupplier so that its numRows won't be updated if the
                 // plugin is re-enabled in the middle of iterating over a different result set
-                mirror.clearLastRecordCountObject();
+                mirror.clearLastJdbcMessageSupplier();
                 return null;
             }
         }
         private static @Nullable TraceEntry onBeforeStatement(StatementMirror mirror) {
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier =
-                        JdbcMessageSupplier.createWithBatchedSqls(mirror);
-                mirror.setLastRecordCountObject(jdbcMessageSupplier.getRecordCountObject());
+                        new BatchStatementMessageSupplier(mirror.getBatchedSqlCopy());
+                mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
                 return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
             } else {
-                // clear lastRecordCountObject so that its numRows won't be updated if the
+                // clear lastJdbcMessageSupplier so that its numRows won't be updated if the
                 // plugin is re-enabled in the middle of iterating over a different result set
-                mirror.clearLastRecordCountObject();
+                mirror.clearLastJdbcMessageSupplier();
                 return null;
             }
         }
@@ -466,13 +486,10 @@ public class StatementAspect {
         @OnBefore
         public static @Nullable TransactionMetric onBefore(
                 @BindReceiver HasStatementMirror statement) {
-            // help out gc a little by clearing the weak reference, don't want to solely rely on
-            // this (and use strong reference) in case a jdbc driver implementation closes
-            // statements in finalize by calling an internal method and not calling public close()
             StatementMirror mirror = statement.getGlowrootStatementMirror();
             if (mirror != null) {
                 // this should always be true since just checked hasGlowrootStatementMirror() above
-                mirror.clearLastRecordCountObject();
+                mirror.clearLastJdbcMessageSupplier();
             }
             if (captureStatementClose) {
                 return pluginServices.startTransactionMetric(metricName);

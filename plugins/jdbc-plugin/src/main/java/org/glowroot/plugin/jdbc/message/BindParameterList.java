@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.jdbc;
+package org.glowroot.plugin.jdbc.message;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -23,25 +23,26 @@ import javax.annotation.Nullable;
 import com.google.common.collect.Iterators;
 
 // micro-optimized list for bind parameters
-class BindParameterList implements Iterable</*@Nullable*/Object> {
+public class BindParameterList implements Iterable</*@Nullable*/Object> {
 
     private @Nullable Object[] parameters;
     private int size;
 
-    static BindParameterList copyOf(BindParameterList bindParameterList) {
+    public static BindParameterList copyOf(BindParameterList bindParameterList) {
         return new BindParameterList(bindParameterList.parameters, bindParameterList.size);
     }
 
-    BindParameterList(int capacity) {
+    public BindParameterList(int capacity) {
         parameters = new Object[capacity];
     }
 
     private BindParameterList(@Nullable Object[] parameters, int size) {
-        this.parameters = parameters.clone();
+        this.parameters = new Object[size];
+        System.arraycopy(parameters, 0, this.parameters, 0, size);
         this.size = size;
     }
 
-    void set(int i, @Nullable Object parameter) {
+    public void set(int i, @Nullable Object parameter) {
         int capacity = parameters.length;
         if (i >= capacity) {
             // using same capacity increase formula as ArrayList
@@ -55,7 +56,7 @@ class BindParameterList implements Iterable</*@Nullable*/Object> {
         }
     }
 
-    int size() {
+    public int size() {
         return size;
     }
 
@@ -63,7 +64,7 @@ class BindParameterList implements Iterable</*@Nullable*/Object> {
         return size == 0;
     }
 
-    void clear() {
+    public void clear() {
         Arrays.fill(parameters, null);
         size = 0;
     }

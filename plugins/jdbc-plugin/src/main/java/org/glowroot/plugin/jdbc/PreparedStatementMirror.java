@@ -23,6 +23,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Queues;
 import com.google.common.hash.HashCode;
 
+import org.glowroot.plugin.jdbc.message.BindParameterList;
+
 // used to capture and mirror the state of prepared statements since the underlying
 // PreparedStatement values cannot be inspected after they have been set
 class PreparedStatementMirror extends StatementMirror {
@@ -80,6 +82,15 @@ class PreparedStatementMirror extends StatementMirror {
         parameters.set(parameterIndex - 1, object);
     }
 
+    public void clearParameters() {
+        if (parametersCopied) {
+            parameters = new BindParameterList(parameters.size());
+            parametersCopied = false;
+        } else {
+            parameters.clear();
+        }
+    }
+
     @Override
     public void clearBatch() {
         if (parametersCopied) {
@@ -123,13 +134,13 @@ class PreparedStatementMirror extends StatementMirror {
     }
 
     static class StreamingParameterValue {
-        private final Object o;
-        public StreamingParameterValue(Object o) {
-            this.o = o;
+        private final Class<?> clazz;
+        public StreamingParameterValue(Class<?> clazz) {
+            this.clazz = clazz;
         }
         @Override
         public String toString() {
-            return "{stream:" + o.getClass().getSimpleName() + "}";
+            return "{stream:" + clazz.getSimpleName() + "}";
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.jdbc;
+package org.glowroot.plugin.jdbc.message;
 
-class RecordCountObject {
+import org.glowroot.api.MessageSupplier;
+
+public abstract class JdbcMessageSupplier extends MessageSupplier {
 
     // intentionally not volatile for performance, but it does mean partial and active trace
     // captures may see stale value (but partial and active trace captures use memory barrier in
@@ -24,25 +26,30 @@ class RecordCountObject {
 
     private boolean hasPerformedNavigation;
 
-    void setHasPerformedNavigation() {
+    public void setHasPerformedNavigation() {
         hasPerformedNavigation = true;
     }
 
-    void incrementNumRows() {
+    public void incrementNumRows() {
         numRows++;
         hasPerformedNavigation = true;
     }
 
-    void updateNumRows(int currentRow) {
+    public void updateNumRows(int currentRow) {
         numRows = Math.max(numRows, currentRow);
         hasPerformedNavigation = true;
     }
 
-    int getNumRows() {
-        return numRows;
-    }
-
-    boolean hasPerformedNavigation() {
-        return hasPerformedNavigation;
+    void appendRowCount(StringBuilder sb) {
+        if (!hasPerformedNavigation) {
+            return;
+        }
+        sb.append(" => ");
+        sb.append(numRows);
+        if (numRows == 1) {
+            sb.append(" row");
+        } else {
+            sb.append(" rows");
+        }
     }
 }
