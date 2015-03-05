@@ -259,24 +259,26 @@ glowroot.controller('JvmGaugesCtrl', [
           var points = angular.copy(data[i]);
           var j;
           var point;
-          if (points.length) {
-            if (gaugeDeltas[plotGaugeName]) {
-              var deltas = [];
-              for (j = 1; j < points.length; j++) {
-                point = points[j];
-                var lastPoint = points[j - 1];
-                if (point && lastPoint) {
-                  deltas[j - 1] = [point[0], point[1] - lastPoint[1]];
-                } else {
-                  deltas[j - 1] = null;
-                }
+          if (gaugeDeltas[plotGaugeName]) {
+            var deltas = [];
+            for (j = 1; j < points.length; j++) {
+              point = points[j];
+              var lastPoint = points[j - 1];
+              if (point && lastPoint) {
+                deltas[j - 1] = [point[0], point[1] - lastPoint[1]];
+              } else {
+                deltas[j - 1] = null;
               }
-              points = deltas;
             }
-            var scale = scalePoints(points);
-            gaugeScales[plotGaugeName] = scale;
+            points = deltas;
           }
           updateYvalMap(plotGaugeName, points);
+          if (points.length) {
+            var scale = scalePoints(points);
+            gaugeScales[plotGaugeName] = scale;
+          } else {
+            gaugeScales[plotGaugeName] = undefined;
+          }
           if (gaugeDeltas[plotGaugeName]) {
             // now that yval map has correct (possibly negative) values for tooltip
             // truncate negative values so they show up on the chart as 0 (tooltip will reveal true value)
