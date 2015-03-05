@@ -92,7 +92,8 @@ public class DataSourceShutdownTest {
                     for (int i = 0; i < 100; i++) {
                         try {
                             traceMarker();
-                        } catch (InterruptedException e) {}
+                        } catch (InterruptedException e) {
+                        }
                     }
                 }
             });

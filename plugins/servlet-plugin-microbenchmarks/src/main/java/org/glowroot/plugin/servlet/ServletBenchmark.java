@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.jdbc;
+package org.glowroot.plugin.servlet;
 
 import java.util.concurrent.TimeUnit;
 
@@ -29,9 +29,9 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 
-import org.glowroot.plugin.jdbc.support.MockHttpRequest;
-import org.glowroot.plugin.jdbc.support.MockHttpResponse;
-import org.glowroot.plugin.jdbc.support.MockHttpServlet;
+import org.glowroot.plugin.servlet.support.MockHttpRequest;
+import org.glowroot.plugin.servlet.support.MockHttpResponse;
+import org.glowroot.plugin.servlet.support.MockHttpServlet;
 
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)

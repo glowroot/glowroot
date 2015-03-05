@@ -350,7 +350,8 @@ public class TracePointQueryTest {
                 public void run() {
                     try {
                         trace1(true);
-                    } catch (InterruptedException e) {}
+                    } catch (InterruptedException e) {
+                    }
                 }
             });
             executorService.execute(new Runnable() {
@@ -358,7 +359,8 @@ public class TracePointQueryTest {
                 public void run() {
                     try {
                         trace1(true);
-                    } catch (InterruptedException e) {}
+                    } catch (InterruptedException e) {
+                    }
                 }
             });
             executorService.execute(new Runnable() {
@@ -366,7 +368,8 @@ public class TracePointQueryTest {
                 public void run() {
                     try {
                         trace2(true);
-                    } catch (InterruptedException e) {}
+                    } catch (InterruptedException e) {
+                    }
                 }
             });
             executorService.execute(new Runnable() {
@@ -374,7 +377,8 @@ public class TracePointQueryTest {
                 public void run() {
                     try {
                         trace3(true);
-                    } catch (InterruptedException e) {}
+                    } catch (InterruptedException e) {
+                    }
                 }
             });
             try {

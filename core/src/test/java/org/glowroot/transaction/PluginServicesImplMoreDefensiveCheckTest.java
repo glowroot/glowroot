@@ -27,8 +27,8 @@ import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.GeneralConfig;
+import org.glowroot.config.PluginDescriptor;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.transaction.model.Transaction;
 
