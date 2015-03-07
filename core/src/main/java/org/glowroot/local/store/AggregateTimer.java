@@ -31,42 +31,42 @@ import static org.glowroot.local.store.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.local.store.ObjectMappers.orEmpty;
 
 @UsedByJsonBinding
-public class AggregateMetric {
+public class AggregateTimer {
 
     private final String name;
     // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
     private long totalMicros;
     private long count;
-    private final List<AggregateMetric> nestedMetrics;
+    private final List<AggregateTimer> nestedTimers;
 
-    public static AggregateMetric createSyntheticRootMetric() {
-        return new AggregateMetric("<multiple root nodes>", 0, 0, new ArrayList<AggregateMetric>());
+    public static AggregateTimer createSyntheticRootTimer() {
+        return new AggregateTimer("<multiple root nodes>", 0, 0, new ArrayList<AggregateTimer>());
     }
 
-    private AggregateMetric(String name, long totalMicros, long count,
-            List<AggregateMetric> nestedMetrics) {
+    private AggregateTimer(String name, long totalMicros, long count,
+            List<AggregateTimer> nestedTimers) {
         this.name = name;
         this.totalMicros = totalMicros;
         this.count = count;
-        this.nestedMetrics = Lists.newArrayList(nestedMetrics);
+        this.nestedTimers = Lists.newArrayList(nestedTimers);
     }
 
-    public void mergeMatchedMetric(AggregateMetric aggregateMetric) {
-        count += aggregateMetric.getCount();
-        totalMicros += aggregateMetric.getTotalMicros();
-        for (AggregateMetric toBeMergedNestedMetric : aggregateMetric.getNestedMetrics()) {
+    public void mergeMatchedTimer(AggregateTimer aggregateTimer) {
+        count += aggregateTimer.getCount();
+        totalMicros += aggregateTimer.getTotalMicros();
+        for (AggregateTimer toBeMergedNestedTimer : aggregateTimer.getNestedTimers()) {
             // for each to-be-merged child node look for a match
-            AggregateMetric foundMatchingChildMetric = null;
-            for (AggregateMetric childMetric : nestedMetrics) {
-                if (toBeMergedNestedMetric.getName().equals(childMetric.getName())) {
-                    foundMatchingChildMetric = childMetric;
+            AggregateTimer foundMatchingChildTimer = null;
+            for (AggregateTimer childTimer : nestedTimers) {
+                if (toBeMergedNestedTimer.getName().equals(childTimer.getName())) {
+                    foundMatchingChildTimer = childTimer;
                     break;
                 }
             }
-            if (foundMatchingChildMetric == null) {
-                nestedMetrics.add(toBeMergedNestedMetric);
+            if (foundMatchingChildTimer == null) {
+                nestedTimers.add(toBeMergedNestedTimer);
             } else {
-                foundMatchingChildMetric.mergeMatchedMetric(toBeMergedNestedMetric);
+                foundMatchingChildTimer.mergeMatchedTimer(toBeMergedNestedTimer);
             }
         }
     }
@@ -83,21 +83,21 @@ public class AggregateMetric {
         return count;
     }
 
-    public List<AggregateMetric> getNestedMetrics() {
-        return nestedMetrics;
+    public List<AggregateTimer> getNestedTimers() {
+        return nestedTimers;
     }
 
     @JsonCreator
-    static AggregateMetric readValue(
+    static AggregateTimer readValue(
             @JsonProperty("name") @Nullable String name,
             @JsonProperty("totalMicros") @Nullable Long totalMicros,
             @JsonProperty("count") @Nullable Long count,
-            @JsonProperty("nestedMetrics") @Nullable List</*@Nullable*/AggregateMetric> uncheckedNestedMetrics)
+            @JsonProperty("nestedTimers") @Nullable List</*@Nullable*/AggregateTimer> uncheckedNestedTimers)
             throws JsonMappingException {
-        List<AggregateMetric> nestedMetrics = orEmpty(uncheckedNestedMetrics, "nestedMetrics");
+        List<AggregateTimer> nestedTimers = orEmpty(uncheckedNestedTimers, "nestedTimers");
         checkRequiredProperty(name, "name");
         checkRequiredProperty(totalMicros, "totalMicros");
         checkRequiredProperty(count, "count");
-        return new AggregateMetric(name, totalMicros, count, nestedMetrics);
+        return new AggregateTimer(name, totalMicros, count, nestedTimers);
     }
 }

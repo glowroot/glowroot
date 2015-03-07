@@ -84,8 +84,8 @@ public class AnalyzedClassPlanBTest {
         config.setMethodName("y");
         config.setMethodParameterTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
-        config.setCaptureKind(CaptureKind.METRIC);
-        config.setMetricName("y");
+        config.setCaptureKind(CaptureKind.TIMER);
+        config.setTimerName("y");
         container.getConfigService().addInstrumentationConfig(config);
     }
 

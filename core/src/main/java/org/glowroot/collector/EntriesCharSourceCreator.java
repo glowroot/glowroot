@@ -49,7 +49,7 @@ public class EntriesCharSourceCreator {
     private static void writeStackTrace(List<StackTraceElement> stackTrace, JsonGenerator jw)
             throws IOException {
         jw.writeStartArray();
-        List<StackTraceElementPlus> elements = Profile.stripSyntheticMetricMethods(stackTrace);
+        List<StackTraceElementPlus> elements = Profile.stripSyntheticTimerMethods(stackTrace);
         for (StackTraceElementPlus element : elements) {
             jw.writeString(element.getStackTraceElement().toString());
         }

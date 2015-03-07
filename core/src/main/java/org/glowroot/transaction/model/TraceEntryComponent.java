@@ -58,11 +58,11 @@ class TraceEntryComponent {
 
     private final Ticker ticker;
 
-    TraceEntryComponent(MessageSupplier messageSupplier, TransactionMetricExt transactionMetric,
-            long startTick, Ticker ticker) {
+    TraceEntryComponent(MessageSupplier messageSupplier, TimerExt timer, long startTick,
+            Ticker ticker) {
         this.startTick = startTick;
         this.ticker = ticker;
-        rootTraceEntry = new TraceEntry(messageSupplier, startTick, 0, transactionMetric);
+        rootTraceEntry = new TraceEntry(messageSupplier, startTick, 0, timer);
         activeEntries.push(rootTraceEntry);
         synchronized (entries) {
             entries.push(rootTraceEntry);
@@ -101,9 +101,8 @@ class TraceEntryComponent {
         return completed ? endTick - startTick : ticker.read() - startTick;
     }
 
-    TraceEntry pushEntry(long startTick, MessageSupplier messageSupplier,
-            TransactionMetricExt transactionMetric) {
-        TraceEntry entry = createEntry(startTick, messageSupplier, null, transactionMetric, false);
+    TraceEntry pushEntry(long startTick, MessageSupplier messageSupplier, TimerExt timer) {
+        TraceEntry entry = createEntry(startTick, messageSupplier, null, timer, false);
         activeEntries.push(entry);
         synchronized (entries) {
             entries.push(entry);
@@ -149,8 +148,7 @@ class TraceEntryComponent {
     }
 
     private TraceEntry createEntry(long startTick, @Nullable MessageSupplier messageSupplier,
-            @Nullable ErrorMessage errorMessage, @Nullable TransactionMetricExt transactionMetric,
-            boolean limitBypassed) {
+            @Nullable ErrorMessage errorMessage, @Nullable TimerExt timer, boolean limitBypassed) {
         if (entryLimitExceeded && !limitBypassed) {
             // just in case the entryLimit property is changed in the middle of a trace this resets
             // the flag so that it can be triggered again (and possibly then a second limit marker)
@@ -171,7 +169,7 @@ class TraceEntryComponent {
             nestingLevel = currentEntry.getNestingLevel() + 1;
         }
         TraceEntry entry =
-                new TraceEntry(messageSupplier, startTick, nestingLevel, transactionMetric);
+                new TraceEntry(messageSupplier, startTick, nestingLevel, timer);
         entry.setErrorMessage(errorMessage);
         return entry;
     }

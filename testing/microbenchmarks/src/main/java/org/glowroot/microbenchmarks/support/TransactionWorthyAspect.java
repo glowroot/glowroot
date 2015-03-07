@@ -17,8 +17,8 @@ package org.glowroot.microbenchmarks.support;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -35,11 +35,11 @@ public class TransactionWorthyAspect {
 
     @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TransactionWorthy",
             methodName = "doSomethingTransactionWorthy", methodParameterTypes = {},
-            metricName = "transaction worthy")
+            timerName = "transaction worthy")
     public static class TransactionWorthyAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(TransactionWorthyAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(TransactionWorthyAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -49,7 +49,7 @@ public class TransactionWorthyAspect {
         @OnBefore
         public static TraceEntry onBefore() {
             return pluginServices.startTransaction("Microbenchmark", "transaction worthy",
-                    MessageSupplier.from("transaction worthy"), metricName);
+                    MessageSupplier.from("transaction worthy"), timerName);
         }
 
         @OnReturn

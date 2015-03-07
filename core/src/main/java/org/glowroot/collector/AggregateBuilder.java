@@ -29,8 +29,8 @@ import com.google.common.io.CharStreams;
 import org.glowroot.common.ScratchBuffer;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.ThreadInfoComponent.ThreadInfoData;
+import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.Transaction;
-import org.glowroot.transaction.model.TransactionMetricImpl;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -53,7 +53,7 @@ class AggregateBuilder {
     private long traceCount;
     // histogram uses microseconds to reduce (or at least simplify) bucket allocations
     private final LazyHistogram histogram = new LazyHistogram();
-    private final AggregateMetric syntheticRootMetric = new AggregateMetric("");
+    private final AggregateTimer syntheticRootTimer = new AggregateTimer("");
     private final AggregateProfileBuilder aggregateProfile = new AggregateProfileBuilder();
 
     AggregateBuilder(String transactionType, @Nullable String transactionName) {
@@ -85,10 +85,10 @@ class AggregateBuilder {
         histogram.add(durationMicros);
     }
 
-    void addToMetrics(TransactionMetricImpl rootTransactionMetric) {
-        syntheticRootMetric.totalMicros += NANOSECONDS.toMicros(rootTransactionMetric.getTotal());
-        syntheticRootMetric.count += rootTransactionMetric.getCount();
-        mergeAsChildMetric(syntheticRootMetric, rootTransactionMetric);
+    void addToTimers(TimerImpl rootTimer) {
+        syntheticRootTimer.totalMicros += NANOSECONDS.toMicros(rootTimer.getTotal());
+        syntheticRootTimer.count += rootTimer.getCount();
+        mergeAsChildTimer(syntheticRootTimer, rootTimer);
     }
 
     void addToProfile(Profile profile) {
@@ -115,7 +115,7 @@ class AggregateBuilder {
                 .totalBlockedMicros(totalBlockedMicros)
                 .totalWaitedMicros(totalWaitedMicros)
                 .totalAllocatedBytes(totalAllocatedBytes)
-                .metrics(getMetricsJson())
+                .timers(getTimersJson())
                 .histogram(histogram)
                 .profileSampleCount(profileSampleCount)
                 .traceCount(traceCount)
@@ -155,25 +155,24 @@ class AggregateBuilder {
         return profileSampleCount;
     }
 
-    private void mergeAsChildMetric(AggregateMetric parentAggregateMetric,
-            TransactionMetricImpl transactionMetric) {
-        String name = transactionMetric.getName();
-        AggregateMetric aggregateMetric = parentAggregateMetric.nestedMetrics.get(name);
-        if (aggregateMetric == null) {
-            aggregateMetric = new AggregateMetric(name);
-            parentAggregateMetric.nestedMetrics.put(name, aggregateMetric);
+    private void mergeAsChildTimer(AggregateTimer parentAggregateTimer, TimerImpl timer) {
+        String name = timer.getName();
+        AggregateTimer aggregateTimer = parentAggregateTimer.nestedTimers.get(name);
+        if (aggregateTimer == null) {
+            aggregateTimer = new AggregateTimer(name);
+            parentAggregateTimer.nestedTimers.put(name, aggregateTimer);
         }
-        aggregateMetric.totalMicros += NANOSECONDS.toMicros(transactionMetric.getTotal());
-        aggregateMetric.count += transactionMetric.getCount();
-        for (TransactionMetricImpl nestedTransactionMetric : transactionMetric.getNestedMetrics()) {
-            mergeAsChildMetric(aggregateMetric, nestedTransactionMetric);
+        aggregateTimer.totalMicros += NANOSECONDS.toMicros(timer.getTotal());
+        aggregateTimer.count += timer.getCount();
+        for (TimerImpl nestedTimer : timer.getNestedTimers()) {
+            mergeAsChildTimer(aggregateTimer, nestedTimer);
         }
     }
 
-    private String getMetricsJson() throws IOException {
+    private String getTimersJson() throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        writeMetric(jg, syntheticRootMetric);
+        writeTimer(jg, syntheticRootTimer);
         jg.close();
         return sb.toString();
     }
@@ -183,15 +182,15 @@ class AggregateBuilder {
         return ProfileCharSourceCreator.createProfileJson(aggregateProfile.getSyntheticRootNode());
     }
 
-    private void writeMetric(JsonGenerator jg, AggregateMetric aggregateMetric) throws IOException {
+    private void writeTimer(JsonGenerator jg, AggregateTimer aggregateTimer) throws IOException {
         jg.writeStartObject();
-        jg.writeStringField("name", aggregateMetric.name);
-        jg.writeNumberField("totalMicros", aggregateMetric.totalMicros);
-        jg.writeNumberField("count", aggregateMetric.count);
-        if (!aggregateMetric.nestedMetrics.isEmpty()) {
-            jg.writeArrayFieldStart("nestedMetrics");
-            for (AggregateMetric metric : aggregateMetric.nestedMetrics.values()) {
-                writeMetric(jg, metric);
+        jg.writeStringField("name", aggregateTimer.name);
+        jg.writeNumberField("totalMicros", aggregateTimer.totalMicros);
+        jg.writeNumberField("count", aggregateTimer.count);
+        if (!aggregateTimer.nestedTimers.isEmpty()) {
+            jg.writeArrayFieldStart("nestedTimers");
+            for (AggregateTimer timer : aggregateTimer.nestedTimers.values()) {
+                writeTimer(jg, timer);
             }
             jg.writeEndArray();
         }
@@ -215,13 +214,13 @@ class AggregateBuilder {
         return x + y;
     }
 
-    private static class AggregateMetric {
+    private static class AggregateTimer {
         private final String name;
         // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
         private long totalMicros;
         private long count;
-        private final Map<String, AggregateMetric> nestedMetrics = Maps.newHashMap();
-        private AggregateMetric(String name) {
+        private final Map<String, AggregateTimer> nestedTimers = Maps.newHashMap();
+        private AggregateTimer(String name) {
             this.name = name;
         }
     }

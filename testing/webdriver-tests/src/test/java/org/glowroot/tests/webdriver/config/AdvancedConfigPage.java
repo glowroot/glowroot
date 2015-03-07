@@ -33,8 +33,8 @@ public class AdvancedConfigPage {
         this.driver = driver;
     }
 
-    public WebElement getMetricWrapperMethodsCheckBox() {
-        return withWait(xpath("//div[@gt-label='Metric wrapper methods']//input"));
+    public WebElement getTimerWrapperMethodsCheckBox() {
+        return withWait(xpath("//div[@gt-label='Timer wrapper methods']//input"));
     }
 
     public WebElement getImmediatePartialStoreThresholdTextField() {

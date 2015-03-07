@@ -15,22 +15,22 @@
  */
 package org.glowroot.transaction;
 
-import org.glowroot.api.MetricName;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.transaction.model.TimerExt;
+import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.Transaction;
-import org.glowroot.transaction.model.TransactionMetricExt;
-import org.glowroot.transaction.model.TransactionMetricImpl;
 import org.glowroot.weaving.WeavingTimerService;
 
 class WeavingTimerServiceImpl implements WeavingTimerService {
 
     private final TransactionRegistry transactionRegistry;
-    private final MetricName metricName;
+    private final TimerName timerName;
 
     WeavingTimerServiceImpl(TransactionRegistry transactionRegistry,
-            MetricNameCache metricNameCache) {
+            TimerNameCache timerNameCache) {
         this.transactionRegistry = transactionRegistry;
-        this.metricName = metricNameCache.getName(OnlyForTheMetricName.class);
+        this.timerName = timerNameCache.getName(OnlyForTheTimerName.class);
     }
 
     @Override
@@ -39,15 +39,15 @@ class WeavingTimerServiceImpl implements WeavingTimerService {
         if (transaction == null) {
             return NopWeavingTimer.INSTANCE;
         }
-        TransactionMetricImpl currentMetric = transaction.getCurrentTransactionMetric();
-        if (currentMetric == null) {
+        TimerImpl currentTimer = transaction.getCurrentTimer();
+        if (currentTimer == null) {
             return NopWeavingTimer.INSTANCE;
         }
-        final TransactionMetricExt transactionMetric = currentMetric.startNestedMetric(metricName);
+        final TimerExt timer = currentTimer.startNestedTimer(timerName);
         return new WeavingTimer() {
             @Override
             public void stop() {
-                transactionMetric.stop();
+                timer.stop();
             }
         };
     }
@@ -59,8 +59,8 @@ class WeavingTimerServiceImpl implements WeavingTimerService {
     }
 
     @Pointcut(className = "", methodName = "", methodParameterTypes = {},
-            metricName = "glowroot weaving")
-    private static class OnlyForTheMetricName {
-        private OnlyForTheMetricName() {}
+            timerName = "glowroot weaving")
+    private static class OnlyForTheTimerName {
+        private OnlyForTheTimerName() {}
     }
 }

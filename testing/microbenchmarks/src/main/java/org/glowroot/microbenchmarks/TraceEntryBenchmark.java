@@ -28,8 +28,8 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.microbenchmarks.support.TraceEntryWorthy;
@@ -41,8 +41,8 @@ public class TraceEntryBenchmark {
 
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-microbenchmarks");
-    private static final MetricName metricName =
-            pluginServices.getMetricName(OnlyForTheMetricName.class);
+    private static final TimerName timerName =
+            pluginServices.getTimerName(OnlyForTheTimerName.class);
 
     @Param
     private PointcutType pointcutType;
@@ -58,7 +58,7 @@ public class TraceEntryBenchmark {
     @OperationsPerInvocation(2000)
     public void execute() {
         TraceEntry traceEntry = pluginServices.startTransaction("Microbenchmark",
-                "micro transaction", MessageSupplier.from("micro transaction"), metricName);
+                "micro transaction", MessageSupplier.from("micro transaction"), timerName);
         switch (pointcutType) {
             case API:
                 for (int i = 0; i < 2000; i++) {
@@ -75,6 +75,6 @@ public class TraceEntryBenchmark {
     }
 
     @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {},
-            metricName = "micro transaction")
-    private static class OnlyForTheMetricName {}
+            timerName = "micro transaction")
+    private static class OnlyForTheTimerName {}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,12 +35,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Value.Immutable
 public abstract class Advice {
 
-    static final Ordering<Advice> orderingByMetricName = new Ordering<Advice>() {
+    static final Ordering<Advice> orderingByTimerName = new Ordering<Advice>() {
         @Override
         public int compare(@Nullable Advice left, @Nullable Advice right) {
             checkNotNull(left);
             checkNotNull(right);
-            return left.pointcut().metricName().compareToIgnoreCase(right.pointcut().metricName());
+            return left.pointcut().timerName().compareToIgnoreCase(right.pointcut().timerName());
         }
     };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,28 +21,28 @@ import com.google.common.cache.LoadingCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.MetricName;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.transaction.model.ImmutableMetricNameImpl;
-import org.glowroot.transaction.model.MetricNameImpl;
+import org.glowroot.transaction.model.ImmutableTimerNameImpl;
+import org.glowroot.transaction.model.TimerNameImpl;
 
 // used to ensure one instance per name so that pointer equality can be used instead of String
 // equality
 //
-// also used to ensure @Pointcut metric name matches the metric name passed to PluginServices
-class MetricNameCache {
+// also used to ensure @Pointcut timer name matches the timer name passed to PluginServices
+class TimerNameCache {
 
-    private static final Logger logger = LoggerFactory.getLogger(MetricNameCache.class);
+    private static final Logger logger = LoggerFactory.getLogger(TimerNameCache.class);
 
-    private final LoadingCache<String, MetricNameImpl> names =
-            CacheBuilder.newBuilder().build(new CacheLoader<String, MetricNameImpl>() {
+    private final LoadingCache<String, TimerNameImpl> names =
+            CacheBuilder.newBuilder().build(new CacheLoader<String, TimerNameImpl>() {
                 @Override
-                public MetricNameImpl load(String name) {
-                    return ImmutableMetricNameImpl.of(name);
+                public TimerNameImpl load(String name) {
+                    return ImmutableTimerNameImpl.of(name);
                 }
             });
 
-    MetricName getName(Class<?> adviceClass) {
+    TimerName getName(Class<?> adviceClass) {
         if (adviceClass == null) {
             logger.error("get(): argument 'adviceClass' must be non-null");
             return getUnknownName();
@@ -51,20 +51,20 @@ class MetricNameCache {
         if (pointcut == null) {
             logger.warn("advice has no @Pointcut: {}", adviceClass.getName());
             return getUnknownName();
-        } else if (pointcut.metricName().isEmpty()) {
-            logger.warn("advice @Pointcut has no metricName() attribute: {}",
+        } else if (pointcut.timerName().isEmpty()) {
+            logger.warn("advice @Pointcut has no timerName() attribute: {}",
                     adviceClass.getName());
             return getUnknownName();
         } else {
-            return getName(pointcut.metricName());
+            return getName(pointcut.timerName());
         }
     }
 
-    private MetricName getName(String name) {
+    private TimerName getName(String name) {
         return names.getUnchecked(name);
     }
 
-    private MetricName getUnknownName() {
+    private TimerName getUnknownName() {
         return names.getUnchecked("unknown");
     }
 }

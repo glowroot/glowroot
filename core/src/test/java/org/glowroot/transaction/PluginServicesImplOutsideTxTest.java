@@ -21,7 +21,7 @@ import org.junit.Test;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
+import org.glowroot.api.TimerName;
 import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.AdvancedConfig;
@@ -49,29 +49,29 @@ public class PluginServicesImplOutsideTxTest {
         when(configService.getGeneralConfig()).thenReturn(generalConfig);
         when(configService.getAdvancedConfig()).thenReturn(advancedConfig);
 
-        MetricNameCache metricNameCache = mock(MetricNameCache.class);
+        TimerNameCache timerNameCache = mock(TimerNameCache.class);
         ThreadAllocatedBytes threadAllocatedBytes = mock(ThreadAllocatedBytes.class);
         UserProfileScheduler userProfileScheduler = mock(UserProfileScheduler.class);
         Ticker ticker = mock(Ticker.class);
         Clock clock = mock(Clock.class);
         pluginServices = PluginServicesImpl.create(transactionRegistry, transactionCollector,
-                configService, metricNameCache, threadAllocatedBytes, userProfileScheduler, ticker,
+                configService, timerNameCache, threadAllocatedBytes, userProfileScheduler, ticker,
                 clock, ImmutableList.<PluginDescriptor>of(), null);
     }
 
     @Test
     public void testStartTraceEntry() {
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        MetricName metricName = mock(MetricName.class);
-        assertThat(pluginServices.startTraceEntry(messageSupplier, metricName)
+        TimerName timerName = mock(TimerName.class);
+        assertThat(pluginServices.startTraceEntry(messageSupplier, timerName)
                 .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
     }
 
     @Test
-    public void testStartTransactionMetric() {
-        MetricName metricName = mock(MetricName.class);
-        assertThat(pluginServices.startTransactionMetric(metricName).getClass().getSimpleName())
-                .isEqualTo("NopTransactionMetric");
+    public void testStartTimer() {
+        TimerName timerName = mock(TimerName.class);
+        assertThat(pluginServices.startTimer(timerName).getClass().getSimpleName())
+                .isEqualTo("NopTimer");
     }
 
     @Test

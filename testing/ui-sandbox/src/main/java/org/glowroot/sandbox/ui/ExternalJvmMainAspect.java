@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,17 @@
 package org.glowroot.sandbox.ui;
 
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.Timer;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
-import org.glowroot.api.TransactionMetric;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.Pointcut;
 
-// this is used to generate a trace with <multiple root nodes> (and with multiple metrics) just to
+// this is used to generate a trace with <multiple root nodes> (and with multiple timers) just to
 // test this unusual situation
 public class ExternalJvmMainAspect {
 
@@ -34,11 +34,11 @@ public class ExternalJvmMainAspect {
 
     @Pointcut(className = "org.glowroot.container.javaagent.JavaagentContainer",
             methodName = "main", methodParameterTypes = {"java.lang.String[]"},
-            metricName = "external jvm main")
+            timerName = "external jvm main")
     public static class MainAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(MainAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(MainAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -49,7 +49,7 @@ public class ExternalJvmMainAspect {
         public static TraceEntry onBefore() {
             return pluginServices.startTransaction("Sandbox", "javaagent container main",
                     MessageSupplier.from("org.glowroot.container.javaagent.JavaagentContainer"
-                            + ".main()"), metricName);
+                            + ".main()"), timerName);
         }
 
         @OnAfter
@@ -59,11 +59,11 @@ public class ExternalJvmMainAspect {
     }
 
     @Pointcut(className = "org.glowroot.container.javaagent.JavaagentContainer",
-            methodName = "metricMarkerOne", methodParameterTypes = {}, metricName = "metric one")
-    public static class MetricMarkerOneAdvice {
+            methodName = "timerMarkerOne", methodParameterTypes = {}, timerName = "timer one")
+    public static class TimerMarkerOneAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(MetricMarkerOneAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(TimerMarkerOneAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -71,22 +71,22 @@ public class ExternalJvmMainAspect {
         }
 
         @OnBefore
-        public static TransactionMetric onBefore() {
-            return pluginServices.startTransactionMetric(metricName);
+        public static Timer onBefore() {
+            return pluginServices.startTimer(timerName);
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler TransactionMetric transactionMetric) {
-            transactionMetric.stop();
+        public static void onAfter(@BindTraveler Timer timer) {
+            timer.stop();
         }
     }
 
     @Pointcut(className = "org.glowroot.container.javaagent.JavaagentContainer",
-            methodName = "metricMarkerTwo", methodParameterTypes = {}, metricName = "metric two")
-    public static class MetricMarkerTwoAdvice {
+            methodName = "timerMarkerTwo", methodParameterTypes = {}, timerName = "timer two")
+    public static class TimerMarkerTwoAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(MetricMarkerTwoAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(TimerMarkerTwoAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -94,13 +94,13 @@ public class ExternalJvmMainAspect {
         }
 
         @OnBefore
-        public static TransactionMetric onBefore() {
-            return pluginServices.startTransactionMetric(metricName);
+        public static Timer onBefore() {
+            return pluginServices.startTimer(timerName);
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler TransactionMetric transactionMetric) {
-            transactionMetric.stop();
+        public static void onAfter(@BindTraveler Timer timer) {
+            timer.stop();
         }
     }
 }

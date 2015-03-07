@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,11 @@ package org.glowroot.plugin.jdbc;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
+import org.glowroot.api.Timer;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
-import org.glowroot.api.TransactionMetric;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -61,17 +61,17 @@ public class ConnectionAspect {
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "commit", methodParameterTypes = {},
-            ignoreSelfNested = true, metricName = "jdbc commit")
+            ignoreSelfNested = true, timerName = "jdbc commit")
     public static class CommitAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(CommitAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(CommitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore() {
-            return pluginServices.startTraceEntry(MessageSupplier.from("jdbc commit"), metricName);
+            return pluginServices.startTraceEntry(MessageSupplier.from("jdbc commit"), timerName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {
@@ -86,10 +86,10 @@ public class ConnectionAspect {
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "rollback", methodParameterTypes = {},
-            ignoreSelfNested = true, metricName = "jdbc rollback")
+            ignoreSelfNested = true, timerName = "jdbc rollback")
     public static class RollbackAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(RollbackAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(RollbackAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -97,7 +97,7 @@ public class ConnectionAspect {
         @OnBefore
         public static TraceEntry onBefore() {
             return pluginServices
-                    .startTraceEntry(MessageSupplier.from("jdbc rollback"), metricName);
+                    .startTraceEntry(MessageSupplier.from("jdbc rollback"), timerName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {
@@ -112,10 +112,10 @@ public class ConnectionAspect {
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "close", methodParameterTypes = {},
-            ignoreSelfNested = true, metricName = "jdbc connection close")
+            ignoreSelfNested = true, timerName = "jdbc connection close")
     public static class CloseAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(CloseAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -125,36 +125,36 @@ public class ConnectionAspect {
             if (captureConnectionLifecycleTraceEntries) {
                 return pluginServices.startTraceEntry(
                         MessageSupplier.from("jdbc connection close"),
-                        metricName);
+                        timerName);
             } else {
-                return pluginServices.startTransactionMetric(metricName);
+                return pluginServices.startTimer(timerName);
             }
         }
         @OnReturn
-        public static void onReturn(@BindTraveler Object entryOrMetric) {
-            if (entryOrMetric instanceof TraceEntry) {
-                ((TraceEntry) entryOrMetric).endWithStackTrace(
+        public static void onReturn(@BindTraveler Object entryOrTimer) {
+            if (entryOrTimer instanceof TraceEntry) {
+                ((TraceEntry) entryOrTimer).endWithStackTrace(
                         JdbcPluginProperties.stackTraceThresholdMillis(), MILLISECONDS);
             } else {
-                ((TransactionMetric) entryOrMetric).stop();
+                ((Timer) entryOrTimer).stop();
             }
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Object entryOrMetric) {
-            if (entryOrMetric instanceof TraceEntry) {
-                ((TraceEntry) entryOrMetric).endWithError(ErrorMessage.from(t));
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Object entryOrTimer) {
+            if (entryOrTimer instanceof TraceEntry) {
+                ((TraceEntry) entryOrTimer).endWithError(ErrorMessage.from(t));
             } else {
-                ((TransactionMetric) entryOrMetric).stop();
+                ((Timer) entryOrTimer).stop();
             }
         }
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "setAutoCommit",
             ignoreSelfNested = true, methodParameterTypes = {"boolean"},
-            metricName = "jdbc set autocommit")
+            timerName = "jdbc set autocommit")
     public static class SetAutoCommitAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(CloseAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return captureTransactionLifecycleTraceEntries;
@@ -163,7 +163,7 @@ public class ConnectionAspect {
         public static TraceEntry onBefore(@BindParameter boolean autoCommit) {
             return pluginServices.startTraceEntry(
                     MessageSupplier.from("jdbc set autocommit: {}", Boolean.toString(autoCommit)),
-                    metricName);
+                    timerName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {

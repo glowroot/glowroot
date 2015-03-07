@@ -48,7 +48,7 @@ public class TransactionModule {
 
     private final ImmediateTraceStoreWatcher immedateTraceStoreWatcher;
 
-    private final boolean metricWrapperMethods;
+    private final boolean timerWrapperMethods;
     private final boolean jvmRetransformClassesSupported;
 
     private final PluginServicesFactory pluginServicesFactory;
@@ -67,17 +67,17 @@ public class TransactionModule {
                 instrumentation, dataDir);
         analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
                 adviceCache.getMixinTypes(), extraBootResourceFinder);
-        final MetricNameCache metricNameCache = new MetricNameCache();
-        weavingTimerService = new WeavingTimerServiceImpl(transactionRegistry, metricNameCache);
+        final TimerNameCache timerNameCache = new TimerNameCache();
+        weavingTimerService = new WeavingTimerServiceImpl(transactionRegistry, timerNameCache);
 
-        metricWrapperMethods =
-                configModule.getConfigService().getAdvancedConfig().metricWrapperMethods();
+        timerWrapperMethods =
+                configModule.getConfigService().getAdvancedConfig().timerWrapperMethods();
         // instrumentation is null when debugging with IsolatedWeavingClassLoader
         // instead of javaagent
         if (instrumentation != null) {
             ClassFileTransformer transformer = new WeavingClassFileTransformer(
                     adviceCache.getMixinTypes(), adviceCache.getAdvisorsSupplier(), analyzedWorld,
-                    weavingTimerService, metricWrapperMethods);
+                    weavingTimerService, timerWrapperMethods);
             PreInitializeWeavingClasses.preInitializeClasses();
             if (instrumentation.isRetransformClassesSupported()) {
                 instrumentation.addTransformer(transformer, true);
@@ -104,7 +104,7 @@ public class TransactionModule {
             @Override
             public PluginServices create(@Nullable String pluginId) {
                 return PluginServicesImpl.create(transactionRegistry, transactionCollector,
-                        configModule.getConfigService(), metricNameCache, threadAllocatedBytes,
+                        configModule.getConfigService(), timerNameCache, threadAllocatedBytes,
                         userProfileScheduler, ticker, clock, configModule.getPluginDescriptors(),
                         pluginId);
             }
@@ -128,8 +128,8 @@ public class TransactionModule {
         return weavingTimerService;
     }
 
-    public boolean isMetricWrapperMethods() {
-        return metricWrapperMethods;
+    public boolean isTimerWrapperMethods() {
+        return timerWrapperMethods;
     }
 
     public boolean isJvmRetransformClassesSupported() {

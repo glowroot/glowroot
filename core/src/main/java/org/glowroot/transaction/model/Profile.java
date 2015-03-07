@@ -34,8 +34,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Profile {
 
-    private static final Pattern metricMarkerMethodPattern =
-            Pattern.compile("^.*\\$glowroot\\$metric\\$(.*)\\$[0-9]+$");
+    private static final Pattern timerMarkerMethodPattern =
+            Pattern.compile("^.*\\$glowroot\\$timer\\$(.*)\\$[0-9]+$");
 
     private final Object lock = new Object();
     // optimized for trace captures which are never read
@@ -85,7 +85,7 @@ public class Profile {
         for (int i = 0; i < unmergedStackTraces.size(); i++) {
             List<StackTraceElement> stackTrace = unmergedStackTraces.get(i);
             State threadState = unmergedStackTraceThreadStates.get(i);
-            addToStackTree(stripSyntheticMetricMethods(stackTrace), threadState);
+            addToStackTree(stripSyntheticTimerMethods(stackTrace), threadState);
         }
         unmergedStackTraces.clear();
         unmergedStackTraceThreadStates.clear();
@@ -116,14 +116,14 @@ public class Profile {
             }
             // match found, update lastMatchedNode and break out of the inner loop
             matchingNode.incrementSampleCount(1);
-            // the metric names for a given stack element should always match, unless
+            // the timer names for a given stack element should always match, unless
             // the line numbers aren't available and overloaded methods are matched up, or
-            // the stack trace was captured while one of the synthetic $glowroot$metric$
-            // methods was executing in which case one of the metric names may be a
+            // the stack trace was captured while one of the synthetic $glowroot$timer$
+            // methods was executing in which case one of the timer names may be a
             // subset of the other, in which case, the superset wins:
-            List<String> metricNames = element.getMetricNames();
-            if (metricNames.size() > matchingNode.getMetricNames().size()) {
-                matchingNode.setMetricNames(metricNames);
+            List<String> timerNames = element.getTimerNames();
+            if (timerNames.size() > matchingNode.getTimerNames().size()) {
+                matchingNode.setTimerNames(timerNames);
             }
             lastMatchedNode = matchingNode;
             nextChildNodes = lastMatchedNode.getChildNodes();
@@ -138,55 +138,55 @@ public class Profile {
             } else {
                 nextNode = ProfileNode.create(element.getStackTraceElement(), null);
             }
-            nextNode.setMetricNames(element.getMetricNames());
+            nextNode.setTimerNames(element.getTimerNames());
             nextNode.incrementSampleCount(1);
             lastMatchedNode.addChildNode(nextNode);
             lastMatchedNode = nextNode;
         }
     }
 
-    // recreate the stack trace as it would have been without the synthetic $glowroot$metric$
+    // recreate the stack trace as it would have been without the synthetic $glowroot$timer$
     // methods
-    public static List<StackTraceElementPlus> stripSyntheticMetricMethods(
+    public static List<StackTraceElementPlus> stripSyntheticTimerMethods(
             List<StackTraceElement> stackTrace) {
 
         List<StackTraceElementPlus> stackTracePlus =
                 Lists.newArrayListWithCapacity(stackTrace.size());
         for (Iterator<StackTraceElement> i = stackTrace.iterator(); i.hasNext();) {
             StackTraceElement element = i.next();
-            String metricName = getMetricName(element);
-            if (metricName == null) {
+            String timerName = getTimerName(element);
+            if (timerName == null) {
                 stackTracePlus.add(new StackTraceElementPlus(element, ImmutableList.<String>of()));
                 continue;
             }
             String originalMethodName = element.getMethodName();
-            List<String> metricNames = Lists.newArrayListWithCapacity(2);
-            metricNames.add(metricName);
-            // skip over successive $glowroot$metric$ methods up to and including the "original"
+            List<String> timerNames = Lists.newArrayListWithCapacity(2);
+            timerNames.add(timerName);
+            // skip over successive $glowroot$timer$ methods up to and including the "original"
             // method
             while (i.hasNext()) {
                 StackTraceElement skipElement = i.next();
-                metricName = getMetricName(skipElement);
-                if (metricName == null) {
-                    // loop should always terminate here since synthetic $glowroot$metric$
+                timerName = getTimerName(skipElement);
+                if (timerName == null) {
+                    // loop should always terminate here since synthetic $glowroot$timer$
                     // methods should never be the last element (the last element is the first
                     // element in the call stack)
                     originalMethodName = skipElement.getMethodName();
                     break;
                 }
-                metricNames.add(metricName);
+                timerNames.add(timerName);
             }
             // "original" in the sense that this is what it would have been without the
-            // synthetic $metric$ methods
+            // synthetic $timer$ methods
             StackTraceElement originalElement = new StackTraceElement(element.getClassName(),
                     originalMethodName, element.getFileName(), element.getLineNumber());
-            stackTracePlus.add(new StackTraceElementPlus(originalElement, metricNames));
+            stackTracePlus.add(new StackTraceElementPlus(originalElement, timerNames));
         }
         return stackTracePlus;
     }
 
-    private static @Nullable String getMetricName(StackTraceElement stackTraceElement) {
-        Matcher matcher = metricMarkerMethodPattern.matcher(stackTraceElement.getMethodName());
+    private static @Nullable String getTimerName(StackTraceElement stackTraceElement) {
+        Matcher matcher = timerMarkerMethodPattern.matcher(stackTraceElement.getMethodName());
         if (matcher.matches()) {
             String group = matcher.group(1);
             checkNotNull(group);
@@ -212,17 +212,17 @@ public class Profile {
 
     public static class StackTraceElementPlus {
         private final StackTraceElement stackTraceElement;
-        private final ImmutableList<String> metricNames;
+        private final ImmutableList<String> timerNames;
         private StackTraceElementPlus(StackTraceElement stackTraceElement,
-                List<String> metricNames) {
+                List<String> timerNames) {
             this.stackTraceElement = stackTraceElement;
-            this.metricNames = ImmutableList.copyOf(metricNames);
+            this.timerNames = ImmutableList.copyOf(timerNames);
         }
         public StackTraceElement getStackTraceElement() {
             return stackTraceElement;
         }
-        private ImmutableList<String> getMetricNames() {
-            return metricNames;
+        private ImmutableList<String> getTimerNames() {
+            return timerNames;
         }
     }
 }

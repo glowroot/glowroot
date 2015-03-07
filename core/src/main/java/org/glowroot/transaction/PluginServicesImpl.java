@@ -31,11 +31,11 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
+import org.glowroot.api.Timer;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
-import org.glowroot.api.TransactionMetric;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.common.Clock;
 import org.glowroot.common.ScheduledRunnable;
@@ -46,10 +46,10 @@ import org.glowroot.config.GeneralConfig;
 import org.glowroot.config.PluginConfig;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.jvm.ThreadAllocatedBytes;
-import org.glowroot.transaction.model.MetricNameImpl;
+import org.glowroot.transaction.model.TimerExt;
+import org.glowroot.transaction.model.TimerImpl;
+import org.glowroot.transaction.model.TimerNameImpl;
 import org.glowroot.transaction.model.Transaction;
-import org.glowroot.transaction.model.TransactionMetricExt;
-import org.glowroot.transaction.model.TransactionMetricImpl;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -60,7 +60,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private final TransactionRegistry transactionRegistry;
     private final TransactionCollector transactionCollector;
     private final ConfigService configService;
-    private final MetricNameCache metricNameCache;
+    private final TimerNameCache timerNameCache;
     private final @Nullable ThreadAllocatedBytes threadAllocatedBytes;
     private final UserProfileScheduler userProfileScheduler;
     private final Clock clock;
@@ -79,11 +79,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     static PluginServicesImpl create(TransactionRegistry transactionRegistry,
             TransactionCollector transactionCollector, ConfigService configService,
-            MetricNameCache metricNameCache, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
+            TimerNameCache timerNameCache, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             UserProfileScheduler userProfileScheduler, Ticker ticker, Clock clock,
             List<PluginDescriptor> pluginDescriptors, @Nullable String pluginId) {
         PluginServicesImpl pluginServices = new PluginServicesImpl(transactionRegistry,
-                transactionCollector, configService, metricNameCache, threadAllocatedBytes,
+                transactionCollector, configService, timerNameCache, threadAllocatedBytes,
                 userProfileScheduler, ticker, clock, pluginDescriptors, pluginId);
         // add config listeners first before caching configuration property values to avoid a
         // (remotely) possible race condition
@@ -98,13 +98,13 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     private PluginServicesImpl(TransactionRegistry transactionRegistry,
             TransactionCollector transactionCollector, ConfigService configService,
-            MetricNameCache metricNameCache, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
+            TimerNameCache timerNameCache, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             UserProfileScheduler userProfileScheduler, Ticker ticker, Clock clock,
             List<PluginDescriptor> pluginDescriptors, @Nullable String pluginId) {
         this.transactionRegistry = transactionRegistry;
         this.transactionCollector = transactionCollector;
         this.configService = configService;
-        this.metricNameCache = metricNameCache;
+        this.timerNameCache = timerNameCache;
         this.threadAllocatedBytes = threadAllocatedBytes;
         this.userProfileScheduler = userProfileScheduler;
         this.clock = clock;
@@ -178,13 +178,13 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public MetricName getMetricName(Class<?> adviceClass) {
-        return metricNameCache.getName(adviceClass);
+    public TimerName getTimerName(Class<?> adviceClass) {
+        return timerNameCache.getName(adviceClass);
     }
 
     @Override
     public TraceEntry startTransaction(String transactionType, String transactionName,
-            MessageSupplier messageSupplier, MetricName metricName) {
+            MessageSupplier messageSupplier, TimerName timerName) {
         if (transactionType == null) {
             logger.error("startTransaction(): argument 'transactionType' must be non-null");
             return NopTraceEntry.INSTANCE;
@@ -197,46 +197,46 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             logger.error("startTransaction(): argument 'messageSupplier' must be non-null");
             return NopTraceEntry.INSTANCE;
         }
-        if (metricName == null) {
-            logger.error("startTransaction(): argument 'metricName' must be non-null");
+        if (timerName == null) {
+            logger.error("startTransaction(): argument 'timerName' must be non-null");
             return NopTraceEntry.INSTANCE;
         }
         return startTransactionInternal(transactionType, transactionName, messageSupplier,
-                metricName);
+                timerName);
     }
 
     @Override
-    public TraceEntry startTraceEntry(MessageSupplier messageSupplier, MetricName metricName) {
+    public TraceEntry startTraceEntry(MessageSupplier messageSupplier, TimerName timerName) {
         if (messageSupplier == null) {
             logger.error("startTraceEntry(): argument 'messageSupplier' must be non-null");
             return NopTraceEntry.INSTANCE;
         }
-        if (metricName == null) {
-            logger.error("startTraceEntry(): argument 'metricName' must be non-null");
+        if (timerName == null) {
+            logger.error("startTraceEntry(): argument 'timerName' must be non-null");
             return NopTraceEntry.INSTANCE;
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction == null) {
             return NopTraceEntry.INSTANCE;
         }
-        return startTraceEntryInternal(transaction, metricName, messageSupplier);
+        return startTraceEntryInternal(transaction, timerName, messageSupplier);
     }
 
     @Override
-    public TransactionMetric startTransactionMetric(MetricName metricName) {
-        if (metricName == null) {
-            logger.error("startTransactionMetric(): argument 'metricName' must be non-null");
-            return NopTransactionMetric.INSTANCE;
+    public Timer startTimer(TimerName timerName) {
+        if (timerName == null) {
+            logger.error("startTimer(): argument 'timerName' must be non-null");
+            return NopTimer.INSTANCE;
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction == null) {
-            return NopTransactionMetric.INSTANCE;
+            return NopTimer.INSTANCE;
         }
-        TransactionMetricImpl currentMetric = transaction.getCurrentTransactionMetric();
-        if (currentMetric == null) {
-            return NopTransactionMetric.INSTANCE;
+        TimerImpl currentTimer = transaction.getCurrentTimer();
+        if (currentTimer == null) {
+            return NopTimer.INSTANCE;
         }
-        return currentMetric.startNestedMetric(metricName);
+        return currentTimer.startNestedTimer(timerName);
     }
 
     @Override
@@ -347,50 +347,46 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     private TraceEntry startTransactionInternal(String transactionType, String transactionName,
-            MessageSupplier messageSupplier, MetricName metricName) {
+            MessageSupplier messageSupplier, TimerName timerName) {
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction == null) {
-            TransactionMetricImpl rootMetric =
-                    TransactionMetricImpl.createRootMetric((MetricNameImpl) metricName, ticker);
+            TimerImpl rootTimer = TimerImpl.createRootTimer((TimerNameImpl) timerName, ticker);
             long startTick = ticker.read();
-            rootMetric.start(startTick);
+            rootTimer.start(startTick);
             transaction = new Transaction(clock.currentTimeMillis(), transactionType,
-                    transactionName, messageSupplier, rootMetric, startTick, captureThreadInfo,
+                    transactionName, messageSupplier, rootTimer, startTick, captureThreadInfo,
                     captureGcInfo, threadAllocatedBytes, ticker);
             transactionRegistry.addTransaction(transaction);
             return new TraceEntryImpl(transaction.getTraceEntryComponent(), transaction);
         } else {
-            return startTraceEntryInternal(transaction, metricName, messageSupplier);
+            return startTraceEntryInternal(transaction, timerName, messageSupplier);
         }
     }
 
-    private TraceEntry startTraceEntryInternal(Transaction transaction, MetricName metricName,
+    private TraceEntry startTraceEntryInternal(Transaction transaction, TimerName timerName,
             MessageSupplier messageSupplier) {
         long startTick = ticker.read();
         if (transaction.getEntryCount() >= maxTraceEntriesPerTransaction) {
             // the entry limit has been exceeded for this trace
             transaction.addEntryLimitExceededMarkerIfNeeded();
-            TransactionMetricExt transactionMetric =
-                    startTransactionMetric(metricName, startTick, transaction);
-            return new DummyTraceEntry(transactionMetric, startTick, transaction, messageSupplier);
+            TimerExt timer = startTimer(timerName, startTick, transaction);
+            return new DummyTraceEntry(timer, startTick, transaction, messageSupplier);
         } else {
-            TransactionMetricExt transactionMetric =
-                    startTransactionMetric(metricName, startTick, transaction);
+            TimerExt timer = startTimer(timerName, startTick, transaction);
             org.glowroot.transaction.model.TraceEntry traceEntry =
-                    transaction.pushEntry(startTick, messageSupplier, transactionMetric);
+                    transaction.pushEntry(startTick, messageSupplier, timer);
             return new TraceEntryImpl(traceEntry, transaction);
         }
     }
 
-    private TransactionMetricExt startTransactionMetric(MetricName metricName, long startTick,
-            Transaction transaction) {
-        TransactionMetricImpl currentTransactionMetric = transaction.getCurrentTransactionMetric();
-        if (currentTransactionMetric == null) {
-            // this really shouldn't happen as current transaction metric should be non-null unless
-            // transaction has completed
-            return NopTransactionMetricExt.INSTANCE;
+    private TimerExt startTimer(TimerName timerName, long startTick, Transaction transaction) {
+        TimerImpl currentTimer = transaction.getCurrentTimer();
+        if (currentTimer == null) {
+            // this really shouldn't happen as current timer should be non-null unless transaction
+            // has completed
+            return NopTimerExt.INSTANCE;
         }
-        return currentTransactionMetric.startNestedMetric(metricName, startTick);
+        return currentTimer.startNestedTimer(timerName, startTick);
     }
 
     private static ImmutableList<StackTraceElement> captureStackTrace() {
@@ -476,20 +472,20 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     private class DummyTraceEntry implements TraceEntry {
-        private final TransactionMetricExt transactionMetric;
+        private final TimerExt timer;
         private final long startTick;
         private final Transaction transaction;
         private final MessageSupplier messageSupplier;
-        public DummyTraceEntry(TransactionMetricExt transactionMetric, long startTick,
-                Transaction transaction, MessageSupplier messageSupplier) {
-            this.transactionMetric = transactionMetric;
+        public DummyTraceEntry(TimerExt timer, long startTick, Transaction transaction,
+                MessageSupplier messageSupplier) {
+            this.timer = timer;
             this.startTick = startTick;
             this.transaction = transaction;
             this.messageSupplier = messageSupplier;
         }
         @Override
         public void end() {
-            transactionMetric.stop();
+            timer.stop();
         }
         @Override
         public void endWithStackTrace(long threshold, TimeUnit unit) {
@@ -499,7 +495,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 return;
             }
             long endTick = ticker.read();
-            transactionMetric.end(endTick);
+            timer.end(endTick);
             // use higher entry limit when adding slow entries, but still need some kind of cap
             if (endTick - startTick >= unit.toNanos(threshold)
                     && transaction.getEntryCount() < 2 * maxTraceEntriesPerTransaction) {
@@ -519,7 +515,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 return;
             }
             long endTick = ticker.read();
-            transactionMetric.end(endTick);
+            timer.end(endTick);
             // use higher entry limit when adding errors, but still need some kind of cap
             if (transaction.getEntryCount() < 2 * maxTraceEntriesPerTransaction) {
                 // entry won't be nested properly, but at least the error will get captured
@@ -547,14 +543,14 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
     }
 
-    private static class NopTransactionMetric implements TransactionMetric {
-        private static final NopTransactionMetric INSTANCE = new NopTransactionMetric();
+    private static class NopTimer implements Timer {
+        private static final NopTimer INSTANCE = new NopTimer();
         @Override
         public void stop() {}
     }
 
-    private static class NopTransactionMetricExt implements TransactionMetricExt {
-        private static final NopTransactionMetricExt INSTANCE = new NopTransactionMetricExt();
+    private static class NopTimerExt implements TimerExt {
+        private static final NopTimerExt INSTANCE = new NopTimerExt();
         @Override
         public void stop() {}
         @Override

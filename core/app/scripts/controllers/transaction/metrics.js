@@ -38,66 +38,66 @@ glowroot.controller('TransactionMetricsCtrl', [
       $scope.mergedAggregate = data.mergedAggregate;
       $scope.threadInfoAggregate = data.threadInfoAggregate;
       if ($scope.mergedAggregate.transactionCount) {
-        updateTreeMetrics();
-        updateFlattenedMetrics();
+        updateTreeTimers();
+        updateFlattenedTimers();
       }
     }
 
-    function updateTreeMetrics() {
-      var treeMetrics = [];
+    function updateTreeTimers() {
+      var treeTimers = [];
 
-      function traverse(metric, nestingLevel) {
-        metric.nestingLevel = nestingLevel;
-        treeMetrics.push(metric);
-        if (metric.nestedMetrics) {
-          metric.nestedMetrics.sort(function (a, b) {
+      function traverse(timer, nestingLevel) {
+        timer.nestingLevel = nestingLevel;
+        treeTimers.push(timer);
+        if (timer.nestedTimers) {
+          timer.nestedTimers.sort(function (a, b) {
             return b.totalMicros - a.totalMicros;
           });
-          $.each(metric.nestedMetrics, function (index, nestedMetric) {
-            traverse(nestedMetric, nestingLevel + 1);
+          $.each(timer.nestedTimers, function (index, nestedTimer) {
+            traverse(nestedTimer, nestingLevel + 1);
           });
         }
       }
 
-      traverse($scope.mergedAggregate.metrics, 0);
+      traverse($scope.mergedAggregate.timers, 0);
 
-      $scope.treeMetrics = treeMetrics;
+      $scope.treeTimers = treeTimers;
     }
 
-    function updateFlattenedMetrics() {
-      var flattenedMetricMap = {};
-      var flattenedMetrics = [];
+    function updateFlattenedTimers() {
+      var flattenedTimerMap = {};
+      var flattenedTimers = [];
 
-      function traverse(metric, parentMetricNames) {
-        var flattenedMetric = flattenedMetricMap[metric.name];
-        if (!flattenedMetric) {
-          flattenedMetric = {
-            name: metric.name,
-            totalMicros: metric.totalMicros,
-            count: metric.count
+      function traverse(timer, parentTimerNames) {
+        var flattenedTimer = flattenedTimerMap[timer.name];
+        if (!flattenedTimer) {
+          flattenedTimer = {
+            name: timer.name,
+            totalMicros: timer.totalMicros,
+            count: timer.count
           };
-          flattenedMetricMap[metric.name] = flattenedMetric;
-          flattenedMetrics.push(flattenedMetric);
-        } else if (parentMetricNames.indexOf(metric.name) === -1) {
-          // only add to existing flattened metric if the aggregate metric isn't appearing under itself
-          // (this is possible when they are separated by another aggregate metric)
-          flattenedMetric.totalMicros += metric.totalMicros;
-          flattenedMetric.count += metric.count;
+          flattenedTimerMap[timer.name] = flattenedTimer;
+          flattenedTimers.push(flattenedTimer);
+        } else if (parentTimerNames.indexOf(timer.name) === -1) {
+          // only add to existing flattened timer if the aggregate timer isn't appearing under itself
+          // (this is possible when they are separated by another aggregate timer)
+          flattenedTimer.totalMicros += timer.totalMicros;
+          flattenedTimer.count += timer.count;
         }
-        if (metric.nestedMetrics) {
-          $.each(metric.nestedMetrics, function (index, nestedMetric) {
-            traverse(nestedMetric, parentMetricNames.concat(metric));
+        if (timer.nestedTimers) {
+          $.each(timer.nestedTimers, function (index, nestedTimer) {
+            traverse(nestedTimer, parentTimerNames.concat(timer));
           });
         }
       }
 
-      traverse($scope.mergedAggregate.metrics, []);
+      traverse($scope.mergedAggregate.timers, []);
 
-      flattenedMetrics.sort(function (a, b) {
+      flattenedTimers.sort(function (a, b) {
         return b.totalMicros - a.totalMicros;
       });
 
-      $scope.flattenedMetrics = flattenedMetrics;
+      $scope.flattenedTimers = flattenedTimers;
     }
 
     var chartOptions = {

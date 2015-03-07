@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ package org.glowroot.tests.plugin;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
@@ -33,11 +33,11 @@ public class LogCauseAspect {
             PluginServices.get("glowroot-integration-tests");
 
     @Pointcut(className = "org.glowroot.tests.LogCause", methodName = "log",
-            methodParameterTypes = {"java.lang.String"}, metricName = "log error")
+            methodParameterTypes = {"java.lang.String"}, timerName = "log error")
     public static class LogCauseAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LogCauseAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(LogCauseAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -47,7 +47,7 @@ public class LogCauseAspect {
         @OnBefore
         public static TraceEntry onBefore(@BindParameter String message) {
             return pluginServices.startTraceEntry(MessageSupplier.from("ERROR -- {}", message),
-                    metricName);
+                    timerName);
         }
 
         @OnAfter

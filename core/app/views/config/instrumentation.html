@@ -143,8 +143,8 @@
               <label>
                 <input type="radio"
                        ng-model="config.captureKind"
-                       value="metric">
-                Metric
+                       value="timer">
+                Timer
               </label>
             </div>
             <div class="radio">
@@ -174,16 +174,16 @@
           </div>
         </div>
         <div gt-form-group
-             gt-label="{{captureKindTransaction ? 'Root metric name' : 'Metric name'}}"
-             gt-model="config.metricName"
+             gt-label="{{captureKindTransaction ? 'Root timer name' : 'Timer name'}}"
+             gt-model="config.timerName"
              gt-pattern="/^[a-zA-Z0-9 ]*$/"
-             gt-required="loaded && showMetric"
+             gt-required="loaded && showTimer"
              gt-width="20em"
-             ng-show="showMetric"
+             ng-show="showTimer"
              style="margin-top: 40px;">
           <div class="help-block">
-            Multiple instrumentation definitions can share the same metric name,
-            in which case their metrics are aggregated together.
+            Multiple instrumentation definitions can share the same timer name,
+            in which case their timers are aggregated together.
           </div>
         </div>
         <div gt-form-group

@@ -15,24 +15,9 @@
  */
 package org.glowroot.transaction.model;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import org.glowroot.api.Timer;
 
-import com.google.common.annotations.VisibleForTesting;
-import org.immutables.value.Value;
+public interface TimerExt extends Timer {
 
-import org.glowroot.api.MetricName;
-
-@Value.Immutable
-public abstract class MetricNameImpl implements MetricName {
-
-    private static final AtomicInteger nextSpecialHashCode = new AtomicInteger();
-
-    @VisibleForTesting
-    @Value.Parameter
-    public abstract String name();
-
-    @Value.Derived
-    int specialHashCode() {
-        return nextSpecialHashCode.getAndIncrement();
-    }
+    void end(long endTick);
 }

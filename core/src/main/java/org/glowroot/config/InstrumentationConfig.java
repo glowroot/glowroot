@@ -54,7 +54,7 @@ public abstract class InstrumentationConfig {
     public abstract List<MethodModifier> methodModifiers();
     public abstract CaptureKind captureKind();
     @Value.Default
-    public String metricName() {
+    public String timerName() {
         return "";
     }
     @Value.Default
@@ -99,8 +99,8 @@ public abstract class InstrumentationConfig {
         return Hashing.sha1().hashString(Marshaling2.toJson(this), Charsets.UTF_8).toString();
     }
 
-    public boolean isMetricOrGreater() {
-        return captureKind() == CaptureKind.METRIC || captureKind() == CaptureKind.TRACE_ENTRY
+    public boolean isTimerOrGreater() {
+        return captureKind() == CaptureKind.TIMER || captureKind() == CaptureKind.TRACE_ENTRY
                 || captureKind() == CaptureKind.TRANSACTION;
     }
 
@@ -113,7 +113,7 @@ public abstract class InstrumentationConfig {
     }
 
     public static enum CaptureKind implements LowercaseMarshaling {
-        METRIC, TRACE_ENTRY, TRANSACTION, OTHER
+        TIMER, TRACE_ENTRY, TRANSACTION, OTHER
     }
 
     private static class InstrumentationConfigOrdering extends Ordering<InstrumentationConfig> {

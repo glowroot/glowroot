@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,24 @@
  */
 package org.glowroot.transaction.model;
 
-import javax.annotation.Nullable;
+import java.util.concurrent.atomic.AtomicInteger;
 
-class CurrentTransactionMetricHolder {
+import com.google.common.annotations.VisibleForTesting;
+import org.immutables.value.Value;
 
-    private @Nullable TransactionMetricImpl currentTransactionMetric;
+import org.glowroot.api.TimerName;
 
-    @Nullable
-    TransactionMetricImpl get() {
-        return currentTransactionMetric;
-    }
+@Value.Immutable
+public abstract class TimerNameImpl implements TimerName {
 
-    void set(@Nullable TransactionMetricImpl transactionMetric) {
-        this.currentTransactionMetric = transactionMetric;
+    private static final AtomicInteger nextSpecialHashCode = new AtomicInteger();
+
+    @VisibleForTesting
+    @Value.Parameter
+    public abstract String name();
+
+    @Value.Derived
+    int specialHashCode() {
+        return nextSpecialHashCode.getAndIncrement();
     }
 }

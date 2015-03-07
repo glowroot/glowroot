@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@ import javax.annotation.Nullable;
 
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
-import org.glowroot.api.TransactionMetric;
+import org.glowroot.api.Timer;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
@@ -46,24 +46,24 @@ public class ResultSetAspect {
 
     @Pointcut(className = "java.sql.ResultSet",
             methodName = "next|previous|relative|absolute|first|last", methodParameterTypes = "..",
-            metricName = "jdbc resultset navigate")
+            timerName = "jdbc resultset navigate")
     public static class NavigateAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(NavigateAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(NavigateAdvice.class);
         private static volatile boolean pluginEnabled;
         // plugin configuration property captureResultSetNavigate is cached to limit map lookups
-        private static volatile boolean metricEnabled;
+        private static volatile boolean timerEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
                 @Override
                 public void onChange() {
                     pluginEnabled = pluginServices.isEnabled();
-                    metricEnabled = pluginEnabled
+                    timerEnabled = pluginEnabled
                             && pluginServices.getBooleanProperty("captureResultSetNavigate");
                 }
             });
             pluginEnabled = pluginServices.isEnabled();
-            metricEnabled = pluginEnabled
+            timerEnabled = pluginEnabled
                     && pluginServices.getBooleanProperty("captureResultSetNavigate");
         }
         @IsEnabled
@@ -72,9 +72,9 @@ public class ResultSetAspect {
             return resultSet.hasGlowrootStatementMirror() && pluginEnabled;
         }
         @OnBefore
-        public static @Nullable TransactionMetric onBefore() {
-            if (metricEnabled) {
-                return pluginServices.startTransactionMetric(metricName);
+        public static @Nullable Timer onBefore() {
+            if (timerEnabled) {
+                return pluginServices.startTimer(timerName);
             } else {
                 return null;
             }
@@ -110,76 +110,76 @@ public class ResultSetAspect {
             }
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable TransactionMetric transactionMetric) {
-            if (transactionMetric != null) {
-                transactionMetric.stop();
+        public static void onAfter(@BindTraveler @Nullable Timer timer) {
+            if (timer != null) {
+                timer.stop();
             }
         }
     }
 
     @Pointcut(className = "java.sql.ResultSet", methodName = "get*",
-            methodParameterTypes = {"int", ".."}, metricName = "jdbc resultset value")
+            methodParameterTypes = {"int", ".."}, timerName = "jdbc resultset value")
     public static class ValueAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ValueAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(ValueAdvice.class);
         // plugin configuration property captureResultSetGet is cached to limit map lookups
-        private static volatile boolean metricEnabled;
+        private static volatile boolean timerEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
                 @Override
                 public void onChange() {
-                    metricEnabled = pluginServices.isEnabled()
+                    timerEnabled = pluginServices.isEnabled()
                             && pluginServices.getBooleanProperty("captureResultSetGet");
                 }
             });
-            metricEnabled = pluginServices.isEnabled()
+            timerEnabled = pluginServices.isEnabled()
                     && pluginServices.getBooleanProperty("captureResultSetGet");
         }
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return metricEnabled && resultSet.hasGlowrootStatementMirror();
+            return timerEnabled && resultSet.hasGlowrootStatementMirror();
         }
         @OnBefore
-        public static TransactionMetric onBefore() {
-            return pluginServices.startTransactionMetric(metricName);
+        public static Timer onBefore() {
+            return pluginServices.startTimer(timerName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler TransactionMetric transactionMetric) {
-            transactionMetric.stop();
+        public static void onAfter(@BindTraveler Timer timer) {
+            timer.stop();
         }
     }
 
     @Pointcut(className = "java.sql.ResultSet", methodName = "get*",
-            methodParameterTypes = {"java.lang.String", ".."}, metricName = "jdbc resultset value")
+            methodParameterTypes = {"java.lang.String", ".."}, timerName = "jdbc resultset value")
     public static class ValueAdvice2 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ValueAdvice2.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(ValueAdvice2.class);
         // plugin configuration property captureResultSetGet is cached to limit map lookups
-        private static volatile boolean metricEnabled;
+        private static volatile boolean timerEnabled;
         static {
             pluginServices.registerConfigListener(new ConfigListener() {
                 @Override
                 public void onChange() {
-                    metricEnabled = pluginServices.isEnabled()
+                    timerEnabled = pluginServices.isEnabled()
                             && pluginServices.getBooleanProperty("captureResultSetGet");
                 }
             });
-            metricEnabled = pluginServices.isEnabled()
+            timerEnabled = pluginServices.isEnabled()
                     && pluginServices.getBooleanProperty("captureResultSetGet");
         }
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return metricEnabled && resultSet.hasGlowrootStatementMirror();
+            return timerEnabled && resultSet.hasGlowrootStatementMirror();
         }
         @OnBefore
-        public static TransactionMetric onBefore() {
-            return pluginServices.startTransactionMetric(metricName);
+        public static Timer onBefore() {
+            return pluginServices.startTimer(timerName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler TransactionMetric transactionMetric) {
-            transactionMetric.stop();
+        public static void onAfter(@BindTraveler Timer timer) {
+            timer.stop();
         }
     }
 }

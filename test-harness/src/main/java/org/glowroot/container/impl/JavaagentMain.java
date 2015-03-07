@@ -55,8 +55,8 @@ public class JavaagentMain {
             // spin a bit to so that caller can capture a trace with <multiple root nodes> if
             // desired
             for (int i = 0; i < 1000; i++) {
-                metricMarkerOne();
-                metricMarkerTwo();
+                timerMarkerOne();
+                timerMarkerTwo();
                 Thread.sleep(1);
             }
             // non-daemon threads started above keep jvm alive after main returns
@@ -103,11 +103,11 @@ public class JavaagentMain {
         }
     }
 
-    private static void metricMarkerOne() throws InterruptedException {
+    private static void timerMarkerOne() throws InterruptedException {
         Thread.sleep(1);
     }
 
-    private static void metricMarkerTwo() throws InterruptedException {
+    private static void timerMarkerTwo() throws InterruptedException {
         Thread.sleep(1);
     }
 }

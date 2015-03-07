@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,7 @@
 package org.glowroot.api;
 
 /**
- * See {@link PluginServices#startTransactionMetric(MetricName)} for how to retrieve and use
- * {@code TransactionMetric} instances.
+ * See {@link PluginServices#getTimerName(Class)} for how to retrieve and use {@code TimerName}
+ * instances.
  */
-public interface TransactionMetric {
-
-    /**
-     * Stop the {@code TransactionMetric}.
-     */
-    void stop();
-}
+public interface TimerName {}

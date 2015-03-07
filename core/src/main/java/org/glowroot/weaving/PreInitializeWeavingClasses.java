@@ -298,8 +298,8 @@ public class PreInitializeWeavingClasses {
 
     private static List<String> getGlowrootUsedTypes() {
         List<String> types = Lists.newArrayList();
-        types.add("org.glowroot.api.MetricName");
-        types.add("org.glowroot.api.TransactionMetric");
+        types.add("org.glowroot.api.Timer");
+        types.add("org.glowroot.api.TimerName");
         types.add("org.glowroot.api.weaving.BindParameter");
         types.add("org.glowroot.api.weaving.BindTraveler");
         types.add("org.glowroot.api.weaving.IsEnabled");
@@ -319,13 +319,13 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.transaction.WeavingTimerServiceImpl");
         types.add("org.glowroot.transaction.WeavingTimerServiceImpl$1");
         types.add("org.glowroot.transaction.WeavingTimerServiceImpl$NopWeavingTimer");
-        types.add("org.glowroot.transaction.model.CurrentTransactionMetricHolder");
-        types.add("org.glowroot.transaction.model.MetricNameImpl");
-        types.add("org.glowroot.transaction.model.NestedMetricMap");
-        types.add("org.glowroot.transaction.model.NestedMetricMap$Entry");
+        types.add("org.glowroot.transaction.model.CurrentTimerHolder");
+        types.add("org.glowroot.transaction.model.NestedTimerMap");
+        types.add("org.glowroot.transaction.model.NestedTimerMap$Entry");
+        types.add("org.glowroot.transaction.model.TimerExt");
+        types.add("org.glowroot.transaction.model.TimerImpl");
+        types.add("org.glowroot.transaction.model.TimerNameImpl");
         types.add("org.glowroot.transaction.model.Transaction");
-        types.add("org.glowroot.transaction.model.TransactionMetricExt");
-        types.add("org.glowroot.transaction.model.TransactionMetricImpl");
         types.add("org.glowroot.weaving.Advice");
         types.add("org.glowroot.weaving.Advice$1");
         types.add("org.glowroot.weaving.Advice$AdviceParameter");
@@ -449,7 +449,7 @@ public class PreInitializeWeavingClasses {
         // accessing the private constructor in an enclosed type
         // (see http://stackoverflow.com/questions/2883181)
         types.add("org.glowroot.common.Reflections$1");
-        types.add("org.glowroot.transaction.model.NestedMetricMap$1");
+        types.add("org.glowroot.transaction.model.NestedTimerMap$1");
         types.add("org.glowroot.weaving.AnalyzedClass$1");
         types.add("org.glowroot.weaving.BootstrapMetaHolders$1");
         types.add("org.glowroot.weaving.ImmutableAnalyzedClass$1");
@@ -489,7 +489,7 @@ public class PreInitializeWeavingClasses {
         // org.glowroot.shaded.objectweb.asm.ClassReader.accept(Unknown Source)~[na:0.5-SNAPSHOT]
         // org.glowroot.shaded.objectweb.asm.ClassReader.accept(Unknown Source)~[na:0.5-SNAPSHOT]
         // org.glowroot.weaving.Weaver.weaveInternal(Weaver.java:115)[na:0.5-SNAPSHOT]
-        // org.glowroot.weaving.Weaver.weave$glowroot$metric$glowroot$weaving$0(Weaver.java:88)[na:0.5-SNAPSHOT]
+        // org.glowroot.weaving.Weaver.weave$glowroot$timer$glowroot$weaving$0(Weaver.java:88)[na:0.5-SNAPSHOT]
         // org.glowroot.weaving.Weaver.weave(Weaver.java:78)[na:0.5-SNAPSHOT]
         // org.glowroot.weaving.WeavingClassFileTransformer.transformInternal(WeavingClassFileTransformer.java:113)[na:0.5-SNAPSHOT]
         // org.glowroot.weaving.WeavingClassFileTransformer.transform(WeavingClassFileTransformer.java:76)[na:0.5-SNAPSHOT]

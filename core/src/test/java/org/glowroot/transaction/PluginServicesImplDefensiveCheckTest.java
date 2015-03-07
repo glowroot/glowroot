@@ -23,8 +23,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices.ConfigListener;
+import org.glowroot.api.TimerName;
 import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
 import org.glowroot.config.AdvancedConfig;
@@ -57,16 +57,16 @@ public class PluginServicesImplDefensiveCheckTest {
         when(configService.getGeneralConfig()).thenReturn(generalConfig);
         when(configService.getAdvancedConfig()).thenReturn(advancedConfig);
 
-        MetricNameCache metricNameCache = mock(MetricNameCache.class);
+        TimerNameCache timerNameCache = mock(TimerNameCache.class);
         ThreadAllocatedBytes threadAllocatedBytes = mock(ThreadAllocatedBytes.class);
         UserProfileScheduler userProfileScheduler = mock(UserProfileScheduler.class);
         Ticker ticker = mock(Ticker.class);
         Clock clock = mock(Clock.class);
         pluginServices = PluginServicesImpl.create(transactionRegistry, transactionCollector,
-                configService, metricNameCache, threadAllocatedBytes, userProfileScheduler, ticker,
+                configService, timerNameCache, threadAllocatedBytes, userProfileScheduler, ticker,
                 clock, ImmutableList.<PluginDescriptor>of(), null);
         mocks = ImmutableList.of(transactionRegistry, transactionCollector, configService,
-                metricNameCache, threadAllocatedBytes, userProfileScheduler, ticker, clock);
+                timerNameCache, threadAllocatedBytes, userProfileScheduler, ticker, clock);
         mockConfigService = configService;
     }
 
@@ -96,31 +96,31 @@ public class PluginServicesImplDefensiveCheckTest {
     @Test
     public void testStartTransaction() {
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        MetricName metricName = mock(MetricName.class);
+        TimerName timerName = mock(TimerName.class);
         assertThat(pluginServices.startTransaction("test", "test", messageSupplier, null)
                 .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
-        assertThat(pluginServices.startTransaction("test", "test", null, metricName)
+        assertThat(pluginServices.startTransaction("test", "test", null, timerName)
                 .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
-        assertThat(pluginServices.startTransaction("test", null, messageSupplier, metricName)
+        assertThat(pluginServices.startTransaction("test", null, messageSupplier, timerName)
                 .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
-        assertThat(pluginServices.startTransaction(null, "test", messageSupplier, metricName)
+        assertThat(pluginServices.startTransaction(null, "test", messageSupplier, timerName)
                 .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
     }
 
     @Test
     public void testStartTraceEntry() {
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        MetricName metricName = mock(MetricName.class);
+        TimerName timerName = mock(TimerName.class);
         assertThat(pluginServices.startTraceEntry(messageSupplier, null)
                 .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
-        assertThat(pluginServices.startTraceEntry(null, metricName)
+        assertThat(pluginServices.startTraceEntry(null, timerName)
                 .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
     }
 
     @Test
-    public void testStartTransactionMetric() {
-        assertThat(pluginServices.startTransactionMetric(null)
-                .getClass().getSimpleName()).isEqualTo("NopTransactionMetric");
+    public void testStartTimer() {
+        assertThat(pluginServices.startTimer(null).getClass().getSimpleName())
+                .isEqualTo("NopTimer");
     }
 
     @Test

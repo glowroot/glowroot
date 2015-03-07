@@ -18,8 +18,8 @@ package org.glowroot.tests.plugin;
 import java.util.Map.Entry;
 
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindTraveler;
@@ -35,11 +35,11 @@ public class TraceGeneratorAspect {
             PluginServices.get("glowroot-integration-tests");
 
     @Pointcut(className = "org.glowroot.tests.TraceGenerator", methodName = "call",
-            methodParameterTypes = {"boolean"}, metricName = "trace generator")
+            methodParameterTypes = {"boolean"}, timerName = "trace generator")
     public static class LevelOneAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LevelOneAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(LevelOneAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -50,7 +50,7 @@ public class TraceGeneratorAspect {
         public static TraceEntry onBefore(@BindReceiver TraceGenerator traceGenerator) {
             TraceEntry traceEntry = pluginServices.startTransaction(
                     traceGenerator.transactionType(), traceGenerator.transactionName(),
-                    MessageSupplier.from(traceGenerator.headline()), metricName);
+                    MessageSupplier.from(traceGenerator.headline()), timerName);
             for (Entry<String, String> entry : traceGenerator.customAttributes().entrySet()) {
                 pluginServices.setTransactionCustomAttribute(entry.getKey(), entry.getValue());
             }

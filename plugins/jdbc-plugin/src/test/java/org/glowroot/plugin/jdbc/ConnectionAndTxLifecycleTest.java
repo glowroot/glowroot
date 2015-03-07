@@ -82,8 +82,8 @@ public class ConnectionAndTxLifecycleTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(trace.getRootMetric().getNestedMetricNames()).contains("jdbc get connection");
-        assertThat(trace.getRootMetric().getNestedMetricNames()).contains("jdbc connection close");
+        assertThat(trace.getRootTimer().getNestedTimerNames()).contains("jdbc get connection");
+        assertThat(trace.getRootTimer().getNestedTimerNames()).contains("jdbc connection close");
     }
 
     @Test
@@ -112,8 +112,8 @@ public class ConnectionAndTxLifecycleTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(trace.getRootMetric().getNestedMetricNames()).contains("jdbc get connection");
-        assertThat(trace.getRootMetric().getNestedMetricNames()).doesNotContain(
+        assertThat(trace.getRootTimer().getNestedTimerNames()).contains("jdbc get connection");
+        assertThat(trace.getRootTimer().getNestedTimerNames()).doesNotContain(
                 "jdbc connection close");
     }
 
@@ -144,8 +144,8 @@ public class ConnectionAndTxLifecycleTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(trace.getRootMetric().getNestedMetricNames()).contains("jdbc get connection");
-        assertThat(trace.getRootMetric().getNestedMetricNames()).contains("jdbc connection close");
+        assertThat(trace.getRootTimer().getNestedTimerNames()).contains("jdbc get connection");
+        assertThat(trace.getRootTimer().getNestedTimerNames()).contains("jdbc connection close");
     }
 
     @Test

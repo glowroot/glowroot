@@ -79,7 +79,7 @@ public class Transaction {
     @GuardedBy("customAttributes")
     private volatile @MonotonicNonNull SetMultimap<String, String> customAttributes;
 
-    private final TransactionMetricImpl rootMetric;
+    private final TimerImpl rootTimer;
 
     private final @Nullable ThreadInfoComponent threadInfoComponent;
     private final @Nullable GcInfoComponent gcInfoComponent;
@@ -106,26 +106,26 @@ public class Transaction {
 
     private long captureTime;
 
-    // memory barrier is used to ensure memory visibility of entries and metrics at key points,
+    // memory barrier is used to ensure memory visibility of entries and timers at key points,
     // namely after each entry
     //
     // benchmarking shows this is significantly faster than ensuring memory visibility of each
-    // metric update, the down side is that the latest updates to metrics for transactions
+    // timer update, the down side is that the latest updates to timers for transactions
     // that are captured in-flight (e.g. partial traces and active traces displayed in the UI) may
     // not be visible
     private volatile boolean memoryBarrier;
 
     public Transaction(long startTime, String transactionType, String transactionName,
-            MessageSupplier messageSupplier, TransactionMetricImpl rootMetric, long startTick,
+            MessageSupplier messageSupplier, TimerImpl rootTimer, long startTick,
             boolean captureThreadInfo, boolean captureGcInfo,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes, Ticker ticker) {
         this.startTime = startTime;
         this.transactionType = transactionType;
         this.transactionName = transactionName;
-        this.rootMetric = rootMetric;
+        this.rootTimer = rootTimer;
         id = new TraceUniqueId(startTime);
         traceEntryComponent =
-                new TraceEntryComponent(messageSupplier, rootMetric, startTick, ticker);
+                new TraceEntryComponent(messageSupplier, rootTimer, startTick, ticker);
         threadId = Thread.currentThread().getId();
         threadInfoComponent =
                 captureThreadInfo ? new ThreadInfoComponent(threadAllocatedBytes) : null;
@@ -214,13 +214,13 @@ public class Transaction {
     }
 
     // this is called from a non-transaction thread
-    public TransactionMetricImpl getRootMetric() {
+    public TimerImpl getRootTimer() {
         readMemoryBarrier();
-        return rootMetric;
+        return rootTimer;
     }
 
-    public @Nullable TransactionMetricImpl getCurrentTransactionMetric() {
-        return rootMetric.getCurrentTransactionMetricHolder().get();
+    public @Nullable TimerImpl getCurrentTimer() {
+        return rootTimer.getCurrentTimerHolder().get();
     }
 
     // can be called from a non-transaction thread
@@ -357,9 +357,8 @@ public class Transaction {
         willBeStored = true;
     }
 
-    public TraceEntry pushEntry(long startTick, MessageSupplier messageSupplier,
-            TransactionMetricExt transactionMetric) {
-        return traceEntryComponent.pushEntry(startTick, messageSupplier, transactionMetric);
+    public TraceEntry pushEntry(long startTick, MessageSupplier messageSupplier, TimerExt timer) {
+        return traceEntryComponent.pushEntry(startTick, messageSupplier, timer);
     }
 
     public TraceEntry addEntry(long startTick, long endTick,
@@ -381,9 +380,9 @@ public class Transaction {
     // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
     public void popEntry(TraceEntry entry, long endTick, @Nullable ErrorMessage errorMessage) {
         traceEntryComponent.popEntry(entry, endTick, errorMessage);
-        TransactionMetricExt transactionMetric = entry.getTransactionMetric();
-        if (transactionMetric != null) {
-            transactionMetric.end(endTick);
+        TimerExt timer = entry.getTimer();
+        if (timer != null) {
+            timer.end(endTick);
         }
         memoryBarrier = true;
     }

@@ -17,52 +17,52 @@ package org.glowroot.transaction;
 
 import org.junit.Test;
 
-import org.glowroot.api.MetricName;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.transaction.model.MetricNameImpl;
+import org.glowroot.transaction.model.TimerNameImpl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MetricNameCacheTest {
+public class TimerNameCacheTest {
 
     @Test
     public void testNullClass() {
         // given
-        MetricNameCache metricNameCache = new MetricNameCache();
+        TimerNameCache timerNameCache = new TimerNameCache();
         // when
-        MetricName metricName = metricNameCache.getName(null);
+        TimerName timerName = timerNameCache.getName(null);
         // then
-        assertThat(((MetricNameImpl) metricName).name()).isEqualTo("unknown");
+        assertThat(((TimerNameImpl) timerName).name()).isEqualTo("unknown");
     }
 
     @Test
     public void testClassWithoutPointcutAnnotation() {
         // given
-        MetricNameCache metricNameCache = new MetricNameCache();
+        TimerNameCache timerNameCache = new TimerNameCache();
         // when
-        MetricName metricName = metricNameCache.getName(A.class);
+        TimerName timerName = timerNameCache.getName(A.class);
         // then
-        assertThat(((MetricNameImpl) metricName).name()).isEqualTo("unknown");
+        assertThat(((TimerNameImpl) timerName).name()).isEqualTo("unknown");
     }
 
     @Test
-    public void testClassWithEmptyMetricName() {
+    public void testClassWithEmptyTimerName() {
         // given
-        MetricNameCache metricNameCache = new MetricNameCache();
+        TimerNameCache timerNameCache = new TimerNameCache();
         // when
-        MetricName metricName = metricNameCache.getName(B.class);
+        TimerName timerName = timerNameCache.getName(B.class);
         // then
-        assertThat(((MetricNameImpl) metricName).name()).isEqualTo("unknown");
+        assertThat(((TimerNameImpl) timerName).name()).isEqualTo("unknown");
     }
 
     @Test
     public void testNormal() {
         // given
-        MetricNameCache metricNameCache = new MetricNameCache();
+        TimerNameCache timerNameCache = new TimerNameCache();
         // when
-        MetricName metricName = metricNameCache.getName(C.class);
+        TimerName timerName = timerNameCache.getName(C.class);
         // then
-        assertThat(((MetricNameImpl) metricName).name()).isEqualTo("z");
+        assertThat(((TimerNameImpl) timerName).name()).isEqualTo("z");
     }
 
     private static class A {}
@@ -70,6 +70,6 @@ public class MetricNameCacheTest {
     @Pointcut(className = "x", methodName = "y", methodParameterTypes = {})
     private static class B {}
 
-    @Pointcut(className = "x", methodName = "y", methodParameterTypes = {}, metricName = "z")
+    @Pointcut(className = "x", methodName = "y", methodParameterTypes = {}, timerName = "z")
     private static class C {}
 }

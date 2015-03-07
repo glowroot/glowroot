@@ -31,7 +31,7 @@
     "profileIntervalMillis": 10
   },
   "advanced": {
-    "metricWrapperMethods": false,
+    "timerWrapperMethods": false,
     "immediatePartialStoreThresholdSeconds": 60,
     "maxTraceEntriesPerTransaction": 2000,
     "maxStackTraceSamplesPerTransaction": 10000,

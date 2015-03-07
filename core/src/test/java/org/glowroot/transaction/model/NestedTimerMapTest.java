@@ -24,23 +24,22 @@ import org.junit.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class NestedMetricMapTest {
+public class NestedTimerMapTest {
 
     @Test
     public void testBucketCollision() {
         // given
-        NestedMetricMap map = new NestedMetricMap();
-        Map<MetricNameImpl, TransactionMetricImpl> uniqueMetrics = Maps.newHashMap();
+        NestedTimerMap map = new NestedTimerMap();
+        Map<TimerNameImpl, TimerImpl> uniqueTimers = Maps.newHashMap();
         for (int i = 0; i < 100; i++) {
-            uniqueMetrics.put(ImmutableMetricNameImpl.of("metric-" + i),
-                    mock(TransactionMetricImpl.class));
+            uniqueTimers.put(ImmutableTimerNameImpl.of("timer-" + i), mock(TimerImpl.class));
         }
         // when
-        for (Entry<MetricNameImpl, TransactionMetricImpl> entry : uniqueMetrics.entrySet()) {
+        for (Entry<TimerNameImpl, TimerImpl> entry : uniqueTimers.entrySet()) {
             map.put(entry.getKey(), entry.getValue());
         }
         // then
-        for (Entry<MetricNameImpl, TransactionMetricImpl> entry : uniqueMetrics.entrySet()) {
+        for (Entry<TimerNameImpl, TimerImpl> entry : uniqueTimers.entrySet()) {
             assertThat(map.get(entry.getKey())).isEqualTo(entry.getValue());
         }
     }

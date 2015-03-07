@@ -68,11 +68,11 @@ public class CommitRollbackTest {
                 "jdbc execution: insert into employee (name) values ('john doe')");
         TraceEntry jdbcCommitEntry = entries.get(2);
         assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc commit");
-        assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(2);
-        // ordering is by total desc, so not fixed (though root metric will be first since it
+        assertThat(trace.getRootTimer().getNestedTimers()).hasSize(2);
+        // ordering is by total desc, so not fixed (though root timer will be first since it
         // encompasses all other timings)
-        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootMetric().getNestedMetricNames())
+        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootTimer().getNestedTimerNames())
                 .containsOnly("jdbc execute", "jdbc commit");
     }
 
@@ -92,11 +92,11 @@ public class CommitRollbackTest {
         assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc commit");
         assertThat(jdbcCommitEntry.getError().getText()).isEqualTo(
                 "java.sql.SQLException: A commit failure");
-        assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(2);
-        // ordering is by total desc, so not fixed (though root metric will be first since it
+        assertThat(trace.getRootTimer().getNestedTimers()).hasSize(2);
+        // ordering is by total desc, so not fixed (though root timer will be first since it
         // encompasses all other timings)
-        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootMetric().getNestedMetricNames())
+        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootTimer().getNestedTimerNames())
                 .containsOnly("jdbc execute", "jdbc commit");
     }
 
@@ -114,11 +114,11 @@ public class CommitRollbackTest {
                 "jdbc execution: insert into employee (name) values ('john doe')");
         TraceEntry jdbcCommitEntry = entries.get(2);
         assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc rollback");
-        assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(2);
-        // ordering is by total desc, so not fixed (though root metric will be first since it
+        assertThat(trace.getRootTimer().getNestedTimers()).hasSize(2);
+        // ordering is by total desc, so not fixed (though root timer will be first since it
         // encompasses all other timings)
-        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootMetric().getNestedMetricNames())
+        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootTimer().getNestedTimerNames())
                 .containsOnly("jdbc execute", "jdbc rollback");
     }
 
@@ -138,11 +138,11 @@ public class CommitRollbackTest {
         assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc rollback");
         assertThat(jdbcCommitEntry.getError().getText()).isEqualTo(
                 "java.sql.SQLException: A rollback failure");
-        assertThat(trace.getRootMetric().getNestedMetrics()).hasSize(2);
-        // ordering is by total desc, so not fixed (though root metric will be first since it
+        assertThat(trace.getRootTimer().getNestedTimers()).hasSize(2);
+        // ordering is by total desc, so not fixed (though root timer will be first since it
         // encompasses all other timings)
-        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootMetric().getNestedMetricNames())
+        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootTimer().getNestedTimerNames())
                 .containsOnly("jdbc execute", "jdbc rollback");
     }
 

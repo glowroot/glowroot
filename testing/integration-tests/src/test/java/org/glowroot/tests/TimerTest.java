@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import org.glowroot.container.trace.Trace;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MetricTest {
+public class TimerTest {
 
     private static Container container;
 
@@ -54,55 +54,55 @@ public class MetricTest {
     }
 
     @Test
-    public void shouldReadMetrics() throws Exception {
+    public void shouldReadTimers() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithMetrics.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithTimers.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getRootMetric().getNestedMetrics()).isEmpty();
-        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootTimer().getNestedTimers()).isEmpty();
+        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
     }
 
     @Test
-    public void shouldReadMetricsWithRootAndSelfNested() throws Exception {
+    public void shouldReadTimersWithRootAndSelfNested() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSelfNestedMetric.class);
+        container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSelfNestedTimer.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getRootMetric().getNestedMetrics()).isEmpty();
-        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootMetric().getCount()).isEqualTo(1);
+        assertThat(trace.getRootTimer().getNestedTimers()).isEmpty();
+        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootTimer().getCount()).isEqualTo(1);
     }
 
     @Test
-    public void shouldReadActiveMetrics() throws Exception {
+    public void shouldReadActiveTimers() throws Exception {
         // given
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Future<Void> future = executorService.submit(new Callable<Void>() {
             @Override
             public Void call() throws Exception {
-                container.executeAppUnderTest(ShouldGenerateActiveTraceWithMetrics.class);
+                container.executeAppUnderTest(ShouldGenerateActiveTraceWithTimers.class);
                 return null;
             }
         });
         // then
         Trace trace = container.getTraceService().getActiveTrace(5, SECONDS);
         assertThat(trace).isNotNull();
-        assertThat(trace.getRootMetric().getNestedMetrics()).isEmpty();
-        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootMetric().getCount()).isEqualTo(1);
-        assertThat(trace.getRootMetric().isActive()).isTrue();
-        assertThat(trace.getRootMetric().isMinActive()).isTrue();
-        assertThat(trace.getRootMetric().isMaxActive()).isTrue();
+        assertThat(trace.getRootTimer().getNestedTimers()).isEmpty();
+        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootTimer().getCount()).isEqualTo(1);
+        assertThat(trace.getRootTimer().isActive()).isTrue();
+        assertThat(trace.getRootTimer().isMinActive()).isTrue();
+        assertThat(trace.getRootTimer().isMaxActive()).isTrue();
         // cleanup
         future.get();
         executorService.shutdown();
     }
 
-    public static class ShouldGenerateTraceWithMetrics implements AppUnderTest, TraceMarker {
+    public static class ShouldGenerateTraceWithTimers implements AppUnderTest, TraceMarker {
         @Override
         public void executeApp() throws InterruptedException {
             traceMarker();
@@ -113,7 +113,7 @@ public class MetricTest {
         }
     }
 
-    public static class ShouldGenerateTraceWithRootAndSelfNestedMetric implements
+    public static class ShouldGenerateTraceWithRootAndSelfNestedTimer implements
             AppUnderTest,
             TraceMarker {
         private int nestingLevel = 0;
@@ -131,7 +131,7 @@ public class MetricTest {
         }
     }
 
-    public static class ShouldGenerateActiveTraceWithMetrics implements AppUnderTest,
+    public static class ShouldGenerateActiveTraceWithTimers implements AppUnderTest,
             TraceMarker {
         @Override
         public void executeApp() throws InterruptedException {

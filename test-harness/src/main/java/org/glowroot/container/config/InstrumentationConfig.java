@@ -41,7 +41,7 @@ public class InstrumentationConfig {
     private ImmutableList<MethodModifier> methodModifiers;
     private @Nullable CaptureKind captureKind;
 
-    private @Nullable String metricName;
+    private @Nullable String timerName;
 
     private @Nullable String traceEntryTemplate;
     private @Nullable Long traceEntryStackThresholdMillis;
@@ -123,12 +123,12 @@ public class InstrumentationConfig {
         this.captureKind = captureKind;
     }
 
-    public @Nullable String getMetricName() {
-        return metricName;
+    public @Nullable String getTimerName() {
+        return timerName;
     }
 
-    public void setMetricName(String metricName) {
-        this.metricName = metricName;
+    public void setTimerName(String timerName) {
+        this.timerName = timerName;
     }
 
     public @Nullable String getTraceEntryTemplate() {
@@ -229,7 +229,7 @@ public class InstrumentationConfig {
                     && Objects.equal(methodReturnType, that.methodReturnType)
                     && Objects.equal(methodModifiers, that.methodModifiers)
                     && Objects.equal(captureKind, that.captureKind)
-                    && Objects.equal(metricName, that.metricName)
+                    && Objects.equal(timerName, that.timerName)
                     && Objects.equal(traceEntryTemplate, that.traceEntryTemplate)
                     && Objects.equal(traceEntryStackThresholdMillis,
                             that.traceEntryStackThresholdMillis)
@@ -252,7 +252,7 @@ public class InstrumentationConfig {
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(className, methodName, methodParameterTypes, methodReturnType,
-                methodModifiers, captureKind, metricName, traceEntryTemplate,
+                methodModifiers, captureKind, timerName, traceEntryTemplate,
                 traceEntryStackThresholdMillis, traceEntryCaptureSelfNested, transactionType,
                 transactionNameTemplate, transactionUserTemplate,
                 transactionCustomAttributeTemplates, traceStoreThresholdMillis, enabledProperty,
@@ -268,7 +268,7 @@ public class InstrumentationConfig {
                 .add("methodReturnType", methodReturnType)
                 .add("methodModifiers", methodModifiers)
                 .add("captureKind", captureKind)
-                .add("metricName", metricName)
+                .add("timerName", timerName)
                 .add("traceEntryTemplate", traceEntryTemplate)
                 .add("traceEntryStackThresholdMillis", traceEntryStackThresholdMillis)
                 .add("traceEntryCaptureSelfNested", traceEntryCaptureSelfNested)
@@ -291,7 +291,7 @@ public class InstrumentationConfig {
             @JsonProperty("methodReturnType") @Nullable String methodReturnType,
             @JsonProperty("methodModifiers") @Nullable List</*@Nullable*/MethodModifier> uncheckedMethodModifiers,
             @JsonProperty("captureKind") @Nullable CaptureKind captureKind,
-            @JsonProperty("metricName") @Nullable String metricName,
+            @JsonProperty("timerName") @Nullable String timerName,
             @JsonProperty("traceEntryTemplate") @Nullable String traceEntryTemplate,
             @JsonProperty("traceEntryStackThresholdMillis") @Nullable Long traceEntryStackThresholdMillis,
             @JsonProperty("traceEntryCaptureSelfNested") @Nullable Boolean traceEntryCaptureSelfNested,
@@ -316,7 +316,7 @@ public class InstrumentationConfig {
         checkRequiredProperty(methodName, "methodName");
         checkRequiredProperty(methodReturnType, "methodReturnType");
         checkRequiredProperty(captureKind, "captureKind");
-        checkRequiredProperty(metricName, "metricName");
+        checkRequiredProperty(timerName, "timerName");
         checkRequiredProperty(traceEntryTemplate, "traceEntryTemplate");
         checkRequiredProperty(traceEntryCaptureSelfNested, "traceEntryCaptureSelfNested");
         checkRequiredProperty(transactionType, "transactionType");
@@ -334,7 +334,7 @@ public class InstrumentationConfig {
         config.setMethodReturnType(methodReturnType);
         config.setMethodModifiers(methodModifiers);
         config.setCaptureKind(captureKind);
-        config.setMetricName(metricName);
+        config.setTimerName(timerName);
         config.setTraceEntryTemplate(traceEntryTemplate);
         config.setTraceEntryStackThresholdMillis(traceEntryStackThresholdMillis);
         config.setTraceEntryCaptureSelfNested(traceEntryCaptureSelfNested);
@@ -353,6 +353,6 @@ public class InstrumentationConfig {
     }
 
     public static enum CaptureKind {
-        METRIC, TRACE_ENTRY, TRANSACTION, OTHER
+        TIMER, TRACE_ENTRY, TRANSACTION, OTHER
     }
 }

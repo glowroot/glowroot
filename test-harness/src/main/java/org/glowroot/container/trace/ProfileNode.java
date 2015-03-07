@@ -33,15 +33,15 @@ public class ProfileNode {
     private final @Nullable String stackTraceElement;
     private final @Nullable String leafThreadState;
     private final int sampleCount;
-    private final ImmutableList<String> metricNames;
+    private final ImmutableList<String> timerNames;
     private final ImmutableList<ProfileNode> childNodes;
 
     private ProfileNode(@Nullable String stackTraceElement, @Nullable String leafThreadState,
-            int sampleCount, List<String> metricNames, List<ProfileNode> childNodes) {
+            int sampleCount, List<String> timerNames, List<ProfileNode> childNodes) {
         this.stackTraceElement = stackTraceElement;
         this.leafThreadState = leafThreadState;
         this.sampleCount = sampleCount;
-        this.metricNames = ImmutableList.copyOf(metricNames);
+        this.timerNames = ImmutableList.copyOf(timerNames);
         this.childNodes = ImmutableList.copyOf(childNodes);
     }
 
@@ -58,8 +58,8 @@ public class ProfileNode {
         return sampleCount;
     }
 
-    public ImmutableList<String> getMetricNames() {
-        return metricNames;
+    public ImmutableList<String> getTimerNames() {
+        return timerNames;
     }
 
     public ImmutableList<ProfileNode> getChildNodes() {
@@ -72,7 +72,7 @@ public class ProfileNode {
                 .add("stackTraceElement", stackTraceElement)
                 .add("leafThreadState", leafThreadState)
                 .add("sampleCount", sampleCount)
-                .add("metricNames", metricNames)
+                .add("timerNames", timerNames)
                 .add("childNodes", childNodes)
                 .toString();
     }
@@ -82,13 +82,13 @@ public class ProfileNode {
             @JsonProperty("stackTraceElement") @Nullable String stackTraceElement,
             @JsonProperty("leafThreadState") @Nullable String leafThreadState,
             @JsonProperty("sampleCount") @Nullable Integer sampleCount,
-            @JsonProperty("metricNames") @Nullable List</*@Nullable*/String> uncheckedMetricNames,
+            @JsonProperty("timerNames") @Nullable List</*@Nullable*/String> uncheckedTimerNames,
             @JsonProperty("childNodes") @Nullable List</*@Nullable*/ProfileNode> uncheckedChildNodes)
             throws JsonMappingException {
-        List<String> metricNames = orEmpty(uncheckedMetricNames, "metricNames");
+        List<String> timerNames = orEmpty(uncheckedTimerNames, "timerNames");
         List<ProfileNode> childNodes = orEmpty(uncheckedChildNodes, "childNodes");
         checkRequiredProperty(sampleCount, "sampleCount");
         return new ProfileNode(stackTraceElement, leafThreadState,
-                sampleCount, metricNames, childNodes);
+                sampleCount, timerNames, childNodes);
     }
 }

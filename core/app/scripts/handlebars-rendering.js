@@ -45,77 +45,77 @@ HandlebarsRendering = (function () {
     return buffer;
   });
 
-  Handlebars.registerHelper('eachMetricOrdered', function (metrics, options) {
+  Handlebars.registerHelper('eachTimerOrdered', function (timers, options) {
     var buffer = '';
 
-    function traverse(metric, nestingLevel) {
-      metric.nestingLevel = nestingLevel;
-      buffer += options.fn(metric);
-      if (metric.nestedMetrics) {
-        metric.nestedMetrics.sort(function (a, b) {
+    function traverse(timer, nestingLevel) {
+      timer.nestingLevel = nestingLevel;
+      buffer += options.fn(timer);
+      if (timer.nestedTimers) {
+        timer.nestedTimers.sort(function (a, b) {
           return b.total - a.total;
         });
-        $.each(metric.nestedMetrics, function (index, nestedMetric) {
-          traverse(nestedMetric, nestingLevel + 1);
+        $.each(timer.nestedTimers, function (index, nestedTimer) {
+          traverse(nestedTimer, nestingLevel + 1);
         });
       }
     }
 
     // add the root node
-    traverse(metrics, 0);
+    traverse(timers, 0);
     return buffer;
   });
 
-  Handlebars.registerHelper('eachMetricFlattenedOrdered', function (metrics, options) {
-    var flattenedMetricMap = {};
-    var flattenedMetrics = [];
+  Handlebars.registerHelper('eachTimerFlattenedOrdered', function (timers, options) {
+    var flattenedTimerMap = {};
+    var flattenedTimers = [];
 
-    function traverse(metric, parentMetricNames) {
-      var flattenedMetric = flattenedMetricMap[metric.name];
-      if (!flattenedMetric) {
-        flattenedMetric = {
-          name: metric.name,
-          total: metric.total,
-          min: metric.min,
-          max: metric.max,
-          count: metric.count,
-          active: metric.active,
-          minActive: metric.minActive,
-          maxActive: metric.maxActive
+    function traverse(timer, parentTimerNames) {
+      var flattenedTimer = flattenedTimerMap[timer.name];
+      if (!flattenedTimer) {
+        flattenedTimer = {
+          name: timer.name,
+          total: timer.total,
+          min: timer.min,
+          max: timer.max,
+          count: timer.count,
+          active: timer.active,
+          minActive: timer.minActive,
+          maxActive: timer.maxActive
         };
-        flattenedMetricMap[metric.name] = flattenedMetric;
-        flattenedMetrics.push(flattenedMetric);
-      } else if (parentMetricNames.indexOf(metric.name) === -1) {
-        // only add to existing flattened metric if the trace metric isn't appearing under itself
-        // (this is possible when they are separated by another trace metric)
-        flattenedMetric.total += metric.total;
-        flattenedMetric.active = flattenedMetric.active || metric.active;
-        if (metric.min < flattenedMetric.min) {
-          flattenedMetric.min = metric.min;
-          flattenedMetric.minActive = metric.minActive;
+        flattenedTimerMap[timer.name] = flattenedTimer;
+        flattenedTimers.push(flattenedTimer);
+      } else if (parentTimerNames.indexOf(timer.name) === -1) {
+        // only add to existing flattened timer if the timer isn't appearing under itself
+        // (this is possible when they are separated by another timer)
+        flattenedTimer.total += timer.total;
+        flattenedTimer.active = flattenedTimer.active || timer.active;
+        if (timer.min < flattenedTimer.min) {
+          flattenedTimer.min = timer.min;
+          flattenedTimer.minActive = timer.minActive;
         }
-        if (metric.max > flattenedMetric.max) {
-          flattenedMetric.max = metric.max;
-          flattenedMetric.maxActive = metric.maxActive;
+        if (timer.max > flattenedTimer.max) {
+          flattenedTimer.max = timer.max;
+          flattenedTimer.maxActive = timer.maxActive;
         }
-        flattenedMetric.count += metric.count;
+        flattenedTimer.count += timer.count;
       }
-      if (metric.nestedMetrics) {
-        $.each(metric.nestedMetrics, function (index, nestedMetric) {
-          traverse(nestedMetric, parentMetricNames.concat(metric));
+      if (timer.nestedTimers) {
+        $.each(timer.nestedTimers, function (index, nestedTimer) {
+          traverse(nestedTimer, parentTimerNames.concat(timer));
         });
       }
     }
 
     // add the root node
-    traverse(metrics, []);
+    traverse(timers, []);
 
-    flattenedMetrics.sort(function (a, b) {
+    flattenedTimers.sort(function (a, b) {
       return b.total - a.total;
     });
     var buffer = '';
-    $.each(flattenedMetrics, function (index, metric) {
-      buffer += options.fn(metric);
+    $.each(flattenedTimers, function (index, timer) {
+      buffer += options.fn(timer);
     });
     return buffer;
   });
@@ -256,8 +256,8 @@ HandlebarsRendering = (function () {
     return indent1 * (1 + traceEntry.nestingLevel);
   });
 
-  Handlebars.registerHelper('metricIndent', function (metric) {
-    return indent1 * metric.nestingLevel;
+  Handlebars.registerHelper('timerIndent', function (timer) {
+    return indent1 * timer.nestingLevel;
   });
 
   Handlebars.registerHelper('firstPart', function (message) {
@@ -303,14 +303,14 @@ HandlebarsRendering = (function () {
     mousedownPageX = e.pageX;
     mousedownPageY = e.pageY;
   });
-  $(document).on('click', '.gt-metric-view-toggle', function () {
-    var $traceMetrics = $(this).parents('.gt-trace-metrics');
-    $traceMetrics.children('table').toggleClass('hide');
+  $(document).on('click', '.gt-timers-view-toggle', function () {
+    var $timers = $(this).parents('.gt-timers');
+    $timers.children('table').toggleClass('hide');
     // re-focus on visible element, otherwise up/down/pgup/pgdown/ESC don't work
-    var $metricViewToggle = $traceMetrics.find('.gt-metric-view-toggle:visible');
-    $metricViewToggle.attr('tabindex', -1);
-    $metricViewToggle.css('outline', 'none');
-    $metricViewToggle.focus();
+    var $timersViewToggle = $timers.find('.gt-timers-view-toggle:visible');
+    $timersViewToggle.attr('tabindex', -1);
+    $timersViewToggle.css('outline', 'none');
+    $timersViewToggle.focus();
   });
   $(document).on('click', '.gt-unexpanded-content, .gt-expanded-content', function (e, keyboard) {
     smartToggle($(this).parent(), e, keyboard);
@@ -622,12 +622,12 @@ HandlebarsRendering = (function () {
       filterNode(rootNode);
     }
 
-    function generateHtml(metric) {
+    function generateHtml(timer) {
 
       function curr(node, level) {
         var nodeSampleCount;
-        if (metric) {
-          nodeSampleCount = node.metricCounts[metric] || 0;
+        if (timer) {
+          nodeSampleCount = node.timerCounts[timer] || 0;
         } else {
           nodeSampleCount = node.sampleCount;
         }
@@ -679,8 +679,8 @@ HandlebarsRendering = (function () {
           var childNodes = node.childNodes;
           // order child nodes by sampleCount (descending)
           childNodes.sort(function (a, b) {
-            if (metric) {
-              return (b.metricCounts[metric] || 0) - (a.metricCounts[metric] || 0);
+            if (timer) {
+              return (b.timerCounts[timer] || 0) - (a.timerCounts[timer] || 0);
             } else {
               return b.sampleCount - a.sampleCount;
             }
@@ -709,7 +709,7 @@ HandlebarsRendering = (function () {
     var html = generateHtml();
     $selector.find('.gt-profile').html(html);
 
-    var mergedCounts = calculateMetricCounts(rootNode);
+    var mergedCounts = calculateTimerCounts(rootNode);
     if ($.isEmptyObject(mergedCounts)) {
       // display filter text input
       var $profileTextFilter = $selector.find('.gt-profile-text-filter');
@@ -734,10 +734,10 @@ HandlebarsRendering = (function () {
     } else {
       // build tree
       var tree = {name: '', childNodes: {}};
-      $.each(rootNode.metricCounts, function (metric) {
+      $.each(rootNode.timerCounts, function (timer) {
         // only really need to look at leafs (' / other') to hit all nodes
-        if (metric.match(/ \/ other$/)) {
-          var parts = metric.split(' / ');
+        if (timer.match(/ \/ other$/)) {
+          var parts = timer.split(' / ');
           var node = tree;
           var partialName = '';
           $.each(parts, function (i, part) {
@@ -760,7 +760,7 @@ HandlebarsRendering = (function () {
           childNodes.push(childNode);
         });
         childNodes.sort(function (a, b) {
-          return rootNode.metricCounts[b.name] - rootNode.metricCounts[a.name];
+          return rootNode.timerCounts[b.name] - rootNode.timerCounts[a.name];
         });
         if (childNodes.length === 1 && childNodes[0].name.match(/ \/ other$/)) {
           // skip if single 'other' node (in which case it will be represented by current node)
@@ -773,7 +773,7 @@ HandlebarsRendering = (function () {
       };
 
       var orderedNodes = nodesDepthFirst(tree);
-      // remove the root '' since all nodes are already under the single root trace metric
+      // remove the root '' since all nodes are already under the single root timer
       orderedNodes.splice(0, 1);
       // build filter dropdown
       var $profileFilter = $selector.find('.gt-profile-filter');
@@ -782,7 +782,7 @@ HandlebarsRendering = (function () {
       $profileFilter.parent().removeClass('hide');
       $.each(orderedNodes, function (i, node) {
         $profileFilter.append($('<option />').val(node.name)
-            .text(node.name + ' (' + rootNode.metricCounts[node.name] + ')'));
+            .text(node.name + ' (' + rootNode.timerCounts[node.name] + ')'));
       });
       $profileFilter.change(function () {
         // update merged stack tree based on filter
@@ -792,15 +792,15 @@ HandlebarsRendering = (function () {
     }
   }
 
-  function calculateMetricCounts(node) {
+  function calculateTimerCounts(node) {
     var mergedCounts = {};
-    if (node.leafThreadState && node.metricNames && node.metricNames.length) {
+    if (node.leafThreadState && node.timerNames && node.timerNames.length) {
       var partial = '';
-      $.each(node.metricNames, function (i, metricName) {
+      $.each(node.timerNames, function (i, timerName) {
         if (i > 0) {
           partial += ' / ';
         }
-        partial += metricName;
+        partial += timerName;
         mergedCounts[partial] = node.sampleCount;
       });
       mergedCounts[partial + ' / other'] = node.sampleCount;
@@ -808,19 +808,19 @@ HandlebarsRendering = (function () {
     if (node.childNodes) {
       var childNodes = node.childNodes;
       var i;
-      var processMetric = function (metric, count) {
-        if (mergedCounts[metric]) {
-          mergedCounts[metric] += count;
+      var processTimer = function (timer, count) {
+        if (mergedCounts[timer]) {
+          mergedCounts[timer] += count;
         } else {
-          mergedCounts[metric] = count;
+          mergedCounts[timer] = count;
         }
       };
       for (i = 0; i < childNodes.length; i++) {
-        var metricCounts = calculateMetricCounts(childNodes[i]);
-        $.each(metricCounts, processMetric);
+        var timerCounts = calculateTimerCounts(childNodes[i]);
+        $.each(timerCounts, processTimer);
       }
     }
-    node.metricCounts = mergedCounts;
+    node.timerCounts = mergedCounts;
     return mergedCounts;
   }
 

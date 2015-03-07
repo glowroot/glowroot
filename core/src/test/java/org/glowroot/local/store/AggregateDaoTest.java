@@ -79,7 +79,7 @@ public class AggregateDaoTest {
                 .transactionCount(10)
                 .profileSampleCount(0)
                 .traceCount(0)
-                .metrics(getFakeMetrics())
+                .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build();
         List<Aggregate> transactionAggregates = Lists.newArrayList();
@@ -92,7 +92,7 @@ public class AggregateDaoTest {
                 .transactionCount(1)
                 .profileSampleCount(0)
                 .traceCount(0)
-                .metrics(getFakeMetrics())
+                .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build());
         transactionAggregates.add(ImmutableAggregate.builder()
@@ -104,7 +104,7 @@ public class AggregateDaoTest {
                 .transactionCount(2)
                 .profileSampleCount(0)
                 .traceCount(0)
-                .metrics(getFakeMetrics())
+                .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build());
         transactionAggregates.add(ImmutableAggregate.builder()
@@ -116,7 +116,7 @@ public class AggregateDaoTest {
                 .transactionCount(7)
                 .profileSampleCount(0)
                 .traceCount(0)
-                .metrics(getFakeMetrics())
+                .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build());
         aggregateDao.store(ImmutableList.of(overallAggregate), transactionAggregates, 10000);
@@ -130,7 +130,7 @@ public class AggregateDaoTest {
                 .transactionCount(10)
                 .profileSampleCount(0)
                 .traceCount(0)
-                .metrics(getFakeMetrics())
+                .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build();
         List<Aggregate> transactionAggregates2 = Lists.newArrayList();
@@ -143,7 +143,7 @@ public class AggregateDaoTest {
                 .transactionCount(1)
                 .profileSampleCount(0)
                 .traceCount(0)
-                .metrics(getFakeMetrics())
+                .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build());
         transactionAggregates2.add(ImmutableAggregate.builder()
@@ -155,7 +155,7 @@ public class AggregateDaoTest {
                 .transactionCount(2)
                 .profileSampleCount(0)
                 .traceCount(0)
-                .metrics(getFakeMetrics())
+                .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build());
         transactionAggregates2.add(ImmutableAggregate.builder()
@@ -167,7 +167,7 @@ public class AggregateDaoTest {
                 .transactionCount(7)
                 .profileSampleCount(0)
                 .traceCount(0)
-                .metrics(getFakeMetrics())
+                .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build());
 
@@ -198,7 +198,7 @@ public class AggregateDaoTest {
         assertThat(queryResult.records().get(2).transactionCount()).isEqualTo(2);
     }
 
-    private static String getFakeMetrics() {
+    private static String getFakeTimers() {
         return "{\"name\":\"xyz root\",\"totalMicros\":111,\"count\":5}";
     }
 

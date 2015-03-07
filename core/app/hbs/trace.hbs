@@ -65,8 +65,8 @@
 <div class="gt-bold">
   Breakdown <span style="font-weight: normal;">(in milliseconds)</span>:
 </div>
-<div class="gt-trace-metrics">
-  <table class="gt-trace-metrics-table gt-indent2" style="border-spacing: 0;">
+<div class="gt-timers">
+  <table class="gt-timers-table gt-indent2" style="border-spacing: 0;">
     <thead>
     <tr>
       <td></td>
@@ -75,7 +75,7 @@
       <td>max</td>
       <td>count</td>
       <td>
-        <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-metric-view-toggle"
+        <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
                 style="margin-top: -6px; margin-bottom: -6px;">
           switch to tree view
         </button>
@@ -83,10 +83,10 @@
     </tr>
     </thead>
     <tbody>
-    {{#eachMetricFlattenedOrdered metrics}}
+    {{#eachTimerFlattenedOrdered timers}}
       <tr class="align-top">
         <td style="text-align: left;">
-          <div style="margin-left: {{metricIndent .}}em;">
+          <div style="margin-left: {{timerIndent .}}em;">
             <div class="gt-break-word gt-second-line-indent">{{name}}</div>
           </div>
         </td>
@@ -96,10 +96,10 @@
         <td>{{count}}</td>
         <td></td>
       </tr>
-    {{/eachMetricFlattenedOrdered}}
+    {{/eachTimerFlattenedOrdered}}
     </tbody>
   </table>
-  <table class="hide gt-trace-metrics-table gt-indent2" style="border-spacing: 0;">
+  <table class="hide gt-timers-table gt-indent2" style="border-spacing: 0;">
     <thead>
     <tr>
       <td></td>
@@ -108,7 +108,7 @@
       <td>max</td>
       <td>count</td>
       <td>
-        <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-metric-view-toggle"
+        <button class="gt-flat-btn gt-flat-btn-big gt-link-color gt-timers-view-toggle"
                 style="margin-top: -6px; margin-bottom: -6px;">
           switch to flattened view
         </button>
@@ -116,10 +116,10 @@
     </tr>
     </thead>
     <tbody>
-    {{#eachMetricOrdered metrics}}
+    {{#eachTimerOrdered timers}}
       <tr class="align-top">
         <td style="text-align: left;">
-          <div style="margin-left: {{metricIndent .}}em;">
+          <div style="margin-left: {{timerIndent .}}em;">
             <div class="gt-break-word gt-second-line-indent">{{name}}</div>
           </div>
         </td>
@@ -129,7 +129,7 @@
         <td>{{count}}</td>
         <td></td>
       </tr>
-    {{/eachMetricOrdered}}
+    {{/eachTimerOrdered}}
     </tbody>
   </table>
 </div>

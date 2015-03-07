@@ -12,7 +12,7 @@
       "methodParameterTypes": [ ],
       "captureKind": "transaction",
       "transactionNameTemplate": "transaction worthy",
-      "metricName": "transaction worthy",
+      "timerName": "transaction worthy",
       "traceEntryTemplate": "transaction worthy"
     },
     {
@@ -20,27 +20,27 @@
       "methodName": "doSomethingTraceEntryWorthy2",
       "methodParameterTypes": [ ],
       "captureKind": "trace-entry",
-      "metricName": "trace entry worthy",
+      "timerName": "trace entry worthy",
       "traceEntryTemplate": "trace entry worthy: {{this.name}}"
     },
     {
-      "className": "org.glowroot.microbenchmarks.core.support.MetricWorthy",
-      "methodName": "doSomethingMetricWorthy2",
+      "className": "org.glowroot.microbenchmarks.core.support.TimerWorthy",
+      "methodName": "doSomethingTimerWorthy2",
       "methodParameterTypes": [ ],
-      "captureKind": "metric",
-      "metricName": "metric worthy"
+      "captureKind": "timer",
+      "timerName": "timer worthy"
     },
     {
-      "className": "org.glowroot.microbenchmarks.core.support.MetricWorthy",
-      "methodName": "doSomethingMetricWorthy2B",
+      "className": "org.glowroot.microbenchmarks.core.support.TimerWorthy",
+      "methodName": "doSomethingTimerWorthy2B",
       "methodParameterTypes": [ ],
-      "captureKind": "metric",
-      "metricName": "metric worthy B"
+      "captureKind": "timer",
+      "timerName": "timer worthy B"
     }
   ],
   "aspects": [
     "org.glowroot.microbenchmarks.core.support.TransactionWorthyAspect",
     "org.glowroot.microbenchmarks.core.support.TraceEntryWorthyAspect",
-    "org.glowroot.microbenchmarks.core.support.MetricWorthyAspect"
+    "org.glowroot.microbenchmarks.core.support.TimerWorthyAspect"
   ]
 }

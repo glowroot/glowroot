@@ -22,11 +22,11 @@ import java.sql.PreparedStatement;
 import javax.annotation.Nullable;
 
 import org.glowroot.api.ErrorMessage;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
+import org.glowroot.api.Timer;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
-import org.glowroot.api.TransactionMetric;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
@@ -113,14 +113,14 @@ public class StatementAspect {
     // capture the sql used to create the PreparedStatement
     @Pointcut(className = "java.sql.Connection", methodName = "prepare*",
             methodParameterTypes = {"java.lang.String", ".."}, ignoreSelfNested = true,
-            metricName = "jdbc prepare")
+            timerName = "jdbc prepare")
     public static class PrepareAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(PrepareAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(PrepareAdvice.class);
         @OnBefore
-        public static @Nullable TransactionMetric onBefore() {
+        public static @Nullable Timer onBefore() {
             if (capturePreparedStatementCreation) {
-                return pluginServices.startTransactionMetric(metricName);
+                return pluginServices.startTimer(timerName);
             } else {
                 return null;
             }
@@ -136,9 +136,9 @@ public class StatementAspect {
             preparedStatement.setGlowrootStatementMirror(new PreparedStatementMirror(sql));
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable TransactionMetric transactionMetric) {
-            if (transactionMetric != null) {
-                transactionMetric.stop();
+        public static void onAfter(@BindTraveler @Nullable Timer timer) {
+            if (timer != null) {
+                timer.stop();
             }
         }
     }
@@ -259,10 +259,10 @@ public class StatementAspect {
 
     @Pointcut(className = "java.sql.Statement", methodName = "execute*",
             methodParameterTypes = {"java.lang.String", ".."}, ignoreSelfNested = true,
-            metricName = "jdbc execute")
+            timerName = "jdbc execute")
     public static class StatementExecuteAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(StatementExecuteAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(StatementExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
             return statement.hasGlowrootStatementMirror();
@@ -282,7 +282,7 @@ public class StatementAspect {
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier = new StatementMessageSupplier(sql);
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
+                return pluginServices.startTraceEntry(jdbcMessageSupplier, timerName);
             } else {
                 // clear lastJdbcMessageSupplier so that its numRows won't be updated if the plugin
                 // is re-enabled in the middle of iterating over a different result set
@@ -319,10 +319,10 @@ public class StatementAspect {
     // executeBatch is not included since it is handled separately (below)
     @Pointcut(className = "java.sql.PreparedStatement",
             methodName = "execute|executeQuery|executeUpdate", methodParameterTypes = {},
-            ignoreSelfNested = true, metricName = "jdbc execute")
+            ignoreSelfNested = true, timerName = "jdbc execute")
     public static class PreparedStatementExecuteAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(PreparedStatementExecuteAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(PreparedStatementExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror preparedStatement) {
             return preparedStatement.hasGlowrootStatementMirror();
@@ -345,7 +345,7 @@ public class StatementAspect {
                     jdbcMessageSupplier = new StatementMessageSupplier(mirror.getSql());
                 }
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
+                return pluginServices.startTraceEntry(jdbcMessageSupplier, timerName);
             } else {
                 // clear lastJdbcMessageSupplier so that its numRows won't be updated if the plugin
                 // is re-enabled in the middle of iterating over a different result set
@@ -380,10 +380,10 @@ public class StatementAspect {
     }
 
     @Pointcut(className = "java.sql.Statement", methodName = "executeBatch",
-            methodParameterTypes = {}, ignoreSelfNested = true, metricName = "jdbc execute")
+            methodParameterTypes = {}, ignoreSelfNested = true, timerName = "jdbc execute")
     public static class StatementExecuteBatchAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(StatementExecuteBatchAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(StatementExecuteBatchAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
             return statement.hasGlowrootStatementMirror();
@@ -432,7 +432,7 @@ public class StatementAspect {
                     jdbcMessageSupplier = new StatementMessageSupplier(mirror.getSql());
                 }
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
+                return pluginServices.startTraceEntry(jdbcMessageSupplier, timerName);
             } else {
                 // clear lastJdbcMessageSupplier so that its numRows won't be updated if the
                 // plugin is re-enabled in the middle of iterating over a different result set
@@ -445,7 +445,7 @@ public class StatementAspect {
                 JdbcMessageSupplier jdbcMessageSupplier =
                         new BatchStatementMessageSupplier(mirror.getBatchedSqlCopy());
                 mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startTraceEntry(jdbcMessageSupplier, metricName);
+                return pluginServices.startTraceEntry(jdbcMessageSupplier, timerName);
             } else {
                 // clear lastJdbcMessageSupplier so that its numRows won't be updated if the
                 // plugin is re-enabled in the middle of iterating over a different result set
@@ -475,16 +475,16 @@ public class StatementAspect {
     // ================== Statement Closing ==================
 
     @Pointcut(className = "java.sql.Statement", methodName = "close", methodParameterTypes = {},
-            metricName = "jdbc statement close")
+            timerName = "jdbc statement close")
     public static class CloseAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(CloseAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
             return statement.hasGlowrootStatementMirror() && pluginServices.isEnabled();
         }
         @OnBefore
-        public static @Nullable TransactionMetric onBefore(
+        public static @Nullable Timer onBefore(
                 @BindReceiver HasStatementMirror statement) {
             StatementMirror mirror = statement.getGlowrootStatementMirror();
             if (mirror != null) {
@@ -492,15 +492,15 @@ public class StatementAspect {
                 mirror.clearLastJdbcMessageSupplier();
             }
             if (captureStatementClose) {
-                return pluginServices.startTransactionMetric(metricName);
+                return pluginServices.startTimer(timerName);
             } else {
                 return null;
             }
         }
         @OnAfter
-        public static void onAfter(@BindTraveler @Nullable TransactionMetric transactionMetric) {
-            if (transactionMetric != null) {
-                transactionMetric.stop();
+        public static void onAfter(@BindTraveler @Nullable Timer timer) {
+            if (timer != null) {
+                timer.stop();
             }
         }
     }

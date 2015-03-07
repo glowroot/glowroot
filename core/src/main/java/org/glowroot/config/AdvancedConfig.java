@@ -27,7 +27,7 @@ import org.glowroot.common.Marshaling2;
 public abstract class AdvancedConfig {
 
     @Value.Default
-    public boolean metricWrapperMethods() {
+    public boolean timerWrapperMethods() {
         return false;
     }
 

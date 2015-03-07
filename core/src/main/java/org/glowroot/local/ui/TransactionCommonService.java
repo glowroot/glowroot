@@ -266,7 +266,7 @@ class TransactionCommonService {
             currMergedAggregate.addTotalWaitedMicros(nonRolledUpAggregate.totalWaitedMicros());
             currMergedAggregate.addTotalAllocatedBytes(nonRolledUpAggregate.totalAllocatedBytes());
             currMergedAggregate.addProfileSampleCount(nonRolledUpAggregate.profileSampleCount());
-            currMergedAggregate.addMetrics(nonRolledUpAggregate.metrics());
+            currMergedAggregate.addTimers(nonRolledUpAggregate.timers());
             currMergedAggregate.addHistogram(nonRolledUpAggregate.histogram());
         }
         if (currMergedAggregate != null) {

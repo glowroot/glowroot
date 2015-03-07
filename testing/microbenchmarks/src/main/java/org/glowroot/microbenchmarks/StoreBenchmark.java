@@ -29,8 +29,8 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.microbenchmarks.support.TraceEntryWorthy;
@@ -44,8 +44,8 @@ public class StoreBenchmark {
 
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-microbenchmarks");
-    private static final MetricName metricName =
-            pluginServices.getMetricName(OnlyForTheMetricName.class);
+    private static final TimerName timerName =
+            pluginServices.getTimerName(OnlyForTheTimerName.class);
 
     @Param({"false", "true"})
     private boolean store;
@@ -74,7 +74,7 @@ public class StoreBenchmark {
     @Benchmark
     public void execute() {
         rootTraceEntry = pluginServices.startTransaction("Microbenchmark", "micro transaction",
-                MessageSupplier.from("micro transaction"), metricName);
+                MessageSupplier.from("micro transaction"), timerName);
         if (store) {
             pluginServices.setTraceStoreThreshold(0, MILLISECONDS);
         }
@@ -86,6 +86,6 @@ public class StoreBenchmark {
     }
 
     @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {},
-            metricName = "micro transaction")
-    private static class OnlyForTheMetricName {}
+            timerName = "micro transaction")
+    private static class OnlyForTheTimerName {}
 }

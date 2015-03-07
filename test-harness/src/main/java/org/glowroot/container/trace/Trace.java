@@ -47,7 +47,7 @@ public class Trace {
     private final @Nullable String user;
     private final ImmutableSetMultimap<String, String> customAttributes;
     private final Map<String, /*@Nullable*/Object> customDetail;
-    private final TraceMetric rootMetric;
+    private final Timer rootTimer;
     private final @Nullable Long threadCpuTime;
     private final @Nullable Long threadBlockedTime;
     private final @Nullable Long threadWaitedTime;
@@ -62,7 +62,7 @@ public class Trace {
             long duration, String transactionType, String transactionName, String headline,
             @Nullable String error, @Nullable String user,
             ImmutableSetMultimap<String, String> customAttributes,
-            Map<String, /*@Nullable*/Object> customDetail, TraceMetric rootMetric,
+            Map<String, /*@Nullable*/Object> customDetail, Timer rootTimer,
             @Nullable Long threadCpuTime, @Nullable Long threadBlockedTime,
             @Nullable Long threadWaitedTime, @Nullable Long threadAllocatedBytes,
             List<TraceGcInfo> gcInfos, long entryCount, long profileSampleCount,
@@ -80,7 +80,7 @@ public class Trace {
         this.user = user;
         this.customAttributes = customAttributes;
         this.customDetail = customDetail;
-        this.rootMetric = rootMetric;
+        this.rootTimer = rootTimer;
         this.threadCpuTime = threadCpuTime;
         this.threadBlockedTime = threadBlockedTime;
         this.threadWaitedTime = threadWaitedTime;
@@ -144,8 +144,8 @@ public class Trace {
         return customDetail;
     }
 
-    public TraceMetric getRootMetric() {
-        return rootMetric;
+    public Timer getRootTimer() {
+        return rootTimer;
     }
 
     public @Nullable Long getThreadCpuTime() {
@@ -199,7 +199,7 @@ public class Trace {
                 .add("error", error)
                 .add("user", user)
                 .add("customAttributes", customAttributes)
-                .add("rootMetric", rootMetric)
+                .add("rootTimer", rootTimer)
                 .add("threadCpuTime", threadCpuTime)
                 .add("threadBlockedTime", threadBlockedTime)
                 .add("threadWaitedTime", threadWaitedTime)
@@ -227,7 +227,7 @@ public class Trace {
             @JsonProperty("user") @Nullable String user,
             @JsonProperty("customAttributes") @Nullable Map<String, /*@Nullable*/List</*@Nullable*/String>> customAttributes,
             @JsonProperty("customDetail") @Nullable Map<String, /*@Nullable*/Object> customDetail,
-            @JsonProperty("metrics") @Nullable TraceMetric rootMetric,
+            @JsonProperty("timers") @Nullable Timer rootTimer,
             @JsonProperty("threadCpuTime") @Nullable Long threadCpuTime,
             @JsonProperty("threadBlockedTime") @Nullable Long threadBlockedTime,
             @JsonProperty("threadWaitedTime") @Nullable Long threadWaitedTime,
@@ -248,7 +248,7 @@ public class Trace {
         checkRequiredProperty(transactionType, "transactionType");
         checkRequiredProperty(transactionName, "transactionName");
         checkRequiredProperty(headline, "headline");
-        checkRequiredProperty(rootMetric, "metrics");
+        checkRequiredProperty(rootTimer, "timers");
         checkRequiredProperty(entryCount, "entryCount");
         checkRequiredProperty(profileSampleCount, "profileSampleCount");
         checkRequiredProperty(entriesExistence, "entriesExistence");
@@ -269,7 +269,7 @@ public class Trace {
         }
         return new Trace(id, active, partial, startTime, captureTime, duration, transactionType,
                 transactionName, headline, error, user, theCustomAttributes.build(),
-                nullToEmpty(customDetail), rootMetric, threadCpuTime, threadBlockedTime,
+                nullToEmpty(customDetail), rootTimer, threadCpuTime, threadBlockedTime,
                 threadWaitedTime, threadAllocatedBytes, gcInfos, entryCount, profileSampleCount,
                 entriesExistence, profileExistence);
     }

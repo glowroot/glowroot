@@ -239,7 +239,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
                 }
             }
         }
-        // sort for consistency since the order affects metric nesting
+        // sort for consistency since the order affects timer nesting
         return sortAdvisors(matchingAdvisors);
     }
 
@@ -250,7 +250,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
             case 1:
                 return ImmutableList.copyOf(matchingAdvisors);
             default:
-                return Advice.orderingByMetricName.immutableSortedCopy(matchingAdvisors);
+                return Advice.orderingByTimerName.immutableSortedCopy(matchingAdvisors);
         }
     }
 }

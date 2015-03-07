@@ -41,14 +41,14 @@ class AggregateProfileBuilder {
 
     private void mergeNode(ProfileNode node, ProfileNode toBeMergedNode) {
         node.incrementSampleCount(toBeMergedNode.getSampleCount());
-        // the metric names for a given stack element should always match, unless
+        // the timer names for a given stack element should always match, unless
         // the line numbers aren't available and overloaded methods are matched up, or
-        // the stack trace was captured while one of the synthetic $glowroot$metric$ methods was
-        // executing in which case one of the metric names may be a subset of the other,
+        // the stack trace was captured while one of the synthetic $glowroot$timer$ methods was
+        // executing in which case one of the timer names may be a subset of the other,
         // in which case, the superset wins:
-        List<String> metricNames = toBeMergedNode.getMetricNames();
-        if (metricNames.size() > node.getMetricNames().size()) {
-            node.setMetricNames(metricNames);
+        List<String> timerNames = toBeMergedNode.getTimerNames();
+        if (timerNames.size() > node.getTimerNames().size()) {
+            node.setTimerNames(timerNames);
         }
         for (ProfileNode toBeMergedChildNode : toBeMergedNode.getChildNodes()) {
             // for each to-be-merged child node look for a match

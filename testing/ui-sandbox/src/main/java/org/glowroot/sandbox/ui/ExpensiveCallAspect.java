@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import com.google.common.collect.ImmutableMap;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.Optional;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindClassMeta;
 import org.glowroot.api.weaving.BindReceiver;
@@ -49,10 +49,10 @@ public class ExpensiveCallAspect {
             "a cause with a different stack trace", nestedCause);
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute0",
-            methodParameterTypes = {}, metricName = "expensive 0")
+            methodParameterTypes = {}, timerName = "expensive 0")
     public static class ExpensiveCallAdvice0 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice0.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(ExpensiveCallAdvice0.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -64,7 +64,7 @@ public class ExpensiveCallAspect {
             // detail
             MessageSupplier messageSupplier =
                     getMessageSupplierWithDetail(expensiveCall, expensiveCallInvoker);
-            return pluginServices.startTraceEntry(messageSupplier, metricName);
+            return pluginServices.startTraceEntry(messageSupplier, timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
@@ -80,10 +80,10 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute1",
-            methodParameterTypes = {}, metricName = "expensive 1")
+            methodParameterTypes = {}, timerName = "expensive 1")
     public static class ExpensiveCallAdvice1 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice1.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(ExpensiveCallAdvice1.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -91,7 +91,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
-            return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
@@ -107,10 +107,10 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute2",
-            methodParameterTypes = {}, metricName = "expensive 2")
+            methodParameterTypes = {}, timerName = "expensive 2")
     public static class ExpensiveCallAdvice2 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice2.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(ExpensiveCallAdvice2.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -118,7 +118,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
-            return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
@@ -134,10 +134,10 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute3",
-            methodParameterTypes = {}, metricName = "expensive 3")
+            methodParameterTypes = {}, timerName = "expensive 3")
     public static class ExpensiveCallAdvice3 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice3.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(ExpensiveCallAdvice3.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -145,7 +145,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
-            return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
@@ -161,10 +161,10 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute4",
-            methodParameterTypes = {}, metricName = "expensive 4")
+            methodParameterTypes = {}, timerName = "expensive 4")
     public static class ExpensiveCallAdvice4 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice4.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(ExpensiveCallAdvice4.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -172,7 +172,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
-            return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
@@ -188,10 +188,10 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute5",
-            methodParameterTypes = {}, metricName = "expensive 5")
+            methodParameterTypes = {}, timerName = "expensive 5")
     public static class ExpensiveCallAdvice5 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice5.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(ExpensiveCallAdvice5.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -199,7 +199,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
-            return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
@@ -215,10 +215,10 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute6",
-            methodParameterTypes = {}, metricName = "expensive 6")
+            methodParameterTypes = {}, timerName = "expensive 6")
     public static class ExpensiveCallAdvice6 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice6.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(ExpensiveCallAdvice6.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -226,7 +226,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
-            return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
@@ -242,10 +242,10 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute7",
-            methodParameterTypes = {}, metricName = "expensive 7")
+            methodParameterTypes = {}, timerName = "expensive 7")
     public static class ExpensiveCallAdvice7 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice7.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(ExpensiveCallAdvice7.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -253,7 +253,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
-            return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
@@ -269,10 +269,10 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute8",
-            methodParameterTypes = {}, metricName = "expensive 8")
+            methodParameterTypes = {}, timerName = "expensive 8")
     public static class ExpensiveCallAdvice8 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice8.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(ExpensiveCallAdvice8.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -280,7 +280,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
-            return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
@@ -296,10 +296,10 @@ public class ExpensiveCallAspect {
     }
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute9",
-            methodParameterTypes = {}, metricName = "expensive 9 really long to test wrapping")
+            methodParameterTypes = {}, timerName = "expensive 9 really long to test wrapping")
     public static class ExpensiveCallAdvice9 {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(ExpensiveCallAdvice9.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(ExpensiveCallAdvice9.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -307,7 +307,7 @@ public class ExpensiveCallAspect {
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
-            return onBeforeInternal(expensiveCall, expensiveCallInvoker, metricName);
+            return onBeforeInternal(expensiveCall, expensiveCallInvoker, timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
@@ -323,13 +323,13 @@ public class ExpensiveCallAspect {
     }
 
     private static TraceEntry onBeforeInternal(Object expensiveCall,
-            ExpensiveCallInvoker expensiveCallInvoker, MetricName metricName) {
+            ExpensiveCallInvoker expensiveCallInvoker, TimerName timerName) {
         if (random.nextDouble() < 0.05) {
             return null;
         }
         MessageSupplier messageSupplier =
                 MessageSupplier.from(expensiveCallInvoker.getTraceEntryMessage(expensiveCall));
-        return pluginServices.startTraceEntry(messageSupplier, metricName);
+        return pluginServices.startTraceEntry(messageSupplier, timerName);
     }
 
     private static void onAfterInternal(TraceEntry traceEntry, int num) {

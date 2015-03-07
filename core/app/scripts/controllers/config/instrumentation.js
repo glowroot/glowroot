@@ -51,7 +51,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
         $scope.selectedMethodName = data.config.methodName;
         $scope.methodSignatures = data.methodSignatures || [];
         $scope.captureKindTransaction = captureKind === 'transaction';
-        $scope.showMetric = captureKind === 'metric' || captureKind === 'trace-entry' || captureKind === 'transaction';
+        $scope.showTimer = captureKind === 'timer' || captureKind === 'trace-entry' || captureKind === 'transaction';
         $scope.showTraceEntry = captureKind === 'trace-entry' || captureKind === 'transaction';
         $scope.showTraceEntryStackThreshold = captureKind === 'trace-entry';
 
@@ -94,7 +94,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       $scope.loaded = true;
       onNewData({
         config: {
-          captureKind: 'metric'
+          captureKind: 'timer'
         }
       });
     }
@@ -297,11 +297,11 @@ glowroot.controller('ConfigInstrumentationCtrl', [
         return;
       }
       $scope.captureKindTransaction = newValue === 'transaction';
-      $scope.showMetric = newValue === 'metric' || newValue === 'trace-entry' || newValue === 'transaction';
+      $scope.showTimer = newValue === 'timer' || newValue === 'trace-entry' || newValue === 'transaction';
       $scope.showTraceEntry = newValue === 'trace-entry' || newValue === 'transaction';
       $scope.showTraceEntryStackThreshold = newValue === 'trace-entry';
-      if (!$scope.showMetric) {
-        $scope.config.metricName = '';
+      if (!$scope.showTimer) {
+        $scope.config.timerName = '';
       }
       if (!$scope.showTraceEntry) {
         $scope.config.traceEntryTemplate = '';

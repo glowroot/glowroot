@@ -60,13 +60,13 @@ public class ActiveTraceTest {
     }
 
     @Test
-    public void shouldReadActiveTraceStuckOnRootMetric() throws Exception {
-        shouldReadActiveTrace(ShouldGenerateActiveTraceStuckOnRootMetric.class, false);
+    public void shouldReadActiveTraceStuckOnRootTimer() throws Exception {
+        shouldReadActiveTrace(ShouldGenerateActiveTraceStuckOnRootTimer.class, false);
     }
 
     @Test
-    public void shouldReadActiveTraceStuckOnNonRootMetric() throws Exception {
-        shouldReadActiveTrace(ShouldGenerateActiveTraceStuckOnNonRootMetric.class, true);
+    public void shouldReadActiveTraceStuckOnNonRootTimer() throws Exception {
+        shouldReadActiveTrace(ShouldGenerateActiveTraceStuckOnNonRootTimer.class, true);
     }
 
     private Trace shouldReadActiveTrace(final Class<? extends AppUnderTest> appUnderTest,
@@ -109,9 +109,9 @@ public class ActiveTraceTest {
         assertThat(trace).isNotNull();
         assertThat(trace.isActive()).isTrue();
         assertThat(trace.isPartial()).isFalse();
-        assertThat(trace.getRootMetric().isMaxActive()).isTrue();
+        assertThat(trace.getRootTimer().isMaxActive()).isTrue();
         if (stuckOnNonRoot) {
-            assertThat(trace.getRootMetric().getNestedMetrics().get(0).isMaxActive()).isTrue();
+            assertThat(trace.getRootTimer().getNestedTimers().get(0).isMaxActive()).isTrue();
             assertThat(entries).hasSize(3);
         } else {
             assertThat(entries).hasSize(1);
@@ -129,7 +129,7 @@ public class ActiveTraceTest {
         return trace;
     }
 
-    public static class ShouldGenerateActiveTraceStuckOnRootMetric implements AppUnderTest,
+    public static class ShouldGenerateActiveTraceStuckOnRootTimer implements AppUnderTest,
             TraceMarker {
         @Override
         public void executeApp() {
@@ -145,7 +145,7 @@ public class ActiveTraceTest {
         }
     }
 
-    public static class ShouldGenerateActiveTraceStuckOnNonRootMetric implements AppUnderTest,
+    public static class ShouldGenerateActiveTraceStuckOnNonRootTimer implements AppUnderTest,
             TraceMarker {
         @Override
         public void executeApp() throws InterruptedException {

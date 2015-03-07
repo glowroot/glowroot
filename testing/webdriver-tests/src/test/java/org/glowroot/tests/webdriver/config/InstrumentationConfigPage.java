@@ -55,8 +55,8 @@ public class InstrumentationConfigPage {
         withWait(xpath("//label[text()[normalize-space()='any signature']]//input")).click();
     }
 
-    public WebElement getCaptureKindMetricRadioButton() {
-        return withWait(xpath("//input[@ng-model='config.captureKind'][@value='metric']"));
+    public WebElement getCaptureKindTimerRadioButton() {
+        return withWait(xpath("//input[@ng-model='config.captureKind'][@value='timer']"));
     }
 
     public WebElement getCaptureKindTraceEntryRadioButton() {
@@ -71,8 +71,8 @@ public class InstrumentationConfigPage {
         return withWait(xpath("//input[@ng-model='config.captureKind'][@value='other']"));
     }
 
-    public WebElement getMetricNameTextField() {
-        return withWait(xpath("//div[@gt-model='config.metricName']//input"));
+    public WebElement getTimerNameTextField() {
+        return withWait(xpath("//div[@gt-model='config.timerName']//input"));
     }
 
     public WebElement getTraceEntryTemplateTextField() {

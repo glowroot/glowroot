@@ -142,7 +142,7 @@ class ConfigJsonService {
         AdvancedConfig config = configService.getAdvancedConfig();
         return Marshaling2.toJson(ImmutableAdvancedConfigResponse.builder()
                 .config(AdvancedConfigDto.fromConfig(config))
-                .metricWrapperMethodsActive(transactionModule.isMetricWrapperMethods())
+                .timerWrapperMethodsActive(transactionModule.isTimerWrapperMethods())
                 .build());
     }
 
@@ -464,7 +464,7 @@ class ConfigJsonService {
     @Json.Marshaled
     abstract static class AdvancedConfigResponse {
         abstract AdvancedConfigDto config();
-        abstract boolean metricWrapperMethodsActive();
+        abstract boolean timerWrapperMethodsActive();
     }
 
     @Value.Immutable
@@ -662,7 +662,7 @@ class ConfigJsonService {
     @Json.Marshaled
     abstract static class AdvancedConfigDto {
 
-        abstract boolean metricWrapperMethods();
+        abstract boolean timerWrapperMethods();
         abstract int immediatePartialStoreThresholdSeconds();
         abstract int maxTraceEntriesPerTransaction();
         abstract int maxStackTraceSamplesPerTransaction();
@@ -674,7 +674,7 @@ class ConfigJsonService {
 
         private AdvancedConfig toConfig() {
             return ImmutableAdvancedConfig.builder()
-                    .metricWrapperMethods(metricWrapperMethods())
+                    .timerWrapperMethods(timerWrapperMethods())
                     .immediatePartialStoreThresholdSeconds(immediatePartialStoreThresholdSeconds())
                     .maxTraceEntriesPerTransaction(maxTraceEntriesPerTransaction())
                     .maxStackTraceSamplesPerTransaction(maxStackTraceSamplesPerTransaction())
@@ -688,7 +688,7 @@ class ConfigJsonService {
         private static AdvancedConfigDto fromConfig(AdvancedConfig config) {
             return ImmutableAdvancedConfigDto
                     .builder()
-                    .metricWrapperMethods(config.metricWrapperMethods())
+                    .timerWrapperMethods(config.timerWrapperMethods())
                     .immediatePartialStoreThresholdSeconds(
                             config.immediatePartialStoreThresholdSeconds())
                     .maxTraceEntriesPerTransaction(config.maxTraceEntriesPerTransaction())

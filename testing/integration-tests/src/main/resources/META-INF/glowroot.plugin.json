@@ -40,7 +40,7 @@
       "name": "levelFiveEnabled",
       "type": "boolean",
       "label": "LevelFive",
-      "checkboxLabel": "Capture metrics for LevelFive.call()"
+      "checkboxLabel": "Capture timers for LevelFive.call()"
     },
     {
       "name": "levelFiveEntryEnabled",
@@ -78,7 +78,7 @@
         "java.lang.String"
       ],
       "captureKind": "trace-entry",
-      "metricName": "level four",
+      "timerName": "level four",
       "traceEntryTemplate": "Level Four: {{0}}, {{1}}"
     },
     {
@@ -89,7 +89,7 @@
         "java.lang.String"
       ],
       "captureKind": "trace-entry",
-      "metricName": "level five",
+      "timerName": "level five",
       "traceEntryTemplate": "Level Five: {{0}}, {{1}}",
       "enabledProperty": "levelFiveEnabled",
       "traceEntryEnabledProperty": "levelFiveEntryEnabled"
@@ -114,7 +114,7 @@
       "methodName": "get*",
       "methodParameterTypes": [],
       "captureKind": "trace-entry",
-      "metricName": "coverage",
+      "timerName": "coverage",
       "traceEntryTemplate": "Coverage get: {{_}}"
     },
     {
@@ -124,7 +124,7 @@
         "*"
       ],
       "captureKind": "trace-entry",
-      "metricName": "coverage",
+      "timerName": "coverage",
       "traceEntryTemplate": "Coverage put: {{0}}"
     }
   ],

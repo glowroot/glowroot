@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 package org.glowroot.tests.plugin;
 
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.OnAfter;
@@ -30,16 +30,16 @@ public class MockDriverAspect {
             PluginServices.get("glowroot-integration-tests");
 
     @Pointcut(className = "org.glowroot.tests.MockDriver", methodName = "getMajorVersion",
-            methodParameterTypes = {}, metricName = "get major version")
+            methodParameterTypes = {}, timerName = "get major version")
     public static class GetMajorVersionAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(GetMajorVersionAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(GetMajorVersionAdvice.class);
 
         @OnBefore
         public static TraceEntry onBefore() {
             return pluginServices.startTraceEntry(MessageSupplier.from("major version"),
-                    metricName);
+                    timerName);
         }
 
         @OnAfter

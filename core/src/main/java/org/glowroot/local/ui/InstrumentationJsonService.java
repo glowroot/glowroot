@@ -287,7 +287,7 @@ class InstrumentationJsonService {
         @Json.ForceEmpty
         abstract List<MethodModifier> methodModifiers();
         abstract CaptureKind captureKind();
-        abstract Optional<String> metricName();
+        abstract Optional<String> timerName();
         abstract Optional<String> traceEntryTemplate();
         @Json.ForceEmpty
         abstract @Nullable Long traceEntryStackThresholdMillis();
@@ -311,7 +311,7 @@ class InstrumentationJsonService {
                     .methodReturnType(config.methodReturnType())
                     .addAllMethodModifiers(config.methodModifiers())
                     .captureKind(config.captureKind())
-                    .metricName(config.metricName())
+                    .timerName(config.timerName())
                     .traceEntryTemplate(config.traceEntryTemplate())
                     .traceEntryStackThresholdMillis(config.traceEntryStackThresholdMillis())
                     .traceEntryCaptureSelfNested(config.traceEntryCaptureSelfNested())
@@ -335,7 +335,7 @@ class InstrumentationJsonService {
                     .methodReturnType(methodReturnType().or(""))
                     .addAllMethodModifiers(methodModifiers())
                     .captureKind(captureKind())
-                    .metricName(metricName().or(""))
+                    .timerName(timerName().or(""))
                     .traceEntryTemplate(traceEntryTemplate().or(""))
                     .traceEntryStackThresholdMillis(traceEntryStackThresholdMillis())
                     .traceEntryCaptureSelfNested(traceEntryCaptureSelfNested().or(false))

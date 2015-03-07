@@ -83,8 +83,8 @@ public class AggregateDao {
                     ImmutableColumn.of("trace_count", Types.BIGINT),
                     // profile json is always from "synthetic root"
                     ImmutableColumn.of("profile_capped_id", Types.BIGINT), // capped database id
-                    // metrics json is always from "synthetic root"
-                    ImmutableColumn.of("metrics", Types.VARCHAR),
+                    // timers json is always from "synthetic root"
+                    ImmutableColumn.of("timers", Types.VARCHAR),
                     ImmutableColumn.of("histogram", Types.BLOB));
 
     private static final ImmutableList<Column> transactionAggregateColumns =
@@ -103,8 +103,8 @@ public class AggregateDao {
                     ImmutableColumn.of("trace_count", Types.BIGINT),
                     // profile json is always from "synthetic root"
                     ImmutableColumn.of("profile_capped_id", Types.BIGINT), // capped database id
-                    // metrics json is always from "synthetic root"
-                    ImmutableColumn.of("metrics", Types.VARCHAR), // json data
+                    // timers json is always from "synthetic root"
+                    ImmutableColumn.of("timers", Types.VARCHAR), // json data
                     ImmutableColumn.of("histogram", Types.BLOB));
 
     // this index includes all columns needed for the overall aggregate query so h2 can return
@@ -240,7 +240,7 @@ public class AggregateDao {
         return dataSource.query("select capture_time, total_micros, error_count,"
                 + " transaction_count, total_cpu_micros, total_blocked_micros,"
                 + " total_waited_micros, total_allocated_bytes, profile_sample_count, trace_count,"
-                + " metrics, histogram from overall_aggregate" + rollupSuffix
+                + " timers, histogram from overall_aggregate" + rollupSuffix
                 + " where transaction_type = ? and capture_time >= ? and capture_time <= ?"
                 + " order by capture_time", new AggregateRowMapper(transactionType, null),
                 transactionType, captureTimeFrom, captureTimeTo);
@@ -253,7 +253,7 @@ public class AggregateDao {
         return dataSource.query("select capture_time, total_micros, error_count,"
                 + " transaction_count, total_cpu_micros, total_blocked_micros,"
                 + " total_waited_micros, total_allocated_bytes, profile_sample_count, trace_count,"
-                + " metrics, histogram from transaction_aggregate" + rollupSuffix
+                + " timers, histogram from transaction_aggregate" + rollupSuffix
                 + " where transaction_type = ? and transaction_name = ? and capture_time >= ?"
                 + " and capture_time <= ?",
                 new AggregateRowMapper(transactionType, transactionName), transactionType,
@@ -419,7 +419,7 @@ public class AggregateDao {
         List<Aggregate> overallAggregates = dataSource.query("select transaction_type,"
                 + " total_micros, error_count, transaction_count, total_cpu_micros,"
                 + " total_blocked_micros, total_waited_micros, total_allocated_bytes,"
-                + " profile_sample_count, trace_count, profile_capped_id, metrics, histogram"
+                + " profile_sample_count, trace_count, profile_capped_id, timers, histogram"
                 + " from overall_aggregate where capture_time > ? and capture_time <= ?",
                 new OverallRollupResultSetExtractor(rollupTime), rollupTime - fixedRollupMillis,
                 rollupTime);
@@ -427,7 +427,7 @@ public class AggregateDao {
                 + " transaction_name, total_micros, error_count, transaction_count,"
                 + " total_cpu_micros, total_blocked_micros, total_waited_micros,"
                 + " total_allocated_bytes, profile_sample_count, trace_count, profile_capped_id,"
-                + " metrics, histogram from transaction_aggregate where capture_time > ?"
+                + " timers, histogram from transaction_aggregate where capture_time > ?"
                 + " and capture_time <= ?", new TransactionRollupResultSetExtractor(rollupTime),
                 rollupTime - fixedRollupMillis, rollupTime);
         store(overallAggregates, transactionAggregates, "_rollup_1");
@@ -440,13 +440,13 @@ public class AggregateDao {
                 + " (transaction_type, capture_time, total_micros, error_count, transaction_count,"
                 + " total_cpu_micros, total_blocked_micros, total_waited_micros,"
                 + " total_allocated_bytes, profile_sample_count, trace_count, profile_capped_id,"
-                + " metrics, histogram) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                + " timers, histogram) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 new OverallBatchAdder(overallAggregates));
         dataSource.batchUpdate("insert into transaction_aggregate" + rollupSuffix
                 + " (transaction_type, transaction_name, capture_time, total_micros, error_count,"
                 + " transaction_count, total_cpu_micros, total_blocked_micros,"
                 + " total_waited_micros, total_allocated_bytes, profile_sample_count, trace_count,"
-                + " profile_capped_id, metrics, histogram) values"
+                + " profile_capped_id, timers, histogram) values"
                 + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 new TransactionBatchAdder(transactionAggregates));
     }
@@ -539,7 +539,7 @@ public class AggregateDao {
                 preparedStatement.setLong(i++, overallAggregate.profileSampleCount());
                 preparedStatement.setLong(i++, overallAggregate.traceCount());
                 RowMappers.setLong(preparedStatement, i++, profileId);
-                preparedStatement.setString(i++, overallAggregate.metrics());
+                preparedStatement.setString(i++, overallAggregate.timers());
                 preparedStatement.setBytes(i++, overallAggregate.histogram());
                 preparedStatement.addBatch();
             }
@@ -576,7 +576,7 @@ public class AggregateDao {
                 preparedStatement.setLong(i++, transactionAggregate.profileSampleCount());
                 preparedStatement.setLong(i++, transactionAggregate.traceCount());
                 RowMappers.setLong(preparedStatement, i++, profileId);
-                preparedStatement.setString(i++, transactionAggregate.metrics());
+                preparedStatement.setString(i++, transactionAggregate.timers());
                 preparedStatement.setBytes(i++, transactionAggregate.histogram());
                 preparedStatement.addBatch();
             }
@@ -668,7 +668,7 @@ public class AggregateDao {
                     .totalAllocatedBytes(resultSet.getLong(i++))
                     .profileSampleCount(resultSet.getLong(i++))
                     .traceCount(resultSet.getLong(i++))
-                    .metrics(checkNotNull(resultSet.getString(i++)))
+                    .timers(checkNotNull(resultSet.getString(i++)))
                     .histogram(checkNotNull(resultSet.getBytes(i++)))
                     .build();
         }
@@ -712,7 +712,7 @@ public class AggregateDao {
             long profileSampleCount = resultSet.getLong(i++);
             long traceCount = resultSet.getLong(i++);
             Long profileCappedId = RowMappers.getLong(resultSet, i++);
-            String metrics = checkNotNull(resultSet.getString(i++));
+            String timers = checkNotNull(resultSet.getString(i++));
             byte[] histogram = checkNotNull(resultSet.getBytes(i++));
 
             mergedAggregate.addTotalMicros(totalMicros);
@@ -724,7 +724,7 @@ public class AggregateDao {
             mergedAggregate.addTotalAllocatedBytes(totalAllocatedBytes);
             mergedAggregate.addProfileSampleCount(profileSampleCount);
             mergedAggregate.addTraceCount(traceCount);
-            mergedAggregate.addMetrics(metrics);
+            mergedAggregate.addTimers(timers);
             mergedAggregate.addHistogram(histogram);
             if (profileCappedId != null) {
                 String profileContent =
@@ -812,8 +812,8 @@ public class AggregateDao {
         private @Nullable Long totalAllocatedBytes;
         private long profileSampleCount;
         private long traceCount;
-        private final AggregateMetric syntheticRootMetric =
-                AggregateMetric.createSyntheticRootMetric();
+        private final AggregateTimer syntheticRootTimer =
+                AggregateTimer.createSyntheticRootTimer();
         private final LazyHistogram lazyHistogram = new LazyHistogram();
         private final AggregateProfileNode syntheticProfileNode =
                 AggregateProfileNode.createSyntheticRootNode();
@@ -865,9 +865,9 @@ public class AggregateDao {
             this.traceCount += traceCount;
         }
 
-        public void addMetrics(String metrics) throws IOException {
-            AggregateMetric syntheticRootMetric = mapper.readValue(metrics, AggregateMetric.class);
-            this.syntheticRootMetric.mergeMatchedMetric(syntheticRootMetric);
+        public void addTimers(String timers) throws IOException {
+            AggregateTimer syntheticRootTimers = mapper.readValue(timers, AggregateTimer.class);
+            this.syntheticRootTimer.mergeMatchedTimer(syntheticRootTimers);
         }
 
         public void addHistogram(byte[] histogram) throws DataFormatException {
@@ -903,18 +903,18 @@ public class AggregateDao {
                     .totalAllocatedBytes(totalAllocatedBytes)
                     .profileSampleCount(profileSampleCount)
                     .traceCount(traceCount)
-                    .metrics(getMetricsJson())
+                    .timers(getTimersJson())
                     .histogram(histogram)
                     .profile(getProfileJson())
                     .build();
         }
 
-        private String getMetricsJson() throws IOException {
-            StringBuilder metrics = new StringBuilder();
-            JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(metrics));
-            jg.writeObject(syntheticRootMetric);
+        private String getTimersJson() throws IOException {
+            StringBuilder timers = new StringBuilder();
+            JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(timers));
+            jg.writeObject(syntheticRootTimer);
             jg.close();
-            return metrics.toString();
+            return timers.toString();
         }
 
         private @Nullable String getProfileJson() throws IOException {

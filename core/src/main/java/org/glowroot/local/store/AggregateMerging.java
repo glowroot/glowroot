@@ -36,22 +36,22 @@ public class AggregateMerging {
 
     private AggregateMerging() {}
 
-    public static MetricMergedAggregate getMetricMergedAggregate(List<Aggregate> aggregates)
+    public static TimerMergedAggregate getTimerMergedAggregate(List<Aggregate> aggregates)
             throws Exception {
         long transactionCount = 0;
-        AggregateMetric syntheticRootMetric = AggregateMetric.createSyntheticRootMetric();
+        AggregateTimer syntheticRootTimer = AggregateTimer.createSyntheticRootTimer();
         for (Aggregate aggregate : aggregates) {
             transactionCount += aggregate.transactionCount();
-            AggregateMetric toBeMergedSyntheticRootMetric =
-                    mapper.readValue(aggregate.metrics(), AggregateMetric.class);
-            syntheticRootMetric.mergeMatchedMetric(toBeMergedSyntheticRootMetric);
+            AggregateTimer toBeMergedSyntheticRootTimer =
+                    mapper.readValue(aggregate.timers(), AggregateTimer.class);
+            syntheticRootTimer.mergeMatchedTimer(toBeMergedSyntheticRootTimer);
         }
-        if (syntheticRootMetric.getNestedMetrics().size() == 1) {
+        if (syntheticRootTimer.getNestedTimers().size() == 1) {
             // strip off synthetic root node
-            return new MetricMergedAggregate(syntheticRootMetric.getNestedMetrics().get(0),
+            return new TimerMergedAggregate(syntheticRootTimer.getNestedTimers().get(0),
                     transactionCount);
         } else {
-            return new MetricMergedAggregate(syntheticRootMetric, transactionCount);
+            return new TimerMergedAggregate(syntheticRootTimer, transactionCount);
         }
     }
 
@@ -135,19 +135,19 @@ public class AggregateMerging {
     }
 
     // could use @Value.Immutable, but it's not technically immutable since it contains
-    // non-immutable state (AggregateMetric)
-    public static class MetricMergedAggregate {
+    // non-immutable state (AggregateTimer)
+    public static class TimerMergedAggregate {
 
-        private final AggregateMetric rootMetric;
+        private final AggregateTimer rootTimer;
         private final long transactionCount;
 
-        private MetricMergedAggregate(AggregateMetric rootMetric, long transactionCount) {
-            this.rootMetric = rootMetric;
+        private TimerMergedAggregate(AggregateTimer rootTimer, long transactionCount) {
+            this.rootTimer = rootTimer;
             this.transactionCount = transactionCount;
         }
 
-        public AggregateMetric getMetrics() {
-            return rootMetric;
+        public AggregateTimer getTimers() {
+            return rootTimer;
         }
 
         public long getTransactionCount() {

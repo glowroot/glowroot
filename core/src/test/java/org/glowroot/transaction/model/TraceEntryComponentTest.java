@@ -29,10 +29,10 @@ public class TraceEntryComponentTest {
     public void testTooManyPops() {
         // given
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        TransactionMetricExt transactionMetric = mock(TransactionMetricExt.class);
+        TimerExt timer = mock(TimerExt.class);
         Ticker ticker = mock(Ticker.class);
-        TraceEntryComponent traceEntryComponent = new TraceEntryComponent(messageSupplier,
-                transactionMetric, 0, ticker);
+        TraceEntryComponent traceEntryComponent =
+                new TraceEntryComponent(messageSupplier, timer, 0, ticker);
         // when
         traceEntryComponent.popEntry(traceEntryComponent.getRootTraceEntry(), 0, null);
         traceEntryComponent.popEntry(traceEntryComponent.getRootTraceEntry(), 0, null);
@@ -44,13 +44,13 @@ public class TraceEntryComponentTest {
         // given
         MessageSupplier messageSupplier1 = mock(MessageSupplier.class);
         MessageSupplier messageSupplier2 = mock(MessageSupplier.class);
-        TransactionMetricExt transactionMetric1 = mock(TransactionMetricExt.class);
-        TransactionMetricExt transactionMetric2 = mock(TransactionMetricExt.class);
+        TimerExt timer1 = mock(TimerExt.class);
+        TimerExt timer2 = mock(TimerExt.class);
         Ticker ticker = mock(Ticker.class);
-        TraceEntryComponent traceEntryComponent = new TraceEntryComponent(messageSupplier1,
-                transactionMetric1, 0, ticker);
+        TraceEntryComponent traceEntryComponent =
+                new TraceEntryComponent(messageSupplier1, timer1, 0, ticker);
         // when
-        traceEntryComponent.pushEntry(0, messageSupplier2, transactionMetric2);
+        traceEntryComponent.pushEntry(0, messageSupplier2, timer2);
         traceEntryComponent.popEntry(traceEntryComponent.getRootTraceEntry(), 0, null);
         // then
         assertThat(traceEntryComponent.isCompleted()).isTrue();
@@ -61,13 +61,13 @@ public class TraceEntryComponentTest {
         // given
         MessageSupplier messageSupplier1 = mock(MessageSupplier.class);
         MessageSupplier messageSupplier2 = mock(MessageSupplier.class);
-        TransactionMetricExt transactionMetric1 = mock(TransactionMetricExt.class);
-        TransactionMetricExt transactionMetric2 = mock(TransactionMetricExt.class);
+        TimerExt timer1 = mock(TimerExt.class);
+        TimerExt timer2 = mock(TimerExt.class);
         Ticker ticker = mock(Ticker.class);
-        TraceEntryComponent traceEntryComponent = new TraceEntryComponent(messageSupplier1,
-                transactionMetric1, 0, ticker);
+        TraceEntryComponent traceEntryComponent =
+                new TraceEntryComponent(messageSupplier1, timer1, 0, ticker);
         // when
-        traceEntryComponent.pushEntry(0, messageSupplier2, transactionMetric2);
+        traceEntryComponent.pushEntry(0, messageSupplier2, timer2);
         traceEntryComponent.popEntry(mock(TraceEntry.class), 0, null);
         // then
         assertThat(traceEntryComponent.isCompleted()).isTrue();

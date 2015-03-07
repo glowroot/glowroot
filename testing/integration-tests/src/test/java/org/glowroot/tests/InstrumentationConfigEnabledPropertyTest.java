@@ -27,9 +27,9 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
+import org.glowroot.container.trace.Timer;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
-import org.glowroot.container.trace.TraceMetric;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -55,7 +55,7 @@ public class InstrumentationConfigEnabledPropertyTest {
     }
 
     @Test
-    public void shouldReadTracesWithEnabledFifthMetric() throws Exception {
+    public void shouldReadTracesWithEnabledFifthTimer() throws Exception {
         // given
         container.getConfigService().setPluginProperty("glowroot-integration-tests",
                 "levelFiveEnabled", true);
@@ -66,15 +66,15 @@ public class InstrumentationConfigEnabledPropertyTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("Level One");
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
-        assertThat(trace.getRootMetric().getName()).isEqualTo("level one");
-        assertThat(trace.getRootMetric().getNestedMetricNames())
+        assertThat(trace.getRootTimer().getName()).isEqualTo("level one");
+        assertThat(trace.getRootTimer().getNestedTimerNames())
                 .containsOnly("level two");
-        TraceMetric levelTwoMetric = trace.getRootMetric().getNestedMetrics().get(0);
-        assertThat(levelTwoMetric.getNestedMetricNames()).containsOnly("level three");
-        TraceMetric levelThreeMetric = levelTwoMetric.getNestedMetrics().get(0);
-        assertThat(levelThreeMetric.getNestedMetricNames()).containsOnly("level four");
-        TraceMetric levelFourMetric = levelThreeMetric.getNestedMetrics().get(0);
-        assertThat(levelFourMetric.getNestedMetricNames()).containsOnly("level five");
+        Timer levelTwoTimer = trace.getRootTimer().getNestedTimers().get(0);
+        assertThat(levelTwoTimer.getNestedTimerNames()).containsOnly("level three");
+        Timer levelThreeTimer = levelTwoTimer.getNestedTimers().get(0);
+        assertThat(levelThreeTimer.getNestedTimerNames()).containsOnly("level four");
+        Timer levelFourTimer = levelThreeTimer.getNestedTimers().get(0);
+        assertThat(levelFourTimer.getNestedTimerNames()).containsOnly("level five");
         assertThat(entries).hasSize(4);
         TraceEntry entry1 = entries.get(0);
         assertThat(entry1.getMessage().getText()).isEqualTo("Level One");
@@ -108,14 +108,14 @@ public class InstrumentationConfigEnabledPropertyTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("Level One");
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
-        assertThat(trace.getRootMetric().getName()).isEqualTo("level one");
-        assertThat(trace.getRootMetric().getNestedMetricNames()).containsOnly("level two");
-        TraceMetric levelTwoMetric = trace.getRootMetric().getNestedMetrics().get(0);
-        assertThat(levelTwoMetric.getNestedMetricNames()).containsOnly("level three");
-        TraceMetric levelThreeMetric = levelTwoMetric.getNestedMetrics().get(0);
-        assertThat(levelThreeMetric.getNestedMetricNames()).containsOnly("level four");
-        TraceMetric levelFourMetric = levelThreeMetric.getNestedMetrics().get(0);
-        assertThat(levelFourMetric.getNestedMetricNames()).containsOnly("level five");
+        assertThat(trace.getRootTimer().getName()).isEqualTo("level one");
+        assertThat(trace.getRootTimer().getNestedTimerNames()).containsOnly("level two");
+        Timer levelTwoTimer = trace.getRootTimer().getNestedTimers().get(0);
+        assertThat(levelTwoTimer.getNestedTimerNames()).containsOnly("level three");
+        Timer levelThreeTimer = levelTwoTimer.getNestedTimers().get(0);
+        assertThat(levelThreeTimer.getNestedTimerNames()).containsOnly("level four");
+        Timer levelFourTimer = levelThreeTimer.getNestedTimers().get(0);
+        assertThat(levelFourTimer.getNestedTimerNames()).containsOnly("level five");
         assertThat(entries).hasSize(5);
         TraceEntry entry1 = entries.get(0);
         assertThat(entry1.getMessage().getText()).isEqualTo("Level One");

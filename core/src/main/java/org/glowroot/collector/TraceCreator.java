@@ -31,8 +31,8 @@ import com.google.common.io.CharStreams;
 import org.glowroot.common.Marshaling2;
 import org.glowroot.transaction.model.GcInfoComponent.GcInfo;
 import org.glowroot.transaction.model.ThreadInfoComponent.ThreadInfoData;
+import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.Transaction;
-import org.glowroot.transaction.model.TransactionMetricImpl;
 
 public class TraceCreator {
 
@@ -77,7 +77,7 @@ public class TraceCreator {
         builder.customAttributes(writeCustomAttributesAsString(transaction.getCustomAttributes()));
         builder.customAttributesForIndexing(transaction.getCustomAttributes());
         builder.customDetail(writeCustomDetailAsString(transaction.getCustomDetail()));
-        builder.metrics(writeMetricsAsString(transaction.getRootMetric()));
+        builder.timers(writeTimersAsString(transaction.getRootTimer()));
         ThreadInfoData threadInfo = transaction.getThreadInfo();
         if (threadInfo != null) {
             builder.threadCpuTime(threadInfo.threadCpuTime());
@@ -132,11 +132,10 @@ public class TraceCreator {
         return sb.toString();
     }
 
-    private static @Nullable String writeMetricsAsString(TransactionMetricImpl rootMetric)
-            throws IOException {
+    private static @Nullable String writeTimersAsString(TimerImpl rootTimer) throws IOException {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        rootMetric.writeValue(jg);
+        rootTimer.writeValue(jg);
         jg.close();
         return sb.toString();
     }

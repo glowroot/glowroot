@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ import com.google.common.collect.ImmutableMap;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.Optional;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -45,10 +45,10 @@ public class NestableCallAspect {
     private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-sandbox");
 
     @Pointcut(className = "org.glowroot.sandbox.ui.NestableCall", methodName = "execute",
-            methodParameterTypes = {}, metricName = "nestable", ignoreSelfNested = true)
+            methodParameterTypes = {}, timerName = "nestable", ignoreSelfNested = true)
     public static class NestableCallAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(NestableCallAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(NestableCallAdvice.class);
         private static final Random random = new Random();
         @IsEnabled
         public static boolean isEnabled() {
@@ -75,10 +75,10 @@ public class NestableCallAspect {
             TraceEntry traceEntry;
             if (count % 10 == 0) {
                 traceEntry = pluginServices.startTransaction("Background", transactionName,
-                        getRootMessageSupplier(headline), metricName);
+                        getRootMessageSupplier(headline), timerName);
             } else {
                 traceEntry = pluginServices.startTransaction("Sandbox", transactionName,
-                        getRootMessageSupplier(headline), metricName);
+                        getRootMessageSupplier(headline), timerName);
             }
             int index = count % (USERS.size() + 1);
             if (index < USERS.size()) {

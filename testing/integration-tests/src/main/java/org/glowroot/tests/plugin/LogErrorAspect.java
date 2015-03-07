@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ package org.glowroot.tests.plugin;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
@@ -33,11 +33,11 @@ public class LogErrorAspect {
             PluginServices.get("glowroot-integration-tests");
 
     @Pointcut(className = "org.glowroot.tests.LogError", methodName = "log",
-            methodParameterTypes = {"java.lang.String"}, metricName = "log error")
+            methodParameterTypes = {"java.lang.String"}, timerName = "log error")
     public static class LogErrorAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LogErrorAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(LogErrorAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -47,7 +47,7 @@ public class LogErrorAspect {
         @OnBefore
         public static TraceEntry onBefore(@BindParameter String message) {
             return pluginServices.startTraceEntry(MessageSupplier.from("ERROR -- {}", message),
-                    metricName);
+                    timerName);
         }
 
         @OnAfter
@@ -57,11 +57,11 @@ public class LogErrorAspect {
     }
 
     @Pointcut(className = "org.glowroot.tests.LogError", methodName = "addNestedErrorEntry",
-            methodParameterTypes = {}, metricName = "add nested error entry")
+            methodParameterTypes = {}, timerName = "add nested error entry")
     public static class AddErrorEntryAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(AddErrorEntryAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(AddErrorEntryAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -71,7 +71,7 @@ public class LogErrorAspect {
         @OnBefore
         public static TraceEntry onBefore() {
             TraceEntry traceEntry = pluginServices.startTraceEntry(
-                    MessageSupplier.from("outer entry to test nesting level"), metricName);
+                    MessageSupplier.from("outer entry to test nesting level"), timerName);
             pluginServices.addTraceEntry(ErrorMessage.from("test add nested error entry message"));
             return traceEntry;
         }
@@ -85,6 +85,6 @@ public class LogErrorAspect {
     // this is just to generate an additional $glowroot$ method to test that consecutive
     // $glowroot$ methods in an entry stack trace are stripped out correctly
     @Pointcut(className = "org.glowroot.tests.LogError", methodName = "log",
-            methodParameterTypes = {"java.lang.String"}, metricName = "log error 2")
+            methodParameterTypes = {"java.lang.String"}, timerName = "log error 2")
     public static class LogErrorAdvice2 {}
 }

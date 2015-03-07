@@ -48,30 +48,30 @@ class Weaver {
     private final ImmutableList<MixinType> mixinTypes;
     private final AnalyzedWorld analyzedWorld;
     private final WeavingTimerService weavingTimerService;
-    private final boolean metricWrapperMethods;
+    private final boolean timerWrapperMethods;
 
     Weaver(Supplier<List<Advice>> advisors, List<MixinType> mixinTypes,
             AnalyzedWorld analyzedWorld, WeavingTimerService weavingTimerService,
-            boolean metricWrapperMethods) {
+            boolean timerWrapperMethods) {
         this.advisors = advisors;
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.analyzedWorld = analyzedWorld;
         this.weavingTimerService = weavingTimerService;
-        this.metricWrapperMethods = metricWrapperMethods;
+        this.timerWrapperMethods = timerWrapperMethods;
     }
 
     byte /*@Nullable*/[] weave(byte[] classBytes, String className,
             @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
-        if (metricWrapperMethods) {
-            return weave$glowroot$metric$glowroot$weaving$0(classBytes, className, codeSource,
+        if (timerWrapperMethods) {
+            return weave$glowroot$timer$glowroot$weaving$0(classBytes, className, codeSource,
                     loader);
         } else {
             return weaveInternal(classBytes, className, codeSource, loader);
         }
     }
 
-    // weird method name is following "metric marker" method naming
-    private byte /*@Nullable*/[] weave$glowroot$metric$glowroot$weaving$0(byte[] classBytes,
+    // weird method name is following "timer marker" method naming
+    private byte /*@Nullable*/[] weave$glowroot$timer$glowroot$weaving$0(byte[] classBytes,
             String className, @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
         return weaveInternal(classBytes, className, codeSource, loader);
     }
@@ -103,7 +103,7 @@ class Weaver {
         ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES, analyzedWorld,
                 loader, codeSource, className);
         WeavingClassVisitor cv = new WeavingClassVisitor(cw, advisors.get(), mixinTypes, loader,
-                analyzedWorld, codeSource, metricWrapperMethods);
+                analyzedWorld, codeSource, timerWrapperMethods);
         ClassReader cr = new ClassReader(classBytes);
         boolean shortCircuitException = false;
         boolean pointcutClassFoundException = false;

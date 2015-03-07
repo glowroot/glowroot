@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,31 +17,31 @@ package org.glowroot.transaction.model;
 
 import javax.annotation.Nullable;
 
-// micro-optimized map for nested metrics
-class NestedMetricMap {
+// micro-optimized map for nested timers
+class NestedTimerMap {
 
     // table length must always be a power of 2, see comment in get()
     private final @Nullable Entry[] table = new Entry[16];
 
     @Nullable
-    TransactionMetricImpl get(MetricNameImpl metricName) {
+    TimerImpl get(TimerNameImpl timerName) {
         // this mask requires table length to be a power of 2
-        int bucket = metricName.specialHashCode() & (table.length - 1);
+        int bucket = timerName.specialHashCode() & (table.length - 1);
         Entry entry = table[bucket];
         while (true) {
             if (entry == null) {
                 return null;
             }
-            if (entry.metricName == metricName) {
-                return entry.transactionMetric;
+            if (entry.timerName == timerName) {
+                return entry.timer;
             }
             entry = entry.nextEntry;
         }
     }
 
-    void put(MetricNameImpl metricName, TransactionMetricImpl transactionMetric) {
-        Entry newEntry = new Entry(metricName, transactionMetric);
-        int bucket = metricName.specialHashCode() & (table.length - 1);
+    void put(TimerNameImpl timerName, TimerImpl timer) {
+        Entry newEntry = new Entry(timerName, timer);
+        int bucket = timerName.specialHashCode() & (table.length - 1);
         Entry entry = table[bucket];
         if (entry == null) {
             table[bucket] = newEntry;
@@ -56,13 +56,13 @@ class NestedMetricMap {
 
     private static class Entry {
 
-        private final MetricNameImpl metricName;
-        private final TransactionMetricImpl transactionMetric;
+        private final TimerNameImpl timerName;
+        private final TimerImpl timer;
         private @Nullable Entry nextEntry;
 
-        private Entry(MetricNameImpl metricName, TransactionMetricImpl transactionMetric) {
-            this.metricName = metricName;
-            this.transactionMetric = transactionMetric;
+        private Entry(TimerNameImpl timerName, TimerImpl timer) {
+            this.timerName = timerName;
+            this.timer = timer;
         }
     }
 }

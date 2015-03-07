@@ -792,7 +792,7 @@ public class WeaverTest {
         // then
         assertThat(methodName).isNotNull();
         assertThat(methodName.toString())
-                .matches("executeWithReturn\\$glowroot\\$metric\\$abc\\$xyz\\$\\d+");
+                .matches("executeWithReturn\\$glowroot\\$timer\\$abc\\$xyz\\$\\d+");
     }
 
     // ===================== static pointcuts =====================

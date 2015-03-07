@@ -41,10 +41,10 @@ import org.glowroot.api.weaving.Pointcut;
  * 
  *     &#064;Pointcut(className = &quot;org.springframework.validation.Validator&quot;,
  *             methodName = &quot;validate&quot;, methodParameterTypes = {&quot;..&quot;},
- *             metricName = &quot;spring validator&quot;)
+ *             timerName = &quot;spring validator&quot;)
  *     public static class ValidatorAdvice {
- *         private static final MetricName metricName =
- *                 pluginServices.getMetricName(ValidatorAdvice.class);
+ *         private static final TimerName timerName =
+ *                 pluginServices.getTimerName(ValidatorAdvice.class);
  *         &#064;IsEnabled
  *         public static boolean isEnabled() {
  *             return pluginServices.isEnabled();
@@ -53,7 +53,7 @@ import org.glowroot.api.weaving.Pointcut;
  *         public static TraceEntry onBefore(@BindReceiver Object validator) {
  *             return pluginServices.startTraceEntry(
  *                     MessageSupplier.from(&quot;spring validator: {}&quot;, validator.getClass().getName()),
- *                     metricName);
+ *                     timerName);
  *         }
  *         &#064;OnAfter
  *         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
@@ -140,42 +140,42 @@ public abstract class PluginServices {
     public abstract @Nullable Double getDoubleProperty(String name);
 
     /**
-     * Returns the {@code MetricName} instance for the specified {@code adviceClass}.
+     * Returns the {@code TimerName} instance for the specified {@code adviceClass}.
      * 
      * {@code adviceClass} must be a {@code Class} with a {@link Pointcut} annotation that has a
-     * non-empty {@link Pointcut#metricName()}. This is how the {@code MetricName} is named.
+     * non-empty {@link Pointcut#timerName()}. This is how the {@code TimerName} is named.
      * 
-     * The same {@code MetricName} is always returned for a given {@code adviceClass}.
+     * The same {@code TimerName} is always returned for a given {@code adviceClass}.
      * 
      * The return value can (and should) be cached by the plugin for the life of the jvm to avoid
      * looking it up every time it is needed (which is often).
      */
-    public abstract MetricName getMetricName(Class<?> adviceClass);
+    public abstract TimerName getTimerName(Class<?> adviceClass);
 
     /**
      * If there is no active transaction, a new transaction is started.
      * 
      * If there is already an active transaction, this method acts the same as
-     * {@link #startTraceEntry(MessageSupplier, MetricName)} (the transaction name and type are not
+     * {@link #startTraceEntry(MessageSupplier, TimerName)} (the transaction name and type are not
      * modified on the existing transaction).
      */
     public abstract TraceEntry startTransaction(String transactionType, String transactionName,
-            MessageSupplier messageSupplier, MetricName metricName);
+            MessageSupplier messageSupplier, TimerName timerName);
 
     /**
-     * Creates and starts a trace entry with the given {@code messageSupplier}. A transaction metric
-     * for the specified metric is also started.
+     * Creates and starts a trace entry with the given {@code messageSupplier}. A timer for the
+     * specified timer name is also started.
      * 
      * Since entries can be expensive in great quantities, there is a
      * {@code maxTraceEntriesPerTransaction} property on the configuration page to limit the number
      * of entries captured for any given trace.
      * 
      * Once a trace has accumulated {@code maxTraceEntriesPerTransaction} entries, this method
-     * doesn't add new entries to the trace, but instead returns a dummy entry. A transaction metric
-     * for the specified metric is still started, since metrics are very cheap, even in great
-     * quantities. The dummy entry adhere to the {@link TraceEntry} contract and return the
-     * specified {@link MessageSupplier} in response to {@link TraceEntry#getMessageSupplier()}.
-     * Calling {@link TraceEntry#end()} on the dummy entry ends the transaction metric. If
+     * doesn't add new entries to the trace, but instead returns a dummy entry. A timer for the
+     * specified timer name is still started, since timers are very cheap, even in great quantities.
+     * The dummy entry adheres to the {@link TraceEntry} contract and returns the specified
+     * {@link MessageSupplier} in response to {@link TraceEntry#getMessageSupplier()}. Calling
+     * {@link TraceEntry#end()} on the dummy entry ends the timer. If
      * {@link TraceEntry#endWithError(ErrorMessage)} is called on the dummy entry, then the dummy
      * entry will be escalated to a real entry. If
      * {@link TraceEntry#endWithStackTrace(long, TimeUnit)} is called on the dummy entry and the
@@ -189,17 +189,17 @@ public abstract class PluginServices {
      * {@link TraceEntry}.
      */
     public abstract TraceEntry startTraceEntry(MessageSupplier messageSupplier,
-            MetricName metricName);
+            TimerName timerName);
 
     /**
-     * Starts a transaction metric for the specified metric. If a transaction metric is already
-     * running for the specified metric, it will keep an internal counter of the number of starts,
-     * and it will only end the transaction metric after the corresponding number of ends.
+     * Starts a timer for the specified timer name. If a timer is already running for the specified
+     * timer name, it will keep an internal counter of the number of starts, and it will only end
+     * the timer after the corresponding number of ends.
      * 
      * If there is no current transaction, this method does nothing, and returns a no-op instance of
-     * {@link TransactionMetric}.
+     * {@link Timer}.
      */
-    public abstract TransactionMetric startTransactionMetric(MetricName metricName);
+    public abstract Timer startTimer(TimerName timerName);
 
     /**
      * Adds a trace entry with duration zero. It does not set the error attribute on the trace,

@@ -23,9 +23,9 @@ import com.google.common.collect.Maps;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.Optional;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindThrowable;
@@ -43,11 +43,11 @@ public class LevelOneAspect {
 
     @Pointcut(className = "org.glowroot.tests.LevelOne", methodName = "call",
             methodParameterTypes = {"java.lang.Object", "java.lang.Object"},
-            metricName = "level one")
+            timerName = "level one")
     public static class LevelOneAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LevelOneAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(LevelOneAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -93,7 +93,7 @@ public class LevelOneAspect {
                 }
             };
             TraceEntry traceEntry = pluginServices.startTransaction("Integration test",
-                    "basic test", messageSupplier, metricName);
+                    "basic test", messageSupplier, timerName);
             // several trace attributes to test ordering
             pluginServices.setTransactionCustomAttribute("Zee One", String.valueOf(arg2));
             pluginServices.setTransactionCustomAttribute("Yee Two", "yy3");

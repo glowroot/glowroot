@@ -34,9 +34,9 @@ import org.glowroot.container.AppUnderTestServices;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.PluginConfig;
+import org.glowroot.container.trace.Timer;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
-import org.glowroot.container.trace.TraceMetric;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -77,7 +77,7 @@ public class JdbcPluginTest {
     }
 
     @Test
-    public void testResultSetValueMetric() throws Exception {
+    public void testResultSetValueTimer() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResultSetGet", true);
         // when
@@ -85,8 +85,8 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         boolean found = false;
-        for (TraceMetric metric : trace.getRootMetric().getNestedMetrics()) {
-            if (metric.getName().equals("jdbc resultset value")) {
+        for (Timer timer : trace.getRootTimer().getNestedTimers()) {
+            if (timer.getName().equals("jdbc resultset value")) {
                 found = true;
                 break;
             }
@@ -95,7 +95,7 @@ public class JdbcPluginTest {
     }
 
     @Test
-    public void testResultSetValueMetricUsingColumnName() throws Exception {
+    public void testResultSetValueTimerUsingColumnName() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResultSetGet", true);
         // when
@@ -103,8 +103,8 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         boolean found = false;
-        for (TraceMetric metric : trace.getRootMetric().getNestedMetrics()) {
-            if (metric.getName().equals("jdbc resultset value")) {
+        for (Timer timer : trace.getRootTimer().getNestedTimers()) {
+            if (timer.getName().equals("jdbc resultset value")) {
                 found = true;
                 break;
             }
@@ -113,15 +113,15 @@ public class JdbcPluginTest {
     }
 
     @Test
-    public void testWithResultSetNavigateMetric() throws Exception {
+    public void testWithResultSetNavigateTimer() throws Exception {
         // given
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
         boolean found = false;
-        for (TraceMetric metric : trace.getRootMetric().getNestedMetrics()) {
-            if (metric.getName().equals("jdbc resultset navigate")) {
+        for (Timer timer : trace.getRootTimer().getNestedTimers()) {
+            if (timer.getName().equals("jdbc resultset navigate")) {
                 found = true;
                 break;
             }
@@ -130,7 +130,7 @@ public class JdbcPluginTest {
     }
 
     @Test
-    public void testWithoutResultSetNavigateMetric() throws Exception {
+    public void testWithoutResultSetNavigateTimer() throws Exception {
         // given
         container.getConfigService()
                 .setPluginProperty(PLUGIN_ID, "captureResultSetNavigate", false);
@@ -139,8 +139,8 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         boolean found = false;
-        for (TraceMetric metric : trace.getRootMetric().getNestedMetrics()) {
-            if (metric.getName().equals("jdbc resultset navigate")) {
+        for (Timer timer : trace.getRootTimer().getNestedTimers()) {
+            if (timer.getName().equals("jdbc resultset navigate")) {
                 found = true;
                 break;
             }

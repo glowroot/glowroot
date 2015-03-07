@@ -34,7 +34,7 @@ public class ReweavePointcutsTest extends ConfiguredInstrumentationTest {
         container.executeAppUnderTest(ShouldExecuteWithArgs.class);
 
         addInstrumentationForExecute1();
-        addInstrumentationForExecute1MetricOnly();
+        addInstrumentationForExecute1TimerOnly();
         addInstrumentationForExecuteWithReturn();
         addInstrumentationForExecuteWithArgs();
         container.getConfigService().reweave();

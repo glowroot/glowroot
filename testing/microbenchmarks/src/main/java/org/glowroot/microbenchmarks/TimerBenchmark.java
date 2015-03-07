@@ -28,16 +28,16 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.microbenchmarks.support.MetricWorthy;
+import org.glowroot.microbenchmarks.support.TimerWorthy;
 
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Thread)
-public class TransactionMetricWorstCaseBenchmark {
+public class TimerBenchmark {
 
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-microbenchmarks");
@@ -46,15 +46,14 @@ public class TransactionMetricWorstCaseBenchmark {
     private PointcutType pointcutType;
 
     private TraceEntry rootTraceEntry;
-    private MetricWorthy metricWorthy;
+    private TimerWorthy timerWorthy;
 
     @Setup
     public void setup() {
-        MetricName metricName =
-                pluginServices.getMetricName(OnlyForTheMetricName.class);
+        TimerName timerName = pluginServices.getTimerName(OnlyForTheTimerName.class);
         rootTraceEntry = pluginServices.startTransaction("Microbenchmark", "micro transaction",
-                MessageSupplier.from("micro transaction"), metricName);
-        metricWorthy = new MetricWorthy();
+                MessageSupplier.from("micro transaction"), timerName);
+        timerWorthy = new TimerWorthy();
     }
 
     @TearDown
@@ -66,17 +65,15 @@ public class TransactionMetricWorstCaseBenchmark {
     public void execute() {
         switch (pointcutType) {
             case API:
-                metricWorthy.doSomethingMetricWorthy();
-                metricWorthy.doSomethingMetricWorthyB();
+                timerWorthy.doSomethingTimerWorthy();
                 break;
             case CONFIG:
-                metricWorthy.doSomethingMetricWorthy2();
-                metricWorthy.doSomethingMetricWorthy2B();
+                timerWorthy.doSomethingTimerWorthy2();
                 break;
         }
     }
 
     @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {},
-            metricName = "micro transaction")
-    private static class OnlyForTheMetricName {}
+            timerName = "micro transaction")
+    private static class OnlyForTheTimerName {}
 }

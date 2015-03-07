@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindTraveler;
@@ -36,11 +36,11 @@ public class LevelThreeAspect {
 
     @Pointcut(className = "org.glowroot.tests.LevelThree", methodName = "call",
             methodParameterTypes = {"java.lang.String", "java.lang.String"},
-            metricName = "level three")
+            timerName = "level three")
     public static class LevelThreeAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LevelThreeAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(LevelThreeAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -56,7 +56,7 @@ public class LevelThreeAspect {
                     return Message.withDetail("Level Three",
                             ImmutableMap.of("arg1", arg1, "arg2", arg2));
                 }
-            }, metricName);
+            }, timerName);
         }
 
         @OnAfter

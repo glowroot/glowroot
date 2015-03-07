@@ -46,10 +46,10 @@ import org.glowroot.local.store.AggregateDao.TransactionSummaryQuery;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
 import org.glowroot.local.store.AggregateMerging;
 import org.glowroot.local.store.AggregateMerging.HistogramMergedAggregate;
-import org.glowroot.local.store.AggregateMerging.MetricMergedAggregate;
 import org.glowroot.local.store.AggregateMerging.ThreadInfoAggregate;
-import org.glowroot.local.store.AggregateMetric;
+import org.glowroot.local.store.AggregateMerging.TimerMergedAggregate;
 import org.glowroot.local.store.AggregateProfileNode;
+import org.glowroot.local.store.AggregateTimer;
 import org.glowroot.local.store.ImmutableTransactionSummaryQuery;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.ThreadInfoAggregateMarshaler;
@@ -136,8 +136,8 @@ class TransactionJsonService {
             // prior capture times
             aggregates = aggregates.subList(1, aggregates.size());
         }
-        MetricMergedAggregate metricMergedAggregate =
-                AggregateMerging.getMetricMergedAggregate(aggregates);
+        TimerMergedAggregate timerMergedAggregate =
+                AggregateMerging.getTimerMergedAggregate(aggregates);
         ThreadInfoAggregate threadInfoAggregate =
                 AggregateMerging.getThreadInfoAggregate(aggregates);
 
@@ -146,7 +146,7 @@ class TransactionJsonService {
         jg.writeStartObject();
         jg.writeObjectField("dataSeries", dataSeriesList);
         jg.writeObjectField("transactionCounts", transactionCounts);
-        jg.writeObjectField("mergedAggregate", metricMergedAggregate);
+        jg.writeObjectField("mergedAggregate", timerMergedAggregate);
         if (!threadInfoAggregate.isEmpty()) {
             jg.writeFieldName("threadInfoAggregate");
             ThreadInfoAggregateMarshaler.marshal(jg, threadInfoAggregate);
@@ -338,13 +338,13 @@ class TransactionJsonService {
         DataSeriesHelper dataSeriesHelper =
                 new DataSeriesHelper(clock, getDataPointIntervalMillis(request));
         final int topX = 5;
-        List<String> metricNames = getTopMetricNames(stackedPoints, topX + 1);
+        List<String> timerNames = getTopTimerNames(stackedPoints, topX + 1);
         List<DataSeries> dataSeriesList = Lists.newArrayList();
-        for (int i = 0; i < Math.min(metricNames.size(), topX); i++) {
-            dataSeriesList.add(new DataSeries(metricNames.get(i)));
+        for (int i = 0; i < Math.min(timerNames.size(), topX); i++) {
+            dataSeriesList.add(new DataSeries(timerNames.get(i)));
         }
-        // need 'other' data series even if < topX metrics in order to capture root metrics,
-        // e.g. time spent in 'servlet' metric but not i)n any nested metric
+        // need 'other' data series even if < topX timers in order to capture root timers,
+        // e.g. time spent in 'servlet' timer but not in any nested timer
         DataSeries otherDataSeries = new DataSeries(null);
         Aggregate lastAggregate = null;
         for (StackedPoint stackedPoint : stackedPoints) {
@@ -358,10 +358,10 @@ class TransactionJsonService {
                         aggregate.captureTime(), dataSeriesList, otherDataSeries);
             }
             lastAggregate = aggregate;
-            MutableLongMap<String> stackedMetrics = stackedPoint.getStackedMetrics();
+            MutableLongMap<String> stackedTimers = stackedPoint.getStackedTimers();
             long totalOtherMicros = aggregate.totalMicros();
             for (DataSeries dataSeries : dataSeriesList) {
-                MutableLong totalMicros = stackedMetrics.get(dataSeries.getName());
+                MutableLong totalMicros = stackedTimers.get(dataSeries.getName());
                 if (totalMicros == null) {
                     dataSeries.add(aggregate.captureTime(), 0);
                 } else {
@@ -397,12 +397,12 @@ class TransactionJsonService {
         }
     }
 
-    // calculate top 5 metrics
-    private static List<String> getTopMetricNames(List<StackedPoint> stackedPoints, int topX) {
-        MutableLongMap<String> metricTotals = new MutableLongMap<String>();
+    // calculate top 5 timers
+    private static List<String> getTopTimerNames(List<StackedPoint> stackedPoints, int topX) {
+        MutableLongMap<String> timerTotals = new MutableLongMap<String>();
         for (StackedPoint stackedPoint : stackedPoints) {
-            for (Entry<String, MutableLong> entry : stackedPoint.getStackedMetrics().entrySet()) {
-                metricTotals.add(entry.getKey(), entry.getValue().longValue());
+            for (Entry<String, MutableLong> entry : stackedPoint.getStackedTimers().entrySet()) {
+                timerTotals.add(entry.getKey(), entry.getValue().longValue());
             }
         }
         Ordering<Entry<String, MutableLong>> valueOrdering = Ordering.natural().onResultOf(
@@ -413,13 +413,13 @@ class TransactionJsonService {
                         return entry.getValue().longValue();
                     }
                 });
-        List<String> metricNames = Lists.newArrayList();
-        List<Entry<String, MutableLong>> topMetricTotals =
-                valueOrdering.greatestOf(metricTotals.entrySet(), topX);
-        for (Entry<String, MutableLong> entry : topMetricTotals) {
-            metricNames.add(entry.getKey());
+        List<String> timerNames = Lists.newArrayList();
+        List<Entry<String, MutableLong>> topTimerTotals =
+                valueOrdering.greatestOf(timerTotals.entrySet(), topX);
+        for (Entry<String, MutableLong> entry : topTimerTotals) {
+            timerNames.add(entry.getKey());
         }
-        return metricNames;
+        return timerNames;
     }
 
     private boolean shouldIncludeActiveTraces(TransactionDataRequest request) {
@@ -462,45 +462,45 @@ class TransactionJsonService {
     private static class StackedPoint {
 
         private final Aggregate aggregate;
-        // stacked metric values only include time spent as a leaf node in the metric tree
-        private final MutableLongMap<String> stackedMetrics;
+        // stacked timer values only include time spent as a leaf node in the timer tree
+        private final MutableLongMap<String> stackedTimers;
 
         private static StackedPoint create(Aggregate aggregate) throws IOException {
-            String metrics = aggregate.metrics();
-            MutableLongMap<String> stackedMetrics = new MutableLongMap<String>();
-            AggregateMetric syntheticRootMetric = mapper.readValue(metrics, AggregateMetric.class);
-            // skip synthetic root metric
-            for (AggregateMetric realRootMetric : syntheticRootMetric.getNestedMetrics()) {
-                // skip real root metrics
-                for (AggregateMetric topLevelMetric : realRootMetric.getNestedMetrics()) {
-                    // traverse tree starting at top-level (under root) metrics
-                    addToStackedMetric(topLevelMetric, stackedMetrics);
+            String timers = aggregate.timers();
+            MutableLongMap<String> stackedTimers = new MutableLongMap<String>();
+            AggregateTimer syntheticRootTimer = mapper.readValue(timers, AggregateTimer.class);
+            // skip synthetic root timer
+            for (AggregateTimer realRootTimer : syntheticRootTimer.getNestedTimers()) {
+                // skip real root timers
+                for (AggregateTimer topLevelTimer : realRootTimer.getNestedTimers()) {
+                    // traverse tree starting at top-level (under root) timers
+                    addToStackedTimer(topLevelTimer, stackedTimers);
                 }
             }
-            return new StackedPoint(aggregate, stackedMetrics);
+            return new StackedPoint(aggregate, stackedTimers);
         }
 
-        private StackedPoint(Aggregate aggregate, MutableLongMap<String> stackedMetrics) {
+        private StackedPoint(Aggregate aggregate, MutableLongMap<String> stackedTimers) {
             this.aggregate = aggregate;
-            this.stackedMetrics = stackedMetrics;
+            this.stackedTimers = stackedTimers;
         }
 
         private Aggregate getAggregate() {
             return aggregate;
         }
 
-        private MutableLongMap<String> getStackedMetrics() {
-            return stackedMetrics;
+        private MutableLongMap<String> getStackedTimers() {
+            return stackedTimers;
         }
 
-        private static void addToStackedMetric(AggregateMetric metric,
-                MutableLongMap<String> stackedMetrics) {
+        private static void addToStackedTimer(AggregateTimer timer,
+                MutableLongMap<String> stackedTimers) {
             long totalNestedMicros = 0;
-            for (AggregateMetric nestedMetric : metric.getNestedMetrics()) {
-                totalNestedMicros += nestedMetric.getTotalMicros();
-                addToStackedMetric(nestedMetric, stackedMetrics);
+            for (AggregateTimer nestedTimer : timer.getNestedTimers()) {
+                totalNestedMicros += nestedTimer.getTotalMicros();
+                addToStackedTimer(nestedTimer, stackedTimers);
             }
-            stackedMetrics.add(metric.getName(), metric.getTotalMicros() - totalNestedMicros);
+            stackedTimers.add(timer.getName(), timer.getTotalMicros() - totalNestedMicros);
         }
     }
 

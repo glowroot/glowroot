@@ -17,8 +17,8 @@ package org.glowroot.microbenchmarks.support;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -35,11 +35,11 @@ public class TraceEntryWorthyAspect {
 
     @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TraceEntryWorthy",
             methodName = "doSomethingTraceEntryWorthy", methodParameterTypes = {},
-            metricName = "trace entry worthy")
+            timerName = "trace entry worthy")
     public static class TraceEntryWorthyAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(TraceEntryWorthyAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(TraceEntryWorthyAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -49,7 +49,7 @@ public class TraceEntryWorthyAspect {
         @OnBefore
         public static TraceEntry onBefore() {
             return pluginServices.startTraceEntry(MessageSupplier.from("trace entry worthy"),
-                    metricName);
+                    timerName);
         }
 
         @OnThrow

@@ -21,7 +21,7 @@ import org.junit.Test;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.common.Clock;
 import org.glowroot.common.Ticker;
@@ -54,29 +54,29 @@ public class PluginServicesImplMoreDefensiveCheckTest {
         when(configService.getAdvancedConfig()).thenReturn(advancedConfig);
         when(advancedConfig.maxTraceEntriesPerTransaction()).thenReturn(100);
 
-        MetricNameCache metricNameCache = mock(MetricNameCache.class);
+        TimerNameCache timerNameCache = mock(TimerNameCache.class);
         ThreadAllocatedBytes threadAllocatedBytes = mock(ThreadAllocatedBytes.class);
         UserProfileScheduler userProfileScheduler = mock(UserProfileScheduler.class);
         Ticker ticker = mock(Ticker.class);
         Clock clock = mock(Clock.class);
         pluginServices = PluginServicesImpl.create(transactionRegistry, transactionCollector,
-                configService, metricNameCache, threadAllocatedBytes, userProfileScheduler, ticker,
+                configService, timerNameCache, threadAllocatedBytes, userProfileScheduler, ticker,
                 clock, ImmutableList.<PluginDescriptor>of(), null);
     }
 
     @Test
     public void testEndWithStackTrace() {
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        MetricName metricName = mock(MetricName.class);
-        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, metricName);
+        TimerName timerName = mock(TimerName.class);
+        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, timerName);
         traceEntry.endWithStackTrace(-1, MILLISECONDS);
     }
 
     @Test
     public void testEndWithError() {
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        MetricName metricName = mock(MetricName.class);
-        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, metricName);
+        TimerName timerName = mock(TimerName.class);
+        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, timerName);
         traceEntry.endWithError(null);
     }
 
@@ -84,8 +84,8 @@ public class PluginServicesImplMoreDefensiveCheckTest {
     public void testEndDummyWithStackTrace() {
         when(mockTransaction.getEntryCount()).thenReturn(100);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        MetricName metricName = mock(MetricName.class);
-        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, metricName);
+        TimerName timerName = mock(TimerName.class);
+        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, timerName);
         traceEntry.endWithStackTrace(-1, MILLISECONDS);
     }
 
@@ -93,8 +93,8 @@ public class PluginServicesImplMoreDefensiveCheckTest {
     public void testEndDummyWithError() {
         when(mockTransaction.getEntryCount()).thenReturn(100);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        MetricName metricName = mock(MetricName.class);
-        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, metricName);
+        TimerName timerName = mock(TimerName.class);
+        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, timerName);
         traceEntry.endWithError(null);
     }
 
@@ -102,8 +102,8 @@ public class PluginServicesImplMoreDefensiveCheckTest {
     public void testEndDummyWithStackTraceGood() {
         when(mockTransaction.getEntryCount()).thenReturn(100);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        MetricName metricName = mock(MetricName.class);
-        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, metricName);
+        TimerName timerName = mock(TimerName.class);
+        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, timerName);
         traceEntry.endWithStackTrace(1, MILLISECONDS);
     }
 
@@ -111,8 +111,8 @@ public class PluginServicesImplMoreDefensiveCheckTest {
     public void testEndDummyWithErrorGood() {
         when(mockTransaction.getEntryCount()).thenReturn(100);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        MetricName metricName = mock(MetricName.class);
-        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, metricName);
+        TimerName timerName = mock(TimerName.class);
+        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, timerName);
         traceEntry.endWithError(mock(ErrorMessage.class));
     }
 }

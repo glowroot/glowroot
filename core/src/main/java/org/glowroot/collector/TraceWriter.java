@@ -55,10 +55,10 @@ public class TraceWriter {
             jg.writeFieldName("customDetail");
             jg.writeRawValue(customDetail);
         }
-        String metrics = trace.metrics();
-        if (metrics != null) {
-            jg.writeFieldName("metrics");
-            jg.writeRawValue(metrics);
+        String timers = trace.timers();
+        if (timers != null) {
+            jg.writeFieldName("timers");
+            jg.writeRawValue(timers);
         }
         writeOptionalNumberField(jg, "threadCpuTime", trace.threadCpuTime());
         writeOptionalNumberField(jg, "threadBlockedTime", trace.threadBlockedTime());

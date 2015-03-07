@@ -382,7 +382,7 @@ public class ConfigTest {
     }
 
     private static void updateAllFields(AdvancedConfig config) {
-        config.setMetricWrapperMethods(!config.isMetricWrapperMethods());
+        config.setTimerWrapperMethods(!config.isTimerWrapperMethods());
         config.setImmediatePartialStoreThresholdSeconds(
                 config.getImmediatePartialStoreThresholdSeconds() + 1);
         config.setMaxTraceEntriesPerTransaction(config.getMaxTraceEntriesPerTransaction() + 10);
@@ -414,7 +414,7 @@ public class ConfigTest {
         config.setMethodParameterTypes(Lists.newArrayList("java.lang.String", "java.util.List"));
         config.setMethodReturnType("void");
         config.setCaptureKind(CaptureKind.TRANSACTION);
-        config.setMetricName("yako");
+        config.setTimerName("yako");
         config.setTraceEntryTemplate("yak(): {{0}}, {{1}} => {{?}}");
         config.setTransactionType("ttype");
         config.setTransactionNameTemplate("tname");
@@ -434,12 +434,12 @@ public class ConfigTest {
                     ImmutableList.of(config.getMethodParameterTypes().get(0) + "c"));
         }
         config.setMethodReturnType(config.getMethodReturnType() + "d");
-        if (config.getCaptureKind() == CaptureKind.METRIC) {
+        if (config.getCaptureKind() == CaptureKind.TIMER) {
             config.setCaptureKind(CaptureKind.TRACE_ENTRY);
         } else {
-            config.setCaptureKind(CaptureKind.METRIC);
+            config.setCaptureKind(CaptureKind.TIMER);
         }
-        config.setMetricName(config.getMetricName() + "e");
+        config.setTimerName(config.getTimerName() + "e");
         config.setTraceEntryTemplate(config.getTraceEntryTemplate() + "f");
         config.setTraceEntryCaptureSelfNested(!config.isTraceEntryCaptureSelfNested());
         Long traceEntryStackThresholdMillis = config.getTraceEntryStackThresholdMillis();

@@ -27,7 +27,7 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class AdvancedConfig {
 
-    private boolean metricWrapperMethods;
+    private boolean timerWrapperMethods;
     private int immediatePartialStoreThresholdSeconds;
     private int maxTraceEntriesPerTransaction;
     private int maxStackTraceSamplesPerTransaction;
@@ -42,12 +42,12 @@ public class AdvancedConfig {
         this.version = version;
     }
 
-    public boolean isMetricWrapperMethods() {
-        return metricWrapperMethods;
+    public boolean isTimerWrapperMethods() {
+        return timerWrapperMethods;
     }
 
-    public void setMetricWrapperMethods(boolean metricWrapperMethods) {
-        this.metricWrapperMethods = metricWrapperMethods;
+    public void setTimerWrapperMethods(boolean timerWrapperMethods) {
+        this.timerWrapperMethods = timerWrapperMethods;
     }
 
     public int getImmediatePartialStoreThresholdSeconds() {
@@ -118,7 +118,7 @@ public class AdvancedConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(metricWrapperMethods, that.metricWrapperMethods)
+            return Objects.equal(timerWrapperMethods, that.timerWrapperMethods)
                     && Objects.equal(immediatePartialStoreThresholdSeconds,
                             that.immediatePartialStoreThresholdSeconds)
                     && Objects.equal(maxTraceEntriesPerTransaction,
@@ -139,7 +139,7 @@ public class AdvancedConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(metricWrapperMethods, immediatePartialStoreThresholdSeconds,
+        return Objects.hashCode(timerWrapperMethods, immediatePartialStoreThresholdSeconds,
                 maxTraceEntriesPerTransaction, maxStackTraceSamplesPerTransaction,
                 captureThreadInfo, captureGcInfo, mbeanGaugeNotFoundDelaySeconds,
                 internalQueryTimeoutSeconds);
@@ -149,7 +149,7 @@ public class AdvancedConfig {
     public String toString() {
         return MoreObjects
                 .toStringHelper(this)
-                .add("metricWrapperMethods", metricWrapperMethods)
+                .add("timerWrapperMethods", timerWrapperMethods)
                 .add("immediatePartialStoreThresholdSeconds", immediatePartialStoreThresholdSeconds)
                 .add("maxTraceEntriesPerTransaction", maxTraceEntriesPerTransaction)
                 .add("maxStackTraceSamplesPerTransaction", maxStackTraceSamplesPerTransaction)
@@ -163,7 +163,7 @@ public class AdvancedConfig {
 
     @JsonCreator
     static AdvancedConfig readValue(
-            @JsonProperty("metricWrapperMethods") @Nullable Boolean metricWrapperMethods,
+            @JsonProperty("timerWrapperMethods") @Nullable Boolean timerWrapperMethods,
             @JsonProperty("immediatePartialStoreThresholdSeconds") @Nullable Integer immediatePartialStoreThresholdSeconds,
             @JsonProperty("maxTraceEntriesPerTransaction") @Nullable Integer maxTraceEntriesPerTransaction,
             @JsonProperty("maxStackTraceSamplesPerTransaction") @Nullable Integer maxStackTraceSamplesPerTransaction,
@@ -172,7 +172,7 @@ public class AdvancedConfig {
             @JsonProperty("mbeanGaugeNotFoundDelaySeconds") @Nullable Integer mbeanGaugeNotFoundDelaySeconds,
             @JsonProperty("internalQueryTimeoutSeconds") @Nullable Integer internalQueryTimeoutSeconds,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(metricWrapperMethods, "metricWrapperMethods");
+        checkRequiredProperty(timerWrapperMethods, "timerWrapperMethods");
         checkRequiredProperty(immediatePartialStoreThresholdSeconds,
                 "immediatePartialStoreThresholdSeconds");
         checkRequiredProperty(maxTraceEntriesPerTransaction, "maxTraceEntriesPerTransaction");
@@ -184,7 +184,7 @@ public class AdvancedConfig {
         checkRequiredProperty(internalQueryTimeoutSeconds, "internalQueryTimeoutSeconds");
         checkRequiredProperty(version, "version");
         AdvancedConfig config = new AdvancedConfig(version);
-        config.setMetricWrapperMethods(metricWrapperMethods);
+        config.setTimerWrapperMethods(timerWrapperMethods);
         config.setImmediatePartialStoreThresholdSeconds(immediatePartialStoreThresholdSeconds);
         config.setMaxTraceEntriesPerTransaction(maxTraceEntriesPerTransaction);
         config.setMaxStackTraceSamplesPerTransaction(maxStackTraceSamplesPerTransaction);

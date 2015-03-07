@@ -21,8 +21,8 @@ import javax.annotation.Nullable;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindParameter;
@@ -34,15 +34,15 @@ import org.glowroot.api.weaving.Pointcut;
 
 public class Log4jAspect {
 
-    private static final String TRACE_METRIC = "logging";
+    private static final String TIMER_NAME = "logging";
 
     private static final PluginServices pluginServices = PluginServices.get("logger");
 
     @Pointcut(className = "org.apache.log4j.Category", methodName = "warn|error|fatal",
-            methodParameterTypes = {"java.lang.Object"}, metricName = TRACE_METRIC)
+            methodParameterTypes = {"java.lang.Object"}, timerName = TIMER_NAME)
     public static class LogAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LogAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(LogAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled() {
@@ -57,7 +57,7 @@ public class Log4jAspect {
             }
             return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, String.valueOf(message)),
-                    metricName);
+                    timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry,
@@ -69,10 +69,10 @@ public class Log4jAspect {
 
     @Pointcut(className = "org.apache.log4j.Category", methodName = "warn|error|fatal",
             methodParameterTypes = {"java.lang.Object", "java.lang.Throwable"},
-            metricName = TRACE_METRIC)
+            timerName = TIMER_NAME)
     public static class LogWithThrowableAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LogWithThrowableAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(LogWithThrowableAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled() {
@@ -88,7 +88,7 @@ public class Log4jAspect {
             }
             return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, String.valueOf(message)),
-                    metricName);
+                    timerName);
         }
         @OnAfter
         public static void onAfter(@BindParameter @Nullable Object message,
@@ -105,10 +105,10 @@ public class Log4jAspect {
 
     @Pointcut(className = "org.apache.log4j.Category", methodName = "log",
             methodParameterTypes = {"org.apache.log4j.Priority", "java.lang.Object"},
-            metricName = TRACE_METRIC)
+            timerName = TIMER_NAME)
     public static class LogWithPriorityAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LogWithPriorityAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(LogWithPriorityAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindParameter @Nullable Object priority) {
@@ -132,7 +132,7 @@ public class Log4jAspect {
             }
             return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", level, String.valueOf(message)),
-                    metricName);
+                    timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry,
@@ -144,10 +144,10 @@ public class Log4jAspect {
 
     @Pointcut(className = "org.apache.log4j.Category", methodName = "log",
             methodParameterTypes = {"org.apache.log4j.Priority", "java.lang.Object",
-                    "java.lang.Throwable"}, metricName = TRACE_METRIC)
+                    "java.lang.Throwable"}, timerName = TIMER_NAME)
     public static class LogWithPriorityAndThrowableAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LogWithPriorityAndThrowableAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(LogWithPriorityAndThrowableAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindParameter @Nullable Object priority) {
@@ -172,7 +172,7 @@ public class Log4jAspect {
             }
             return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", level, String.valueOf(message)),
-                    metricName);
+                    timerName);
         }
         @OnAfter
         public static void onAfter(
@@ -190,10 +190,10 @@ public class Log4jAspect {
 
     @Pointcut(className = "org.apache.log4j.Category", methodName = "l7dlog",
             methodParameterTypes = {"org.apache.log4j.Priority", "java.lang.String",
-                    "java.lang.Throwable"}, metricName = TRACE_METRIC)
+                    "java.lang.Throwable"}, timerName = TIMER_NAME)
     public static class LocalizedLogAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LocalizedLogAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(LocalizedLogAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindParameter @Nullable Object priority) {
@@ -217,7 +217,7 @@ public class Log4jAspect {
                 pluginServices.setTransactionError(key);
             }
             return pluginServices.startTraceEntry(
-                    MessageSupplier.from("log {} (localized): {}", level, key), metricName);
+                    MessageSupplier.from("log {} (localized): {}", level, key), timerName);
         }
         @OnAfter
         public static void onAfter(
@@ -235,10 +235,10 @@ public class Log4jAspect {
 
     @Pointcut(className = "org.apache.log4j.Category", methodName = "l7dlog",
             methodParameterTypes = {"org.apache.log4j.Priority", "java.lang.String",
-                    "java.lang.Object[]", "java.lang.Throwable"}, metricName = TRACE_METRIC)
+                    "java.lang.Object[]", "java.lang.Throwable"}, timerName = TIMER_NAME)
     public static class LocalizedLogWithParametersAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(LocalizedLogWithParametersAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(LocalizedLogWithParametersAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindParameter @Nullable Object priority) {
@@ -272,11 +272,11 @@ public class Log4jAspect {
                 }
                 return pluginServices.startTraceEntry(
                         MessageSupplier.from("log {} (localized): {} [{}]", level, key,
-                                sb.toString()), metricName);
+                                sb.toString()), timerName);
             } else {
                 return pluginServices.startTraceEntry(
                         MessageSupplier.from("log {} (localized): {}", level, key),
-                        metricName);
+                        timerName);
             }
         }
         @OnAfter

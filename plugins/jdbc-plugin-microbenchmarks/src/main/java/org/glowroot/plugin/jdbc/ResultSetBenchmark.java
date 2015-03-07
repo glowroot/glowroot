@@ -35,8 +35,8 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.plugin.jdbc.support.MockConnection;
@@ -47,8 +47,8 @@ import org.glowroot.plugin.jdbc.support.MockConnection;
 public class ResultSetBenchmark {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
-    private static final MetricName metricName =
-            pluginServices.getMetricName(OnlyForTheMetricName.class);
+    private static final TimerName timerName =
+            pluginServices.getTimerName(OnlyForTheTimerName.class);
 
     @Param
     private Database database;
@@ -88,7 +88,7 @@ public class ResultSetBenchmark {
     @OperationsPerInvocation(10000)
     public void next() throws Exception {
         TraceEntry traceEntry = pluginServices.startTransaction("Microbenchmark",
-                "micro transaction", MessageSupplier.from("micro transaction"), metricName);
+                "micro transaction", MessageSupplier.from("micro transaction"), timerName);
         ResultSet resultSet = preparedStatement.executeQuery();
         for (int i = 0; i < 10000; i++) {
             resultSet.next();
@@ -102,6 +102,6 @@ public class ResultSetBenchmark {
     }
 
     @Pointcut(className = "dummy", methodName = "dummy", methodParameterTypes = {},
-            metricName = "micro transaction")
-    private static class OnlyForTheMetricName {}
+            timerName = "micro transaction")
+    private static class OnlyForTheTimerName {}
 }

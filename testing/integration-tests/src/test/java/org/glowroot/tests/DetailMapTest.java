@@ -29,9 +29,9 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
+import org.glowroot.container.trace.Timer;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
-import org.glowroot.container.trace.TraceMetric;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -69,13 +69,13 @@ public class DetailMapTest {
                                 ImmutableMap.of("subnestedkey1", "a", "subnestedkey2", "b")),
                         "nested2", ImmutableMap.of("nestedkey21", "a", "nestedkey22", "b")));
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
-        assertThat(trace.getRootMetric().getName()).isEqualTo("level one");
-        assertThat(trace.getRootMetric().getNestedMetricNames())
+        assertThat(trace.getRootTimer().getName()).isEqualTo("level one");
+        assertThat(trace.getRootTimer().getNestedTimerNames())
                 .containsOnly("level two");
-        TraceMetric levelTwoMetric = trace.getRootMetric().getNestedMetrics().get(0);
-        assertThat(levelTwoMetric.getNestedMetricNames()).containsOnly("level three");
-        TraceMetric levelThreeMetric = levelTwoMetric.getNestedMetrics().get(0);
-        assertThat(levelThreeMetric.getNestedMetricNames()).containsOnly("level four");
+        Timer levelTwoTimer = trace.getRootTimer().getNestedTimers().get(0);
+        assertThat(levelTwoTimer.getNestedTimerNames()).containsOnly("level three");
+        Timer levelThreeTimer = levelTwoTimer.getNestedTimers().get(0);
+        assertThat(levelThreeTimer.getNestedTimerNames()).containsOnly("level four");
         assertThat(entries).hasSize(4);
         TraceEntry entry1 = entries.get(0);
         assertThat(entry1.getMessage().getText()).isEqualTo("Level One");

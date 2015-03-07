@@ -25,11 +25,11 @@ import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
+import org.glowroot.api.Timer;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
-import org.glowroot.api.TransactionMetric;
 import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -70,10 +70,10 @@ public class DataSourceAspect {
 
     @Pointcut(className = "javax.sql.DataSource", methodName = "getConnection",
             methodParameterTypes = {".."}, ignoreSelfNested = true,
-            metricName = "jdbc get connection")
+            timerName = "jdbc get connection")
     public static class CommitAdvice {
-        private static final MetricName metricName =
-                pluginServices.getMetricName(CommitAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(CommitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -82,16 +82,16 @@ public class DataSourceAspect {
         public static Object onBefore() {
             if (captureConnectionLifecycleTraceEntries) {
                 return pluginServices.startTraceEntry(new GetConnectionMessageSupplier(),
-                        metricName);
+                        timerName);
             } else {
-                return pluginServices.startTransactionMetric(metricName);
+                return pluginServices.startTimer(timerName);
             }
         }
         @OnReturn
         public static void onReturn(@BindReturn Connection connection,
-                @BindTraveler Object entryOrMetric) {
-            if (entryOrMetric instanceof TraceEntry) {
-                TraceEntry traceEntry = (TraceEntry) entryOrMetric;
+                @BindTraveler Object entryOrTimer) {
+            if (entryOrTimer instanceof TraceEntry) {
+                TraceEntry traceEntry = (TraceEntry) entryOrTimer;
                 if (captureTransactionLifecycleTraceEntries) {
                     String autoCommit;
                     try {
@@ -112,15 +112,15 @@ public class DataSourceAspect {
                 traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                         MILLISECONDS);
             } else {
-                ((TransactionMetric) entryOrMetric).stop();
+                ((Timer) entryOrTimer).stop();
             }
         }
         @OnThrow
-        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Object entryOrMetric) {
-            if (entryOrMetric instanceof TraceEntry) {
-                ((TraceEntry) entryOrMetric).endWithError(ErrorMessage.from(t));
+        public static void onThrow(@BindThrowable Throwable t, @BindTraveler Object entryOrTimer) {
+            if (entryOrTimer instanceof TraceEntry) {
+                ((TraceEntry) entryOrTimer).endWithError(ErrorMessage.from(t));
             } else {
-                ((TransactionMetric) entryOrMetric).stop();
+                ((Timer) entryOrTimer).stop();
             }
         }
     }

@@ -23,8 +23,8 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.glowroot.common.Clock;
+import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.Transaction;
-import org.glowroot.transaction.model.TransactionMetricImpl;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,12 +52,12 @@ public class AggregateCollectorTest {
                 scheduledExecutorService, aggregateRepository, Clock.systemClock(), 1);
 
         Transaction transaction = mock(Transaction.class);
-        TransactionMetricImpl transactionMetric = mock(TransactionMetricImpl.class);
-        when(transactionMetric.getName()).thenReturn("test 123");
+        TimerImpl timer = mock(TimerImpl.class);
+        when(timer.getName()).thenReturn("test 123");
         when(transaction.getTransactionType()).thenReturn("a type");
         when(transaction.getTransactionName()).thenReturn("a name");
         when(transaction.getDuration()).thenReturn(MILLISECONDS.toNanos(123));
-        when(transaction.getRootMetric()).thenReturn(transactionMetric);
+        when(transaction.getRootTimer()).thenReturn(timer);
         // when
         int count = 0;
         long firstCaptureTime = aggregateCollector.add(transaction);

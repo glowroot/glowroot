@@ -49,7 +49,7 @@ public class ConfiguredInstrumentationTest {
         dataDir = TempDirs.createTempDir("glowroot-test-datadir");
         container = Containers.createWithFileDb(dataDir);
         addInstrumentationForExecute1();
-        addInstrumentationForExecute1MetricOnly();
+        addInstrumentationForExecute1TimerOnly();
         addInstrumentationForExecuteWithReturn();
         addInstrumentationForExecuteWithArgs();
         // re-start now with pointcut configs
@@ -82,11 +82,11 @@ public class ConfiguredInstrumentationTest {
         assertThat(entries).hasSize(2);
         assertThat(trace.getTransactionType()).isEqualTo("test override type");
         assertThat(trace.getTransactionName()).isEqualTo("test override name");
-        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootMetric().getNestedMetricNames())
+        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootTimer().getNestedTimerNames())
                 .containsOnly("execute one");
-        assertThat(trace.getRootMetric().getNestedMetrics().get(0)
-                .getNestedMetricNames()).containsOnly("execute one metric only");
+        assertThat(trace.getRootTimer().getNestedTimers().get(0)
+                .getNestedTimerNames()).containsOnly("execute one timer only");
         assertThat(entries.get(1).getMessage().getText()).isEqualTo("execute1() => void");
         assertThat(entries.get(1).getStackTrace()).isNotNull();
     }
@@ -100,8 +100,8 @@ public class ConfiguredInstrumentationTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(2);
-        assertThat(trace.getRootMetric().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootMetric().getNestedMetricNames())
+        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
+        assertThat(trace.getRootTimer().getNestedTimerNames())
                 .containsOnly("execute with return");
         assertThat(entries.get(1).getMessage().getText()).isEqualTo("executeWithReturn() => xyz");
     }
@@ -118,8 +118,8 @@ public class ConfiguredInstrumentationTest {
         assertThat(trace.getTransactionType()).isEqualTo("Pointcut config test");
         assertThat(trace.getTransactionName()).isEqualTo("Misc / executeWithArgs");
         assertThat(entries).hasSize(1);
-        assertThat(trace.getRootMetric().getName()).isEqualTo("execute with args");
-        assertThat(trace.getRootMetric().getNestedMetrics()).isEmpty();
+        assertThat(trace.getRootTimer().getName()).isEqualTo("execute with args");
+        assertThat(trace.getRootTimer().getNestedTimers()).isEmpty();
         assertThat(entries.get(0).getMessage().getText())
                 .isEqualTo("executeWithArgs(): abc, 123, the name");
     }
@@ -132,7 +132,7 @@ public class ConfiguredInstrumentationTest {
         config.setMethodReturnType("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setCaptureKind(CaptureKind.TRACE_ENTRY);
-        config.setMetricName("execute one");
+        config.setTimerName("execute one");
         config.setTraceEntryTemplate("execute1() => {{_}}");
         config.setTraceEntryStackThresholdMillis(0L);
         config.setTransactionType("test override type");
@@ -141,15 +141,15 @@ public class ConfiguredInstrumentationTest {
         container.getConfigService().addInstrumentationConfig(config);
     }
 
-    protected static void addInstrumentationForExecute1MetricOnly() throws Exception {
+    protected static void addInstrumentationForExecute1TimerOnly() throws Exception {
         InstrumentationConfig config = new InstrumentationConfig();
         config.setClassName("org.glowroot.tests.ConfiguredInstrumentationTest$Misc");
         config.setMethodName("execute1");
         config.setMethodParameterTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
-        config.setCaptureKind(CaptureKind.METRIC);
-        config.setMetricName("execute one metric only");
+        config.setCaptureKind(CaptureKind.TIMER);
+        config.setTimerName("execute one timer only");
         container.getConfigService().addInstrumentationConfig(config);
     }
 
@@ -161,7 +161,7 @@ public class ConfiguredInstrumentationTest {
         config.setMethodReturnType("");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setCaptureKind(CaptureKind.TRACE_ENTRY);
-        config.setMetricName("execute with return");
+        config.setTimerName("execute with return");
         config.setTraceEntryTemplate("executeWithReturn() => {{_}}");
         container.getConfigService().addInstrumentationConfig(config);
     }
@@ -175,7 +175,7 @@ public class ConfiguredInstrumentationTest {
         config.setMethodReturnType("void");
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setCaptureKind(CaptureKind.TRANSACTION);
-        config.setMetricName("execute with args");
+        config.setTimerName("execute with args");
         config.setTraceEntryTemplate("executeWithArgs(): {{0}}, {{1}}, {{2.name}}");
         config.setTransactionType("Pointcut config test");
         config.setTransactionNameTemplate("Misc / {{methodName}}");

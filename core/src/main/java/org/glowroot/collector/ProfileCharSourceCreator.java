@@ -71,7 +71,7 @@ public class ProfileCharSourceCreator {
 
         private final List<Object> toVisit;
         private final JsonGenerator jg;
-        private final List<String> metricNameStack = Lists.newArrayList();
+        private final List<String> timerNameStack = Lists.newArrayList();
 
         private ProfileWriter(ProfileNode rootNode, Writer writer) throws IOException {
             this.toVisit = Lists.newArrayList((Object) rootNode);
@@ -108,22 +108,22 @@ public class ProfileCharSourceCreator {
                 jg.writeEndArray();
             } else if (curr == JsonGeneratorOp.END_OBJECT) {
                 jg.writeEndObject();
-            } else if (curr == JsonGeneratorOp.POP_METRIC_NAME) {
-                metricNameStack.remove(metricNameStack.size() - 1);
+            } else if (curr == JsonGeneratorOp.POP_TIMER_NAME) {
+                timerNameStack.remove(timerNameStack.size() - 1);
             }
         }
 
         private void writeStackTraceElement(StackTraceElement stackTraceElement,
                 ProfileNode currNode) throws IOException {
             jg.writeStringField("stackTraceElement", stackTraceElement.toString());
-            List<String> currMetricNames = currNode.getMetricNames();
-            for (String currMetricName : currMetricNames) {
-                if (metricNameStack.isEmpty() || !currMetricName.equals(
-                        metricNameStack.get(metricNameStack.size() - 1))) {
+            List<String> currTimerNames = currNode.getTimerNames();
+            for (String currTimerName : currTimerNames) {
+                if (timerNameStack.isEmpty() || !currTimerName.equals(
+                        timerNameStack.get(timerNameStack.size() - 1))) {
                     // filter out successive duplicates which are common from weaving groups
                     // of overloaded methods
-                    metricNameStack.add(currMetricName);
-                    toVisit.add(JsonGeneratorOp.POP_METRIC_NAME);
+                    timerNameStack.add(currTimerName);
+                    toVisit.add(JsonGeneratorOp.POP_TIMER_NAME);
                 }
             }
             jg.writeNumberField("sampleCount", currNode.getSampleCount());
@@ -135,15 +135,15 @@ public class ProfileCharSourceCreator {
 
         private void writeLeaf(State leafThreadState) throws IOException {
             jg.writeStringField("leafThreadState", leafThreadState.name());
-            jg.writeArrayFieldStart("metricNames");
-            for (String metricName : metricNameStack) {
-                jg.writeString(metricName);
+            jg.writeArrayFieldStart("timerNames");
+            for (String timerName : timerNameStack) {
+                jg.writeString(timerName);
             }
             jg.writeEndArray();
         }
 
         private static enum JsonGeneratorOp {
-            END_OBJECT, END_ARRAY, POP_METRIC_NAME
+            END_OBJECT, END_ARRAY, POP_TIMER_NAME
         }
     }
 }

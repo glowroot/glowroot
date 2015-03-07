@@ -25,7 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-import org.glowroot.api.MetricName;
+import org.glowroot.api.TimerName;
 import org.glowroot.common.Ticker;
 
 // instances are updated by a single thread, but can be read by other threads
@@ -37,17 +37,17 @@ import org.glowroot.common.Ticker;
 // other fields are read, so it could be used to create a memory barrier and make the latest values
 // of the other fields visible to the reading thread
 //
-// but benchmarking shows making selfNestingLevel non-volatile reduces metric capture overhead
+// but benchmarking shows making selfNestingLevel non-volatile reduces timer capture overhead
 // from 88 nanoseconds down to 41 nanoseconds, which is very good since System.nanoTime() takes 17
-// nanoseconds and each metric capture has to call it twice
+// nanoseconds and each timer capture has to call it twice
 //
-// the down side is that the latest updates to metrics for transactions that are captured
+// the down side is that the latest updates to timers for transactions that are captured
 // in-flight (e.g. partial traces and active traces displayed in the UI) may not be visible
 //
 // all timing data is in nanoseconds
-public class TransactionMetricImpl implements TransactionMetricExt {
+public class TimerImpl implements TimerExt {
 
-    private final MetricNameImpl metricName;
+    private final TimerNameImpl timerName;
     // nanosecond rollover (292 years) isn't a concern for total time on a single transaction
     private long total;
     private long min = Long.MAX_VALUE;
@@ -57,36 +57,34 @@ public class TransactionMetricImpl implements TransactionMetricExt {
     private long startTick;
     private int selfNestingLevel;
 
-    // nestedMetrics is only accessed by the transaction thread so no need for volatile or
-    // synchronized access during metric capture which is important
+    // nestedTimers is only accessed by the transaction thread so no need for volatile or
+    // synchronized access during timer capture which is important
     //
-    // lazy initialize to save memory in common case where this is a leaf metric
-    private @MonotonicNonNull NestedMetricMap nestedMetrics;
+    // lazy initialize to save memory in common case where this is a leaf timer
+    private @MonotonicNonNull NestedTimerMap nestedTimers;
 
     // separate list for thread safe access by other threads (e.g. partial trace capture and
     // active trace viewer)
     //
-    // lazy initialize to save memory in common case where this is a leaf metric
-    private volatile @MonotonicNonNull List<TransactionMetricImpl> threadSafeNestedMetrics;
+    // lazy initialize to save memory in common case where this is a leaf timer
+    private volatile @MonotonicNonNull List<TimerImpl> threadSafeNestedTimers;
 
-    // parent and currentTransactionMetricHolder don't need to be thread safe as they are only
+    // parent and currentTimerHolder don't need to be thread safe as they are only
     // accessed by the transaction thread
-    private final @Nullable TransactionMetricImpl parent;
-    private final CurrentTransactionMetricHolder currentTransactionMetricHolder;
+    private final @Nullable TimerImpl parent;
+    private final CurrentTimerHolder currentTimerHolder;
 
     private final Ticker ticker;
 
-    public static TransactionMetricImpl createRootMetric(MetricNameImpl metricName, Ticker ticker) {
-        return new TransactionMetricImpl(metricName, null, new CurrentTransactionMetricHolder(),
-                ticker);
+    public static TimerImpl createRootTimer(TimerNameImpl timerName, Ticker ticker) {
+        return new TimerImpl(timerName, null, new CurrentTimerHolder(), ticker);
     }
 
-    private TransactionMetricImpl(MetricNameImpl metricName,
-            @Nullable TransactionMetricImpl parent,
-            CurrentTransactionMetricHolder currentTransactionMetricHolder, Ticker ticker) {
-        this.metricName = metricName;
+    private TimerImpl(TimerNameImpl timerName, @Nullable TimerImpl parent,
+            CurrentTimerHolder currentTimerHolder, Ticker ticker) {
+        this.timerName = timerName;
         this.parent = parent;
-        this.currentTransactionMetricHolder = currentTransactionMetricHolder;
+        this.currentTimerHolder = currentTimerHolder;
         this.ticker = ticker;
     }
 
@@ -104,7 +102,7 @@ public class TransactionMetricImpl implements TransactionMetricExt {
             // grab total before curr, to avoid case where total is updated in between
             // these two lines and then "total + curr" would overstate the correct value
             // (it seems better to understate the correct value if there is an update to the
-            // transaction metric values in between these two lines)
+            // timer values in between these two lines)
             long theTotal = this.total;
             // capture startTick before ticker.read() so curr is never < 0
             long theStartTick = this.startTick;
@@ -143,14 +141,14 @@ public class TransactionMetricImpl implements TransactionMetricExt {
             jg.writeBooleanField("minActive", false);
             jg.writeBooleanField("maxActive", false);
         }
-        if (threadSafeNestedMetrics != null) {
-            ImmutableList<TransactionMetricImpl> copyOfNestedMetrics;
-            synchronized (threadSafeNestedMetrics) {
-                copyOfNestedMetrics = ImmutableList.copyOf(threadSafeNestedMetrics);
+        if (threadSafeNestedTimers != null) {
+            ImmutableList<TimerImpl> copyOfNestedTimers;
+            synchronized (threadSafeNestedTimers) {
+                copyOfNestedTimers = ImmutableList.copyOf(threadSafeNestedTimers);
             }
-            jg.writeArrayFieldStart("nestedMetrics");
-            for (TransactionMetricImpl nestedMetric : copyOfNestedMetrics) {
-                nestedMetric.writeValue(jg);
+            jg.writeArrayFieldStart("nestedTimers");
+            for (TimerImpl nestedTimer : copyOfNestedTimers) {
+                nestedTimer.writeValue(jg);
             }
             jg.writeEndArray();
         }
@@ -165,20 +163,20 @@ public class TransactionMetricImpl implements TransactionMetricExt {
     public void start(long startTick) {
         this.startTick = startTick;
         selfNestingLevel++;
-        currentTransactionMetricHolder.set(this);
+        currentTimerHolder.set(this);
     }
 
     @Override
     public void end(long endTick) {
         if (selfNestingLevel == 1) {
             recordData(endTick - startTick);
-            currentTransactionMetricHolder.set(parent);
+            currentTimerHolder.set(parent);
         }
         selfNestingLevel--;
     }
 
     public String getName() {
-        return metricName.name();
+        return timerName.name();
     }
 
     // only called by transaction thread
@@ -192,60 +190,60 @@ public class TransactionMetricImpl implements TransactionMetricExt {
     }
 
     // only called by transaction thread at transaction completion
-    public List<TransactionMetricImpl> getNestedMetrics() {
-        if (threadSafeNestedMetrics == null) {
+    public List<TimerImpl> getNestedTimers() {
+        if (threadSafeNestedTimers == null) {
             return ImmutableList.of();
         } else {
-            return threadSafeNestedMetrics;
+            return threadSafeNestedTimers;
         }
     }
 
     // only called by transaction thread
-    public TransactionMetricImpl startNestedMetric(MetricName metricName) {
-        // metric names are guaranteed one instance per name so pointer equality can be used
-        if (this.metricName == metricName) {
+    public TimerImpl startNestedTimer(TimerName timerName) {
+        // timer names are guaranteed one instance per name so pointer equality can be used
+        if (this.timerName == timerName) {
             selfNestingLevel++;
             return this;
         }
         long startTick = ticker.read();
-        return startNestedMetricInternal(metricName, startTick);
+        return startNestedTimerInternal(timerName, startTick);
     }
 
     // only called by transaction thread
-    public TransactionMetricImpl startNestedMetric(MetricName metricName, long startTick) {
-        // metric names are guaranteed one instance per name so pointer equality can be used
-        if (this.metricName == metricName) {
+    public TimerImpl startNestedTimer(TimerName timerName, long startTick) {
+        // timer names are guaranteed one instance per name so pointer equality can be used
+        if (this.timerName == timerName) {
             selfNestingLevel++;
             return this;
         }
-        return startNestedMetricInternal(metricName, startTick);
+        return startNestedTimerInternal(timerName, startTick);
     }
 
-    CurrentTransactionMetricHolder getCurrentTransactionMetricHolder() {
-        return currentTransactionMetricHolder;
+    CurrentTimerHolder getCurrentTimerHolder() {
+        return currentTimerHolder;
     }
 
-    private TransactionMetricImpl startNestedMetricInternal(MetricName metricName, long startTick) {
-        if (nestedMetrics == null) {
-            nestedMetrics = new NestedMetricMap();
+    private TimerImpl startNestedTimerInternal(TimerName timerName, long startTick) {
+        if (nestedTimers == null) {
+            nestedTimers = new NestedTimerMap();
         }
-        MetricNameImpl metricNameImpl = (MetricNameImpl) metricName;
-        TransactionMetricImpl nestedMetric = nestedMetrics.get(metricNameImpl);
-        if (nestedMetric != null) {
-            nestedMetric.start(startTick);
-            return nestedMetric;
+        TimerNameImpl timerNameImpl = (TimerNameImpl) timerName;
+        TimerImpl nestedTimer = nestedTimers.get(timerNameImpl);
+        if (nestedTimer != null) {
+            nestedTimer.start(startTick);
+            return nestedTimer;
         }
-        nestedMetric = new TransactionMetricImpl(metricNameImpl, this,
-                currentTransactionMetricHolder, ticker);
-        nestedMetric.start(startTick);
-        nestedMetrics.put(metricNameImpl, nestedMetric);
-        if (threadSafeNestedMetrics == null) {
-            threadSafeNestedMetrics = Lists.newArrayList();
+        nestedTimer = new TimerImpl(timerNameImpl, this,
+                currentTimerHolder, ticker);
+        nestedTimer.start(startTick);
+        nestedTimers.put(timerNameImpl, nestedTimer);
+        if (threadSafeNestedTimers == null) {
+            threadSafeNestedTimers = Lists.newArrayList();
         }
-        synchronized (threadSafeNestedMetrics) {
-            threadSafeNestedMetrics.add(nestedMetric);
+        synchronized (threadSafeNestedTimers) {
+            threadSafeNestedTimers.add(nestedTimer);
         }
-        return nestedMetric;
+        return nestedTimer;
     }
 
     private void recordData(long time) {

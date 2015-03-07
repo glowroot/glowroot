@@ -15,27 +15,27 @@
  */
 package org.glowroot.microbenchmarks.support;
 
-import org.glowroot.api.MetricName;
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.TransactionMetric;
+import org.glowroot.api.Timer;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.Pointcut;
 
-public class MetricWorthyAspect {
+public class TimerWorthyAspect {
 
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-microbenchmarks");
 
-    @Pointcut(className = "org.glowroot.microbenchmarks.core.support.MetricWorthy",
-            methodName = "doSomethingMetricWorthy", methodParameterTypes = {},
-            metricName = "metric worthy")
-    public static class MetricWorthyAdvice {
+    @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TimerWorthy",
+            methodName = "doSomethingTimerWorthy", methodParameterTypes = {},
+            timerName = "timer worthy")
+    public static class TimerWorthyAdvice {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(MetricWorthyAdvice.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(TimerWorthyAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -43,23 +43,23 @@ public class MetricWorthyAspect {
         }
 
         @OnBefore
-        public static TransactionMetric onBefore() {
-            return pluginServices.startTransactionMetric(metricName);
+        public static Timer onBefore() {
+            return pluginServices.startTimer(timerName);
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler TransactionMetric timer) {
+        public static void onAfter(@BindTraveler Timer timer) {
             timer.stop();
         }
     }
 
-    @Pointcut(className = "org.glowroot.microbenchmarks.core.support.MetricWorthy",
-            methodName = "doSomethingMetricWorthyB", methodParameterTypes = {},
-            metricName = "metric worthy B")
-    public static class MetricWorthyAdviceB {
+    @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TimerWorthy",
+            methodName = "doSomethingTimerWorthyB", methodParameterTypes = {},
+            timerName = "timer worthy B")
+    public static class TimerWorthyAdviceB {
 
-        private static final MetricName metricName =
-                pluginServices.getMetricName(MetricWorthyAdviceB.class);
+        private static final TimerName timerName =
+                pluginServices.getTimerName(TimerWorthyAdviceB.class);
 
         @IsEnabled
         public static boolean isEnabled() {
@@ -67,12 +67,12 @@ public class MetricWorthyAspect {
         }
 
         @OnBefore
-        public static TransactionMetric onBefore() {
-            return pluginServices.startTransactionMetric(metricName);
+        public static Timer onBefore() {
+            return pluginServices.startTimer(timerName);
         }
 
         @OnAfter
-        public static void onAfter(@BindTraveler TransactionMetric timer) {
+        public static void onAfter(@BindTraveler Timer timer) {
             timer.stop();
         }
     }

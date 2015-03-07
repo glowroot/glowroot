@@ -57,8 +57,8 @@ public class InstrumentationConfigTest extends WebDriverTest {
                 .isEqualTo("executeAppUnderTest");
         assertThat(configPage.getCaptureKindTransactionRadioButton().isSelected())
                 .isTrue();
-        assertThat(configPage.getMetricNameTextField().getAttribute("value"))
-                .isEqualTo("a metric");
+        assertThat(configPage.getTimerNameTextField().getAttribute("value"))
+                .isEqualTo("a timer");
         assertThat(configPage.getTraceEntryTemplateTextField().getAttribute("value"))
                 .isEqualTo("a trace entry");
         assertThat(configPage.getTransactionTypeTextField().getAttribute("value"))
@@ -89,7 +89,7 @@ public class InstrumentationConfigTest extends WebDriverTest {
         WebElement classNameTextField = configPage.getClassNameTextField();
 
         // when
-        Utils.clearInput(configPage.getMetricNameTextField());
+        Utils.clearInput(configPage.getTimerNameTextField());
         configPage.getDeleteButton().click();
 
         // then
@@ -123,8 +123,8 @@ public class InstrumentationConfigTest extends WebDriverTest {
         assertThat(configPage.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeAppUnderTest");
         assertThat(configPage.getCaptureKindTraceEntryRadioButton().isSelected()).isTrue();
-        assertThat(configPage.getMetricNameTextField().getAttribute("value"))
-                .isEqualTo("a metric");
+        assertThat(configPage.getTimerNameTextField().getAttribute("value"))
+                .isEqualTo("a timer");
         assertThat(configPage.getTraceEntryTemplateTextField().getAttribute("value"))
                 .isEqualTo("a trace entry");
         assertThat(configPage.getTraceEntryStackThresholdTextField()
@@ -132,7 +132,7 @@ public class InstrumentationConfigTest extends WebDriverTest {
     }
 
     @Test
-    public void shouldAddMetricInstrumentation() throws Exception {
+    public void shouldAddTimerInstrumentation() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
@@ -143,7 +143,7 @@ public class InstrumentationConfigTest extends WebDriverTest {
         configSidebar.getInstrumentationLink().click();
 
         // when
-        createMetricInstrumentation();
+        createTimerInstrumentation();
 
         // then
         app.open();
@@ -157,9 +157,8 @@ public class InstrumentationConfigTest extends WebDriverTest {
                 .isEqualTo("org.glowroot.container.Container");
         assertThat(configPage.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeAppUnderTest");
-        assertThat(configPage.getCaptureKindMetricRadioButton().isSelected()).isTrue();
-        assertThat(configPage.getMetricNameTextField().getAttribute("value"))
-                .isEqualTo("a metric");
+        assertThat(configPage.getCaptureKindTimerRadioButton().isSelected()).isTrue();
+        assertThat(configPage.getTimerNameTextField().getAttribute("value")).isEqualTo("a timer");
     }
 
     private void createTransactionInstrumentation() {
@@ -171,8 +170,8 @@ public class InstrumentationConfigTest extends WebDriverTest {
         configPage.clickMethodNameAutoCompleteItem("executeAppUnderTest");
         configPage.clickAnySignatureRadioButton();
         configPage.getCaptureKindTransactionRadioButton().click();
-        configPage.getMetricNameTextField().clear();
-        configPage.getMetricNameTextField().sendKeys("a metric");
+        configPage.getTimerNameTextField().clear();
+        configPage.getTimerNameTextField().sendKeys("a timer");
         configPage.getTraceEntryTemplateTextField().clear();
         configPage.getTraceEntryTemplateTextField().sendKeys("a trace entry");
         configPage.getTransactionTypeTextField().clear();
@@ -200,14 +199,14 @@ public class InstrumentationConfigTest extends WebDriverTest {
         configPage.clickMethodNameAutoCompleteItem("executeAppUnderTest");
         configPage.clickAnySignatureRadioButton();
         configPage.getCaptureKindTraceEntryRadioButton().click();
-        configPage.getMetricNameTextField().clear();
-        configPage.getMetricNameTextField().sendKeys("a metric");
+        configPage.getTimerNameTextField().clear();
+        configPage.getTimerNameTextField().sendKeys("a timer");
         configPage.getTraceEntryTemplateTextField().clear();
         configPage.getTraceEntryTemplateTextField().sendKeys("a trace entry");
         configPage.getAddButton().click();
     }
 
-    private void createMetricInstrumentation() {
+    private void createTimerInstrumentation() {
         Utils.withWait(driver, xpath("//a[@href='config/instrumentation?new']")).click();
         InstrumentationConfigPage configPage = new InstrumentationConfigPage(driver);
         configPage.getClassNameTextField().sendKeys("container.Container");
@@ -215,9 +214,9 @@ public class InstrumentationConfigTest extends WebDriverTest {
         configPage.getMethodNameTextField().sendKeys("exec");
         configPage.clickMethodNameAutoCompleteItem("executeAppUnderTest");
         configPage.clickAnySignatureRadioButton();
-        configPage.getCaptureKindMetricRadioButton().click();
-        configPage.getMetricNameTextField().clear();
-        configPage.getMetricNameTextField().sendKeys("a metric");
+        configPage.getCaptureKindTimerRadioButton().click();
+        configPage.getTimerNameTextField().clear();
+        configPage.getTimerNameTextField().sendKeys("a timer");
         configPage.getAddButton().click();
     }
 }

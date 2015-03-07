@@ -59,8 +59,8 @@ public class ReweaveCountTest {
         config.setMethodName("x");
         config.setMethodParameterTypes(ImmutableList.<String>of());
         config.setMethodReturnType("");
-        config.setCaptureKind(CaptureKind.METRIC);
-        config.setMetricName("x");
+        config.setCaptureKind(CaptureKind.TIMER);
+        config.setTimerName("x");
         config = container.getConfigService().addInstrumentationConfig(config);
         int reweaveCount = container.getConfigService().reweave();
         assertThat(reweaveCount).isEqualTo(2);

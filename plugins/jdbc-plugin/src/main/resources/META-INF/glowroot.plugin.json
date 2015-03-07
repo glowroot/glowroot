@@ -20,11 +20,11 @@
       "type": "boolean",
       "default": true,
       "label": "ResultSet navigation",
-      "checkboxLabel": "Capture timing metrics for ResultSet navigation",
+      "checkboxLabel": "Capture timings for ResultSet navigation",
       "description": [
-        "Capture timing metrics for executions of ResultSet.next()/previous()/relative()/etc",
+        "Capture timings for executions of ResultSet.next()/previous()/relative()/etc",
         " to read the next record in a result set. This defaults to true since the timing for",
-        " this metric is a good indication of jdbc fetch size issues and database latency,",
+        " this timer is a good indication of jdbc fetch size issues and database latency,",
         " but it can be disabled if it is common to return millions of records and the overhead",
         " of System.nanoTime() becomes relevant."
       ]
@@ -34,9 +34,9 @@
       "type": "boolean",
       "default": false,
       "label": "ResultSet values",
-      "checkboxLabel": "Capture timing metrics for ResultSet value retrieval",
+      "checkboxLabel": "Capture timings for ResultSet value retrieval",
       "description": [
-        "Capture timing metrics for executions of ResultSet.get*() to read the individual column",
+        "Capture timings for executions of ResultSet.get*() to read the individual column",
         " values out of a result set record. This defaults to false since the number of calls can",
         " be excessive and generally ResultSet.next() captures more interesting info with less",
         " overhead."
@@ -47,9 +47,9 @@
       "type": "boolean",
       "default": false,
       "label": "Prepared statement creation",
-      "checkboxLabel": "Capture timing metrics for Connection.prepare*()",
+      "checkboxLabel": "Capture timings for Connection.prepare*()",
       "description": [
-        "Capture timing metrics for executions of Connection.prepareStatement() and",
+        "Capture timings for executions of Connection.prepareStatement() and",
         " Connection.prepareCall()."
       ]
     },
@@ -58,9 +58,9 @@
       "type": "boolean",
       "default": false,
       "label": "Statement close",
-      "checkboxLabel": "Capture timing metrics for Statement.close()",
+      "checkboxLabel": "Capture timings for Statement.close()",
       "description": [
-        "Capture timing metrics for executions of Statement.close()."
+        "Capture timings for executions of Statement.close()."
       ]
     },
     {

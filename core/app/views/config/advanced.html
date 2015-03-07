@@ -26,26 +26,26 @@
          class="form-horizontal"
          name="formCtrl">
       <div gt-form-group
-           gt-label="Metric wrapper methods"
-           gt-checkbox-label="Wrap woven methods with metric marker methods"
-           gt-model="config.metricWrapperMethods"
+           gt-label="Timer wrapper methods"
+           gt-checkbox-label="Wrap woven methods with timer marker methods"
+           gt-model="config.timerWrapperMethods"
            gt-type="checkbox">
         <div class="help-block">
           <div class="gt-yellow"
-               ng-show="originalConfig.metricWrapperMethods !== originalData.metricWrapperMethodsActive"
+               ng-show="originalConfig.timerWrapperMethods !== originalData.timerWrapperMethodsActive"
                style="padding-bottom: 5px;">
-            Active value is <code>{{originalData.metricWrapperMethodsActive ? 'ON' : 'OFF'}}</code>.
+            Active value is <code>{{originalData.timerWrapperMethodsActive ? 'ON' : 'OFF'}}</code>.
             The newly configured value will take effect on next JVM restart.
           </div>
           <p>
-            When enabled, all methods that are woven for metric timing are renamed with suffix
-            <code>$glowroot$metric$&lt;metric name&gt;</code>
+            When enabled, all methods that are woven for timing are renamed with suffix
+            <code>$glowroot$timer$&lt;timer name&gt;</code>
             and a new method is generated in its place that simply calls the renamed method. The purpose of this is so
-            that stack traces gathered by the profiler can see what metric timings are active, and the resulting
-            profiles can be filtered in the UI by metric names. For example, a profile can be filtered
+            that stack traces gathered by the profiler can see what timings are active, and the resulting
+            profiles can be filtered in the UI by timer names. For example, a profile can be filtered
             to see only the profile of code that is executing jdbc queries. Or, even more useful, filter to see only
-            the profile of code that has no metric timings, which helps to discover new bottlenecks that would be
-            worth timing via new metric timings.
+            the profile of code that has no timings, which helps to discover new bottlenecks that would be
+            worth timing via new timings.
             <em>Changes to this setting will take effect on next JVM restart.</em>
           </p>
         </div>

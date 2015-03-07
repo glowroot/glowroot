@@ -34,11 +34,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.container.common.ObjectMappers.orEmpty;
 
-public class TraceMetric {
+public class Timer {
 
-    private static final Ordering<TraceMetric> orderingByTotal = new Ordering<TraceMetric>() {
+    private static final Ordering<Timer> orderingByTotal = new Ordering<Timer>() {
         @Override
-        public int compare(@Nullable TraceMetric left, @Nullable TraceMetric right) {
+        public int compare(@Nullable Timer left, @Nullable Timer right) {
             checkNotNull(left);
             checkNotNull(right);
             return Longs.compare(left.total, right.total);
@@ -54,10 +54,10 @@ public class TraceMetric {
     private final boolean minActive;
     private final boolean maxActive;
 
-    private final ImmutableList<TraceMetric> nestedMetrics;
+    private final ImmutableList<Timer> nestedTimers;
 
-    private TraceMetric(String name, long total, long min, long max, long count, boolean active,
-            boolean minActive, boolean maxActive, List<TraceMetric> nestedMetrics) {
+    private Timer(String name, long total, long min, long max, long count, boolean active,
+            boolean minActive, boolean maxActive, List<Timer> nestedTimers) {
         this.name = name;
         this.total = total;
         this.min = min;
@@ -66,7 +66,7 @@ public class TraceMetric {
         this.active = active;
         this.minActive = minActive;
         this.maxActive = maxActive;
-        this.nestedMetrics = ImmutableList.copyOf(nestedMetrics);
+        this.nestedTimers = ImmutableList.copyOf(nestedTimers);
     }
 
     public String getName() {
@@ -101,32 +101,32 @@ public class TraceMetric {
         return maxActive;
     }
 
-    public ImmutableList<TraceMetric> getNestedMetrics() {
-        return getStableAndOrderedNestedMetrics();
+    public ImmutableList<Timer> getNestedTimers() {
+        return getStableAndOrderedNestedTimers();
     }
 
-    // the glowroot weaving metric is a bit unpredictable since tests are often run inside the
+    // the glowroot weaving timer is a bit unpredictable since tests are often run inside the
     // same GlowrootContainer for test speed, so test order affects whether any classes are
     // woven during the test or not
-    // it's easiest to just ignore this metric completely
-    private ImmutableList<TraceMetric> getStableAndOrderedNestedMetrics() {
-        List<TraceMetric> stableNestedMetrics = Lists.newArrayList(nestedMetrics);
-        for (Iterator<TraceMetric> i = stableNestedMetrics.iterator(); i.hasNext();) {
+    // it's easiest to just ignore this timer completely
+    private ImmutableList<Timer> getStableAndOrderedNestedTimers() {
+        List<Timer> stableNestedTimers = Lists.newArrayList(nestedTimers);
+        for (Iterator<Timer> i = stableNestedTimers.iterator(); i.hasNext();) {
             if ("glowroot weaving".equals(i.next().getName())) {
                 i.remove();
             }
         }
         return ImmutableList.copyOf(
-                TraceMetric.orderingByTotal.reverse().sortedCopy(stableNestedMetrics));
+                Timer.orderingByTotal.reverse().sortedCopy(stableNestedTimers));
     }
 
     @JsonIgnore
-    public List<String> getNestedMetricNames() {
-        List<String> stableNestedMetrics = Lists.newArrayList();
-        for (TraceMetric stableNestedMetric : getStableAndOrderedNestedMetrics()) {
-            stableNestedMetrics.add(stableNestedMetric.getName());
+    public List<String> getNestedTimerNames() {
+        List<String> stableNestedTimers = Lists.newArrayList();
+        for (Timer stableNestedTimer : getStableAndOrderedNestedTimers()) {
+            stableNestedTimers.add(stableNestedTimer.getName());
         }
-        return stableNestedMetrics;
+        return stableNestedTimers;
     }
 
     @Override
@@ -140,12 +140,12 @@ public class TraceMetric {
                 .add("active", active)
                 .add("minActive", minActive)
                 .add("maxActive", maxActive)
-                .add("nestedMetrics", nestedMetrics)
+                .add("nestedTimers", nestedTimers)
                 .toString();
     }
 
     @JsonCreator
-    static TraceMetric readValue(
+    static Timer readValue(
             @JsonProperty("name") @Nullable String name,
             @JsonProperty("total") @Nullable Long total,
             @JsonProperty("min") @Nullable Long min,
@@ -154,9 +154,9 @@ public class TraceMetric {
             @JsonProperty("active") @Nullable Boolean active,
             @JsonProperty("minActive") @Nullable Boolean minActive,
             @JsonProperty("maxActive") @Nullable Boolean maxActive,
-            @JsonProperty("nestedMetrics") @Nullable List</*@Nullable*/TraceMetric> uncheckedNestedMetrics)
+            @JsonProperty("nestedTimers") @Nullable List</*@Nullable*/Timer> uncheckedNestedTimers)
             throws JsonMappingException {
-        List<TraceMetric> nestedMetrics = orEmpty(uncheckedNestedMetrics, "nestedMetrics");
+        List<Timer> nestedTimers = orEmpty(uncheckedNestedTimers, "nestedTimers");
         checkRequiredProperty(name, "name");
         checkRequiredProperty(total, "total");
         checkRequiredProperty(min, "min");
@@ -165,7 +165,7 @@ public class TraceMetric {
         checkRequiredProperty(active, "active");
         checkRequiredProperty(minActive, "minActive");
         checkRequiredProperty(maxActive, "maxActive");
-        return new TraceMetric(name, total, min, max, count, active, minActive, maxActive,
-                nestedMetrics);
+        return new Timer(name, total, min, max, count, active, minActive, maxActive,
+                nestedTimers);
     }
 }
