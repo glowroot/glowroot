@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.glowroot.plugin.logger;
 
+import org.glowroot.api.FastThreadLocal;
 import org.glowroot.api.PluginServices;
 
 class LoggerPlugin {
@@ -24,7 +25,7 @@ class LoggerPlugin {
     private LoggerPlugin() {}
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
-    private static final ThreadLocal<Boolean> inAdvice = new ThreadLocal<Boolean>() {
+    private static final FastThreadLocal<Boolean> inAdvice = new FastThreadLocal<Boolean>() {
         @Override
         protected Boolean initialValue() {
             return false;

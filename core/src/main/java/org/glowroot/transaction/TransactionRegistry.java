@@ -21,6 +21,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.Sets;
 
+import org.glowroot.api.FastThreadLocal;
 import org.glowroot.transaction.model.Transaction;
 
 public class TransactionRegistry {
@@ -29,39 +30,25 @@ public class TransactionRegistry {
     private final Collection<Transaction> transactions = Sets.newConcurrentHashSet();
 
     // active running transaction being executed by the current thread
-    //
-    // it is faster to use a mutable holder object and always perform ThreadLocal.get() and never
-    // use ThreadLocal.set(), because the value is more likely to be found in the ThreadLocalMap
-    // direct hash slot and avoid the slow path ThreadLocalMap.getEntryAfterMiss()
-    @SuppressWarnings("nullness:type.argument.type.incompatible")
-    private final ThreadLocal<TransactionHolder> currentTransaction =
-            new ThreadLocal<TransactionHolder>() {
-                @Override
-                protected TransactionHolder initialValue() {
-                    return new TransactionHolder();
-                }
-            };
+    private final FastThreadLocal</*@Nullable*/Transaction> currentTransaction =
+            new FastThreadLocal</*@Nullable*/Transaction>();
 
     @Nullable
     Transaction getCurrentTransaction() {
-        return currentTransaction.get().transaction;
+        return currentTransaction.get();
     }
 
     void addTransaction(Transaction transaction) {
-        currentTransaction.get().transaction = transaction;
+        currentTransaction.set(transaction);
         transactions.add(transaction);
     }
 
     void removeTransaction(Transaction transaction) {
-        currentTransaction.get().transaction = null;
+        currentTransaction.set(null);
         transactions.remove(transaction);
     }
 
     public Collection<Transaction> getTransactions() {
         return transactions;
-    }
-
-    private static class TransactionHolder {
-        private @Nullable Transaction transaction;
     }
 }

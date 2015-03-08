@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
+import org.glowroot.api.FastThreadLocal;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.weaving.BindClassMeta;
 import org.glowroot.api.weaving.BindParameter;
@@ -36,7 +37,7 @@ public class ResponseHeaderAspect {
     private static final PluginServices pluginServices = PluginServices.get("servlet");
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
-    private static final ThreadLocal<Boolean> inAdvice = new ThreadLocal<Boolean>() {
+    private static final FastThreadLocal<Boolean> inAdvice = new FastThreadLocal<Boolean>() {
         @Override
         protected Boolean initialValue() {
             return false;

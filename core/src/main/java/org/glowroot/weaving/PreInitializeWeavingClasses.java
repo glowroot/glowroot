@@ -298,6 +298,9 @@ public class PreInitializeWeavingClasses {
 
     private static List<String> getGlowrootUsedTypes() {
         List<String> types = Lists.newArrayList();
+        types.add("org.glowroot.api.FastThreadLocal");
+        types.add("org.glowroot.api.FastThreadLocal$1");
+        types.add("org.glowroot.api.Holder");
         types.add("org.glowroot.api.Timer");
         types.add("org.glowroot.api.TimerName");
         types.add("org.glowroot.api.weaving.BindParameter");
@@ -314,8 +317,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.common.Ticker");
         types.add("org.glowroot.common.Ticker$1");
         types.add("org.glowroot.transaction.TransactionRegistry");
-        types.add("org.glowroot.transaction.TransactionRegistry$1");
-        types.add("org.glowroot.transaction.TransactionRegistry$TransactionHolder");
         types.add("org.glowroot.transaction.WeavingTimerServiceImpl");
         types.add("org.glowroot.transaction.WeavingTimerServiceImpl$1");
         types.add("org.glowroot.transaction.WeavingTimerServiceImpl$NopWeavingTimer");

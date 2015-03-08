@@ -20,6 +20,7 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.api.ErrorMessage;
+import org.glowroot.api.FastThreadLocal;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
@@ -41,14 +42,14 @@ public class ServletAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("servlet");
 
-    private static final ThreadLocal</*@Nullable*/ServletMessageSupplier> topLevel =
-            new ThreadLocal</*@Nullable*/ServletMessageSupplier>();
+    private static final FastThreadLocal</*@Nullable*/ServletMessageSupplier> topLevel =
+            new FastThreadLocal</*@Nullable*/ServletMessageSupplier>();
 
     // the life of this thread local is tied to the life of the topLevel thread local
     // it is only created if the topLevel thread local exists, and it is cleared when topLevel
     // thread local is cleared
-    private static final ThreadLocal</*@Nullable*/ErrorMessage> sendError =
-            new ThreadLocal</*@Nullable*/ErrorMessage>();
+    private static final FastThreadLocal</*@Nullable*/ErrorMessage> sendError =
+            new FastThreadLocal</*@Nullable*/ErrorMessage>();
 
     @Pointcut(className = "javax.servlet.Servlet", methodName = "service",
             methodParameterTypes = {"javax.servlet.ServletRequest",
@@ -123,11 +124,11 @@ public class ServletAspect {
             ErrorMessage errorMessage = sendError.get();
             if (errorMessage != null) {
                 traceEntry.endWithError(errorMessage);
-                sendError.remove();
+                sendError.set(null);
             } else {
                 traceEntry.end();
             }
-            topLevel.remove();
+            topLevel.set(null);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
@@ -136,9 +137,9 @@ public class ServletAspect {
                 return;
             }
             // ignoring potential sendError since this seems worse
-            sendError.remove();
+            sendError.set(null);
             traceEntry.endWithError(ErrorMessage.from(t));
-            topLevel.remove();
+            topLevel.set(null);
         }
     }
 
