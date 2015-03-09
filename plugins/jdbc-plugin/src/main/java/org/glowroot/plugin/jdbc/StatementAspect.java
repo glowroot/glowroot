@@ -161,6 +161,10 @@ public class StatementAspect {
     @Pointcut(className = "java.sql.PreparedStatement", methodName = "/(?!setNull$)set.*/",
             methodParameterTypes = {"int", "*", ".."})
     public static class SetXAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return captureBindParameters;
+        }
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
                 @BindParameter int parameterIndex, @BindParameter @Nullable Object x) {
@@ -185,6 +189,10 @@ public class StatementAspect {
     @Pointcut(className = "java.sql.PreparedStatement", methodName = "setNull",
             methodParameterTypes = {"int", "int", ".."})
     public static class SetNullAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return captureBindParameters;
+        }
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
                 @BindParameter int parameterIndex) {
@@ -199,6 +207,10 @@ public class StatementAspect {
     @Pointcut(className = "java.sql.PreparedStatement", methodName = "clearParameters",
             methodParameterTypes = {})
     public static class ClearParametersAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return captureBindParameters;
+        }
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement) {
             PreparedStatementMirror mirror =
