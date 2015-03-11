@@ -17,12 +17,20 @@ package org.glowroot.plugin.logger;
 
 import org.glowroot.api.FastThreadLocal;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.PluginServices.BooleanProperty;
 
 class LoggerPlugin {
 
     private static final PluginServices pluginServices = PluginServices.get("logger");
 
-    private LoggerPlugin() {}
+    private static final BooleanProperty traceErrorOnWarningWithThrowable =
+            pluginServices.getEnabledProperty("traceErrorOnWarningWithThrowable");
+    private static final BooleanProperty traceErrorOnWarningWithoutThrowable =
+            pluginServices.getEnabledProperty("traceErrorOnWarningWithoutThrowable");
+    private static final BooleanProperty traceErrorOnErrorWithThrowable =
+            pluginServices.getEnabledProperty("traceErrorOnErrorWithThrowable");
+    private static final BooleanProperty traceErrorOnErrorWithoutThrowable =
+            pluginServices.getEnabledProperty("traceErrorOnErrorWithoutThrowable");
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private static final FastThreadLocal<Boolean> inAdvice = new FastThreadLocal<Boolean>() {
@@ -31,6 +39,8 @@ class LoggerPlugin {
             return false;
         }
     };
+
+    private LoggerPlugin() {}
 
     static boolean inAdvice() {
         return inAdvice.get();
@@ -42,13 +52,13 @@ class LoggerPlugin {
 
     static boolean markTraceAsError(boolean warn, boolean throwable) {
         if (warn && throwable) {
-            return pluginServices.getBooleanProperty("traceErrorOnWarningWithThrowable");
+            return traceErrorOnWarningWithThrowable.value();
         } else if (warn && !throwable) {
-            return pluginServices.getBooleanProperty("traceErrorOnWarningWithoutThrowable");
+            return traceErrorOnWarningWithoutThrowable.value();
         } else if (!warn && throwable) {
-            return pluginServices.getBooleanProperty("traceErrorOnErrorWithThrowable");
+            return traceErrorOnErrorWithThrowable.value();
         } else {
-            return pluginServices.getBooleanProperty("traceErrorOnErrorWithoutThrowable");
+            return traceErrorOnErrorWithoutThrowable.value();
         }
     }
 }

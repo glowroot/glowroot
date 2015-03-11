@@ -98,16 +98,17 @@ class ServletPluginProperties {
         captureRequestHeaders = buildPatternList(CAPTURE_REQUEST_HEADER_PROPERTY_NAME);
         captureResponseHeaders = buildPatternList(CAPTURE_RESPONSE_HEADER_PROPERTY_NAME);
         sessionUserAttributePath =
-                pluginServices.getStringProperty(SESSION_USER_ATTRIBUTE_PROPERTY_NAME);
+                pluginServices.getStringProperty(SESSION_USER_ATTRIBUTE_PROPERTY_NAME).value();
         String captureSessionAttributesText =
-                pluginServices.getStringProperty(CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME);
-        captureSessionAttributePaths = ImmutableSet.copyOf(splitter
-                .split(captureSessionAttributesText));
+                pluginServices.getStringProperty(CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME).value();
+        captureSessionAttributePaths =
+                ImmutableSet.copyOf(splitter.split(captureSessionAttributesText));
         captureSessionAttributeNames = buildCaptureSessionAttributeNames();
     }
 
     private static ImmutableList<Pattern> buildPatternList(String propertyName) {
-        String captureRequestParametersText = pluginServices.getStringProperty(propertyName);
+        String captureRequestParametersText =
+                pluginServices.getStringProperty(propertyName).value();
         List<Pattern> captureParameters = Lists.newArrayList();
         for (String parameter : splitter.split(captureRequestParametersText)) {
             // converted to lower case for case-insensitive matching

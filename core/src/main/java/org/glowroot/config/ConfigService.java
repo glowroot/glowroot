@@ -17,6 +17,7 @@ package org.glowroot.config;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
@@ -476,13 +477,19 @@ public class ConfigService {
     }
 
     private void notifyPluginConfigListeners(String pluginId) {
-        for (ConfigListener configListener : pluginConfigListeners.get(pluginId)) {
-            configListener.onChange();
+        // make copy first to avoid possible ConcurrentModificationException while iterating
+        Collection<ConfigListener> listeners =
+                ImmutableList.copyOf(pluginConfigListeners.get(pluginId));
+        for (ConfigListener listener : listeners) {
+            listener.onChange();
         }
     }
 
     private void notifyAllPluginConfigListeners() {
-        for (ConfigListener configListener : pluginConfigListeners.values()) {
+        // make copy first to avoid possible ConcurrentModificationException while iterating
+        Collection<ConfigListener> listeners =
+                ImmutableList.copyOf(pluginConfigListeners.values());
+        for (ConfigListener configListener : listeners) {
             configListener.onChange();
         }
     }

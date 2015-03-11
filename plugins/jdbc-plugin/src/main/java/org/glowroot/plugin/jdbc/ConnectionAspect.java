@@ -18,7 +18,7 @@ package org.glowroot.plugin.jdbc;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.PluginServices.ConfigListener;
+import org.glowroot.api.PluginServices.BooleanProperty;
 import org.glowroot.api.Timer;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
@@ -37,28 +37,10 @@ public class ConnectionAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
-    private static volatile boolean captureConnectionLifecycleTraceEntries;
-    private static volatile boolean captureTransactionLifecycleTraceEntries;
-
-    static {
-        pluginServices.registerConfigListener(new ConfigListener() {
-            @Override
-            public void onChange() {
-                captureConnectionLifecycleTraceEntries = pluginServices.isEnabled()
-                        && pluginServices.getBooleanProperty(
-                                "captureConnectionLifecycleTraceEntries");
-                captureTransactionLifecycleTraceEntries = pluginServices.isEnabled()
-                        && pluginServices.getBooleanProperty(
-                                "captureTransactionLifecycleTraceEntries");
-            }
-        });
-        captureConnectionLifecycleTraceEntries = pluginServices.isEnabled()
-                && pluginServices.getBooleanProperty(
-                        "captureConnectionLifecycleTraceEntries");
-        captureTransactionLifecycleTraceEntries = pluginServices.isEnabled()
-                && pluginServices.getBooleanProperty(
-                        "captureTransactionLifecycleTraceEntries");
-    }
+    private static final BooleanProperty captureConnectionLifecycleTraceEntries =
+            pluginServices.getEnabledProperty("captureConnectionLifecycleTraceEntries");
+    private static final BooleanProperty captureTransactionLifecycleTraceEntries =
+            pluginServices.getEnabledProperty("captureTransactionLifecycleTraceEntries");
 
     @Pointcut(className = "java.sql.Connection", methodName = "commit", methodParameterTypes = {},
             ignoreSelfNested = true, timerName = "jdbc commit")
@@ -122,7 +104,7 @@ public class ConnectionAspect {
         }
         @OnBefore
         public static Object onBefore() {
-            if (captureConnectionLifecycleTraceEntries) {
+            if (captureConnectionLifecycleTraceEntries.value()) {
                 return pluginServices.startTraceEntry(
                         MessageSupplier.from("jdbc connection close"),
                         timerName);
@@ -157,7 +139,7 @@ public class ConnectionAspect {
                 pluginServices.getTimerName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return captureTransactionLifecycleTraceEntries;
+            return captureTransactionLifecycleTraceEntries.value();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter boolean autoCommit) {

@@ -115,7 +115,7 @@ public abstract class PluginServices {
      * META-INF/glowroot.plugin.json file, and can be modified (assuming they are not marked as
      * hidden) on the configuration page under the plugin's configuration section.
      */
-    public abstract String getStringProperty(String name);
+    public abstract StringProperty getStringProperty(String name);
 
     /**
      * Returns the {@code boolean} plugin property value with the specified {@code name}. If there
@@ -126,7 +126,7 @@ public abstract class PluginServices {
      * META-INF/glowroot.plugin.json file, and can be modified (assuming they are not marked as
      * hidden) on the configuration page under the plugin's configuration section.
      */
-    public abstract boolean getBooleanProperty(String name);
+    public abstract BooleanProperty getBooleanProperty(String name);
 
     /**
      * Returns the {@code Double} plugin property value with the specified {@code name}. If there is
@@ -137,7 +137,9 @@ public abstract class PluginServices {
      * META-INF/glowroot.plugin.json file, and can be modified (assuming they are not marked as
      * hidden) on the configuration page under the plugin's configuration section.
      */
-    public abstract @Nullable Double getDoubleProperty(String name);
+    public abstract DoubleProperty getDoubleProperty(String name);
+
+    public abstract BooleanProperty getEnabledProperty(String name);
 
     /**
      * Returns the {@code TimerName} instance for the specified {@code adviceClass}.
@@ -329,6 +331,19 @@ public abstract class PluginServices {
             logger.error(e.getMessage(), e);
             throw new AssertionError(e);
         }
+    }
+
+    public interface StringProperty {
+        String value();
+    }
+
+    public interface BooleanProperty {
+        boolean value();
+    }
+
+    public interface DoubleProperty {
+        @Nullable
+        Double value();
     }
 
     public interface ConfigListener {

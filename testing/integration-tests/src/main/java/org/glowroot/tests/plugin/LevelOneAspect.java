@@ -25,6 +25,8 @@ import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.Optional;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.PluginServices.BooleanProperty;
+import org.glowroot.api.PluginServices.StringProperty;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindParameter;
@@ -40,6 +42,11 @@ public class LevelOneAspect {
 
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-integration-tests");
+
+    private static final StringProperty alternateHeadline =
+            pluginServices.getStringProperty("alternateHeadline");
+    private static final BooleanProperty starredHeadline =
+            pluginServices.getBooleanProperty("starredHeadline");
 
     @Pointcut(className = "org.glowroot.tests.LevelOne", methodName = "call",
             methodParameterTypes = {"java.lang.Object", "java.lang.Object"},
@@ -57,11 +64,11 @@ public class LevelOneAspect {
         @OnBefore
         public static TraceEntry onBefore(@BindParameter final Object arg1,
                 @BindParameter final Object arg2) {
-            String headline = pluginServices.getStringProperty("alternateHeadline");
+            String headline = alternateHeadline.value();
             if (headline.isEmpty()) {
                 headline = "Level One";
             }
-            if (pluginServices.getBooleanProperty("starredHeadline")) {
+            if (starredHeadline.value()) {
                 headline += "*";
             }
             final String headlineFinal = headline;

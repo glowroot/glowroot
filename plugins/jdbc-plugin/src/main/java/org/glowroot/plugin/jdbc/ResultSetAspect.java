@@ -23,7 +23,7 @@ import javax.annotation.Nullable;
 import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.PluginServices.ConfigListener;
+import org.glowroot.api.PluginServices.BooleanProperty;
 import org.glowroot.api.Timer;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.weaving.BindMethodName;
@@ -50,30 +50,16 @@ public class ResultSetAspect {
     public static class NavigateAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(NavigateAdvice.class);
-        private static volatile boolean pluginEnabled;
-        // plugin configuration property captureResultSetNavigate is cached to limit map lookups
-        private static volatile boolean timerEnabled;
-        static {
-            pluginServices.registerConfigListener(new ConfigListener() {
-                @Override
-                public void onChange() {
-                    pluginEnabled = pluginServices.isEnabled();
-                    timerEnabled = pluginEnabled
-                            && pluginServices.getBooleanProperty("captureResultSetNavigate");
-                }
-            });
-            pluginEnabled = pluginServices.isEnabled();
-            timerEnabled = pluginEnabled
-                    && pluginServices.getBooleanProperty("captureResultSetNavigate");
-        }
+        private static final BooleanProperty timerEnabled =
+                pluginServices.getEnabledProperty("captureResultSetNavigate");
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return resultSet.hasGlowrootStatementMirror() && pluginEnabled;
+            return resultSet.hasGlowrootStatementMirror() && pluginServices.isEnabled();
         }
         @OnBefore
         public static @Nullable Timer onBefore() {
-            if (timerEnabled) {
+            if (timerEnabled.value()) {
                 return pluginServices.startTimer(timerName);
             } else {
                 return null;
@@ -122,23 +108,12 @@ public class ResultSetAspect {
     public static class ValueAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(ValueAdvice.class);
-        // plugin configuration property captureResultSetGet is cached to limit map lookups
-        private static volatile boolean timerEnabled;
-        static {
-            pluginServices.registerConfigListener(new ConfigListener() {
-                @Override
-                public void onChange() {
-                    timerEnabled = pluginServices.isEnabled()
-                            && pluginServices.getBooleanProperty("captureResultSetGet");
-                }
-            });
-            timerEnabled = pluginServices.isEnabled()
-                    && pluginServices.getBooleanProperty("captureResultSetGet");
-        }
+        private static final BooleanProperty timerEnabled =
+                pluginServices.getEnabledProperty("captureResultSetGet");
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return timerEnabled && resultSet.hasGlowrootStatementMirror();
+            return timerEnabled.value() && resultSet.hasGlowrootStatementMirror();
         }
         @OnBefore
         public static Timer onBefore() {
@@ -155,23 +130,12 @@ public class ResultSetAspect {
     public static class ValueAdvice2 {
         private static final TimerName timerName =
                 pluginServices.getTimerName(ValueAdvice2.class);
-        // plugin configuration property captureResultSetGet is cached to limit map lookups
-        private static volatile boolean timerEnabled;
-        static {
-            pluginServices.registerConfigListener(new ConfigListener() {
-                @Override
-                public void onChange() {
-                    timerEnabled = pluginServices.isEnabled()
-                            && pluginServices.getBooleanProperty("captureResultSetGet");
-                }
-            });
-            timerEnabled = pluginServices.isEnabled()
-                    && pluginServices.getBooleanProperty("captureResultSetGet");
-        }
+        private static final BooleanProperty timerEnabled =
+                pluginServices.getEnabledProperty("captureResultSetGet");
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return timerEnabled && resultSet.hasGlowrootStatementMirror();
+            return timerEnabled.value() && resultSet.hasGlowrootStatementMirror();
         }
         @OnBefore
         public static Timer onBefore() {

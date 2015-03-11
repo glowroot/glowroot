@@ -17,6 +17,7 @@ package org.glowroot.tests.plugin;
 
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.PluginServices.BooleanProperty;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindTraveler;
@@ -32,6 +33,9 @@ public class PauseAspect {
 
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-integration-tests");
+
+    private static final BooleanProperty captureTraceEntryStackTraces =
+            pluginServices.getBooleanProperty("captureTraceEntryStackTraces");
 
     @Pointcut(className = "org.glowroot.tests.Pause", methodName = "pause*",
             methodParameterTypes = {}, timerName = "pause")
@@ -53,7 +57,7 @@ public class PauseAspect {
 
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
-            if (pluginServices.getBooleanProperty("captureTraceEntryStackTraces")) {
+            if (captureTraceEntryStackTraces.value()) {
                 traceEntry.endWithStackTrace(0, NANOSECONDS);
             } else {
                 traceEntry.end();

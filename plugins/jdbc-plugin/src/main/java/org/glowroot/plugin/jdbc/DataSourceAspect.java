@@ -26,7 +26,7 @@ import org.glowroot.api.LoggerFactory;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.PluginServices.ConfigListener;
+import org.glowroot.api.PluginServices.BooleanProperty;
 import org.glowroot.api.Timer;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
@@ -49,24 +49,10 @@ public class DataSourceAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
-    private static volatile boolean captureConnectionLifecycleTraceEntries;
-    private static volatile boolean captureTransactionLifecycleTraceEntries;
-
-    static {
-        pluginServices.registerConfigListener(new ConfigListener() {
-            @Override
-            public void onChange() {
-                captureConnectionLifecycleTraceEntries =
-                        pluginServices.getBooleanProperty("captureConnectionLifecycleTraceEntries");
-                captureTransactionLifecycleTraceEntries = pluginServices
-                        .getBooleanProperty("captureTransactionLifecycleTraceEntries");
-            }
-        });
-        captureConnectionLifecycleTraceEntries =
-                pluginServices.getBooleanProperty("captureConnectionLifecycleTraceEntries");
-        captureTransactionLifecycleTraceEntries =
-                pluginServices.getBooleanProperty("captureTransactionLifecycleTraceEntries");
-    }
+    private static final BooleanProperty captureConnectionLifecycleTraceEntries =
+            pluginServices.getEnabledProperty("captureConnectionLifecycleTraceEntries");
+    private static final BooleanProperty captureTransactionLifecycleTraceEntries =
+            pluginServices.getEnabledProperty("captureTransactionLifecycleTraceEntries");
 
     @Pointcut(className = "javax.sql.DataSource", methodName = "getConnection",
             methodParameterTypes = {".."}, ignoreSelfNested = true,
@@ -80,7 +66,7 @@ public class DataSourceAspect {
         }
         @OnBefore
         public static Object onBefore() {
-            if (captureConnectionLifecycleTraceEntries) {
+            if (captureConnectionLifecycleTraceEntries.value()) {
                 return pluginServices.startTraceEntry(new GetConnectionMessageSupplier(),
                         timerName);
             } else {
@@ -92,7 +78,7 @@ public class DataSourceAspect {
                 @BindTraveler Object entryOrTimer) {
             if (entryOrTimer instanceof TraceEntry) {
                 TraceEntry traceEntry = (TraceEntry) entryOrTimer;
-                if (captureTransactionLifecycleTraceEntries) {
+                if (captureTransactionLifecycleTraceEntries.value()) {
                     String autoCommit;
                     try {
                         autoCommit = Boolean.toString(connection.getAutoCommit());

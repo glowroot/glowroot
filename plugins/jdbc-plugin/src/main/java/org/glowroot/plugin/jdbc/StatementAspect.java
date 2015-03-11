@@ -23,7 +23,7 @@ import javax.annotation.Nullable;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.PluginServices.ConfigListener;
+import org.glowroot.api.PluginServices.BooleanProperty;
 import org.glowroot.api.Timer;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
@@ -56,27 +56,12 @@ public class StatementAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
-    private static volatile boolean captureBindParameters;
-    private static volatile boolean capturePreparedStatementCreation;
-    private static volatile boolean captureStatementClose;
-
-    static {
-        pluginServices.registerConfigListener(new ConfigListener() {
-            @Override
-            public void onChange() {
-                captureBindParameters = pluginServices.getBooleanProperty("captureBindParameters");
-                capturePreparedStatementCreation = pluginServices.isEnabled()
-                        && pluginServices.getBooleanProperty("capturePreparedStatementCreation");
-                captureStatementClose = pluginServices.isEnabled()
-                        && pluginServices.getBooleanProperty("captureStatementClose");
-            }
-        });
-        captureBindParameters = pluginServices.getBooleanProperty("captureBindParameters");
-        capturePreparedStatementCreation = pluginServices.isEnabled()
-                && pluginServices.getBooleanProperty("capturePreparedStatementCreation");
-        captureStatementClose = pluginServices.isEnabled()
-                && pluginServices.getBooleanProperty("captureStatementClose");
-    }
+    private static final BooleanProperty captureBindParameters =
+            pluginServices.getEnabledProperty("captureBindParameters");
+    private static final BooleanProperty capturePreparedStatementCreation =
+            pluginServices.getEnabledProperty("capturePreparedStatementCreation");
+    private static final BooleanProperty captureStatementClose =
+            pluginServices.getEnabledProperty("captureStatementClose");
 
     // ===================== Mixin =====================
 
@@ -119,7 +104,7 @@ public class StatementAspect {
                 pluginServices.getTimerName(PrepareAdvice.class);
         @OnBefore
         public static @Nullable Timer onBefore() {
-            if (capturePreparedStatementCreation) {
+            if (capturePreparedStatementCreation.value()) {
                 return pluginServices.startTimer(timerName);
             } else {
                 return null;
@@ -163,7 +148,7 @@ public class StatementAspect {
     public static class SetXAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return captureBindParameters;
+            return captureBindParameters.value();
         }
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
@@ -191,7 +176,7 @@ public class StatementAspect {
     public static class SetNullAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return captureBindParameters;
+            return captureBindParameters.value();
         }
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
@@ -209,7 +194,7 @@ public class StatementAspect {
     public static class ClearParametersAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return captureBindParameters;
+            return captureBindParameters.value();
         }
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement) {
@@ -350,7 +335,7 @@ public class StatementAspect {
             }
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier;
-                if (captureBindParameters) {
+                if (captureBindParameters.value()) {
                     jdbcMessageSupplier = new PreparedStatementMessageSupplier(mirror.getSql(),
                             mirror.getParametersCopy());
                 } else {
@@ -437,7 +422,7 @@ public class StatementAspect {
                 PreparedStatementMirror mirror) {
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier;
-                if (captureBindParameters) {
+                if (captureBindParameters.value()) {
                     jdbcMessageSupplier = new BatchPreparedStatementMessageSupplier(
                             mirror.getSql(), mirror.getBatchedParametersCopy());
                 } else {
@@ -503,7 +488,7 @@ public class StatementAspect {
                 // this should always be true since just checked hasGlowrootStatementMirror() above
                 mirror.clearLastJdbcMessageSupplier();
             }
-            if (captureStatementClose) {
+            if (captureStatementClose.value()) {
                 return pluginServices.startTimer(timerName);
             } else {
                 return null;

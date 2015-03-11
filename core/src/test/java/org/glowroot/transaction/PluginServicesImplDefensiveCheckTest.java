@@ -80,12 +80,12 @@ public class PluginServicesImplDefensiveCheckTest {
 
     @Test
     public void testGetProperty() {
-        assertThat(pluginServices.getStringProperty(null)).isEqualTo("");
-        assertThat(pluginServices.getBooleanProperty(null)).isEqualTo(false);
-        assertThat(pluginServices.getDoubleProperty(null)).isEqualTo(null);
-        assertThat(pluginServices.getStringProperty("")).isEqualTo("");
-        assertThat(pluginServices.getBooleanProperty("")).isEqualTo(false);
-        assertThat(pluginServices.getDoubleProperty("")).isEqualTo(null);
+        assertThat(pluginServices.getStringProperty(null).value()).isEqualTo("");
+        assertThat(pluginServices.getBooleanProperty(null).value()).isEqualTo(false);
+        assertThat(pluginServices.getDoubleProperty(null).value()).isEqualTo(null);
+        assertThat(pluginServices.getStringProperty("").value()).isEqualTo("");
+        assertThat(pluginServices.getBooleanProperty("").value()).isEqualTo(false);
+        assertThat(pluginServices.getDoubleProperty("").value()).isEqualTo(null);
     }
 
     @Test

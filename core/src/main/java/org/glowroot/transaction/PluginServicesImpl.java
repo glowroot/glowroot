@@ -16,6 +16,7 @@
 package org.glowroot.transaction;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
@@ -24,6 +25,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.MapMaker;
 import com.google.common.primitives.Ints;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
@@ -71,11 +73,18 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private final @Nullable String pluginId;
 
     // cache for fast read access
-    private volatile boolean enabled;
-    private volatile boolean captureThreadInfo;
-    private volatile boolean captureGcInfo;
-    private volatile int maxTraceEntriesPerTransaction;
-    private volatile @MonotonicNonNull PluginConfig pluginConfig;
+    // visibility is provided by memoryBarrier below
+    private boolean enabled;
+    private boolean captureThreadInfo;
+    private boolean captureGcInfo;
+    private int maxTraceEntriesPerTransaction;
+    private @MonotonicNonNull PluginConfig pluginConfig;
+
+    private final Map<ConfigListener, Boolean> weakConfigListeners =
+            new MapMaker().weakKeys().makeMap();
+
+    // memory barrier is used to ensure memory visibility of config values
+    private volatile boolean memoryBarrier;
 
     static PluginServicesImpl create(TransactionRegistry transactionRegistry,
             TransactionCollector transactionCollector, ConfigService configService,
@@ -133,36 +142,47 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public String getStringProperty(String name) {
+    public StringProperty getStringProperty(String name) {
         if (name == null) {
             logger.error("getStringProperty(): argument 'name' must be non-null");
-            return "";
+            return new StringPropertyImpl("");
         }
-        if (pluginConfig == null) {
-            return "";
-        }
-        return pluginConfig.getStringProperty(name);
+        StringPropertyImpl stringProperty = new StringPropertyImpl(name);
+        weakConfigListeners.put(stringProperty, true);
+        return stringProperty;
     }
 
     @Override
-    public boolean getBooleanProperty(String name) {
+    public BooleanProperty getBooleanProperty(String name) {
         if (name == null) {
             logger.error("getBooleanProperty(): argument 'name' must be non-null");
-            return false;
+            return new BooleanPropertyImpl("");
         }
-        return pluginConfig != null && pluginConfig.getBooleanProperty(name);
+        BooleanPropertyImpl booleanProperty = new BooleanPropertyImpl(name);
+        weakConfigListeners.put(booleanProperty, true);
+        return booleanProperty;
     }
 
     @Override
-    public @Nullable Double getDoubleProperty(String name) {
+    public DoubleProperty getDoubleProperty(String name) {
         if (name == null) {
             logger.error("getDoubleProperty(): argument 'name' must be non-null");
-            return null;
+            return new DoublePropertyImpl("");
         }
-        if (pluginConfig == null) {
-            return null;
+        DoublePropertyImpl doubleProperty = new DoublePropertyImpl(name);
+        weakConfigListeners.put(doubleProperty, true);
+        return doubleProperty;
+    }
+
+    @Override
+    public BooleanProperty getEnabledProperty(String name) {
+        if (name == null) {
+            logger.error("getEnabledProperty(): argument 'name' must be non-null");
+            return new BooleanPropertyImpl("");
         }
-        return pluginConfig.getDoubleProperty(name);
+        EnabledPropertyImpl enabledProperty = new EnabledPropertyImpl(name);
+        weakConfigListeners.put(enabledProperty, true);
+        return enabledProperty;
     }
 
     @Override
@@ -201,6 +221,8 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             logger.error("startTransaction(): argument 'timerName' must be non-null");
             return NopTraceEntry.INSTANCE;
         }
+        // ensure visibility of recent configuration updates
+        readMemoryBarrier();
         return startTransactionInternal(transactionType, transactionName, messageSupplier,
                 timerName);
     }
@@ -344,6 +366,11 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         maxTraceEntriesPerTransaction = advancedConfig.maxTraceEntriesPerTransaction();
         captureThreadInfo = advancedConfig.captureThreadInfo();
         captureGcInfo = advancedConfig.captureGcInfo();
+
+        for (ConfigListener weakConfigListener : weakConfigListeners.keySet()) {
+            weakConfigListener.onChange();
+        }
+        memoryBarrier = true;
     }
 
     private TraceEntry startTransactionInternal(String transactionType, String transactionName,
@@ -387,6 +414,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             return NopTimerExt.INSTANCE;
         }
         return currentTimer.startNestedTimer(timerName, startTick);
+    }
+
+    private boolean readMemoryBarrier() {
+        return memoryBarrier;
     }
 
     private static ImmutableList<StackTraceElement> captureStackTrace() {
@@ -525,6 +556,94 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         @Override
         public MessageSupplier getMessageSupplier() {
             return messageSupplier;
+        }
+    }
+
+    private class StringPropertyImpl implements StringProperty, ConfigListener {
+        private final String name;
+        // visibility is provided by memoryBarrier in outer class
+        private String value = "";
+        private StringPropertyImpl(String name) {
+            this.name = name;
+            if (pluginConfig != null) {
+                value = pluginConfig.getStringProperty(name);
+            }
+        }
+        @Override
+        public String value() {
+            return value;
+        }
+        @Override
+        public void onChange() {
+            if (pluginConfig != null) {
+                value = pluginConfig.getStringProperty(name);
+            }
+        }
+    }
+
+    private class BooleanPropertyImpl implements BooleanProperty, ConfigListener {
+        private final String name;
+        // visibility is provided by memoryBarrier in outer class
+        private boolean value;
+        private BooleanPropertyImpl(String name) {
+            this.name = name;
+            if (pluginConfig != null) {
+                value = pluginConfig.getBooleanProperty(name);
+            }
+        }
+        @Override
+        public boolean value() {
+            return value;
+        }
+        @Override
+        public void onChange() {
+            if (pluginConfig != null) {
+                value = pluginConfig.getBooleanProperty(name);
+            }
+        }
+    }
+
+    private class DoublePropertyImpl implements DoubleProperty, ConfigListener {
+        private final String name;
+        // visibility is provided by memoryBarrier in outer class
+        private @Nullable Double value;
+        private DoublePropertyImpl(String name) {
+            this.name = name;
+            if (pluginConfig != null) {
+                value = pluginConfig.getDoubleProperty(name);
+            }
+        }
+        @Override
+        public @Nullable Double value() {
+            return value;
+        }
+        @Override
+        public void onChange() {
+            if (pluginConfig != null) {
+                value = pluginConfig.getDoubleProperty(name);
+            }
+        }
+    }
+
+    private class EnabledPropertyImpl implements BooleanProperty, ConfigListener {
+        private final String name;
+        // visibility is provided by memoryBarrier in outer class
+        private boolean value;
+        private EnabledPropertyImpl(String name) {
+            this.name = name;
+            if (pluginConfig != null) {
+                value = enabled && pluginConfig.getBooleanProperty(name);
+            }
+        }
+        @Override
+        public boolean value() {
+            return value;
+        }
+        @Override
+        public void onChange() {
+            if (pluginConfig != null) {
+                value = enabled && pluginConfig.getBooleanProperty(name);
+            }
         }
     }
 
