@@ -28,13 +28,6 @@ matrix:
       # chrome
     - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=chrome SAUCELABS_BROWSER_VERSION=
-      # safari
-    - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.10" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=8
-    - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.9" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=7
-    - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.8" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=6
       # internet explorer
     - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 8.1" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=11
