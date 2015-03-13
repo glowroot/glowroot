@@ -26,7 +26,8 @@ public class JdbcPluginProperties {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
-    private static volatile int stackTraceThresholdMillis;
+    // volatile is not needed here as it piggybacks on PluginServicesImpl.memoryBarrier
+    private static int stackTraceThresholdMillis;
 
     private static volatile ImmutableMultimap<String, Integer> displayBinaryParameterAsHex =
             ImmutableMultimap.of();
@@ -40,8 +41,6 @@ public class JdbcPluginProperties {
                 stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
             }
         });
-        Double value = pluginServices.getDoubleProperty("stackTraceThresholdMillis").value();
-        stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
     }
 
     private JdbcPluginProperties() {}

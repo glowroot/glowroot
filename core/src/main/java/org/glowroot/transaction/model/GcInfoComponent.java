@@ -18,12 +18,13 @@ package org.glowroot.transaction.model;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.concurrent.GuardedBy;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.immutables.value.Json;
@@ -35,7 +36,7 @@ public class GcInfoComponent {
 
     private static final Logger logger = LoggerFactory.getLogger(GcInfoComponent.class);
 
-    private final ImmutableMap<String, GcSnapshot> gcSnapshots;
+    private final Map<String, GcSnapshot> startingSnapshots;
 
     @GuardedBy("lock")
     private volatile @MonotonicNonNull List<GcInfo> completedGcInfos;
@@ -44,15 +45,14 @@ public class GcInfoComponent {
 
     public GcInfoComponent() {
         List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
-        ImmutableMap.Builder<String, GcSnapshot> infos = ImmutableMap.builder();
+        startingSnapshots = Maps.newHashMap();
         for (GarbageCollectorMXBean gcBean : gcBeans) {
             GcSnapshot info = ImmutableGcSnapshot.builder()
                     .collectionCount(gcBean.getCollectionCount())
                     .collectionTime(gcBean.getCollectionTime())
                     .build();
-            infos.put(gcBean.getName(), info);
+            startingSnapshots.put(gcBean.getName(), info);
         }
-        this.gcSnapshots = infos.build();
     }
 
     // must be called from transaction thread
@@ -77,12 +77,12 @@ public class GcInfoComponent {
     }
 
     private List<GcInfo> getGcInfosInternal() {
-        Set<String> unmatchedNames = Sets.newHashSet(gcSnapshots.keySet());
+        Set<String> unmatchedNames = Sets.newHashSet(startingSnapshots.keySet());
         List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
         List<GcInfo> gcInfos = Lists.newArrayList();
         for (GarbageCollectorMXBean gcBean : gcBeans) {
             String name = gcBean.getName();
-            GcSnapshot gcSnapshot = gcSnapshots.get(name);
+            GcSnapshot gcSnapshot = startingSnapshots.get(name);
             if (gcSnapshot == null) {
                 logger.warn("garbage collector bean {} did not exist at start of trace", name);
                 continue;

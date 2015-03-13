@@ -37,8 +37,14 @@ public class BindParameterList implements Iterable</*@Nullable*/Object> {
     }
 
     private BindParameterList(@Nullable Object[] parameters, int size) {
-        this.parameters = new Object[size];
-        System.arraycopy(parameters, 0, this.parameters, 0, size);
+        if (parameters.length == size) {
+            this.parameters = parameters.clone();
+        } else {
+            // clone is faster even in this case, but worth the one time hit (for cached statements
+            // where this will be called over and over) to resize the array and use less memory
+            this.parameters = new Object[size];
+            System.arraycopy(parameters, 0, this.parameters, 0, size);
+        }
         this.size = size;
     }
 

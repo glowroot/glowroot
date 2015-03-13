@@ -69,7 +69,10 @@ public class StatementAspect {
     public static class HasStatementMirrorImpl implements HasStatementMirror {
         // the field and method names are verbose to avoid conflict since they will become fields
         // and methods in all classes that extend java.sql.Statement or java.sql.ResultSet
-        private volatile @Nullable StatementMirror glowrootStatementMirror;
+        //
+        // does not need to be volatile, app/framework must provide visibility of PreparedStatement
+        // if used across threads and this can piggyback
+        private @Nullable StatementMirror glowrootStatementMirror;
         @Override
         public @Nullable StatementMirror getGlowrootStatementMirror() {
             return glowrootStatementMirror;

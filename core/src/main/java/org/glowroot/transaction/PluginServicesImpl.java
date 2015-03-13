@@ -195,6 +195,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             return;
         }
         configService.addPluginConfigListener(pluginId, listener);
+        listener.onChange();
     }
 
     @Override

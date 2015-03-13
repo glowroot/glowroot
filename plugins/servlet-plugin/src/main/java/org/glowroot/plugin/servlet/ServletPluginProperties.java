@@ -57,7 +57,6 @@ class ServletPluginProperties {
                 updateCache();
             }
         });
-        updateCache();
     }
 
     private ServletPluginProperties() {}
