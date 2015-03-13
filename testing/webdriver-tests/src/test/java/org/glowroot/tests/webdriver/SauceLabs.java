@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,14 @@
  */
 package org.glowroot.tests.webdriver;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.jar.Manifest;
 
 import com.google.common.base.Strings;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
-
-import org.glowroot.common.Manifests;
 
 public class SauceLabs {
 
@@ -43,7 +39,6 @@ public class SauceLabs {
     private static final String deviceOrientation;
     private static final String deviceApp;
 
-    private static final String seleniumVersion;
     private static final String tunnelIdentifier;
 
     static {
@@ -61,14 +56,6 @@ public class SauceLabs {
         deviceApp = System.getProperty("saucelabs.device.app");
 
         tunnelIdentifier = System.getProperty("saucelabs.tunnel.identifier");
-        Manifest seleniumManifest;
-        try {
-            seleniumManifest = Manifests.getManifest(WebDriver.class);
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
-        seleniumVersion =
-                seleniumManifest.getAttributes("Build-Info").getValue("Selenium-Version");
     }
 
     public static boolean useSauceLabs() {
@@ -105,7 +92,6 @@ public class SauceLabs {
         if (tunnelIdentifier != null) {
             capabilities.setCapability("tunnel-identifier", tunnelIdentifier);
         }
-        capabilities.setCapability("selenium-version", seleniumVersion);
         capabilities.setCapability("name", testName);
         return new RemoteWebDriver(new URL("http://" + sauceUsername + ":" + sauceAccessKey
                 + "@localhost:4445/wd/hub"), capabilities);
