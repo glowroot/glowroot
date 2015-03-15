@@ -1,5 +1,6 @@
-Glowroot &nbsp;&nbsp; [![Build Status](https://travis-ci.org/glowroot/glowroot.png?branch=master)](https://travis-ci.org/glowroot/glowroot)
-=========
+## Application Performance Management for the JVM
+
+![Image of Glowroot](https://glowroot.org/for-github-readme-6.png)
 
 ## Quick start
 
