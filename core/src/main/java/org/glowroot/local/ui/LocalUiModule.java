@@ -22,13 +22,13 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Strings;
+import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 
 import org.glowroot.collector.CollectorModule;
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
 import org.glowroot.common.JavaVersion;
-import org.glowroot.common.Ticker;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.jvm.JvmModule;

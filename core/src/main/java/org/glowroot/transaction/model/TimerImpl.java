@@ -21,12 +21,13 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
+import org.glowroot.api.Timer;
 import org.glowroot.api.TimerName;
-import org.glowroot.common.Ticker;
 
 // instances are updated by a single thread, but can be read by other threads
 // memory visibility is therefore an issue for the reading threads
@@ -45,9 +46,12 @@ import org.glowroot.common.Ticker;
 // in-flight (e.g. partial traces and active traces displayed in the UI) may not be visible
 //
 // all timing data is in nanoseconds
-public class TimerImpl implements TimerExt {
+public class TimerImpl implements Timer {
 
+    private final Transaction transaction;
+    private final @Nullable TimerImpl parent;
     private final TimerNameImpl timerName;
+
     // nanosecond rollover (292 years) isn't a concern for total time on a single transaction
     private long total;
     private long min = Long.MAX_VALUE;
@@ -69,22 +73,18 @@ public class TimerImpl implements TimerExt {
     // lazy initialize to save memory in common case where this is a leaf timer
     private volatile @MonotonicNonNull List<TimerImpl> threadSafeNestedTimers;
 
-    // parent and currentTimerHolder don't need to be thread safe as they are only
-    // accessed by the transaction thread
-    private final @Nullable TimerImpl parent;
-    private final CurrentTimerHolder currentTimerHolder;
-
     private final Ticker ticker;
 
-    public static TimerImpl createRootTimer(TimerNameImpl timerName, Ticker ticker) {
-        return new TimerImpl(timerName, null, new CurrentTimerHolder(), ticker);
+    public static TimerImpl createRootTimer(Transaction transaction, TimerNameImpl timerName,
+            Ticker ticker) {
+        return new TimerImpl(transaction, null, timerName, ticker);
     }
 
-    private TimerImpl(TimerNameImpl timerName, @Nullable TimerImpl parent,
-            CurrentTimerHolder currentTimerHolder, Ticker ticker) {
+    private TimerImpl(Transaction transaction, @Nullable TimerImpl parent, TimerNameImpl timerName,
+            Ticker ticker) {
         this.timerName = timerName;
         this.parent = parent;
-        this.currentTimerHolder = currentTimerHolder;
+        this.transaction = transaction;
         this.ticker = ticker;
     }
 
@@ -163,14 +163,13 @@ public class TimerImpl implements TimerExt {
     public void start(long startTick) {
         this.startTick = startTick;
         selfNestingLevel++;
-        currentTimerHolder.set(this);
+        transaction.setCurrentTimer(this);
     }
 
-    @Override
     public void end(long endTick) {
         if (selfNestingLevel == 1) {
             recordData(endTick - startTick);
-            currentTimerHolder.set(parent);
+            transaction.setCurrentTimer(parent);
         }
         selfNestingLevel--;
     }
@@ -219,8 +218,8 @@ public class TimerImpl implements TimerExt {
         return startNestedTimerInternal(timerName, startTick);
     }
 
-    CurrentTimerHolder getCurrentTimerHolder() {
-        return currentTimerHolder;
+    Transaction getTransaction() {
+        return transaction;
     }
 
     private TimerImpl startNestedTimerInternal(TimerName timerName, long startTick) {
@@ -233,8 +232,7 @@ public class TimerImpl implements TimerExt {
             nestedTimer.start(startTick);
             return nestedTimer;
         }
-        nestedTimer = new TimerImpl(timerNameImpl, this,
-                currentTimerHolder, ticker);
+        nestedTimer = new TimerImpl(transaction, this, timerNameImpl, ticker);
         nestedTimer.start(startTick);
         nestedTimers.put(timerNameImpl, nestedTimer);
         if (threadSafeNestedTimers == null) {

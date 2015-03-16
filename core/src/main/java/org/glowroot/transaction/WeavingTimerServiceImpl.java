@@ -17,7 +17,6 @@ package org.glowroot.transaction;
 
 import org.glowroot.api.TimerName;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.transaction.model.TimerExt;
 import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.Transaction;
 import org.glowroot.weaving.WeavingTimerService;
@@ -43,7 +42,7 @@ class WeavingTimerServiceImpl implements WeavingTimerService {
         if (currentTimer == null) {
             return NopWeavingTimer.INSTANCE;
         }
-        final TimerExt timer = currentTimer.startNestedTimer(timerName);
+        final TimerImpl timer = currentTimer.startNestedTimer(timerName);
         return new WeavingTimer() {
             @Override
             public void stop() {

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.junit.After;
@@ -30,7 +31,6 @@ import org.junit.Test;
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.ImmutableAggregate;
 import org.glowroot.collector.TransactionSummary;
-import org.glowroot.common.Ticker;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
 
 import static org.assertj.core.api.Assertions.assertThat;

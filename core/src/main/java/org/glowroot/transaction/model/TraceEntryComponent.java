@@ -21,13 +21,13 @@ import java.util.Deque;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
+import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.common.Ticker;
 
 // this supports updating by a single thread and reading by multiple threads
 class TraceEntryComponent {
@@ -58,7 +58,7 @@ class TraceEntryComponent {
 
     private final Ticker ticker;
 
-    TraceEntryComponent(MessageSupplier messageSupplier, TimerExt timer, long startTick,
+    TraceEntryComponent(MessageSupplier messageSupplier, TimerImpl timer, long startTick,
             Ticker ticker) {
         this.startTick = startTick;
         this.ticker = ticker;
@@ -101,7 +101,7 @@ class TraceEntryComponent {
         return completed ? endTick - startTick : ticker.read() - startTick;
     }
 
-    TraceEntry pushEntry(long startTick, MessageSupplier messageSupplier, TimerExt timer) {
+    TraceEntry pushEntry(long startTick, MessageSupplier messageSupplier, TimerImpl timer) {
         TraceEntry entry = createEntry(startTick, messageSupplier, null, timer, false);
         activeEntries.push(entry);
         synchronized (entries) {
@@ -148,7 +148,7 @@ class TraceEntryComponent {
     }
 
     private TraceEntry createEntry(long startTick, @Nullable MessageSupplier messageSupplier,
-            @Nullable ErrorMessage errorMessage, @Nullable TimerExt timer, boolean limitBypassed) {
+            @Nullable ErrorMessage errorMessage, @Nullable TimerImpl timer, boolean limitBypassed) {
         if (entryLimitExceeded && !limitBypassed) {
             // just in case the entryLimit property is changed in the middle of a trace this resets
             // the flag so that it can be triggered again (and possibly then a second limit marker)
@@ -168,8 +168,7 @@ class TraceEntryComponent {
         } else {
             nestingLevel = currentEntry.getNestingLevel() + 1;
         }
-        TraceEntry entry =
-                new TraceEntry(messageSupplier, startTick, nestingLevel, timer);
+        TraceEntry entry = new TraceEntry(messageSupplier, startTick, nestingLevel, timer);
         entry.setErrorMessage(errorMessage);
         return entry;
     }

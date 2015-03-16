@@ -21,6 +21,7 @@ import java.util.Random;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
+import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Lists;
@@ -29,7 +30,6 @@ import org.junit.Test;
 
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
-import org.glowroot.common.Ticker;
 import org.glowroot.local.store.ImmutableTracePoint;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;

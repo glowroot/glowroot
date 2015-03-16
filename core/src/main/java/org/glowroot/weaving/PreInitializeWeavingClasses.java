@@ -314,16 +314,12 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.api.weaving.Pointcut");
         types.add("org.glowroot.common.ClassNames");
         types.add("org.glowroot.common.Reflections");
-        types.add("org.glowroot.common.Ticker");
-        types.add("org.glowroot.common.Ticker$1");
         types.add("org.glowroot.transaction.TransactionRegistry");
         types.add("org.glowroot.transaction.WeavingTimerServiceImpl");
         types.add("org.glowroot.transaction.WeavingTimerServiceImpl$1");
         types.add("org.glowroot.transaction.WeavingTimerServiceImpl$NopWeavingTimer");
-        types.add("org.glowroot.transaction.model.CurrentTimerHolder");
         types.add("org.glowroot.transaction.model.NestedTimerMap");
         types.add("org.glowroot.transaction.model.NestedTimerMap$Entry");
-        types.add("org.glowroot.transaction.model.TimerExt");
         types.add("org.glowroot.transaction.model.TimerImpl");
         types.add("org.glowroot.transaction.model.TimerNameImpl");
         types.add("org.glowroot.transaction.model.Transaction");

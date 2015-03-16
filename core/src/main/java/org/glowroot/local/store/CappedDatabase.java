@@ -29,6 +29,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Ticker;
 import com.google.common.io.CharSource;
 import com.google.common.primitives.Longs;
 import com.ning.compress.lzf.LZFInputStream;
@@ -36,7 +37,6 @@ import com.ning.compress.lzf.LZFOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.Ticker;
 import org.glowroot.markers.OnlyUsedByTests;
 
 public class CappedDatabase {

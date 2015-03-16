@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,10 @@ package org.glowroot.transaction;
 
 import java.util.concurrent.ScheduledExecutorService;
 
+import com.google.common.base.Ticker;
+
 import org.glowroot.common.ScheduledRunnable;
-import org.glowroot.common.Ticker;
+import org.glowroot.common.Tickers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.transaction.model.Transaction;
 
@@ -58,7 +60,7 @@ class ImmediateTraceStoreWatcher extends ScheduledRunnable {
         for (Transaction transaction : transactionRegistry.getTransactions()) {
             // if the transaction is within PERIOD_MILLIS from hitting the partial trace store
             // threshold and the partial trace store hasn't already been scheduled then schedule it
-            if (Ticker.lessThanOrEqual(transaction.getStartTick(), immediatePartialStoreTick)
+            if (Tickers.lessThanOrEqual(transaction.getStartTick(), immediatePartialStoreTick)
                     && transaction.getImmedateTraceStoreRunnable() == null) {
                 // schedule partial trace storage
                 long initialDelayMillis = Math.max(0,

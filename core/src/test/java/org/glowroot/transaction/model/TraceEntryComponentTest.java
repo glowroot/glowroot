@@ -15,10 +15,10 @@
  */
 package org.glowroot.transaction.model;
 
+import com.google.common.base.Ticker;
 import org.junit.Test;
 
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.common.Ticker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -29,7 +29,7 @@ public class TraceEntryComponentTest {
     public void testTooManyPops() {
         // given
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        TimerExt timer = mock(TimerExt.class);
+        TimerImpl timer = mock(TimerImpl.class);
         Ticker ticker = mock(Ticker.class);
         TraceEntryComponent traceEntryComponent =
                 new TraceEntryComponent(messageSupplier, timer, 0, ticker);
@@ -44,8 +44,8 @@ public class TraceEntryComponentTest {
         // given
         MessageSupplier messageSupplier1 = mock(MessageSupplier.class);
         MessageSupplier messageSupplier2 = mock(MessageSupplier.class);
-        TimerExt timer1 = mock(TimerExt.class);
-        TimerExt timer2 = mock(TimerExt.class);
+        TimerImpl timer1 = mock(TimerImpl.class);
+        TimerImpl timer2 = mock(TimerImpl.class);
         Ticker ticker = mock(Ticker.class);
         TraceEntryComponent traceEntryComponent =
                 new TraceEntryComponent(messageSupplier1, timer1, 0, ticker);
@@ -61,8 +61,8 @@ public class TraceEntryComponentTest {
         // given
         MessageSupplier messageSupplier1 = mock(MessageSupplier.class);
         MessageSupplier messageSupplier2 = mock(MessageSupplier.class);
-        TimerExt timer1 = mock(TimerExt.class);
-        TimerExt timer2 = mock(TimerExt.class);
+        TimerImpl timer1 = mock(TimerImpl.class);
+        TimerImpl timer2 = mock(TimerImpl.class);
         Ticker ticker = mock(Ticker.class);
         TraceEntryComponent traceEntryComponent =
                 new TraceEntryComponent(messageSupplier1, timer1, 0, ticker);

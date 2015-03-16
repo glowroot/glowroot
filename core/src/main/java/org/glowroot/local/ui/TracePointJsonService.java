@@ -29,6 +29,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
+import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -37,7 +38,6 @@ import com.google.common.io.CharStreams;
 
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
-import org.glowroot.common.Ticker;
 import org.glowroot.local.store.ImmutableTracePoint;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.StringComparator;

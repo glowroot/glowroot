@@ -34,6 +34,7 @@ import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ticker;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -44,7 +45,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.collector.CollectorModule;
 import org.glowroot.common.Clock;
 import org.glowroot.common.SpyingLogbackFilter;
-import org.glowroot.common.Ticker;
+import org.glowroot.common.Tickers;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.jvm.JvmModule;
@@ -60,8 +61,6 @@ import org.glowroot.weaving.ExtraBootResourceFinder;
 public class GlowrootModule {
 
     private static final Logger logger = LoggerFactory.getLogger(GlowrootModule.class);
-
-    private static final boolean dummyTicker = Boolean.getBoolean("glowroot.internal.dummyTicker");
 
     private final Ticker ticker;
     private final Clock clock;
@@ -106,16 +105,7 @@ public class GlowrootModule {
         // init config module
         configModule = new ConfigModule(dataDir, glowrootJarFile, viewerModeEnabled);
 
-        if (dummyTicker) {
-            ticker = new Ticker() {
-                @Override
-                public long read() {
-                    return 0;
-                }
-            };
-        } else {
-            ticker = Ticker.systemTicker();
-        }
+        ticker = Tickers.getTicker();
         clock = Clock.systemClock();
 
         ExtraBootResourceFinder extraBootResourceFinder = createExtraBootResourceFinder(

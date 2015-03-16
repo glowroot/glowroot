@@ -30,7 +30,7 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.internal.ExceptionInfo;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
-import org.glowroot.common.Ticker;
+import org.glowroot.common.Tickers;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.Profile.StackTraceElementPlus;
 import org.glowroot.transaction.model.TraceEntry;
@@ -128,7 +128,7 @@ public class EntriesCharSourceCreator {
         // (without using synchronization to block updates to the transaction while it is being
         // read)
         private void writeEntry(TraceEntry traceEntry) throws IOException {
-            if (!Ticker.lessThanOrEqual(traceEntry.getStartTick(), captureTick)) {
+            if (!Tickers.lessThanOrEqual(traceEntry.getStartTick(), captureTick)) {
                 // this entry started after the capture tick
                 return;
             }
@@ -158,7 +158,7 @@ public class EntriesCharSourceCreator {
             jg.writeNumberField("offset", traceEntry.getStartTick() - transactionStartTick);
             jg.writeFieldName("duration");
             long endTick = traceEntry.getEndTick();
-            if (traceEntry.isCompleted() && Ticker.lessThanOrEqual(endTick, captureTick)) {
+            if (traceEntry.isCompleted() && Tickers.lessThanOrEqual(endTick, captureTick)) {
                 jg.writeNumber(endTick - traceEntry.getStartTick());
             } else {
                 jg.writeNumber(captureTick - traceEntry.getStartTick());

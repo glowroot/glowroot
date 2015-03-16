@@ -15,6 +15,7 @@
  */
 package org.glowroot.transaction;
 
+import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,7 +24,6 @@ import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.TimerName;
 import org.glowroot.common.Clock;
-import org.glowroot.common.Ticker;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GeneralConfig;

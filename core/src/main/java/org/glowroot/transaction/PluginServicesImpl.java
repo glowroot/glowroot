@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapMaker;
@@ -40,18 +41,16 @@ import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.common.Clock;
-import org.glowroot.common.ScheduledRunnable;
-import org.glowroot.common.Ticker;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GeneralConfig;
 import org.glowroot.config.PluginConfig;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.jvm.ThreadAllocatedBytes;
-import org.glowroot.transaction.model.TimerExt;
 import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.TimerNameImpl;
 import org.glowroot.transaction.model.Transaction;
+import org.glowroot.transaction.model.Transaction.CompletionCallback;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -67,6 +66,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private final UserProfileScheduler userProfileScheduler;
     private final Clock clock;
     private final Ticker ticker;
+
+    private final TransactionCompletionCallback transactionCompletionCallback =
+            new TransactionCompletionCallback();
 
     // pluginId is either the id of a registered plugin or it is null
     // (see validation in constructor)
@@ -276,7 +278,12 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             org.glowroot.transaction.model.TraceEntry entry =
                     transaction.addEntry(currTick, currTick, null, errorMessage, true);
             if (((ReadableErrorMessage) errorMessage).getExceptionInfo() == null) {
-                entry.setStackTrace(PluginServicesImpl.captureStackTrace());
+                StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+                // need to strip back a few stack calls:
+                // skip i=0 which is "java.lang.Thread.getStackTrace()"
+                // skip i=1 which is "...PluginServicesImpl.addTraceEntry()"
+                // skip i=2 which is the plugin advice
+                entry.setStackTrace(ImmutableList.copyOf(stackTrace).subList(3, stackTrace.length));
             }
         }
     }
@@ -378,14 +385,12 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             MessageSupplier messageSupplier, TimerName timerName) {
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction == null) {
-            TimerImpl rootTimer = TimerImpl.createRootTimer((TimerNameImpl) timerName, ticker);
             long startTick = ticker.read();
-            rootTimer.start(startTick);
             transaction = new Transaction(clock.currentTimeMillis(), transactionType,
-                    transactionName, messageSupplier, rootTimer, startTick, captureThreadInfo,
-                    captureGcInfo, threadAllocatedBytes, ticker);
+                    transactionName, messageSupplier, timerName, startTick, captureThreadInfo,
+                    captureGcInfo, threadAllocatedBytes, transactionCompletionCallback, ticker);
             transactionRegistry.addTransaction(transaction);
-            return new TraceEntryImpl(transaction.getTraceEntryComponent(), transaction);
+            return transaction.getRootTraceEntry();
         } else {
             return startTraceEntryInternal(transaction, timerName, messageSupplier);
         }
@@ -397,22 +402,20 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (transaction.getEntryCount() >= maxTraceEntriesPerTransaction) {
             // the entry limit has been exceeded for this trace
             transaction.addEntryLimitExceededMarkerIfNeeded();
-            TimerExt timer = startTimer(timerName, startTick, transaction);
+            TimerImpl timer = startTimer(timerName, startTick, transaction);
             return new DummyTraceEntry(timer, startTick, transaction, messageSupplier);
         } else {
-            TimerExt timer = startTimer(timerName, startTick, transaction);
-            org.glowroot.transaction.model.TraceEntry traceEntry =
-                    transaction.pushEntry(startTick, messageSupplier, timer);
-            return new TraceEntryImpl(traceEntry, transaction);
+            TimerImpl timer = startTimer(timerName, startTick, transaction);
+            return transaction.pushEntry(startTick, messageSupplier, timer);
         }
     }
 
-    private TimerExt startTimer(TimerName timerName, long startTick, Transaction transaction) {
+    private TimerImpl startTimer(TimerName timerName, long startTick, Transaction transaction) {
         TimerImpl currentTimer = transaction.getCurrentTimer();
         if (currentTimer == null) {
             // this really shouldn't happen as current timer should be non-null unless transaction
             // has completed
-            return NopTimerExt.INSTANCE;
+            return TimerImpl.createRootTimer(transaction, (TimerNameImpl) timerName, ticker);
         }
         return currentTimer.startNestedTimer(timerName, startTick);
     }
@@ -421,94 +424,25 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         return memoryBarrier;
     }
 
-    private static ImmutableList<StackTraceElement> captureStackTrace() {
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        // need to strip back a few stack calls:
-        // skip i=0 which is "java.lang.Thread.getStackTrace()"
-        for (int i = 1; i < stackTrace.length; i++) {
-            // startsWith to include nested classes
-            if (!stackTrace[i].getClassName().startsWith(PluginServicesImpl.class.getName())) {
-                // found the caller of PluginServicesImpl, this should be the @Pointcut
-                // @OnReturn/@OnThrow/@OnAfter method, next one should be the woven method
-                return ImmutableList.copyOf(stackTrace).subList(i + 1, stackTrace.length);
-            }
-        }
-        logger.warn("stack trace didn't include endWithStackTrace()");
-        return ImmutableList.of();
-    }
+    private class TransactionCompletionCallback implements CompletionCallback {
 
-    private class TraceEntryImpl implements TraceEntry {
-        private final org.glowroot.transaction.model.TraceEntry traceEntry;
-        private final Transaction transaction;
-        private TraceEntryImpl(org.glowroot.transaction.model.TraceEntry traceEntry,
-                Transaction transaction) {
-            this.traceEntry = traceEntry;
-            this.transaction = transaction;
-        }
         @Override
-        public void end() {
-            endInternal(ticker.read(), null);
-        }
-        @Override
-        public void endWithStackTrace(long threshold, TimeUnit unit) {
-            if (threshold < 0) {
-                logger.error("endWithStackTrace(): argument 'threshold' must be non-negative");
-                end();
-                return;
-            }
-            long endTick = ticker.read();
-            if (endTick - traceEntry.getStartTick() >= unit.toNanos(threshold)) {
-                traceEntry.setStackTrace(captureStackTrace());
-            }
-            endInternal(endTick, null);
-        }
-        @Override
-        public void endWithError(ErrorMessage errorMessage) {
-            if (errorMessage == null) {
-                logger.error("endWithError(): argument 'errorMessage' must be non-null");
-                // fallback to end() without error
-                end();
-                return;
-            }
-            endInternal(ticker.read(), errorMessage);
-        }
-        @Override
-        public MessageSupplier getMessageSupplier() {
-            MessageSupplier messageSupplier = traceEntry.getMessageSupplier();
-            // messageSupplier should never be null since entry.getMessageSupplier() is only null
-            // when the entry was created using addErrorEntry(), and that method doesn't return the
-            // entry afterwards, so it should be impossible to call getMessageSupplier() on it
-            checkNotNull(messageSupplier);
-            return messageSupplier;
-        }
-        private void endInternal(long endTick, @Nullable ErrorMessage errorMessage) {
-            transaction.popEntry(traceEntry, endTick, errorMessage);
-            if (transaction.isCompleted()) {
-                // the root entry has been popped off
-                safeCancel(transaction.getImmedateTraceStoreRunnable());
-                safeCancel(transaction.getUserProfileRunnable());
-                // send to trace collector before removing from trace registry so that trace
-                // collector can cover the gap (via
-                // TransactionCollectorImpl.getPendingCompleteTraces())
-                // between removing the trace from the registry and storing it
-                transactionCollector.onCompletedTransaction(transaction);
-                transactionRegistry.removeTransaction(transaction);
-            }
-        }
-        private void safeCancel(@Nullable ScheduledRunnable scheduledRunnable) {
-            if (scheduledRunnable == null) {
-                return;
-            }
-            scheduledRunnable.cancel();
+        public void completed(Transaction transaction) {
+            // send to trace collector before removing from trace registry so that trace
+            // collector can cover the gap
+            // (via TransactionCollectorImpl.getPendingCompleteTraces())
+            // between removing the trace from the registry and storing it
+            transactionCollector.onCompletedTransaction(transaction);
+            transactionRegistry.removeTransaction(transaction);
         }
     }
 
     private class DummyTraceEntry implements TraceEntry {
-        private final TimerExt timer;
+        private final TimerImpl timer;
         private final long startTick;
         private final Transaction transaction;
         private final MessageSupplier messageSupplier;
-        public DummyTraceEntry(TimerExt timer, long startTick, Transaction transaction,
+        public DummyTraceEntry(TimerImpl timer, long startTick, Transaction transaction,
                 MessageSupplier messageSupplier) {
             this.timer = timer;
             this.startTick = startTick;
@@ -535,7 +469,12 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 // at least the long entry and stack trace will get captured
                 org.glowroot.transaction.model.TraceEntry entry =
                         transaction.addEntry(startTick, endTick, messageSupplier, null, true);
-                entry.setStackTrace(captureStackTrace());
+                StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+                // need to strip back a few stack calls:
+                // skip i=0 which is "java.lang.Thread.getStackTrace()"
+                // skip i=1 which is "...PluginServicesImpl$DummyTraceEntry.addTraceEntry()"
+                // skip i=2 which is the plugin advice
+                entry.setStackTrace(ImmutableList.copyOf(stackTrace).subList(3, stackTrace.length));
             }
         }
         @Override
@@ -667,13 +606,5 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         private static final NopTimer INSTANCE = new NopTimer();
         @Override
         public void stop() {}
-    }
-
-    private static class NopTimerExt implements TimerExt {
-        private static final NopTimerExt INSTANCE = new NopTimerExt();
-        @Override
-        public void stop() {}
-        @Override
-        public void end(long endTick) {}
     }
 }

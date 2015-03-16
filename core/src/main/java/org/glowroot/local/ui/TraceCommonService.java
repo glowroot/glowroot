@@ -20,6 +20,7 @@ import java.sql.SQLException;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Ticker;
 import com.google.common.collect.Iterables;
 import com.google.common.io.CharSource;
 
@@ -30,7 +31,6 @@ import org.glowroot.collector.TraceCreator;
 import org.glowroot.collector.TraceWriter;
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
-import org.glowroot.common.Ticker;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.transaction.model.Transaction;

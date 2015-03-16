@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.Strings;
+import com.google.common.base.Ticker;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
@@ -34,10 +35,10 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.TimerName;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.common.ScheduledRunnable;
-import org.glowroot.common.Ticker;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.transaction.model.GcInfoComponent.GcInfo;
 import org.glowroot.transaction.model.ThreadInfoComponent.ThreadInfoData;
@@ -80,6 +81,8 @@ public class Transaction {
     private volatile @MonotonicNonNull SetMultimap<String, String> customAttributes;
 
     private final TimerImpl rootTimer;
+    // currentTimer doesn't need to be thread safe as it is only accessed by transaction thread
+    private @Nullable TimerImpl currentTimer;
 
     private final @Nullable ThreadInfoComponent threadInfoComponent;
     private final @Nullable GcInfoComponent gcInfoComponent;
@@ -98,8 +101,8 @@ public class Transaction {
 
     // these are stored in the trace so they are only scheduled a single time, and also so they can
     // be canceled at trace completion
-    private volatile @Nullable ScheduledRunnable userProfileRunnable;
-    private volatile @Nullable ScheduledRunnable immedateTraceStoreRunnable;
+    private volatile @MonotonicNonNull ScheduledRunnable userProfileRunnable;
+    private volatile @MonotonicNonNull ScheduledRunnable immedateTraceStoreRunnable;
 
     private volatile boolean partiallyStored;
     private volatile boolean willBeStored;
@@ -115,21 +118,29 @@ public class Transaction {
     // not be visible
     private volatile boolean memoryBarrier;
 
+    private final CompletionCallback completionCallback;
+
     public Transaction(long startTime, String transactionType, String transactionName,
-            MessageSupplier messageSupplier, TimerImpl rootTimer, long startTick,
+            MessageSupplier messageSupplier, TimerName timerName, long startTick,
             boolean captureThreadInfo, boolean captureGcInfo,
-            @Nullable ThreadAllocatedBytes threadAllocatedBytes, Ticker ticker) {
+            @Nullable ThreadAllocatedBytes threadAllocatedBytes,
+            CompletionCallback completionCallback, Ticker ticker) {
         this.startTime = startTime;
         this.transactionType = transactionType;
         this.transactionName = transactionName;
-        this.rootTimer = rootTimer;
         id = new TraceUniqueId(startTime);
+        // suppress warning for passing @UnderInitialization this
+        @SuppressWarnings("argument.type.incompatible")
+        TimerImpl rootTimer = TimerImpl.createRootTimer(this, (TimerNameImpl) timerName, ticker);
+        this.rootTimer = rootTimer;
+        rootTimer.start(startTick);
         traceEntryComponent =
                 new TraceEntryComponent(messageSupplier, rootTimer, startTick, ticker);
         threadId = Thread.currentThread().getId();
         threadInfoComponent =
                 captureThreadInfo ? new ThreadInfoComponent(threadAllocatedBytes) : null;
         gcInfoComponent = captureGcInfo ? new GcInfoComponent() : null;
+        this.completionCallback = completionCallback;
     }
 
     public long getStartTime() {
@@ -219,8 +230,12 @@ public class Transaction {
         return rootTimer;
     }
 
+    public void setCurrentTimer(@Nullable TimerImpl currentTimer) {
+        this.currentTimer = currentTimer;
+    }
+
     public @Nullable TimerImpl getCurrentTimer() {
-        return rootTimer.getCurrentTimerHolder().get();
+        return currentTimer;
     }
 
     // can be called from a non-transaction thread
@@ -233,7 +248,7 @@ public class Transaction {
         return gcInfoComponent == null ? null : gcInfoComponent.getGcInfos();
     }
 
-    public TraceEntry getTraceEntryComponent() {
+    public TraceEntry getRootTraceEntry() {
         return traceEntryComponent.getRootTraceEntry();
     }
 
@@ -357,7 +372,7 @@ public class Transaction {
         willBeStored = true;
     }
 
-    public TraceEntry pushEntry(long startTick, MessageSupplier messageSupplier, TimerExt timer) {
+    public TraceEntry pushEntry(long startTick, MessageSupplier messageSupplier, TimerImpl timer) {
         return traceEntryComponent.pushEntry(startTick, messageSupplier, timer);
     }
 
@@ -380,11 +395,17 @@ public class Transaction {
     // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
     public void popEntry(TraceEntry entry, long endTick, @Nullable ErrorMessage errorMessage) {
         traceEntryComponent.popEntry(entry, endTick, errorMessage);
-        TimerExt timer = entry.getTimer();
-        if (timer != null) {
-            timer.end(endTick);
-        }
         memoryBarrier = true;
+        if (isCompleted()) {
+            // the root entry has been popped off
+            if (immedateTraceStoreRunnable != null) {
+                immedateTraceStoreRunnable.cancel();
+            }
+            if (userProfileRunnable != null) {
+                userProfileRunnable.cancel();
+            }
+            completionCallback.completed(this);
+        }
     }
 
     public void captureStackTrace(@Nullable ThreadInfo threadInfo, int limit) {
@@ -428,5 +449,9 @@ public class Transaction {
 
     private boolean readMemoryBarrier() {
         return memoryBarrier;
+    }
+
+    public static interface CompletionCallback {
+        void completed(Transaction transaction);
     }
 }

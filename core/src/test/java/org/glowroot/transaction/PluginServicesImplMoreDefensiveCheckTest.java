@@ -15,6 +15,7 @@
  */
 package org.glowroot.transaction;
 
+import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,12 +25,12 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.common.Clock;
-import org.glowroot.common.Ticker;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GeneralConfig;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.jvm.ThreadAllocatedBytes;
+import org.glowroot.transaction.model.TimerNameImpl;
 import org.glowroot.transaction.model.Transaction;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -65,26 +66,10 @@ public class PluginServicesImplMoreDefensiveCheckTest {
     }
 
     @Test
-    public void testEndWithStackTrace() {
-        MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        TimerName timerName = mock(TimerName.class);
-        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, timerName);
-        traceEntry.endWithStackTrace(-1, MILLISECONDS);
-    }
-
-    @Test
-    public void testEndWithError() {
-        MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        TimerName timerName = mock(TimerName.class);
-        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, timerName);
-        traceEntry.endWithError(null);
-    }
-
-    @Test
     public void testEndDummyWithStackTrace() {
         when(mockTransaction.getEntryCount()).thenReturn(100);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        TimerName timerName = mock(TimerName.class);
+        TimerName timerName = mock(TimerNameImpl.class);
         TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, timerName);
         traceEntry.endWithStackTrace(-1, MILLISECONDS);
     }
@@ -93,7 +78,7 @@ public class PluginServicesImplMoreDefensiveCheckTest {
     public void testEndDummyWithError() {
         when(mockTransaction.getEntryCount()).thenReturn(100);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        TimerName timerName = mock(TimerName.class);
+        TimerName timerName = mock(TimerNameImpl.class);
         TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, timerName);
         traceEntry.endWithError(null);
     }
@@ -102,7 +87,7 @@ public class PluginServicesImplMoreDefensiveCheckTest {
     public void testEndDummyWithStackTraceGood() {
         when(mockTransaction.getEntryCount()).thenReturn(100);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        TimerName timerName = mock(TimerName.class);
+        TimerName timerName = mock(TimerNameImpl.class);
         TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, timerName);
         traceEntry.endWithStackTrace(1, MILLISECONDS);
     }
@@ -111,7 +96,7 @@ public class PluginServicesImplMoreDefensiveCheckTest {
     public void testEndDummyWithErrorGood() {
         when(mockTransaction.getEntryCount()).thenReturn(100);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        TimerName timerName = mock(TimerName.class);
+        TimerName timerName = mock(TimerNameImpl.class);
         TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, timerName);
         traceEntry.endWithError(mock(ErrorMessage.class));
     }

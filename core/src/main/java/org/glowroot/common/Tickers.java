@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,20 @@
  */
 package org.glowroot.common;
 
-// Basically the same as Guava's {@link com.google.common.base.Ticker} class, but doesn't get shaded
-// so it can be used from other modules (e.g. microbenchmarks).
-public abstract class Ticker {
+import com.google.common.base.Ticker;
 
-    private static final Ticker SYSTEM_TICKER = new Ticker() {
-        @Override
-        public long read() {
-            return System.nanoTime();
+public class Tickers {
+
+    private static final boolean dummyTicker = Boolean.getBoolean("glowroot.internal.dummyTicker");
+
+    // normally Ticker should be injected, but in some memory sensitive classes it can be cached
+    // in a static field
+    public static Ticker getTicker() {
+        if (dummyTicker) {
+            return new DummyTicker();
+        } else {
+            return Ticker.systemTicker();
         }
-    };
-
-    public abstract long read();
-
-    public static Ticker systemTicker() {
-        return SYSTEM_TICKER;
     }
 
     // Nano times roll over every 292 years, so it is important to test differences between nano
@@ -37,5 +36,12 @@ public abstract class Ticker {
     // (see http://java.sun.com/javase/7/docs/api/java/lang/System.html#nanoTime())
     public static boolean lessThanOrEqual(long tick1, long tick2) {
         return tick2 - tick1 >= 0;
+    }
+
+    private static class DummyTicker extends Ticker {
+        @Override
+        public long read() {
+            return 0;
+        }
     }
 }

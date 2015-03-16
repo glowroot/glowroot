@@ -19,13 +19,13 @@ import java.io.File;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import com.google.common.base.Ticker;
 import com.google.common.io.CharSource;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.collector.Trace;
-import org.glowroot.common.Ticker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
