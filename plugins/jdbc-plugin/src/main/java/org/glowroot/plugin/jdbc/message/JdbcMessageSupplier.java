@@ -22,26 +22,28 @@ public abstract class JdbcMessageSupplier extends MessageSupplier {
     // intentionally not volatile for performance, but it does mean partial and active trace
     // captures may see stale value (but partial and active trace captures use memory barrier in
     // Transaction to ensure the values are at least visible as of the end of the last trace entry)
-    private int numRows;
-
-    private boolean hasPerformedNavigation;
+    private int numRows = -1;
 
     public void setHasPerformedNavigation() {
-        hasPerformedNavigation = true;
+        if (numRows == -1) {
+            numRows = 0;
+        }
     }
 
     public void incrementNumRows() {
-        numRows++;
-        hasPerformedNavigation = true;
+        if (numRows == -1) {
+            numRows = 1;
+        } else {
+            numRows++;
+        }
     }
 
     public void updateNumRows(int currentRow) {
         numRows = Math.max(numRows, currentRow);
-        hasPerformedNavigation = true;
     }
 
     void appendRowCount(StringBuilder sb) {
-        if (!hasPerformedNavigation) {
+        if (numRows == -1) {
             return;
         }
         sb.append(" => ");
