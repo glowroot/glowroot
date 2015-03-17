@@ -15,8 +15,6 @@
  */
 package org.glowroot.plugin.jdbc;
 
-import java.io.InputStream;
-import java.io.Reader;
 import java.sql.PreparedStatement;
 
 import javax.annotation.Nullable;
@@ -40,7 +38,6 @@ import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.plugin.jdbc.PreparedStatementMirror.ByteArrayParameterValue;
-import org.glowroot.plugin.jdbc.PreparedStatementMirror.NullParameterValue;
 import org.glowroot.plugin.jdbc.PreparedStatementMirror.StreamingParameterValue;
 import org.glowroot.plugin.jdbc.message.BatchPreparedStatementMessageSupplier;
 import org.glowroot.plugin.jdbc.message.BatchStatementMessageSupplier;
@@ -143,10 +140,9 @@ public class StatementAspect {
 
     // ================= Parameter Binding =================
 
-    // capture the parameters that are bound to the PreparedStatement except
-    // parameters bound via setNull(..)
-    // see special case below to handle setNull()
-    @Pointcut(className = "java.sql.PreparedStatement", methodName = "/(?!setNull$)set.*/",
+    @Pointcut(className = "java.sql.PreparedStatement", methodName = "setArray|setBigDecimal"
+            + "|setBoolean|setByte|setDate|setDouble|setFloat|setInt|setLong|setNString|setObject"
+            + "|setRef|setRowId|setShort|setString|setTime|setTimestamp|setURL",
             methodParameterTypes = {"int", "*", ".."})
     public static class SetXAdvice {
         @IsEnabled
@@ -159,16 +155,56 @@ public class StatementAspect {
             PreparedStatementMirror mirror =
                     (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
             if (mirror != null) {
-                if (x instanceof InputStream || x instanceof Reader) {
+                mirror.setParameterValue(parameterIndex, x);
+            }
+        }
+    }
+
+    @Pointcut(className = "java.sql.PreparedStatement", methodName = "setAsciiStream"
+            + "|setBinaryStream|setBlob|setCharacterStream|setClob|setNCharacterStream|setNClob"
+            + "|setSQLXML|setUnicodeStream",
+            methodParameterTypes = {"int", "*", ".."})
+    public static class SetStreamAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return captureBindParameters.value();
+        }
+        @OnReturn
+        public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
+                @BindParameter int parameterIndex, @BindParameter @Nullable Object x) {
+            PreparedStatementMirror mirror =
+                    (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
+            if (mirror != null) {
+                if (x == null) {
+                    mirror.setParameterValue(parameterIndex, null);
+                } else {
                     mirror.setParameterValue(parameterIndex,
                             new StreamingParameterValue(x.getClass()));
-                } else if (x instanceof byte[]) {
+                }
+            }
+        }
+    }
+
+    @Pointcut(className = "java.sql.PreparedStatement", methodName = "setBytes",
+            methodParameterTypes = {"int", "byte[]"})
+    public static class SetBytesAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return captureBindParameters.value();
+        }
+        @OnReturn
+        public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
+                @BindParameter int parameterIndex, @BindParameter byte/*@Nullable*/[] x) {
+            PreparedStatementMirror mirror =
+                    (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
+            if (mirror != null) {
+                if (x == null) {
+                    mirror.setParameterValue(parameterIndex, null);
+                } else {
                     boolean displayAsHex = JdbcPluginProperties.displayBinaryParameterAsHex(
                             mirror.getSql(), parameterIndex);
                     mirror.setParameterValue(parameterIndex,
-                            new ByteArrayParameterValue((byte[]) x, displayAsHex));
-                } else {
-                    mirror.setParameterValue(parameterIndex, x);
+                            new ByteArrayParameterValue(x, displayAsHex));
                 }
             }
         }
@@ -187,7 +223,7 @@ public class StatementAspect {
             PreparedStatementMirror mirror =
                     (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
             if (mirror != null) {
-                mirror.setParameterValue(parameterIndex, new NullParameterValue());
+                mirror.setParameterValue(parameterIndex, null);
             }
         }
     }

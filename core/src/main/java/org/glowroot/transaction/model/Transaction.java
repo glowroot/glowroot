@@ -25,7 +25,6 @@ import javax.annotation.concurrent.GuardedBy;
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
@@ -256,7 +255,7 @@ public class Transaction {
         return traceEntryComponent.getSize();
     }
 
-    public ImmutableList<TraceEntry> getEntriesCopy() {
+    public List<TraceEntry> getEntriesCopy() {
         readMemoryBarrier();
         return traceEntryComponent.getEntriesCopy();
     }
@@ -408,7 +407,8 @@ public class Transaction {
         }
     }
 
-    public void captureStackTrace(@Nullable ThreadInfo threadInfo, int limit) {
+    public void captureStackTrace(@Nullable ThreadInfo threadInfo, int limit,
+            boolean mayHaveSyntheticTimerMethods) {
         if (threadInfo == null) {
             // thread is no longer alive
             return;
@@ -424,7 +424,7 @@ public class Transaction {
             // profile is constructed and first stack trace is added prior to setting the
             // transaction profile field, so that it is not possible to read a profile that doesn't
             // have at least one stack trace
-            Profile profile = new Profile();
+            Profile profile = new Profile(mayHaveSyntheticTimerMethods);
             profile.addStackTrace(threadInfo, limit);
             this.profile = profile;
         } else {

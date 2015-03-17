@@ -76,10 +76,15 @@ class PreparedStatementMirror extends StatementMirror {
     // remember parameterIndex starts at 1 not 0
     public void setParameterValue(int parameterIndex, @Nullable Object object) {
         if (parametersCopied) {
-            parameters = BindParameterList.copyOf(parameters);
-            parametersCopied = false;
+            // separate method for less common path to not impact inlining budget of fast(er) path
+            copyParameters();
         }
         parameters.set(parameterIndex - 1, object);
+    }
+
+    private void copyParameters() {
+        parameters = BindParameterList.copyOf(parameters);
+        parametersCopied = false;
     }
 
     public void clearParameters() {
@@ -101,13 +106,6 @@ class PreparedStatementMirror extends StatementMirror {
         }
         if (batchedParameters != null) {
             batchedParameters.clear();
-        }
-    }
-
-    static class NullParameterValue {
-        @Override
-        public String toString() {
-            return "NULL";
         }
     }
 

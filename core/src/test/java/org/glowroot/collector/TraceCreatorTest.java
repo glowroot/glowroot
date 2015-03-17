@@ -31,7 +31,7 @@ public class TraceCreatorTest {
     @Test
     public void shouldStoreVeryLargeProfile() throws IOException {
         // given
-        Profile profile = new Profile();
+        Profile profile = new Profile(false);
         // StackOverflowError was previously occurring somewhere around 1300 stack trace elements
         // using a 1mb thread stack size so testing with 10,000 here just to be sure
         StackTraceElement[] stackTrace = new StackTraceElement[10000];

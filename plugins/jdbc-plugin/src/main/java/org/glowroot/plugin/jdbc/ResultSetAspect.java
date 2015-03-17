@@ -26,7 +26,6 @@ import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.BooleanProperty;
 import org.glowroot.api.Timer;
 import org.glowroot.api.TimerName;
-import org.glowroot.api.weaving.BindMethodName;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindTraveler;
@@ -44,8 +43,58 @@ public class ResultSetAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
+    @Pointcut(className = "java.sql.ResultSet", methodName = "next", methodParameterTypes = {},
+            timerName = "jdbc resultset navigate")
+    public static class NextAdvice {
+        private static final TimerName timerName =
+                pluginServices.getTimerName(NextAdvice.class);
+        private static final BooleanProperty timerEnabled =
+                pluginServices.getEnabledProperty("captureResultSetNavigate");
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
+            // don't capture if implementation detail of a DatabaseMetaData method
+            return resultSet.hasGlowrootStatementMirror() && pluginServices.isEnabled();
+        }
+        @OnBefore
+        public static @Nullable Timer onBefore() {
+            if (timerEnabled.value()) {
+                return pluginServices.startTimer(timerName);
+            } else {
+                return null;
+            }
+        }
+        @OnReturn
+        public static void onReturn(@BindReturn boolean currentRowValid,
+                @BindReceiver HasStatementMirror resultSet) {
+            StatementMirror mirror = resultSet.getGlowrootStatementMirror();
+            if (mirror == null) {
+                // this shouldn't happen since just checked above in isEnabled(), unless some
+                // bizarre concurrent mis-usage of ResultSet
+                return;
+            }
+            JdbcMessageSupplier lastJdbcMessageSupplier = mirror.getLastJdbcMessageSupplier();
+            if (lastJdbcMessageSupplier == null) {
+                // tracing must be disabled (e.g. exceeded trace entry limit)
+                return;
+            }
+            if (currentRowValid) {
+                // ResultSet.getRow() is sometimes not super duper fast due to ResultSet
+                // wrapping and other checks, so this optimizes the common case
+                lastJdbcMessageSupplier.incrementNumRows();
+            } else {
+                lastJdbcMessageSupplier.setHasPerformedNavigation();
+            }
+        }
+        @OnAfter
+        public static void onAfter(@BindTraveler @Nullable Timer timer) {
+            if (timer != null) {
+                timer.stop();
+            }
+        }
+    }
+
     @Pointcut(className = "java.sql.ResultSet",
-            methodName = "next|previous|relative|absolute|first|last", methodParameterTypes = "..",
+            methodName = "previous|relative|absolute|first|last", methodParameterTypes = "..",
             timerName = "jdbc resultset navigate")
     public static class NavigateAdvice {
         private static final TimerName timerName =
@@ -67,7 +116,7 @@ public class ResultSetAspect {
         }
         @OnReturn
         public static void onReturn(@BindReturn boolean currentRowValid,
-                @BindReceiver HasStatementMirror resultSet, @BindMethodName String methodName) {
+                @BindReceiver HasStatementMirror resultSet) {
             try {
                 StatementMirror mirror = resultSet.getGlowrootStatementMirror();
                 if (mirror == null) {
@@ -81,13 +130,7 @@ public class ResultSetAspect {
                     return;
                 }
                 if (currentRowValid) {
-                    if (methodName.equals("next")) {
-                        // ResultSet.getRow() is sometimes not super duper fast due to ResultSet
-                        // wrapping and other checks, so this optimizes the common case
-                        lastJdbcMessageSupplier.incrementNumRows();
-                    } else {
-                        lastJdbcMessageSupplier.updateNumRows(((ResultSet) resultSet).getRow());
-                    }
+                    lastJdbcMessageSupplier.updateNumRows(((ResultSet) resultSet).getRow());
                 } else {
                     lastJdbcMessageSupplier.setHasPerformedNavigation();
                 }

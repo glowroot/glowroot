@@ -77,26 +77,7 @@ public class DataSourceAspect {
         public static void onReturn(@BindReturn Connection connection,
                 @BindTraveler Object entryOrTimer) {
             if (entryOrTimer instanceof TraceEntry) {
-                TraceEntry traceEntry = (TraceEntry) entryOrTimer;
-                if (captureTransactionLifecycleTraceEntries.value()) {
-                    String autoCommit;
-                    try {
-                        autoCommit = Boolean.toString(connection.getAutoCommit());
-                    } catch (SQLException e) {
-                        logger.warn(e.getMessage(), e);
-                        // using toString() instead of getMessage() in order to capture exception
-                        // class name
-                        autoCommit = "<error occurred: " + e.toString() + ">";
-                    }
-                    GetConnectionMessageSupplier messageSupplier =
-                            (GetConnectionMessageSupplier) traceEntry.getMessageSupplier();
-                    if (messageSupplier != null) {
-                        // messageSupplier can be null if NopTraceEntry
-                        messageSupplier.setAutoCommit(autoCommit);
-                    }
-                }
-                traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
-                        MILLISECONDS);
+                onReturnTraceEntry(connection, entryOrTimer);
             } else {
                 ((Timer) entryOrTimer).stop();
             }
@@ -108,6 +89,29 @@ public class DataSourceAspect {
             } else {
                 ((Timer) entryOrTimer).stop();
             }
+        }
+        // split out to separate method so it doesn't affect inlining budget of common case
+        private static void onReturnTraceEntry(Connection connection, Object entryOrTimer) {
+            TraceEntry traceEntry = (TraceEntry) entryOrTimer;
+            if (captureTransactionLifecycleTraceEntries.value()) {
+                String autoCommit;
+                try {
+                    autoCommit = Boolean.toString(connection.getAutoCommit());
+                } catch (SQLException e) {
+                    logger.warn(e.getMessage(), e);
+                    // using toString() instead of getMessage() in order to capture exception
+                    // class name
+                    autoCommit = "<error occurred: " + e.toString() + ">";
+                }
+                GetConnectionMessageSupplier messageSupplier =
+                        (GetConnectionMessageSupplier) traceEntry.getMessageSupplier();
+                if (messageSupplier != null) {
+                    // messageSupplier can be null if NopTraceEntry
+                    messageSupplier.setAutoCommit(autoCommit);
+                }
+            }
+            traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+                    MILLISECONDS);
         }
     }
 

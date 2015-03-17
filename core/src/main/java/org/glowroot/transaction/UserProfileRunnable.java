@@ -47,6 +47,7 @@ class UserProfileRunnable extends ScheduledRunnable {
         ThreadInfo threadInfo =
                 threadBean.getThreadInfo(transaction.getThreadId(), Integer.MAX_VALUE);
         transaction.captureStackTrace(threadInfo,
-                configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction());
+                configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction(),
+                configService.getAdvancedConfig().timerWrapperMethods());
     }
 }

@@ -37,10 +37,7 @@ public class TraceEntry implements org.glowroot.api.TraceEntry {
     private static final Logger logger = LoggerFactory.getLogger(TraceEntry.class);
     private static final Ticker ticker = Tickers.getTicker();
 
-    private static final TraceEntry limitExceededMarker = new TraceEntry(null, 0, 0, null);
-
-    private static final TraceEntry limitExtendedMarker = new TraceEntry(null, 0, 0, null);
-
+    private final @Nullable TraceEntry parentTraceEntry;
     private final @Nullable MessageSupplier messageSupplier;
     // not volatile, so depends on memory barrier in Transaction for visibility
     private @Nullable ErrorMessage errorMessage;
@@ -53,13 +50,17 @@ public class TraceEntry implements org.glowroot.api.TraceEntry {
 
     private final int nestingLevel;
 
+    // this is for maintaining linear list of traces
+    private @Nullable TraceEntry nextTraceEntry;
+
     // only null for limitExceededMarker and limitExtendedMarker
     private final @Nullable TimerImpl timer;
     // not volatile, so depends on memory barrier in Transaction for visibility
     private @Nullable ImmutableList<StackTraceElement> stackTrace;
 
-    TraceEntry(@Nullable MessageSupplier messageSupplier, long startTick, int nesting,
-            @Nullable TimerImpl timer) {
+    TraceEntry(@Nullable TraceEntry parentTraceEntry, @Nullable MessageSupplier messageSupplier,
+            long startTick, int nesting, @Nullable TimerImpl timer) {
+        this.parentTraceEntry = parentTraceEntry;
         this.messageSupplier = messageSupplier;
         this.startTick = startTick;
         this.nestingLevel = nesting;
@@ -96,11 +97,11 @@ public class TraceEntry implements org.glowroot.api.TraceEntry {
     }
 
     public boolean isLimitExceededMarker() {
-        return this == limitExceededMarker;
+        return false;
     }
 
     public boolean isLimitExtendedMarker() {
-        return this == limitExtendedMarker;
+        return false;
     }
 
     @Override
@@ -138,13 +139,22 @@ public class TraceEntry implements org.glowroot.api.TraceEntry {
         endInternal(ticker.read(), errorMessage);
     }
 
-    private void endInternal(long endTick, @Nullable ErrorMessage errorMessage) {
-        // timer is only null for limitExceededMarker, limitExtendedMarker and trace entries added
-        // using addEntry()
-        checkNotNull(timer);
-        Transaction transaction = timer.getTransaction();
-        timer.end(endTick);
-        transaction.popEntry(this, endTick, errorMessage);
+    public void setStackTrace(ImmutableList<StackTraceElement> stackTrace) {
+        this.stackTrace = stackTrace;
+    }
+
+    @Nullable
+    TraceEntry getParentTraceEntry() {
+        return parentTraceEntry;
+    }
+
+    @Nullable
+    TraceEntry getNextTraceEntry() {
+        return nextTraceEntry;
+    }
+
+    void setNextTraceEntry(TraceEntry nextTraceEntry) {
+        this.nextTraceEntry = nextTraceEntry;
     }
 
     @Nullable
@@ -161,15 +171,40 @@ public class TraceEntry implements org.glowroot.api.TraceEntry {
         this.completed = true;
     }
 
-    public void setStackTrace(ImmutableList<StackTraceElement> stackTrace) {
-        this.stackTrace = stackTrace;
+    private void endInternal(long endTick, @Nullable ErrorMessage errorMessage) {
+        // timer is only null for limitExceededMarker, limitExtendedMarker and trace entries added
+        // using addEntry()
+        checkNotNull(timer);
+        Transaction transaction = timer.getTransaction();
+        timer.end(endTick);
+        transaction.popEntry(this, endTick, errorMessage);
     }
 
     static TraceEntry getLimitExceededMarker() {
-        return limitExceededMarker;
+        return new LimitExceededTraceEntry();
     }
 
     static TraceEntry getLimitExtendedMarker() {
-        return limitExtendedMarker;
+        return new LimitExtendedTraceEntry();
+    }
+
+    private static class LimitExceededTraceEntry extends TraceEntry {
+        private LimitExceededTraceEntry() {
+            super(null, null, 0, 0, null);
+        }
+        @Override
+        public boolean isLimitExceededMarker() {
+            return true;
+        }
+    }
+
+    private static class LimitExtendedTraceEntry extends TraceEntry {
+        private LimitExtendedTraceEntry() {
+            super(null, null, 0, 0, null);
+        }
+        @Override
+        public boolean isLimitExtendedMarker() {
+            return true;
+        }
     }
 }

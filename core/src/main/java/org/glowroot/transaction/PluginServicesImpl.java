@@ -399,15 +399,21 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private TraceEntry startTraceEntryInternal(Transaction transaction, TimerName timerName,
             MessageSupplier messageSupplier) {
         long startTick = ticker.read();
-        if (transaction.getEntryCount() >= maxTraceEntriesPerTransaction) {
-            // the entry limit has been exceeded for this trace
-            transaction.addEntryLimitExceededMarkerIfNeeded();
-            TimerImpl timer = startTimer(timerName, startTick, transaction);
-            return new DummyTraceEntry(timer, startTick, transaction, messageSupplier);
-        } else {
+        if (transaction.getEntryCount() < maxTraceEntriesPerTransaction) {
             TimerImpl timer = startTimer(timerName, startTick, transaction);
             return transaction.pushEntry(startTick, messageSupplier, timer);
+        } else {
+            // split out to separate method so as not to affect inlining budget of common path
+            return startDummyTraceEntry(transaction, timerName, messageSupplier, startTick);
         }
+    }
+
+    private TraceEntry startDummyTraceEntry(Transaction transaction, TimerName timerName,
+            MessageSupplier messageSupplier, long startTick) {
+        // the entry limit has been exceeded for this trace
+        transaction.addEntryLimitExceededMarkerIfNeeded();
+        TimerImpl timer = startTimer(timerName, startTick, transaction);
+        return new DummyTraceEntry(timer, startTick, transaction, messageSupplier);
     }
 
     private TimerImpl startTimer(TimerName timerName, long startTick, Transaction transaction) {

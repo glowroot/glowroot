@@ -46,6 +46,13 @@ public class Profile {
     @GuardedBy("lock")
     private final ProfileNode syntheticRootNode = ProfileNode.createSyntheticRoot();
 
+    private final boolean mayHaveSyntheticTimerMethods;
+
+    @VisibleForTesting
+    public Profile(boolean mayHaveSyntheticTimerMethods) {
+        this.mayHaveSyntheticTimerMethods = mayHaveSyntheticTimerMethods;
+    }
+
     public Object getLock() {
         return lock;
     }
@@ -61,6 +68,10 @@ public class Profile {
         synchronized (lock) {
             return syntheticRootNode.getSampleCount() + unmergedStackTraces.size();
         }
+    }
+
+    public boolean mayHaveSyntheticTimerMethods() {
+        return mayHaveSyntheticTimerMethods;
     }
 
     // limit is just to cap memory consumption for a single transaction profile in case it runs for
@@ -85,7 +96,12 @@ public class Profile {
         for (int i = 0; i < unmergedStackTraces.size(); i++) {
             List<StackTraceElement> stackTrace = unmergedStackTraces.get(i);
             State threadState = unmergedStackTraceThreadStates.get(i);
-            addToStackTree(stripSyntheticTimerMethods(stackTrace), threadState);
+            if (mayHaveSyntheticTimerMethods) {
+                addToStackTree(stripSyntheticTimerMethods(stackTrace), threadState);
+            } else {
+                // fast path for common case
+                addToStackTree(stackTrace, threadState);
+            }
         }
         unmergedStackTraces.clear();
         unmergedStackTraceThreadStates.clear();
@@ -93,7 +109,7 @@ public class Profile {
 
     // must be holding lock to call
     @VisibleForTesting
-    public void addToStackTree(List<StackTraceElementPlus> stackTrace, State threadState) {
+    public void addToStackTree(List<?> stackTrace, State threadState) {
         syntheticRootNode.incrementSampleCount(1);
         ProfileNode lastMatchedNode = syntheticRootNode;
         List<ProfileNode> nextChildNodes = syntheticRootNode.getChildNodes();
@@ -101,11 +117,11 @@ public class Profile {
         // navigate the stack tree nodes
         // matching the new stack trace as far as possible
         for (nextIndex = stackTrace.size() - 1; nextIndex >= 0; nextIndex--) {
-            StackTraceElementPlus element = stackTrace.get(nextIndex);
+            Object element = stackTrace.get(nextIndex);
             // look for matching node
             ProfileNode matchingNode = null;
             for (ProfileNode childNode : nextChildNodes) {
-                if (matches(element.getStackTraceElement(), childNode, nextIndex == 0,
+                if (matches(getStackTraceElement(element), childNode, nextIndex == 0,
                         threadState)) {
                     matchingNode = childNode;
                     break;
@@ -121,7 +137,7 @@ public class Profile {
             // the stack trace was captured while one of the synthetic $glowroot$timer$
             // methods was executing in which case one of the timer names may be a
             // subset of the other, in which case, the superset wins:
-            List<String> timerNames = element.getTimerNames();
+            List<String> timerNames = getTimerNames(element);
             if (timerNames.size() > matchingNode.getTimerNames().size()) {
                 matchingNode.setTimerNames(timerNames);
             }
@@ -130,15 +146,15 @@ public class Profile {
         }
         // add remaining stack trace elements
         for (int i = nextIndex; i >= 0; i--) {
-            StackTraceElementPlus element = stackTrace.get(i);
+            Object element = stackTrace.get(i);
             ProfileNode nextNode;
             if (i == 0) {
                 // leaf node
-                nextNode = ProfileNode.create(element.getStackTraceElement(), threadState);
+                nextNode = ProfileNode.create(getStackTraceElement(element), threadState);
             } else {
-                nextNode = ProfileNode.create(element.getStackTraceElement(), null);
+                nextNode = ProfileNode.create(getStackTraceElement(element), null);
             }
-            nextNode.setTimerNames(element.getTimerNames());
+            nextNode.setTimerNames(getTimerNames(element));
             nextNode.incrementSampleCount(1);
             lastMatchedNode.addChildNode(nextNode);
             lastMatchedNode = nextNode;
@@ -186,7 +202,12 @@ public class Profile {
     }
 
     private static @Nullable String getTimerName(StackTraceElement stackTraceElement) {
-        Matcher matcher = timerMarkerMethodPattern.matcher(stackTraceElement.getMethodName());
+        String methodName = stackTraceElement.getMethodName();
+        if (!methodName.contains("$glowroot$timer$")) {
+            // fast contains check for common case
+            return null;
+        }
+        Matcher matcher = timerMarkerMethodPattern.matcher(methodName);
         if (matcher.matches()) {
             String group = matcher.group(1);
             checkNotNull(group);
@@ -207,6 +228,22 @@ public class Profile {
         } else {
             return leafThreadState == null && !leaf
                     && stackTraceElement.equals(childNode.getStackTraceElement());
+        }
+    }
+
+    private static StackTraceElement getStackTraceElement(Object stackTraceElementOrPlus) {
+        if (stackTraceElementOrPlus instanceof StackTraceElement) {
+            return (StackTraceElement) stackTraceElementOrPlus;
+        } else {
+            return ((StackTraceElementPlus) stackTraceElementOrPlus).getStackTraceElement();
+        }
+    }
+
+    private static List<String> getTimerNames(Object stackTraceElementOrPlus) {
+        if (stackTraceElementOrPlus instanceof StackTraceElement) {
+            return ImmutableList.of();
+        } else {
+            return ((StackTraceElementPlus) stackTraceElementOrPlus).getTimerNames();
         }
     }
 

@@ -54,6 +54,8 @@ public class PreparedStatementMessageSupplier extends JdbcMessageSupplier {
                 sb.append("\'");
                 sb.append((String) parameter);
                 sb.append("\'");
+            } else if (parameter == null) {
+                sb.append("NULL");
             } else {
                 sb.append(String.valueOf(parameter));
             }

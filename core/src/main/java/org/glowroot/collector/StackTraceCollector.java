@@ -108,7 +108,8 @@ class StackTraceCollector implements Runnable {
                 ManagementFactory.getThreadMXBean().getThreadInfo(threadIds, Integer.MAX_VALUE);
         for (int i = 0; i < transactions.size(); i++) {
             transactions.get(i).captureStackTrace(threadInfos[i],
-                    configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction());
+                    configService.getAdvancedConfig().maxStackTraceSamplesPerTransaction(),
+                    configService.getAdvancedConfig().timerWrapperMethods());
         }
     }
 
