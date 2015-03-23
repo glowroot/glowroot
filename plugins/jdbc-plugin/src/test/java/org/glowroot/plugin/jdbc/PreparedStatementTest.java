@@ -76,6 +76,20 @@ public class PreparedStatementTest {
     }
 
     @Test
+    public void testPreparedStatementLargeParamSetFirst() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ExecutePreparedStatementLargeParamSetFirst.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(2);
+        TraceEntry jdbcEntry = entries.get(1);
+        assertThat(jdbcEntry.getMessage().getText()).startsWith(
+                "jdbc execution: select * from employee where name like ?");
+    }
+
+    @Test
     public void testPreparedStatementNullSql() throws Exception {
         // given
         // when
@@ -256,6 +270,41 @@ public class PreparedStatementTest {
                     connection.prepareStatement("select * from employee where name like ?");
             try {
                 preparedStatement.setString(1, "john%");
+                preparedStatement.execute();
+                ResultSet rs = preparedStatement.getResultSet();
+                while (rs.next()) {
+                    rs.getString(1);
+                }
+            } finally {
+                preparedStatement.close();
+            }
+        }
+    }
+
+    public static class ExecutePreparedStatementLargeParamSetFirst implements AppUnderTest,
+            TraceMarker {
+        private Connection connection;
+        @Override
+        public void executeApp() throws Exception {
+            connection = Connections.createConnection();
+            try {
+                traceMarker();
+            } finally {
+                Connections.closeConnection(connection);
+            }
+        }
+        @Override
+        public void traceMarker() throws Exception {
+            String sql = "select * from employee where name like ?";
+            for (int i = 0; i < 99; i++) {
+                sql += " and name like ?";
+            }
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            try {
+                preparedStatement.setString(100, "john%");
+                for (int i = 0; i < 99; i++) {
+                    preparedStatement.setString(i + 1, "john%");
+                }
                 preparedStatement.execute();
                 ResultSet rs = preparedStatement.getResultSet();
                 while (rs.next()) {

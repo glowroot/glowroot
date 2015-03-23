@@ -53,6 +53,9 @@ public class BindParameterList implements Iterable</*@Nullable*/Object> {
         if (i >= capacity) {
             // using same capacity increase formula as ArrayList
             capacity = capacity + (capacity >> 1);
+            if (i >= capacity) {
+                capacity = i + 1;
+            }
             parameters = Arrays.copyOf(parameters, capacity);
         }
         parameters[i] = parameter;
