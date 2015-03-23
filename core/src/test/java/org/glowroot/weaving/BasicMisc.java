@@ -60,7 +60,10 @@ public class BasicMisc extends SuperBasicMisc implements Misc, Misc2, Misc3 {
     }
 
     @Override
-    public final void executeWithArgs(String one, int two) {}
+    public final void executeWithArgs(String one, int two) {
+        one = "reassigned param local";
+        two = 22222222;
+    }
 
     // Misc2 implementation
     @Override

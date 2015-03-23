@@ -56,6 +56,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private static final Type adviceFlowOuterHolderType = Type.getType(AdviceFlowOuterHolder.class);
     private static final Type adviceFlowHolderType = Type.getType(AdviceFlowHolder.class);
 
+    private static final Type objectType = Type.getObjectType("java/lang/Object");
+
     private final int access;
     private final String name;
     private final Type owner;
@@ -82,6 +84,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private @MonotonicNonNull Label onReturnLabel;
     private @MonotonicNonNull Label onCatchStartLabel;
     private boolean visitedLocalVariableThis;
+
+    private int[] savedArgLocals = new int[0];
 
     WeavingMethodVisitor(MethodVisitor mv, int access, String name, String desc, Type owner,
             Iterable<Advice> advisors, @Nullable String metaHolderInternalName,
@@ -140,6 +144,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         for (Advice advice : advisors) {
             invokeOnBefore(advice, travelerLocals.get(advice));
         }
+        saveArgsForMethodExit();
         if (needsOnReturn) {
             onReturnLabel = new Label();
         }
@@ -265,7 +270,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         Method isEnabledAdvice = advice.isEnabledAdvice();
         if (isEnabledAdvice != null) {
             loadMethodParameters(advice.isEnabledParameters(), 0, -1, advice.adviceType(),
-                    IsEnabled.class);
+                    IsEnabled.class, false);
             visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
                     isEnabledAdvice.getName(), isEnabledAdvice.getDescriptor(), false);
             enabledLocal = newLocal(Type.BOOLEAN_TYPE);
@@ -355,7 +360,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             visitJumpInsn(IFEQ, onBeforeBlockEnd);
         }
         loadMethodParameters(advice.onBeforeParameters(), 0, -1, advice.adviceType(),
-                OnBefore.class);
+                OnBefore.class, false);
         visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
                 onBeforeAdvice.getName(), onBeforeAdvice.getDescriptor(), false);
         if (travelerLocal != null) {
@@ -364,6 +369,41 @@ class WeavingMethodVisitor extends AdviceAdapter {
         if (onBeforeBlockEnd != null) {
             visitLabel(onBeforeBlockEnd);
         }
+    }
+
+    private void saveArgsForMethodExit() {
+        int numSavedArgs = getNumSavedArgsNeeded();
+        if (numSavedArgs == 0) {
+            return;
+        }
+        savedArgLocals = new int[numSavedArgs];
+        for (int i = 0; i < numSavedArgs; i++) {
+            savedArgLocals[i] = newLocal(argumentTypes[i]);
+            loadArg(i);
+            storeLocal(savedArgLocals[i]);
+        }
+    }
+
+    private int getNumSavedArgsNeeded() {
+        int numSaveArgsNeeded = 0;
+        for (Advice advice : advisors) {
+            numSaveArgsNeeded = Math.max(numSaveArgsNeeded, getNum(advice.onReturnParameters()));
+            numSaveArgsNeeded = Math.max(numSaveArgsNeeded, getNum(advice.onAfterParameters()));
+            numSaveArgsNeeded = Math.max(numSaveArgsNeeded, getNum(advice.onThrowParameters()));
+        }
+        return numSaveArgsNeeded;
+    }
+
+    private int getNum(List<AdviceParameter> adviceParameters) {
+        int numSaveArgsNeeded = 0;
+        for (AdviceParameter parameter : adviceParameters) {
+            if (parameter.kind() == ParameterKind.METHOD_ARG_ARRAY) {
+                return argumentTypes.length;
+            } else if (parameter.kind() == ParameterKind.METHOD_ARG) {
+                numSaveArgsNeeded++;
+            }
+        }
+        return numSaveArgsNeeded;
     }
 
     private void visitOnReturnAdvice(Advice advice, int opcode) {
@@ -404,7 +444,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     break;
             }
             loadMethodParameters(advice.onReturnParameters(), startIndex,
-                    travelerLocals.get(advice), advice.adviceType(), OnReturn.class);
+                    travelerLocals.get(advice), advice.adviceType(), OnReturn.class, true);
         }
         visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
                 onReturnAdvice.getName(), onReturnAdvice.getDescriptor(), false);
@@ -469,7 +509,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     startIndex++;
                 }
                 loadMethodParameters(advice.onThrowParameters(), startIndex,
-                        travelerLocals.get(advice), advice.adviceType(), OnThrow.class);
+                        travelerLocals.get(advice), advice.adviceType(), OnThrow.class, true);
                 visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
                         onThrowAdvice.getName(), onThrowAdvice.getDescriptor(), false);
             }
@@ -492,7 +532,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             visitJumpInsn(IFEQ, onAfterBlockEnd);
         }
         loadMethodParameters(advice.onAfterParameters(), 0, travelerLocals.get(advice),
-                advice.adviceType(), OnAfter.class);
+                advice.adviceType(), OnAfter.class, true);
         visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
                 onAfterAdvice.getName(), onAfterAdvice.getDescriptor(), false);
         if (onAfterBlockEnd != null) {
@@ -532,7 +572,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     private void loadMethodParameters(List<AdviceParameter> parameters, int startIndex,
             @Nullable Integer travelerLocal, Type adviceType,
-            Class<? extends Annotation> annotationType) {
+            Class<? extends Annotation> annotationType, boolean useSavedArgs) {
 
         int argIndex = 0;
         for (int i = startIndex; i < parameters.size(); i++) {
@@ -542,10 +582,11 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     loadTarget();
                     break;
                 case METHOD_ARG:
-                    loadMethodParameters(adviceType, annotationType, argIndex++, parameter);
+                    loadMethodParameter(adviceType, annotationType, argIndex++, parameter,
+                            useSavedArgs);
                     break;
                 case METHOD_ARG_ARRAY:
-                    loadArgArray();
+                    loadArgArray(useSavedArgs);
                     break;
                 case METHOD_NAME:
                     loadMethodName();
@@ -585,8 +626,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
         }
     }
 
-    private void loadMethodParameters(Type adviceType, Class<? extends Annotation> annotationType,
-            int argIndex, AdviceParameter parameter) {
+    private void loadMethodParameter(Type adviceType, Class<? extends Annotation> annotationType,
+            int argIndex, AdviceParameter parameter, boolean useSavedArg) {
         if (argIndex >= argumentTypes.length) {
             logger.warn("the @{} method in {} has more @{} arguments than the number of args in"
                     + " the target method", annotationType.getSimpleName(),
@@ -594,11 +635,31 @@ class WeavingMethodVisitor extends AdviceAdapter {
             pushDefault(parameter.type());
             return;
         }
-        loadArg(argIndex);
+        if (useSavedArg) {
+            loadLocal(savedArgLocals[argIndex]);
+        } else {
+            loadArg(argIndex);
+        }
         boolean primitive = parameter.type().getSort() < Type.ARRAY;
         if (!primitive) {
             // autobox
             box(argumentTypes[argIndex]);
+        }
+    }
+
+    public void loadArgArray(boolean useSavedArgs) {
+        push(argumentTypes.length);
+        newArray(objectType);
+        for (int i = 0; i < argumentTypes.length; i++) {
+            dup();
+            push(i);
+            if (useSavedArgs) {
+                loadLocal(savedArgLocals[i]);
+            } else {
+                loadArg(i);
+            }
+            box(argumentTypes[i]);
+            arrayStore(objectType);
         }
     }
 
