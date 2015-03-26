@@ -22,8 +22,6 @@ glowroot.factory('traceModal', [
   'modals',
   function ($rootScope, $http, modals) {
 
-    var $body = $('body');
-
     function displayModal(traceId) {
 
       var spinner;
@@ -59,7 +57,6 @@ glowroot.factory('traceModal', [
       $modalContent.html('<div style="position: relative; display: inline-block;' +
       ' padding-left: 40px; padding-top: 60px;"></div>');
       spinner = Glowroot.showSpinner($modalContent.children().first());
-      $body.append('<div class="modal-backdrop" id="modalBackdrop"></div>');
     }
 
     return {
