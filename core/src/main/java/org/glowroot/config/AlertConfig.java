@@ -19,18 +19,17 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Charsets;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Ordering;
-import com.google.common.hash.Hashing;
-import org.immutables.value.Json;
 import org.immutables.value.Value;
-
-import org.glowroot.common.Marshaling2;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Value.Immutable
-@Json.Marshaled
+@JsonSerialize(as = ImmutableAlertConfig.class)
+@JsonDeserialize(as = ImmutableAlertConfig.class)
 public abstract class AlertConfig {
 
     public static final Ordering<AlertConfig> orderingByName = new Ordering<AlertConfig>() {
@@ -47,12 +46,11 @@ public abstract class AlertConfig {
     public abstract int timePeriodMinutes();
     public abstract int thresholdMillis();
     public abstract int minTransactionCount();
-    @Json.ForceEmpty
     public abstract List<String> emailAddresses();
 
     @Value.Derived
-    @Json.Ignore
+    @JsonIgnore
     public String version() {
-        return Hashing.sha1().hashString(Marshaling2.toJson(this), Charsets.UTF_8).toString();
+        return Versions.getVersion(this);
     }
 }

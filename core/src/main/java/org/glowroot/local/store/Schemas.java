@@ -139,9 +139,9 @@ class Schemas {
             sql.append(columns.get(i).name());
             sql.append(" ");
             sql.append(sqlTypeName);
-            if (columns.get(i) instanceof PrimaryKeyColumn) {
+            if (columns.get(i).primaryKey()) {
                 sql.append(" primary key");
-            } else if (columns.get(i) instanceof IdentityColumn) {
+            } else if (columns.get(i).identity()) {
                 sql.append(" identity");
             }
         }
@@ -256,13 +256,15 @@ class Schemas {
         abstract String name();
         @Value.Parameter
         abstract int type();
+        @Value.Default
+        boolean primaryKey() {
+            return false;
+        }
+        @Value.Default
+        boolean identity() {
+            return false;
+        }
     }
-
-    @Value.Immutable
-    abstract static class PrimaryKeyColumn extends Column {}
-
-    @Value.Immutable
-    abstract static class IdentityColumn extends Column {}
 
     @Value.Immutable
     abstract static class Index {

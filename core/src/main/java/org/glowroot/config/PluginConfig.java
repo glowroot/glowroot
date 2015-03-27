@@ -20,22 +20,21 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Charsets;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.common.hash.Hashing;
-import org.immutables.value.Json;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.Marshaling2;
 import org.glowroot.config.PropertyDescriptor.PropertyType;
 
 @Value.Immutable
-@Json.Marshaled
-@Json.Import(MarshalingRoutines.class)
+@JsonSerialize(as = ImmutablePluginConfig.class)
+@JsonDeserialize(as = ImmutablePluginConfig.class)
 public abstract class PluginConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginConfig.class);
@@ -51,7 +50,7 @@ public abstract class PluginConfig {
     public abstract Map<String, PropertyValue> properties();
 
     @Value.Derived
-    @Json.Ignore
+    @JsonIgnore
     ImmutableMap<String, Boolean> booleanProperties() {
         Map<String, Boolean> booleanProperties = Maps.newHashMap();
         for (Entry<String, PropertyValue> entry : properties().entrySet()) {
@@ -65,7 +64,7 @@ public abstract class PluginConfig {
     }
 
     @Value.Derived
-    @Json.Ignore
+    @JsonIgnore
     ImmutableMap<String, String> stringProperties() {
         Map<String, String> stringProperties = Maps.newHashMap();
         for (Entry<String, PropertyValue> entry : properties().entrySet()) {
@@ -79,7 +78,7 @@ public abstract class PluginConfig {
     }
 
     @Value.Derived
-    @Json.Ignore
+    @JsonIgnore
     ImmutableMap<String, Optional<Double>> doubleProperties() {
         Map<String, Optional<Double>> doubleProperties = Maps.newHashMap();
         for (Entry<String, PropertyValue> entry : properties().entrySet()) {
@@ -95,9 +94,9 @@ public abstract class PluginConfig {
     }
 
     @Value.Derived
-    @Json.Ignore
+    @JsonIgnore
     public String version() {
-        return Hashing.sha1().hashString(Marshaling2.toJson(this), Charsets.UTF_8).toString();
+        return Versions.getVersion(this);
     }
 
     public String getStringProperty(String name) {

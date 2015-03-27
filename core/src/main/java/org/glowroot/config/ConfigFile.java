@@ -31,11 +31,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
-import org.immutables.common.marshal.Marshaling;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.JavaVersion;
+import org.glowroot.common.ObjectMappers;
 import org.glowroot.markers.OnlyUsedByTests;
 
 class ConfigFile {
@@ -44,7 +44,7 @@ class ConfigFile {
 
     private static final String NEWLINE;
 
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     static {
         String newline = StandardSystemProperty.LINE_SEPARATOR.value();
@@ -66,7 +66,7 @@ class ConfigFile {
     }
 
     private Config readValue(String content) throws IOException {
-        Config config = Marshaling.fromJson(content, Config.class);
+        Config config = mapper.readValue(content, Config.class);
         GeneralConfig generalConfig = config.generalConfig();
         if (generalConfig.defaultTransactionType().isEmpty()) {
             generalConfig = ((ImmutableGeneralConfig) generalConfig).withDefaultTransactionType(
@@ -206,7 +206,7 @@ class ConfigFile {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))
                 .setPrettyPrinter(prettyPrinter);
-        ConfigMarshaler.marshal(jg, config);
+        jg.writeObject(config);
         jg.close();
         // newline is not required, just a personal preference
         return sb.toString() + NEWLINE;

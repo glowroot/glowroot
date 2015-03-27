@@ -18,12 +18,8 @@
     <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>value</artifactId>
+      <!-- immutables is only needed at compile time -->
       <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.immutables</groupId>
-      <artifactId>value-standalone</artifactId>
-      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>

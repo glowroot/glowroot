@@ -17,15 +17,14 @@ package org.glowroot.collector;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableSetMultimap;
-import org.immutables.value.Json;
 import org.immutables.value.Value;
 
-import org.glowroot.config.MarshalingRoutines;
-
 @Value.Immutable
-@Json.Marshaled
-@Json.Import(MarshalingRoutines.class)
+@JsonSerialize(as = ImmutableTrace.class)
+@JsonDeserialize(as = ImmutableTrace.class)
 public abstract class Trace {
 
     public abstract String id();
@@ -52,8 +51,5 @@ public abstract class Trace {
     public abstract long profileSampleCount();
     abstract Existence entriesExistence();
     abstract Existence profileExistence();
-    @Value.Default
-    public ImmutableSetMultimap<String, String> customAttributesForIndexing() {
-        return ImmutableSetMultimap.of();
-    }
+    public abstract ImmutableSetMultimap<String, String> customAttributesForIndexing();
 }

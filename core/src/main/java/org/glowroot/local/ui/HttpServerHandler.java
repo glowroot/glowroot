@@ -34,7 +34,6 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
@@ -322,7 +321,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     private FullHttpResponse handleJsonServiceMappings(FullHttpRequest request,
-            JsonServiceMapping jsonServiceMapping, Matcher matcher) throws JsonProcessingException {
+            JsonServiceMapping jsonServiceMapping, Matcher matcher) {
         if (!httpSessionManager.hasReadAccess(request)) {
             return handleNotAuthenticated(request);
         }
@@ -567,7 +566,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 parameters.toArray(new Object[parameters.size()]));
     }
 
-    private static String getRequestText(FullHttpRequest request) throws JsonProcessingException {
+    private static String getRequestText(FullHttpRequest request) {
         if (request.getMethod() == io.netty.handler.codec.http.HttpMethod.POST) {
             return request.content().toString(Charsets.ISO_8859_1);
         } else {

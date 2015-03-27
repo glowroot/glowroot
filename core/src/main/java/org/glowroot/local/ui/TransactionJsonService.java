@@ -26,21 +26,21 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
-import org.immutables.value.Json;
 import org.immutables.value.Value;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.LazyHistogram;
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.collector.TransactionSummary;
-import org.glowroot.collector.TransactionSummaryMarshaler;
 import org.glowroot.common.Clock;
+import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregateDao.TransactionSummaryQuery;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
@@ -52,7 +52,6 @@ import org.glowroot.local.store.AggregateProfileNode;
 import org.glowroot.local.store.AggregateTimer;
 import org.glowroot.local.store.ImmutableTransactionSummaryQuery;
 import org.glowroot.local.store.QueryResult;
-import org.glowroot.local.store.ThreadInfoAggregateMarshaler;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.transaction.model.Transaction;
@@ -62,7 +61,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @JsonService
 class TransactionJsonService {
 
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = ObjectMappers.create();
     private static final double MICROSECONDS_PER_SECOND = 1000000.0;
 
     private final TransactionCommonService transactionCommonService;
@@ -148,8 +147,7 @@ class TransactionJsonService {
         jg.writeObjectField("transactionCounts", transactionCounts);
         jg.writeObjectField("mergedAggregate", timerMergedAggregate);
         if (!threadInfoAggregate.isEmpty()) {
-            jg.writeFieldName("threadInfoAggregate");
-            ThreadInfoAggregateMarshaler.marshal(jg, threadInfoAggregate);
+            jg.writeObjectField("threadInfoAggregate", threadInfoAggregate);
         }
         jg.writeEndObject();
         jg.close();
@@ -193,9 +191,9 @@ class TransactionJsonService {
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeFieldName("overall");
-        TransactionSummaryMarshaler.marshal(jg, overallSummary);
+        jg.writeObject(overallSummary);
         jg.writeFieldName("transactions");
-        TransactionSummaryMarshaler.instance().marshalIterable(jg, queryResult.records());
+        jg.writeObject(queryResult.records());
         jg.writeBooleanField("moreAvailable", queryResult.moreAvailable());
         jg.writeEndObject();
         jg.close();
@@ -531,7 +529,7 @@ class TransactionJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonDeserialize(as = ImmutableTransactionSummaryRequest.class)
     abstract static class TransactionSummaryRequest {
         abstract long from();
         abstract long to();
@@ -541,7 +539,7 @@ class TransactionJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonDeserialize(as = ImmutableTransactionDataRequest.class)
     abstract static class TransactionDataRequest {
         abstract long from();
         abstract long to();
@@ -550,7 +548,7 @@ class TransactionJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonDeserialize(as = ImmutableTransactionProfileRequest.class)
     abstract static class TransactionProfileRequest {
         abstract long from();
         abstract long to();
@@ -560,7 +558,7 @@ class TransactionJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonDeserialize(as = ImmutableFlameGraphRequest.class)
     abstract static class FlameGraphRequest {
         abstract long from();
         abstract long to();

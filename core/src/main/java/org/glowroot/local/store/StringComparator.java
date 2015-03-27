@@ -19,9 +19,7 @@ import java.util.Locale;
 
 import org.checkerframework.checker.tainting.qual.Untainted;
 
-import org.glowroot.config.MarshalingRoutines.LowercaseMarshaling;
-
-public enum StringComparator implements LowercaseMarshaling {
+public enum StringComparator {
 
     BEGINS("like", "%s%%") {
         @Override

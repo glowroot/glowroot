@@ -15,8 +15,6 @@
  */
 package org.glowroot.tests.webdriver;
 
-import javax.annotation.Nullable;
-
 import com.saucelabs.common.SauceOnDemandAuthentication;
 import com.saucelabs.common.SauceOnDemandSessionIdProvider;
 import com.saucelabs.junit.SauceOnDemandTestWatcher;
@@ -59,14 +57,14 @@ public class WebDriverSetup {
     }
 
     private final Container container;
-    private final @Nullable SeleniumServer seleniumServer;
-    private @Nullable WebDriver driver;
+    private final SeleniumServer seleniumServer;
+    private WebDriver driver;
     private final boolean shared;
 
     private String remoteWebDriverSessionId;
 
-    private WebDriverSetup(Container container, @Nullable SeleniumServer seleniumServer,
-            @Nullable WebDriver driver, boolean shared) {
+    private WebDriverSetup(Container container, SeleniumServer seleniumServer, WebDriver driver,
+            boolean shared) {
         this.container = container;
         this.seleniumServer = seleniumServer;
         this.driver = driver;

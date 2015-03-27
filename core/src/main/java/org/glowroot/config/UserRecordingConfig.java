@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,14 @@
  */
 package org.glowroot.config;
 
-import com.google.common.base.Charsets;
-import com.google.common.hash.Hashing;
-import org.immutables.value.Json;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
 
-import org.glowroot.common.Marshaling2;
-
 @Value.Immutable
-@Json.Marshaled
+@JsonSerialize(as = ImmutableUserRecordingConfig.class)
+@JsonDeserialize(as = ImmutableUserRecordingConfig.class)
 public abstract class UserRecordingConfig {
 
     @Value.Default
@@ -42,8 +41,8 @@ public abstract class UserRecordingConfig {
     }
 
     @Value.Derived
-    @Json.Ignore
+    @JsonIgnore
     public String version() {
-        return Hashing.sha1().hashString(Marshaling2.toJson(this), Charsets.UTF_8).toString();
+        return Versions.getVersion(this);
     }
 }

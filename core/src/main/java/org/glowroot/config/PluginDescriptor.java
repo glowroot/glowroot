@@ -20,15 +20,15 @@ import java.util.Locale;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.Ordering;
-import org.immutables.value.Json;
-import org.immutables.value.Json.Named;
 import org.immutables.value.Value;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Value.Immutable
-@Json.Marshaled
+@JsonDeserialize(as = ImmutablePluginDescriptor.class)
 public abstract class PluginDescriptor {
 
     static final Ordering<PluginDescriptor> specialOrderingByName =
@@ -62,7 +62,7 @@ public abstract class PluginDescriptor {
     public abstract List<String> transactionTypes();
     public abstract List<String> transactionCustomAttributes();
     public abstract List<PropertyDescriptor> properties();
-    @Named("instrumentation")
+    @JsonProperty("instrumentation")
     public abstract List<InstrumentationConfig> instrumentationConfigs();
     public abstract List<String> aspects();
 

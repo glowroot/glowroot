@@ -29,13 +29,13 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharSource;
 import com.google.common.io.CharStreams;
 import org.checkerframework.checker.tainting.qual.Untainted;
-import org.immutables.value.Json;
 import org.immutables.value.Value;
 
 import org.glowroot.collector.Aggregate;
@@ -47,9 +47,8 @@ import org.glowroot.collector.ImmutableErrorSummary;
 import org.glowroot.collector.ImmutableTransactionSummary;
 import org.glowroot.collector.LazyHistogram;
 import org.glowroot.collector.TransactionSummary;
+import org.glowroot.common.ObjectMappers;
 import org.glowroot.common.ScratchBuffer;
-import org.glowroot.config.MarshalingRoutines;
-import org.glowroot.config.MarshalingRoutines.LowercaseMarshaling;
 import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.ResultSetExtractor;
 import org.glowroot.local.store.DataSource.RowMapper;
@@ -66,7 +65,7 @@ public class AggregateDao {
 
     public static final String OVERWRITTEN = "{\"overwritten\":true}";
 
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final ImmutableList<Column> overallAggregatePointColumns =
             ImmutableList.<Column>of(
@@ -484,8 +483,7 @@ public class AggregateDao {
     }
 
     @Value.Immutable
-    @Json.Marshaled
-    @Json.Import(MarshalingRoutines.class)
+    @JsonDeserialize(as = ImmutableTransactionSummaryQuery.class)
     public abstract static class TransactionSummaryQuery {
         public abstract String transactionType();
         public abstract long from();
@@ -495,8 +493,7 @@ public class AggregateDao {
     }
 
     @Value.Immutable
-    @Json.Marshaled
-    @Json.Import(MarshalingRoutines.class)
+    @JsonDeserialize(as = ImmutableErrorSummaryQuery.class)
     public abstract static class ErrorSummaryQuery {
         public abstract String transactionType();
         public abstract long from();
@@ -505,11 +502,11 @@ public class AggregateDao {
         public abstract int limit();
     }
 
-    public static enum TransactionSummarySortOrder implements LowercaseMarshaling {
+    public static enum TransactionSummarySortOrder {
         TOTAL_TIME, AVERAGE_TIME, THROUGHPUT
     }
 
-    public static enum ErrorSummarySortOrder implements LowercaseMarshaling {
+    public static enum ErrorSummarySortOrder {
         ERROR_COUNT, ERROR_RATE
     }
 

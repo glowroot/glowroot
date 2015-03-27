@@ -20,16 +20,17 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import org.immutables.common.marshal.Marshaling;
-import org.immutables.value.Json;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.Marshaling2;
+import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.AlertConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ConfigService.DuplicateMBeanObjectNameException;
@@ -42,7 +43,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
 class AlertJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(AlertJsonService.class);
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final ConfigService configService;
 
@@ -51,28 +52,28 @@ class AlertJsonService {
     }
 
     @GET("/backend/config/alerts")
-    String getAlertList() {
+    String getAlertList() throws JsonProcessingException {
         List<AlertConfigDto> alertConfigDtos = Lists.newArrayList();
         List<AlertConfig> alertConfigs = configService.getAlertConfigs();
         alertConfigs = AlertConfig.orderingByName.immutableSortedCopy(alertConfigs);
         for (AlertConfig alertConfig : alertConfigs) {
             alertConfigDtos.add(AlertConfigDto.fromConfig(alertConfig));
         }
-        return Marshaling2.toJson(alertConfigDtos, AlertConfigDto.class);
+        return mapper.writeValueAsString(alertConfigDtos);
     }
 
     @GET("/backend/config/alerts/([0-9a-f]{40})")
-    String getAlert(String version) {
+    String getAlert(String version) throws JsonProcessingException {
         AlertConfig alertConfig = configService.getAlertConfig(version);
         if (alertConfig == null) {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
         }
-        return Marshaling2.toJson(AlertConfigDto.fromConfig(alertConfig));
+        return mapper.writeValueAsString(AlertConfigDto.fromConfig(alertConfig));
     }
 
     @POST("/backend/config/alerts/add")
     String addAlert(String content) throws Exception {
-        AlertConfigDto alertConfigDto = Marshaling.fromJson(content, AlertConfigDto.class);
+        AlertConfigDto alertConfigDto = mapper.readValue(content, AlertConfigDto.class);
         AlertConfig alertConfig = alertConfigDto.toConfig();
         try {
             configService.insertAlertConfig(alertConfig);
@@ -81,17 +82,17 @@ class AlertJsonService {
             logger.debug(e.getMessage(), e);
             throw new JsonServiceException(CONFLICT, "mbeanObjectName");
         }
-        return Marshaling2.toJson(AlertConfigDto.fromConfig(alertConfig));
+        return mapper.writeValueAsString(AlertConfigDto.fromConfig(alertConfig));
     }
 
     @POST("/backend/config/alerts/update")
     String updateAlert(String content) throws IOException {
-        AlertConfigDto alertConfigDto = Marshaling.fromJson(content, AlertConfigDto.class);
+        AlertConfigDto alertConfigDto = mapper.readValue(content, AlertConfigDto.class);
         AlertConfig alertConfig = alertConfigDto.toConfig();
         String version = alertConfigDto.version();
         checkNotNull(version, "Missing required request property: version");
         configService.updateAlertConfig(alertConfig, version);
-        return Marshaling2.toJson(AlertConfigDto.fromConfig(alertConfig));
+        return mapper.writeValueAsString(AlertConfigDto.fromConfig(alertConfig));
     }
 
     @POST("/backend/config/alerts/remove")
@@ -102,7 +103,8 @@ class AlertJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutableAlertConfigDto.class)
+    @JsonDeserialize(as = ImmutableAlertConfigDto.class)
     abstract static class AlertConfigDto {
 
         public abstract String transactionType();

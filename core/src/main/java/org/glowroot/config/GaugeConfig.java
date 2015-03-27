@@ -19,20 +19,19 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.CharMatcher;
-import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Ordering;
-import com.google.common.hash.Hashing;
-import org.immutables.value.Json;
 import org.immutables.value.Value;
-
-import org.glowroot.common.Marshaling2;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Value.Immutable
-@Json.Marshaled
+@JsonSerialize(as = ImmutableGaugeConfig.class)
+@JsonDeserialize(as = ImmutableGaugeConfig.class)
 public abstract class GaugeConfig {
 
     public static final Ordering<GaugeConfig> orderingByName = new Ordering<GaugeConfig>() {
@@ -45,11 +44,10 @@ public abstract class GaugeConfig {
     };
 
     public abstract String mbeanObjectName();
-    @Json.ForceEmpty
     public abstract List<MBeanAttribute> mbeanAttributes();
 
     @Value.Derived
-    @Json.Ignore
+    @JsonIgnore
     public String display() {
         // e.g. java.lang:name=PS Eden Space,type=MemoryPool
         List<String> parts = Splitter.on(CharMatcher.anyOf(":,")).splitToList(mbeanObjectName());
@@ -63,13 +61,14 @@ public abstract class GaugeConfig {
     }
 
     @Value.Derived
-    @Json.Ignore
+    @JsonIgnore
     public String version() {
-        return Hashing.sha1().hashString(Marshaling2.toJson(this), Charsets.UTF_8).toString();
+        return Versions.getVersion(this);
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutableMBeanAttribute.class)
+    @JsonDeserialize(as = ImmutableMBeanAttribute.class)
     public abstract static class MBeanAttribute {
 
         @Value.Parameter

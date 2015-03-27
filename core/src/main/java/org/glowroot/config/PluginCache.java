@@ -25,20 +25,23 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
-import org.immutables.common.marshal.Marshaling;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.glowroot.common.ObjectMappers;
 
 @Value.Immutable
 abstract class PluginCache {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginCache.class);
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     abstract List<File> pluginJars();
     abstract List<PluginDescriptor> pluginDescriptors();
@@ -142,7 +145,7 @@ abstract class PluginCache {
             try {
                 String content = Resources.toString(url, Charsets.UTF_8);
                 PluginDescriptor pluginDescriptor =
-                        Marshaling.fromJson(content, PluginDescriptor.class);
+                        mapper.readValue(content, PluginDescriptor.class);
                 pluginDescriptors.add(pluginDescriptor);
             } catch (JsonProcessingException e) {
                 logger.error("error parsing plugin descriptor: {}", url.toExternalForm(), e);

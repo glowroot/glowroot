@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@ package org.glowroot.jvm;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-import org.immutables.value.Json;
 import org.immutables.value.Value;
 
 public abstract class OptionalService<T> {
@@ -41,7 +41,7 @@ public abstract class OptionalService<T> {
     public abstract @Nullable T getService();
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutableAvailability.class)
     public abstract static class Availability {
         @Value.Parameter
         public abstract boolean isAvailable();

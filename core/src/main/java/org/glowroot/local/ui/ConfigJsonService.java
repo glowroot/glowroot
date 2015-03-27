@@ -26,6 +26,10 @@ import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -35,14 +39,12 @@ import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
-import org.immutables.common.marshal.Marshaling;
-import org.immutables.value.Json;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Encryption;
-import org.glowroot.common.Marshaling2;
+import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ConfigService.OptimisticLockException;
@@ -54,7 +56,6 @@ import org.glowroot.config.ImmutableSmtpConfig;
 import org.glowroot.config.ImmutableStorageConfig;
 import org.glowroot.config.ImmutableUserInterfaceConfig;
 import org.glowroot.config.ImmutableUserRecordingConfig;
-import org.glowroot.config.MarshalingRoutines;
 import org.glowroot.config.PluginConfig;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.PropertyDescriptor;
@@ -79,6 +80,7 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 class ConfigJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigJsonService.class);
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final ConfigService configService;
     private final CappedDatabase cappedDatabase;
@@ -105,7 +107,7 @@ class ConfigJsonService {
     @GET("/backend/config/general")
     String getGeneralConfig() throws Exception {
         GeneralConfig config = configService.getGeneralConfig();
-        return Marshaling2.toJson(GeneralConfigDto.fromConfig(config));
+        return mapper.writeValueAsString(GeneralConfigDto.fromConfig(config));
     }
 
     @GET("/backend/config/ui")
@@ -118,14 +120,14 @@ class ConfigJsonService {
     @GET("/backend/config/storage")
     String getStorageConfig() throws Exception {
         StorageConfig config = configService.getStorageConfig();
-        return Marshaling2.toJson(StorageConfigDto.fromConfig(config));
+        return mapper.writeValueAsString(StorageConfigDto.fromConfig(config));
     }
 
     @GET("/backend/config/smtp")
     String getSmtpConfig() throws Exception {
         SmtpConfig config = configService.getSmtpConfig();
         String localServerName = InetAddress.getLocalHost().getHostName();
-        return Marshaling2.toJson(ImmutableSmtpConfigResponse.builder()
+        return mapper.writeValueAsString(ImmutableSmtpConfigResponse.builder()
                 .config(SmtpConfigDto.fromConfig(config))
                 .localServerName(localServerName)
                 .build());
@@ -134,13 +136,13 @@ class ConfigJsonService {
     @GET("/backend/config/user-recording")
     String getUserRecordingConfig() throws Exception {
         UserRecordingConfig config = configService.getUserRecordingConfig();
-        return Marshaling2.toJson(UserRecordingConfigDto.fromConfig(config));
+        return mapper.writeValueAsString(UserRecordingConfigDto.fromConfig(config));
     }
 
     @GET("/backend/config/advanced")
     String getAdvancedConfig() throws Exception {
         AdvancedConfig config = configService.getAdvancedConfig();
-        return Marshaling2.toJson(ImmutableAdvancedConfigResponse.builder()
+        return mapper.writeValueAsString(ImmutableAdvancedConfigResponse.builder()
                 .config(AdvancedConfigDto.fromConfig(config))
                 .timerWrapperMethodsActive(transactionModule.isTimerWrapperMethods())
                 .build());
@@ -158,7 +160,7 @@ class ConfigJsonService {
                     .enabled(pluginConfig.enabled())
                     .build());
         }
-        return Marshaling2.toJson(pluginResponses, PluginResponse.class);
+        return mapper.writeValueAsString(pluginResponses);
     }
 
     @GET("/backend/config/plugin/(.+)")
@@ -174,7 +176,7 @@ class ConfigJsonService {
         if (config == null || pluginDescriptor == null) {
             throw new IllegalArgumentException("Plugin id not found: " + pluginId);
         }
-        return Marshaling2.toJson(ImmutablePluginConfigResponse.builder()
+        return mapper.writeValueAsString(ImmutablePluginConfigResponse.builder()
                 .name(pluginDescriptor.name())
                 .addAllPropertyDescriptors(pluginDescriptor.properties())
                 .config(PluginConfigDto.fromConfig(config))
@@ -183,7 +185,7 @@ class ConfigJsonService {
 
     @POST("/backend/config/general")
     String updateGeneralConfig(String content) throws Exception {
-        GeneralConfigDto configDto = Marshaling.fromJson(content, GeneralConfigDto.class);
+        GeneralConfigDto configDto = mapper.readValue(content, GeneralConfigDto.class);
         try {
             configService.updateGeneralConfig(configDto.toConfig(), configDto.version());
         } catch (OptimisticLockException e) {
@@ -196,8 +198,7 @@ class ConfigJsonService {
     Object updateUserInterfaceConfig(String content) throws Exception {
         // this code cannot be reached when httpServer is null
         checkNotNull(httpServer);
-        UserInterfaceConfigDto configDto =
-                Marshaling.fromJson(content, UserInterfaceConfigDto.class);
+        UserInterfaceConfigDto configDto = mapper.readValue(content, UserInterfaceConfigDto.class);
         configDto.validate();
         UserInterfaceConfig priorConfig = configService.getUserInterfaceConfig();
         ImmutableUserInterfaceConfig.Builder builder = ImmutableUserInterfaceConfig.builder()
@@ -246,7 +247,7 @@ class ConfigJsonService {
 
     @POST("/backend/config/storage")
     String updateStorageConfig(String content) throws Exception {
-        StorageConfigDto configDto = Marshaling.fromJson(content, StorageConfigDto.class);
+        StorageConfigDto configDto = mapper.readValue(content, StorageConfigDto.class);
         try {
             configService.updateStorageConfig(configDto.toConfig(), configDto.version());
         } catch (OptimisticLockException e) {
@@ -259,7 +260,7 @@ class ConfigJsonService {
 
     @POST("/backend/config/smtp")
     String updateSmtpConfig(String content) throws Exception {
-        SmtpConfigDto configDto = Marshaling.fromJson(content, SmtpConfigDto.class);
+        SmtpConfigDto configDto = mapper.readValue(content, SmtpConfigDto.class);
         try {
             configService.updateSmtpConfig(toConfig(configDto), configDto.version());
         } catch (OptimisticLockException e) {
@@ -270,8 +271,7 @@ class ConfigJsonService {
 
     @POST("/backend/config/user-recording")
     String updateUserRecordingConfig(String content) throws Exception {
-        UserRecordingConfigDto configDto =
-                Marshaling.fromJson(content, UserRecordingConfigDto.class);
+        UserRecordingConfigDto configDto = mapper.readValue(content, UserRecordingConfigDto.class);
         try {
             configService.updateUserRecordingConfig(configDto.toConfig(), configDto.version());
         } catch (OptimisticLockException e) {
@@ -282,7 +282,7 @@ class ConfigJsonService {
 
     @POST("/backend/config/advanced")
     String updateAdvancedConfig(String content) throws Exception {
-        AdvancedConfigDto configDto = Marshaling.fromJson(content, AdvancedConfigDto.class);
+        AdvancedConfigDto configDto = mapper.readValue(content, AdvancedConfigDto.class);
         try {
             configService.updateAdvancedConfig(configDto.toConfig(), configDto.version());
         } catch (OptimisticLockException e) {
@@ -293,7 +293,7 @@ class ConfigJsonService {
 
     @POST("/backend/config/plugin/(.+)")
     String updatePluginConfig(String pluginId, String content) throws Exception {
-        PluginConfigDto configDto = Marshaling.fromJson(content, PluginConfigDto.class);
+        PluginConfigDto configDto = mapper.readValue(content, PluginConfigDto.class);
         try {
             configService.updatePluginConfig(configDto.toConfig(pluginId), configDto.version());
         } catch (OptimisticLockException e) {
@@ -304,7 +304,7 @@ class ConfigJsonService {
 
     @POST("/backend/config/send-test-email")
     void sendTestEmail(String content) throws Exception {
-        SmtpConfigDto configDto = Marshaling.fromJson(content, SmtpConfigDto.class);
+        SmtpConfigDto configDto = mapper.readValue(content, SmtpConfigDto.class);
         String testEmailRecipient = configDto.testEmailRecipient();
         checkNotNull(testEmailRecipient);
         Session session = AlertingService.createMailSession(toConfig(configDto),
@@ -329,7 +329,7 @@ class ConfigJsonService {
 
     @RequiresNonNull("httpServer")
     private Object onSuccessfulUserInterfaceUpdate(UserInterfaceConfig priorConfig,
-            UserInterfaceConfig config) {
+            UserInterfaceConfig config) throws JsonProcessingException {
         boolean portChangedSucceeded = false;
         boolean portChangedFailed = false;
         if (priorConfig.port() != config.port()) {
@@ -358,7 +358,7 @@ class ConfigJsonService {
     }
 
     @RequiresNonNull("httpServer")
-    private String getUserInterface(boolean portChangeFailed) {
+    private String getUserInterface(boolean portChangeFailed) throws JsonProcessingException {
         UserInterfaceConfig config = configService.getUserInterfaceConfig();
         UserInterfaceConfigDto configDto = ImmutableUserInterfaceConfigDto.builder()
                 .port(config.port())
@@ -368,7 +368,7 @@ class ConfigJsonService {
                 .sessionTimeoutMinutes(config.sessionTimeoutMinutes())
                 .version(config.version())
                 .build();
-        return Marshaling2.toJson(ImmutableUserInterfaceConfigResponse.builder()
+        return mapper.writeValueAsString(ImmutableUserInterfaceConfigResponse.builder()
                 .config(configDto)
                 .activePort(httpServer.getPort())
                 .portChangeFailed(portChangeFailed)
@@ -446,7 +446,7 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutableUserInterfaceConfigResponse.class)
     abstract static class UserInterfaceConfigResponse {
         abstract UserInterfaceConfigDto config();
         abstract int activePort();
@@ -454,21 +454,21 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutableSmtpConfigResponse.class)
     abstract static class SmtpConfigResponse {
         abstract SmtpConfigDto config();
         abstract String localServerName();
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutableAdvancedConfigResponse.class)
     abstract static class AdvancedConfigResponse {
         abstract AdvancedConfigDto config();
         abstract boolean timerWrapperMethodsActive();
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutablePluginResponse.class)
     abstract static class PluginResponse {
         abstract String id();
         abstract String name();
@@ -476,11 +476,10 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutablePluginConfigResponse.class)
     abstract static class PluginConfigResponse {
         abstract String name();
         abstract PluginConfigDto config();
-        @Json.ForceEmpty
         abstract List<PropertyDescriptor> propertyDescriptors();
     }
 
@@ -488,7 +487,8 @@ class ConfigJsonService {
     // attribute, and that they have no default attribute values
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutableGeneralConfigDto.class)
+    @JsonDeserialize(as = ImmutableGeneralConfigDto.class)
     abstract static class GeneralConfigDto {
 
         abstract boolean enabled();
@@ -518,8 +518,8 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
-    @Json.Import(MarshalingRoutines.class)
+    @JsonSerialize(as = ImmutableUserInterfaceConfigDto.class)
+    @JsonDeserialize(as = ImmutableUserInterfaceConfigDto.class)
     abstract static class UserInterfaceConfigDto {
 
         abstract int port();
@@ -568,7 +568,8 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutableStorageConfigDto.class)
+    @JsonDeserialize(as = ImmutableStorageConfigDto.class)
     abstract static class StorageConfigDto {
 
         abstract int aggregateExpirationHours();
@@ -595,7 +596,8 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutableSmtpConfigDto.class)
+    @JsonDeserialize(as = ImmutableSmtpConfigDto.class)
     abstract static class SmtpConfigDto {
 
         abstract String fromEmailAddress();
@@ -605,7 +607,6 @@ class ConfigJsonService {
         abstract boolean ssl();
         abstract String username();
         abstract boolean passwordExists();
-        @Json.ForceEmpty
         abstract Map<String, String> additionalProperties();
         // only used for requests
         @Value.Default
@@ -632,7 +633,8 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutableUserRecordingConfigDto.class)
+    @JsonDeserialize(as = ImmutableUserRecordingConfigDto.class)
     abstract static class UserRecordingConfigDto {
 
         abstract boolean enabled();
@@ -659,7 +661,8 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutableAdvancedConfigDto.class)
+    @JsonDeserialize(as = ImmutableAdvancedConfigDto.class)
     abstract static class AdvancedConfigDto {
 
         abstract boolean timerWrapperMethods();
@@ -703,12 +706,11 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
-    @Json.Import(MarshalingRoutines.class)
+    @JsonSerialize(as = ImmutablePluginConfigDto.class)
+    @JsonDeserialize(as = ImmutablePluginConfigDto.class)
     abstract static class PluginConfigDto {
 
         abstract boolean enabled();
-        @Json.ForceEmpty
         abstract Map<String, PropertyValue> properties();
         abstract String version();
 

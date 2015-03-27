@@ -20,99 +20,112 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Charsets;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Ordering;
-import com.google.common.hash.Hashing;
 import com.google.common.primitives.Ints;
-import org.immutables.value.Json;
 import org.immutables.value.Value;
 
 import org.glowroot.api.weaving.MethodModifier;
-import org.glowroot.common.Marshaling2;
-import org.glowroot.config.MarshalingRoutines.LowercaseMarshaling;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Value.Immutable
-@Json.Marshaled
-@Json.Import(MarshalingRoutines.class)
+@JsonSerialize(as = ImmutableInstrumentationConfig.class)
+@JsonDeserialize(as = ImmutableInstrumentationConfig.class)
 public abstract class InstrumentationConfig {
 
     public static final Ordering<InstrumentationConfig> defaultOrdering =
             new InstrumentationConfigOrdering();
 
     public abstract String className();
+
     public abstract String methodName();
+
     // empty methodParameterTypes means match no-arg methods only
-    @Json.ForceEmpty
     public abstract List<String> methodParameterTypes();
+
     @Value.Default
     public String methodReturnType() {
         return "";
     }
+
     // currently unused, but will have a purpose soon, e.g. to capture all public methods
     public abstract List<MethodModifier> methodModifiers();
+
     public abstract CaptureKind captureKind();
+
     @Value.Default
     public String timerName() {
         return "";
     }
+
     @Value.Default
     public String traceEntryTemplate() {
         return "";
     }
-    @Json.ForceEmpty
+
     public abstract @Nullable Long traceEntryStackThresholdMillis();
+
     @Value.Default
     public boolean traceEntryCaptureSelfNested() {
         return false;
     }
+
     @Value.Default
     public String transactionType() {
         return "";
     }
+
     @Value.Default
     public String transactionNameTemplate() {
         return "";
     }
+
     @Value.Default
     public String transactionUserTemplate() {
         return "";
     }
-    @Json.ForceEmpty
+
     public abstract Map<String, String> transactionCustomAttributeTemplates();
-    @Json.ForceEmpty
+
     public abstract @Nullable Long traceStoreThresholdMillis();
+
     // enabledProperty and traceEntryEnabledProperty are for plugin authors
     @Value.Default
     public String enabledProperty() {
         return "";
     }
+
     @Value.Default
     public String traceEntryEnabledProperty() {
         return "";
     }
 
     @Value.Derived
-    @Json.Ignore
+    @JsonIgnore
     public String version() {
-        return Hashing.sha1().hashString(Marshaling2.toJson(this), Charsets.UTF_8).toString();
+        return Versions.getVersion(this);
     }
 
+    @JsonIgnore
     public boolean isTimerOrGreater() {
         return captureKind() == CaptureKind.TIMER || captureKind() == CaptureKind.TRACE_ENTRY
                 || captureKind() == CaptureKind.TRANSACTION;
     }
 
+    @JsonIgnore
     public boolean isTraceEntryOrGreater() {
         return captureKind() == CaptureKind.TRACE_ENTRY || captureKind() == CaptureKind.TRANSACTION;
     }
 
+    @JsonIgnore
     public boolean isTransaction() {
         return captureKind() == CaptureKind.TRANSACTION;
     }
 
-    public static enum CaptureKind implements LowercaseMarshaling {
+    public static enum CaptureKind {
         TIMER, TRACE_ENTRY, TRANSACTION, OTHER
     }
 

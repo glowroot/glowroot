@@ -42,6 +42,9 @@ public class SmtpConfig {
     // used for submitting a password change
     private String newPassword = "";
 
+    // used for generating a test email
+    private String testEmailRecipient = "";
+
     private final String version;
 
     public SmtpConfig(String version) {
@@ -120,6 +123,14 @@ public class SmtpConfig {
         return newPassword;
     }
 
+    public String getTestEmailRecipient() {
+        return testEmailRecipient;
+    }
+
+    public void setTestEmailRecipient(String testEmailRecipient) {
+        this.testEmailRecipient = testEmailRecipient;
+    }
+
     public String getVersion() {
         return version;
     }
@@ -163,6 +174,8 @@ public class SmtpConfig {
                 .add("username", username)
                 .add("passwordExists", passwordExists)
                 .add("additionalProperties", additionalProperties)
+                .add("newPassword", newPassword)
+                .add("testEmailRecipient", testEmailRecipient)
                 .add("version", version)
                 .toString();
     }

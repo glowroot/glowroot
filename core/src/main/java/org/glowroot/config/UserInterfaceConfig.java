@@ -15,17 +15,14 @@
  */
 package org.glowroot.config;
 
-import com.google.common.base.Charsets;
-import com.google.common.hash.Hashing;
-import org.immutables.value.Json;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
 
-import org.glowroot.common.Marshaling2;
-import org.glowroot.config.MarshalingRoutines.LowercaseMarshaling;
-
 @Value.Immutable
-@Json.Marshaled
-@Json.Import(MarshalingRoutines.class)
+@JsonSerialize(as = ImmutableUserInterfaceConfig.class)
+@JsonDeserialize(as = ImmutableUserInterfaceConfig.class)
 public class UserInterfaceConfig {
 
     @Value.Default
@@ -55,9 +52,9 @@ public class UserInterfaceConfig {
     }
 
     @Value.Derived
-    @Json.Ignore
+    @JsonIgnore
     public String version() {
-        return Hashing.sha1().hashString(Marshaling2.toJson(this), Charsets.UTF_8).toString();
+        return Versions.getVersion(this);
     }
 
     public boolean adminPasswordEnabled() {
@@ -68,7 +65,7 @@ public class UserInterfaceConfig {
         return !readOnlyPasswordHash().isEmpty();
     }
 
-    public static enum AnonymousAccess implements LowercaseMarshaling {
+    public static enum AnonymousAccess {
         NONE, READ_ONLY, ADMIN
     }
 }

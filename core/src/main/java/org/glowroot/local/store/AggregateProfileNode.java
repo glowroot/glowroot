@@ -32,8 +32,8 @@ import com.google.common.collect.Lists;
 
 import org.glowroot.markers.UsedByJsonBinding;
 
-import static org.glowroot.local.store.ObjectMappers.checkRequiredProperty;
-import static org.glowroot.local.store.ObjectMappers.orEmpty;
+import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
+import static org.glowroot.common.ObjectMappers.orEmpty;
 
 @UsedByJsonBinding
 @JsonSerialize(using = AggregateProfileNode.Serializer.class)

@@ -64,7 +64,6 @@ class QueryStrings {
             checkNotNull(setter, "Unexpected attribute: %s", key);
             Class<?> valueClass = setter.getParameterTypes()[0];
             Object value;
-
             if (valueClass == Iterable.class) {
                 // only lists of type string supported
                 value = entry.getValue();
@@ -136,6 +135,9 @@ class QueryStrings {
                 continue;
             }
             if (method.getParameterTypes().length == 1) {
+                if (!isSimpleSetter(method.getParameterTypes()[0])) {
+                    continue;
+                }
                 method.setAccessible(true);
                 if (method.getName().startsWith("addAll")) {
                     String propertyName = method.getName().substring(6);
@@ -148,5 +150,11 @@ class QueryStrings {
             }
         }
         return setters;
+    }
+
+    private static boolean isSimpleSetter(Class<?> targetClass) {
+        return targetClass == String.class || isInteger(targetClass) || isLong(targetClass)
+                || isDouble(targetClass) || isBoolean(targetClass)
+                || Enum.class.isAssignableFrom(targetClass) || targetClass == Iterable.class;
     }
 }

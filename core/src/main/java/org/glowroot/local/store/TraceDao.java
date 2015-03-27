@@ -52,7 +52,7 @@ public class TraceDao implements TraceRepository {
     private static final Logger logger = LoggerFactory.getLogger(TraceDao.class);
 
     private static final ImmutableList<Column> traceColumns = ImmutableList.<Column>of(
-            ImmutablePrimaryKeyColumn.of("id", Types.VARCHAR),
+            ImmutableColumn.of("id", Types.VARCHAR).withPrimaryKey(true),
             ImmutableColumn.of("partial", Types.BIGINT),
             ImmutableColumn.of("start_time", Types.BIGINT),
             ImmutableColumn.of("capture_time", Types.BIGINT),

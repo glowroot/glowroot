@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
@@ -30,7 +31,7 @@ import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
 
 import org.glowroot.api.PluginServices.ConfigListener;
-import org.glowroot.common.Marshaling2;
+import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.UserInterfaceConfig;
@@ -40,6 +41,7 @@ import org.glowroot.jvm.OptionalService;
 class LayoutJsonService {
 
     private static final JsonFactory jsonFactory = new JsonFactory();
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final String version;
     private final ConfigService configService;
@@ -81,7 +83,7 @@ class LayoutJsonService {
                     fixedGaugeRollupSeconds);
             layout = localLayout;
         }
-        return Marshaling2.toJson(localLayout);
+        return mapper.writeValueAsString(localLayout);
     }
 
     String getLayoutVersion() {

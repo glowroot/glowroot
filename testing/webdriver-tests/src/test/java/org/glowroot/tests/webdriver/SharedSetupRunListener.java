@@ -15,8 +15,6 @@
  */
 package org.glowroot.tests.webdriver;
 
-import javax.annotation.Nullable;
-
 import org.junit.runner.Description;
 import org.junit.runner.Result;
 import org.junit.runner.notification.RunListener;
@@ -24,13 +22,13 @@ import org.junit.runner.notification.RunListener;
 public class SharedSetupRunListener extends RunListener {
 
     private static volatile boolean useSharedSetup;
-    private static volatile @Nullable WebDriverSetup sharedSetup;
+    private static volatile WebDriverSetup sharedSetup;
 
     public static boolean useSharedSetup() {
         return useSharedSetup;
     }
 
-    public static @Nullable WebDriverSetup getSharedSetup() {
+    public static WebDriverSetup getSharedSetup() {
         return sharedSetup;
     }
 

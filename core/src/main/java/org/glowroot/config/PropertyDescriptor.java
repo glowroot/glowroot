@@ -17,24 +17,23 @@ package org.glowroot.config;
 
 import javax.annotation.Nullable;
 
-import org.immutables.value.Json;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.config.MarshalingRoutines.LowercaseMarshaling;
-import org.glowroot.config.MarshalingRoutines.Multiline;
-
 @Value.Immutable
-@Json.Marshaled
-@Json.Import(MarshalingRoutines.class)
+@JsonSerialize(as = ImmutablePropertyDescriptor.class)
+@JsonDeserialize(as = ImmutablePropertyDescriptor.class)
 public abstract class PropertyDescriptor {
 
     private static final Logger logger = LoggerFactory.getLogger(PropertyDescriptor.class);
 
     public abstract String name();
     public abstract PropertyType type();
-    @Json.Named("default")
+    @JsonProperty("default")
     abstract @Nullable PropertyValue defaultValue();
     @Value.Default
     public boolean hidden() {
@@ -82,7 +81,7 @@ public abstract class PropertyDescriptor {
         }
     }
 
-    enum PropertyType implements LowercaseMarshaling {
+    enum PropertyType {
         STRING, BOOLEAN, DOUBLE
     }
 }

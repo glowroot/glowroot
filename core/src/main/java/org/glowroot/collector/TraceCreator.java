@@ -25,10 +25,11 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.io.CharStreams;
 
-import org.glowroot.common.Marshaling2;
+import org.glowroot.common.ObjectMappers;
 import org.glowroot.transaction.model.GcInfoComponent.GcInfo;
 import org.glowroot.transaction.model.ThreadInfoComponent.ThreadInfoData;
 import org.glowroot.transaction.model.TimerImpl;
@@ -37,6 +38,7 @@ import org.glowroot.transaction.model.Transaction;
 public class TraceCreator {
 
     private static final JsonFactory jsonFactory = new JsonFactory();
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private TraceCreator() {}
 
@@ -87,7 +89,7 @@ public class TraceCreator {
         }
         List<GcInfo> gcInfos = transaction.getGcInfos();
         if (gcInfos != null) {
-            builder.gcInfos(Marshaling2.toJson(gcInfos, GcInfo.class));
+            builder.gcInfos(mapper.writeValueAsString(gcInfos));
         }
         builder.entryCount(transaction.getEntryCount());
         builder.profileSampleCount(transaction.getProfileSampleCount());

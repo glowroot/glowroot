@@ -17,18 +17,14 @@ package org.glowroot.local.ui;
 
 import java.util.List;
 
-import com.google.common.base.Charsets;
-import com.google.common.hash.Hashing;
-import org.immutables.value.Json;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
 
-import org.glowroot.common.Marshaling2;
-import org.glowroot.config.MarshalingRoutines;
 import org.glowroot.config.UserInterfaceConfig.AnonymousAccess;
+import org.glowroot.config.Versions;
 
 @Value.Immutable
-@Json.Marshaled
-@Json.Import(MarshalingRoutines.class)
+@JsonSerialize(as = ImmutableLayout.class)
 abstract class Layout {
 
     abstract boolean jvmHeapDump();
@@ -46,6 +42,6 @@ abstract class Layout {
 
     @Value.Derived
     public String version() {
-        return Hashing.sha1().hashString(Marshaling2.toJson(this), Charsets.UTF_8).toString();
+        return Versions.getVersion(this);
     }
 }

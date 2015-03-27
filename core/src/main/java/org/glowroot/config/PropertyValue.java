@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,13 @@ package org.glowroot.config;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import org.glowroot.config.PropertyDescriptor.PropertyType;
 
+@JsonSerialize(using = PropertyValueSerializer.class)
+@JsonDeserialize(using = PropertyValueDeserializer.class)
 public class PropertyValue {
 
     // can be boolean, @Nullable Double or @NonNull String

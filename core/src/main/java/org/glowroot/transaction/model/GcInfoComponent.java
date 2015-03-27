@@ -23,11 +23,11 @@ import java.util.Set;
 
 import javax.annotation.concurrent.GuardedBy;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.immutables.value.Json;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,7 +113,7 @@ public class GcInfoComponent {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutableGcInfo.class)
     public abstract static class GcInfo {
         abstract String name();
         abstract long collectionCount();

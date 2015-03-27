@@ -17,58 +17,61 @@ package org.glowroot.config;
 
 import java.util.List;
 
-import org.immutables.value.Json;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@Json.Marshaled
+@JsonSerialize(as = ImmutableConfig.class)
+@JsonDeserialize(as = ImmutableConfig.class)
 abstract class Config {
 
     @Value.Default
-    @Json.Named("general")
+    @JsonProperty("general")
     GeneralConfig generalConfig() {
         return ImmutableGeneralConfig.builder().build();
     }
 
     @Value.Default
-    @Json.Named("ui")
+    @JsonProperty("ui")
     UserInterfaceConfig userInterfaceConfig() {
         return ImmutableUserInterfaceConfig.builder().build();
     }
 
     @Value.Default
-    @Json.Named("storage")
+    @JsonProperty("storage")
     StorageConfig storageConfig() {
         return ImmutableStorageConfig.builder().build();
     }
 
     @Value.Default
-    @Json.Named("smtp")
+    @JsonProperty("smtp")
     SmtpConfig smtpConfig() {
         return ImmutableSmtpConfig.builder().build();
     }
 
     @Value.Default
-    @Json.Named("userRecording")
+    @JsonProperty("userRecording")
     UserRecordingConfig userRecordingConfig() {
         return ImmutableUserRecordingConfig.builder().build();
     }
 
     @Value.Default
-    @Json.Named("advanced")
+    @JsonProperty("advanced")
     AdvancedConfig advancedConfig() {
         return ImmutableAdvancedConfig.builder().build();
     }
 
-    @Json.Named("plugins")
+    @JsonProperty("plugins")
     abstract List<PluginConfig> pluginConfigs();
 
-    @Json.Named("instrumentation")
+    @JsonProperty("instrumentation")
     abstract List<InstrumentationConfig> instrumentationConfigs();
 
-    @Json.Named("gauges")
+    @JsonProperty("gauges")
     abstract List<GaugeConfig> gaugeConfigs();
 
-    @Json.Named("alerts")
+    @JsonProperty("alerts")
     abstract List<AlertConfig> alertConfigs();
 }

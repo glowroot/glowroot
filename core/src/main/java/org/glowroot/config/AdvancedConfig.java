@@ -15,15 +15,14 @@
  */
 package org.glowroot.config;
 
-import com.google.common.base.Charsets;
-import com.google.common.hash.Hashing;
-import org.immutables.value.Json;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
 
-import org.glowroot.common.Marshaling2;
-
 @Value.Immutable
-@Json.Marshaled
+@JsonSerialize(as = ImmutableAdvancedConfig.class)
+@JsonDeserialize(as = ImmutableAdvancedConfig.class)
 public abstract class AdvancedConfig {
 
     @Value.Default
@@ -69,8 +68,8 @@ public abstract class AdvancedConfig {
     }
 
     @Value.Derived
-    @Json.Ignore
+    @JsonIgnore
     public String version() {
-        return Hashing.sha1().hashString(Marshaling2.toJson(this), Charsets.UTF_8).toString();
+        return Versions.getVersion(this);
     }
 }

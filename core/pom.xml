@@ -28,15 +28,8 @@
     <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>value</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.immutables</groupId>
-      <artifactId>common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.immutables</groupId>
-      <artifactId>value-standalone</artifactId>
-      <optional>true</optional>
+      <!-- immutables is only needed at compile time -->
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.ow2.asm</groupId>
@@ -97,6 +90,11 @@
       <artifactId>jackson-annotations</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-guava</artifactId>
+      <version>2.5.1</version>
+    </dependency>
+    <dependency>
       <groupId>org.hdrhistogram</groupId>
       <artifactId>HdrHistogram</artifactId>
       <version>2.1.4</version>
@@ -146,6 +144,12 @@
       <groupId>${checker.qual.group.id}</groupId>
       <artifactId>${checker.qual.artifact.id}</artifactId>
       <version>${checker.qual.version}</version>
+      <!-- don't need this dependency at runtime since only annotations -->
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
       <!-- don't need this dependency at runtime since only annotations -->
       <optional>true</optional>
     </dependency>
@@ -366,24 +370,6 @@
       <build>
         <plugins>
           <plugin>
-            <!-- TODO this is needed until https://jira.codehaus.org/browse/MSHADE-182 -->
-            <groupId>com.coderplus.maven.plugins</groupId>
-            <artifactId>copy-rename-maven-plugin</artifactId>
-            <version>1.0</version>
-            <executions>
-              <execution>
-                <phase>prepare-package</phase>
-                <goals>
-                  <goal>rename</goal>
-                </goals>
-                <configuration>
-                  <sourceFile>target/classes/META-INF/services/org.immutables.common.marshal.internal.MarshalingContributor</sourceFile>
-                  <destinationFile>target/classes/META-INF/services/org.glowroot.shaded.immutables.common.marshal.internal.MarshalingContributor</destinationFile>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
             <artifactId>maven-shade-plugin</artifactId>
             <configuration>
               <dependencyReducedPomLocation>
@@ -404,8 +390,6 @@
                       <!-- don't need these dependencies at runtime since only annotations -->
                       <exclude>${checker.qual.group.id}:${checker.qual.artifact.id}</exclude>
                       <exclude>com.google.code.findbugs:jsr305</exclude>
-                      <!-- don't need this dependency at runtime since only annotation processor -->
-                      <exclude>org.immutables:value-standalone</exclude>
                     </excludes>
                   </artifactSet>
                   <filters>
@@ -413,13 +397,6 @@
                       <artifact>com.google.guava:guava</artifact>
                       <excludes>
                         <exclude>META-INF/beans.xml</exclude>
-                      </excludes>
-                    </filter>
-                    <filter>
-                      <artifact>org.immutables:common</artifact>
-                      <excludes>
-                        <exclude>META-INF/services/javax.ws.rs.ext.MessageBodyReader</exclude>
-                        <exclude>META-INF/services/javax.ws.rs.ext.MessageBodyWriter</exclude>
                       </excludes>
                     </filter>
                     <filter>
@@ -529,10 +506,6 @@
                       <!-- a couple of classes in guava are under this package name -->
                       <pattern>com.google.thirdparty</pattern>
                       <shadedPattern>org.glowroot.shaded.google.thirdparty</shadedPattern>
-                    </relocation>
-                    <relocation>
-                      <pattern>org.immutables</pattern>
-                      <shadedPattern>org.glowroot.shaded.immutables</shadedPattern>
                     </relocation>
                     <relocation>
                       <pattern>org.HdrHistogram</pattern>

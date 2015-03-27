@@ -17,16 +17,18 @@ package org.glowroot.collector;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
-import org.immutables.value.Json;
 import org.immutables.value.Value;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Value.Immutable
-@Json.Marshaled
+@JsonSerialize(as = ImmutableTransactionSummary.class)
+@JsonDeserialize(as = ImmutableTransactionSummary.class)
 public abstract class TransactionSummary {
 
     public static final Ordering<TransactionSummary> orderingByTotalTimeDesc =

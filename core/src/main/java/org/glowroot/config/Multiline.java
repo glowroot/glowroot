@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.local.store;
+package org.glowroot.config;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.immutables.value.Value;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-@Value.Immutable
-@JsonSerialize(as = ImmutableErrorMessageCount.class)
-public abstract class ErrorMessageCount {
+// for binding either string or array of strings joined into a single string
+@JsonDeserialize(using = MultilineDeserializer.class)
+class Multiline {
 
-    public abstract String message();
-    public abstract long count();
+    private final String string;
+
+    static Multiline of(String string) {
+        return new Multiline(string);
+    }
+
+    Multiline(String string) {
+        this.string = string;
+    }
+
+    @Override
+    public String toString() {
+        return string;
+    }
 }

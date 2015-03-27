@@ -42,6 +42,8 @@ import javax.management.openmbean.TabularData;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Splitter;
@@ -53,14 +55,12 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import com.google.common.primitives.Ints;
-import org.immutables.common.marshal.Marshaling;
-import org.immutables.value.Json;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.GaugePoint;
-import org.glowroot.common.Marshaling2;
+import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GaugeConfig;
 import org.glowroot.config.GaugeConfig.MBeanAttribute;
@@ -79,7 +79,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 class JvmJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(JvmJsonService.class);
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final Ordering<ThreadInfo> threadInfoOrdering =
             new Ordering<ThreadInfo>() {
@@ -157,7 +157,7 @@ class JvmJsonService {
             }
         }
         ImmutableList<Gauge> sortedGauges = Gauge.ordering.immutableSortedCopy(gauges);
-        return Marshaling2.toJson(sortedGauges, Gauge.class);
+        return mapper.writeValueAsString(sortedGauges);
     }
 
     @GET("/backend/jvm/mbean-tree")
@@ -264,7 +264,7 @@ class JvmJsonService {
 
     @POST("/backend/jvm/check-disk-space")
     String checkDiskSpace(String content) throws IOException {
-        RequestWithDirectory request = Marshaling.fromJson(content, RequestWithDirectory.class);
+        RequestWithDirectory request = mapper.readValue(content, RequestWithDirectory.class);
         File dir = new File(request.directory());
         if (!dir.exists()) {
             return "{\"error\": \"Directory doesn't exist\"}";
@@ -281,7 +281,7 @@ class JvmJsonService {
         // this command is filtered out of the UI when service is null
         HeapDumps service = checkNotNull(heapDumps.getService(),
                 "Heap dump service is not available: %s", heapDumps.getAvailability().getReason());
-        RequestWithDirectory request = Marshaling.fromJson(content, RequestWithDirectory.class);
+        RequestWithDirectory request = mapper.readValue(content, RequestWithDirectory.class);
         File dir = new File(request.directory());
         if (!dir.exists()) {
             return "{\"error\": \"Directory doesn't exist\"}";
@@ -554,7 +554,7 @@ class JvmJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonDeserialize(as = ImmutableGaugePointRequest.class)
     abstract static class GaugePointRequest {
         abstract long from();
         abstract long to();
@@ -563,7 +563,7 @@ class JvmJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutableGauge.class)
     public abstract static class Gauge {
 
         static final Ordering<Gauge> ordering = new Ordering<Gauge>() {
@@ -659,19 +659,19 @@ class JvmJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonDeserialize(as = ImmutableMBeanTreeRequest.class)
     abstract static class MBeanTreeRequest {
         abstract public List<String> expanded();
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonDeserialize(as = ImmutableMBeanAttributeMapRequest.class)
     abstract static class MBeanAttributeMapRequest {
         abstract String objectName();
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonDeserialize(as = ImmutableRequestWithDirectory.class)
     abstract static class RequestWithDirectory {
         abstract String directory();
     }

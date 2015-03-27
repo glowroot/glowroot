@@ -23,16 +23,18 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.io.CharSource;
-import org.immutables.value.Json;
 import org.immutables.value.Value;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.LazyHistogram;
+import org.glowroot.common.ObjectMappers;
 
 public class AggregateMerging {
 
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private AggregateMerging() {}
 
@@ -192,7 +194,8 @@ public class AggregateMerging {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutableThreadInfoAggregate.class)
+    @JsonDeserialize(as = ImmutableThreadInfoAggregate.class)
     public abstract static class ThreadInfoAggregate {
         abstract @Nullable Long totalCpuMicros();
         abstract @Nullable Long totalBlockedMicros();

@@ -24,7 +24,10 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -32,17 +35,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import org.immutables.common.marshal.Marshaling;
-import org.immutables.value.Json;
 import org.immutables.value.Value;
 
 import org.glowroot.api.weaving.MethodModifier;
-import org.glowroot.common.Marshaling2;
+import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ImmutableInstrumentationConfig;
 import org.glowroot.config.InstrumentationConfig;
 import org.glowroot.config.InstrumentationConfig.CaptureKind;
-import org.glowroot.config.MarshalingRoutines;
 import org.glowroot.local.ui.UiAnalyzedMethod.UiAnalyzedMethodOrdering;
 import org.glowroot.transaction.AdviceCache;
 import org.glowroot.transaction.TransactionModule;
@@ -54,7 +54,7 @@ import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
 @JsonService
 class InstrumentationJsonService {
 
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = ObjectMappers.create();
     private static final Splitter splitter = Splitter.on(' ').omitEmptyStrings();
 
     private final ConfigService configService;
@@ -78,7 +78,7 @@ class InstrumentationJsonService {
         for (InstrumentationConfig config : configs) {
             dtos.add(InstrumentationConfigDto.fromConfig(config));
         }
-        return Marshaling2.toJson(ImmutableInstrumentationListResponse.builder()
+        return mapper.writeValueAsString(ImmutableInstrumentationListResponse.builder()
                 .addAllConfigs(dtos)
                 .jvmOutOfSync(adviceCache.isOutOfSync(configService.getInstrumentationConfigs()))
                 .jvmRetransformClassesSupported(
@@ -87,14 +87,14 @@ class InstrumentationJsonService {
     }
 
     @GET("/backend/config/instrumentation/([0-9a-f]{40})")
-    String getInstrumentationConfig(String version) {
+    String getInstrumentationConfig(String version) throws JsonProcessingException {
         InstrumentationConfig config = configService.getInstrumentationConfig(version);
         if (config == null) {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
         }
         List<MethodSignature> methodSignatures =
                 getMethodSignatures(config.className(), config.methodName());
-        return Marshaling2.toJson(ImmutableInstrumentationConfigResponse.builder()
+        return mapper.writeValueAsString(ImmutableInstrumentationConfigResponse.builder()
                 .config(InstrumentationConfigDto.fromConfig(config))
                 .addAllMethodSignatures(methodSignatures)
                 .build());
@@ -139,13 +139,13 @@ class InstrumentationJsonService {
                 QueryStrings.decode(queryString, MethodSignaturesRequest.class);
         List<MethodSignature> methodSignatures =
                 getMethodSignatures(request.className(), request.methodName());
-        return Marshaling2.toJson(methodSignatures, MethodSignature.class);
+        return mapper.writeValueAsString(methodSignatures);
     }
 
     @POST("/backend/config/instrumentation/add")
     String addInstrumentationConfig(String content) throws Exception {
         InstrumentationConfigDto configDto =
-                Marshaling.fromJson(content, InstrumentationConfigDto.class);
+                mapper.readValue(content, InstrumentationConfigDto.class);
         InstrumentationConfig config = configDto.toConfig();
         String version = configService.insertInstrumentationConfig(config);
         return getInstrumentationConfig(version);
@@ -154,7 +154,7 @@ class InstrumentationJsonService {
     @POST("/backend/config/instrumentation/update")
     String updateInstrumentationConfig(String content) throws IOException {
         InstrumentationConfigDto configDto =
-                Marshaling.fromJson(content, InstrumentationConfigDto.class);
+                mapper.readValue(content, InstrumentationConfigDto.class);
         InstrumentationConfig config = configDto.toConfig();
         String version = configDto.version();
         checkNotNull(version, "Missing required request property: version");
@@ -244,13 +244,14 @@ class InstrumentationJsonService {
     }
 
     @Value.Immutable
+    @JsonDeserialize(as = ImmutableMethodSignaturesRequest.class)
     abstract static class MethodSignaturesRequest {
         abstract String className();
         abstract String methodName();
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutableMethodSignature.class)
     abstract static class MethodSignature {
         abstract String name();
         abstract List<String> parameterTypes();
@@ -259,45 +260,39 @@ class InstrumentationJsonService {
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutableInstrumentationListResponse.class)
     abstract static class InstrumentationListResponse {
-        @Json.ForceEmpty
         abstract List<InstrumentationConfigDto> configs();
         abstract boolean jvmOutOfSync();
         abstract boolean jvmRetransformClassesSupported();
     }
 
     @Value.Immutable
-    @Json.Marshaled
+    @JsonSerialize(as = ImmutableInstrumentationConfigResponse.class)
     abstract static class InstrumentationConfigResponse {
         abstract InstrumentationConfigDto config();
         abstract List<MethodSignature> methodSignatures();
     }
 
     @Value.Immutable
-    @Json.Marshaled
-    @Json.Import(MarshalingRoutines.class)
+    @JsonSerialize(as = ImmutableInstrumentationConfigDto.class)
+    @JsonDeserialize(as = ImmutableInstrumentationConfigDto.class)
     abstract static class InstrumentationConfigDto {
 
         abstract String className();
         abstract String methodName();
-        @Json.ForceEmpty
         abstract List<String> methodParameterTypes();
         abstract Optional<String> methodReturnType();
-        @Json.ForceEmpty
         abstract List<MethodModifier> methodModifiers();
         abstract CaptureKind captureKind();
         abstract Optional<String> timerName();
         abstract Optional<String> traceEntryTemplate();
-        @Json.ForceEmpty
         abstract @Nullable Long traceEntryStackThresholdMillis();
         abstract Optional<Boolean> traceEntryCaptureSelfNested();
         abstract Optional<String> transactionType();
         abstract Optional<String> transactionNameTemplate();
         abstract Optional<String> transactionUserTemplate();
-        @Json.ForceEmpty
         abstract Map<String, String> transactionCustomAttributeTemplates();
-        @Json.ForceEmpty
         abstract @Nullable Long traceStoreThresholdMillis();
         abstract Optional<String> enabledProperty();
         abstract Optional<String> traceEntryEnabledProperty();

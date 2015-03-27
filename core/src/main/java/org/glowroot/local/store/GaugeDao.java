@@ -43,7 +43,7 @@ public class GaugeDao {
     private static Logger logger = LoggerFactory.getLogger(GaugeDao.class);
 
     private static final ImmutableList<Column> gaugeColumns = ImmutableList.<Column>of(
-            ImmutableIdentityColumn.of("id", Types.BIGINT),
+            ImmutableColumn.of("id", Types.BIGINT).withIdentity(true),
             ImmutableColumn.of("name", Types.VARCHAR),
             ImmutableColumn.of("ever_increasing", Types.BOOLEAN));
 
