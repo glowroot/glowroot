@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
-# this is needed for low-entropy docker containers
-export MAVEN_OPTS=-Djava.security.egd=file:/dev/urandom
+# java.security.egd is needed for low-entropy docker containers
+surefire_jvm_args="-Xmx512m -Djava.security.egd=file:/dev/urandom"
 
 case "$1" in
 
@@ -11,22 +11,27 @@ case "$1" in
                if [[ "$GLOWROOT_UNSHADED" == "true" ]]
                then
                  mvn clean test -Dglowroot.test.harness=$GLOWROOT_HARNESS \
+                                -DargLine=$surefire_jvm_args \
                                 -B
                else
                  # using install instead of package for subsequent jdbc-plugin tests
                  mvn clean install -Dglowroot.test.harness=$GLOWROOT_HARNESS \
+                                   -DargLine=$surefire_jvm_args \
                                    -B
                  mvn clean test -pl plugins/jdbc-plugin \
                                 -Dglowroot.test.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=H2 \
+                                -DargLine=$surefire_jvm_args \
                                 -B
                  mvn clean test -pl plugins/jdbc-plugin \
                                 -Dglowroot.test.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=COMMONS_DBCP_WRAPPED \
+                                -DargLine=$surefire_jvm_args \
                                 -B
                  mvn clean test -pl plugins/jdbc-plugin \
                                 -Dglowroot.test.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=TOMCAT_JDBC_POOL_WRAPPED \
+                                -DargLine=$surefire_jvm_args \
                                 -B
                fi
                ;;
@@ -43,6 +48,7 @@ case "$1" in
                                   -Dglowroot.test.harness=local \
                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
                                   --settings misc/travis-build/settings.xml \
+                                  -DargLine=$surefire_jvm_args \
                                   -B
                else
                  # simulate the deploy step from above
@@ -50,11 +56,13 @@ case "$1" in
                                    -Dglowroot.shading.skip=true \
                                    -Dglowroot.test.harness=local \
                                    -Dglowroot.build.commit=$TRAVIS_COMMIT \
+                                   -DargLine=$surefire_jvm_args \
                                    -B
                fi
                # build shaded distribution zip which will be uploaded to s3 in travis-ci deploy step
                mvn clean install -Dglowroot.test.harness=local \
                                  -Dglowroot.build.commit=$TRAVIS_COMMIT \
+                                 -DargLine=$surefire_jvm_args \
                                  -B
                ;;
 
@@ -75,6 +83,7 @@ case "$1" in
                                  -Dglowroot.shading.skip=true \
                                  -Dglowroot.test.harness=javaagent \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
+                                 -DargLine=$surefire_jvm_args \
                                  -B
                  # also running integration-tests with local test harness to capture a couple methods
                  # exercised only by the local test harness
@@ -83,6 +92,7 @@ case "$1" in
                                  -Dglowroot.shading.skip=true \
                                  -Dglowroot.test.harness=local \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
+                                 -DargLine=$surefire_jvm_args \
                                  -B
                  # also running logger-plugin-tests with shading and javaagent in order to get
                  # code coverage for Slf4jTest and Slf4jMarkerTest
@@ -91,6 +101,7 @@ case "$1" in
                                  -pl plugin-api,core,plugins/logger-plugin-tests \
                                  -Dglowroot.test.harness=javaagent \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
+                                 -DargLine=$surefire_jvm_args \
                                  -B
 
                  # the sonar.jdbc.password system property is set in the pom.xml using the
@@ -103,6 +114,7 @@ case "$1" in
                                  -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \
                                  -Dsonar.host.url=$SONAR_HOST_URL \
                                  -Dsonar.jacoco.reportPath=$PWD/jacoco-combined.exec \
+                                 -DargLine=$surefire_jvm_args \
                                  -B
                else
                  echo skipping, sonar analysis only runs against master repository and master branch
@@ -118,6 +130,9 @@ case "$1" in
                  unzip $HOME/checker-framework.zip -d $HOME
                  # strip version from directory name
                  mv $HOME/checker-framework-* $HOME/checker-framework
+                 # need to limit memory of all JVM forks for travis docker build
+                 # see https://github.com/travis-ci/travis-ci/issues/3396
+                 sed -i 's#"java" "-jar" "${mydir}"/../dist/checker.jar#"java" "-Xmx512m" "-jar" "${mydir}"/../dist/checker.jar -J-Xmx512m#' $HOME/checker-framework/checker/bin/javac
                fi
 
                set +e
@@ -138,6 +153,7 @@ case "$1" in
                                  -Dchecker.install.dir=$HOME/checker-framework \
                                  -Dchecker.stubs.dir=$PWD/misc/checker-stubs \
                                  -Dglowroot.ui.skip=true \
+                                 -DargLine=$surefire_jvm_args \
                                  -B \
                                  | sed 's/\[ERROR\] .*[\/]\([^\/.]*\.java\):\[\([0-9]*\),\([0-9]*\)\]/[ERROR] (\1:\2) [column \3]/'
                # preserve exit status from mvn (needed because of pipe to sed)
@@ -160,6 +176,7 @@ case "$1" in
                                 -Dsaucelabs.device.orientation=$SAUCELABS_DEVICE_ORIENTATION \
                                 -Dsaucelabs.device.app=$SAUCELABS_DEVICE_APP \
                                 -Dsaucelabs.tunnel.identifier=$TRAVIS_JOB_NUMBER \
+                                -DargLine=$surefire_jvm_args \
                                 -B
                else
                  echo skipping, saucelabs only runs against master repository and master branch

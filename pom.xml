@@ -408,6 +408,13 @@
           <version>1.8.11</version>
           <optional>true</optional>
         </dependency>
+        <dependency>
+          <!-- not all modules have dependency on immutables (e.g. jdbc-plugin) but need it on
+            the classpath for the explicit annotation processing setup below -->
+          <groupId>org.immutables</groupId>
+          <artifactId>value</artifactId>
+          <version>2.0.1</version>
+        </dependency>
       </dependencies>
       <build>
         <plugins>

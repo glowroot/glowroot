@@ -18,7 +18,7 @@ matrix:
   include:
     - jdk: oraclejdk8
       env: TARGET=deploy
-    - jdk: oraclejdk7
+    - jdk: oraclejdk8
       env: TARGET=sonar
     - jdk: oraclejdk8
       env: TARGET=checker

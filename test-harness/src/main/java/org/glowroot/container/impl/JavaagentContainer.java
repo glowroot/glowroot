@@ -323,6 +323,12 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
         if (!useFileDb) {
             command.add("-Dglowroot.internal.h2.memdb=true");
         }
+        // this is used inside low-entropy docker containers
+        String sourceOfRandomness = System.getProperty("java.security.egd");
+        if (sourceOfRandomness != null) {
+            command.add("-Djava.security.egd=" + sourceOfRandomness);
+        }
+        command.add("-Xmx" + Runtime.getRuntime().maxMemory());
         for (Entry<Object, Object> entry : System.getProperties().entrySet()) {
             Object keyObject = entry.getKey();
             if (!(keyObject instanceof String)) {
