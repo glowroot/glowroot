@@ -17,6 +17,8 @@ package org.glowroot.collector;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableSetMultimap;
@@ -39,17 +41,22 @@ public abstract class Trace {
     public abstract String headline();
     public abstract @Nullable String error();
     public abstract @Nullable String user();
-    public abstract @Nullable String customAttributes(); // json data
-    public abstract @Nullable String customDetail(); // json data
-    public abstract @Nullable String timers(); // json data
+    @JsonRawValue
+    public abstract @Nullable String customAttributes();
+    @JsonRawValue
+    public abstract @Nullable String customDetail();
+    @JsonRawValue
+    public abstract @Nullable String timers();
     public abstract @Nullable Long threadCpuTime(); // nanoseconds
     public abstract @Nullable Long threadBlockedTime(); // nanoseconds
     public abstract @Nullable Long threadWaitedTime(); // nanoseconds
     public abstract @Nullable Long threadAllocatedBytes();
-    public abstract @Nullable String gcInfos(); // json data
+    @JsonRawValue
+    public abstract @Nullable String gcInfos();
     public abstract long entryCount();
     public abstract long profileSampleCount();
     abstract Existence entriesExistence();
     abstract Existence profileExistence();
+    @JsonIgnore
     public abstract ImmutableSetMultimap<String, String> customAttributesForIndexing();
 }

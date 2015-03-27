@@ -20,6 +20,7 @@ import java.sql.SQLException;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Iterables;
 import com.google.common.io.CharSource;
@@ -28,14 +29,16 @@ import org.glowroot.collector.EntriesCharSourceCreator;
 import org.glowroot.collector.ProfileCharSourceCreator;
 import org.glowroot.collector.Trace;
 import org.glowroot.collector.TraceCreator;
-import org.glowroot.collector.TraceWriter;
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
+import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.transaction.model.Transaction;
 
 class TraceCommonService {
+
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final TraceDao traceDao;
     private final TransactionRegistry transactionRegistry;
@@ -103,7 +106,7 @@ class TraceCommonService {
                 transactionCollectorImpl.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
                 Trace trace = createTrace(transaction);
-                return new TraceExport(trace, TraceWriter.toString(trace),
+                return new TraceExport(trace, mapper.writeValueAsString(trace),
                         createEntries(transaction), createProfile(transaction));
             }
         }
@@ -111,8 +114,8 @@ class TraceCommonService {
         if (trace == null) {
             return null;
         }
-        return new TraceExport(trace, TraceWriter.toString(trace), traceDao.readEntries(traceId),
-                traceDao.readProfile(traceId));
+        return new TraceExport(trace, mapper.writeValueAsString(trace),
+                traceDao.readEntries(traceId), traceDao.readProfile(traceId));
     }
 
     private Trace createTrace(Transaction transaction) throws IOException {

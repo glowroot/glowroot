@@ -17,6 +17,7 @@ package org.glowroot.collector;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -35,6 +36,7 @@ public abstract class Aggregate {
     public abstract @Nullable Long totalAllocatedBytes();
     public abstract long profileSampleCount();
     public abstract long traceCount();
+    @JsonRawValue
     public abstract String timers();
     public abstract byte[] histogram();
     public abstract @Nullable String profile();

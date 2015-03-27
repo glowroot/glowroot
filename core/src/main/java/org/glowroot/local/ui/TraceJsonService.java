@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,18 @@
  */
 package org.glowroot.local.ui;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.Trace;
-import org.glowroot.collector.TraceWriter;
+import org.glowroot.common.ObjectMappers;
 
 @JsonService
 class TraceJsonService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceJsonService.class);
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final TraceCommonService traceCommonService;
 
@@ -39,7 +41,7 @@ class TraceJsonService {
             logger.debug("no trace found for id: {}", id);
             return "{\"expired\":true}";
         } else {
-            return TraceWriter.toString(trace);
+            return mapper.writeValueAsString(trace);
         }
     }
 }
