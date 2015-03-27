@@ -11,7 +11,7 @@
 
   <groupId>org.glowroot</groupId>
   <artifactId>glowroot-parent</artifactId>
-  <version>0.5-SNAPSHOT</version>
+  <version>0.8-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Glowroot Parent Project</name>
@@ -376,7 +376,7 @@
                       plugins inherit this pom, ${project.version} is replaced by the plugin's
                       version -->
                     <resourceBundle>
-                      org.glowroot.misc:glowroot-license-resource-bundle:0.5-SNAPSHOT
+                      org.glowroot.misc:glowroot-license-resource-bundle:0.8-SNAPSHOT
                     </resourceBundle>
                   </resourceBundles>
                 </configuration>
