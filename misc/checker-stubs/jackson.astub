@@ -23,6 +23,7 @@ public class JsonNode {
 public class ObjectMapper {
     public <T extends @Nullable Object> T treeToValue(TreeNode n, Class<T> valueType);
     public <T extends @Nullable Object> T readValue(String content, Class<T> valueType);
+    public <T extends @Nullable Object> T readValue(String content, TypeReference valueTypeRef);
     public <T extends @Nullable Object> T readValue(File src, Class<T> valueType);
     public <T extends @Nullable Object> T convertValue(@Nullable Object fromValue,
             Class<T> toValueType);

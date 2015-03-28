@@ -143,6 +143,8 @@ public class ConfigTest extends WebDriverTest {
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getAdvancedLink().click();
+        // need to give angular view a chance to render
+        Thread.sleep(200);
 
         // when
         page.getTimerWrapperMethodsCheckBox().click();

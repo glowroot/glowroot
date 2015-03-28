@@ -165,12 +165,12 @@ public class TraceService {
         return traces;
     }
 
-    public @Nullable List<TraceEntry> getEntries(String traceId) throws Exception {
+    public List<TraceEntry> getEntries(String traceId) throws Exception {
         String content = httpClient.get("/backend/trace/entries?trace-id=" + traceId);
         return mapper.readValue(content, new TypeReference<List<TraceEntry>>() {});
     }
 
-    public @Nullable ProfileNode getProfile(String traceId) throws Exception {
+    public ProfileNode getProfile(String traceId) throws Exception {
         String content = httpClient.get("/backend/trace/profile?trace-id=" + traceId);
         return mapper.readValue(content, ProfileNode.class);
     }

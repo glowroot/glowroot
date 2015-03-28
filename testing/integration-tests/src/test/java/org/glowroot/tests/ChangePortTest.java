@@ -66,6 +66,8 @@ public class ChangePortTest {
         // when
         config.setPort(newPort);
         container.getConfigService().updateUserInterfaceConfig(config);
+        // give old port a second to fully close down
+        Thread.sleep(1000);
         // then
         boolean oldPortDead = false;
         try {

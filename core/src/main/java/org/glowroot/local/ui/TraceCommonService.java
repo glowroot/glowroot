@@ -133,8 +133,7 @@ class TraceCommonService {
     }
 
     private @Nullable CharSource createProfile(Transaction active) throws IOException {
-        return ProfileCharSourceCreator.createProfileCharSource(
-                active.getProfile());
+        return ProfileCharSourceCreator.createProfileCharSource(active.getProfile());
     }
 
     static class TraceExport {

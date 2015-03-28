@@ -34,6 +34,7 @@ import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.trace.ProfileNode;
 import org.glowroot.container.trace.Trace;
+import org.glowroot.container.trace.Trace.Existence;
 import org.glowroot.container.trace.TraceEntry;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -94,7 +95,7 @@ public class ActiveTraceTest {
         ProfileNode profile = null;
         while (stopwatch.elapsed(SECONDS) < 5) {
             trace = container.getTraceService().getActiveTrace(0, MILLISECONDS);
-            if (trace != null) {
+            if (trace != null && trace.getProfileExistence() == Existence.YES) {
                 profile = container.getTraceService().getProfile(trace.getId());
                 if (profile != null) {
                     break;
@@ -102,7 +103,17 @@ public class ActiveTraceTest {
             }
             Thread.sleep(10);
         }
-        // sleep once more to make sure trace gets into proper nested entry
+        if (stuckOnNonRoot) {
+            // wait for trace to get into nested timer
+            stopwatch = Stopwatch.createStarted();
+            while (stopwatch.elapsed(SECONDS) < 5) {
+                trace = container.getTraceService().getActiveTrace(0, MILLISECONDS);
+                if (!trace.getRootTimer().getNestedTimers().isEmpty()) {
+                    break;
+                }
+                Thread.sleep(10);
+            }
+        }
         Thread.sleep(20);
         trace = container.getTraceService().getActiveTrace(0, MILLISECONDS);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
