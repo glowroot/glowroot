@@ -45,23 +45,25 @@ public class HttpClient {
     }
 
     public String get(String path) throws Exception {
-        BoundRequestBuilder request = asyncHttpClient.prepareGet("http://localhost:" + port + path);
+        String url = "http://localhost:" + port + path;
+        BoundRequestBuilder request = asyncHttpClient.prepareGet(url);
         Response response = execute(request);
-        return validateAndReturnBody(response);
+        return validateAndReturnBody(response, url);
     }
 
     public InputStream getAsStream(String path) throws Exception {
-        BoundRequestBuilder request = asyncHttpClient.prepareGet("http://localhost:" + port + path);
+        String url = "http://localhost:" + port + path;
+        BoundRequestBuilder request = asyncHttpClient.prepareGet(url);
         Response response = execute(request);
-        return validateAndReturnBodyAsStream(response);
+        return validateAndReturnBodyAsStream(response, url);
     }
 
     public String post(String path, String data) throws Exception {
-        BoundRequestBuilder request =
-                asyncHttpClient.preparePost("http://localhost:" + port + path);
+        String url = "http://localhost:" + port + path;
+        BoundRequestBuilder request = asyncHttpClient.preparePost(url);
         request.setBody(data);
         Response response = execute(request);
-        return validateAndReturnBody(response);
+        return validateAndReturnBody(response, url);
     }
 
     public void close() {
@@ -94,21 +96,22 @@ public class HttpClient {
         }
     }
 
-    private static String validateAndReturnBody(Response response) throws Exception {
+    private static String validateAndReturnBody(Response response, String url) throws Exception {
         if (response.getStatusCode() == HttpResponseStatus.OK.code()) {
             return response.getResponseBody();
         } else {
-            throw new IllegalStateException("Unexpected HTTP status code returned: "
-                    + response.getStatusCode() + " (" + response.getStatusText() + ")");
+            throw new IllegalStateException("HTTP status code " + response.getStatusCode()
+                    + " was returned for url: " + url);
         }
     }
 
-    private static InputStream validateAndReturnBodyAsStream(Response response) throws Exception {
+    private static InputStream validateAndReturnBodyAsStream(Response response, String url)
+            throws Exception {
         if (response.getStatusCode() == HttpResponseStatus.OK.code()) {
             return response.getResponseBodyAsStream();
         } else {
-            throw new IllegalStateException("Unexpected HTTP status code returned: "
-                    + response.getStatusCode() + " (" + response.getStatusText() + ")");
+            throw new IllegalStateException("HTTP status code " + response.getStatusCode()
+                    + " was returned for url: " + url);
         }
     }
 
