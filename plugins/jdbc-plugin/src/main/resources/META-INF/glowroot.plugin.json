@@ -9,11 +9,7 @@
       "default": true,
       "label": "Bind parameters",
       "checkboxLabel": "Capture jdbc bind parameters",
-      "description": [
-        "Capture jdbc bind parameters for PreparedStatement executions. This is disabled by",
-        " default as it can cause Glowroot to capture potentially secure data, e.g. account",
-        " data being stored to an account table."
-      ]
+      "description": "Capture jdbc bind parameters for PreparedStatement executions. This is disabled by default as it can cause Glowroot to capture potentially secure data, e.g. account data being stored to an account table."
     },
     {
       "name": "captureResultSetNavigate",
@@ -21,13 +17,7 @@
       "default": true,
       "label": "ResultSet navigation",
       "checkboxLabel": "Capture timings for ResultSet navigation",
-      "description": [
-        "Capture timings for executions of ResultSet.next()/previous()/relative()/etc",
-        " to read the next record in a result set. This defaults to true since the timing for",
-        " this timer is a good indication of jdbc fetch size issues and database latency,",
-        " but it can be disabled if it is common to return millions of records and the overhead",
-        " of System.nanoTime() becomes relevant."
-      ]
+      "description": "Capture timings for executions of ResultSet.next()/previous()/relative()/etc to read the next record in a result set. This defaults to true since the timing for this timer is a good indication of jdbc fetch size issues and database latency, but it can be disabled if it is common to return millions of records and the overhead of System.nanoTime() becomes relevant."
     },
     {
       "name": "captureResultSetGet",
@@ -35,12 +25,7 @@
       "default": false,
       "label": "ResultSet values",
       "checkboxLabel": "Capture timings for ResultSet value retrieval",
-      "description": [
-        "Capture timings for executions of ResultSet.get*() to read the individual column",
-        " values out of a result set record. This defaults to false since the number of calls can",
-        " be excessive and generally ResultSet.next() captures more interesting info with less",
-        " overhead."
-      ]
+      "description": "Capture timings for executions of ResultSet.get*() to read the individual column values out of a result set record. This defaults to false since the number of calls can be excessive and generally ResultSet.next() captures more interesting info with less overhead."
     },
     {
       "name": "capturePreparedStatementCreation",
@@ -48,10 +33,7 @@
       "default": false,
       "label": "Prepared statement creation",
       "checkboxLabel": "Capture timings for Connection.prepare*()",
-      "description": [
-        "Capture timings for executions of Connection.prepareStatement() and",
-        " Connection.prepareCall()."
-      ]
+      "description": "Capture timings for executions of Connection.prepareStatement() and Connection.prepareCall()."
     },
     {
       "name": "captureStatementClose",
@@ -59,9 +41,7 @@
       "default": false,
       "label": "Statement close",
       "checkboxLabel": "Capture timings for Statement.close()",
-      "description": [
-        "Capture timings for executions of Statement.close()."
-      ]
+      "description": "Capture timings for executions of Statement.close()."
     },
     {
       "name": "captureTransactionLifecycleTraceEntries",
@@ -75,21 +55,14 @@
       "type": "boolean",
       "label": "Connection lifecycle",
       "checkboxLabel": "Capture trace entries for Connection opening and closing",
-      "description": [
-        "Capture trace entries for executions of DataSource.getConnection()",
-        " and Connection.close()"
-      ]
+      "description": "Capture trace entries for executions of DataSource.getConnection() and Connection.close()"
     },
     {
       "name": "stackTraceThresholdMillis",
       "type": "double",
       "default": 1000.0,
       "label": "Stack trace threshold (millis)",
-      "description": [
-        "Any jdbc call that exceeds this threshold will have a stack trace captured and attached",
-        " to it. An empty value will not collect any stack traces, a zero value will collect a",
-        " stack trace for every jdbc call."
-      ]
+      "description": "Any jdbc call that exceeds this threshold will have a stack trace captured and attached to it. An empty value will not collect any stack traces, a zero value will collect a stack trace for every jdbc call."
     }
   ],
   "aspects": [

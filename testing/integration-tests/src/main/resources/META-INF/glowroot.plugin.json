@@ -47,9 +47,7 @@
       "type": "boolean",
       "label": "LevelFive trace entries",
       "checkboxLabel": "Capture trace entries for LevelFive.call()",
-      "description": [
-        "LevelFive property above must be enabled also in order to capture trace entries."
-      ]
+      "description": "LevelFive property above must be enabled also in order to capture trace entries."
     },
     {
       "name": "anumber",

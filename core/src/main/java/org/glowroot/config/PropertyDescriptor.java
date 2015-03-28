@@ -45,8 +45,8 @@ public abstract class PropertyDescriptor {
         return "";
     }
     @Value.Default
-    public Multiline description() {
-        return Multiline.of("");
+    public String description() {
+        return "";
     }
 
     PropertyValue getValidatedNonNullDefaultValue() {

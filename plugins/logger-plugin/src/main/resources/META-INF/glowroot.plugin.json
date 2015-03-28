@@ -9,9 +9,7 @@
       "default": true,
       "label": "Error with throwable",
       "checkboxLabel": "Mark trace as error when an error is logged with a throwable",
-      "description": [
-        "Mark the entire trace as an error any time an error message is logged with a throwable."
-      ]
+      "description": "Mark the entire trace as an error any time an error message is logged with a throwable."
     },
     {
       "name": "traceErrorOnErrorWithoutThrowable",
@@ -19,9 +17,7 @@
       "default": false,
       "label": "Error without throwable",
       "checkboxLabel": "Mark trace as error when an error is logged without a throwable",
-      "description": [
-        "Mark the entire trace as an error any time an error message is logged without a throwable."
-      ]
+      "description": "Mark the entire trace as an error any time an error message is logged without a throwable."
     },
     {
       "name": "traceErrorOnWarningWithThrowable",
@@ -29,9 +25,7 @@
       "default": false,
       "label": "Warning with throwable",
       "checkboxLabel": "Mark trace as error when a warning is logged with a throwable",
-      "description": [
-        "Mark the entire trace as an error any time a warning message is logged with a throwable."
-      ]
+      "description": "Mark the entire trace as an error any time a warning message is logged with a throwable."
     },
     {
       "name": "traceErrorOnWarningWithoutThrowable",
@@ -39,10 +33,7 @@
       "default": false,
       "label": "Warning without throwable",
       "checkboxLabel": "Mark trace as error when a warning is logged without a throwable",
-      "description": [
-        "Mark the entire trace as an error any time a warning message is logged without a",
-        " throwable."
-      ]
+      "description": "Mark the entire trace as an error any time a warning message is logged without a throwable."
     }
   ],
   "aspects": [
