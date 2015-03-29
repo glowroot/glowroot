@@ -17,7 +17,6 @@ package org.glowroot.tests.webdriver;
 
 import java.util.List;
 
-import com.google.common.base.Stopwatch;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
@@ -30,7 +29,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.tests.webdriver.jvm.JvmSidebar;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.xpath;
 
 public class BasicSmokeTest extends WebDriverTest {
@@ -40,12 +38,10 @@ public class BasicSmokeTest extends WebDriverTest {
         GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
         generalConfig.setProfilingIntervalMillis(10);
         container.getConfigService().updateGeneralConfig(generalConfig);
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        // wait for some aggregation to occur
-        while (stopwatch.elapsed(SECONDS) < 2) {
-            container.executeAppUnderTest(JdbcServlet.class);
-            container.executeAppUnderTest(ErrorServlet.class);
-        }
+        container.executeAppUnderTest(JdbcServlet.class);
+        container.executeAppUnderTest(ErrorServlet.class);
+        // sleep for a bit to give glowroot aggregator time to process these requests
+        Thread.sleep(1000);
     }
 
     @Test

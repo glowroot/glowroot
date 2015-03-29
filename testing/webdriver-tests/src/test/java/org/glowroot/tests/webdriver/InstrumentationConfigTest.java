@@ -49,8 +49,6 @@ public class InstrumentationConfigTest extends WebDriverTest {
         configSidebar.getInstrumentationLink().click();
         Utils.withWait(driver, partialLinkText("org.glowroot.container.Container")).click();
         InstrumentationConfigPage configPage = new InstrumentationConfigPage(driver);
-        // need to give angular view a chance to render before assertions
-        Thread.sleep(100);
         assertThat(configPage.getClassNameTextField().getAttribute("value"))
                 .isEqualTo("org.glowroot.container.Container");
         assertThat(configPage.getMethodNameTextField().getAttribute("value"))
@@ -116,8 +114,6 @@ public class InstrumentationConfigTest extends WebDriverTest {
         configSidebar.getInstrumentationLink().click();
         Utils.withWait(driver, partialLinkText("org.glowroot.container.Container")).click();
         InstrumentationConfigPage configPage = new InstrumentationConfigPage(driver);
-        // need to give angular view a chance to render before assertions
-        Thread.sleep(100);
         assertThat(configPage.getClassNameTextField().getAttribute("value"))
                 .isEqualTo("org.glowroot.container.Container");
         assertThat(configPage.getMethodNameTextField().getAttribute("value"))
@@ -151,8 +147,6 @@ public class InstrumentationConfigTest extends WebDriverTest {
         configSidebar.getInstrumentationLink().click();
         Utils.withWait(driver, partialLinkText("org.glowroot.container.Container")).click();
         InstrumentationConfigPage configPage = new InstrumentationConfigPage(driver);
-        // need to give angular view a chance to render before assertions
-        Thread.sleep(100);
         assertThat(configPage.getClassNameTextField().getAttribute("value"))
                 .isEqualTo("org.glowroot.container.Container");
         assertThat(configPage.getMethodNameTextField().getAttribute("value"))

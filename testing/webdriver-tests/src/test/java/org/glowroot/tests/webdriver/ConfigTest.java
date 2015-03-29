@@ -16,8 +16,6 @@
 package org.glowroot.tests.webdriver;
 
 import org.junit.Test;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.glowroot.tests.webdriver.config.AdvancedConfigPage;
 import org.glowroot.tests.webdriver.config.ConfigSidebar;
@@ -50,8 +48,6 @@ public class ConfigTest extends WebDriverTest {
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
-        // need to give angular view a chance to render before assertions
-        Thread.sleep(200);
         assertThat(page.getEnabledSwitchOn().getAttribute("class").split(" "))
                 .doesNotContain("active");
         assertThat(page.getEnabledSwitchOff().getAttribute("class").split(" ")).contains("active");
@@ -79,18 +75,13 @@ public class ConfigTest extends WebDriverTest {
         page.getUserTextField().sendKeys("abc");
         page.getProfileIntervalTextField().clear();
         page.getProfileIntervalTextField().sendKeys("2345");
-        page.getSaveButton().click();
-        // wait for save to complete
-        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
-                ExpectedConditions.elementToBeClickable(page.getSaveButton())));
+        page.clickSaveButton();
 
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
         // user recording config is not accessible via config sidebar currently
         driver.navigate().to(userRecordingUrl);
-        // need to give angular view a chance to render before assertions
-        Thread.sleep(200);
         assertThat(page.getEnabledSwitchOn().getAttribute("class").split(" "))
                 .doesNotContain("active");
         assertThat(page.getEnabledSwitchOff().getAttribute("class").split(" ")).contains("active");
@@ -123,13 +114,9 @@ public class ConfigTest extends WebDriverTest {
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getStorageLink().click();
-        // need to give angular view a chance to render before assertions
-        Thread.sleep(200);
-        assertThat(page.getAggregateExpirationTextField().getAttribute("value"))
-                .isEqualTo("44");
+        assertThat(page.getAggregateExpirationTextField().getAttribute("value")).isEqualTo("44");
         assertThat(page.getTraceExpirationTextField().getAttribute("value")).isEqualTo("55");
-        assertThat(page.getCappedDatabaseSizeTextField().getAttribute("value"))
-                .isEqualTo("678");
+        assertThat(page.getCappedDatabaseSizeTextField().getAttribute("value")).isEqualTo("678");
     }
 
     @Test
@@ -143,8 +130,6 @@ public class ConfigTest extends WebDriverTest {
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getAdvancedLink().click();
-        // need to give angular view a chance to render
-        Thread.sleep(200);
 
         // when
         page.getTimerWrapperMethodsCheckBox().click();
@@ -166,8 +151,6 @@ public class ConfigTest extends WebDriverTest {
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getAdvancedLink().click();
-        // need to give angular view a chance to render before assertions
-        Thread.sleep(200);
         assertThat(page.getTimerWrapperMethodsCheckBox().isSelected()).isTrue();
         assertThat(page.getImmediatePartialStoreThresholdTextField().getAttribute("value"))
                 .isEqualTo("1234");
@@ -179,8 +162,7 @@ public class ConfigTest extends WebDriverTest {
         assertThat(page.getGcInfoCheckBox().isSelected()).isFalse();
         assertThat(page.getMBeanGaugeNotFoundDelayTextField().getAttribute("value"))
                 .isEqualTo("4567");
-        assertThat(page.getInternalQueryTimeoutTextField().getAttribute("value"))
-                .isEqualTo("5678");
+        assertThat(page.getInternalQueryTimeoutTextField().getAttribute("value")).isEqualTo("5678");
     }
 
     // TODO test servlet, jdbc and logger plugin config pages
