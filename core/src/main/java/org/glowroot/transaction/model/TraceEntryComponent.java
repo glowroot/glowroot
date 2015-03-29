@@ -40,7 +40,7 @@ class TraceEntryComponent {
     // not volatile, so depends on memory barrier in Transaction for visibility
     private long endTick;
 
-    private final TraceEntry rootTraceEntry;
+    private final TraceEntry rootEntry;
 
     @Nullable
     private TraceEntry activeEntry;
@@ -49,7 +49,7 @@ class TraceEntryComponent {
 
     // entries.size() is accessed a lot, but only by transaction thread, so storing size separately
     // so it can be accessed without synchronization
-    private int entriesSize;
+    private int entryCount;
 
     // this doesn't need to be volatile since it is only accessed by the transaction thread
     private boolean entryLimitExceeded;
@@ -60,19 +60,19 @@ class TraceEntryComponent {
             Ticker ticker) {
         this.startTick = startTick;
         this.ticker = ticker;
-        rootTraceEntry = new TraceEntry(null, messageSupplier, startTick, 0, timer);
-        activeEntry = rootTraceEntry;
-        tailEntry = rootTraceEntry;
-        entriesSize++;
+        rootEntry = new TraceEntry(null, messageSupplier, startTick, -1, timer);
+        activeEntry = rootEntry;
+        tailEntry = rootEntry;
     }
 
-    TraceEntry getRootTraceEntry() {
-        return rootTraceEntry;
+    TraceEntry getRootEntry() {
+        return rootEntry;
     }
 
+    // this does not include root trace entry
     List<TraceEntry> getEntriesCopy() {
         List<TraceEntry> entries = Lists.newArrayList();
-        TraceEntry entry = rootTraceEntry;
+        TraceEntry entry = rootEntry.getNextTraceEntry();
         while (entry != null) {
             entries.add(entry);
             entry = entry.getNextTraceEntry();
@@ -80,8 +80,9 @@ class TraceEntryComponent {
         return entries;
     }
 
-    int getSize() {
-        return entriesSize;
+    // this does not include root trace entry
+    int getEntryCount() {
+        return entryCount;
     }
 
     long getStartTick() {
@@ -106,7 +107,7 @@ class TraceEntryComponent {
         tailEntry.setNextTraceEntry(entry);
         tailEntry = entry;
         activeEntry = entry;
-        entriesSize++;
+        entryCount++;
         return entry;
     }
 
@@ -129,7 +130,7 @@ class TraceEntryComponent {
                 createEntry(startTick, messageSupplier, errorMessage, null, limitBypassed);
         tailEntry.setNextTraceEntry(entry);
         tailEntry = entry;
-        entriesSize++;
+        entryCount++;
         entry.setEndTick(endTick);
         return entry;
     }
@@ -142,7 +143,7 @@ class TraceEntryComponent {
         TraceEntry entry = TraceEntry.getLimitExceededMarker();
         tailEntry.setNextTraceEntry(entry);
         tailEntry = entry;
-        entriesSize++;
+        entryCount++;
     }
 
     private TraceEntry createEntry(long startTick, @Nullable MessageSupplier messageSupplier,
@@ -156,7 +157,7 @@ class TraceEntryComponent {
             TraceEntry entry = TraceEntry.getLimitExtendedMarker();
             tailEntry.setNextTraceEntry(entry);
             tailEntry = entry;
-            entriesSize++;
+            entryCount++;
         }
         int nestingLevel;
         if (entryLimitExceeded && limitBypassed) {

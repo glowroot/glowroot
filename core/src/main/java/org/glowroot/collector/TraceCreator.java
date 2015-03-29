@@ -29,6 +29,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.io.CharStreams;
 
+import org.glowroot.api.internal.ReadableErrorMessage;
+import org.glowroot.api.internal.ThrowableInfo;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.transaction.model.GcInfoComponent.GcInfo;
 import org.glowroot.transaction.model.ThreadInfoComponent.ThreadInfoData;
@@ -68,17 +70,23 @@ public class TraceCreator {
         builder.id(transaction.getId());
         builder.active(active);
         builder.partial(partial);
+        ReadableErrorMessage errorMessage = transaction.getErrorMessage();
+        builder.error(errorMessage != null);
         builder.startTime(transaction.getStartTime());
         builder.captureTime(captureTime);
         builder.duration(captureTick - transaction.getStartTick());
         builder.transactionType(transaction.getTransactionType());
         builder.transactionName(transaction.getTransactionName());
         builder.headline(transaction.getHeadline());
-        builder.error(transaction.getError());
         builder.user(transaction.getUser());
-        builder.customAttributes(writeCustomAttributesAsString(transaction.getCustomAttributes()));
-        builder.customAttributesForIndexing(transaction.getCustomAttributes());
+        ImmutableSetMultimap<String, String> customAttributes = transaction.getCustomAttributes();
+        builder.customAttributes(writeCustomAttributesAsString(customAttributes));
+        builder.customAttributesForIndexing(customAttributes);
         builder.customDetail(writeCustomDetailAsString(transaction.getCustomDetail()));
+        if (errorMessage != null) {
+            builder.errorMessage(errorMessage.getMessage());
+            builder.errorThrowable(writeExceptionAsString(errorMessage.getThrowable()));
+        }
         builder.timers(writeTimersAsString(transaction.getRootTimer()));
         ThreadInfoData threadInfo = transaction.getThreadInfo();
         if (threadInfo != null) {
@@ -123,13 +131,25 @@ public class TraceCreator {
     }
 
     private static @Nullable String writeCustomDetailAsString(
-            Map<String, ? extends /*@Nullable*/Object> customDetail) throws IOException {
-        if (customDetail == null) {
+            Map<String, ? extends /*@Nullable*/Object> detail) throws IOException {
+        if (detail == null) {
             return null;
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        new DetailMapWriter(jg).write(customDetail);
+        new DetailMapWriter(jg).write(detail);
+        jg.close();
+        return sb.toString();
+    }
+
+    private static @Nullable String writeExceptionAsString(@Nullable ThrowableInfo exception)
+            throws IOException {
+        if (exception == null) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
+        EntriesCharSourceCreator.writeThrowable(exception, jg);
         jg.close();
         return sb.toString();
     }

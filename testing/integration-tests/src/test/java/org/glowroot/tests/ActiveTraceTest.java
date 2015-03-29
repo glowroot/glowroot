@@ -116,16 +116,16 @@ public class ActiveTraceTest {
         }
         Thread.sleep(20);
         trace = container.getTraceService().getActiveTrace(0, MILLISECONDS);
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace).isNotNull();
         assertThat(trace.isActive()).isTrue();
         assertThat(trace.isPartial()).isFalse();
         assertThat(trace.getRootTimer().isMaxActive()).isTrue();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         if (stuckOnNonRoot) {
             assertThat(trace.getRootTimer().getNestedTimers().get(0).isMaxActive()).isTrue();
-            assertThat(entries).hasSize(3);
+            assertThat(entries).hasSize(2);
         } else {
-            assertThat(entries).hasSize(1);
+            assertThat(entries).isEmpty();
         }
         assertThat(profile).isNotNull();
         // interrupt trace

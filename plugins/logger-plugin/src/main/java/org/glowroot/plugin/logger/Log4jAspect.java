@@ -53,7 +53,7 @@ public class Log4jAspect {
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
-                pluginServices.setTransactionError(String.valueOf(message));
+                pluginServices.setTransactionError(String.valueOf(message), null);
             }
             return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, String.valueOf(message)),
@@ -84,7 +84,7 @@ public class Log4jAspect {
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), t != null)) {
-                pluginServices.setTransactionError(String.valueOf(message));
+                pluginServices.setTransactionError(String.valueOf(message), t);
             }
             return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, String.valueOf(message)),
@@ -128,7 +128,7 @@ public class Log4jAspect {
             LoggerPlugin.inAdvice(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), false)) {
-                pluginServices.setTransactionError(String.valueOf(message));
+                pluginServices.setTransactionError(String.valueOf(message), null);
             }
             return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", level, String.valueOf(message)),
@@ -168,7 +168,7 @@ public class Log4jAspect {
             LoggerPlugin.inAdvice(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), t != null)) {
-                pluginServices.setTransactionError(String.valueOf(message));
+                pluginServices.setTransactionError(String.valueOf(message), t);
             }
             return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", level, String.valueOf(message)),
@@ -214,7 +214,7 @@ public class Log4jAspect {
             LoggerPlugin.inAdvice(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), t != null)) {
-                pluginServices.setTransactionError(key);
+                pluginServices.setTransactionError(key, t);
             }
             return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {} (localized): {}", level, key), timerName);
@@ -260,7 +260,7 @@ public class Log4jAspect {
             LoggerPlugin.inAdvice(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), t != null)) {
-                pluginServices.setTransactionError(key);
+                pluginServices.setTransactionError(key, t);
             }
             if (params != null && params.length > 0) {
                 StringBuilder sb = new StringBuilder();

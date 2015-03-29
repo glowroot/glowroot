@@ -118,9 +118,7 @@ public class LevelOneAspect {
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler TraceEntry traceEntry) {
-            Map<String, ?> detail = ImmutableMap.of("erra", Optional.absent(), "errb",
-                    ImmutableMap.of("errc", Optional.absent(), "errd", "xyz"));
-            traceEntry.endWithError(ErrorMessage.withDetail(t, detail));
+            traceEntry.endWithError(ErrorMessage.from(t));
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ public class JdbcDriverTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo("major version");
+        assertThat(entries.get(0).getMessage().getText()).isEqualTo("major version");
     }
 
     public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest, TraceMarker {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package org.glowroot.container.trace;
 
-import java.util.Map;
-
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -24,37 +22,37 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.MoreObjects;
 
-import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
+public class ErrorMessage {
 
-public class ErrorMessage extends Message {
+    private final @Nullable String message;
+    private final @Nullable ThrowableInfo throwable;
 
-    private final @Nullable ExceptionInfo exception;
-
-    private ErrorMessage(@Nullable String text, Map<String, /*@Nullable*/Object> detail,
-            @Nullable ExceptionInfo exception) {
-        super(text, detail);
-        this.exception = exception;
+    private ErrorMessage(@Nullable String message, @Nullable ThrowableInfo throwable) {
+        this.message = message;
+        this.throwable = throwable;
     }
 
-    public @Nullable ExceptionInfo getException() {
-        return exception;
+    public @Nullable String getMessage() {
+        return message;
+    }
+
+    public @Nullable ThrowableInfo getThrowable() {
+        return throwable;
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("text", getText())
-                .add("detail", getDetail())
-                .add("exception", exception)
+                .add("message", message)
+                .add("throwable", throwable)
                 .toString();
     }
 
     @JsonCreator
     static ErrorMessage readValue(
-            @JsonProperty("text") @Nullable String text,
-            @JsonProperty("detail") @Nullable Map<String, /*@Nullable*/Object> detail,
-            @JsonProperty("exception") @Nullable ExceptionInfo exception)
+            @JsonProperty("message") @Nullable String message,
+            @JsonProperty("throwable") @Nullable ThrowableInfo throwable)
             throws JsonMappingException {
-        return new ErrorMessage(text, nullToEmpty(detail), exception);
+        return new ErrorMessage(message, throwable);
     }
 }

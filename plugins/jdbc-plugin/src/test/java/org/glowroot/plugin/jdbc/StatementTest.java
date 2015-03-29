@@ -64,9 +64,9 @@ public class StatementTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee => 3 rows");
     }
 
@@ -78,7 +78,7 @@ public class StatementTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
+        assertThat(entries).isEmpty();
     }
 
     @Test
@@ -89,11 +89,11 @@ public class StatementTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee");
-        assertThat(jdbcEntry.getError().getText()).isEqualTo(
+        assertThat(entry.getError().getMessage()).isEqualTo(
                 "java.sql.SQLException: An execute failure");
     }
 
@@ -105,9 +105,9 @@ public class StatementTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee => 3 rows");
     }
 
@@ -119,9 +119,9 @@ public class StatementTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee => 3 rows");
     }
 
@@ -133,9 +133,9 @@ public class StatementTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee => 3 rows");
     }
 
@@ -147,9 +147,9 @@ public class StatementTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee => 2 rows");
     }
 
@@ -161,9 +161,9 @@ public class StatementTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee => 1 row");
     }
 
@@ -175,9 +175,9 @@ public class StatementTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee => 3 rows");
     }
 

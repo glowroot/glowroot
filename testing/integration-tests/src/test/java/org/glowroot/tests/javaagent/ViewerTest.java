@@ -52,14 +52,12 @@ public class ViewerTest {
         try {
             assertThat(trace.getHeadline()).isEqualTo("Level One");
             assertThat(trace.getTransactionName()).isEqualTo("basic test");
-            assertThat(entries).hasSize(4);
-            TraceEntry entry1 = entries.get(0);
-            assertThat(entry1.getMessage().getText()).isEqualTo("Level One");
-            TraceEntry entry2 = entries.get(1);
+            assertThat(entries).hasSize(3);
+            TraceEntry entry2 = entries.get(0);
             assertThat(entry2.getMessage().getText()).isEqualTo("Level Two");
-            TraceEntry entry3 = entries.get(2);
+            TraceEntry entry3 = entries.get(1);
             assertThat(entry3.getMessage().getText()).isEqualTo("Level Three");
-            TraceEntry entry4 = entries.get(3);
+            TraceEntry entry4 = entries.get(2);
             assertThat(entry4.getMessage().getText()).isEqualTo("Level Four: axy, bxy");
         } finally {
             // cleanup

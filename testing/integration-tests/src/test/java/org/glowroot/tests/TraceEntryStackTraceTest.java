@@ -66,8 +66,8 @@ public class TraceEntryStackTraceTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithTraceEntryStackTrace.class);
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        List<String> stackTrace = entries.get(1).getStackTrace();
+        assertThat(entries).hasSize(1);
+        List<String> stackTrace = entries.get(0).getStackTrace();
         assertThat(stackTrace).isNotEmpty();
         assertThat(stackTrace.get(0)).startsWith(Pause.class.getName()
                 + ".pauseOneMillisecond(" + Pause.class.getSimpleName() + ".java:");

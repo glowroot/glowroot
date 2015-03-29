@@ -35,6 +35,21 @@
   <span class="gt-bold">Transaction name:</span>
   {{transactionName}}
 </div>
+{{#if error}}
+  <div class="gt-break-word gt-second-line-indent">
+    <span class="gt-bold">Error:</span>
+    {{errorMessage}}
+  </div>
+  {{#if errorThrowable}}
+    <div class="gt-trace-exception-indent">
+      <span class="gt-inline-block gt-unexpanded-content gt-link-color">exception</span>
+      {{! using span so background will stretch beyond page border if needed }}
+      <span class="gt-inline-block gt-expanded-content gt-nowrap hide">
+        {{{exceptionHtml errorThrowable}}}
+      </span>
+    </div>
+  {{/if}}
+{{/if}}
 <div>
   <span class="gt-bold">Start:</span>
   {{date startTime}}
@@ -43,12 +58,6 @@
   <span class="gt-bold">Duration:</span>
   {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds
 </div>
-{{#if error}}
-  <div class="gt-break-word gt-second-line-indent">
-    <span class="gt-bold">Error:</span>
-    {{error}}
-  </div>
-{{/if}}
 {{#if user}}
   <div class="gt-break-word gt-second-line-indent">
     <span class="gt-bold">User:</span>

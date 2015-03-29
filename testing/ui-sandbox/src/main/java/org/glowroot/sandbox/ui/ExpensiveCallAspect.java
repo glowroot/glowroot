@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableMap;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.Optional;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
@@ -335,21 +334,16 @@ public class ExpensiveCallAspect {
     private static void onAfterInternal(TraceEntry traceEntry, int num) {
         double value = random.nextDouble();
         if (traceEntry == null) {
-            if (value < 0.33) {
+            if (value < 0.5) {
                 pluginServices.addTraceEntry(ErrorMessage.from(
                         new IllegalStateException("Exception in execute" + num
                                 + ", with no trace entry text and no custom error message",
                                 getRandomCause())));
-            } else if (value < 0.67) {
+            } else {
                 pluginServices.addTraceEntry(ErrorMessage.from(
                         "randomized error with no trace entry text",
                         new IllegalStateException("Exception in execute" + num
                                 + ", with no trace entry text", getRandomCause())));
-            } else {
-                pluginServices.addTraceEntry(ErrorMessage.withDetail(
-                        "randomized error with no trace entry text, with detail map",
-                        new IllegalStateException("Exception in execute" + num, getRandomCause()),
-                        ImmutableMap.of("x", Optional.absent(), "y", "a non-null value")));
             }
             return;
         }
@@ -359,14 +353,9 @@ public class ExpensiveCallAspect {
             traceEntry.endWithError(ErrorMessage.from(
                     new IllegalStateException("Exception in execute" + num
                             + ", with no custom error message", getRandomCause())));
-        } else if (value < 0.98) {
+        } else {
             traceEntry.endWithError(ErrorMessage.from("randomized error",
                     new IllegalStateException("Exception in execute" + num, getRandomCause())));
-        } else {
-            // add detail map to half of randomized errors
-            traceEntry.endWithError(ErrorMessage.withDetail("randomized error with detail map",
-                    new IllegalStateException("Exception in execute" + num, getRandomCause()),
-                    ImmutableMap.of("x", Optional.absent(), "y", "a non-null value")));
         }
     }
 

@@ -66,10 +66,10 @@ public class ConnectionAndTxLifecycleTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        TraceEntry entry1 = entries.get(1);
+        assertThat(entries).hasSize(2);
+        TraceEntry entry1 = entries.get(0);
         assertThat(entry1.getMessage().getText()).isEqualTo("jdbc get connection");
-        TraceEntry entry2 = entries.get(2);
+        TraceEntry entry2 = entries.get(1);
         assertThat(entry2.getMessage().getText()).isEqualTo("jdbc connection close");
     }
 
@@ -80,10 +80,10 @@ public class ConnectionAndTxLifecycleTest {
         container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
         assertThat(trace.getRootTimer().getNestedTimerNames()).contains("jdbc get connection");
         assertThat(trace.getRootTimer().getNestedTimerNames()).contains("jdbc connection close");
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).isEmpty();
     }
 
     @Test
@@ -96,10 +96,10 @@ public class ConnectionAndTxLifecycleTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry entry1 = entries.get(1);
-        assertThat(entry1.getMessage().getText()).isEqualTo("jdbc get connection");
-        assertThat(entry1.getError().getText()).isEqualTo(
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getText()).isEqualTo("jdbc get connection");
+        assertThat(entry.getError().getMessage()).isEqualTo(
                 "java.sql.SQLException: A getconnection failure");
     }
 
@@ -110,11 +110,11 @@ public class ConnectionAndTxLifecycleTest {
         container.executeAppUnderTest(ExecuteGetConnectionOnThrowingDataSource.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
         assertThat(trace.getRootTimer().getNestedTimerNames()).contains("jdbc get connection");
         assertThat(trace.getRootTimer().getNestedTimerNames()).doesNotContain(
                 "jdbc connection close");
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).isEmpty();
     }
 
     @Test
@@ -127,12 +127,13 @@ public class ConnectionAndTxLifecycleTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        TraceEntry entry1 = entries.get(1);
+        assertThat(entries).hasSize(2);
+        TraceEntry entry1 = entries.get(0);
         assertThat(entry1.getMessage().getText()).isEqualTo("jdbc get connection");
-        TraceEntry entry2 = entries.get(2);
+        TraceEntry entry2 = entries.get(1);
         assertThat(entry2.getMessage().getText()).isEqualTo("jdbc connection close");
-        assertThat(entry2.getError().getText()).isEqualTo("java.sql.SQLException: A close failure");
+        assertThat(entry2.getError().getMessage()).isEqualTo(
+                "java.sql.SQLException: A close failure");
     }
 
     @Test
@@ -142,10 +143,10 @@ public class ConnectionAndTxLifecycleTest {
         container.executeAppUnderTest(ExecuteCloseConnectionOnThrowingDataSource.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
         assertThat(trace.getRootTimer().getNestedTimerNames()).contains("jdbc get connection");
         assertThat(trace.getRootTimer().getNestedTimerNames()).contains("jdbc connection close");
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).isEmpty();
     }
 
     @Test
@@ -158,13 +159,13 @@ public class ConnectionAndTxLifecycleTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries.size()).isBetween(3, 4);
-        TraceEntry entry1 = entries.get(1);
+        assertThat(entries.size()).isBetween(2, 3);
+        TraceEntry entry1 = entries.get(0);
         assertThat(entry1.getMessage().getText()).isEqualTo("jdbc set autocommit: false");
-        TraceEntry entry2 = entries.get(2);
+        TraceEntry entry2 = entries.get(1);
         assertThat(entry2.getMessage().getText()).isEqualTo("jdbc set autocommit: true");
-        if (entries.size() == 4) {
-            TraceEntry entry3 = entries.get(3);
+        if (entries.size() == 3) {
+            TraceEntry entry3 = entries.get(2);
             assertThat(entry3.getMessage().getText()).isEqualTo("jdbc commit");
         }
     }
@@ -179,14 +180,14 @@ public class ConnectionAndTxLifecycleTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        TraceEntry entry1 = entries.get(1);
+        assertThat(entries).hasSize(2);
+        TraceEntry entry1 = entries.get(0);
         assertThat(entry1.getMessage().getText()).isEqualTo("jdbc set autocommit: false");
-        assertThat(entry1.getError().getText()).isEqualTo(
+        assertThat(entry1.getError().getMessage()).isEqualTo(
                 "java.sql.SQLException: A setautocommit failure");
-        TraceEntry entry2 = entries.get(2);
+        TraceEntry entry2 = entries.get(1);
         assertThat(entry2.getMessage().getText()).isEqualTo("jdbc set autocommit: true");
-        assertThat(entry2.getError().getText()).isEqualTo(
+        assertThat(entry2.getError().getMessage()).isEqualTo(
                 "java.sql.SQLException: A setautocommit failure");
     }
 
@@ -202,9 +203,9 @@ public class ConnectionAndTxLifecycleTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        TraceEntry entry1 = entries.get(1);
-        assertThat(entry1.getMessage().getText())
+        assertThat(entries).hasSize(2);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getText())
                 .isEqualTo("jdbc get connection (autocommit: true)");
     }
 

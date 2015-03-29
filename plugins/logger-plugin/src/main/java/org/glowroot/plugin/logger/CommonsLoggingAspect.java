@@ -50,7 +50,7 @@ public class CommonsLoggingAspect {
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
-                pluginServices.setTransactionError(String.valueOf(message));
+                pluginServices.setTransactionError(String.valueOf(message), null);
             }
             return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, String.valueOf(message)),
@@ -80,7 +80,7 @@ public class CommonsLoggingAspect {
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), t != null)) {
-                pluginServices.setTransactionError(String.valueOf(message));
+                pluginServices.setTransactionError(String.valueOf(message), t);
             }
             return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, String.valueOf(message)),

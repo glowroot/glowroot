@@ -34,7 +34,6 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.glowroot.Containers;
 import org.glowroot.container.Container;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -68,12 +67,9 @@ public class RequestHeaderTest {
         container.executeAppUnderTest(SetStandardRequestHeaders.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) entry.getMessage().getDetail().get("Request headers");
+                (Map<String, Object>) trace.getCustomDetail().get("Request headers");
         assertThat(requestHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(requestHeaders.get("Content-Length")).isEqualTo("1");
         assertThat(requestHeaders.get("Extra")).isNull();
@@ -88,12 +84,9 @@ public class RequestHeaderTest {
         container.executeAppUnderTest(SetStandardRequestHeadersLowercase.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) entry.getMessage().getDetail().get("Request headers");
+                (Map<String, Object>) trace.getCustomDetail().get("Request headers");
         assertThat(requestHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(requestHeaders.get("content-length")).isEqualTo("1");
         assertThat(requestHeaders.get("extra")).isNull();
@@ -108,12 +101,9 @@ public class RequestHeaderTest {
         container.executeAppUnderTest(SetOtherRequestHeaders.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) entry.getMessage().getDetail().get("Request headers");
+                (Map<String, Object>) trace.getCustomDetail().get("Request headers");
         @SuppressWarnings("unchecked")
         List<String> one = (List<String>) requestHeaders.get("One");
         assertThat(one).containsExactly("ab", "xy");
@@ -130,12 +120,9 @@ public class RequestHeaderTest {
         container.executeAppUnderTest(GetBadRequestHeaders.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) entry.getMessage().getDetail().get("Request headers");
+                (Map<String, Object>) trace.getCustomDetail().get("Request headers");
         assertThat(requestHeaders).isNull();
     }
 
@@ -148,12 +135,9 @@ public class RequestHeaderTest {
         container.executeAppUnderTest(GetBadRequestHeaders2.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) entry.getMessage().getDetail().get("Request headers");
+                (Map<String, Object>) trace.getCustomDetail().get("Request headers");
         assertThat(requestHeaders).hasSize(1);
         assertThat(requestHeaders.get("h1")).isEqualTo("");
     }

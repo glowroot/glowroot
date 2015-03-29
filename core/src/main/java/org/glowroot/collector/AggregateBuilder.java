@@ -64,7 +64,7 @@ class AggregateBuilder {
     void add(Transaction transaction) {
         long durationMicros = NANOSECONDS.toMicros(transaction.getDuration());
         totalMicros += durationMicros;
-        if (transaction.getError() != null) {
+        if (transaction.getErrorMessage() != null) {
             errorCount++;
         }
         if (transaction.willBeStored()) {

@@ -57,12 +57,12 @@ public class PluginConfiguredInstrumentationTest {
         container.executeAppUnderTest(ShouldExecuteAAA.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
         assertThat(trace.getTransactionName()).isEqualTo("abc zzz");
         assertThat(trace.getUser()).isEqualTo("uzzz");
         assertThat(trace.getCustomAttributes().get("View")).containsExactly("vabc");
         assertThat(trace.getCustomAttributes().get("Z")).containsExactly("zabc");
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).isEmpty();
     }
 
     public static class ShouldExecuteAAA implements AppUnderTest, TraceMarker {

@@ -27,9 +27,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharSource;
 
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.internal.ExceptionInfo;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
+import org.glowroot.api.internal.ThrowableInfo;
 import org.glowroot.common.Tickers;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.Profile.StackTraceElementPlus;
@@ -44,6 +44,20 @@ public class EntriesCharSourceCreator {
     public static CharSource createEntriesCharSource(List<TraceEntry> entries,
             long transactionStartTick, long captureTick) {
         return new EntriesCharSource(entries, transactionStartTick, captureTick);
+    }
+
+    static void writeThrowable(ThrowableInfo exception, JsonGenerator jg) throws IOException {
+        jg.writeStartObject();
+        jg.writeStringField("display", exception.display());
+        jg.writeFieldName("stackTrace");
+        writeStackTrace(exception.stackTrace(), jg);
+        jg.writeNumberField("framesInCommonWithCaused", exception.framesInCommonWithCaused());
+        ThrowableInfo cause = exception.cause();
+        if (cause != null) {
+            jg.writeFieldName("cause");
+            writeThrowable(cause, jg);
+        }
+        jg.writeEndObject();
     }
 
     private static void writeStackTrace(List<StackTraceElement> stackTrace, JsonGenerator jw)
@@ -84,6 +98,7 @@ public class EntriesCharSourceCreator {
         private final JsonGenerator jg;
 
         private int writerIndex;
+        private boolean closed;
 
         private EntriesReader(List<TraceEntry> entries, long transactionStartTick, long captureTick)
                 throws IOException {
@@ -104,18 +119,20 @@ public class EntriesCharSourceCreator {
                 writerIndex += nChars;
                 return nChars;
             }
-            // need to add another entry to writer
             if (!entries.hasNext()) {
-                return -1;
+                if (closed) {
+                    return -1;
+                }
+                jg.writeEndArray();
+                jg.close();
+                closed = true;
+                return read(cbuf, off, len);
             }
+            // need to add another entry to the writer
             writer.reset();
             writerIndex = 0;
             // note it is possible for writeEntry() to not write anything
             writeEntry(entries.next());
-            if (!entries.hasNext()) {
-                jg.writeEndArray();
-                jg.close();
-            }
             // now go back and read the new data
             return read(cbuf, off, len);
         }
@@ -196,31 +213,11 @@ public class EntriesCharSourceCreator {
 
         private void writeErrorMessage(ReadableErrorMessage errorMessage) throws IOException {
             jg.writeStartObject();
-            jg.writeStringField("text", errorMessage.getText());
-            Map<String, ? extends /*@Nullable*/Object> errorDetail = errorMessage.getDetail();
-            if (!errorDetail.isEmpty()) {
-                jg.writeFieldName("detail");
-                new DetailMapWriter(jg).write(errorDetail);
-            }
-            ExceptionInfo exception = errorMessage.getExceptionInfo();
-            if (exception != null) {
-                jg.writeFieldName("exception");
-                writeException(exception, jg);
-            }
-            jg.writeEndObject();
-        }
-
-        private void writeException(ExceptionInfo exception, JsonGenerator jg) throws IOException {
-            jg.writeStartObject();
-            jg.writeStringField("display", exception.display());
-            jg.writeFieldName("stackTrace");
-            writeStackTrace(exception.stackTrace(), jg);
-            jg.writeNumberField("framesInCommonWithCaused",
-                    exception.framesInCommonWithCaused());
-            ExceptionInfo cause = exception.cause();
-            if (cause != null) {
-                jg.writeFieldName("cause");
-                writeException(cause, jg);
+            jg.writeStringField("message", errorMessage.getMessage());
+            ThrowableInfo throwable = errorMessage.getThrowable();
+            if (throwable != null) {
+                jg.writeFieldName("throwable");
+                writeThrowable(throwable, jg);
             }
             jg.writeEndObject();
         }

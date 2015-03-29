@@ -35,6 +35,7 @@ class TraceTestData {
                 .id("abc" + counter.getAndIncrement())
                 .active(false)
                 .partial(false)
+                .error(false)
                 .startTime(1)
                 .captureTime(11)
                 .duration(MILLISECONDS.toNanos(10))

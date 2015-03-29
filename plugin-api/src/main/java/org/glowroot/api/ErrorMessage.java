@@ -15,17 +15,14 @@
  */
 package org.glowroot.api;
 
-import java.util.Map;
-
 import javax.annotation.Nullable;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.internal.ExceptionInfo;
 import org.glowroot.api.internal.ReadableErrorMessage;
+import org.glowroot.api.internal.ThrowableInfo;
 
 /**
  * The detail map can contain only {@link String}, {@link Double}, {@link Boolean} and null value
@@ -49,7 +46,7 @@ public abstract class ErrorMessage {
             logger.warn("from(): argument 't' must be non-null");
             return from((String) null);
         }
-        return new ErrorMessageImpl(getRootCause(t).toString(), ExceptionInfo.from(t), null);
+        return new ErrorMessageImpl(getRootCause(t).toString(), ThrowableInfo.from(t));
     }
 
     // accepts null message so callers don't have to check if passing it in from elsewhere
@@ -58,41 +55,12 @@ public abstract class ErrorMessage {
             logger.warn("from(): argument 't' must be non-null");
             return from(message);
         }
-        return new ErrorMessageImpl(message, ExceptionInfo.from(t), null);
+        return new ErrorMessageImpl(message, ThrowableInfo.from(t));
     }
 
     // accepts null message so callers don't have to check if passing it in from elsewhere
     public static ErrorMessage from(@Nullable String message) {
-        return new ErrorMessageImpl(message, null, null);
-    }
-
-    public static ErrorMessage withDetail(Throwable t,
-            Map<String, ? extends /*@Nullable*/Object> detail) {
-        if (t == null) {
-            logger.warn("withDetail(): argument 't' must be non-null");
-            return withDetail((String) null, detail);
-        }
-        return new ErrorMessageImpl(getRootCause(t).toString(), ExceptionInfo.from(t), detail);
-    }
-
-    // accepts null message so callers don't have to check if passing it in from elsewhere
-    public static ErrorMessage withDetail(@Nullable String message, Throwable t,
-            Map<String, ? extends /*@Nullable*/Object> detail) {
-        if (t == null) {
-            logger.warn("withDetail(): argument 't' must be non-null");
-            return withDetail(message, detail);
-        }
-        return new ErrorMessageImpl(message, ExceptionInfo.from(t), detail);
-    }
-
-    // accepts null message so callers don't have to check if passing it in from elsewhere
-    public static ErrorMessage withDetail(@Nullable String message,
-            Map<String, ? extends /*@Nullable*/Object> detail) {
-        if (detail == null) {
-            logger.warn("withDetail(): argument 'detail' must be non-null");
-            return new ErrorMessageImpl(message, null, null);
-        }
-        return new ErrorMessageImpl(message, null, detail);
+        return new ErrorMessageImpl(message, null);
     }
 
     private ErrorMessage() {}
@@ -111,34 +79,22 @@ public abstract class ErrorMessage {
     // making it accessible to plugins
     private static class ErrorMessageImpl extends ErrorMessage implements ReadableErrorMessage {
 
-        private final @Nullable String text;
-        private final @Nullable ExceptionInfo exceptionInfo;
-        private final Map<String, ? extends /*@Nullable*/Object> detail;
+        private final @Nullable String message;
+        private final @Nullable ThrowableInfo throwableInfo;
 
-        private ErrorMessageImpl(@Nullable String text, @Nullable ExceptionInfo exceptionInfo,
-                @Nullable Map<String, ? extends /*@Nullable*/Object> detail) {
-            this.text = text;
-            this.exceptionInfo = exceptionInfo;
-            if (detail == null) {
-                this.detail = ImmutableMap.of();
-            } else {
-                this.detail = detail;
-            }
+        private ErrorMessageImpl(@Nullable String text, @Nullable ThrowableInfo throwableInfo) {
+            this.message = text;
+            this.throwableInfo = throwableInfo;
         }
 
         @Override
-        public String getText() {
-            return Strings.nullToEmpty(text);
+        public String getMessage() {
+            return Strings.nullToEmpty(message);
         }
 
         @Override
-        public @Nullable ExceptionInfo getExceptionInfo() {
-            return exceptionInfo;
-        }
-
-        @Override
-        public Map<String, ? extends /*@Nullable*/Object> getDetail() {
-            return detail;
+        public @Nullable ThrowableInfo getThrowable() {
+            return throwableInfo;
         }
     }
 }

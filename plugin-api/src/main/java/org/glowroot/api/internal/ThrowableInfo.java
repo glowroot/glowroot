@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,22 +24,22 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
-// this class primarily exists because Exceptions are not thread safe
+// this class primarily exists because Throwables are not thread safe
 @Value.Immutable
-public abstract class ExceptionInfo {
+public abstract class ThrowableInfo {
 
     public abstract String display();
-    // for inner cause exceptions, stackTrace only includes frames not in common with caused
+    // for inner cause throwable, stackTrace only includes frames not in common with caused
     public abstract List<StackTraceElement> stackTrace();
     // this is for printing '... 18 more' at end of cause instead of entire stack trace
     public abstract int framesInCommonWithCaused();
-    public abstract @Nullable ExceptionInfo cause();
+    public abstract @Nullable ThrowableInfo cause();
 
-    public static ExceptionInfo from(Throwable t) {
+    public static ThrowableInfo from(Throwable t) {
         return from(t, null);
     }
 
-    private static ExceptionInfo from(Throwable t,
+    private static ThrowableInfo from(Throwable t,
             @Nullable List<StackTraceElement> causedStackTrace) {
         int framesInCommon = 0;
         ImmutableList<StackTraceElement> stackTrace = ImmutableList.copyOf(t.getStackTrace());
@@ -60,7 +60,7 @@ public abstract class ExceptionInfo {
                 stackTrace = stackTrace.subList(0, stackTrace.size() - framesInCommon);
             }
         }
-        ImmutableExceptionInfo.Builder builder = ImmutableExceptionInfo.builder()
+        ImmutableThrowableInfo.Builder builder = ImmutableThrowableInfo.builder()
                 .display(t.toString())
                 .addAllStackTrace(stackTrace)
                 .framesInCommonWithCaused(framesInCommon);

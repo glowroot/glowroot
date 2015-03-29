@@ -79,7 +79,7 @@ public class ConfiguredInstrumentationTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
+        assertThat(entries).hasSize(1);
         assertThat(trace.getTransactionType()).isEqualTo("test override type");
         assertThat(trace.getTransactionName()).isEqualTo("test override name");
         assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
@@ -87,8 +87,9 @@ public class ConfiguredInstrumentationTest {
                 .containsOnly("execute one");
         assertThat(trace.getRootTimer().getNestedTimers().get(0)
                 .getNestedTimerNames()).containsOnly("execute one timer only");
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo("execute1() => void");
-        assertThat(entries.get(1).getStackTrace()).isNotNull();
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getText()).isEqualTo("execute1() => void");
+        assertThat(entry.getStackTrace()).isNotNull();
     }
 
     @Test
@@ -98,12 +99,12 @@ public class ConfiguredInstrumentationTest {
         container.executeAppUnderTest(ShouldExecuteWithReturn.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
         assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
         assertThat(trace.getRootTimer().getNestedTimerNames())
                 .containsOnly("execute with return");
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo("executeWithReturn() => xyz");
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(1);
+        assertThat(entries.get(0).getMessage().getText()).isEqualTo("executeWithReturn() => xyz");
     }
 
     @Test
@@ -113,15 +114,13 @@ public class ConfiguredInstrumentationTest {
         container.executeAppUnderTest(ShouldExecuteWithArgs.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("executeWithArgs(): abc, 123, the name");
         assertThat(trace.getTransactionType()).isEqualTo("Pointcut config test");
         assertThat(trace.getTransactionName()).isEqualTo("Misc / executeWithArgs");
-        assertThat(entries).hasSize(1);
         assertThat(trace.getRootTimer().getName()).isEqualTo("execute with args");
         assertThat(trace.getRootTimer().getNestedTimers()).isEmpty();
-        assertThat(entries.get(0).getMessage().getText())
-                .isEqualTo("executeWithArgs(): abc, 123, the name");
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).isEmpty();
     }
 
     protected static void addInstrumentationForExecute1() throws Exception {

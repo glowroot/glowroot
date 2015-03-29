@@ -62,11 +62,11 @@ public class CommitRollbackTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        TraceEntry jdbcInsertEntry = entries.get(1);
+        assertThat(entries).hasSize(2);
+        TraceEntry jdbcInsertEntry = entries.get(0);
         assertThat(jdbcInsertEntry.getMessage().getText()).isEqualTo(
                 "jdbc execution: insert into employee (name) values ('john doe')");
-        TraceEntry jdbcCommitEntry = entries.get(2);
+        TraceEntry jdbcCommitEntry = entries.get(1);
         assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc commit");
         assertThat(trace.getRootTimer().getNestedTimers()).hasSize(2);
         // ordering is by total desc, so not fixed (though root timer will be first since it
@@ -84,13 +84,13 @@ public class CommitRollbackTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        TraceEntry jdbcInsertEntry = entries.get(1);
+        assertThat(entries).hasSize(2);
+        TraceEntry jdbcInsertEntry = entries.get(0);
         assertThat(jdbcInsertEntry.getMessage().getText()).isEqualTo(
                 "jdbc execution: insert into employee (name) values ('john doe')");
-        TraceEntry jdbcCommitEntry = entries.get(2);
+        TraceEntry jdbcCommitEntry = entries.get(1);
         assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc commit");
-        assertThat(jdbcCommitEntry.getError().getText()).isEqualTo(
+        assertThat(jdbcCommitEntry.getError().getMessage()).isEqualTo(
                 "java.sql.SQLException: A commit failure");
         assertThat(trace.getRootTimer().getNestedTimers()).hasSize(2);
         // ordering is by total desc, so not fixed (though root timer will be first since it
@@ -108,11 +108,11 @@ public class CommitRollbackTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        TraceEntry jdbcInsertEntry = entries.get(1);
+        assertThat(entries).hasSize(2);
+        TraceEntry jdbcInsertEntry = entries.get(0);
         assertThat(jdbcInsertEntry.getMessage().getText()).isEqualTo(
                 "jdbc execution: insert into employee (name) values ('john doe')");
-        TraceEntry jdbcCommitEntry = entries.get(2);
+        TraceEntry jdbcCommitEntry = entries.get(1);
         assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc rollback");
         assertThat(trace.getRootTimer().getNestedTimers()).hasSize(2);
         // ordering is by total desc, so not fixed (though root timer will be first since it
@@ -130,13 +130,13 @@ public class CommitRollbackTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        TraceEntry jdbcInsertEntry = entries.get(1);
+        assertThat(entries).hasSize(2);
+        TraceEntry jdbcInsertEntry = entries.get(0);
         assertThat(jdbcInsertEntry.getMessage().getText()).isEqualTo(
                 "jdbc execution: insert into employee (name) values ('john doe')");
-        TraceEntry jdbcCommitEntry = entries.get(2);
+        TraceEntry jdbcCommitEntry = entries.get(1);
         assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc rollback");
-        assertThat(jdbcCommitEntry.getError().getText()).isEqualTo(
+        assertThat(jdbcCommitEntry.getError().getMessage()).isEqualTo(
                 "java.sql.SQLException: A rollback failure");
         assertThat(trace.getRootTimer().getNestedTimers()).hasSize(2);
         // ordering is by total desc, so not fixed (though root timer will be first since it

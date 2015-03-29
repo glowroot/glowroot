@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,16 +59,14 @@ public class NullDetailMapValueTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("Level One");
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
-        assertThat(entries).hasSize(4);
-        TraceEntry entry1 = entries.get(0);
-        assertThat(entry1.getMessage().getText()).isEqualTo("Level One");
-        assertThat(entry1.getMessage().getDetail()).isEqualTo(mapOf("arg1", "a", "arg2", null,
+        assertThat(trace.getCustomDetail()).isEqualTo(mapOf("arg1", "a", "arg2", null,
                 "nested1", mapOf("nestedkey11", "a", "nestedkey12", null,
                         "subnested1", mapOf("subnestedkey1", "a", "subnestedkey2", null)),
                 "nested2", mapOf("nestedkey21", "a", "nestedkey22", null)));
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(3);
     }
 
     private static Map<String, Object> mapOf(String k1, Object v1, String k2, Object v2) {

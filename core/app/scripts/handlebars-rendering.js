@@ -236,16 +236,16 @@ HandlebarsRendering = (function () {
 
   Handlebars.registerHelper('errorIndentClass', function (message) {
     if (message) {
-      return 'indent2';
+      return 'gt-indent2';
     }
     return '';
   });
 
   Handlebars.registerHelper('exceptionIndentClass', function (message) {
     if (message) {
-      return 'indent1';
+      return 'gt-indent1';
     }
-    return 'indent2';
+    return 'gt-indent2';
   });
 
   Handlebars.registerHelper('addIndent2', function (width) {
@@ -270,19 +270,19 @@ HandlebarsRendering = (function () {
     return message.slice(-(traceEntryLineLength / 2 - 3));
   });
 
-  Handlebars.registerHelper('exceptionHtml', function (exception) {
+  Handlebars.registerHelper('exceptionHtml', function (throwable) {
     var html = '<strong>';
-    while (exception) {
-      html += exception.display + '</strong><br>';
+    while (throwable) {
+      html += throwable.display + '</strong><br>';
       var i;
-      for (i = 0; i < exception.stackTrace.length; i++) {
-        html += '<div class="stack-trace-element">at ' + exception.stackTrace[i] + '</div>';
+      for (i = 0; i < throwable.stackTrace.length; i++) {
+        html += '<div class="stack-trace-element">at ' + throwable.stackTrace[i] + '</div>';
       }
-      if (exception.framesInCommon) {
-        html += '... ' + exception.framesInCommon + ' more<br>';
+      if (throwable.framesInCommon) {
+        html += '... ' + throwable.framesInCommon + ' more<br>';
       }
-      exception = exception.cause;
-      if (exception) {
+      throwable = throwable.cause;
+      if (throwable) {
         html += '<strong>Caused by: ';
       }
     }

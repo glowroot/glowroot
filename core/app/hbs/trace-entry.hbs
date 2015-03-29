@@ -41,20 +41,14 @@
         {{#if error}}
           <div class="{{{errorIndentClass message}}}">
             <div>
-              <strong><span class="gt-inline-block gt-content-padding">{{error.text}}</span></strong>
+              <strong><span class="gt-inline-block gt-content-padding">{{error.message}}</span></strong>
             </div>
-            {{#if error.detail}}
-              <div class="gt-content-detail">
-                <span class="gt-inline-block gt-unexpanded-content gt-link-color">detail</span>
-                <span class="gt-inline-block gt-expanded-content hide">{{{messageDetailHtml error.detail}}}</span>
-              </div>
-            {{/if}}
-            {{#if error.exception}}
+            {{#if error.throwable}}
               <div class="{{{exceptionIndentClass message}}}">
                 <span class="gt-inline-block gt-unexpanded-content gt-link-color">exception</span>
                 {{! using span so background will stretch beyond page border if needed }}
                 <span class="gt-inline-block gt-expanded-content gt-nowrap hide">
-                  {{{exceptionHtml error.exception}}}
+                  {{{exceptionHtml error.throwable}}}
                 </span>
               </div>
             {{/if}}

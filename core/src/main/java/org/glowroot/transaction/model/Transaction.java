@@ -37,6 +37,7 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
+import org.glowroot.api.internal.ThrowableInfo;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.transaction.model.GcInfoComponent.GcInfo;
@@ -70,14 +71,14 @@ public class Transaction {
     private volatile String transactionName;
     private volatile boolean explicitSetTransactionName;
 
-    // trace-level error, only used if root entry doesn't have an ErrorMessage
-    private volatile @Nullable String error;
-
     private volatile @Nullable String user;
 
     // lazy loaded to reduce memory when custom attributes are not used
     @GuardedBy("customAttributes")
     private volatile @MonotonicNonNull SetMultimap<String, String> customAttributes;
+
+    // trace-level error
+    private volatile @Nullable ReadableErrorMessage errorMessage;
 
     private final TimerImpl rootTimer;
     // currentTimer doesn't need to be thread safe as it is only accessed by transaction thread
@@ -177,25 +178,11 @@ public class Transaction {
     }
 
     public String getHeadline() {
-        MessageSupplier messageSupplier =
-                traceEntryComponent.getRootTraceEntry().getMessageSupplier();
+        MessageSupplier messageSupplier = traceEntryComponent.getRootEntry().getMessageSupplier();
         // messageSupplier should never be null since entry.getMessageSupplier() is only null when
         // the entry was created using addErrorEntry()
         checkNotNull(messageSupplier);
         return ((ReadableMessage) messageSupplier.get()).getText();
-    }
-
-    public @Nullable String getError() {
-        // don't prefer the root entry error message since it is likely a more generic error
-        // message, e.g. servlet response sendError(500)
-        if (error != null) {
-            return error;
-        }
-        ReadableErrorMessage message = traceEntryComponent.getRootTraceEntry().getErrorMessage();
-        if (message == null) {
-            return null;
-        }
-        return message.getText();
     }
 
     public @Nullable String getUser() {
@@ -215,12 +202,20 @@ public class Transaction {
     }
 
     public Map<String, ? extends /*@Nullable*/Object> getCustomDetail() {
-        MessageSupplier messageSupplier =
-                traceEntryComponent.getRootTraceEntry().getMessageSupplier();
+        MessageSupplier messageSupplier = traceEntryComponent.getRootEntry().getMessageSupplier();
         // messageSupplier should never be null since entry.getMessageSupplier() is only null when
         // the entry was created using addErrorEntry()
         checkNotNull(messageSupplier);
         return ((ReadableMessage) messageSupplier.get()).getDetail();
+    }
+
+    public @Nullable ReadableErrorMessage getErrorMessage() {
+        // don't prefer the root entry error message since it is likely a more generic error
+        // message, e.g. servlet response sendError(500)
+        if (errorMessage != null) {
+            return errorMessage;
+        }
+        return traceEntryComponent.getRootEntry().getErrorMessage();
     }
 
     // this is called from a non-transaction thread
@@ -247,12 +242,12 @@ public class Transaction {
         return gcInfoComponent == null ? null : gcInfoComponent.getGcInfos();
     }
 
-    public TraceEntry getRootTraceEntry() {
-        return traceEntryComponent.getRootTraceEntry();
+    public TraceEntry getRootEntry() {
+        return traceEntryComponent.getRootEntry();
     }
 
     public int getEntryCount() {
-        return traceEntryComponent.getSize();
+        return traceEntryComponent.getEntryCount();
     }
 
     public List<TraceEntry> getEntriesCopy() {
@@ -330,10 +325,10 @@ public class Transaction {
         }
     }
 
-    public void setError(@Nullable String error) {
-        // use the first non-null/non-empty error
-        if (this.error == null && error != null && !error.isEmpty()) {
-            this.error = error;
+    public void setError(@Nullable String message, @Nullable Throwable t) {
+        if (errorMessage == null) {
+            // first call to this method for this trace
+            errorMessage = new ReadableErrorMessageImpl(message, t);
         }
     }
 
@@ -453,5 +448,31 @@ public class Transaction {
 
     public static interface CompletionCallback {
         void completed(Transaction transaction);
+    }
+
+    private static class ReadableErrorMessageImpl implements ReadableErrorMessage {
+
+        private final @Nullable String message;
+        private final @Nullable ThrowableInfo throwableInfo;
+
+        private ReadableErrorMessageImpl(@Nullable String message,
+                @Nullable Throwable t) {
+            this.message = message;
+            if (t == null) {
+                this.throwableInfo = null;
+            } else {
+                this.throwableInfo = ThrowableInfo.from(t);
+            }
+        }
+
+        @Override
+        public String getMessage() {
+            return Strings.nullToEmpty(message);
+        }
+
+        @Override
+        public @Nullable ThrowableInfo getThrowable() {
+            return throwableInfo;
+        }
     }
 }

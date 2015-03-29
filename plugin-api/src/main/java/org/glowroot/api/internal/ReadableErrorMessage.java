@@ -15,18 +15,14 @@
  */
 package org.glowroot.api.internal;
 
-import java.util.Map;
-
 import javax.annotation.Nullable;
 
 // this interface exists to provide access to ErrorMessageImpl from glowroot without making
 // ErrorMessageImpl accessible to plugins (at least not through the org.glowroot.api package)
 public interface ReadableErrorMessage {
 
-    String getText();
-
-    Map<String, ? extends /*@Nullable*/Object> getDetail();
+    String getMessage();
 
     @Nullable
-    ExceptionInfo getExceptionInfo();
+    ThrowableInfo getThrowable();
 }

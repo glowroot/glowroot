@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,11 +56,10 @@ public class WeavingTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entry = container.getTraceService().getEntries(trace.getId());
-        TraceEntry entry1 = entry.get(0);
-        TraceEntry entry2 = entry.get(1);
-        assertThat(entry1.getMessage().getText()).isEqualTo("Level One");
-        assertThat(entry2.getMessage().getText()).isEqualTo("Level Two");
+        assertThat(trace.getHeadline()).isEqualTo("Level One");
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getText()).isEqualTo("Level Two");
     }
 
     public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest {

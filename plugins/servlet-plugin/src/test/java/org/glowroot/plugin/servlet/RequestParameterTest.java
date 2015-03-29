@@ -33,7 +33,6 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -65,12 +64,9 @@ public class RequestParameterTest {
         container.executeAppUnderTest(GetParameter.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> requestParameters =
-                (Map<String, Object>) entry.getMessage().getDetail().get("Request parameters");
+                (Map<String, Object>) trace.getCustomDetail().get("Request parameters");
         assertThat(requestParameters).hasSize(3);
         assertThat(requestParameters.get("xYz")).isEqualTo("aBc");
         assertThat(requestParameters.get("jpassword1")).isEqualTo("****");
@@ -87,11 +83,8 @@ public class RequestParameterTest {
         container.executeAppUnderTest(GetParameter.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getDetail()).hasSize(1);
-        assertThat(entry.getMessage().getDetail()).containsKey("Request http method");
+        assertThat(trace.getCustomDetail()).hasSize(1);
+        assertThat(trace.getCustomDetail()).containsKey("Request http method");
     }
 
     @Test
@@ -110,12 +103,9 @@ public class RequestParameterTest {
         container.executeAppUnderTest(GetBadParameterMap.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> requestParameters =
-                (Map<String, Object>) entry.getMessage().getDetail().get("Request parameters");
+                (Map<String, Object>) trace.getCustomDetail().get("Request parameters");
         assertThat(requestParameters).hasSize(1);
         assertThat(requestParameters.get("k")).isEqualTo("");
     }

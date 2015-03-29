@@ -28,15 +28,15 @@ import com.google.common.collect.ImmutableList;
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.container.common.ObjectMappers.orEmpty;
 
-public class ExceptionInfo {
+public class ThrowableInfo {
 
     private final String display;
     private final ImmutableList<String> stackTrace;
     private final int framesInCommonWithCaused;
-    private final @Nullable ExceptionInfo cause;
+    private final @Nullable ThrowableInfo cause;
 
-    private ExceptionInfo(String display, List<String> stackTrace,
-            int framesInCommonWithCaused, @Nullable ExceptionInfo cause) {
+    private ThrowableInfo(String display, List<String> stackTrace,
+            int framesInCommonWithCaused, @Nullable ThrowableInfo cause) {
         this.display = display;
         this.stackTrace = ImmutableList.copyOf(stackTrace);
         this.framesInCommonWithCaused = framesInCommonWithCaused;
@@ -55,7 +55,7 @@ public class ExceptionInfo {
         return framesInCommonWithCaused;
     }
 
-    public @Nullable ExceptionInfo getCause() {
+    public @Nullable ThrowableInfo getCause() {
         return cause;
     }
 
@@ -70,15 +70,15 @@ public class ExceptionInfo {
     }
 
     @JsonCreator
-    static ExceptionInfo readValue(
+    static ThrowableInfo readValue(
             @JsonProperty("display") @Nullable String display,
             @JsonProperty("stackTrace") @Nullable List</*@Nullable*/String> uncheckedStackTrace,
             @JsonProperty("framesInCommonWithCaused") @Nullable Integer framesInCommonWithCaused,
-            @JsonProperty("cause") @Nullable ExceptionInfo cause)
+            @JsonProperty("cause") @Nullable ThrowableInfo cause)
             throws JsonMappingException {
         List<String> stackTrace = orEmpty(uncheckedStackTrace, "stackTrace");
         checkRequiredProperty(display, "display");
         checkRequiredProperty(framesInCommonWithCaused, "framesInCommonWithCaused");
-        return new ExceptionInfo(display, stackTrace, framesInCommonWithCaused, cause);
+        return new ThrowableInfo(display, stackTrace, framesInCommonWithCaused, cause);
     }
 }

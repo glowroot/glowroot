@@ -277,7 +277,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             long currTick = ticker.read();
             org.glowroot.transaction.model.TraceEntry entry =
                     transaction.addEntry(currTick, currTick, null, errorMessage, true);
-            if (((ReadableErrorMessage) errorMessage).getExceptionInfo() == null) {
+            if (((ReadableErrorMessage) errorMessage).getThrowable() == null) {
                 StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
                 // need to strip back a few stack calls:
                 // skip i=0 which is "java.lang.Thread.getStackTrace()"
@@ -305,10 +305,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public void setTransactionError(@Nullable String error) {
+    public void setTransactionError(@Nullable String message, @Nullable Throwable t) {
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
-            transaction.setError(error);
+            transaction.setError(message, t);
         }
     }
 
@@ -390,7 +390,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                     transactionName, messageSupplier, timerName, startTick, captureThreadInfo,
                     captureGcInfo, threadAllocatedBytes, transactionCompletionCallback, ticker);
             transactionRegistry.addTransaction(transaction);
-            return transaction.getRootTraceEntry();
+            return transaction.getRootEntry();
         } else {
             return startTraceEntryInternal(transaction, timerName, messageSupplier);
         }

@@ -16,10 +16,8 @@
 package org.glowroot.tests;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -31,7 +29,7 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.GeneralConfig;
-import org.glowroot.container.trace.ExceptionInfo;
+import org.glowroot.container.trace.ThrowableInfo;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 import org.glowroot.tests.plugin.LogCauseAspect.LogCauseAdvice;
@@ -68,16 +66,11 @@ public class ErrorCaptureTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(trace.getError()).isNotNull();
-        assertThat(entries).hasSize(4);
-        TraceEntry rootEntry = entries.get(0);
-        assertThat(rootEntry.getError()).isNotNull();
-        assertThat(rootEntry.getError().getDetail()).isNotNull();
-        assertThat(rootEntry.getError().getDetail()).isEqualTo(
-                mapOf("erra", null, "errb", mapOf("errc", null, "errd", "xyz")));
+        assertThat(trace.getErrorMessage()).isNotNull();
+        assertThat(entries).hasSize(3);
+        assertThat(entries.get(0).getError()).isNull();
         assertThat(entries.get(1).getError()).isNull();
         assertThat(entries.get(2).getError()).isNull();
-        assertThat(entries.get(3).getError()).isNull();
     }
 
     @Test
@@ -88,10 +81,10 @@ public class ErrorCaptureTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(trace.getError()).isNull();
-        assertThat(entries).hasSize(3);
-        assertThat(entries.get(2).getError()).isNotNull();
-        List<String> stackTrace = entries.get(2).getStackTrace();
+        assertThat(trace.getErrorMessage()).isNull();
+        assertThat(entries).hasSize(2);
+        assertThat(entries.get(1).getError()).isNotNull();
+        List<String> stackTrace = entries.get(1).getStackTrace();
         assertThat(stackTrace.get(0))
                 .isEqualTo(LogError.class.getName() + ".addNestedErrorEntry(LogError.java)");
     }
@@ -104,17 +97,18 @@ public class ErrorCaptureTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(trace.getError()).isNull();
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(1).getError()).isNotNull();
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo("ERROR -- abc");
-        ExceptionInfo exception = entries.get(1).getError().getException();
-        assertThat(exception.getDisplay()).isEqualTo(
+        assertThat(trace.getErrorMessage()).isNull();
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getError()).isNotNull();
+        assertThat(entry.getMessage().getText()).isEqualTo("ERROR -- abc");
+        ThrowableInfo throwable = entry.getError().getThrowable();
+        assertThat(throwable.getDisplay()).isEqualTo(
                 "java.lang.IllegalStateException: java.lang.IllegalArgumentException: Cause 3");
-        assertThat(exception.getStackTrace().get(0)).startsWith(
+        assertThat(throwable.getStackTrace().get(0)).startsWith(
                 LogCauseAdvice.class.getName() + ".onAfter(");
-        assertThat(exception.getFramesInCommonWithCaused()).isZero();
-        ExceptionInfo cause = exception.getCause();
+        assertThat(throwable.getFramesInCommonWithCaused()).isZero();
+        ThrowableInfo cause = throwable.getCause();
         assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalArgumentException: Cause 3");
         assertThat(cause.getStackTrace().get(0)).startsWith(
                 LogCauseAdvice.class.getName() + ".onAfter(");
@@ -145,31 +139,22 @@ public class ErrorCaptureTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(trace.getError()).isNull();
-        assertThat(entries).hasSize(3);
+        assertThat(trace.getErrorMessage()).isNull();
+        assertThat(entries).hasSize(2);
+        assertThat(entries.get(0).getMessage().getText())
+                .isEqualTo("outer entry to test nesting level");
         assertThat(entries.get(0).getNestingLevel())
                 .isEqualTo(0);
-        assertThat(entries.get(1).getMessage().getText())
-                .isEqualTo("outer entry to test nesting level");
+        assertThat(entries.get(1).getError().getMessage())
+                .isEqualTo("test add nested error entry message");
         assertThat(entries.get(1).getNestingLevel())
                 .isEqualTo(1);
-        assertThat(entries.get(2).getError().getText())
-                .isEqualTo("test add nested error entry message");
-        assertThat(entries.get(2).getNestingLevel())
-                .isEqualTo(2);
     }
 
-    private static int getFirstLineNumber(ExceptionInfo cause) {
+    private static int getFirstLineNumber(ThrowableInfo cause) {
         String element = cause.getStackTrace().get(0);
         return Integer.parseInt(element.substring(element.lastIndexOf(':') + 1,
                 element.length() - 1));
-    }
-
-    private static Map<String, Object> mapOf(String k1, Object v1, String k2, Object v2) {
-        Map<String, Object> map = Maps.newHashMap();
-        map.put(k1, v1);
-        map.put(k2, v2);
-        return map;
     }
 
     public static class ShouldCaptureError implements AppUnderTest {

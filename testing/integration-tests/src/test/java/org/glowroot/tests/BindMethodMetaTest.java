@@ -58,24 +58,24 @@ public class BindMethodMetaTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo("Coverage get: false");
-        assertThat(entries.get(2).getMessage().getText()).isEqualTo("Coverage get: 100");
-        assertThat(entries.get(3).getMessage().getText()).isEqualTo("Coverage get: b");
-        assertThat(entries.get(4).getMessage().getText()).isEqualTo("Coverage get: 300");
-        assertThat(entries.get(5).getMessage().getText()).isEqualTo("Coverage get: 400");
-        assertThat(entries.get(6).getMessage().getText()).isEqualTo("Coverage get: 500");
-        assertThat(entries.get(7).getMessage().getText()).isEqualTo("Coverage get: 600.0");
-        assertThat(entries.get(8).getMessage().getText()).isEqualTo("Coverage get: 700.0");
-        assertThat(entries.get(9).getMessage().getText()).isEqualTo("Coverage get: [1, 2, 3]");
-        assertThat(entries.get(10).getMessage().getText()).isEqualTo("Coverage put: true");
-        assertThat(entries.get(11).getMessage().getText()).isEqualTo("Coverage put: 101");
-        assertThat(entries.get(12).getMessage().getText()).isEqualTo("Coverage put: c");
-        assertThat(entries.get(13).getMessage().getText()).isEqualTo("Coverage put: 303");
-        assertThat(entries.get(14).getMessage().getText()).isEqualTo("Coverage put: 404");
-        assertThat(entries.get(15).getMessage().getText()).isEqualTo("Coverage put: 505");
-        assertThat(entries.get(16).getMessage().getText()).isEqualTo("Coverage put: 606.0");
-        assertThat(entries.get(17).getMessage().getText()).isEqualTo("Coverage put: 707.0");
-        assertThat(entries.get(18).getMessage().getText()).isEqualTo("Coverage put: [7, 8, 9]");
+        assertThat(entries.get(0).getMessage().getText()).isEqualTo("Coverage get: false");
+        assertThat(entries.get(1).getMessage().getText()).isEqualTo("Coverage get: 100");
+        assertThat(entries.get(2).getMessage().getText()).isEqualTo("Coverage get: b");
+        assertThat(entries.get(3).getMessage().getText()).isEqualTo("Coverage get: 300");
+        assertThat(entries.get(4).getMessage().getText()).isEqualTo("Coverage get: 400");
+        assertThat(entries.get(5).getMessage().getText()).isEqualTo("Coverage get: 500");
+        assertThat(entries.get(6).getMessage().getText()).isEqualTo("Coverage get: 600.0");
+        assertThat(entries.get(7).getMessage().getText()).isEqualTo("Coverage get: 700.0");
+        assertThat(entries.get(8).getMessage().getText()).isEqualTo("Coverage get: [1, 2, 3]");
+        assertThat(entries.get(9).getMessage().getText()).isEqualTo("Coverage put: true");
+        assertThat(entries.get(10).getMessage().getText()).isEqualTo("Coverage put: 101");
+        assertThat(entries.get(11).getMessage().getText()).isEqualTo("Coverage put: c");
+        assertThat(entries.get(12).getMessage().getText()).isEqualTo("Coverage put: 303");
+        assertThat(entries.get(13).getMessage().getText()).isEqualTo("Coverage put: 404");
+        assertThat(entries.get(14).getMessage().getText()).isEqualTo("Coverage put: 505");
+        assertThat(entries.get(15).getMessage().getText()).isEqualTo("Coverage put: 606.0");
+        assertThat(entries.get(16).getMessage().getText()).isEqualTo("Coverage put: 707.0");
+        assertThat(entries.get(17).getMessage().getText()).isEqualTo("Coverage put: [7, 8, 9]");
     }
 
     public static class ShouldCoverBindMethodMetas implements AppUnderTest, TraceMarker {

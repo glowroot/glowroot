@@ -36,6 +36,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 
+import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
 import org.glowroot.local.store.ImmutableTracePoint;
@@ -167,7 +168,7 @@ class TracePointJsonService {
                             .id(transaction.getId())
                             .captureTime(clock.currentTimeMillis())
                             .duration(transaction.getDuration())
-                            .error(transaction.getError() != null)
+                            .error(transaction.getErrorMessage() != null)
                             .build();
                     points.add(point);
                 }
@@ -205,7 +206,7 @@ class TracePointJsonService {
         }
 
         private boolean matchesErrorOnly(Transaction transaction) {
-            return !query.errorOnly() || transaction.getError() != null;
+            return !query.errorOnly() || transaction.getErrorMessage() != null;
         }
 
         private boolean matchesHeadline(Transaction transaction) {
@@ -219,8 +220,9 @@ class TracePointJsonService {
         }
 
         private boolean matchesError(Transaction transaction) {
-            return matchesUsingStringComparator(query.errorComparator(), query.error(),
-                    transaction.getError());
+            ReadableErrorMessage errorMessage = transaction.getErrorMessage();
+            String text = errorMessage == null ? null : errorMessage.getMessage();
+            return matchesUsingStringComparator(query.errorComparator(), query.error(), text);
         }
 
         private boolean matchesUser(Transaction transaction) {

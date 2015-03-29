@@ -32,7 +32,6 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 import org.glowroot.plugin.servlet.TestServlet.PatchedMockHttpServletResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,12 +66,9 @@ public class ResponseHeaderTest {
         container.executeAppUnderTest(SetStandardResponseHeaders.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
-                (Map<String, Object>) entry.getMessage().getDetail().get("Response headers");
+                (Map<String, Object>) trace.getCustomDetail().get("Response headers");
         assertThat(responseHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("Content-Length")).isEqualTo("1");
         assertThat(responseHeaders.get("Content-Language")).isEqualTo("en");
@@ -88,12 +84,9 @@ public class ResponseHeaderTest {
         container.executeAppUnderTest(SetStandardResponseHeadersUsingSetHeader.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
-                (Map<String, Object>) entry.getMessage().getDetail().get("Response headers");
+                (Map<String, Object>) trace.getCustomDetail().get("Response headers");
         assertThat(responseHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("Content-Length")).isEqualTo("1");
         assertThat(responseHeaders.get("Content-Language")).isEqualTo("en");
@@ -109,12 +102,9 @@ public class ResponseHeaderTest {
         container.executeAppUnderTest(SetStandardResponseHeadersUsingAddHeader.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
-                (Map<String, Object>) entry.getMessage().getDetail().get("Response headers");
+                (Map<String, Object>) trace.getCustomDetail().get("Response headers");
         assertThat(responseHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("Content-Length")).isEqualTo("1");
         assertThat(responseHeaders.get("Content-Language")).isEqualTo("en");
@@ -130,12 +120,9 @@ public class ResponseHeaderTest {
         container.executeAppUnderTest(SetStandardResponseHeadersLowercase.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
-                (Map<String, Object>) entry.getMessage().getDetail().get("Response headers");
+                (Map<String, Object>) trace.getCustomDetail().get("Response headers");
         assertThat(responseHeaders.get("content-type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("content-length")).isEqualTo("1");
         assertThat(responseHeaders.get("extra")).isNull();
@@ -149,10 +136,7 @@ public class ResponseHeaderTest {
         container.executeAppUnderTest(SetStandardResponseHeaders.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getDetail()).doesNotContainKey("Response headers");
+        assertThat(trace.getCustomDetail()).doesNotContainKey("Response headers");
     }
 
     @Test
@@ -163,10 +147,7 @@ public class ResponseHeaderTest {
         container.executeAppUnderTest(SetStandardResponseHeaders.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getDetail()).doesNotContainKey("Response headers");
+        assertThat(trace.getCustomDetail()).doesNotContainKey("Response headers");
     }
 
     @Test
@@ -177,10 +158,7 @@ public class ResponseHeaderTest {
         container.executeAppUnderTest(SetStandardResponseHeadersUsingSetHeader.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getDetail()).doesNotContainKey("Response headers");
+        assertThat(trace.getCustomDetail()).doesNotContainKey("Response headers");
     }
 
     @Test
@@ -191,10 +169,7 @@ public class ResponseHeaderTest {
         container.executeAppUnderTest(SetStandardResponseHeadersUsingAddHeader.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getDetail()).doesNotContainKey("Response headers");
+        assertThat(trace.getCustomDetail()).doesNotContainKey("Response headers");
     }
 
     @Test
@@ -206,12 +181,9 @@ public class ResponseHeaderTest {
         container.executeAppUnderTest(SetLotsOfResponseHeaders.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
-                (Map<String, Object>) entry.getMessage().getDetail().get("Response headers");
+                (Map<String, Object>) trace.getCustomDetail().get("Response headers");
         @SuppressWarnings("unchecked")
         List<String> one = (List<String>) responseHeaders.get("One");
         @SuppressWarnings("unchecked")

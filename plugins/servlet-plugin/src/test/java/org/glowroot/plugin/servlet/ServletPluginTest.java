@@ -78,13 +78,11 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteServlet.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("/testservlet");
         assertThat(trace.getTransactionName()).isEqualTo("/testservlet");
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText()).isEqualTo("/testservlet");
-        assertThat(entry.getMessage().getDetail().get("Request http method")).isEqualTo("GET");
+        assertThat(trace.getCustomDetail().get("Request http method")).isEqualTo("GET");
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).isEmpty();
     }
 
     @Test
@@ -94,13 +92,11 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteFilter.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("/testfilter");
         assertThat(trace.getTransactionName()).isEqualTo("/testfilter");
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText()).isEqualTo("/testfilter");
-        assertThat(entry.getMessage().getDetail().get("Request http method")).isEqualTo("GET");
+        assertThat(trace.getCustomDetail().get("Request http method")).isEqualTo("GET");
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).isEmpty();
     }
 
     @Test
@@ -110,13 +106,11 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ExecuteFilterWithNestedServlet.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getHeadline()).isEqualTo("/testfilter");
         assertThat(trace.getTransactionName()).isEqualTo("/testfilter");
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText()).isEqualTo("/testfilter");
-        assertThat(entry.getMessage().getDetail().get("Request http method")).isEqualTo("GET");
+        assertThat(trace.getCustomDetail().get("Request http method")).isEqualTo("GET");
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).isEmpty();
     }
 
     @Test
@@ -126,11 +120,10 @@ public class ServletPluginTest {
         container.executeAppUnderTest(TestNoQueryString.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        String queryString = (String) entry.getMessage().getDetail().get("Request query string");
+        String queryString = (String) trace.getCustomDetail().get("Request query string");
         assertThat(queryString).isNull();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).isEmpty();
     }
 
     @Test
@@ -140,11 +133,10 @@ public class ServletPluginTest {
         container.executeAppUnderTest(TestEmptyQueryString.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        String queryString = (String) entry.getMessage().getDetail().get("Request query string");
+        String queryString = (String) trace.getCustomDetail().get("Request query string");
         assertThat(queryString).isEqualTo("");
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).isEmpty();
     }
 
     @Test
@@ -154,11 +146,10 @@ public class ServletPluginTest {
         container.executeAppUnderTest(TestNonEmptyQueryString.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        String queryString = (String) entry.getMessage().getDetail().get("Request query string");
+        String queryString = (String) trace.getCustomDetail().get("Request query string");
         assertThat(queryString).isEqualTo("a=b&c=d");
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).isEmpty();
     }
 
     @Test
@@ -168,10 +159,10 @@ public class ServletPluginTest {
         container.executeAppUnderTest(ServletThrowsException.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getErrorMessage()).isNotNull();
+        assertThat(trace.getErrorThrowable()).isNotNull();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        assertThat(trace.getError()).isNotNull();
-        assertThat(entries.get(0).getError().getException()).isNotNull();
+        assertThat(entries).isEmpty();
     }
 
     @Test
@@ -181,10 +172,10 @@ public class ServletPluginTest {
         container.executeAppUnderTest(FilterThrowsException.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getErrorMessage()).isNotNull();
+        assertThat(trace.getErrorThrowable()).isNotNull();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
-        assertThat(trace.getError()).isNotNull();
-        assertThat(entries.get(0).getError().getException()).isNotNull();
+        assertThat(entries).isEmpty();
     }
 
     @Test
@@ -194,20 +185,16 @@ public class ServletPluginTest {
         container.executeAppUnderTest(Send500Error.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getErrorMessage()).isEqualTo("sendError, HTTP status code 500");
+        assertThat(trace.getErrorThrowable()).isNull();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        assertThat(trace.getError()).isEqualTo("sendError, HTTP status code 500");
-        assertThat(entries.get(0).getError()).isNotNull();
-        assertThat(entries.get(0).getError().getText()).isEqualTo(
-                "sendError, HTTP status code 500");
-        assertThat(entries.get(0).getError().getException()).isNull();
-        assertThat(entries.get(0).getStackTrace()).isNull();
-        assertThat(entries.get(1).getError()).isNotNull();
-        assertThat(entries.get(1).getError().getText()).isEqualTo(
-                "sendError, HTTP status code 500");
-        assertThat(entries.get(1).getError().getException()).isNull();
-        assertThat(entries.get(1).getStackTrace()).isNotNull();
-        assertThat(entries.get(1).getStackTrace().get(0)).contains(".sendError(");
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getError()).isNotNull();
+        assertThat(entry.getError().getMessage()).isEqualTo("sendError, HTTP status code 500");
+        assertThat(entry.getError().getThrowable()).isNull();
+        assertThat(entry.getStackTrace()).isNotNull();
+        assertThat(entry.getStackTrace().get(0)).contains(".sendError(");
     }
 
     @Test
@@ -217,20 +204,16 @@ public class ServletPluginTest {
         container.executeAppUnderTest(SetStatus500Error.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getErrorMessage()).isEqualTo("setStatus, HTTP status code 500");
+        assertThat(trace.getErrorThrowable()).isNull();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        assertThat(trace.getError()).isEqualTo("setStatus, HTTP status code 500");
-        assertThat(entries.get(0).getError()).isNotNull();
-        assertThat(entries.get(0).getError().getText()).isEqualTo(
-                "setStatus, HTTP status code 500");
-        assertThat(entries.get(0).getError().getException()).isNull();
-        assertThat(entries.get(0).getStackTrace()).isNull();
-        assertThat(entries.get(1).getError()).isNotNull();
-        assertThat(entries.get(1).getError().getText()).isEqualTo(
-                "setStatus, HTTP status code 500");
-        assertThat(entries.get(1).getError().getException()).isNull();
-        assertThat(entries.get(1).getStackTrace()).isNotNull();
-        assertThat(entries.get(1).getStackTrace().get(0)).contains(".setStatus(");
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getError()).isNotNull();
+        assertThat(entry.getError().getMessage()).isEqualTo("setStatus, HTTP status code 500");
+        assertThat(entry.getError().getThrowable()).isNull();
+        assertThat(entry.getStackTrace()).isNotNull();
+        assertThat(entry.getStackTrace().get(0)).contains(".setStatus(");
     }
 
     @Test

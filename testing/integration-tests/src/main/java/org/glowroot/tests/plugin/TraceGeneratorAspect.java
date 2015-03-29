@@ -55,7 +55,7 @@ public class TraceGeneratorAspect {
                 pluginServices.setTransactionCustomAttribute(entry.getKey(), entry.getValue());
             }
             if (traceGenerator.error() != null) {
-                pluginServices.setTransactionError(traceGenerator.error());
+                pluginServices.setTransactionError(traceGenerator.error(), null);
             }
             return traceEntry;
         }

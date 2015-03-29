@@ -37,16 +37,18 @@ public class Trace {
     private final String id;
     private final boolean active;
     private final boolean partial;
+    private final boolean error;
     private final long startTime;
     private final long captureTime;
     private final long duration;
     private final String transactionType;
     private final String transactionName;
     private final String headline;
-    private final @Nullable String error;
     private final @Nullable String user;
     private final ImmutableSetMultimap<String, String> customAttributes;
     private final Map<String, /*@Nullable*/Object> customDetail;
+    private final @Nullable String errorMessage;
+    private final @Nullable ThrowableInfo errorThrowable;
     private final Timer rootTimer;
     private final @Nullable Long threadCpuTime;
     private final @Nullable Long threadBlockedTime;
@@ -58,28 +60,30 @@ public class Trace {
     private final Existence entriesExistence;
     private final Existence profileExistence;
 
-    private Trace(String id, boolean active, boolean partial, long startTime, long captureTime,
-            long duration, String transactionType, String transactionName, String headline,
-            @Nullable String error, @Nullable String user,
+    private Trace(String id, boolean active, boolean partial, boolean error, long startTime,
+            long captureTime, long duration, String transactionType, String transactionName,
+            String headline, @Nullable String user,
             ImmutableSetMultimap<String, String> customAttributes,
-            Map<String, /*@Nullable*/Object> customDetail, Timer rootTimer,
-            @Nullable Long threadCpuTime, @Nullable Long threadBlockedTime,
-            @Nullable Long threadWaitedTime, @Nullable Long threadAllocatedBytes,
-            List<TraceGcInfo> gcInfos, long entryCount, long profileSampleCount,
-            Existence entriesExistence, Existence profileExistence) {
+            Map<String, /*@Nullable*/Object> customDetail, @Nullable String errorMessage,
+            @Nullable ThrowableInfo errorThrowable, Timer rootTimer, @Nullable Long threadCpuTime,
+            @Nullable Long threadBlockedTime, @Nullable Long threadWaitedTime,
+            @Nullable Long threadAllocatedBytes, List<TraceGcInfo> gcInfos, long entryCount,
+            long profileSampleCount, Existence entriesExistence, Existence profileExistence) {
         this.id = id;
         this.active = active;
         this.partial = partial;
+        this.error = error;
         this.startTime = startTime;
         this.captureTime = captureTime;
         this.duration = duration;
         this.transactionType = transactionType;
         this.transactionName = transactionName;
         this.headline = headline;
-        this.error = error;
         this.user = user;
         this.customAttributes = customAttributes;
         this.customDetail = customDetail;
+        this.errorMessage = errorMessage;
+        this.errorThrowable = errorThrowable;
         this.rootTimer = rootTimer;
         this.threadCpuTime = threadCpuTime;
         this.threadBlockedTime = threadBlockedTime;
@@ -102,6 +106,10 @@ public class Trace {
 
     public boolean isPartial() {
         return partial;
+    }
+
+    public boolean isError() {
+        return error;
     }
 
     public long getStartTime() {
@@ -128,10 +136,6 @@ public class Trace {
         return headline;
     }
 
-    public @Nullable String getError() {
-        return error;
-    }
-
     public @Nullable String getUser() {
         return user;
     }
@@ -142,6 +146,14 @@ public class Trace {
 
     public Map<String, /*@Nullable*/Object> getCustomDetail() {
         return customDetail;
+    }
+
+    public @Nullable String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public @Nullable ThrowableInfo getErrorThrowable() {
+        return errorThrowable;
     }
 
     public Timer getRootTimer() {
@@ -190,15 +202,18 @@ public class Trace {
                 .add("id", id)
                 .add("active", active)
                 .add("partial", partial)
+                .add("error", error)
                 .add("startTime", startTime)
                 .add("captureTime", captureTime)
                 .add("duration", duration)
                 .add("transactionType", transactionType)
                 .add("transactionName", transactionName)
                 .add("headline", headline)
-                .add("error", error)
                 .add("user", user)
                 .add("customAttributes", customAttributes)
+                .add("customDetail", customDetail)
+                .add("errorMessage", errorMessage)
+                .add("errorThrowable", errorThrowable)
                 .add("rootTimer", rootTimer)
                 .add("threadCpuTime", threadCpuTime)
                 .add("threadBlockedTime", threadBlockedTime)
@@ -217,16 +232,18 @@ public class Trace {
             @JsonProperty("id") @Nullable String id,
             @JsonProperty("active") @Nullable Boolean active,
             @JsonProperty("partial") @Nullable Boolean partial,
+            @JsonProperty("error") @Nullable Boolean error,
             @JsonProperty("startTime") @Nullable Long startTime,
             @JsonProperty("captureTime") @Nullable Long captureTime,
             @JsonProperty("duration") @Nullable Long duration,
             @JsonProperty("transactionType") @Nullable String transactionType,
             @JsonProperty("transactionName") @Nullable String transactionName,
             @JsonProperty("headline") @Nullable String headline,
-            @JsonProperty("error") @Nullable String error,
             @JsonProperty("user") @Nullable String user,
             @JsonProperty("customAttributes") @Nullable Map<String, /*@Nullable*/List</*@Nullable*/String>> customAttributes,
             @JsonProperty("customDetail") @Nullable Map<String, /*@Nullable*/Object> customDetail,
+            @JsonProperty("errorMessage") @Nullable String errorMessage,
+            @JsonProperty("errorThrowable") @Nullable ThrowableInfo errorThrowable,
             @JsonProperty("timers") @Nullable Timer rootTimer,
             @JsonProperty("threadCpuTime") @Nullable Long threadCpuTime,
             @JsonProperty("threadBlockedTime") @Nullable Long threadBlockedTime,
@@ -242,6 +259,7 @@ public class Trace {
         checkRequiredProperty(id, "id");
         checkRequiredProperty(active, "active");
         checkRequiredProperty(partial, "partial");
+        checkRequiredProperty(error, "error");
         checkRequiredProperty(startTime, "startTime");
         checkRequiredProperty(captureTime, "captureTime");
         checkRequiredProperty(duration, "duration");
@@ -267,11 +285,11 @@ public class Trace {
                 theCustomAttributes.putAll(entry.getKey(), values);
             }
         }
-        return new Trace(id, active, partial, startTime, captureTime, duration, transactionType,
-                transactionName, headline, error, user, theCustomAttributes.build(),
-                nullToEmpty(customDetail), rootTimer, threadCpuTime, threadBlockedTime,
-                threadWaitedTime, threadAllocatedBytes, gcInfos, entryCount, profileSampleCount,
-                entriesExistence, profileExistence);
+        return new Trace(id, active, partial, error, startTime, captureTime, duration,
+                transactionType, transactionName, headline, user, theCustomAttributes.build(),
+                nullToEmpty(customDetail), errorMessage, errorThrowable, rootTimer, threadCpuTime,
+                threadBlockedTime, threadWaitedTime, threadAllocatedBytes, gcInfos, entryCount,
+                profileSampleCount, entriesExistence, profileExistence);
     }
 
     public enum Existence {

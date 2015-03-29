@@ -251,7 +251,7 @@ public abstract class PluginServices {
      * 
      * If there is no current transaction, this method does nothing.
      */
-    public abstract void setTransactionError(@Nullable String error);
+    public abstract void setTransactionError(@Nullable String message, @Nullable Throwable t);
 
     /**
      * Sets the user attribute on the transaction. This attribute is shared across all plugins, and

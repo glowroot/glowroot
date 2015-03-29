@@ -21,9 +21,11 @@
     "fromEmailAddress": "",
     "fromDisplayName": "",
     "host": "",
+    "port": null,
     "ssl": false,
     "username": "",
-    "encryptedPassword": ""
+    "encryptedPassword": "",
+    "additionalProperties": { }
   },
   "userRecording": {
     "enabled": false,
@@ -32,6 +34,7 @@
   },
   "advanced": {
     "timerWrapperMethods": false,
+    "weavingTimer": false,
     "immediatePartialStoreThresholdSeconds": 60,
     "maxTraceEntriesPerTransaction": 2000,
     "maxStackTraceSamplesPerTransaction": 10000,
@@ -58,9 +61,11 @@
     },
     {
       "id": "glowroot-test-container",
-      "enabled": true
+      "enabled": true,
+      "properties": { }
     }
   ],
+  "instrumentation": [ ],
   "gauges": [
     {
       "mbeanObjectName": "java.lang:type=Memory",
@@ -80,5 +85,6 @@
         }
       ]
     }
-  ]
+  ],
+  "alerts": [ ]
 }

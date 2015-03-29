@@ -15,7 +15,6 @@
  */
 package org.glowroot.api;
 
-import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
 
 import org.glowroot.api.internal.ReadableErrorMessage;
@@ -25,75 +24,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ErrorMessageTest {
 
     @Test
-    public void testWithDetail() {
-        ImmutableMap<String, Object> detail = ImmutableMap.of();
-        ReadableErrorMessage errorMessage =
-                (ReadableErrorMessage) ErrorMessage.withDetail("", detail);
-        assertThat(errorMessage.getText()).isEqualTo("");
-        assertThat(errorMessage.getDetail()).isEmpty();
-        assertThat(errorMessage.getExceptionInfo()).isNull();
-    }
-
-    @Test
-    public void testWithDetailAndThrowable() {
-        Throwable t = new Throwable();
-        ImmutableMap<String, Object> detail = ImmutableMap.of();
-        ReadableErrorMessage errorMessage =
-                (ReadableErrorMessage) ErrorMessage.withDetail("", t, detail);
-        assertThat(errorMessage.getText()).isEqualTo("");
-        assertThat(errorMessage.getDetail()).isEmpty();
-        assertThat(errorMessage.getExceptionInfo()).isNotNull();
-    }
-
-    @Test
     public void testNullMessage() {
         ReadableErrorMessage errorMessage =
                 (ReadableErrorMessage) ErrorMessage.from((String) null);
-        assertThat(errorMessage.getText()).isEqualTo("");
-        assertThat(errorMessage.getDetail()).isEmpty();
-        assertThat(errorMessage.getExceptionInfo()).isNull();
+        assertThat(errorMessage.getMessage()).isEqualTo("");
+        assertThat(errorMessage.getThrowable()).isNull();
     }
     @Test
     public void testNullThrowable() {
         ReadableErrorMessage errorMessage =
                 (ReadableErrorMessage) ErrorMessage.from((Throwable) null);
-        assertThat(errorMessage.getText()).isEqualTo("");
-        assertThat(errorMessage.getDetail()).isEmpty();
-        assertThat(errorMessage.getExceptionInfo()).isNull();
+        assertThat(errorMessage.getMessage()).isEqualTo("");
+        assertThat(errorMessage.getThrowable()).isNull();
     }
 
     @Test
     public void testNullMessageAndNullThrowable() {
         ReadableErrorMessage errorMessage = (ReadableErrorMessage) ErrorMessage.from(null, null);
-        assertThat(errorMessage.getText()).isEqualTo("");
-        assertThat(errorMessage.getDetail()).isEmpty();
-        assertThat(errorMessage.getExceptionInfo()).isNull();
-    }
-
-    @Test
-    public void testNullThrowableAndNullDetail() {
-        ReadableErrorMessage errorMessage =
-                (ReadableErrorMessage) ErrorMessage.withDetail((Throwable) null, null);
-        assertThat(errorMessage.getText()).isEqualTo("");
-        assertThat(errorMessage.getDetail()).isEmpty();
-        assertThat(errorMessage.getExceptionInfo()).isNull();
-    }
-
-    @Test
-    public void testNullMessageAndNullDetail() {
-        ReadableErrorMessage errorMessage =
-                (ReadableErrorMessage) ErrorMessage.withDetail((String) null, null);
-        assertThat(errorMessage.getText()).isEqualTo("");
-        assertThat(errorMessage.getDetail()).isEmpty();
-        assertThat(errorMessage.getExceptionInfo()).isNull();
-    }
-
-    @Test
-    public void testNullEverything() {
-        ReadableErrorMessage errorMessage =
-                (ReadableErrorMessage) ErrorMessage.withDetail(null, null, null);
-        assertThat(errorMessage.getText()).isEqualTo("");
-        assertThat(errorMessage.getDetail()).isEmpty();
-        assertThat(errorMessage.getExceptionInfo()).isNull();
+        assertThat(errorMessage.getMessage()).isEqualTo("");
+        assertThat(errorMessage.getThrowable()).isNull();
     }
 }

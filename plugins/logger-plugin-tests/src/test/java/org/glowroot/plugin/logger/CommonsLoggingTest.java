@@ -65,11 +65,11 @@ public class CommonsLoggingTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(trace.getError()).isEqualTo("efg");
-        assertThat(entries).hasSize(4);
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo("log warn: def");
-        assertThat(entries.get(2).getMessage().getText()).isEqualTo("log error: efg");
-        assertThat(entries.get(3).getMessage().getText()).isEqualTo("log fatal: fgh");
+        assertThat(trace.getErrorMessage()).isEqualTo("efg");
+        assertThat(entries).hasSize(3);
+        assertThat(entries.get(0).getMessage().getText()).isEqualTo("log warn: def");
+        assertThat(entries.get(1).getMessage().getText()).isEqualTo("log error: efg");
+        assertThat(entries.get(2).getMessage().getText()).isEqualTo("log fatal: fgh");
     }
 
     @Test
@@ -82,27 +82,27 @@ public class CommonsLoggingTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(trace.getError()).isEqualTo("efg_");
-        assertThat(entries).hasSize(4);
+        assertThat(trace.getErrorMessage()).isEqualTo("efg_");
+        assertThat(entries).hasSize(3);
 
-        TraceEntry warnEntry = entries.get(1);
+        TraceEntry warnEntry = entries.get(0);
         assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn: def_");
-        assertThat(warnEntry.getError().getText()).isEqualTo("456");
-        assertThat(warnEntry.getError().getException().getStackTrace().get(0))
+        assertThat(warnEntry.getError().getMessage()).isEqualTo("456");
+        assertThat(warnEntry.getError().getThrowable().getStackTrace().get(0))
                 .contains("traceMarker");
 
-        TraceEntry errorEntry = entries.get(2);
+        TraceEntry errorEntry = entries.get(1);
         assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_");
-        assertThat(errorEntry.getError().getText())
+        assertThat(errorEntry.getError().getMessage())
                 .isEqualTo("567");
-        assertThat(errorEntry.getError().getException().getStackTrace().get(0))
+        assertThat(errorEntry.getError().getThrowable().getStackTrace().get(0))
                 .contains("traceMarker");
 
-        TraceEntry fatalEntry = entries.get(3);
+        TraceEntry fatalEntry = entries.get(2);
         assertThat(fatalEntry.getMessage().getText()).isEqualTo("log fatal: fgh_");
-        assertThat(fatalEntry.getError().getText())
+        assertThat(fatalEntry.getError().getMessage())
                 .isEqualTo("678");
-        assertThat(fatalEntry.getError().getException().getStackTrace().get(0))
+        assertThat(fatalEntry.getError().getThrowable().getStackTrace().get(0))
                 .contains("traceMarker");
     }
 
@@ -116,18 +116,18 @@ public class CommonsLoggingTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(trace.getError()).isEqualTo("efg_");
-        assertThat(entries).hasSize(4);
+        assertThat(trace.getErrorMessage()).isEqualTo("efg_");
+        assertThat(entries).hasSize(3);
 
-        TraceEntry warnEntry = entries.get(1);
+        TraceEntry warnEntry = entries.get(0);
         assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn: def_");
-        assertThat(warnEntry.getError().getText()).isEqualTo("def_");
-        TraceEntry errorEntry = entries.get(2);
+        assertThat(warnEntry.getError().getMessage()).isEqualTo("def_");
+        TraceEntry errorEntry = entries.get(1);
         assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_");
-        assertThat(errorEntry.getError().getText()).isEqualTo("efg_");
-        TraceEntry fatalEntry = entries.get(3);
+        assertThat(errorEntry.getError().getMessage()).isEqualTo("efg_");
+        TraceEntry fatalEntry = entries.get(2);
         assertThat(fatalEntry.getMessage().getText()).isEqualTo("log fatal: fgh_");
-        assertThat(fatalEntry.getError().getText()).isEqualTo("fgh_");
+        assertThat(fatalEntry.getError().getMessage()).isEqualTo("fgh_");
     }
 
     @Test
@@ -141,7 +141,7 @@ public class CommonsLoggingTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
+        assertThat(entries).isEmpty();
     }
 
     public static class ShouldLog implements AppUnderTest, TraceMarker {

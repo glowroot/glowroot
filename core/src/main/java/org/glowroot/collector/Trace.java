@@ -33,18 +33,21 @@ public abstract class Trace {
     abstract boolean active();
     // "partial" means "partial stored" but no longer currently active
     public abstract boolean partial();
+    public abstract boolean error();
     public abstract long startTime();
     public abstract long captureTime();
     public abstract long duration(); // nanoseconds
     public abstract String transactionType();
     public abstract String transactionName();
     public abstract String headline();
-    public abstract @Nullable String error();
     public abstract @Nullable String user();
     @JsonRawValue
     public abstract @Nullable String customAttributes();
     @JsonRawValue
     public abstract @Nullable String customDetail();
+    public abstract @Nullable String errorMessage();
+    @JsonRawValue
+    public abstract @Nullable String errorThrowable();
     @JsonRawValue
     public abstract @Nullable String timers();
     public abstract @Nullable Long threadCpuTime(); // nanoseconds

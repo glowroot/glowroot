@@ -70,8 +70,8 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
+        assertThat(entries).hasSize(1);
+        TraceEntry jdbcEntry = entries.get(0);
         assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
                 "jdbc execution: insert into employee (name, misc) values (?, ?) ['jane', NULL]");
     }
@@ -159,8 +159,8 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo(
+        assertThat(entries).hasSize(1);
+        assertThat(entries.get(0).getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee where name like ? ['nomatch%'] => 0 rows");
     }
 
@@ -172,8 +172,8 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
+        assertThat(entries).hasSize(1);
+        TraceEntry jdbcEntry = entries.get(0);
         assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee => 3 rows");
         assertThat(jdbcEntry.getStackTrace()).isNull();
@@ -188,8 +188,8 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
+        assertThat(entries).hasSize(1);
+        TraceEntry jdbcEntry = entries.get(0);
         assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee => 3 rows");
         assertThat(jdbcEntry.getStackTrace()).isNotNull();
@@ -205,8 +205,8 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(2);
-        TraceEntry jdbcEntry = entries.get(1);
+        assertThat(entries).hasSize(1);
+        TraceEntry jdbcEntry = entries.get(0);
         assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
                 "jdbc execution: select * from employee => 3 rows");
         assertThat(jdbcEntry.getStackTrace()).isNull();
@@ -223,7 +223,7 @@ public class JdbcPluginTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(1);
+        assertThat(entries).isEmpty();
     }
 
     public static class ExecuteStatementAndIterateOverResults implements AppUnderTest, TraceMarker {

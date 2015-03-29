@@ -74,7 +74,7 @@ public class TransactionCollectorImpl implements TransactionCollector {
     }
 
     public boolean shouldStore(Transaction transaction) {
-        if (transaction.isPartiallyStored() || transaction.getError() != null) {
+        if (transaction.isPartiallyStored() || transaction.getErrorMessage() != null) {
             return true;
         }
         // check if should store for user recording
