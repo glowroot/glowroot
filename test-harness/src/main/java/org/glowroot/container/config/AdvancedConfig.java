@@ -28,6 +28,7 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 public class AdvancedConfig {
 
     private boolean timerWrapperMethods;
+    private boolean weavingTimer;
     private int immediatePartialStoreThresholdSeconds;
     private int maxTraceEntriesPerTransaction;
     private int maxStackTraceSamplesPerTransaction;
@@ -48,6 +49,14 @@ public class AdvancedConfig {
 
     public void setTimerWrapperMethods(boolean timerWrapperMethods) {
         this.timerWrapperMethods = timerWrapperMethods;
+    }
+
+    public boolean isWeavingTimer() {
+        return weavingTimer;
+    }
+
+    public void setWeavingTimer(boolean weavingTimer) {
+        this.weavingTimer = weavingTimer;
     }
 
     public int getImmediatePartialStoreThresholdSeconds() {
@@ -119,6 +128,7 @@ public class AdvancedConfig {
             // sending to the server, and represents the current version hash when receiving from
             // the server
             return Objects.equal(timerWrapperMethods, that.timerWrapperMethods)
+                    && Objects.equal(weavingTimer, that.weavingTimer)
                     && Objects.equal(immediatePartialStoreThresholdSeconds,
                             that.immediatePartialStoreThresholdSeconds)
                     && Objects.equal(maxTraceEntriesPerTransaction,
@@ -139,10 +149,10 @@ public class AdvancedConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(timerWrapperMethods, immediatePartialStoreThresholdSeconds,
-                maxTraceEntriesPerTransaction, maxStackTraceSamplesPerTransaction,
-                captureThreadInfo, captureGcInfo, mbeanGaugeNotFoundDelaySeconds,
-                internalQueryTimeoutSeconds);
+        return Objects.hashCode(timerWrapperMethods, weavingTimer,
+                immediatePartialStoreThresholdSeconds, maxTraceEntriesPerTransaction,
+                maxStackTraceSamplesPerTransaction, captureThreadInfo, captureGcInfo,
+                mbeanGaugeNotFoundDelaySeconds, internalQueryTimeoutSeconds);
     }
 
     @Override
@@ -150,6 +160,7 @@ public class AdvancedConfig {
         return MoreObjects
                 .toStringHelper(this)
                 .add("timerWrapperMethods", timerWrapperMethods)
+                .add("weavingTimer", weavingTimer)
                 .add("immediatePartialStoreThresholdSeconds", immediatePartialStoreThresholdSeconds)
                 .add("maxTraceEntriesPerTransaction", maxTraceEntriesPerTransaction)
                 .add("maxStackTraceSamplesPerTransaction", maxStackTraceSamplesPerTransaction)
@@ -164,6 +175,7 @@ public class AdvancedConfig {
     @JsonCreator
     static AdvancedConfig readValue(
             @JsonProperty("timerWrapperMethods") @Nullable Boolean timerWrapperMethods,
+            @JsonProperty("weavingTimer") @Nullable Boolean weavingTimer,
             @JsonProperty("immediatePartialStoreThresholdSeconds") @Nullable Integer immediatePartialStoreThresholdSeconds,
             @JsonProperty("maxTraceEntriesPerTransaction") @Nullable Integer maxTraceEntriesPerTransaction,
             @JsonProperty("maxStackTraceSamplesPerTransaction") @Nullable Integer maxStackTraceSamplesPerTransaction,
@@ -173,6 +185,7 @@ public class AdvancedConfig {
             @JsonProperty("internalQueryTimeoutSeconds") @Nullable Integer internalQueryTimeoutSeconds,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(timerWrapperMethods, "timerWrapperMethods");
+        checkRequiredProperty(weavingTimer, "weavingTimer");
         checkRequiredProperty(immediatePartialStoreThresholdSeconds,
                 "immediatePartialStoreThresholdSeconds");
         checkRequiredProperty(maxTraceEntriesPerTransaction, "maxTraceEntriesPerTransaction");
@@ -185,6 +198,7 @@ public class AdvancedConfig {
         checkRequiredProperty(version, "version");
         AdvancedConfig config = new AdvancedConfig(version);
         config.setTimerWrapperMethods(timerWrapperMethods);
+        config.setWeavingTimer(weavingTimer);
         config.setImmediatePartialStoreThresholdSeconds(immediatePartialStoreThresholdSeconds);
         config.setMaxTraceEntriesPerTransaction(maxTraceEntriesPerTransaction);
         config.setMaxStackTraceSamplesPerTransaction(maxStackTraceSamplesPerTransaction);

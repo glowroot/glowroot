@@ -15,8 +15,10 @@
  */
 package org.glowroot.transaction;
 
+import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.config.ConfigService;
 import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.Transaction;
 import org.glowroot.weaving.WeavingTimerService;
@@ -26,14 +28,25 @@ class WeavingTimerServiceImpl implements WeavingTimerService {
     private final TransactionRegistry transactionRegistry;
     private final TimerName timerName;
 
+    private volatile boolean enabled;
+
     WeavingTimerServiceImpl(TransactionRegistry transactionRegistry,
-            TimerNameCache timerNameCache) {
+            final ConfigService configService, TimerNameCache timerNameCache) {
         this.transactionRegistry = transactionRegistry;
+        configService.addConfigListener(new ConfigListener() {
+            @Override
+            public void onChange() {
+                enabled = configService.getAdvancedConfig().weavingTimer();
+            }
+        });
         this.timerName = timerNameCache.getName(OnlyForTheTimerName.class);
     }
 
     @Override
     public WeavingTimer start() {
+        if (!enabled) {
+            return NopWeavingTimer.INSTANCE;
+        }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction == null) {
             return NopWeavingTimer.INSTANCE;

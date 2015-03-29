@@ -666,6 +666,7 @@ class ConfigJsonService {
     abstract static class AdvancedConfigDto {
 
         abstract boolean timerWrapperMethods();
+        abstract boolean weavingTimer();
         abstract int immediatePartialStoreThresholdSeconds();
         abstract int maxTraceEntriesPerTransaction();
         abstract int maxStackTraceSamplesPerTransaction();
@@ -678,6 +679,7 @@ class ConfigJsonService {
         private AdvancedConfig toConfig() {
             return ImmutableAdvancedConfig.builder()
                     .timerWrapperMethods(timerWrapperMethods())
+                    .weavingTimer(weavingTimer())
                     .immediatePartialStoreThresholdSeconds(immediatePartialStoreThresholdSeconds())
                     .maxTraceEntriesPerTransaction(maxTraceEntriesPerTransaction())
                     .maxStackTraceSamplesPerTransaction(maxStackTraceSamplesPerTransaction())
@@ -689,13 +691,14 @@ class ConfigJsonService {
         }
 
         private static AdvancedConfigDto fromConfig(AdvancedConfig config) {
-            return ImmutableAdvancedConfigDto
-                    .builder()
+            return ImmutableAdvancedConfigDto.builder()
                     .timerWrapperMethods(config.timerWrapperMethods())
+                    .weavingTimer(config.weavingTimer())
                     .immediatePartialStoreThresholdSeconds(
                             config.immediatePartialStoreThresholdSeconds())
                     .maxTraceEntriesPerTransaction(config.maxTraceEntriesPerTransaction())
-                    .maxStackTraceSamplesPerTransaction(config.maxStackTraceSamplesPerTransaction())
+                    .maxStackTraceSamplesPerTransaction(
+                            config.maxStackTraceSamplesPerTransaction())
                     .captureThreadInfo(config.captureThreadInfo())
                     .captureGcInfo(config.captureGcInfo())
                     .mbeanGaugeNotFoundDelaySeconds(config.mbeanGaugeNotFoundDelaySeconds())

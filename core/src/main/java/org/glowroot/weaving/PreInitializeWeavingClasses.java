@@ -316,7 +316,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.common.Reflections");
         types.add("org.glowroot.transaction.TransactionRegistry");
         types.add("org.glowroot.transaction.WeavingTimerServiceImpl");
-        types.add("org.glowroot.transaction.WeavingTimerServiceImpl$1");
+        types.add("org.glowroot.transaction.WeavingTimerServiceImpl$2");
         types.add("org.glowroot.transaction.WeavingTimerServiceImpl$NopWeavingTimer");
         types.add("org.glowroot.transaction.model.NestedTimerMap");
         types.add("org.glowroot.transaction.model.NestedTimerMap$Entry");

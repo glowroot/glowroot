@@ -15,7 +15,6 @@
  */
 package org.glowroot.container.trace;
 
-import java.util.Iterator;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -102,28 +101,13 @@ public class Timer {
     }
 
     public ImmutableList<Timer> getNestedTimers() {
-        return getStableAndOrderedNestedTimers();
-    }
-
-    // the glowroot weaving timer is a bit unpredictable since tests are often run inside the
-    // same GlowrootContainer for test speed, so test order affects whether any classes are
-    // woven during the test or not
-    // it's easiest to just ignore this timer completely
-    private ImmutableList<Timer> getStableAndOrderedNestedTimers() {
-        List<Timer> stableNestedTimers = Lists.newArrayList(nestedTimers);
-        for (Iterator<Timer> i = stableNestedTimers.iterator(); i.hasNext();) {
-            if ("glowroot weaving".equals(i.next().getName())) {
-                i.remove();
-            }
-        }
-        return ImmutableList.copyOf(
-                Timer.orderingByTotal.reverse().sortedCopy(stableNestedTimers));
+        return ImmutableList.copyOf(Timer.orderingByTotal.reverse().sortedCopy(nestedTimers));
     }
 
     @JsonIgnore
     public List<String> getNestedTimerNames() {
         List<String> stableNestedTimers = Lists.newArrayList();
-        for (Timer stableNestedTimer : getStableAndOrderedNestedTimers()) {
+        for (Timer stableNestedTimer : getNestedTimers()) {
             stableNestedTimers.add(stableNestedTimer.getName());
         }
         return stableNestedTimers;

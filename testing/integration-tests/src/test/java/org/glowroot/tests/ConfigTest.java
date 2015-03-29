@@ -383,6 +383,7 @@ public class ConfigTest {
 
     private static void updateAllFields(AdvancedConfig config) {
         config.setTimerWrapperMethods(!config.isTimerWrapperMethods());
+        config.setWeavingTimer(!config.isWeavingTimer());
         config.setImmediatePartialStoreThresholdSeconds(
                 config.getImmediatePartialStoreThresholdSeconds() + 1);
         config.setMaxTraceEntriesPerTransaction(config.getMaxTraceEntriesPerTransaction() + 10);

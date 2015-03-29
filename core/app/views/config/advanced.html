@@ -51,6 +51,19 @@
         </div>
       </div>
       <div gt-form-group
+           gt-label="Weaving timer"
+           gt-checkbox-label="Enable transaction timer to capture glowroot weaving time"
+           gt-model="config.weavingTimer"
+           gt-type="checkbox">
+        <div class="help-block">
+          <p>
+            When enabled, glowroot weaving time (performed during class loading) will be captured as a standard
+            transaction timer under the timer name "glowroot weaving". Typically only the initial transaction(s) through
+            an application perform class loading/weaving.
+          </p>
+        </div>
+      </div>
+      <div gt-form-group
            gt-label="Immediate partial trace store threshold"
            gt-model="config.immediatePartialStoreThresholdSeconds"
            gt-number="true"

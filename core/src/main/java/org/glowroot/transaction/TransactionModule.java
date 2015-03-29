@@ -69,7 +69,8 @@ public class TransactionModule {
         analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
                 adviceCache.getMixinTypes(), extraBootResourceFinder);
         final TimerNameCache timerNameCache = new TimerNameCache();
-        weavingTimerService = new WeavingTimerServiceImpl(transactionRegistry, timerNameCache);
+        weavingTimerService =
+                new WeavingTimerServiceImpl(transactionRegistry, configService, timerNameCache);
 
         timerWrapperMethods =
                 configModule.getConfigService().getAdvancedConfig().timerWrapperMethods();

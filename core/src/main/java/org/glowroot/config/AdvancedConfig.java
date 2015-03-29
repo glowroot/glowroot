@@ -31,6 +31,11 @@ public abstract class AdvancedConfig {
     }
 
     @Value.Default
+    public boolean weavingTimer() {
+        return false;
+    }
+
+    @Value.Default
     public int immediatePartialStoreThresholdSeconds() {
         return 60;
     }
