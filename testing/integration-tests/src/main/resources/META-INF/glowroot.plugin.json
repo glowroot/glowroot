@@ -1,7 +1,6 @@
 {
   "name": "Integration Tests Plugin",
   "id": "glowroot-integration-tests",
-  "version": "0.5-SNAPSHOT",
   "transactionTypes": [
     "Integration test"
   ],

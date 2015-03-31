@@ -1,7 +1,6 @@
 {
   "name": "Servlet Plugin",
   "id": "servlet",
-  "version": "0.5-SNAPSHOT",
   "transactionTypes": [
     "Servlet"
   ],

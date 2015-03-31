@@ -1,7 +1,6 @@
 {
   "name": "Microbenchmarks Plugin",
   "id": "glowroot-microbenchmarks",
-  "version": "0.5-SNAPSHOT",
   "transactionTypes": [
     "Microbenchmark"
   ],

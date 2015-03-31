@@ -1,7 +1,6 @@
 {
   "name": "Logger Plugin",
   "id": "logger",
-  "version": "0.5-SNAPSHOT",
   "properties": [
     {
       "name": "traceErrorOnErrorWithThrowable",

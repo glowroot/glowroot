@@ -58,7 +58,6 @@ public abstract class PluginDescriptor {
 
     public abstract String name();
     public abstract String id();
-    public abstract String version();
     public abstract List<String> transactionTypes();
     public abstract List<String> transactionCustomAttributes();
     public abstract List<PropertyDescriptor> properties();

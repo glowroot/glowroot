@@ -1,7 +1,6 @@
 {
   "name": "UI Sandbox Plugin",
   "id": "glowroot-ui-sandbox",
-  "version": "0.5-SNAPSHOT",
   "transactionTypes": [
     "Sandbox",
     "Background"

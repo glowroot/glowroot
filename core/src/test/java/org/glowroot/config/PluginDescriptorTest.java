@@ -49,8 +49,6 @@ public class PluginDescriptorTest {
         return ImmutablePluginDescriptor.builder()
                 .name(name)
                 .id(name.toLowerCase(Locale.ENGLISH).replace(' ', '-'))
-                .version("1.0")
                 .build();
-
     }
 }

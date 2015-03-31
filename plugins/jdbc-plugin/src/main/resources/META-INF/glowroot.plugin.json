@@ -1,7 +1,6 @@
 {
   "name": "Jdbc Plugin",
   "id": "jdbc",
-  "version": "0.5-SNAPSHOT",
   "properties": [
     {
       "name": "captureBindParameters",
