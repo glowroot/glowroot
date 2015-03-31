@@ -23,17 +23,22 @@
     </dependency>
     <dependency>
       <groupId>org.glowroot.plugins</groupId>
-      <artifactId>servlet-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot.plugins</groupId>
       <artifactId>jdbc-plugin</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.glowroot.plugins</groupId>
       <artifactId>logger-plugin</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot.plugins</groupId>
+      <artifactId>quartz-plugin</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot.plugins</groupId>
+      <artifactId>servlet-plugin</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>
