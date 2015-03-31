@@ -1,0 +1,39 @@
+{
+  "name": "Http Client Plugin",
+  "id": "http-client",
+  "instrumentation": [
+    {
+      "className": "org.apache.http.client.HttpClient",
+      "methodName": "execute",
+      "methodParameterTypes": [
+        "org.apache.http.client.methods.HttpUriRequest",
+        ".."
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "http client request",
+      "traceEntryTemplate": "http client request: {{0.method}} {{0.URI}}"
+    },
+    {
+      "className": "org.apache.http.client.HttpClient",
+      "methodName": "execute",
+      "methodParameterTypes": [
+        "org.apache.http.HttpHost",
+        "org.apache.http.HttpRequest",
+        ".."
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "http client request",
+      "traceEntryTemplate": "http client request: {{1.requestLine.method}} {{0.toURI}}{{1.requestLine.uri}}"
+    },
+    {
+      "className": "com.ning.http.client.AsyncHttpClient$BoundRequestBuilder",
+      "methodName": "execute",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "http client request",
+      "traceEntryTemplate": "http client request: {{this.request.method}} {{this.baseURL}}"
+    }
+  ]
+}

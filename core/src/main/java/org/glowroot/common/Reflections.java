@@ -48,10 +48,27 @@ public class Reflections {
             throws Exception {
         try {
             return getMethod(clazz, name, parameterTypes);
-        } catch (Exception e) {
+        } catch (NoSuchMethodException e) {
             // log exception at trace level
             logger.trace(e.getMessage(), e);
-            return getDeclaredMethod(clazz, name, parameterTypes);
+            return getAnyDeclaredMethod(clazz, name, parameterTypes);
+        }
+    }
+
+    private static Method getAnyDeclaredMethod(Class<?> clazz, String name,
+            Class<?>... parameterTypes) throws Exception {
+        try {
+            Method method = clazz.getDeclaredMethod(name, parameterTypes);
+            method.setAccessible(true);
+            return method;
+        } catch (NoSuchMethodException e) {
+            // log exception at trace level
+            logger.trace(e.getMessage(), e);
+            Class<?> superClass = clazz.getSuperclass();
+            if (superClass == null) {
+                throw e;
+            }
+            return getAnyDeclaredMethod(superClass, name, parameterTypes);
         }
     }
 
@@ -70,9 +87,23 @@ public class Reflections {
         } catch (NoSuchFieldException e) {
             // log exception at trace level
             logger.trace(e.getMessage(), e);
+            return getAnyDeclaredField(clazz, fieldName);
+        }
+    }
+
+    private static Field getAnyDeclaredField(Class<?> clazz, String fieldName) throws Exception {
+        try {
             Field field = clazz.getDeclaredField(fieldName);
             field.setAccessible(true);
             return field;
+        } catch (NoSuchFieldException e) {
+            // log exception at trace level
+            logger.trace(e.getMessage(), e);
+            Class<?> superClass = clazz.getSuperclass();
+            if (superClass == null) {
+                throw e;
+            }
+            return getAnyDeclaredField(superClass, fieldName);
         }
     }
 

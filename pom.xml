@@ -44,6 +44,7 @@
     <module>testing/webdriver-tests</module>
     <module>testing/microbenchmarks</module>
     <module>testing/ui-sandbox</module>
+    <module>plugins/http-client-plugin</module>
     <module>plugins/jdbc-plugin</module>
     <module>plugins/jdbc-plugin-microbenchmarks</module>
     <module>plugins/jms-plugin</module>
