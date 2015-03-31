@@ -28,6 +28,11 @@
     </dependency>
     <dependency>
       <groupId>org.glowroot.plugins</groupId>
+      <artifactId>jms-plugin</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot.plugins</groupId>
       <artifactId>logger-plugin</artifactId>
       <version>${project.version}</version>
     </dependency>

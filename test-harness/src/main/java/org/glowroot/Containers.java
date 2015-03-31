@@ -83,7 +83,7 @@ public class Containers {
 
     public static Container getSharedLocalContainer() throws Exception {
         if (!SharedContainerRunListener.useSharedContainer()) {
-            return create(null, false, false);
+            return new LocalContainer(null, false, 0, false, ImmutableMap.<String, String>of());
         }
         LocalContainer container =
                 (LocalContainer) SharedContainerRunListener.getSharedLocalContainer();

@@ -1,0 +1,39 @@
+{
+  "name": "JMS Plugin",
+  "id": "jms",
+  "instrumentation": [
+    {
+      "className": "javax.jms.MessageListener",
+      "methodName": "onMessage",
+      "methodParameterTypes": [
+        "javax.jms.Message"
+      ],
+      "captureKind": "transaction",
+      "timerName": "jms message",
+      "traceEntryTemplate": "{{this.class.simpleName}}.onMessage()",
+      "transactionType": "JMS Message",
+      "transactionNameTemplate": "{{this.class.simpleName}}"
+    },
+    {
+      "className": "javax.jms.MessageProducer",
+      "methodName": "send",
+      "methodParameterTypes": [
+        "javax.jms.Message",
+        ".."
+      ],
+      "captureKind": "timer",
+      "timerName": "jms send message"
+    },
+    {
+      "className": "javax.jms.MessageProducer",
+      "methodName": "send",
+      "methodParameterTypes": [
+        "javax.jms.Destination",
+        "javax.jms.Message",
+        ".."
+      ],
+      "captureKind": "timer",
+      "timerName": "jms send message"
+    }
+  ]
+}
