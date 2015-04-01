@@ -100,34 +100,41 @@
                  style="max-width: 20em; display: inline-block">
         </div>
       </div>
-      <fieldset>
-        <legend>Send test email</legend>
-        <div gt-form-group
-             gt-label="Test email recipient"
-             gt-model="testEmailRecipient"
-             gt-width="25em"
-             class="gt-form-group-without-help-block">
-        </div>
-      </fieldset>
       <div class="form-group gt-form-buttons">
         <div class="col-lg-offset-3 col-lg-9">
-          <div gt-button-group>
-            <div gt-button
-                 class="gt-inline-block"
-                 gt-label="Save changes"
-                 gt-click="save(deferred)"
-                 gt-disabled="!hasChanges() || formCtrl.$invalid">
-            </div>
-            <div gt-button
-                 class="gt-inline-block"
-                 gt-btn-class="btn-default"
-                 gt-label="Send test email"
-                 gt-click="sendTestEmail(deferred)"
-                 gt-disabled="!testEmailRecipient || !config.host">
-            </div>
+          <div gt-button
+               gt-label="Save changes"
+               gt-click="save(deferred)"
+               gt-disabled="!hasChanges() || formCtrl.$invalid">
           </div>
         </div>
       </div>
+    </div>
+    <div ng-form
+         class="form-horizontal"
+         style="padding-top: 30px;">
+      <fieldset class="gt-send-email-fieldset" style="padding-bottom: 30px;">
+        <legend>Send test email</legend>
+        <label class="col-lg-3 control-label" for="testEmailRecipient">
+          Test email recipient
+        </label>
+
+        <div class="col-lg-9">
+          <input type="text"
+                 class="form-control"
+                 ng-model="testEmailRecipient"
+                 id="testEmailRecipient"
+                 style="max-width: 25em; float: left; vertical-align: top; margin-right: 10px; margin-bottom: 10px;">
+
+          <div gt-button
+               gt-btn-class="btn-default"
+               gt-label="Send test email"
+               gt-click="sendTestEmail(deferred)"
+               gt-disabled="!testEmailRecipient || !config.host"
+               style="vertical-align: top; margin-bottom: 10px;">
+          </div>
+        </div>
+      </fieldset>
     </div>
   </div>
 </div>
