@@ -20,10 +20,12 @@ import org.junit.Test;
 import org.glowroot.tests.webdriver.config.AdvancedConfigPage;
 import org.glowroot.tests.webdriver.config.ConfigSidebar;
 import org.glowroot.tests.webdriver.config.GeneralConfigPage;
+import org.glowroot.tests.webdriver.config.SmtpConfigPage;
 import org.glowroot.tests.webdriver.config.StorageConfigPage;
 import org.glowroot.tests.webdriver.config.UserRecordingConfigPage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.openqa.selenium.By.xpath;
 
 public class ConfigTest extends WebDriverTest {
 
@@ -53,6 +55,50 @@ public class ConfigTest extends WebDriverTest {
         assertThat(page.getEnabledSwitchOff().getAttribute("class").split(" ")).contains("active");
         assertThat(page.getStoreThresholdTextField().getAttribute("value")).isEqualTo("2345");
         assertThat(page.getProfilingIntervalTextField().getAttribute("value")).isEqualTo("3456");
+    }
+
+    @Test
+    public void shouldUpdateSmtpConfig() throws Exception {
+        // given
+        App app = new App(driver, "http://localhost:" + container.getUiPort());
+        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+        SmtpConfigPage page = new SmtpConfigPage(driver);
+
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getAlertsLink().click();
+        Utils.withWait(driver, xpath("//a[@href='config/smtp']")).click();
+
+        // when
+        page.getFromEmailAddressTextField().clear();
+        page.getFromEmailAddressTextField().sendKeys("user1234@example.org");
+        page.getFromDisplayNameTextField().clear();
+        page.getFromDisplayNameTextField().sendKeys("User 1234");
+        page.getSmtpHostTextField().clear();
+        page.getSmtpHostTextField().sendKeys("example.org");
+        page.getSmtpPortTextField().clear();
+        page.getSmtpPortTextField().sendKeys("5678");
+        page.getUseSslCheckbox().click();
+        page.getUsernameTextField().clear();
+        page.getUsernameTextField().sendKeys("user1234");
+        page.getPasswordTextField().clear();
+        page.getPasswordTextField().sendKeys("p");
+        page.clickSaveButton();
+
+        // then
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getAlertsLink().click();
+        Utils.withWait(driver, xpath("//a[@href='config/smtp']")).click();
+        assertThat(page.getFromEmailAddressTextField().getAttribute("value"))
+                .isEqualTo("user1234@example.org");
+        assertThat(page.getFromDisplayNameTextField().getAttribute("value")).isEqualTo("User 1234");
+        assertThat(page.getSmtpHostTextField().getAttribute("value")).isEqualTo("example.org");
+        assertThat(page.getSmtpPortTextField().getAttribute("value")).isEqualTo("5678");
+        assertThat(page.getUseSslCheckbox().isSelected()).isTrue();
+        assertThat(page.getUsernameTextField().getAttribute("value")).isEqualTo("user1234");
+        assertThat(page.getPasswordTextField().getAttribute("value")).isEqualTo("********");
     }
 
     @Test

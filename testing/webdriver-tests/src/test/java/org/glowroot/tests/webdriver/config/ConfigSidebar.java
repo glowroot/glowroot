@@ -31,16 +31,16 @@ public class ConfigSidebar {
         this.driver = driver;
     }
 
-    public WebElement getProfilingLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("Profiling"));
-    }
-
     public WebElement getInstrumentationLink() {
         return Utils.withWait(driver, getSidebar(), linkText("Instrumentation"));
     }
 
     public WebElement getGaugesLink() {
         return Utils.withWait(driver, getSidebar(), linkText("Gauges"));
+    }
+
+    public WebElement getAlertsLink() {
+        return Utils.withWait(driver, getSidebar(), linkText("Alerts"));
     }
 
     public WebElement getAdvancedLink() {
