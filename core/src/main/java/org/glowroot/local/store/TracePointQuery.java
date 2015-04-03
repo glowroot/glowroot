@@ -174,9 +174,12 @@ public abstract class TracePointQuery {
     }
 
     private void appendOrderByAndLimit(ParameterizedSqlBuilder builder) {
-        builder.appendText(" order by trace.duration desc limit ?");
-        // +1 is to identify if limit was exceeded
-        builder.addArg(limit() + 1);
+        builder.appendText(" order by trace.duration");
+        if (limit() != 0) {
+            // +1 is to identify if limit was exceeded
+            builder.appendText(" desc limit ?");
+            builder.addArg(limit() + 1);
+        }
     }
 
     private static class ParameterizedSqlBuilder {

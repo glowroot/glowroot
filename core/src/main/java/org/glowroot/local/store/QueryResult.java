@@ -38,7 +38,9 @@ public class QueryResult<T> {
     }
 
     public static </*@NonNull*/T> QueryResult<T> from(ImmutableList<T> records, int limit) {
-        if (records.size() > limit) {
+        if (limit == 0) {
+            return new QueryResult<T>(records, false);
+        } else if (records.size() > limit) {
             return new QueryResult<T>(records.subList(0, limit), true);
         } else {
             return new QueryResult<T>(records, false);

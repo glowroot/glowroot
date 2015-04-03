@@ -147,7 +147,7 @@ class TracePointJsonService {
                             return transaction.getStartTick();
                         }
                     }));
-            if (activeTraces.size() > query.limit()) {
+            if (query.limit() != 0 && activeTraces.size() > query.limit()) {
                 activeTraces = activeTraces.subList(0, query.limit());
             }
             return activeTraces;

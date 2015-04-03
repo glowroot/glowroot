@@ -56,6 +56,6 @@ public abstract class TraceQuery {
     }
     @Value.Default
     public int limit() {
-        return Integer.MAX_VALUE;
+        return 0;
     }
 }
