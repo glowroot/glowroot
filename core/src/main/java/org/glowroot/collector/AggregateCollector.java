@@ -73,10 +73,7 @@ public class AggregateCollector {
         List<AggregateIntervalCollector> intervalCollectors = Lists.newArrayList();
         for (AggregateIntervalCollector intervalCollector : getOrderedAllIntervalCollectors()) {
             long endTime = intervalCollector.getEndTime();
-            // don't add interval if less than 5 seconds from start since likely to be under
-            // representative and steep slope
-            if (endTime >= from && endTime <= to
-                    && intervalCollector.getCurrentDuration() >= 5000) {
+            if (endTime >= from && endTime <= to) {
                 intervalCollectors.add(intervalCollector);
             }
         }
