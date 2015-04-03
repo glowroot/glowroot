@@ -370,7 +370,7 @@ public class AnalyzedWorld {
 
     // now that the type has been loaded anyways, build the analyzed class via reflection
     private static AnalyzedClass createAnalyzedClassPlanC(Class<?> clazz, List<Advice> advisors) {
-        ImmutableAnalyzedClass.Builder classBuilder = ImmutableAnalyzedClass.builder();
+        AnalyzedClass.Builder classBuilder = AnalyzedClass.builder();
         classBuilder.modifiers(clazz.getModifiers());
         classBuilder.name(clazz.getName());
         Class<?> superClass = clazz.getSuperclass();
@@ -394,7 +394,7 @@ public class AnalyzedWorld {
             List<Advice> matchingAdvisors = getMatchingAdvisors(method.getModifiers(),
                     method.getName(), parameterTypes, returnType, adviceMatchers);
             if (!matchingAdvisors.isEmpty()) {
-                ImmutableAnalyzedMethod.Builder methodBuilder = ImmutableAnalyzedMethod.builder();
+                AnalyzedMethod.Builder methodBuilder = AnalyzedMethod.builder();
                 methodBuilder.name(method.getName());
                 for (Type parameterType : parameterTypes) {
                     methodBuilder.addParameterTypes(parameterType.getClassName());

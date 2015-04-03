@@ -46,16 +46,10 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.Encryption;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.AdvancedConfig;
+import org.glowroot.config.AnonymousAccess;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ConfigService.OptimisticLockException;
 import org.glowroot.config.GeneralConfig;
-import org.glowroot.config.ImmutableAdvancedConfig;
-import org.glowroot.config.ImmutableGeneralConfig;
-import org.glowroot.config.ImmutablePluginConfig;
-import org.glowroot.config.ImmutableSmtpConfig;
-import org.glowroot.config.ImmutableStorageConfig;
-import org.glowroot.config.ImmutableUserInterfaceConfig;
-import org.glowroot.config.ImmutableUserRecordingConfig;
 import org.glowroot.config.PluginConfig;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.PropertyDescriptor;
@@ -63,7 +57,6 @@ import org.glowroot.config.PropertyValue;
 import org.glowroot.config.SmtpConfig;
 import org.glowroot.config.StorageConfig;
 import org.glowroot.config.UserInterfaceConfig;
-import org.glowroot.config.UserInterfaceConfig.AnonymousAccess;
 import org.glowroot.config.UserRecordingConfig;
 import org.glowroot.local.store.AlertingService;
 import org.glowroot.local.store.CappedDatabase;
@@ -107,7 +100,7 @@ class ConfigJsonService {
     @GET("/backend/config/general")
     String getGeneralConfig() throws Exception {
         GeneralConfig config = configService.getGeneralConfig();
-        return mapper.writeValueAsString(GeneralConfigDto.fromConfig(config));
+        return mapper.writeValueAsString(GeneralConfigDtoBase.fromConfig(config));
     }
 
     @GET("/backend/config/ui")
@@ -120,15 +113,15 @@ class ConfigJsonService {
     @GET("/backend/config/storage")
     String getStorageConfig() throws Exception {
         StorageConfig config = configService.getStorageConfig();
-        return mapper.writeValueAsString(StorageConfigDto.fromConfig(config));
+        return mapper.writeValueAsString(StorageConfigDtoBase.fromConfig(config));
     }
 
     @GET("/backend/config/smtp")
     String getSmtpConfig() throws Exception {
         SmtpConfig config = configService.getSmtpConfig();
         String localServerName = InetAddress.getLocalHost().getHostName();
-        return mapper.writeValueAsString(ImmutableSmtpConfigResponse.builder()
-                .config(SmtpConfigDto.fromConfig(config))
+        return mapper.writeValueAsString(SmtpConfigResponse.builder()
+                .config(SmtpConfigDtoBase.fromConfig(config))
                 .localServerName(localServerName)
                 .build());
     }
@@ -136,14 +129,14 @@ class ConfigJsonService {
     @GET("/backend/config/user-recording")
     String getUserRecordingConfig() throws Exception {
         UserRecordingConfig config = configService.getUserRecordingConfig();
-        return mapper.writeValueAsString(UserRecordingConfigDto.fromConfig(config));
+        return mapper.writeValueAsString(UserRecordingConfigDtoBase.fromConfig(config));
     }
 
     @GET("/backend/config/advanced")
     String getAdvancedConfig() throws Exception {
         AdvancedConfig config = configService.getAdvancedConfig();
-        return mapper.writeValueAsString(ImmutableAdvancedConfigResponse.builder()
-                .config(AdvancedConfigDto.fromConfig(config))
+        return mapper.writeValueAsString(AdvancedConfigResponse.builder()
+                .config(AdvancedConfigDtoBase.fromConfig(config))
                 .timerWrapperMethodsActive(transactionModule.isTimerWrapperMethods())
                 .build());
     }
@@ -154,7 +147,7 @@ class ConfigJsonService {
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             PluginConfig pluginConfig = configService.getPluginConfig(pluginDescriptor.id());
             checkNotNull(pluginConfig);
-            pluginResponses.add(ImmutablePluginResponse.builder()
+            pluginResponses.add(PluginResponse.builder()
                     .id(pluginDescriptor.id())
                     .name(pluginDescriptor.name())
                     .enabled(pluginConfig.enabled())
@@ -176,10 +169,10 @@ class ConfigJsonService {
         if (config == null || pluginDescriptor == null) {
             throw new IllegalArgumentException("Plugin id not found: " + pluginId);
         }
-        return mapper.writeValueAsString(ImmutablePluginConfigResponse.builder()
+        return mapper.writeValueAsString(PluginConfigResponse.builder()
                 .name(pluginDescriptor.name())
                 .addAllPropertyDescriptors(pluginDescriptor.properties())
-                .config(PluginConfigDto.fromConfig(config))
+                .config(PluginConfigDtoBase.fromConfig(config))
                 .build());
     }
 
@@ -201,7 +194,7 @@ class ConfigJsonService {
         UserInterfaceConfigDto configDto = mapper.readValue(content, UserInterfaceConfigDto.class);
         configDto.validate();
         UserInterfaceConfig priorConfig = configService.getUserInterfaceConfig();
-        ImmutableUserInterfaceConfig.Builder builder = ImmutableUserInterfaceConfig.builder()
+        UserInterfaceConfig.Builder builder = UserInterfaceConfig.builder()
                 .port(configDto.port())
                 .sessionTimeoutMinutes(configDto.sessionTimeoutMinutes());
         if (configDto.currentAdminPassword().length() > 0
@@ -360,7 +353,7 @@ class ConfigJsonService {
     @RequiresNonNull("httpServer")
     private String getUserInterface(boolean portChangeFailed) throws JsonProcessingException {
         UserInterfaceConfig config = configService.getUserInterfaceConfig();
-        UserInterfaceConfigDto configDto = ImmutableUserInterfaceConfigDto.builder()
+        UserInterfaceConfigDto configDto = UserInterfaceConfigDto.builder()
                 .port(config.port())
                 .adminPasswordEnabled(config.adminPasswordEnabled())
                 .readOnlyPasswordEnabled(config.readOnlyPasswordEnabled())
@@ -368,7 +361,7 @@ class ConfigJsonService {
                 .sessionTimeoutMinutes(config.sessionTimeoutMinutes())
                 .version(config.version())
                 .build();
-        return mapper.writeValueAsString(ImmutableUserInterfaceConfigResponse.builder()
+        return mapper.writeValueAsString(UserInterfaceConfigResponse.builder()
                 .config(configDto)
                 .activePort(httpServer.getPort())
                 .portChangeFailed(portChangeFailed)
@@ -376,7 +369,7 @@ class ConfigJsonService {
     }
 
     private SmtpConfig toConfig(SmtpConfigDto configDto) throws Exception {
-        ImmutableSmtpConfig.Builder builder = ImmutableSmtpConfig.builder()
+        SmtpConfig.Builder builder = SmtpConfig.builder()
                 .fromEmailAddress(configDto.fromEmailAddress())
                 .fromDisplayName(configDto.fromDisplayName())
                 .host(configDto.host())
@@ -446,50 +439,50 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableUserInterfaceConfigResponse.class)
-    abstract static class UserInterfaceConfigResponse {
+    @JsonSerialize(as = UserInterfaceConfigResponse.class)
+    abstract static class UserInterfaceConfigResponseBase {
         abstract UserInterfaceConfigDto config();
         abstract int activePort();
         abstract boolean portChangeFailed();
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableSmtpConfigResponse.class)
-    abstract static class SmtpConfigResponse {
+    @JsonSerialize(as = SmtpConfigResponse.class)
+    abstract static class SmtpConfigResponseBase {
         abstract SmtpConfigDto config();
         abstract String localServerName();
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableAdvancedConfigResponse.class)
-    abstract static class AdvancedConfigResponse {
+    @JsonSerialize(as = AdvancedConfigResponse.class)
+    abstract static class AdvancedConfigResponseBase {
         abstract AdvancedConfigDto config();
         abstract boolean timerWrapperMethodsActive();
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutablePluginResponse.class)
-    abstract static class PluginResponse {
+    @JsonSerialize(as = PluginResponse.class)
+    abstract static class PluginResponseBase {
         abstract String id();
         abstract String name();
         abstract boolean enabled();
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutablePluginConfigResponse.class)
-    abstract static class PluginConfigResponse {
+    @JsonSerialize(as = PluginConfigResponse.class)
+    abstract static class PluginConfigResponseBase {
         abstract String name();
         abstract PluginConfigDto config();
-        abstract List<PropertyDescriptor> propertyDescriptors();
+        abstract ImmutableList<PropertyDescriptor> propertyDescriptors();
     }
 
     // these DTOs are only different from underlying config objects in that they contain the version
     // attribute, and that they have no default attribute values
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableGeneralConfigDto.class)
-    @JsonDeserialize(as = ImmutableGeneralConfigDto.class)
-    abstract static class GeneralConfigDto {
+    @JsonSerialize(as = GeneralConfigDto.class)
+    @JsonDeserialize(as = GeneralConfigDto.class)
+    abstract static class GeneralConfigDtoBase {
 
         abstract boolean enabled();
         abstract int traceStoreThresholdMillis();
@@ -497,8 +490,8 @@ class ConfigJsonService {
         abstract String defaultTransactionType();
         abstract String version();
 
-        private GeneralConfig toConfig() {
-            return ImmutableGeneralConfig.builder()
+        GeneralConfig toConfig() {
+            return GeneralConfig.builder()
                     .enabled(enabled())
                     .traceStoreThresholdMillis(traceStoreThresholdMillis())
                     .profilingIntervalMillis(profilingIntervalMillis())
@@ -507,7 +500,7 @@ class ConfigJsonService {
         }
 
         private static GeneralConfigDto fromConfig(GeneralConfig config) {
-            return ImmutableGeneralConfigDto.builder()
+            return GeneralConfigDto.builder()
                     .enabled(config.enabled())
                     .traceStoreThresholdMillis(config.traceStoreThresholdMillis())
                     .profilingIntervalMillis(config.profilingIntervalMillis())
@@ -518,9 +511,9 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableUserInterfaceConfigDto.class)
-    @JsonDeserialize(as = ImmutableUserInterfaceConfigDto.class)
-    abstract static class UserInterfaceConfigDto {
+    @JsonSerialize(as = UserInterfaceConfigDto.class)
+    @JsonDeserialize(as = UserInterfaceConfigDto.class)
+    abstract static class UserInterfaceConfigDtoBase {
 
         abstract int port();
         abstract boolean adminPasswordEnabled();
@@ -544,7 +537,7 @@ class ConfigJsonService {
         abstract int sessionTimeoutMinutes();
         abstract String version();
 
-        private void validate() {
+        void validate() {
             if (readOnlyPasswordEnabled()) {
                 checkState(adminPasswordEnabled());
             }
@@ -568,17 +561,17 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableStorageConfigDto.class)
-    @JsonDeserialize(as = ImmutableStorageConfigDto.class)
-    abstract static class StorageConfigDto {
+    @JsonSerialize(as = StorageConfigDto.class)
+    @JsonDeserialize(as = StorageConfigDto.class)
+    abstract static class StorageConfigDtoBase {
 
         abstract int aggregateExpirationHours();
         abstract int traceExpirationHours();
         abstract int cappedDatabaseSizeMb();
         abstract String version();
 
-        private StorageConfig toConfig() {
-            return ImmutableStorageConfig.builder()
+        StorageConfig toConfig() {
+            return StorageConfig.builder()
                     .aggregateExpirationHours(aggregateExpirationHours())
                     .traceExpirationHours(traceExpirationHours())
                     .cappedDatabaseSizeMb(cappedDatabaseSizeMb())
@@ -586,7 +579,7 @@ class ConfigJsonService {
         }
 
         private static StorageConfigDto fromConfig(StorageConfig config) {
-            return ImmutableStorageConfigDto.builder()
+            return StorageConfigDto.builder()
                     .aggregateExpirationHours(config.aggregateExpirationHours())
                     .traceExpirationHours(config.traceExpirationHours())
                     .cappedDatabaseSizeMb(config.cappedDatabaseSizeMb())
@@ -596,9 +589,9 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableSmtpConfigDto.class)
-    @JsonDeserialize(as = ImmutableSmtpConfigDto.class)
-    abstract static class SmtpConfigDto {
+    @JsonSerialize(as = SmtpConfigDto.class)
+    @JsonDeserialize(as = SmtpConfigDto.class)
+    abstract static class SmtpConfigDtoBase {
 
         abstract String fromEmailAddress();
         abstract String fromDisplayName();
@@ -618,7 +611,7 @@ class ConfigJsonService {
         abstract String version();
 
         private static SmtpConfigDto fromConfig(SmtpConfig config) {
-            return ImmutableSmtpConfigDto.builder()
+            return SmtpConfigDto.builder()
                     .fromEmailAddress(config.fromEmailAddress())
                     .fromDisplayName(config.fromDisplayName())
                     .host(config.host())
@@ -633,17 +626,17 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableUserRecordingConfigDto.class)
-    @JsonDeserialize(as = ImmutableUserRecordingConfigDto.class)
-    abstract static class UserRecordingConfigDto {
+    @JsonSerialize(as = UserRecordingConfigDto.class)
+    @JsonDeserialize(as = UserRecordingConfigDto.class)
+    abstract static class UserRecordingConfigDtoBase {
 
         abstract boolean enabled();
         abstract String user();
         abstract int profileIntervalMillis();
         abstract String version();
 
-        private UserRecordingConfig toConfig() {
-            return ImmutableUserRecordingConfig.builder()
+        UserRecordingConfig toConfig() {
+            return UserRecordingConfig.builder()
                     .enabled(enabled())
                     .user(user())
                     .profileIntervalMillis(profileIntervalMillis())
@@ -651,7 +644,7 @@ class ConfigJsonService {
         }
 
         private static UserRecordingConfigDto fromConfig(UserRecordingConfig config) {
-            return ImmutableUserRecordingConfigDto.builder()
+            return UserRecordingConfigDto.builder()
                     .enabled(config.enabled())
                     .user(config.user())
                     .profileIntervalMillis(config.profileIntervalMillis())
@@ -661,9 +654,9 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableAdvancedConfigDto.class)
-    @JsonDeserialize(as = ImmutableAdvancedConfigDto.class)
-    abstract static class AdvancedConfigDto {
+    @JsonSerialize(as = AdvancedConfigDto.class)
+    @JsonDeserialize(as = AdvancedConfigDto.class)
+    abstract static class AdvancedConfigDtoBase {
 
         abstract boolean timerWrapperMethods();
         abstract boolean weavingTimer();
@@ -676,8 +669,8 @@ class ConfigJsonService {
         abstract int internalQueryTimeoutSeconds();
         abstract String version();
 
-        private AdvancedConfig toConfig() {
-            return ImmutableAdvancedConfig.builder()
+        AdvancedConfig toConfig() {
+            return AdvancedConfig.builder()
                     .timerWrapperMethods(timerWrapperMethods())
                     .weavingTimer(weavingTimer())
                     .immediatePartialStoreThresholdSeconds(immediatePartialStoreThresholdSeconds())
@@ -691,7 +684,7 @@ class ConfigJsonService {
         }
 
         private static AdvancedConfigDto fromConfig(AdvancedConfig config) {
-            return ImmutableAdvancedConfigDto.builder()
+            return AdvancedConfigDto.builder()
                     .timerWrapperMethods(config.timerWrapperMethods())
                     .weavingTimer(config.weavingTimer())
                     .immediatePartialStoreThresholdSeconds(
@@ -709,27 +702,27 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutablePluginConfigDto.class)
-    @JsonDeserialize(as = ImmutablePluginConfigDto.class)
-    abstract static class PluginConfigDto {
+    @JsonSerialize(as = PluginConfigDto.class)
+    @JsonDeserialize(as = PluginConfigDto.class)
+    abstract static class PluginConfigDtoBase {
 
         abstract boolean enabled();
         abstract Map<String, PropertyValue> properties();
         abstract String version();
 
-        private static PluginConfigDto fromConfig(PluginConfig config) {
-            return ImmutablePluginConfigDto.builder()
-                    .enabled(config.enabled())
-                    .putAllProperties(config.properties())
-                    .version(config.version())
-                    .build();
-        }
-
-        private PluginConfig toConfig(String id) {
-            return ImmutablePluginConfig.builder()
+        PluginConfig toConfig(String id) {
+            return PluginConfig.builder()
                     .id(id)
                     .enabled(enabled())
                     .putAllProperties(properties())
+                    .build();
+        }
+
+        private static PluginConfigDto fromConfig(PluginConfig config) {
+            return PluginConfigDto.builder()
+                    .enabled(config.enabled())
+                    .putAllProperties(config.properties())
+                    .version(config.version())
                     .build();
         }
     }

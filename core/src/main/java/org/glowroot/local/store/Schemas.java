@@ -114,7 +114,7 @@ class Schemas {
             while (resultSet.next()) {
                 String columnName = checkNotNull(resultSet.getString("COLUMN_NAME"));
                 int columnType = resultSet.getInt("DATA_TYPE");
-                columns.add(ImmutableColumn.of(columnName.toLowerCase(Locale.ENGLISH), columnType));
+                columns.add(Column.of(columnName.toLowerCase(Locale.ENGLISH), columnType));
             }
         } catch (Throwable t) {
             throw closer.rethrow(t);
@@ -218,7 +218,7 @@ class Schemas {
             for (String column : entry.getValue()) {
                 columns.add(column.toLowerCase(Locale.ENGLISH));
             }
-            indexes.add(ImmutableIndex.of(name, columns));
+            indexes.add(Index.of(name, columns));
         }
         return indexes.build();
     }
@@ -251,7 +251,7 @@ class Schemas {
     }
 
     @Value.Immutable
-    abstract static class Column {
+    abstract static class ColumnBase {
         @Value.Parameter
         abstract String name();
         @Value.Parameter
@@ -267,10 +267,10 @@ class Schemas {
     }
 
     @Value.Immutable
-    abstract static class Index {
+    abstract static class IndexBase {
         @Value.Parameter
         abstract @Untainted String name();
         @Value.Parameter
-        abstract List</*@Untainted*/String> columns();
+        abstract ImmutableList</*@Untainted*/String> columns();
     }
 }

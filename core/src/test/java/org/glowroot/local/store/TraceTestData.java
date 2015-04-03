@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.io.CharSource;
 
 import org.glowroot.collector.Existence;
-import org.glowroot.collector.ImmutableTrace;
 import org.glowroot.collector.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -31,7 +30,7 @@ class TraceTestData {
     private static final AtomicInteger counter = new AtomicInteger();
 
     static Trace createTrace() {
-        return ImmutableTrace.builder()
+        return Trace.builder()
                 .id("abc" + counter.getAndIncrement())
                 .active(false)
                 .partial(false)

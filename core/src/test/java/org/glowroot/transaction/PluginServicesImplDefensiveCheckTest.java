@@ -52,8 +52,8 @@ public class PluginServicesImplDefensiveCheckTest {
         TransactionRegistry transactionRegistry = mock(TransactionRegistry.class);
         TransactionCollector transactionCollector = mock(TransactionCollector.class);
         ConfigService configService = mock(ConfigService.class);
-        GeneralConfig generalConfig = mock(GeneralConfig.class);
-        AdvancedConfig advancedConfig = mock(AdvancedConfig.class);
+        GeneralConfig generalConfig = GeneralConfig.builder().build();
+        AdvancedConfig advancedConfig = AdvancedConfig.builder().build();
         when(configService.getGeneralConfig()).thenReturn(generalConfig);
         when(configService.getAdvancedConfig()).thenReturn(advancedConfig);
 

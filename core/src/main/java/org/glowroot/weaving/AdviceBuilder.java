@@ -48,8 +48,6 @@ import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.weaving.Advice.AdviceParameter;
-import org.glowroot.weaving.Advice.ParameterKind;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -88,7 +86,7 @@ public class AdviceBuilder {
                     .put(BindMethodMeta.class, ParameterKind.METHOD_META)
                     .build();
 
-    private final ImmutableAdvice.Builder builder = ImmutableAdvice.builder();
+    private final Advice.Builder builder = Advice.builder();
 
     private final @Nullable Class<?> adviceClass;
     private final @Nullable LazyDefinedClass lazyAdviceClass;
@@ -327,7 +325,7 @@ public class AdviceBuilder {
         // parameterKindMap
         checkNotNull(parameterKind, "Annotation not found in parameterKindMap: "
                 + validBindAnnotationType.getName());
-        return ImmutableAdviceParameter.builder()
+        return AdviceParameter.builder()
                 .kind(parameterKind)
                 .type(Type.getType(parameterType))
                 .build();

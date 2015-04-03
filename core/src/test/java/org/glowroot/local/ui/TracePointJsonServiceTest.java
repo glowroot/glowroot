@@ -30,7 +30,6 @@ import org.junit.Test;
 
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
-import org.glowroot.local.store.ImmutableTracePoint;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.store.TracePoint;
@@ -220,7 +219,7 @@ public class TracePointJsonServiceTest {
     }
 
     private static TracePoint mockPoint(String id, long end, long durationMillis) {
-        return ImmutableTracePoint.builder()
+        return TracePoint.builder()
                 .id(id)
                 .captureTime(end)
                 .duration(MILLISECONDS.toNanos(durationMillis))

@@ -28,7 +28,7 @@ import com.google.common.io.CharStreams;
 
 import org.glowroot.common.ScratchBuffer;
 import org.glowroot.transaction.model.Profile;
-import org.glowroot.transaction.model.ThreadInfoComponent.ThreadInfoData;
+import org.glowroot.transaction.model.ThreadInfoData;
 import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.Transaction;
 
@@ -104,7 +104,7 @@ class AggregateBuilder {
         buffer.flip();
         byte[] histogram = new byte[size];
         buffer.get(histogram, 0, size);
-        return ImmutableAggregate.builder()
+        return Aggregate.builder()
                 .transactionType(transactionType)
                 .transactionName(transactionName)
                 .captureTime(captureTime)
@@ -124,7 +124,7 @@ class AggregateBuilder {
     }
 
     TransactionSummary getLiveTransactionSummary() {
-        return ImmutableTransactionSummary.builder()
+        return TransactionSummary.builder()
                 .transactionName(transactionName)
                 .totalMicros(totalMicros)
                 .transactionCount(transactionCount)
@@ -132,7 +132,7 @@ class AggregateBuilder {
     }
 
     ErrorSummary getLiveErrorSummary() {
-        return ImmutableErrorSummary.builder()
+        return ErrorSummary.builder()
                 .transactionName(transactionName)
                 .errorCount(errorCount)
                 .transactionCount(transactionCount)
@@ -140,7 +140,7 @@ class AggregateBuilder {
     }
 
     ErrorPoint buildErrorPoint(long captureTime) {
-        return ImmutableErrorPoint.builder()
+        return ErrorPoint.builder()
                 .captureTime(captureTime)
                 .errorCount(errorCount)
                 .transactionCount(transactionCount)

@@ -32,16 +32,13 @@ import org.immutables.value.Value;
 
 import org.glowroot.collector.ErrorPoint;
 import org.glowroot.collector.ErrorSummary;
-import org.glowroot.collector.ImmutableErrorPoint;
 import org.glowroot.common.Clock;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.AggregateDao;
-import org.glowroot.local.store.AggregateDao.ErrorSummaryQuery;
 import org.glowroot.local.store.AggregateDao.ErrorSummarySortOrder;
 import org.glowroot.local.store.ErrorMessageCount;
 import org.glowroot.local.store.ErrorMessageQuery;
-import org.glowroot.local.store.ImmutableErrorMessageQuery;
-import org.glowroot.local.store.ImmutableErrorSummaryQuery;
+import org.glowroot.local.store.ErrorSummaryQuery;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.store.TraceErrorPoint;
@@ -79,7 +76,7 @@ class ErrorJsonService {
     String getData(String queryString) throws Exception {
         ErrorMessageRequest request = QueryStrings.decode(queryString, ErrorMessageRequest.class);
 
-        ErrorMessageQuery query = ImmutableErrorMessageQuery.builder()
+        ErrorMessageQuery query = ErrorMessageQuery.builder()
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
@@ -107,7 +104,7 @@ class ErrorJsonService {
             for (TraceErrorPoint traceErrorPoint : traceErrorPoints) {
                 Long transactionCount = transactionCountMap.get(traceErrorPoint.captureTime());
                 if (transactionCount != null) {
-                    errorPoints.add(ImmutableErrorPoint.of(traceErrorPoint.captureTime(),
+                    errorPoints.add(ErrorPoint.of(traceErrorPoint.captureTime(),
                             traceErrorPoint.errorCount(), transactionCount));
                 }
             }
@@ -134,7 +131,7 @@ class ErrorJsonService {
         ErrorSummary overallSummary = errorCommonService.readOverallErrorSummary(
                 request.transactionType(), request.from() + 1, request.to());
 
-        ErrorSummaryQuery query = ImmutableErrorSummaryQuery.builder()
+        ErrorSummaryQuery query = ErrorSummaryQuery.builder()
                 .transactionType(request.transactionType())
                 .from(request.from() + 1)
                 .to(request.to())
@@ -223,8 +220,8 @@ class ErrorJsonService {
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = ImmutableErrorSummaryRequest.class)
-    abstract static class ErrorSummaryRequest {
+    @JsonDeserialize(as = ErrorSummaryRequest.class)
+    abstract static class ErrorSummaryRequestBase {
         abstract long from();
         abstract long to();
         abstract String transactionType();
@@ -233,8 +230,8 @@ class ErrorJsonService {
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = ImmutableTabBarDataRequest.class)
-    abstract static class TabBarDataRequest {
+    @JsonDeserialize(as = TabBarDataRequest.class)
+    abstract static class TabBarDataRequestBase {
         abstract long from();
         abstract long to();
         abstract String transactionType();
@@ -242,14 +239,14 @@ class ErrorJsonService {
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = ImmutableErrorMessageRequest.class)
-    abstract static class ErrorMessageRequest {
+    @JsonDeserialize(as = ErrorMessageRequest.class)
+    abstract static class ErrorMessageRequestBase {
         abstract long from();
         abstract long to();
         abstract String transactionType();
         abstract @Nullable String transactionName();
-        public abstract List<String> includes();
-        public abstract List<String> excludes();
+        public abstract ImmutableList<String> includes();
+        public abstract ImmutableList<String> excludes();
         abstract int errorMessageLimit();
     }
 }

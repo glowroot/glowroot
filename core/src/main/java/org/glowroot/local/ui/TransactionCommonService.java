@@ -30,17 +30,15 @@ import com.google.common.io.CharSource;
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.AggregateCollector;
 import org.glowroot.collector.AggregateIntervalCollector;
-import org.glowroot.collector.ImmutableTransactionSummary;
 import org.glowroot.collector.TransactionSummary;
 import org.glowroot.common.ScratchBuffer;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregateDao.MergedAggregate;
-import org.glowroot.local.store.AggregateDao.TransactionSummaryQuery;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
 import org.glowroot.local.store.AggregateMerging;
 import org.glowroot.local.store.AggregateProfileNode;
-import org.glowroot.local.store.ImmutableTransactionSummaryQuery;
 import org.glowroot.local.store.QueryResult;
+import org.glowroot.local.store.TransactionSummaryQuery;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -87,8 +85,7 @@ class TransactionCommonService {
             return aggregateDao.readTransactionSummaries(query);
         }
         long revisedTo = getRevisedTo(query.to(), orderedIntervalCollectors);
-        TransactionSummaryQuery revisedQuery =
-                ((ImmutableTransactionSummaryQuery) query).withTo(revisedTo);
+        TransactionSummaryQuery revisedQuery = query.withTo(revisedTo);
         QueryResult<TransactionSummary> queryResult =
                 aggregateDao.readTransactionSummaries(revisedQuery);
         if (orderedIntervalCollectors.isEmpty()) {
@@ -349,7 +346,7 @@ class TransactionCommonService {
 
     private static TransactionSummary combineTransactionSummaries(@Nullable String transactionName,
             TransactionSummary summary1, TransactionSummary summary2) {
-        return ImmutableTransactionSummary.builder()
+        return TransactionSummary.builder()
                 .transactionName(transactionName)
                 .totalMicros(summary1.totalMicros() + summary2.totalMicros())
                 .transactionCount(summary1.transactionCount() + summary2.transactionCount())

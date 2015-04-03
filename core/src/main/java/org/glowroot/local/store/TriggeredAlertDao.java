@@ -20,17 +20,14 @@ import java.sql.Types;
 
 import com.google.common.collect.ImmutableList;
 
-import org.glowroot.local.store.Schemas.Column;
-import org.glowroot.local.store.Schemas.Index;
-
 class TriggeredAlertDao {
 
     private static final ImmutableList<Column> triggeredAlertColumns = ImmutableList.<Column>of(
-            ImmutableColumn.of("alert_config_version", Types.VARCHAR),
-            ImmutableColumn.of("end_time", Types.BIGINT));
+            Column.of("alert_config_version", Types.VARCHAR),
+            Column.of("end_time", Types.BIGINT));
 
     private static final ImmutableList<Index> triggeredAlertIndexes =
-            ImmutableList.<Index>of(ImmutableIndex.of("triggered_alert_idx",
+            ImmutableList.<Index>of(Index.of("triggered_alert_idx",
                     ImmutableList.of("alert_config_version")));
 
     private final DataSource dataSource;

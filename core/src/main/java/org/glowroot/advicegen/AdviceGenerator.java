@@ -32,12 +32,11 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.config.CaptureKind;
 import org.glowroot.config.InstrumentationConfig;
-import org.glowroot.config.InstrumentationConfig.CaptureKind;
 import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.AdviceBuilder;
 import org.glowroot.weaving.AdviceFlowOuterHolder;
-import org.glowroot.weaving.ImmutableLazyDefinedClass;
 import org.glowroot.weaving.LazyDefinedClass;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -146,7 +145,7 @@ public class AdviceGenerator {
             addOnBeforeMethodOther(cw);
         }
         cw.visitEnd();
-        ImmutableLazyDefinedClass.Builder builder = ImmutableLazyDefinedClass.builder()
+        LazyDefinedClass.Builder builder = LazyDefinedClass.builder()
                 .type(Type.getObjectType(adviceInternalName))
                 .bytes(cw.toByteArray());
         if (methodMetaClass != null) {
@@ -626,7 +625,7 @@ public class AdviceGenerator {
                     "getTransactionCustomAttributeTemplate" + i);
         }
         cw.visitEnd();
-        return ImmutableLazyDefinedClass.builder()
+        return LazyDefinedClass.builder()
                 .type(Type.getObjectType(methodMetaInternalName))
                 .bytes(cw.toByteArray())
                 .build();

@@ -46,7 +46,7 @@ public class PluginDescriptorTest {
     }
 
     private static PluginDescriptor pluginDescriptorWithName(String name) {
-        return ImmutablePluginDescriptor.builder()
+        return PluginDescriptor.builder()
                 .name(name)
                 .id(name.toLowerCase(Locale.ENGLISH).replace(' ', '-'))
                 .build();

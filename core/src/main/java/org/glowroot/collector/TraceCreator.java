@@ -32,8 +32,8 @@ import com.google.common.io.CharStreams;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ThrowableInfo;
 import org.glowroot.common.ObjectMappers;
-import org.glowroot.transaction.model.GcInfoComponent.GcInfo;
-import org.glowroot.transaction.model.ThreadInfoComponent.ThreadInfoData;
+import org.glowroot.transaction.model.GcInfo;
+import org.glowroot.transaction.model.ThreadInfoData;
 import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.Transaction;
 
@@ -66,7 +66,7 @@ public class TraceCreator {
     // (without using synchronization to block updates to the trace while it is being read)
     private static Trace createTrace(Transaction transaction, boolean active, boolean partial,
             long captureTime, long captureTick) throws IOException {
-        ImmutableTrace.Builder builder = ImmutableTrace.builder();
+        Trace.Builder builder = Trace.builder();
         builder.id(transaction.getId());
         builder.active(active);
         builder.partial(partial);

@@ -42,17 +42,16 @@ import org.glowroot.collector.TransactionSummary;
 import org.glowroot.common.Clock;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.AggregateDao;
-import org.glowroot.local.store.AggregateDao.TransactionSummaryQuery;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
 import org.glowroot.local.store.AggregateMerging;
 import org.glowroot.local.store.AggregateMerging.HistogramMergedAggregate;
-import org.glowroot.local.store.AggregateMerging.ThreadInfoAggregate;
 import org.glowroot.local.store.AggregateMerging.TimerMergedAggregate;
 import org.glowroot.local.store.AggregateProfileNode;
 import org.glowroot.local.store.AggregateTimer;
-import org.glowroot.local.store.ImmutableTransactionSummaryQuery;
 import org.glowroot.local.store.QueryResult;
+import org.glowroot.local.store.ThreadInfoAggregate;
 import org.glowroot.local.store.TraceDao;
+import org.glowroot.local.store.TransactionSummaryQuery;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.transaction.model.Transaction;
 
@@ -177,7 +176,7 @@ class TransactionJsonService {
         TransactionSummary overallSummary = transactionCommonService.readOverallSummary(
                 request.transactionType(), request.from() + 1, request.to());
 
-        TransactionSummaryQuery query = ImmutableTransactionSummaryQuery.builder()
+        TransactionSummaryQuery query = TransactionSummaryQuery.builder()
                 .transactionType(request.transactionType())
                 .from(request.from() + 1)
                 .to(request.to())
@@ -529,8 +528,8 @@ class TransactionJsonService {
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = ImmutableTransactionSummaryRequest.class)
-    abstract static class TransactionSummaryRequest {
+    @JsonDeserialize(as = TransactionSummaryRequest.class)
+    abstract static class TransactionSummaryRequestBase {
         abstract long from();
         abstract long to();
         abstract String transactionType();
@@ -539,8 +538,8 @@ class TransactionJsonService {
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = ImmutableTransactionDataRequest.class)
-    abstract static class TransactionDataRequest {
+    @JsonDeserialize(as = TransactionDataRequest.class)
+    abstract static class TransactionDataRequestBase {
         abstract long from();
         abstract long to();
         abstract String transactionType();
@@ -548,8 +547,8 @@ class TransactionJsonService {
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = ImmutableTransactionProfileRequest.class)
-    abstract static class TransactionProfileRequest {
+    @JsonDeserialize(as = TransactionProfileRequest.class)
+    abstract static class TransactionProfileRequestBase {
         abstract long from();
         abstract long to();
         abstract String transactionType();
@@ -558,8 +557,8 @@ class TransactionJsonService {
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = ImmutableFlameGraphRequest.class)
-    abstract static class FlameGraphRequest {
+    @JsonDeserialize(as = FlameGraphRequest.class)
+    abstract static class FlameGraphRequestBase {
         abstract long from();
         abstract long to();
         abstract String transactionType();

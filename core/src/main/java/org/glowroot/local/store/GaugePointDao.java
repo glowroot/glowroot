@@ -26,35 +26,32 @@ import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.collector.GaugePoint;
 import org.glowroot.collector.GaugePointRepository;
-import org.glowroot.collector.ImmutableGaugePoint;
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigService;
 import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.RowMapper;
-import org.glowroot.local.store.Schemas.Column;
-import org.glowroot.local.store.Schemas.Index;
 
 import static org.glowroot.common.Checkers.castUntainted;
 
 public class GaugePointDao implements GaugePointRepository {
 
     private static final ImmutableList<Column> gaugePointColumns = ImmutableList.<Column>of(
-            ImmutableColumn.of("gauge_id", Types.BIGINT),
-            ImmutableColumn.of("capture_time", Types.BIGINT),
-            ImmutableColumn.of("value", Types.DOUBLE));
+            Column.of("gauge_id", Types.BIGINT),
+            Column.of("capture_time", Types.BIGINT),
+            Column.of("value", Types.DOUBLE));
 
     private static final ImmutableList<Index> gaugePointIndexes =
-            ImmutableList.<Index>of(ImmutableIndex.of("gauge_point_idx",
+            ImmutableList.<Index>of(Index.of("gauge_point_idx",
                     ImmutableList.of("gauge_id", "capture_time", "value")));
 
     private static final ImmutableList<Column> gaugePointRollupColumns = ImmutableList.<Column>of(
-            ImmutableColumn.of("gauge_id", Types.BIGINT),
-            ImmutableColumn.of("capture_time", Types.BIGINT),
-            ImmutableColumn.of("value", Types.DOUBLE),
-            ImmutableColumn.of("count", Types.DOUBLE)); // count is needed for further rollups
+            Column.of("gauge_id", Types.BIGINT),
+            Column.of("capture_time", Types.BIGINT),
+            Column.of("value", Types.DOUBLE),
+            Column.of("count", Types.DOUBLE)); // count is needed for further rollups
 
     private static final ImmutableList<Index> gaugePointRollupIndexes =
-            ImmutableList.<Index>of(ImmutableIndex.of("gauge_point_rollup_1_idx",
+            ImmutableList.<Index>of(Index.of("gauge_point_rollup_1_idx",
                     ImmutableList.of("gauge_id", "capture_time", "value")));
 
     private final GaugeDao gaugeDao;
@@ -184,7 +181,7 @@ public class GaugePointDao implements GaugePointRepository {
         public GaugePoint mapRow(ResultSet resultSet) throws SQLException {
             long captureTime = resultSet.getLong(1);
             double value = resultSet.getDouble(2);
-            return ImmutableGaugePoint.builder()
+            return GaugePoint.builder()
                     .gaugeName(gaugeName)
                     .captureTime(captureTime)
                     .value(value)

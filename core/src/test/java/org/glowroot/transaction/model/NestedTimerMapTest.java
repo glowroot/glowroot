@@ -32,7 +32,7 @@ public class NestedTimerMapTest {
         NestedTimerMap map = new NestedTimerMap();
         Map<TimerNameImpl, TimerImpl> uniqueTimers = Maps.newHashMap();
         for (int i = 0; i < 100; i++) {
-            uniqueTimers.put(ImmutableTimerNameImpl.of("timer-" + i), mock(TimerImpl.class));
+            uniqueTimers.put(TimerNameImpl.of("timer-" + i), mock(TimerImpl.class));
         }
         // when
         for (Entry<TimerNameImpl, TimerImpl> entry : uniqueTimers.entrySet()) {

@@ -69,13 +69,13 @@ class ConfigFile {
         Config config = mapper.readValue(content, Config.class);
         GeneralConfig generalConfig = config.generalConfig();
         if (generalConfig.defaultTransactionType().isEmpty()) {
-            generalConfig = ((ImmutableGeneralConfig) generalConfig).withDefaultTransactionType(
+            generalConfig = generalConfig.withDefaultTransactionType(
                     getDefaultTransactionType(config.instrumentationConfigs()));
-            config = ((ImmutableConfig) config).withGeneralConfig(generalConfig);
+            config = config.withGeneralConfig(generalConfig);
         }
         if (!mapper.readTree(content).has("gauges")) {
             List<GaugeConfig> defaultGauges = getDefaultGaugeConfigs();
-            config = ((ImmutableConfig) config).withGaugeConfigs(defaultGauges);
+            config = config.withGaugeConfigs(defaultGauges);
         }
         Map<String, PluginConfig> filePluginConfigs = Maps.newHashMap();
         for (PluginConfig pluginConfig : config.pluginConfigs()) {
@@ -84,8 +84,7 @@ class ConfigFile {
         List<PluginConfig> pluginConfigs = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             PluginConfig filePluginConfig = filePluginConfigs.get(pluginDescriptor.id());
-            ImmutablePluginConfig.Builder builder = ImmutablePluginConfig.builder()
-                    .id(pluginDescriptor.id());
+            PluginConfig.Builder builder = PluginConfig.builder().id(pluginDescriptor.id());
             if (filePluginConfig != null) {
                 builder.enabled(filePluginConfig.enabled());
             }
@@ -105,7 +104,7 @@ class ConfigFile {
             }
             pluginConfigs.add(builder.build());
         }
-        return ((ImmutableConfig) config).withPluginConfigs(pluginConfigs);
+        return config.withPluginConfigs(pluginConfigs);
     }
 
     Config loadConfig() throws IOException {
@@ -170,7 +169,7 @@ class ConfigFile {
     }
 
     Config getDefaultConfig() {
-        return ImmutableConfig.builder()
+        return Config.builder()
                 .addAllPluginConfigs(getDefaultPluginConfigs(pluginDescriptors))
                 .addAllGaugeConfigs(getDefaultGaugeConfigs())
                 .build();
@@ -182,19 +181,17 @@ class ConfigFile {
 
     private static List<GaugeConfig> getDefaultGaugeConfigs() {
         List<GaugeConfig> defaultGaugeConfigs = Lists.newArrayList();
-        defaultGaugeConfigs.add(ImmutableGaugeConfig.builder()
+        defaultGaugeConfigs.add(GaugeConfig.builder()
                 .mbeanObjectName("java.lang:type=Memory")
-                .addMbeanAttributes(ImmutableMBeanAttribute.of("HeapMemoryUsage/used", false))
+                .addMbeanAttributes(MBeanAttribute.of("HeapMemoryUsage/used", false))
                 .build());
-        ImmutableGaugeConfig.Builder operatingSystemMBean = ImmutableGaugeConfig.builder()
+        GaugeConfig.Builder operatingSystemMBean = GaugeConfig.builder()
                 .mbeanObjectName("java.lang:type=OperatingSystem")
-                .addMbeanAttributes(ImmutableMBeanAttribute.of("FreePhysicalMemorySize", false));
+                .addMbeanAttributes(MBeanAttribute.of("FreePhysicalMemorySize", false));
         if (!JavaVersion.isJdk6()) {
             // these are only available since 1.7
-            operatingSystemMBean.addMbeanAttributes(
-                    ImmutableMBeanAttribute.of("ProcessCpuLoad", false));
-            operatingSystemMBean.addMbeanAttributes(
-                    ImmutableMBeanAttribute.of("SystemCpuLoad", false));
+            operatingSystemMBean.addMbeanAttributes(MBeanAttribute.of("ProcessCpuLoad", false));
+            operatingSystemMBean.addMbeanAttributes(MBeanAttribute.of("SystemCpuLoad", false));
         }
         defaultGaugeConfigs.add(operatingSystemMBean.build());
         return defaultGaugeConfigs;
@@ -216,7 +213,7 @@ class ConfigFile {
             List<PluginDescriptor> pluginDescriptors) {
         List<PluginConfig> pluginConfigs = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            ImmutablePluginConfig.Builder builder = ImmutablePluginConfig.builder()
+            PluginConfig.Builder builder = PluginConfig.builder()
                     .id(pluginDescriptor.id())
                     .enabled(true);
             for (PropertyDescriptor propertyDescriptor : pluginDescriptor.properties()) {

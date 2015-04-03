@@ -29,7 +29,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.collector.Aggregate;
-import org.glowroot.collector.ImmutableAggregate;
 import org.glowroot.collector.TransactionSummary;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
 
@@ -70,7 +69,7 @@ public class AggregateDaoTest {
     @Test
     public void shouldReadTransactions() throws Exception {
         // given
-        Aggregate overallAggregate = ImmutableAggregate.builder()
+        Aggregate overallAggregate = Aggregate.builder()
                 .transactionType("a type")
                 .transactionName(null)
                 .captureTime(10000)
@@ -83,7 +82,7 @@ public class AggregateDaoTest {
                 .histogram(getFakeHistogram())
                 .build();
         List<Aggregate> transactionAggregates = Lists.newArrayList();
-        transactionAggregates.add(ImmutableAggregate.builder()
+        transactionAggregates.add(Aggregate.builder()
                 .transactionType("a type")
                 .transactionName("one")
                 .captureTime(10000)
@@ -95,7 +94,7 @@ public class AggregateDaoTest {
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build());
-        transactionAggregates.add(ImmutableAggregate.builder()
+        transactionAggregates.add(Aggregate.builder()
                 .transactionType("a type")
                 .transactionName("two")
                 .captureTime(10000)
@@ -107,7 +106,7 @@ public class AggregateDaoTest {
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build());
-        transactionAggregates.add(ImmutableAggregate.builder()
+        transactionAggregates.add(Aggregate.builder()
                 .transactionType("a type")
                 .transactionName("seven")
                 .captureTime(10000)
@@ -121,7 +120,7 @@ public class AggregateDaoTest {
                 .build());
         aggregateDao.store(ImmutableList.of(overallAggregate), transactionAggregates, 10000);
 
-        Aggregate overallAggregate2 = ImmutableAggregate.builder()
+        Aggregate overallAggregate2 = Aggregate.builder()
                 .transactionType("a type")
                 .transactionName(null)
                 .captureTime(20000)
@@ -134,7 +133,7 @@ public class AggregateDaoTest {
                 .histogram(getFakeHistogram())
                 .build();
         List<Aggregate> transactionAggregates2 = Lists.newArrayList();
-        transactionAggregates2.add(ImmutableAggregate.builder()
+        transactionAggregates2.add(Aggregate.builder()
                 .transactionType("a type")
                 .transactionName("one")
                 .captureTime(20000)
@@ -146,7 +145,7 @@ public class AggregateDaoTest {
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build());
-        transactionAggregates2.add(ImmutableAggregate.builder()
+        transactionAggregates2.add(Aggregate.builder()
                 .transactionType("a type")
                 .transactionName("two")
                 .captureTime(20000)
@@ -158,7 +157,7 @@ public class AggregateDaoTest {
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build());
-        transactionAggregates2.add(ImmutableAggregate.builder()
+        transactionAggregates2.add(Aggregate.builder()
                 .transactionType("a type")
                 .transactionName("seven")
                 .captureTime(20000)
@@ -175,7 +174,7 @@ public class AggregateDaoTest {
         // when
         List<Aggregate> overallAggregates =
                 aggregateDao.readOverallAggregates("a type", 0, 100000, 0);
-        ImmutableTransactionSummaryQuery query = ImmutableTransactionSummaryQuery.builder()
+        TransactionSummaryQuery query = TransactionSummaryQuery.builder()
                 .transactionType("a type")
                 .from(0)
                 .to(100000)

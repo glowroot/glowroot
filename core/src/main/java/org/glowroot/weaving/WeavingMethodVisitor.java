@@ -43,8 +43,6 @@ import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
-import org.glowroot.weaving.Advice.AdviceParameter;
-import org.glowroot.weaving.Advice.ParameterKind;
 import org.glowroot.weaving.AdviceFlowOuterHolder.AdviceFlowHolder;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -394,7 +392,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         return numSaveArgsNeeded;
     }
 
-    private int getNum(List<AdviceParameter> adviceParameters) {
+    private int getNum(ImmutableList<AdviceParameter> adviceParameters) {
         int numSaveArgsNeeded = 0;
         for (AdviceParameter parameter : adviceParameters) {
             if (parameter.kind() == ParameterKind.METHOD_ARG_ARRAY) {

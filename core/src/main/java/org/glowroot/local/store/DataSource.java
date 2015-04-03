@@ -41,8 +41,6 @@ import org.h2.jdbc.JdbcConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.local.store.Schemas.Column;
-import org.glowroot.local.store.Schemas.Index;
 import org.glowroot.markers.OnlyUsedByTests;
 
 public class DataSource {

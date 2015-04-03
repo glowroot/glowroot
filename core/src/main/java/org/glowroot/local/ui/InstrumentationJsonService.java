@@ -39,11 +39,9 @@ import org.immutables.value.Value;
 
 import org.glowroot.api.weaving.MethodModifier;
 import org.glowroot.common.ObjectMappers;
+import org.glowroot.config.CaptureKind;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.ImmutableInstrumentationConfig;
 import org.glowroot.config.InstrumentationConfig;
-import org.glowroot.config.InstrumentationConfig.CaptureKind;
-import org.glowroot.local.ui.UiAnalyzedMethod.UiAnalyzedMethodOrdering;
 import org.glowroot.transaction.AdviceCache;
 import org.glowroot.transaction.TransactionModule;
 
@@ -76,9 +74,9 @@ class InstrumentationJsonService {
         configs = InstrumentationConfig.defaultOrdering.immutableSortedCopy(configs);
         List<InstrumentationConfigDto> dtos = Lists.newArrayList();
         for (InstrumentationConfig config : configs) {
-            dtos.add(InstrumentationConfigDto.fromConfig(config));
+            dtos.add(InstrumentationConfigDtoBase.fromConfig(config));
         }
-        return mapper.writeValueAsString(ImmutableInstrumentationListResponse.builder()
+        return mapper.writeValueAsString(InstrumentationListResponse.builder()
                 .addAllConfigs(dtos)
                 .jvmOutOfSync(adviceCache.isOutOfSync(configService.getInstrumentationConfigs()))
                 .jvmRetransformClassesSupported(
@@ -94,8 +92,8 @@ class InstrumentationJsonService {
         }
         List<MethodSignature> methodSignatures =
                 getMethodSignatures(config.className(), config.methodName());
-        return mapper.writeValueAsString(ImmutableInstrumentationConfigResponse.builder()
-                .config(InstrumentationConfigDto.fromConfig(config))
+        return mapper.writeValueAsString(InstrumentationConfigResponse.builder()
+                .config(InstrumentationConfigDtoBase.fromConfig(config))
                 .addAllMethodSignatures(methodSignatures)
                 .build());
     }
@@ -202,7 +200,7 @@ class InstrumentationJsonService {
         List<UiAnalyzedMethod> analyzedMethods = getAnalyzedMethods(className, methodName);
         List<MethodSignature> methodSignatures = Lists.newArrayList();
         for (UiAnalyzedMethod analyzedMethod : analyzedMethods) {
-            ImmutableMethodSignature.Builder builder = ImmutableMethodSignature.builder();
+            MethodSignature.Builder builder = MethodSignature.builder();
             builder.name(analyzedMethod.name());
             builder.addAllParameterTypes(analyzedMethod.parameterTypes());
             builder.returnType(analyzedMethod.returnType());
@@ -227,63 +225,63 @@ class InstrumentationJsonService {
             }
         }
         // order methods by accessibility, then by name, then by number of args
-        return UiAnalyzedMethodOrdering.INSTANCE.sortedCopy(analyzedMethods);
+        return UiAnalyzedMethod.ordering().sortedCopy(analyzedMethods);
     }
 
     @Value.Immutable
-    abstract static class ClassNamesRequest {
+    abstract static class ClassNamesRequestBase {
         abstract String partialClassName();
         abstract int limit();
     }
 
     @Value.Immutable
-    abstract static class MethodNamesRequest {
+    abstract static class MethodNamesRequestBase {
         abstract String className();
         abstract String partialMethodName();
         abstract int limit();
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = ImmutableMethodSignaturesRequest.class)
-    abstract static class MethodSignaturesRequest {
+    @JsonDeserialize(as = MethodSignaturesRequest.class)
+    abstract static class MethodSignaturesRequestBase {
         abstract String className();
         abstract String methodName();
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableMethodSignature.class)
-    abstract static class MethodSignature {
+    @JsonSerialize(as = MethodSignature.class)
+    abstract static class MethodSignatureBase {
         abstract String name();
-        abstract List<String> parameterTypes();
+        abstract ImmutableList<String> parameterTypes();
         abstract String returnType();
-        abstract List<String> modifiers();
+        abstract ImmutableList<String> modifiers();
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableInstrumentationListResponse.class)
-    abstract static class InstrumentationListResponse {
-        abstract List<InstrumentationConfigDto> configs();
+    @JsonSerialize(as = InstrumentationListResponse.class)
+    abstract static class InstrumentationListResponseBase {
+        abstract ImmutableList<InstrumentationConfigDto> configs();
         abstract boolean jvmOutOfSync();
         abstract boolean jvmRetransformClassesSupported();
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableInstrumentationConfigResponse.class)
-    abstract static class InstrumentationConfigResponse {
+    @JsonSerialize(as = InstrumentationConfigResponse.class)
+    abstract static class InstrumentationConfigResponseBase {
         abstract InstrumentationConfigDto config();
-        abstract List<MethodSignature> methodSignatures();
+        abstract ImmutableList<MethodSignature> methodSignatures();
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableInstrumentationConfigDto.class)
-    @JsonDeserialize(as = ImmutableInstrumentationConfigDto.class)
-    abstract static class InstrumentationConfigDto {
+    @JsonSerialize(as = InstrumentationConfigDto.class)
+    @JsonDeserialize(as = InstrumentationConfigDto.class)
+    abstract static class InstrumentationConfigDtoBase {
 
         abstract String className();
         abstract String methodName();
-        abstract List<String> methodParameterTypes();
+        abstract ImmutableList<String> methodParameterTypes();
         abstract Optional<String> methodReturnType();
-        abstract List<MethodModifier> methodModifiers();
+        abstract ImmutableList<MethodModifier> methodModifiers();
         abstract CaptureKind captureKind();
         abstract Optional<String> timerName();
         abstract Optional<String> traceEntryTemplate();
@@ -299,7 +297,7 @@ class InstrumentationJsonService {
         abstract @Nullable String version(); // null for insert operations
 
         private static InstrumentationConfigDto fromConfig(InstrumentationConfig config) {
-            return ImmutableInstrumentationConfigDto.builder()
+            return InstrumentationConfigDto.builder()
                     .className(config.className())
                     .methodName(config.methodName())
                     .addAllMethodParameterTypes(config.methodParameterTypes())
@@ -322,8 +320,8 @@ class InstrumentationJsonService {
                     .build();
         }
 
-        private InstrumentationConfig toConfig() {
-            return ImmutableInstrumentationConfig.builder()
+        InstrumentationConfig toConfig() {
+            return InstrumentationConfig.builder()
                     .className(className())
                     .methodName(methodName())
                     .addAllMethodParameterTypes(methodParameterTypes())

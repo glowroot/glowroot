@@ -82,7 +82,7 @@ public class AggregateMerging {
             totalAllocatedBytes = nullAwareAdd(totalAllocatedBytes,
                     aggregate.totalAllocatedBytes());
         }
-        return ImmutableThreadInfoAggregate.builder()
+        return ThreadInfoAggregate.builder()
                 .totalCpuMicros(totalCpuMicros)
                 .totalBlockedMicros(totalBlockedMicros)
                 .totalWaitedMicros(totalWaitedMicros)
@@ -194,9 +194,9 @@ public class AggregateMerging {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableThreadInfoAggregate.class)
-    @JsonDeserialize(as = ImmutableThreadInfoAggregate.class)
-    public abstract static class ThreadInfoAggregate {
+    @JsonSerialize(as = ThreadInfoAggregate.class)
+    @JsonDeserialize(as = ThreadInfoAggregate.class)
+    public abstract static class ThreadInfoAggregateBase {
         abstract @Nullable Long totalCpuMicros();
         abstract @Nullable Long totalBlockedMicros();
         abstract @Nullable Long totalWaitedMicros();

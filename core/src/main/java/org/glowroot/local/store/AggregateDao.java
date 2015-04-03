@@ -41,10 +41,6 @@ import org.immutables.value.Value;
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.ErrorPoint;
 import org.glowroot.collector.ErrorSummary;
-import org.glowroot.collector.ImmutableAggregate;
-import org.glowroot.collector.ImmutableErrorPoint;
-import org.glowroot.collector.ImmutableErrorSummary;
-import org.glowroot.collector.ImmutableTransactionSummary;
 import org.glowroot.collector.LazyHistogram;
 import org.glowroot.collector.TransactionSummary;
 import org.glowroot.common.ObjectMappers;
@@ -52,8 +48,6 @@ import org.glowroot.common.ScratchBuffer;
 import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.ResultSetExtractor;
 import org.glowroot.local.store.DataSource.RowMapper;
-import org.glowroot.local.store.Schemas.Column;
-import org.glowroot.local.store.Schemas.Index;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -69,42 +63,42 @@ public class AggregateDao {
 
     private static final ImmutableList<Column> overallAggregatePointColumns =
             ImmutableList.<Column>of(
-                    ImmutableColumn.of("transaction_type", Types.VARCHAR),
-                    ImmutableColumn.of("capture_time", Types.BIGINT),
-                    ImmutableColumn.of("total_micros", Types.BIGINT),
-                    ImmutableColumn.of("error_count", Types.BIGINT),
-                    ImmutableColumn.of("transaction_count", Types.BIGINT),
-                    ImmutableColumn.of("total_cpu_micros", Types.BIGINT),
-                    ImmutableColumn.of("total_blocked_micros", Types.BIGINT),
-                    ImmutableColumn.of("total_waited_micros", Types.BIGINT),
-                    ImmutableColumn.of("total_allocated_bytes", Types.BIGINT),
-                    ImmutableColumn.of("profile_sample_count", Types.BIGINT),
-                    ImmutableColumn.of("trace_count", Types.BIGINT),
+                    Column.of("transaction_type", Types.VARCHAR),
+                    Column.of("capture_time", Types.BIGINT),
+                    Column.of("total_micros", Types.BIGINT),
+                    Column.of("error_count", Types.BIGINT),
+                    Column.of("transaction_count", Types.BIGINT),
+                    Column.of("total_cpu_micros", Types.BIGINT),
+                    Column.of("total_blocked_micros", Types.BIGINT),
+                    Column.of("total_waited_micros", Types.BIGINT),
+                    Column.of("total_allocated_bytes", Types.BIGINT),
+                    Column.of("profile_sample_count", Types.BIGINT),
+                    Column.of("trace_count", Types.BIGINT),
                     // profile json is always from "synthetic root"
-                    ImmutableColumn.of("profile_capped_id", Types.BIGINT), // capped database id
+                    Column.of("profile_capped_id", Types.BIGINT), // capped database id
                     // timers json is always from "synthetic root"
-                    ImmutableColumn.of("timers", Types.VARCHAR),
-                    ImmutableColumn.of("histogram", Types.BLOB));
+                    Column.of("timers", Types.VARCHAR),
+                    Column.of("histogram", Types.BLOB));
 
     private static final ImmutableList<Column> transactionAggregateColumns =
             ImmutableList.<Column>of(
-                    ImmutableColumn.of("transaction_type", Types.VARCHAR),
-                    ImmutableColumn.of("transaction_name", Types.VARCHAR),
-                    ImmutableColumn.of("capture_time", Types.BIGINT),
-                    ImmutableColumn.of("total_micros", Types.BIGINT),
-                    ImmutableColumn.of("error_count", Types.BIGINT),
-                    ImmutableColumn.of("transaction_count", Types.BIGINT),
-                    ImmutableColumn.of("total_cpu_micros", Types.BIGINT),
-                    ImmutableColumn.of("total_blocked_micros", Types.BIGINT),
-                    ImmutableColumn.of("total_waited_micros", Types.BIGINT),
-                    ImmutableColumn.of("total_allocated_bytes", Types.BIGINT),
-                    ImmutableColumn.of("profile_sample_count", Types.BIGINT),
-                    ImmutableColumn.of("trace_count", Types.BIGINT),
+                    Column.of("transaction_type", Types.VARCHAR),
+                    Column.of("transaction_name", Types.VARCHAR),
+                    Column.of("capture_time", Types.BIGINT),
+                    Column.of("total_micros", Types.BIGINT),
+                    Column.of("error_count", Types.BIGINT),
+                    Column.of("transaction_count", Types.BIGINT),
+                    Column.of("total_cpu_micros", Types.BIGINT),
+                    Column.of("total_blocked_micros", Types.BIGINT),
+                    Column.of("total_waited_micros", Types.BIGINT),
+                    Column.of("total_allocated_bytes", Types.BIGINT),
+                    Column.of("profile_sample_count", Types.BIGINT),
+                    Column.of("trace_count", Types.BIGINT),
                     // profile json is always from "synthetic root"
-                    ImmutableColumn.of("profile_capped_id", Types.BIGINT), // capped database id
+                    Column.of("profile_capped_id", Types.BIGINT), // capped database id
                     // timers json is always from "synthetic root"
-                    ImmutableColumn.of("timers", Types.VARCHAR), // json data
-                    ImmutableColumn.of("histogram", Types.BLOB));
+                    Column.of("timers", Types.VARCHAR), // json data
+                    Column.of("histogram", Types.BLOB));
 
     // this index includes all columns needed for the overall aggregate query so h2 can return
     // the result set directly from the index without having to reference the table for each row
@@ -112,9 +106,9 @@ public class AggregateDao {
             ImmutableList.of("capture_time", "transaction_type", "total_micros",
                     "transaction_count", "error_count");
     private static final ImmutableList<Index> overallAggregateIndexes = ImmutableList.<Index>of(
-            ImmutableIndex.of("overall_aggregate_idx", overallAggregateIndexColumns));
+            Index.of("overall_aggregate_idx", overallAggregateIndexColumns));
     private static final ImmutableList<Index> overallAggregateRollupIndexes =
-            ImmutableList.<Index>of(ImmutableIndex.of("overall_aggregate_rollup_1_idx",
+            ImmutableList.<Index>of(Index.of("overall_aggregate_rollup_1_idx",
                     overallAggregateIndexColumns));
 
     // this index includes all columns needed for the transaction aggregate query so h2 can return
@@ -125,10 +119,10 @@ public class AggregateDao {
             ImmutableList.of("capture_time", "transaction_type", "transaction_name",
                     "total_micros", "transaction_count", "error_count");
     private static final ImmutableList<Index> transactionAggregateIndexes =
-            ImmutableList.<Index>of(ImmutableIndex.of("transaction_aggregate_idx",
+            ImmutableList.<Index>of(Index.of("transaction_aggregate_idx",
                     transactionAggregateIndexColumns));
     private static final ImmutableList<Index> transactionAggregateRollupIndexes =
-            ImmutableList.<Index>of(ImmutableIndex.of("transaction_aggregate_rollup_1_idx",
+            ImmutableList.<Index>of(Index.of("transaction_aggregate_rollup_1_idx",
                     transactionAggregateIndexColumns));
 
     private final DataSource dataSource;
@@ -180,7 +174,7 @@ public class AggregateDao {
                 captureTimeTo);
         if (summary == null) {
             // this can happen if datasource is in the middle of closing
-            return ImmutableTransactionSummary.builder().build();
+            return TransactionSummary.builder().build();
         } else {
             return summary;
         }
@@ -212,7 +206,7 @@ public class AggregateDao {
                 transactionType, captureTimeFrom, captureTimeTo);
         if (result == null) {
             // this can happen if datasource is in the middle of closing
-            return ImmutableErrorSummary.builder().build();
+            return ErrorSummary.builder().build();
         } else {
             return result;
         }
@@ -483,8 +477,8 @@ public class AggregateDao {
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = ImmutableTransactionSummaryQuery.class)
-    public abstract static class TransactionSummaryQuery {
+    @JsonDeserialize(as = TransactionSummaryQuery.class)
+    public abstract static class TransactionSummaryQueryBase {
         public abstract String transactionType();
         public abstract long from();
         public abstract long to();
@@ -493,8 +487,8 @@ public class AggregateDao {
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = ImmutableErrorSummaryQuery.class)
-    public abstract static class ErrorSummaryQuery {
+    @JsonDeserialize(as = ErrorSummaryQuery.class)
+    public abstract static class ErrorSummaryQueryBase {
         public abstract String transactionType();
         public abstract long from();
         public abstract long to();
@@ -588,7 +582,7 @@ public class AggregateDao {
                 // this is an aggregate query so this should be impossible
                 throw new SQLException("Aggregate query did not return any results");
             }
-            return ImmutableTransactionSummary.builder()
+            return TransactionSummary.builder()
                     .totalMicros(resultSet.getLong(1))
                     .transactionCount(resultSet.getLong(2))
                     .build();
@@ -603,7 +597,7 @@ public class AggregateDao {
                 // transaction_name should never be null
                 throw new SQLException("Found null transaction_name in transaction_aggregate");
             }
-            return ImmutableTransactionSummary.builder()
+            return TransactionSummary.builder()
                     .transactionName(transactionName)
                     .totalMicros(resultSet.getLong(2))
                     .transactionCount(resultSet.getLong(3))
@@ -619,7 +613,7 @@ public class AggregateDao {
                 // this is an aggregate query so this should be impossible
                 throw new SQLException("Aggregate query did not return any results");
             }
-            return ImmutableErrorSummary.builder()
+            return ErrorSummary.builder()
                     .errorCount(resultSet.getLong(1))
                     .transactionCount(resultSet.getLong(2))
                     .build();
@@ -634,7 +628,7 @@ public class AggregateDao {
                 // transaction_name should never be null
                 throw new SQLException("Found null transaction_name in transaction_aggregate");
             }
-            return ImmutableErrorSummary.builder()
+            return ErrorSummary.builder()
                     .transactionName(transactionName)
                     .errorCount(resultSet.getLong(2))
                     .transactionCount(resultSet.getLong(3))
@@ -652,7 +646,7 @@ public class AggregateDao {
         @Override
         public Aggregate mapRow(ResultSet resultSet) throws SQLException {
             int i = 1;
-            return ImmutableAggregate.builder()
+            return Aggregate.builder()
                     .transactionType(transactionType)
                     .transactionName(transactionName)
                     .captureTime(resultSet.getLong(i++))
@@ -677,7 +671,7 @@ public class AggregateDao {
             long captureTime = resultSet.getLong(1);
             long errorCount = resultSet.getLong(2);
             long transactionCount = resultSet.getLong(3);
-            return ImmutableErrorPoint.of(captureTime, errorCount, transactionCount);
+            return ErrorPoint.of(captureTime, errorCount, transactionCount);
         }
     }
 
@@ -887,7 +881,7 @@ public class AggregateDao {
             byte[] histogram = new byte[size];
             buffer.get(histogram, 0, size);
 
-            return ImmutableAggregate.builder()
+            return Aggregate.builder()
                     .transactionType(transactionType)
                     .transactionName(transactionName)
                     .captureTime(captureTime)

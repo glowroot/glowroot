@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.immutables.value.Value;
@@ -34,7 +35,6 @@ import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.AlertConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ConfigService.DuplicateMBeanObjectNameException;
-import org.glowroot.config.ImmutableAlertConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
@@ -57,7 +57,7 @@ class AlertJsonService {
         List<AlertConfig> alertConfigs = configService.getAlertConfigs();
         alertConfigs = AlertConfig.orderingByName.immutableSortedCopy(alertConfigs);
         for (AlertConfig alertConfig : alertConfigs) {
-            alertConfigDtos.add(AlertConfigDto.fromConfig(alertConfig));
+            alertConfigDtos.add(AlertConfigDtoBase.fromConfig(alertConfig));
         }
         return mapper.writeValueAsString(alertConfigDtos);
     }
@@ -68,7 +68,7 @@ class AlertJsonService {
         if (alertConfig == null) {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
         }
-        return mapper.writeValueAsString(AlertConfigDto.fromConfig(alertConfig));
+        return mapper.writeValueAsString(AlertConfigDtoBase.fromConfig(alertConfig));
     }
 
     @POST("/backend/config/alerts/add")
@@ -82,7 +82,7 @@ class AlertJsonService {
             logger.debug(e.getMessage(), e);
             throw new JsonServiceException(CONFLICT, "mbeanObjectName");
         }
-        return mapper.writeValueAsString(AlertConfigDto.fromConfig(alertConfig));
+        return mapper.writeValueAsString(AlertConfigDtoBase.fromConfig(alertConfig));
     }
 
     @POST("/backend/config/alerts/update")
@@ -92,7 +92,7 @@ class AlertJsonService {
         String version = alertConfigDto.version();
         checkNotNull(version, "Missing required request property: version");
         configService.updateAlertConfig(alertConfig, version);
-        return mapper.writeValueAsString(AlertConfigDto.fromConfig(alertConfig));
+        return mapper.writeValueAsString(AlertConfigDtoBase.fromConfig(alertConfig));
     }
 
     @POST("/backend/config/alerts/remove")
@@ -103,20 +103,20 @@ class AlertJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableAlertConfigDto.class)
-    @JsonDeserialize(as = ImmutableAlertConfigDto.class)
-    abstract static class AlertConfigDto {
+    @JsonSerialize(as = AlertConfigDto.class)
+    @JsonDeserialize(as = AlertConfigDto.class)
+    abstract static class AlertConfigDtoBase {
 
         public abstract String transactionType();
         public abstract double percentile();
         public abstract int timePeriodMinutes();
         public abstract int thresholdMillis();
         public abstract int minTransactionCount();
-        public abstract List<String> emailAddresses();
+        public abstract ImmutableList<String> emailAddresses();
         abstract @Nullable String version(); // null for insert operations
 
         private static AlertConfigDto fromConfig(AlertConfig alertConfig) {
-            return ImmutableAlertConfigDto.builder()
+            return AlertConfigDto.builder()
                     .transactionType(alertConfig.transactionType())
                     .percentile(alertConfig.percentile())
                     .timePeriodMinutes(alertConfig.timePeriodMinutes())
@@ -127,8 +127,8 @@ class AlertJsonService {
                     .build();
         }
 
-        private AlertConfig toConfig() {
-            return ImmutableAlertConfig.builder()
+        AlertConfig toConfig() {
+            return AlertConfig.builder()
                     .transactionType(transactionType())
                     .percentile(percentile())
                     .timePeriodMinutes(timePeriodMinutes())

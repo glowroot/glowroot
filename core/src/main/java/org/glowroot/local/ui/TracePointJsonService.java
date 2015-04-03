@@ -39,7 +39,6 @@ import com.google.common.io.CharStreams;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
-import org.glowroot.local.store.ImmutableTracePoint;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.StringComparator;
 import org.glowroot.local.store.TraceDao;
@@ -164,7 +163,7 @@ class TracePointJsonService {
                         && matchesError(transaction)
                         && matchesUser(transaction)
                         && matchesCustomAttribute(transaction)) {
-                    ImmutableTracePoint point = ImmutableTracePoint.builder()
+                    TracePoint point = TracePoint.builder()
                             .id(transaction.getId())
                             .captureTime(clock.currentTimeMillis())
                             .duration(transaction.getDuration())

@@ -28,7 +28,6 @@ import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
 import org.glowroot.Viewer;
 import org.glowroot.config.GeneralConfig;
-import org.glowroot.config.ImmutableGeneralConfig;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -75,8 +74,7 @@ public class JavaagentMain {
         // conditional check is needed to prevent config file timestamp update when testing
         // ConfigFileLastModifiedTest.shouldNotUpdateFileOnStartupIfNoChanges()
         if (config.traceStoreThresholdMillis() != 0) {
-            GeneralConfig updatedConfig =
-                    ((ImmutableGeneralConfig) config).withTraceStoreThresholdMillis(0);
+            GeneralConfig updatedConfig = config.withTraceStoreThresholdMillis(0);
             configService.updateGeneralConfig(updatedConfig, config.version());
         }
     }

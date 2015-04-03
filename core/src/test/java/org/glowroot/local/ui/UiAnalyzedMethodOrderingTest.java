@@ -21,7 +21,6 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 
-import org.glowroot.local.ui.UiAnalyzedMethod.UiAnalyzedMethodOrdering;
 import org.glowroot.weaving.AnalyzedWorld;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,7 +38,7 @@ public class UiAnalyzedMethodOrderingTest {
         ClasspathCache classpathCache = new ClasspathCache(analyzedWorld, null);
         List<UiAnalyzedMethod> methods = classpathCache.getAnalyzedMethods(A.class.getName());
         // when
-        methods = UiAnalyzedMethodOrdering.INSTANCE.sortedCopy(methods);
+        methods = UiAnalyzedMethod.ordering().sortedCopy(methods);
         assertThat(methods.get(0).name()).isEqualTo("z");
         assertThat(methods.get(1).name()).isEqualTo("x");
         assertThat(methods.get(2).name()).isEqualTo("y");

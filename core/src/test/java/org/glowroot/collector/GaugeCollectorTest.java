@@ -30,8 +30,7 @@ import org.glowroot.common.Clock;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GaugeConfig;
-import org.glowroot.config.ImmutableGaugeConfig;
-import org.glowroot.config.ImmutableMBeanAttribute;
+import org.glowroot.config.MBeanAttribute;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,9 +54,9 @@ public class GaugeCollectorTest {
     @Before
     public void beforeEachTest() {
         ConfigService configService = mock(ConfigService.class);
-        AdvancedConfig advancedConfig = mock(AdvancedConfig.class);
+        AdvancedConfig advancedConfig =
+                AdvancedConfig.builder().mbeanGaugeNotFoundDelaySeconds(60).build();
         when(configService.getAdvancedConfig()).thenReturn(advancedConfig);
-        when(advancedConfig.mbeanGaugeNotFoundDelaySeconds()).thenReturn(60);
 
         GaugePointRepository gaugePointRepository = mock(GaugePointRepository.class);
         lazyPlatformMBeanServer = mock(LazyPlatformMBeanServer.class);
@@ -75,7 +74,7 @@ public class GaugeCollectorTest {
     @Test
     public void shouldHandleInvalidMBeanObjectName() {
         // given
-        GaugeConfig gaugeConfigs = ImmutableGaugeConfig.builder()
+        GaugeConfig gaugeConfigs = GaugeConfig.builder()
                 .mbeanObjectName("invalid mbean object name")
                 .build();
         // when
@@ -91,10 +90,10 @@ public class GaugeCollectorTest {
     @SuppressWarnings("unchecked")
     public void shouldHandleMBeanInstanceNotFoundBeforeLoggingDelay() throws Exception {
         // given
-        GaugeConfig gaugeConfigs = ImmutableGaugeConfig.builder()
+        GaugeConfig gaugeConfigs = GaugeConfig.builder()
                 .mbeanObjectName("xyz:aaa=bbb")
-                .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
-                .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
+                .addMbeanAttributes(MBeanAttribute.of("ccc", false))
+                .addMbeanAttributes(MBeanAttribute.of("ddd", false))
                 .build();
         when(clock.currentTimeMillis()).thenReturn(59999L);
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
@@ -110,10 +109,10 @@ public class GaugeCollectorTest {
     @SuppressWarnings("unchecked")
     public void shouldHandleMBeanInstanceNotFoundAfterLoggingDelay() throws Exception {
         // given
-        GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
+        GaugeConfig gaugeConfig = GaugeConfig.builder()
                 .mbeanObjectName("xyz:aaa=bbb")
-                .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
-                .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
+                .addMbeanAttributes(MBeanAttribute.of("ccc", false))
+                .addMbeanAttributes(MBeanAttribute.of("ddd", false))
                 .build();
         when(clock.currentTimeMillis()).thenReturn(60000L);
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
@@ -130,10 +129,10 @@ public class GaugeCollectorTest {
     @SuppressWarnings("unchecked")
     public void shouldHandleMBeanInstanceNotFoundBeforeAndAfterLoggingDelay() throws Exception {
         // given
-        GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
+        GaugeConfig gaugeConfig = GaugeConfig.builder()
                 .mbeanObjectName("xyz:aaa=bbb")
-                .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
-                .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
+                .addMbeanAttributes(MBeanAttribute.of("ccc", false))
+                .addMbeanAttributes(MBeanAttribute.of("ddd", false))
                 .build();
         when(clock.currentTimeMillis()).thenReturn(0L).thenReturn(30000L).thenReturn(60000L);
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
@@ -156,10 +155,10 @@ public class GaugeCollectorTest {
     @SuppressWarnings("unchecked")
     public void shouldHandleMBeanAttributeNotFound() throws Exception {
         // given
-        GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
+        GaugeConfig gaugeConfig = GaugeConfig.builder()
                 .mbeanObjectName("xyz:aaa=bbb")
-                .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
-                .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
+                .addMbeanAttributes(MBeanAttribute.of("ccc", false))
+                .addMbeanAttributes(MBeanAttribute.of("ddd", false))
                 .build();
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(AttributeNotFoundException.class);
@@ -178,10 +177,10 @@ public class GaugeCollectorTest {
     @Test
     public void shouldHandleMBeanAttributeOtherException() throws Exception {
         // given
-        GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
+        GaugeConfig gaugeConfig = GaugeConfig.builder()
                 .mbeanObjectName("xyz:aaa=bbb")
-                .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
-                .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
+                .addMbeanAttributes(MBeanAttribute.of("ccc", false))
+                .addMbeanAttributes(MBeanAttribute.of("ddd", false))
                 .build();
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(new RuntimeException("A msg"));
@@ -202,10 +201,10 @@ public class GaugeCollectorTest {
     @Test
     public void shouldHandleMBeanAttributeNotANumber() throws Exception {
         // given
-        GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
+        GaugeConfig gaugeConfig = GaugeConfig.builder()
                 .mbeanObjectName("xyz:aaa=bbb")
-                .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
-                .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
+                .addMbeanAttributes(MBeanAttribute.of("ccc", false))
+                .addMbeanAttributes(MBeanAttribute.of("ddd", false))
                 .build();
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenReturn("not a number");

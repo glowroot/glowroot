@@ -47,7 +47,7 @@ public class GcInfoComponent {
         List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
         startingSnapshots = Maps.newHashMap();
         for (GarbageCollectorMXBean gcBean : gcBeans) {
-            GcSnapshot info = ImmutableGcSnapshot.builder()
+            GcSnapshot info = GcSnapshot.builder()
                     .collectionCount(gcBean.getCollectionCount())
                     .collectionTime(gcBean.getCollectionTime())
                     .build();
@@ -94,7 +94,7 @@ public class GcInfoComponent {
                 // no new collections, so don't write it out
                 continue;
             }
-            gcInfos.add(ImmutableGcInfo.builder()
+            gcInfos.add(GcInfo.builder()
                     .name(name)
                     .collectionCount(collectionCountEnd - gcSnapshot.collectionCount())
                     .collectionTime(collectionTimeEnd - gcSnapshot.collectionTime())
@@ -107,14 +107,14 @@ public class GcInfoComponent {
     }
 
     @Value.Immutable
-    abstract static class GcSnapshot {
+    abstract static class GcSnapshotBase {
         abstract long collectionCount();
         abstract long collectionTime();
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableGcInfo.class)
-    public abstract static class GcInfo {
+    @JsonSerialize(as = GcInfo.class)
+    public abstract static class GcInfoBase {
         abstract String name();
         abstract long collectionCount();
         abstract long collectionTime();

@@ -227,7 +227,7 @@ class ClasspathCache {
                 // don't add synthetic or native methods to the analyzed model
                 continue;
             }
-            ImmutableUiAnalyzedMethod.Builder builder = ImmutableUiAnalyzedMethod.builder();
+            UiAnalyzedMethod.Builder builder = UiAnalyzedMethod.builder();
             builder.name(method.getName());
             for (Class<?> parameterType : method.getParameterTypes()) {
                 // Class.getName() for arrays returns internal notation (e.g. "[B" for byte array)
@@ -451,7 +451,7 @@ class ClasspathCache {
                 // don't add constructors to the analyzed model
                 return null;
             }
-            ImmutableUiAnalyzedMethod.Builder builder = ImmutableUiAnalyzedMethod.builder();
+            UiAnalyzedMethod.Builder builder = UiAnalyzedMethod.builder();
             builder.name(name);
             for (Type parameterType : Type.getArgumentTypes(desc)) {
                 builder.addParameterTypes(parameterType.getClassName());

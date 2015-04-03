@@ -47,8 +47,7 @@ import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ConfigService.DuplicateMBeanObjectNameException;
 import org.glowroot.config.GaugeConfig;
-import org.glowroot.config.GaugeConfig.MBeanAttribute;
-import org.glowroot.config.ImmutableGaugeConfig;
+import org.glowroot.config.MBeanAttribute;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -75,8 +74,8 @@ class GaugeJsonService {
         List<GaugeConfig> gaugeConfigs = configService.getGaugeConfigs();
         gaugeConfigs = GaugeConfig.orderingByName.immutableSortedCopy(gaugeConfigs);
         for (GaugeConfig gaugeConfig : gaugeConfigs) {
-            responses.add(ImmutableGaugeConfigWithWarningMessages.builder()
-                    .config(GaugeConfigDto.fromConfig(gaugeConfig))
+            responses.add(GaugeConfigWithWarningMessages.builder()
+                    .config(GaugeConfigDtoBase.fromConfig(gaugeConfig))
                     .build());
         }
         return mapper.writeValueAsString(responses);
@@ -113,8 +112,7 @@ class GaugeJsonService {
     String getMBeanAttributes(String queryString) throws Exception {
         MBeanAttributeNamesRequest request =
                 QueryStrings.decode(queryString, MBeanAttributeNamesRequest.class);
-        ImmutableMBeanAttributeNamesResponse.Builder builder =
-                ImmutableMBeanAttributeNamesResponse.builder();
+        MBeanAttributeNamesResponse.Builder builder = MBeanAttributeNamesResponse.builder();
         for (GaugeConfig gaugeConfig : configService.getGaugeConfigs()) {
             if (gaugeConfig.mbeanObjectName().equals(request.mbeanObjectName())
                     && !gaugeConfig.version().equals(request.gaugeVersion())) {
@@ -179,8 +177,8 @@ class GaugeJsonService {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
         }
-        ImmutableGaugeResponse.Builder builder = ImmutableGaugeResponse.builder()
-                .config(GaugeConfigDto.fromConfig(gaugeConfig));
+        GaugeResponse.Builder builder = GaugeResponse.builder()
+                .config(GaugeConfigDtoBase.fromConfig(gaugeConfig));
         if (mbeanInfo == null) {
             builder.mbeanUnavailable(true);
         } else {
@@ -258,29 +256,29 @@ class GaugeJsonService {
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = ImmutableGaugeConfigWithWarningMessages.class)
-    abstract static class GaugeConfigWithWarningMessages {
+    @JsonDeserialize(as = GaugeConfigWithWarningMessages.class)
+    abstract static class GaugeConfigWithWarningMessagesBase {
         abstract GaugeConfigDto config();
-        abstract List<String> warningMessages();
+        abstract ImmutableList<String> warningMessages();
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = ImmutableMBeanObjectNameRequest.class)
-    abstract static class MBeanObjectNameRequest {
+    @JsonDeserialize(as = MBeanObjectNameRequest.class)
+    abstract static class MBeanObjectNameRequestBase {
         abstract String partialMBeanObjectName();
         abstract int limit();
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = ImmutableMBeanAttributeNamesRequest.class)
-    abstract static class MBeanAttributeNamesRequest {
+    @JsonDeserialize(as = MBeanAttributeNamesRequest.class)
+    abstract static class MBeanAttributeNamesRequestBase {
         abstract String mbeanObjectName();
         abstract @Nullable String gaugeVersion();
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableMBeanAttributeNamesResponse.class)
-    abstract static class MBeanAttributeNamesResponse {
+    @JsonSerialize(as = MBeanAttributeNamesResponse.class)
+    abstract static class MBeanAttributeNamesResponseBase {
         @Value.Default
         boolean mbeanUnavailable() {
             return false;
@@ -289,33 +287,33 @@ class GaugeJsonService {
         boolean duplicateMBean() {
             return false;
         }
-        abstract List<String> mbeanAttributes();
+        abstract ImmutableList<String> mbeanAttributes();
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableGaugeResponse.class)
-    abstract static class GaugeResponse {
+    @JsonSerialize(as = GaugeResponse.class)
+    abstract static class GaugeResponseBase {
         abstract GaugeConfigDto config();
         @Value.Default
         boolean mbeanUnavailable() {
             return false;
         }
-        abstract List<String> mbeanAvailableAttributeNames();
+        abstract ImmutableList<String> mbeanAvailableAttributeNames();
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableGaugeConfigDto.class)
-    @JsonDeserialize(as = ImmutableGaugeConfigDto.class)
-    abstract static class GaugeConfigDto {
+    @JsonSerialize(as = GaugeConfigDto.class)
+    @JsonDeserialize(as = GaugeConfigDto.class)
+    abstract static class GaugeConfigDtoBase {
 
         // name is only used in one direction since it is a derived attribute
         abstract @Nullable String display();
         abstract String mbeanObjectName();
-        abstract List<MBeanAttribute> mbeanAttributes();
+        abstract ImmutableList<MBeanAttribute> mbeanAttributes();
         abstract @Nullable String version(); // null for insert operations
 
         private static GaugeConfigDto fromConfig(GaugeConfig gaugeConfig) {
-            return ImmutableGaugeConfigDto.builder()
+            return GaugeConfigDto.builder()
                     .display(gaugeConfig.display())
                     .mbeanObjectName(gaugeConfig.mbeanObjectName())
                     .addAllMbeanAttributes(gaugeConfig.mbeanAttributes())
@@ -323,8 +321,8 @@ class GaugeJsonService {
                     .build();
         }
 
-        private GaugeConfig toConfig() {
-            return ImmutableGaugeConfig.builder()
+        GaugeConfig toConfig() {
+            return GaugeConfig.builder()
                     .mbeanObjectName(mbeanObjectName())
                     .addAllMbeanAttributes(mbeanAttributes())
                     .build();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,6 @@ import com.google.common.collect.ImmutableList;
 import org.h2.jdbc.JdbcConnection;
 import org.junit.Test;
 
-import org.glowroot.local.store.Schemas.Index;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SchemasTest {
@@ -40,8 +38,7 @@ public class SchemasTest {
         // when
         Set<Index> indexes = Schemas.getIndexes("tab", connection);
         assertThat(indexes).hasSize(1);
-        assertThat(indexes.iterator().next())
-                .isEqualTo(ImmutableIndex.of("tab_idx", ImmutableList.of("a")));
+        assertThat(indexes.iterator().next()).isEqualTo(Index.of("tab_idx", ImmutableList.of("a")));
         // then
     }
 

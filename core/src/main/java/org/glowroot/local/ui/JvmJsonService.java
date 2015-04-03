@@ -63,12 +63,11 @@ import org.glowroot.collector.GaugePoint;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GaugeConfig;
-import org.glowroot.config.GaugeConfig.MBeanAttribute;
+import org.glowroot.config.MBeanAttribute;
+import org.glowroot.jvm.Availability;
 import org.glowroot.jvm.HeapDumps;
-import org.glowroot.jvm.ImmutableAvailability;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 import org.glowroot.jvm.OptionalService;
-import org.glowroot.jvm.OptionalService.Availability;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.local.store.GaugePointDao;
 import org.glowroot.markers.UsedByJsonBinding;
@@ -150,8 +149,7 @@ class JvmJsonService {
         List<Gauge> gauges = Lists.newArrayList();
         for (GaugeConfig gaugeConfig : configService.getGaugeConfigs()) {
             for (MBeanAttribute mbeanAttribute : gaugeConfig.mbeanAttributes()) {
-                gauges.add(ImmutableGauge.of(
-                        gaugeConfig.mbeanObjectName() + "," + mbeanAttribute.name(),
+                gauges.add(Gauge.of(gaugeConfig.mbeanObjectName() + "," + mbeanAttribute.name(),
                         mbeanAttribute.everIncreasing(),
                         gaugeConfig.display() + '/' + mbeanAttribute.name()));
             }
@@ -416,27 +414,27 @@ class JvmJsonService {
     private static Availability getThreadCpuTimeAvailability() {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         if (!threadMXBean.isThreadCpuTimeSupported()) {
-            return ImmutableAvailability.of(false, "java.lang.management.ThreadMXBean"
+            return Availability.of(false, "java.lang.management.ThreadMXBean"
                     + ".isThreadCpuTimeSupported() returned false");
         }
         if (!threadMXBean.isThreadCpuTimeEnabled()) {
-            return ImmutableAvailability.of(false, "java.lang.management.ThreadMXBean"
+            return Availability.of(false, "java.lang.management.ThreadMXBean"
                     + ".isThreadCpuTimeEnabled() returned false");
         }
-        return ImmutableAvailability.of(true, "");
+        return Availability.of(true, "");
     }
 
     private static Availability getThreadContentionAvailability() {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         if (!threadMXBean.isThreadContentionMonitoringSupported()) {
-            return ImmutableAvailability.of(false, "java.lang.management.ThreadMXBean"
+            return Availability.of(false, "java.lang.management.ThreadMXBean"
                     + ".isThreadContentionMonitoringSupported() returned false");
         }
         if (!threadMXBean.isThreadContentionMonitoringEnabled()) {
-            return ImmutableAvailability.of(false, "java.lang.management.ThreadMXBean"
+            return Availability.of(false, "java.lang.management.ThreadMXBean"
                     + ".isThreadContentionMonitoringEnabled() returned false");
         }
-        return ImmutableAvailability.of(true, "");
+        return Availability.of(true, "");
     }
 
     private @Nullable static String getHeapDumpPathFromCommandLine() {
@@ -554,17 +552,17 @@ class JvmJsonService {
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = ImmutableGaugePointRequest.class)
-    abstract static class GaugePointRequest {
+    @JsonDeserialize(as = GaugePointRequest.class)
+    abstract static class GaugePointRequestBase {
         abstract long from();
         abstract long to();
-        abstract List<String> gaugeNames();
+        abstract ImmutableList<String> gaugeNames();
         abstract int rollupLevel();
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableGauge.class)
-    public abstract static class Gauge {
+    @JsonSerialize(as = Gauge.class)
+    public abstract static class GaugeBase {
 
         static final Ordering<Gauge> ordering = new Ordering<Gauge>() {
             @Override
@@ -659,20 +657,20 @@ class JvmJsonService {
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = ImmutableMBeanTreeRequest.class)
-    abstract static class MBeanTreeRequest {
+    @JsonDeserialize(as = MBeanTreeRequest.class)
+    abstract static class MBeanTreeRequestBase {
         abstract public List<String> expanded();
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = ImmutableMBeanAttributeMapRequest.class)
-    abstract static class MBeanAttributeMapRequest {
+    @JsonDeserialize(as = MBeanAttributeMapRequest.class)
+    abstract static class MBeanAttributeMapRequestBase {
         abstract String objectName();
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = ImmutableRequestWithDirectory.class)
-    abstract static class RequestWithDirectory {
+    @JsonDeserialize(as = RequestWithDirectory.class)
+    abstract static class RequestWithDirectoryBase {
         abstract String directory();
     }
 }

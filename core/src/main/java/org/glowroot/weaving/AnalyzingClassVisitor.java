@@ -51,7 +51,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
 
     private List<AnalyzedClass> superAnalyzedClasses = ImmutableList.of();
 
-    private ImmutableAnalyzedClass./*@MonotonicNonNull*/Builder analyzedClassBuilder;
+    private AnalyzedClass./*@MonotonicNonNull*/Builder analyzedClassBuilder;
 
     private @MonotonicNonNull AnalyzedClass analyzedClass;
 
@@ -88,7 +88,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
                 ClassNames.fromInternalNames(interfaceInternalNamesNullable);
         String className = ClassNames.fromInternalName(internalName);
         String superClassName = ClassNames.fromInternalName(superInternalName);
-        analyzedClassBuilder = ImmutableAnalyzedClass.builder()
+        analyzedClassBuilder = AnalyzedClass.builder()
                 .modifiers(access)
                 .name(className)
                 .superName(superClassName)
@@ -148,7 +148,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
                 getMatchingAdvisors(name, parameterTypes, returnType, access);
         if (!matchingAdvisors.isEmpty()) {
             checkNotNull(analyzedClassBuilder, "Call to visit() is required");
-            ImmutableAnalyzedMethod.Builder builder = ImmutableAnalyzedMethod.builder();
+            AnalyzedMethod.Builder builder = AnalyzedMethod.builder();
             builder.name(name);
             for (Type parameterType : parameterTypes) {
                 builder.addParameterTypes(parameterType.getClassName());

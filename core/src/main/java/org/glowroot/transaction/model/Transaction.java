@@ -40,8 +40,6 @@ import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.api.internal.ThrowableInfo;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.jvm.ThreadAllocatedBytes;
-import org.glowroot.transaction.model.GcInfoComponent.GcInfo;
-import org.glowroot.transaction.model.ThreadInfoComponent.ThreadInfoData;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

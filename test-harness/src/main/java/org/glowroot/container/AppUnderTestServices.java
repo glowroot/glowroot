@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.ImmutablePluginConfig;
 import org.glowroot.config.PluginConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -38,7 +37,7 @@ public class AppUnderTestServices {
         if (config == null) {
             throw new IllegalStateException("Plugin not found for pluginId: " + pluginId);
         }
-        PluginConfig updatedConfig = ((ImmutablePluginConfig) config).withEnabled(enabled);
+        PluginConfig updatedConfig = config.withEnabled(enabled);
         configService.updatePluginConfig(updatedConfig, config.version());
     }
 

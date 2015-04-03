@@ -30,12 +30,9 @@ import org.glowroot.collector.AggregateCollector;
 import org.glowroot.collector.AggregateIntervalCollector;
 import org.glowroot.collector.ErrorPoint;
 import org.glowroot.collector.ErrorSummary;
-import org.glowroot.collector.ImmutableErrorPoint;
-import org.glowroot.collector.ImmutableErrorSummary;
 import org.glowroot.local.store.AggregateDao;
-import org.glowroot.local.store.AggregateDao.ErrorSummaryQuery;
 import org.glowroot.local.store.AggregateDao.ErrorSummarySortOrder;
-import org.glowroot.local.store.ImmutableErrorSummaryQuery;
+import org.glowroot.local.store.ErrorSummaryQuery;
 import org.glowroot.local.store.QueryResult;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -82,7 +79,7 @@ class ErrorCommonService {
             return aggregateDao.readTransactionErrorSummaries(query);
         }
         long revisedTo = getRevisedTo(query.to(), orderedIntervalCollectors);
-        ErrorSummaryQuery revisedQuery = ((ImmutableErrorSummaryQuery) query).withTo(revisedTo);
+        ErrorSummaryQuery revisedQuery = query.withTo(revisedTo);
         QueryResult<ErrorSummary> queryResult =
                 aggregateDao.readTransactionErrorSummaries(revisedQuery);
         if (orderedIntervalCollectors.isEmpty()) {
@@ -139,8 +136,8 @@ class ErrorCommonService {
             long rollupTime = (long) Math.ceil(errorPoint.captureTime()
                     / (double) fixedRollupMillis) * fixedRollupMillis;
             if (rollupTime != currRollupTime && currTransactionCount != 0) {
-                rolledUpErrorPoints.add(ImmutableErrorPoint.of(currCaptureTime, currErrorCount,
-                        currTransactionCount));
+                rolledUpErrorPoints.add(
+                        ErrorPoint.of(currCaptureTime, currErrorCount, currTransactionCount));
                 currErrorCount = 0;
                 currTransactionCount = 0;
             }
@@ -151,7 +148,7 @@ class ErrorCommonService {
         }
         if (currTransactionCount != 0) {
             rolledUpErrorPoints.add(
-                    ImmutableErrorPoint.of(currCaptureTime, currErrorCount, currTransactionCount));
+                    ErrorPoint.of(currCaptureTime, currErrorCount, currTransactionCount));
         }
         return rolledUpErrorPoints;
     }
@@ -202,7 +199,7 @@ class ErrorCommonService {
 
     private static ErrorSummary combineErrorSummaries(
             @Nullable String transactionName, ErrorSummary summary1, ErrorSummary summary2) {
-        return ImmutableErrorSummary.builder()
+        return ErrorSummary.builder()
                 .transactionName(transactionName)
                 .errorCount(summary1.errorCount() + summary2.errorCount())
                 .transactionCount(summary1.transactionCount() + summary2.transactionCount())

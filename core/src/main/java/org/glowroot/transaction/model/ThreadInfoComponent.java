@@ -53,7 +53,7 @@ public class ThreadInfoComponent {
         ThreadInfo threadInfo = threadMXBean.getThreadInfo(threadId, 0);
         // thread info for current thread cannot be null
         checkNotNull(threadInfo);
-        ImmutableThreadInfoSnapshot.Builder builder = ImmutableThreadInfoSnapshot.builder();
+        ThreadInfoSnapshot.Builder builder = ThreadInfoSnapshot.builder();
         if (isThreadCpuTimeSupported) {
             builder.threadCpuTime(threadMXBean.getCurrentThreadCpuTime());
         }
@@ -91,7 +91,7 @@ public class ThreadInfoComponent {
     }
 
     private ThreadInfoData getThreadInfoInternal() {
-        ImmutableThreadInfoData.Builder builder = ImmutableThreadInfoData.builder();
+        ThreadInfoData.Builder builder = ThreadInfoData.builder();
         ThreadInfo threadInfo = threadMXBean.getThreadInfo(threadId, 0);
         if (threadInfo == null) {
             // thread must have just recently terminated
@@ -109,7 +109,7 @@ public class ThreadInfoComponent {
         return builder.build();
     }
 
-    private void addThreadCpuTime(ImmutableThreadInfoData.Builder builder) {
+    private void addThreadCpuTime(ThreadInfoData.Builder builder) {
         // getThreadCpuTime() returns -1 if CPU time measurement is disabled (which is different
         // than whether or not it is supported)
         long threadCpuTime = threadMXBean.getThreadCpuTime(threadId);
@@ -118,7 +118,7 @@ public class ThreadInfoComponent {
         }
     }
 
-    private void addThreadBlockedAndWaitedTime(ImmutableThreadInfoData.Builder builder,
+    private void addThreadBlockedAndWaitedTime(ThreadInfoData.Builder builder,
             ThreadInfo threadInfo) {
         // getBlockedTime() and getWaitedTime() return -1 if thread contention monitoring is
         // disabled (which is different than whether or not it is supported)
@@ -135,7 +135,7 @@ public class ThreadInfoComponent {
     }
 
     @RequiresNonNull("threadAllocatedBytes")
-    private void addThreadAllocatedBytes(ImmutableThreadInfoData.Builder builder) {
+    private void addThreadAllocatedBytes(ThreadInfoData.Builder builder) {
         long allocatedBytes = threadAllocatedBytes.getThreadAllocatedBytesSafely(threadId);
         if (startingSnapshot.threadAllocatedBytes() != -1 && allocatedBytes != -1) {
             builder.threadAllocatedBytes(
@@ -144,7 +144,7 @@ public class ThreadInfoComponent {
     }
 
     @Value.Immutable
-    abstract static class ThreadInfoSnapshot {
+    abstract static class ThreadInfoSnapshotBase {
         @Value.Default
         long threadCpuTime() { // nanoseconds
             return -1;
@@ -164,7 +164,7 @@ public class ThreadInfoComponent {
     }
 
     @Value.Immutable
-    public abstract static class ThreadInfoData {
+    public abstract static class ThreadInfoDataBase {
         public abstract @Nullable Long threadCpuTime(); // nanoseconds
         public abstract @Nullable Long threadBlockedTime(); // nanoseconds (for consistency)
         public abstract @Nullable Long threadWaitedTime(); // nanoseconds (for consistency)

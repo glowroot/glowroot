@@ -211,31 +211,23 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.ByFunctionOrdering");
         types.add("com.google.common.collect.CollectPreconditions");
         types.add("com.google.common.collect.Collections2");
-        types.add("com.google.common.collect.ComparatorOrdering");
-        types.add("com.google.common.collect.DescendingImmutableSortedSet");
         types.add("com.google.common.collect.EmptyImmutableSet");
-        types.add("com.google.common.collect.EmptyImmutableSortedSet");
-        types.add("com.google.common.collect.Hashing");
         types.add("com.google.common.collect.ImmutableAsList");
         types.add("com.google.common.collect.ImmutableCollection");
         types.add("com.google.common.collect.ImmutableCollection$ArrayBasedBuilder");
         types.add("com.google.common.collect.ImmutableCollection$Builder");
-        types.add("com.google.common.collect.ImmutableEnumSet");
         types.add("com.google.common.collect.ImmutableList");
         types.add("com.google.common.collect.ImmutableList$1");
         types.add("com.google.common.collect.ImmutableList$Builder");
         types.add("com.google.common.collect.ImmutableList$ReverseImmutableList");
         types.add("com.google.common.collect.ImmutableList$SubList");
         types.add("com.google.common.collect.ImmutableSet");
-        types.add("com.google.common.collect.ImmutableSortedSet");
-        types.add("com.google.common.collect.ImmutableSortedSetFauxverideShim");
         types.add("com.google.common.collect.Iterables");
         types.add("com.google.common.collect.Iterators");
         types.add("com.google.common.collect.Iterators$1");
         types.add("com.google.common.collect.Iterators$11");
         types.add("com.google.common.collect.Iterators$12");
         types.add("com.google.common.collect.Iterators$2");
-        types.add("com.google.common.collect.Iterators$3");
         types.add("com.google.common.collect.Lists");
         types.add("com.google.common.collect.Lists$RandomAccessReverseList");
         types.add("com.google.common.collect.Lists$ReverseList");
@@ -247,13 +239,10 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.Platform");
         types.add("com.google.common.collect.RegularImmutableAsList");
         types.add("com.google.common.collect.RegularImmutableList");
-        types.add("com.google.common.collect.RegularImmutableSet");
         types.add("com.google.common.collect.ReverseNaturalOrdering");
         types.add("com.google.common.collect.ReverseOrdering");
         types.add("com.google.common.collect.Sets");
         types.add("com.google.common.collect.SingletonImmutableList");
-        types.add("com.google.common.collect.SingletonImmutableSet");
-        types.add("com.google.common.collect.SortedIterable");
         types.add("com.google.common.collect.UnmodifiableIterator");
         types.add("com.google.common.collect.UnmodifiableListIterator");
         types.add("com.google.common.io.ByteSource");
@@ -322,17 +311,26 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.transaction.model.NestedTimerMap$Entry");
         types.add("org.glowroot.transaction.model.TimerImpl");
         types.add("org.glowroot.transaction.model.TimerNameImpl");
+        types.add("org.glowroot.transaction.model.TimerNameImplBase");
         types.add("org.glowroot.transaction.model.Transaction");
         types.add("org.glowroot.weaving.Advice");
-        types.add("org.glowroot.weaving.Advice$1");
-        types.add("org.glowroot.weaving.Advice$AdviceParameter");
-        types.add("org.glowroot.weaving.Advice$ParameterKind");
+        types.add("org.glowroot.weaving.AdviceBase");
+        types.add("org.glowroot.weaving.AdviceBase$1");
+        types.add("org.glowroot.weaving.AdviceBase$AdviceParameterBase");
         types.add("org.glowroot.weaving.AdviceFlowOuterHolder");
         types.add("org.glowroot.weaving.AdviceFlowOuterHolder$1");
         types.add("org.glowroot.weaving.AdviceFlowOuterHolder$AdviceFlowHolder");
         types.add("org.glowroot.weaving.AdviceMatcher");
+        types.add("org.glowroot.weaving.AdviceMatcherBase");
+        types.add("org.glowroot.weaving.AdviceParameter");
         types.add("org.glowroot.weaving.AnalyzedClass");
+        types.add("org.glowroot.weaving.AnalyzedClass$Builder");
+        types.add("org.glowroot.weaving.AnalyzedClassBase");
         types.add("org.glowroot.weaving.AnalyzedMethod");
+        types.add("org.glowroot.weaving.AnalyzedMethod$Builder");
+        types.add("org.glowroot.weaving.AnalyzedMethodBase");
+        types.add("org.glowroot.weaving.AnalyzedMethodKey");
+        types.add("org.glowroot.weaving.AnalyzedMethodKey$Builder");
         types.add("org.glowroot.weaving.AnalyzedWorld");
         types.add("org.glowroot.weaving.AnalyzedWorld$1");
         types.add("org.glowroot.weaving.AnalyzedWorld$ParseContext");
@@ -343,23 +341,17 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.ClassLoaders");
         types.add("org.glowroot.weaving.ExtraBootResourceFinder");
         types.add("org.glowroot.weaving.GeneratedBytecodeUtil");
-        types.add("org.glowroot.weaving.ImmutableAdvice");
-        types.add("org.glowroot.weaving.ImmutableAdviceMatcher");
-        types.add("org.glowroot.weaving.ImmutableAnalyzedClass");
-        types.add("org.glowroot.weaving.ImmutableAnalyzedClass$Builder");
-        types.add("org.glowroot.weaving.ImmutableAnalyzedMethod");
-        types.add("org.glowroot.weaving.ImmutableAnalyzedMethod$Builder");
-        types.add("org.glowroot.weaving.ImmutableAnalyzedMethodKey");
-        types.add("org.glowroot.weaving.ImmutableAnalyzedMethodKey$Builder");
         types.add("org.glowroot.weaving.MixinMatcher");
         types.add("org.glowroot.weaving.MixinType");
+        types.add("org.glowroot.weaving.MixinTypeBase");
+        types.add("org.glowroot.weaving.ParameterKind");
         types.add("org.glowroot.weaving.PointcutClassVisitor");
         types.add("org.glowroot.weaving.Weaver");
         types.add("org.glowroot.weaving.Weaver$ComputeFramesClassWriter");
         types.add("org.glowroot.weaving.Weaver$JSRInlinerClassVisitor");
         types.add("org.glowroot.weaving.WeavingClassFileTransformer");
         types.add("org.glowroot.weaving.WeavingClassVisitor");
-        types.add("org.glowroot.weaving.WeavingClassVisitor$AnalyzedMethodKey");
+        types.add("org.glowroot.weaving.WeavingClassVisitor$AnalyzedMethodKeyBase");
         types.add("org.glowroot.weaving.WeavingClassVisitor$InitMixins");
         types.add("org.glowroot.weaving.WeavingClassVisitor$MethodMetaGroup");
         types.add("org.glowroot.weaving.WeavingClassVisitor$PointcutClassFoundException");
@@ -445,19 +437,17 @@ public class PreInitializeWeavingClasses {
         // these are special classes generated by javac (but not by the eclipse compiler) to handle
         // accessing the private constructor in an enclosed type
         // (see http://stackoverflow.com/questions/2883181)
-        types.add("org.glowroot.common.Reflections$1");
         types.add("org.glowroot.transaction.model.NestedTimerMap$1");
         types.add("org.glowroot.weaving.AnalyzedClass$1");
         types.add("org.glowroot.weaving.BootstrapMetaHolders$1");
-        types.add("org.glowroot.weaving.ImmutableAnalyzedClass$1");
-        types.add("org.glowroot.weaving.ImmutableAnalyzedMethod$1");
-        types.add("org.glowroot.weaving.ImmutableAnalyzedMethodKey$1");
+        types.add("org.glowroot.weaving.AnalyzedMethod$1");
+        types.add("org.glowroot.weaving.AnalyzedMethodKey$1");
         types.add("org.glowroot.weaving.Weaver$1");
         types.add("org.glowroot.weaving.WeavingClassVisitor$1");
         // this is a special class generated by javac (but not by the eclipse compiler) to handle
         // enum switch statements
         // (see http://stackoverflow.com/questions/1834632/java-enum-and-additional-class-files)
-        types.add("org.glowroot.weaving.AdviceMatcher$1");
+        types.add("org.glowroot.weaving.AdviceMatcherBase$1");
         types.add("org.glowroot.weaving.WeavingMethodVisitor$1");
         return types;
     }

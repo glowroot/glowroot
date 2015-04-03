@@ -31,10 +31,8 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GaugeConfig;
-import org.glowroot.config.GaugeConfig.MBeanAttribute;
+import org.glowroot.config.MBeanAttribute;
 import org.glowroot.local.store.DataSource.ResultSetExtractor;
-import org.glowroot.local.store.Schemas.Column;
-import org.glowroot.local.store.Schemas.Index;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
@@ -43,12 +41,12 @@ public class GaugeDao {
     private static Logger logger = LoggerFactory.getLogger(GaugeDao.class);
 
     private static final ImmutableList<Column> gaugeColumns = ImmutableList.<Column>of(
-            ImmutableColumn.of("id", Types.BIGINT).withIdentity(true),
-            ImmutableColumn.of("name", Types.VARCHAR),
-            ImmutableColumn.of("ever_increasing", Types.BOOLEAN));
+            Column.of("id", Types.BIGINT).withIdentity(true),
+            Column.of("name", Types.VARCHAR),
+            Column.of("ever_increasing", Types.BOOLEAN));
 
     private static final ImmutableList<Index> gaugeIndexes =
-            ImmutableList.<Index>of(ImmutableIndex.of("gauge_idx", ImmutableList.of("name")));
+            ImmutableList.<Index>of(Index.of("gauge_idx", ImmutableList.of("name")));
 
     // expire after 1 hour to avoid retaining deleted gauge configs indefinitely
     private final Cache<String, Long> gaugeIds =

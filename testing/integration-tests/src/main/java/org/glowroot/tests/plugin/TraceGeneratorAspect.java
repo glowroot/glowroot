@@ -27,14 +27,14 @@ import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.tests.TraceGenerator;
+import org.glowroot.tests.TraceGeneratorBase;
 
 public class TraceGeneratorAspect {
 
     private static final PluginServices pluginServices =
             PluginServices.get("glowroot-integration-tests");
 
-    @Pointcut(className = "org.glowroot.tests.TraceGenerator", methodName = "call",
+    @Pointcut(className = "org.glowroot.tests.TraceGeneratorBase", methodName = "call",
             methodParameterTypes = {"boolean"}, timerName = "trace generator")
     public static class LevelOneAdvice {
 
@@ -47,7 +47,7 @@ public class TraceGeneratorAspect {
         }
 
         @OnBefore
-        public static TraceEntry onBefore(@BindReceiver TraceGenerator traceGenerator) {
+        public static TraceEntry onBefore(@BindReceiver TraceGeneratorBase traceGenerator) {
             TraceEntry traceEntry = pluginServices.startTransaction(
                     traceGenerator.transactionType(), traceGenerator.transactionName(),
                     MessageSupplier.from(traceGenerator.headline()), timerName);

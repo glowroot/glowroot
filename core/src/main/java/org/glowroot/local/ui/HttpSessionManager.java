@@ -41,8 +41,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Clock;
+import org.glowroot.config.AnonymousAccess;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.UserInterfaceConfig.AnonymousAccess;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.COOKIE;
 import static io.netty.handler.codec.http.HttpHeaders.Names.SET_COOKIE;

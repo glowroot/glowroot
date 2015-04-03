@@ -25,11 +25,11 @@ import org.immutables.value.Value;
 public abstract class OptionalService<T> {
 
     static <T> OptionalService<T> available(T service) {
-        return new NonLazyOptionalService<T>(ImmutableAvailability.of(true, ""), service);
+        return new NonLazyOptionalService<T>(Availability.of(true, ""), service);
     }
 
     static <T> OptionalService<T> unavailable(String reason) {
-        return new NonLazyOptionalService<T>(ImmutableAvailability.of(false, reason), null);
+        return new NonLazyOptionalService<T>(Availability.of(false, reason), null);
     }
 
     static <T> OptionalService<T> lazy(Supplier<OptionalService<T>> supplier) {
@@ -41,8 +41,8 @@ public abstract class OptionalService<T> {
     public abstract @Nullable T getService();
 
     @Value.Immutable
-    @JsonSerialize(as = ImmutableAvailability.class)
-    public abstract static class Availability {
+    @JsonSerialize(as = Availability.class)
+    public abstract static class AvailabilityBase {
         @Value.Parameter
         public abstract boolean isAvailable();
         // reason only needed when available is false

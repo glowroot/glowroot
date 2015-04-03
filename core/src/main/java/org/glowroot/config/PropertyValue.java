@@ -20,8 +20,6 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import org.glowroot.config.PropertyDescriptor.PropertyType;
-
 @JsonSerialize(using = PropertyValueSerializer.class)
 @JsonDeserialize(using = PropertyValueDeserializer.class)
 public class PropertyValue {

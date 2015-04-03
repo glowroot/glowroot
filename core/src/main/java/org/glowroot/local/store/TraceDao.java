@@ -34,14 +34,11 @@ import org.checkerframework.checker.tainting.qual.Untainted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.ImmutableTrace;
 import org.glowroot.collector.Trace;
 import org.glowroot.collector.TraceRepository;
 import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.ResultSetExtractor;
 import org.glowroot.local.store.DataSource.RowMapper;
-import org.glowroot.local.store.Schemas.Column;
-import org.glowroot.local.store.Schemas.Index;
 import org.glowroot.markers.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -52,38 +49,38 @@ public class TraceDao implements TraceRepository {
     private static final Logger logger = LoggerFactory.getLogger(TraceDao.class);
 
     private static final ImmutableList<Column> traceColumns = ImmutableList.<Column>of(
-            ImmutableColumn.of("id", Types.VARCHAR).withPrimaryKey(true),
-            ImmutableColumn.of("partial", Types.BIGINT),
-            ImmutableColumn.of("error", Types.BOOLEAN),
-            ImmutableColumn.of("start_time", Types.BIGINT),
-            ImmutableColumn.of("capture_time", Types.BIGINT),
-            ImmutableColumn.of("duration", Types.BIGINT), // nanoseconds
-            ImmutableColumn.of("transaction_type", Types.VARCHAR),
-            ImmutableColumn.of("transaction_name", Types.VARCHAR),
-            ImmutableColumn.of("headline", Types.VARCHAR),
-            ImmutableColumn.of("user", Types.VARCHAR),
-            ImmutableColumn.of("custom_attributes", Types.VARCHAR), // json data
-            ImmutableColumn.of("custom_detail", Types.VARCHAR), // json data
-            ImmutableColumn.of("error_message", Types.VARCHAR),
-            ImmutableColumn.of("error_throwable", Types.VARCHAR), // json data
-            ImmutableColumn.of("timers", Types.VARCHAR), // json data
-            ImmutableColumn.of("thread_cpu_time", Types.BIGINT), // nanoseconds
-            ImmutableColumn.of("thread_blocked_time", Types.BIGINT), // nanoseconds
-            ImmutableColumn.of("thread_waited_time", Types.BIGINT), // nanoseconds
-            ImmutableColumn.of("thread_allocated_bytes", Types.BIGINT),
-            ImmutableColumn.of("gc_infos", Types.VARCHAR), // json data
-            ImmutableColumn.of("entry_count", Types.BIGINT),
-            ImmutableColumn.of("entries_capped_id", Types.VARCHAR), // capped database id
-            ImmutableColumn.of("profile_sample_count", Types.BIGINT),
-            ImmutableColumn.of("profile_capped_id", Types.VARCHAR)); // capped database id
+            Column.of("id", Types.VARCHAR).withPrimaryKey(true),
+            Column.of("partial", Types.BIGINT),
+            Column.of("error", Types.BOOLEAN),
+            Column.of("start_time", Types.BIGINT),
+            Column.of("capture_time", Types.BIGINT),
+            Column.of("duration", Types.BIGINT), // nanoseconds
+            Column.of("transaction_type", Types.VARCHAR),
+            Column.of("transaction_name", Types.VARCHAR),
+            Column.of("headline", Types.VARCHAR),
+            Column.of("user", Types.VARCHAR),
+            Column.of("custom_attributes", Types.VARCHAR), // json data
+            Column.of("custom_detail", Types.VARCHAR), // json data
+            Column.of("error_message", Types.VARCHAR),
+            Column.of("error_throwable", Types.VARCHAR), // json data
+            Column.of("timers", Types.VARCHAR), // json data
+            Column.of("thread_cpu_time", Types.BIGINT), // nanoseconds
+            Column.of("thread_blocked_time", Types.BIGINT), // nanoseconds
+            Column.of("thread_waited_time", Types.BIGINT), // nanoseconds
+            Column.of("thread_allocated_bytes", Types.BIGINT),
+            Column.of("gc_infos", Types.VARCHAR), // json data
+            Column.of("entry_count", Types.BIGINT),
+            Column.of("entries_capped_id", Types.VARCHAR), // capped database id
+            Column.of("profile_sample_count", Types.BIGINT),
+            Column.of("profile_capped_id", Types.VARCHAR)); // capped database id
 
     // capture_time column is used for expiring records without using FK with on delete cascade
     private static final ImmutableList<Column> transactionCustomAttributeColumns =
             ImmutableList.<Column>of(
-                    ImmutableColumn.of("trace_id", Types.VARCHAR),
-                    ImmutableColumn.of("name", Types.VARCHAR),
-                    ImmutableColumn.of("value", Types.VARCHAR),
-                    ImmutableColumn.of("capture_time", Types.BIGINT));
+                    Column.of("trace_id", Types.VARCHAR),
+                    Column.of("name", Types.VARCHAR),
+                    Column.of("value", Types.VARCHAR),
+                    Column.of("capture_time", Types.BIGINT));
 
     private static final ImmutableList<Index> traceIndexes = ImmutableList.<Index>of(
             // trace_idx is for the default trace point query
@@ -93,16 +90,16 @@ public class TraceDao implements TraceRepository {
             //
             // duration, id and error columns are included so h2 can return the result set directly
             // from the index without having to reference the table for each row
-            ImmutableIndex.of("trace_idx", ImmutableList.of("capture_time", "transaction_type",
-                    "duration", "id", "error")),
+            Index.of("trace_idx", ImmutableList.of("capture_time", "transaction_type", "duration",
+                    "id", "error")),
             // trace_error_message_idx is for readErrorMessageCounts()
-            ImmutableIndex.of("trace_error_message_idx", ImmutableList.of("error", "capture_time",
+            Index.of("trace_error_message_idx", ImmutableList.of("error", "capture_time",
                     "transaction_type", "transaction_name", "error_message")),
             // trace_transaction_count_idx is for readTransactionCount()
-            ImmutableIndex.of("trace_transaction_count_idx",
+            Index.of("trace_transaction_count_idx",
                     ImmutableList.of("transaction_type", "transaction_name", "capture_time")),
             // trace_overall_count_idx is for readOverallCount()
-            ImmutableIndex.of("trace_overall_count_idx",
+            Index.of("trace_overall_count_idx",
                     ImmutableList.of("transaction_type", "capture_time")));
 
     private final DataSource dataSource;
@@ -300,7 +297,7 @@ public class TraceDao implements TraceRepository {
             args.add('%' + exclude.toUpperCase(Locale.ENGLISH) + '%');
         }
         sql += " " + groupByClause;
-        return ImmutableParameterizedSql.of(sql, args);
+        return ParameterizedSql.of(sql, args);
     }
 
     private static void upgradeTraceTable(DataSource dataSource) throws SQLException {
@@ -331,7 +328,7 @@ public class TraceDao implements TraceRepository {
             String id = resultSet.getString(1);
             // this checkNotNull is safe since id is the primary key and cannot be null
             checkNotNull(id);
-            return ImmutableTracePoint.builder()
+            return TracePoint.builder()
                     .id(id)
                     .captureTime(resultSet.getLong(2))
                     .duration(resultSet.getLong(3))
@@ -348,7 +345,7 @@ public class TraceDao implements TraceRepository {
             String id = resultSet.getString(columnIndex++);
             // this checkNotNull is safe since id is the primary key and cannot be null
             checkNotNull(id);
-            return ImmutableTrace.builder()
+            return Trace.builder()
                     .id(id)
                     .active(false)
                     .partial(resultSet.getBoolean(columnIndex++))
@@ -385,14 +382,14 @@ public class TraceDao implements TraceRepository {
         public TraceErrorPoint mapRow(ResultSet resultSet) throws SQLException {
             long captureTime = resultSet.getLong(1);
             long errorCount = resultSet.getLong(2);
-            return ImmutableTraceErrorPoint.of(captureTime, errorCount);
+            return TraceErrorPoint.of(captureTime, errorCount);
         }
     }
 
     private static class ErrorMessageCountRowMapper implements RowMapper<ErrorMessageCount> {
         @Override
         public ErrorMessageCount mapRow(ResultSet resultSet) throws SQLException {
-            return ImmutableErrorMessageCount.builder()
+            return ErrorMessageCount.builder()
                     .message(Strings.nullToEmpty(resultSet.getString(1)))
                     .count(resultSet.getLong(2))
                     .build();

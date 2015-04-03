@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.TimerName;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.transaction.model.ImmutableTimerNameImpl;
 import org.glowroot.transaction.model.TimerNameImpl;
 
 // used to ensure one instance per name so that pointer equality can be used instead of String
@@ -38,7 +37,7 @@ class TimerNameCache {
             CacheBuilder.newBuilder().build(new CacheLoader<String, TimerNameImpl>() {
                 @Override
                 public TimerNameImpl load(String name) {
-                    return ImmutableTimerNameImpl.of(name);
+                    return TimerNameImpl.of(name);
                 }
             });
 

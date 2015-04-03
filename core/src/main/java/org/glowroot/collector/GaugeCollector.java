@@ -36,7 +36,7 @@ import org.glowroot.common.Clock;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GaugeConfig;
-import org.glowroot.config.GaugeConfig.MBeanAttribute;
+import org.glowroot.config.MBeanAttribute;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 
 class GaugeCollector extends ScheduledRunnable {
@@ -119,7 +119,7 @@ class GaugeCollector extends ScheduledRunnable {
             }
             if (attributeValue instanceof Number) {
                 double value = ((Number) attributeValue).doubleValue();
-                gaugePoints.add(ImmutableGaugePoint.builder()
+                gaugePoints.add(GaugePoint.builder()
                         .gaugeName(gaugeConfig.mbeanObjectName() + ',' + mbeanAttributeName)
                         .captureTime(captureTime)
                         .value(value)

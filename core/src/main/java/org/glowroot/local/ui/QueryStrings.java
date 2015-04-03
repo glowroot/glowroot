@@ -47,9 +47,7 @@ class QueryStrings {
     private QueryStrings() {}
 
     static <T> T decode(String queryString, Class<T> clazz) throws Exception {
-        String className = createImmutableClassName(clazz);
-        Class<?> immutableClass = Class.forName(className);
-        Method builderMethod = Reflections.getDeclaredMethod(immutableClass, "builder");
+        Method builderMethod = Reflections.getDeclaredMethod(clazz, "builder");
         Object builder = Reflections.invokeStatic(builderMethod);
         checkNotNull(builder);
         Class<?> immutableBuilderClass = builder.getClass();
@@ -76,15 +74,6 @@ class QueryStrings {
         @SuppressWarnings("unchecked")
         T decoded = (T) Reflections.invoke(build, builder);
         return decoded;
-    }
-
-    private static <T> String createImmutableClassName(Class<T> clazz) {
-        Package pkg = clazz.getPackage();
-        if (pkg == null) {
-            return "Immutable" + clazz.getSimpleName();
-        } else {
-            return pkg.getName() + ".Immutable" + clazz.getSimpleName();
-        }
     }
 
     private static @Nullable Object parseString(String str, Class<?> targetClass) {

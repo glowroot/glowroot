@@ -135,7 +135,7 @@ class LayoutJsonService {
             transactionCustomAttributes.addAll(pluginDescriptor.transactionCustomAttributes());
         }
         UserInterfaceConfig userInterfaceConfig = configService.getUserInterfaceConfig();
-        return ImmutableLayout.builder()
+        return Layout.builder()
                 .jvmHeapDump(heapDumps != null)
                 .footerMessage("version " + version)
                 .adminPasswordEnabled(userInterfaceConfig.adminPasswordEnabled())

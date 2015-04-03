@@ -158,7 +158,7 @@ public class ConfigService {
         synchronized (writeLock) {
             checkVersionsEqual(config.generalConfig().version(), priorVersion);
             boolean previousEnabled = config.generalConfig().enabled();
-            Config updatedConfig = ((ImmutableConfig) config).withGeneralConfig(generalConfig);
+            Config updatedConfig = config.withGeneralConfig(generalConfig);
             configFile.write(updatedConfig);
             config = updatedConfig;
             notifyPluginConfigListeners = config.generalConfig().enabled() != previousEnabled;
@@ -175,7 +175,7 @@ public class ConfigService {
         synchronized (writeLock) {
             checkVersionsEqual(config.userInterfaceConfig().version(), priorVersion);
             Config updatedConfig =
-                    ((ImmutableConfig) config).withUserInterfaceConfig(userInterfaceConfig);
+                    config.withUserInterfaceConfig(userInterfaceConfig);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
@@ -187,7 +187,7 @@ public class ConfigService {
             throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(config.storageConfig().version(), priorVersion);
-            Config updatedConfig = ((ImmutableConfig) config).withStorageConfig(storageConfig);
+            Config updatedConfig = config.withStorageConfig(storageConfig);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
@@ -198,7 +198,7 @@ public class ConfigService {
     public String updateSmtpConfig(SmtpConfig smtpConfig, String priorVersion) throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(config.smtpConfig().version(), priorVersion);
-            Config updatedConfig = ((ImmutableConfig) config).withSmtpConfig(smtpConfig);
+            Config updatedConfig = config.withSmtpConfig(smtpConfig);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
@@ -211,7 +211,7 @@ public class ConfigService {
         synchronized (writeLock) {
             checkVersionsEqual(config.userRecordingConfig().version(), priorVersion);
             Config updatedConfig =
-                    ((ImmutableConfig) config).withUserRecordingConfig(userRecordingConfig);
+                    config.withUserRecordingConfig(userRecordingConfig);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
@@ -223,7 +223,7 @@ public class ConfigService {
             throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(config.advancedConfig().version(), priorVersion);
-            Config updatedConfig = ((ImmutableConfig) config).withAdvancedConfig(advancedConfig);
+            Config updatedConfig = config.withAdvancedConfig(advancedConfig);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
@@ -246,7 +246,7 @@ public class ConfigService {
                 }
             }
             checkState(found, "Plugin config not found: %s", pluginConfig.id());
-            Config updatedConfig = ((ImmutableConfig) config).withPluginConfigs(pluginConfigs);
+            Config updatedConfig = config.withPluginConfigs(pluginConfigs);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
@@ -260,7 +260,7 @@ public class ConfigService {
             List<InstrumentationConfig> configs =
                     Lists.newArrayList(config.instrumentationConfigs());
             configs.add(instrumentationConfig);
-            Config updatedConfig = ((ImmutableConfig) config).withInstrumentationConfigs(configs);
+            Config updatedConfig = config.withInstrumentationConfigs(configs);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
@@ -282,7 +282,7 @@ public class ConfigService {
                 }
             }
             checkState(found, "Instrumentation config not found: %s", priorVersion);
-            Config updatedConfig = ((ImmutableConfig) config).withInstrumentationConfigs(configs);
+            Config updatedConfig = config.withInstrumentationConfigs(configs);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
@@ -303,7 +303,7 @@ public class ConfigService {
                 }
             }
             checkState(found, "Instrumentation config not found: %s", version);
-            Config updatedConfig = ((ImmutableConfig) config).withInstrumentationConfigs(configs);
+            Config updatedConfig = config.withInstrumentationConfigs(configs);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
@@ -320,7 +320,7 @@ public class ConfigService {
                 }
             }
             gaugeConfigs.add(gaugeConfig);
-            Config updatedConfig = ((ImmutableConfig) config).withGaugeConfigs(gaugeConfigs);
+            Config updatedConfig = config.withGaugeConfigs(gaugeConfigs);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
@@ -328,7 +328,8 @@ public class ConfigService {
         return gaugeConfig.version();
     }
 
-    public String updateGaugeConfig(GaugeConfig gaugeConfig, String priorVersion) throws Exception {
+    public String updateGaugeConfig(GaugeConfig gaugeConfig, String priorVersion)
+            throws Exception {
         synchronized (writeLock) {
             List<GaugeConfig> gaugeConfigs = Lists.newArrayList(config.gaugeConfigs());
             boolean found = false;
@@ -343,7 +344,7 @@ public class ConfigService {
                 }
             }
             checkState(found, "Gauge config not found: %s", priorVersion);
-            Config updatedConfig = ((ImmutableConfig) config).withGaugeConfigs(gaugeConfigs);
+            Config updatedConfig = config.withGaugeConfigs(gaugeConfigs);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
@@ -363,7 +364,7 @@ public class ConfigService {
                 }
             }
             checkState(found, "Gauge config not found: %s", version);
-            Config updatedConfig = ((ImmutableConfig) config).withGaugeConfigs(gaugeConfigs);
+            Config updatedConfig = config.withGaugeConfigs(gaugeConfigs);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
@@ -374,7 +375,7 @@ public class ConfigService {
         synchronized (writeLock) {
             List<AlertConfig> alertConfigs = Lists.newArrayList(config.alertConfigs());
             alertConfigs.add(alertConfig);
-            Config updatedConfig = ((ImmutableConfig) config).withAlertConfigs(alertConfigs);
+            Config updatedConfig = config.withAlertConfigs(alertConfigs);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
@@ -395,7 +396,7 @@ public class ConfigService {
                 }
             }
             checkState(found, "Alert config not found: %s", priorVersion);
-            Config updatedConfig = ((ImmutableConfig) config).withAlertConfigs(alertConfigs);
+            Config updatedConfig = config.withAlertConfigs(alertConfigs);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
@@ -415,7 +416,7 @@ public class ConfigService {
                 }
             }
             checkState(found, "Alert config not found: %s", version);
-            Config updatedConfig = ((ImmutableConfig) config).withAlertConfigs(alertConfigs);
+            Config updatedConfig = config.withAlertConfigs(alertConfigs);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
