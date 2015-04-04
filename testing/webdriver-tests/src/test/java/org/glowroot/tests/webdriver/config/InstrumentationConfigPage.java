@@ -99,16 +99,11 @@ public class InstrumentationConfigPage {
         return withWait(xpath("//div[@gt-model='config.traceStoreThresholdMillis']//input"));
     }
 
-    public WebElement getAddButton() {
-        return withWait(xpath("//button[normalize-space()='Add']"));
-    }
-
-    public void clickSaveButton() {
-        WebElement saveButton = withWait(xpath("//button[normalize-space()='Save changes']"));
-        saveButton.click();
-        // wait for save to complete
-        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
-                ExpectedConditions.elementToBeClickable(saveButton)));
+    public void clickAddButton() {
+        WebElement addButton = withWait(xpath("//button[normalize-space()='Add']"));
+        addButton.click();
+        // wait for add to complete
+        new WebDriverWait(driver, 30).until(ExpectedConditions.stalenessOf(addButton));
     }
 
     public WebElement getDeleteButton() {

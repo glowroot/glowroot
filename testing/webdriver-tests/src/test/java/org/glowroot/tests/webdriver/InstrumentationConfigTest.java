@@ -174,7 +174,7 @@ public class InstrumentationConfigTest extends WebDriverTest {
         configPage.getTransactionNameTemplateTextField().sendKeys("a trace");
         configPage.getTraceStoreThresholdMillisTextField().clear();
         configPage.getTraceStoreThresholdMillisTextField().sendKeys("123");
-        configPage.getAddButton().click();
+        configPage.clickAddButton();
     }
 
     private void createTraceEntryInstrumentation() {
@@ -197,7 +197,7 @@ public class InstrumentationConfigTest extends WebDriverTest {
         configPage.getTimerNameTextField().sendKeys("a timer");
         configPage.getTraceEntryTemplateTextField().clear();
         configPage.getTraceEntryTemplateTextField().sendKeys("a trace entry");
-        configPage.getAddButton().click();
+        configPage.clickAddButton();
     }
 
     private void createTimerInstrumentation() {
@@ -211,6 +211,6 @@ public class InstrumentationConfigTest extends WebDriverTest {
         configPage.getCaptureKindTimerRadioButton().click();
         configPage.getTimerNameTextField().clear();
         configPage.getTimerNameTextField().sendKeys("a timer");
-        configPage.getAddButton().click();
+        configPage.clickAddButton();
     }
 }
