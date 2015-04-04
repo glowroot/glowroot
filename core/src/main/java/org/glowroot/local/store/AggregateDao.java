@@ -71,7 +71,7 @@ public class AggregateDao {
                     Column.of("total_cpu_micros", Types.BIGINT),
                     Column.of("total_blocked_micros", Types.BIGINT),
                     Column.of("total_waited_micros", Types.BIGINT),
-                    Column.of("total_allocated_bytes", Types.BIGINT),
+                    Column.of("total_allocated_kbytes", Types.BIGINT),
                     Column.of("profile_sample_count", Types.BIGINT),
                     Column.of("trace_count", Types.BIGINT),
                     // profile json is always from "synthetic root"
@@ -91,7 +91,7 @@ public class AggregateDao {
                     Column.of("total_cpu_micros", Types.BIGINT),
                     Column.of("total_blocked_micros", Types.BIGINT),
                     Column.of("total_waited_micros", Types.BIGINT),
-                    Column.of("total_allocated_bytes", Types.BIGINT),
+                    Column.of("total_allocated_kbytes", Types.BIGINT),
                     Column.of("profile_sample_count", Types.BIGINT),
                     Column.of("trace_count", Types.BIGINT),
                     // profile json is always from "synthetic root"
@@ -232,8 +232,8 @@ public class AggregateDao {
         String rollupSuffix = getRollupSuffix(rollupLevel);
         return dataSource.query("select capture_time, total_micros, error_count,"
                 + " transaction_count, total_cpu_micros, total_blocked_micros,"
-                + " total_waited_micros, total_allocated_bytes, profile_sample_count, trace_count,"
-                + " timers, histogram from overall_aggregate" + rollupSuffix
+                + " total_waited_micros, total_allocated_kbytes, profile_sample_count,"
+                + " trace_count, timers, histogram from overall_aggregate" + rollupSuffix
                 + " where transaction_type = ? and capture_time >= ? and capture_time <= ?"
                 + " order by capture_time", new AggregateRowMapper(transactionType, null),
                 transactionType, captureTimeFrom, captureTimeTo);
@@ -245,8 +245,8 @@ public class AggregateDao {
         String rollupSuffix = getRollupSuffix(rollupLevel);
         return dataSource.query("select capture_time, total_micros, error_count,"
                 + " transaction_count, total_cpu_micros, total_blocked_micros,"
-                + " total_waited_micros, total_allocated_bytes, profile_sample_count, trace_count,"
-                + " timers, histogram from transaction_aggregate" + rollupSuffix
+                + " total_waited_micros, total_allocated_kbytes, profile_sample_count,"
+                + " trace_count, timers, histogram from transaction_aggregate" + rollupSuffix
                 + " where transaction_type = ? and transaction_name = ? and capture_time >= ?"
                 + " and capture_time <= ?",
                 new AggregateRowMapper(transactionType, transactionName), transactionType,
@@ -411,7 +411,7 @@ public class AggregateDao {
     private void rollupOneInterval(long rollupTime) throws Exception {
         List<Aggregate> overallAggregates = dataSource.query("select transaction_type,"
                 + " total_micros, error_count, transaction_count, total_cpu_micros,"
-                + " total_blocked_micros, total_waited_micros, total_allocated_bytes,"
+                + " total_blocked_micros, total_waited_micros, total_allocated_kbytes,"
                 + " profile_sample_count, trace_count, profile_capped_id, timers, histogram"
                 + " from overall_aggregate where capture_time > ? and capture_time <= ?",
                 new OverallRollupResultSetExtractor(rollupTime), rollupTime - fixedRollupMillis,
@@ -419,7 +419,7 @@ public class AggregateDao {
         List<Aggregate> transactionAggregates = dataSource.query("select transaction_type,"
                 + " transaction_name, total_micros, error_count, transaction_count,"
                 + " total_cpu_micros, total_blocked_micros, total_waited_micros,"
-                + " total_allocated_bytes, profile_sample_count, trace_count, profile_capped_id,"
+                + " total_allocated_kbytes, profile_sample_count, trace_count, profile_capped_id,"
                 + " timers, histogram from transaction_aggregate where capture_time > ?"
                 + " and capture_time <= ?", new TransactionRollupResultSetExtractor(rollupTime),
                 rollupTime - fixedRollupMillis, rollupTime);
@@ -432,14 +432,14 @@ public class AggregateDao {
         dataSource.batchUpdate("insert into overall_aggregate" + rollupSuffix
                 + " (transaction_type, capture_time, total_micros, error_count, transaction_count,"
                 + " total_cpu_micros, total_blocked_micros, total_waited_micros,"
-                + " total_allocated_bytes, profile_sample_count, trace_count, profile_capped_id,"
+                + " total_allocated_kbytes, profile_sample_count, trace_count, profile_capped_id,"
                 + " timers, histogram) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 new OverallBatchAdder(overallAggregates));
         dataSource.batchUpdate("insert into transaction_aggregate" + rollupSuffix
                 + " (transaction_type, transaction_name, capture_time, total_micros, error_count,"
                 + " transaction_count, total_cpu_micros, total_blocked_micros,"
-                + " total_waited_micros, total_allocated_bytes, profile_sample_count, trace_count,"
-                + " profile_capped_id, timers, histogram) values"
+                + " total_waited_micros, total_allocated_kbytes, profile_sample_count,"
+                + " trace_count, profile_capped_id, timers, histogram) values"
                 + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 new TransactionBatchAdder(transactionAggregates));
     }
@@ -526,7 +526,7 @@ public class AggregateDao {
                 RowMappers.setLong(preparedStatement, i++, overallAggregate.totalCpuMicros());
                 RowMappers.setLong(preparedStatement, i++, overallAggregate.totalBlockedMicros());
                 RowMappers.setLong(preparedStatement, i++, overallAggregate.totalWaitedMicros());
-                RowMappers.setLong(preparedStatement, i++, overallAggregate.totalAllocatedBytes());
+                RowMappers.setLong(preparedStatement, i++, overallAggregate.totalAllocatedKBytes());
                 preparedStatement.setLong(i++, overallAggregate.profileSampleCount());
                 preparedStatement.setLong(i++, overallAggregate.traceCount());
                 RowMappers.setLong(preparedStatement, i++, profileId);
@@ -563,7 +563,7 @@ public class AggregateDao {
                 RowMappers.setLong(preparedStatement, i++,
                         transactionAggregate.totalWaitedMicros());
                 RowMappers.setLong(preparedStatement, i++,
-                        transactionAggregate.totalAllocatedBytes());
+                        transactionAggregate.totalAllocatedKBytes());
                 preparedStatement.setLong(i++, transactionAggregate.profileSampleCount());
                 preparedStatement.setLong(i++, transactionAggregate.traceCount());
                 RowMappers.setLong(preparedStatement, i++, profileId);
@@ -656,7 +656,7 @@ public class AggregateDao {
                     .totalCpuMicros(resultSet.getLong(i++))
                     .totalBlockedMicros(resultSet.getLong(i++))
                     .totalWaitedMicros(resultSet.getLong(i++))
-                    .totalAllocatedBytes(resultSet.getLong(i++))
+                    .totalAllocatedKBytes(resultSet.getLong(i++))
                     .profileSampleCount(resultSet.getLong(i++))
                     .traceCount(resultSet.getLong(i++))
                     .timers(checkNotNull(resultSet.getString(i++)))
@@ -699,7 +699,7 @@ public class AggregateDao {
             Long totalCpuMicros = resultSet.getLong(i++);
             Long totalBlockedMicros = RowMappers.getLong(resultSet, i++);
             Long totalWaitedMicros = RowMappers.getLong(resultSet, i++);
-            Long totalAllocatedBytes = RowMappers.getLong(resultSet, i++);
+            Long totalAllocatedKBytes = RowMappers.getLong(resultSet, i++);
             long profileSampleCount = resultSet.getLong(i++);
             long traceCount = resultSet.getLong(i++);
             Long profileCappedId = RowMappers.getLong(resultSet, i++);
@@ -712,7 +712,7 @@ public class AggregateDao {
             mergedAggregate.addTotalCpuMicros(totalCpuMicros);
             mergedAggregate.addTotalBlockedMicros(totalBlockedMicros);
             mergedAggregate.addTotalWaitedMicros(totalWaitedMicros);
-            mergedAggregate.addTotalAllocatedBytes(totalAllocatedBytes);
+            mergedAggregate.addTotalAllocatedKBytes(totalAllocatedKBytes);
             mergedAggregate.addProfileSampleCount(profileSampleCount);
             mergedAggregate.addTraceCount(traceCount);
             mergedAggregate.addTimers(timers);
@@ -800,7 +800,7 @@ public class AggregateDao {
         private @Nullable Long totalCpuMicros;
         private @Nullable Long totalBlockedMicros;
         private @Nullable Long totalWaitedMicros;
-        private @Nullable Long totalAllocatedBytes;
+        private @Nullable Long totalAllocatedKBytes;
         private long profileSampleCount;
         private long traceCount;
         private final AggregateTimer syntheticRootTimer =
@@ -844,8 +844,9 @@ public class AggregateDao {
             this.totalWaitedMicros = nullAwareAdd(this.totalWaitedMicros, totalWaitedMicros);
         }
 
-        public void addTotalAllocatedBytes(@Nullable Long totalAllocatedBytes) {
-            this.totalAllocatedBytes = nullAwareAdd(this.totalAllocatedBytes, totalAllocatedBytes);
+        public void addTotalAllocatedKBytes(@Nullable Long totalAllocatedKBytes) {
+            this.totalAllocatedKBytes = nullAwareAdd(this.totalAllocatedKBytes,
+                    totalAllocatedKBytes);
         }
 
         public void addProfileSampleCount(long profileSampleCount) {
@@ -891,7 +892,7 @@ public class AggregateDao {
                     .totalCpuMicros(totalCpuMicros)
                     .totalBlockedMicros(totalBlockedMicros)
                     .totalWaitedMicros(totalWaitedMicros)
-                    .totalAllocatedBytes(totalAllocatedBytes)
+                    .totalAllocatedKBytes(totalAllocatedKBytes)
                     .profileSampleCount(profileSampleCount)
                     .traceCount(traceCount)
                     .timers(getTimersJson())

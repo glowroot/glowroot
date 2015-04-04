@@ -33,7 +33,8 @@ public abstract class AggregateBase {
     public abstract @Nullable Long totalCpuMicros();
     public abstract @Nullable Long totalBlockedMicros();
     public abstract @Nullable Long totalWaitedMicros();
-    public abstract @Nullable Long totalAllocatedBytes();
+    // aggregation uses kbytes to avoid (unlikely) rollover
+    public abstract @Nullable Long totalAllocatedKBytes();
     public abstract long profileSampleCount();
     public abstract long traceCount();
     @JsonRawValue

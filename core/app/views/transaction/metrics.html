@@ -162,9 +162,9 @@
         Waited time:
         {{(threadInfoAggregate.totalWaitedMicros / (1000 * mergedAggregate.transactionCount)).toFixed(1)}} ms
       </div>
-      <div ng-show="threadInfoAggregate.totalAllocatedBytes">
+      <div ng-show="threadInfoAggregate.totalAllocatedKBytes">
         Allocated memory:
-        {{(threadInfoAggregate.totalAllocatedBytes / (1000 * mergedAggregate.transactionCount)).toFixed(1) | gtBytes}}
+        {{(threadInfoAggregate.totalAllocatedKBytes * 1024 / mergedAggregate.transactionCount).toFixed(1) | gtBytes}}
       </div>
     </div>
   </div>

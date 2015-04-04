@@ -41,13 +41,12 @@ class AggregateBuilder {
 
     private final String transactionType;
     private final @Nullable String transactionName;
-    // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
     private long totalMicros;
     private long errorCount;
     private long transactionCount;
-    private @Nullable Long totalCpuMicros;
-    private @Nullable Long totalBlockedMicros;
-    private @Nullable Long totalWaitedMicros;
+    private @Nullable Long totalCpuTime;
+    private @Nullable Long totalBlockedTime;
+    private @Nullable Long totalWaitedTime;
     private @Nullable Long totalAllocatedBytes;
     private long profileSampleCount;
     private long traceCount;
@@ -73,12 +72,9 @@ class AggregateBuilder {
         transactionCount++;
         ThreadInfoData threadInfo = transaction.getThreadInfo();
         if (threadInfo != null) {
-            totalCpuMicros = nullAwareAdd(totalCpuMicros,
-                    nullAwareNanosToMicros(threadInfo.threadCpuTime()));
-            totalBlockedMicros = nullAwareAdd(totalBlockedMicros,
-                    nullAwareNanosToMicros(threadInfo.threadBlockedTime()));
-            totalWaitedMicros = nullAwareAdd(totalWaitedMicros,
-                    nullAwareNanosToMicros(threadInfo.threadWaitedTime()));
+            totalCpuTime = nullAwareAdd(totalCpuTime, threadInfo.threadCpuTime());
+            totalBlockedTime = nullAwareAdd(totalBlockedTime, threadInfo.threadBlockedTime());
+            totalWaitedTime = nullAwareAdd(totalWaitedTime, threadInfo.threadWaitedTime());
             totalAllocatedBytes = nullAwareAdd(totalAllocatedBytes,
                     threadInfo.threadAllocatedBytes());
         }
@@ -111,10 +107,10 @@ class AggregateBuilder {
                 .totalMicros(totalMicros)
                 .errorCount(errorCount)
                 .transactionCount(transactionCount)
-                .totalCpuMicros(totalCpuMicros)
-                .totalBlockedMicros(totalBlockedMicros)
-                .totalWaitedMicros(totalWaitedMicros)
-                .totalAllocatedBytes(totalAllocatedBytes)
+                .totalCpuMicros(nullAwareNanosToMicros(totalCpuTime))
+                .totalBlockedMicros(nullAwareNanosToMicros(totalBlockedTime))
+                .totalWaitedMicros(nullAwareNanosToMicros(totalWaitedTime))
+                .totalAllocatedKBytes(nullAwareBytesToKBytes(totalAllocatedBytes))
                 .timers(getTimersJson())
                 .histogram(histogram)
                 .profileSampleCount(profileSampleCount)
@@ -202,6 +198,13 @@ class AggregateBuilder {
             return null;
         }
         return NANOSECONDS.toMicros(nanoseconds);
+    }
+
+    private static @Nullable Long nullAwareBytesToKBytes(@Nullable Long bytes) {
+        if (bytes == null) {
+            return null;
+        }
+        return bytes / 1024;
     }
 
     private static @Nullable Long nullAwareAdd(@Nullable Long x, @Nullable Long y) {

@@ -74,19 +74,19 @@ public class AggregateMerging {
         Long totalCpuMicros = null;
         Long totalBlockedMicros = null;
         Long totalWaitedMicros = null;
-        Long totalAllocatedBytes = null;
+        Long totalAllocatedKBytes = null;
         for (Aggregate aggregate : aggregates) {
             totalCpuMicros = nullAwareAdd(totalCpuMicros, aggregate.totalCpuMicros());
             totalBlockedMicros = nullAwareAdd(totalBlockedMicros, aggregate.totalBlockedMicros());
             totalWaitedMicros = nullAwareAdd(totalWaitedMicros, aggregate.totalWaitedMicros());
-            totalAllocatedBytes = nullAwareAdd(totalAllocatedBytes,
-                    aggregate.totalAllocatedBytes());
+            totalAllocatedKBytes = nullAwareAdd(totalAllocatedKBytes,
+                    aggregate.totalAllocatedKBytes());
         }
         return ThreadInfoAggregate.builder()
                 .totalCpuMicros(totalCpuMicros)
                 .totalBlockedMicros(totalBlockedMicros)
                 .totalWaitedMicros(totalWaitedMicros)
-                .totalAllocatedBytes(totalAllocatedBytes)
+                .totalAllocatedKBytes(totalAllocatedKBytes)
                 .build();
     }
 
@@ -200,11 +200,11 @@ public class AggregateMerging {
         abstract @Nullable Long totalCpuMicros();
         abstract @Nullable Long totalBlockedMicros();
         abstract @Nullable Long totalWaitedMicros();
-        abstract @Nullable Long totalAllocatedBytes();
+        abstract @Nullable Long totalAllocatedKBytes();
 
         public boolean isEmpty() {
             return totalCpuMicros() == null && totalBlockedMicros() == null
-                    && totalWaitedMicros() == null && totalAllocatedBytes() == null;
+                    && totalWaitedMicros() == null && totalAllocatedKBytes() == null;
         }
     }
 }
