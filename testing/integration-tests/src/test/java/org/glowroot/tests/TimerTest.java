@@ -98,6 +98,8 @@ public class TimerTest {
         assertThat(trace.getRootTimer().isMinActive()).isTrue();
         assertThat(trace.getRootTimer().isMaxActive()).isTrue();
         // cleanup
+        // interrupt trace
+        container.interruptAppUnderTest();
         future.get();
         executorService.shutdown();
     }
@@ -134,13 +136,15 @@ public class TimerTest {
     public static class ShouldGenerateActiveTraceWithTimers implements AppUnderTest,
             TraceMarker {
         @Override
-        public void executeApp() throws InterruptedException {
+        public void executeApp() {
             traceMarker();
         }
         @Override
-        public void traceMarker() throws InterruptedException {
-            // need to sleep long enough for active trace request to find this trace
-            Thread.sleep(100);
+        public void traceMarker() {
+            try {
+                Thread.sleep(Long.MAX_VALUE);
+            } catch (InterruptedException e) {
+            }
         }
     }
 }

@@ -151,7 +151,6 @@ public class ActiveTraceTest {
             try {
                 Thread.sleep(Long.MAX_VALUE);
             } catch (InterruptedException e) {
-                return;
             }
         }
     }
