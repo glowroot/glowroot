@@ -13,26 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.servlet;
+package org.glowroot.api.weaving;
 
-import org.junit.After;
-import org.junit.Test;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-import org.glowroot.common.SpyingLogbackFilter;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class SessionInvokerTest {
-
-    @After
-    public void afterEachTest() {
-        if (SpyingLogbackFilter.active()) {
-            SpyingLogbackFilter.clearMessages();
-        }
-    }
-
-    @Test
-    public void shouldNotFindHttpSessionClass() {
-        assertThat(SessionInvoker.getHttpSessionClass(Object.class)).isNull();
-    }
+@Target({TYPE, METHOD})
+@Retention(RUNTIME)
+public @interface Shim {
+    String value();
 }

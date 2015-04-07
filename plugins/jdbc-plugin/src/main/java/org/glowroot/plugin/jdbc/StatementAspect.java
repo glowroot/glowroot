@@ -62,7 +62,7 @@ public class StatementAspect {
 
     // ===================== Mixin =====================
 
-    @Mixin(target = {"java.sql.Statement", "java.sql.ResultSet"})
+    @Mixin({"java.sql.Statement", "java.sql.ResultSet"})
     public static class HasStatementMirrorImpl implements HasStatementMirror {
         // the field and method names are verbose to avoid conflict since they will become fields
         // and methods in all classes that extend java.sql.Statement or java.sql.ResultSet

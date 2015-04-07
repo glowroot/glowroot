@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.glowroot.api.OptionalReturn;
 import org.glowroot.api.weaving.Mixin;
 import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.api.weaving.Shim;
 import org.glowroot.weaving.AbstractMisc.ExtendsAbstractMisc;
 import org.glowroot.weaving.AbstractNotMisc.ExtendsAbstractNotMisc;
 import org.glowroot.weaving.SomeAspect.BasicAdvice;
@@ -79,6 +80,7 @@ import org.glowroot.weaving.SomeAspect.NotNestingWithNoIsEnabledAdvice;
 import org.glowroot.weaving.SomeAspect.PrimitiveAdvice;
 import org.glowroot.weaving.SomeAspect.PrimitiveWithAutoboxAdvice;
 import org.glowroot.weaving.SomeAspect.PrimitiveWithWildcardAdvice;
+import org.glowroot.weaving.SomeAspect.Shimmy;
 import org.glowroot.weaving.SomeAspect.StaticAdvice;
 import org.glowroot.weaving.SomeAspect.SuperBasicAdvice;
 import org.glowroot.weaving.SomeAspect.TestBytecodeWithStackFramesAdvice;
@@ -661,6 +663,18 @@ public class WeaverTest {
         test.executeWithArgs("one", 2);
         // then
         assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+    }
+
+    // ===================== @Shim =====================
+
+    @Test
+    public void shouldShim() throws Exception {
+        // given
+        Misc test = newWovenObject(ShimmedMisc.class, Misc.class, Shimmy.class, Shimmy.class);
+        // when
+        ((Shimmy) test).shimmySetString("another value");
+        // then
+        assertThat(((Shimmy) test).shimmyGetString()).isEqualTo("another value");
     }
 
     // ===================== @Mixin =====================
@@ -1265,16 +1279,20 @@ public class WeaverTest {
     }
 
     public static <S, T extends S> S newWovenObject(Class<T> implClass, Class<S> bridgeClass,
-            Class<?> adviceOrMixinClass, Class<?>... extraBridgeClasses) throws Exception {
+            Class<?> adviceOrShimOrMixinClass, Class<?>... extraBridgeClasses) throws Exception {
 
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
-        if (adviceOrMixinClass.isAnnotationPresent(Pointcut.class)) {
+        if (adviceOrShimOrMixinClass.isAnnotationPresent(Pointcut.class)) {
             loader.setAdvisors(ImmutableList.of(
-                    new AdviceBuilder(adviceOrMixinClass, false).build()));
+                    new AdviceBuilder(adviceOrShimOrMixinClass, false).build()));
         }
-        Mixin mixin = adviceOrMixinClass.getAnnotation(Mixin.class);
+        Mixin mixin = adviceOrShimOrMixinClass.getAnnotation(Mixin.class);
         if (mixin != null) {
-            loader.setMixinTypes(ImmutableList.of(MixinType.from(mixin, adviceOrMixinClass)));
+            loader.setMixinTypes(ImmutableList.of(MixinType.from(mixin, adviceOrShimOrMixinClass)));
+        }
+        Shim shim = adviceOrShimOrMixinClass.getAnnotation(Shim.class);
+        if (shim != null) {
+            loader.setShimTypes(ImmutableList.of(ShimType.from(shim, adviceOrShimOrMixinClass)));
         }
         loader.setWeavingTimerService(NopWeavingTimerService.INSTANCE);
         // SomeAspectThreadLocals is passed as bridgeable so that the static thread locals will be

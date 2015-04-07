@@ -301,6 +301,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.api.weaving.OnReturn");
         types.add("org.glowroot.api.weaving.OnThrow");
         types.add("org.glowroot.api.weaving.Pointcut");
+        types.add("org.glowroot.api.weaving.Shim");
         types.add("org.glowroot.common.ClassNames");
         types.add("org.glowroot.common.Reflections");
         types.add("org.glowroot.transaction.TransactionRegistry");
@@ -341,11 +342,12 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.ClassLoaders");
         types.add("org.glowroot.weaving.ExtraBootResourceFinder");
         types.add("org.glowroot.weaving.GeneratedBytecodeUtil");
-        types.add("org.glowroot.weaving.MixinMatcher");
         types.add("org.glowroot.weaving.MixinType");
         types.add("org.glowroot.weaving.MixinTypeBase");
         types.add("org.glowroot.weaving.ParameterKind");
         types.add("org.glowroot.weaving.PointcutClassVisitor");
+        types.add("org.glowroot.weaving.ShimType");
+        types.add("org.glowroot.weaving.ShimTypeBase");
         types.add("org.glowroot.weaving.Weaver");
         types.add("org.glowroot.weaving.Weaver$ComputeFramesClassWriter");
         types.add("org.glowroot.weaving.Weaver$JSRInlinerClassVisitor");

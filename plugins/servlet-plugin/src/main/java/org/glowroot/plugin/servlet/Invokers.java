@@ -16,8 +16,6 @@
 package org.glowroot.plugin.servlet;
 
 import java.lang.reflect.Method;
-import java.util.Enumeration;
-import java.util.NoSuchElementException;
 
 import javax.annotation.Nullable;
 
@@ -58,39 +56,6 @@ public class Invokers {
             logger.warn("error calling {}.{}()", method.getDeclaringClass().getName(),
                     method.getName(), t);
             return defaultValue;
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    static <T> T invoke(@Nullable Method method, Object obj, @Nullable Object arg, T defaultValue) {
-        if (method == null) {
-            return defaultValue;
-        }
-        try {
-            Object value = method.invoke(obj, arg);
-            if (value == null) {
-                return defaultValue;
-            }
-            return (T) value;
-        } catch (Throwable t) {
-            logger.warn("error calling {}.{}()", method.getDeclaringClass().getName(),
-                    method.getName(), t);
-            return defaultValue;
-        }
-    }
-
-    static class EmptyStringEnumeration implements Enumeration<String> {
-
-        static final Enumeration<String> INSTANCE = new EmptyStringEnumeration();
-
-        @Override
-        public boolean hasMoreElements() {
-            return false;
-        }
-
-        @Override
-        public String nextElement() {
-            throw new NoSuchElementException();
         }
     }
 }

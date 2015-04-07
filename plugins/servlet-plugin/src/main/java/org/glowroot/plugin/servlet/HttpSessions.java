@@ -26,12 +26,13 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
+import org.glowroot.plugin.servlet.ServletAspect.HttpSession;
+
 class HttpSessions {
 
     private HttpSessions() {}
 
-    static ImmutableMap<String, String> getSessionAttributes(Object session,
-            SessionInvoker sessionInvoker) {
+    static ImmutableMap<String, String> getSessionAttributes(HttpSession session) {
         Set<String> capturePaths = ServletPluginProperties.captureSessionAttributePaths();
         if (capturePaths.isEmpty()) {
             return ImmutableMap.of();
@@ -40,45 +41,47 @@ class HttpSessions {
         // dump only http session attributes in list
         for (String capturePath : capturePaths) {
             if (capturePath.equals("*")) {
-                captureAllSessionAttributes(session, sessionInvoker, captureMap);
+                captureAllSessionAttributes(session, captureMap);
             } else if (capturePath.endsWith(".*")) {
-                captureWildcardPath(session, sessionInvoker, captureMap,
+                captureWildcardPath(session, captureMap,
                         capturePath.substring(0, capturePath.length() - 2));
             } else {
-                captureNonWildcardPath(session, sessionInvoker, captureMap, capturePath);
+                captureNonWildcardPath(session, captureMap, capturePath);
             }
         }
         return ImmutableMap.copyOf(captureMap);
     }
 
-    static @Nullable String getSessionAttributeTextValue(Object session, String attributePath,
-            SessionInvoker sessionInvoker) {
-        Object value = getSessionAttribute(session, attributePath, sessionInvoker);
+    static @Nullable String getSessionAttributeTextValue(HttpSession session,
+            String attributePath) {
+        Object value = getSessionAttribute(session, attributePath);
         return (value == null) ? null : value.toString();
     }
 
-    static @Nullable Object getSessionAttribute(Object session, String attributePath,
-            SessionInvoker sessionInvoker) {
+    static @Nullable Object getSessionAttribute(HttpSession session, String attributePath) {
         int index = attributePath.indexOf('.');
         if (index == -1) {
             // fast path
-            return sessionInvoker.getAttribute(session, attributePath);
+            return session.getAttribute(attributePath);
         } else {
-            Object curr = sessionInvoker.getAttribute(session, attributePath.substring(0, index));
+            Object curr = session.getAttribute(attributePath.substring(0, index));
             return Beans.value(curr, attributePath.substring(index + 1));
         }
     }
 
-    private static void captureAllSessionAttributes(Object session, SessionInvoker sessionInvoker,
+    private static void captureAllSessionAttributes(HttpSession session,
             Map<String, String> captureMap) {
-        Enumeration<?> e = sessionInvoker.getAttributeNames(session);
+        Enumeration<?> e = session.getAttributeNames();
+        if (e == null) {
+            return;
+        }
         while (e.hasMoreElements()) {
             String attributeName = (String) e.nextElement();
             if (attributeName == null) {
                 // null check to be safe in case this is a very strange servlet container
                 continue;
             }
-            Object value = sessionInvoker.getAttribute(session, attributeName);
+            Object value = session.getAttribute(attributeName);
             // value shouldn't be null, but its (remotely) possible that a concurrent
             // request for the same session just removed the attribute
             String valueString = value == null ? "" : value.toString();
@@ -87,9 +90,9 @@ class HttpSessions {
         }
     }
 
-    private static void captureWildcardPath(Object session, SessionInvoker sessionInvoker,
-            Map<String, String> captureMap, String capturePath) {
-        Object value = getSessionAttribute(session, capturePath, sessionInvoker);
+    private static void captureWildcardPath(HttpSession session, Map<String, String> captureMap,
+            String capturePath) {
+        Object value = getSessionAttribute(session, capturePath);
         if (value instanceof Map<?, ?>) {
             for (Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
                 Object val = entry.getValue();
@@ -103,9 +106,9 @@ class HttpSessions {
         }
     }
 
-    private static void captureNonWildcardPath(Object session, SessionInvoker sessionInvoker,
-            Map<String, String> captureMap, String capturePath) {
-        String value = getSessionAttributeTextValue(session, capturePath, sessionInvoker);
+    private static void captureNonWildcardPath(HttpSession session, Map<String, String> captureMap,
+            String capturePath) {
+        String value = getSessionAttributeTextValue(session, capturePath);
         if (value != null) {
             captureMap.put(capturePath, value);
         }

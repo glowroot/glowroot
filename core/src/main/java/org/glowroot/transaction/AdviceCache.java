@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.advicegen.AdviceGenerator;
 import org.glowroot.api.weaving.Mixin;
 import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.api.weaving.Shim;
 import org.glowroot.config.InstrumentationConfig;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.markers.OnlyUsedByTests;
@@ -51,6 +52,9 @@ import org.glowroot.weaving.AdviceBuilder;
 import org.glowroot.weaving.ClassLoaders;
 import org.glowroot.weaving.LazyDefinedClass;
 import org.glowroot.weaving.MixinType;
+import org.glowroot.weaving.MixinTypeBase;
+import org.glowroot.weaving.ShimType;
+import org.glowroot.weaving.ShimTypeBase;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -61,6 +65,7 @@ public class AdviceCache {
     private static final AtomicInteger jarFileCounter = new AtomicInteger();
 
     private final ImmutableList<Advice> pluginAdvisors;
+    private final ImmutableList<ShimType> shimTypes;
     private final ImmutableList<MixinType> mixinTypes;
     private final @Nullable Instrumentation instrumentation;
     private final File dataDir;
@@ -75,6 +80,7 @@ public class AdviceCache {
             @Nullable Instrumentation instrumentation, File dataDir) throws Exception {
 
         List<Advice> pluginAdvisors = Lists.newArrayList();
+        List<ShimType> shimTypes = Lists.newArrayList();
         List<MixinType> mixinTypes = Lists.newArrayList();
         Map<Advice, LazyDefinedClass> lazyAdvisors = Maps.newHashMap();
         // use temporary class loader so @Pointcut classes won't be defined for real until
@@ -89,6 +95,7 @@ public class AdviceCache {
                 try {
                     Class<?> aspectClass = Class.forName(aspect, false, tempIsolatedClassLoader);
                     pluginAdvisors.addAll(getAdvisors(aspectClass));
+                    shimTypes.addAll(getShimTypes(aspectClass));
                     mixinTypes.addAll(getMixinTypes(aspectClass));
                 } catch (ClassNotFoundException e) {
                     logger.warn("aspect not found: {}", aspect, e);
@@ -116,6 +123,7 @@ public class AdviceCache {
             }
         }
         this.pluginAdvisors = ImmutableList.copyOf(pluginAdvisors);
+        this.shimTypes = ImmutableList.copyOf(shimTypes);
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.instrumentation = instrumentation;
         this.dataDir = dataDir;
@@ -129,6 +137,11 @@ public class AdviceCache {
                 return allAdvisors;
             }
         };
+    }
+
+    @VisibleForTesting
+    public List<ShimType> getShimTypes() {
+        return shimTypes;
     }
 
     @VisibleForTesting
@@ -190,12 +203,23 @@ public class AdviceCache {
         return advisors;
     }
 
+    private static List<ShimType> getShimTypes(Class<?> aspectClass) throws IOException {
+        List<ShimType> shimTypes = Lists.newArrayList();
+        for (Class<?> memberClass : aspectClass.getClasses()) {
+            Shim shim = memberClass.getAnnotation(Shim.class);
+            if (shim != null) {
+                shimTypes.add(ShimTypeBase.from(shim, memberClass));
+            }
+        }
+        return shimTypes;
+    }
+
     private static List<MixinType> getMixinTypes(Class<?> aspectClass) throws IOException {
         List<MixinType> mixinTypes = Lists.newArrayList();
         for (Class<?> memberClass : aspectClass.getClasses()) {
             Mixin mixin = memberClass.getAnnotation(Mixin.class);
             if (mixin != null) {
-                mixinTypes.add(MixinType.from(mixin, memberClass));
+                mixinTypes.add(MixinTypeBase.from(mixin, memberClass));
             }
         }
         return mixinTypes;

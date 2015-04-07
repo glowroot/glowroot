@@ -40,6 +40,7 @@ import static org.objectweb.asm.Opcodes.ASM5;
 
 class AnalyzingClassVisitor extends ClassVisitor {
 
+    private final ImmutableList<ShimType> shimTypes;
     private final ImmutableList<MixinType> mixinTypes;
     private final ImmutableList<Advice> advisors;
     private final @Nullable ClassLoader loader;
@@ -47,6 +48,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
     private final @Nullable CodeSource codeSource;
 
     private ImmutableList<AdviceMatcher> adviceMatchers = ImmutableList.of();
+    private ImmutableList<ShimType> matchedShimTypes = ImmutableList.of();
     private ImmutableList<MixinType> matchedMixinTypes = ImmutableList.of();
 
     private List<AnalyzedClass> superAnalyzedClasses = ImmutableList.of();
@@ -55,10 +57,11 @@ class AnalyzingClassVisitor extends ClassVisitor {
 
     private @MonotonicNonNull AnalyzedClass analyzedClass;
 
-    public AnalyzingClassVisitor(List<Advice> advisors, List<MixinType> mixinTypes,
-            @Nullable ClassLoader loader, AnalyzedWorld analyzedWorld,
+    public AnalyzingClassVisitor(List<Advice> advisors, List<ShimType> shimTypes,
+            List<MixinType> mixinTypes, @Nullable ClassLoader loader, AnalyzedWorld analyzedWorld,
             @Nullable CodeSource codeSource) {
         super(ASM5);
+        this.shimTypes = ImmutableList.copyOf(shimTypes);
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.advisors = ImmutableList.copyOf(advisors);
         this.loader = loader;
@@ -95,9 +98,12 @@ class AnalyzingClassVisitor extends ClassVisitor {
                 .addAllInterfaceNames(interfaceNames);
         adviceMatchers = AdviceMatcher.getAdviceMatchers(className, advisors);
         if (Modifier.isInterface(access)) {
+            ImmutableList<ShimType> matchedShimTypes = getMatchedShimTypes(className,
+                    ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
             ImmutableList<MixinType> matchedMixinTypes = getMatchedMixinTypes(className,
                     ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
             superAnalyzedClasses = ImmutableList.of();
+            analyzedClassBuilder.addAllShimTypes(matchedShimTypes);
             analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
             if (adviceMatchers.isEmpty()) {
                 return analyzedClassBuilder.build();
@@ -116,11 +122,15 @@ class AnalyzingClassVisitor extends ClassVisitor {
         superAnalyzedClasses = Lists.newArrayList();
         superAnalyzedClasses.addAll(superAnalyzedHierarchy);
         superAnalyzedClasses.addAll(interfaceAnalyzedHierarchy);
+        matchedShimTypes =
+                getMatchedShimTypes(className, superAnalyzedHierarchy, interfaceAnalyzedHierarchy);
+        analyzedClassBuilder.addAllShimTypes(matchedShimTypes);
         matchedMixinTypes =
                 getMatchedMixinTypes(className, superAnalyzedHierarchy, interfaceAnalyzedHierarchy);
         analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
 
-        if (!hasSuperAdvice() && adviceMatchers.isEmpty() && matchedMixinTypes.isEmpty()) {
+        if (!hasSuperAdvice() && adviceMatchers.isEmpty() && matchedShimTypes.isEmpty()
+                && matchedMixinTypes.isEmpty()) {
             return analyzedClassBuilder.build();
         } else {
             return null;
@@ -167,6 +177,10 @@ class AnalyzingClassVisitor extends ClassVisitor {
         return matchingAdvisors;
     }
 
+    ImmutableList<ShimType> getMatchedShimTypes() {
+        return matchedShimTypes;
+    }
+
     ImmutableList<MixinType> getMatchedMixinTypes() {
         return matchedMixinTypes;
     }
@@ -190,13 +204,34 @@ class AnalyzingClassVisitor extends ClassVisitor {
         return analyzedHierarchy;
     }
 
+    private ImmutableList<ShimType> getMatchedShimTypes(String className,
+            Iterable<AnalyzedClass> superAnalyzedClasses,
+            List<AnalyzedClass> newInterfaceAnalyzedClasses) {
+        Set<ShimType> matchedShimTypes = Sets.newHashSet();
+        for (ShimType shimType : shimTypes) {
+            if (shimType.target().equals(className)) {
+                matchedShimTypes.add(shimType);
+            }
+        }
+        for (AnalyzedClass newInterfaceAnalyzedClass : newInterfaceAnalyzedClasses) {
+            matchedShimTypes.addAll(newInterfaceAnalyzedClass.shimTypes());
+        }
+        // remove shims that were already implemented in a super class
+        for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
+            if (!superAnalyzedClass.isInterface()) {
+                matchedShimTypes.removeAll(superAnalyzedClass.shimTypes());
+            }
+        }
+        return ImmutableList.copyOf(matchedShimTypes);
+    }
+
     private ImmutableList<MixinType> getMatchedMixinTypes(String className,
             Iterable<AnalyzedClass> superAnalyzedClasses,
             List<AnalyzedClass> newInterfaceAnalyzedClasses) {
         Set<MixinType> matchedMixinTypes = Sets.newHashSet();
-        String typeClassName = className;
         for (MixinType mixinType : mixinTypes) {
-            if (MixinMatcher.isTypeMatch(mixinType, typeClassName)) {
+            // currently only exact matching is supported
+            if (mixinType.targets().contains(className)) {
                 matchedMixinTypes.add(mixinType);
             }
         }

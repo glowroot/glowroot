@@ -28,6 +28,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import org.glowroot.plugin.servlet.ServletAspect.HttpServletShim;
+
 // shallow copies are necessary because request may not be thread safe, which may affect ability
 // to see detail from active traces
 //
@@ -72,14 +74,16 @@ class DetailCapture {
         return map.build();
     }
 
-    static ImmutableMap<String, Object> captureRequestHeaders(Object request,
-            RequestInvoker requestInvoker) {
+    static ImmutableMap<String, Object> captureRequestHeaders(HttpServletShim request) {
         ImmutableList<Pattern> capturePatterns = ServletPluginProperties.captureRequestHeaders();
         if (capturePatterns.isEmpty()) {
             return ImmutableMap.of();
         }
         Map<String, Object> requestHeaders = Maps.newHashMap();
-        Enumeration<String> headerNames = requestInvoker.getHeaderNames(request);
+        Enumeration<String> headerNames = request.getHeaderNames();
+        if (headerNames == null) {
+            return ImmutableMap.of();
+        }
         for (Enumeration<String> e = headerNames; e.hasMoreElements();) {
             String name = e.nextElement();
             if (name == null) {
@@ -91,8 +95,10 @@ class DetailCapture {
             if (!matchesOneOf(keyLowerCase, capturePatterns)) {
                 continue;
             }
-            Enumeration<String> values = requestInvoker.getHeaders(request, name);
-            captureRequestHeader(name, values, requestHeaders);
+            Enumeration<String> values = request.getHeaders(name);
+            if (values != null) {
+                captureRequestHeader(name, values, requestHeaders);
+            }
         }
         return ImmutableMap.copyOf(requestHeaders);
     }

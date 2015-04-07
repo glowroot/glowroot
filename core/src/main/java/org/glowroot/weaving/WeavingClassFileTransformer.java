@@ -41,10 +41,10 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     // hard-coded results in org.glowroot.weaving.PreInitializeWeavingClassesTest)
     // note: an exception is made for WeavingTimerService, see PreInitializeWeavingClassesTest for
     // explanation
-    public WeavingClassFileTransformer(List<MixinType> mixinTypes, Supplier<List<Advice>> advisors,
-            AnalyzedWorld analyzedWorld, WeavingTimerService weavingTimerService,
-            boolean timerWrapperMethods) {
-        weaver = new Weaver(advisors, mixinTypes, analyzedWorld, weavingTimerService,
+    public WeavingClassFileTransformer(List<ShimType> shimTypes, List<MixinType> mixinTypes,
+            Supplier<List<Advice>> advisors, AnalyzedWorld analyzedWorld,
+            WeavingTimerService weavingTimerService, boolean timerWrapperMethods) {
+        weaver = new Weaver(advisors, shimTypes, mixinTypes, analyzedWorld, weavingTimerService,
                 timerWrapperMethods);
         // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
         // loader, otherwise woven bootstrap classes will generate NoClassDefFoundError since

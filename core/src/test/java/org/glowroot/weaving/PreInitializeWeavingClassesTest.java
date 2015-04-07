@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,12 +40,12 @@ public class PreInitializeWeavingClassesTest {
         // (so these types will be in the list of possible subtypes later on)
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "org/glowroot/weaving/AnalyzedWorld", "<init>",
-                "(Lcom/google/common/base/Supplier;Ljava/util/List;"
+                "(Lcom/google/common/base/Supplier;Ljava/util/List;Ljava/util/List;"
                         + "Lorg/glowroot/weaving/ExtraBootResourceFinder;)V"));
         // "call" WeavingClassFileTransformer constructor
         globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
                 "org/glowroot/weaving/WeavingClassFileTransformer", "<init>",
-                "(Ljava/util/List;Lcom/google/common/base/Supplier;"
+                "(Ljava/util/List;Ljava/util/List;Lcom/google/common/base/Supplier;"
                         + "Lorg/glowroot/weaving/AnalyzedWorld;"
                         + "Lorg/glowroot/weaving/WeavingTimerService;Z)V"));
         // "call" WeavingClassFileTransformer.transform()

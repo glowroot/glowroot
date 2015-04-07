@@ -67,7 +67,7 @@ public class TransactionModule {
                 configModule.getPluginJars(), configService.getInstrumentationConfigs(),
                 instrumentation, dataDir);
         analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
-                adviceCache.getMixinTypes(), extraBootResourceFinder);
+                adviceCache.getShimTypes(), adviceCache.getMixinTypes(), extraBootResourceFinder);
         final TimerNameCache timerNameCache = new TimerNameCache();
         weavingTimerService =
                 new WeavingTimerServiceImpl(transactionRegistry, configService, timerNameCache);
@@ -78,7 +78,8 @@ public class TransactionModule {
         // instead of javaagent
         if (instrumentation != null) {
             ClassFileTransformer transformer = new WeavingClassFileTransformer(
-                    adviceCache.getMixinTypes(), adviceCache.getAdvisorsSupplier(), analyzedWorld,
+                    adviceCache.getShimTypes(), adviceCache.getMixinTypes(),
+                    adviceCache.getAdvisorsSupplier(), analyzedWorld,
                     weavingTimerService, timerWrapperMethods);
             PreInitializeWeavingClasses.preInitializeClasses();
             if (instrumentation.isRetransformClassesSupported()) {

@@ -51,9 +51,11 @@ import org.objectweb.asm.commons.SimpleRemapper;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.util.ASMifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.api.weaving.Shim;
 import org.glowroot.common.ClassNames;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -76,9 +78,11 @@ import static org.objectweb.asm.Opcodes.F_SAME1;
 import static org.objectweb.asm.Opcodes.GETSTATIC;
 import static org.objectweb.asm.Opcodes.GOTO;
 import static org.objectweb.asm.Opcodes.ICONST_0;
+import static org.objectweb.asm.Opcodes.ILOAD;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
+import static org.objectweb.asm.Opcodes.IRETURN;
 import static org.objectweb.asm.Opcodes.NEW;
 import static org.objectweb.asm.Opcodes.PUTSTATIC;
 import static org.objectweb.asm.Opcodes.RETURN;
@@ -118,14 +122,14 @@ class WeavingClassVisitor extends ClassVisitor {
     private int methodMetaCounter;
 
     public WeavingClassVisitor(ClassVisitor cv, List<Advice> advisors,
-            ImmutableList<MixinType> mixinTypes, @Nullable ClassLoader loader,
-            AnalyzedWorld analyzedWorld, @Nullable CodeSource codeSource,
-            boolean timerWrapperMethods) {
+            ImmutableList<ShimType> shimTypes, ImmutableList<MixinType> mixinTypes,
+            @Nullable ClassLoader loader, AnalyzedWorld analyzedWorld,
+            @Nullable CodeSource codeSource, boolean timerWrapperMethods) {
         super(ASM5, cv);
         this.cv = cv;
         this.loader = loader;
-        analyzingClassVisitor =
-                new AnalyzingClassVisitor(advisors, mixinTypes, loader, analyzedWorld, codeSource);
+        analyzingClassVisitor = new AnalyzingClassVisitor(advisors, shimTypes, mixinTypes, loader,
+                analyzedWorld, codeSource);
         this.analyzedWorld = analyzedWorld;
         this.timerWrapperMethods = timerWrapperMethods;
     }
@@ -149,8 +153,9 @@ class WeavingClassVisitor extends ClassVisitor {
             return;
         }
         type = Type.getObjectType(internalName);
-        String /*@Nullable*/[] interfacesIncludingMixins = getInterfacesIncludingMixins(
-                interfaceInternalNamesNullable, analyzingClassVisitor.getMatchedMixinTypes());
+        String /*@Nullable*/[] interfacesIncludingMixins = getInterfacesIncludingShimsAndMixins(
+                interfaceInternalNamesNullable, analyzingClassVisitor.getMatchedShimTypes(),
+                analyzingClassVisitor.getMatchedMixinTypes());
         cv.visit(version, access, internalName, signature, superInternalName,
                 interfacesIncludingMixins);
     }
@@ -203,6 +208,9 @@ class WeavingClassVisitor extends ClassVisitor {
             return;
         }
         checkNotNull(type); // type is non null if there is something to weave
+        for (ShimType shimType : analyzingClassVisitor.getMatchedShimTypes()) {
+            addShim(shimType);
+        }
         for (MixinType mixinType : analyzingClassVisitor.getMatchedMixinTypes()) {
             addMixin(mixinType);
         }
@@ -388,21 +396,25 @@ class WeavingClassVisitor extends ClassVisitor {
                 "(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;", false);
     }
 
-    private static String /*@Nullable*/[] getInterfacesIncludingMixins(
-            String /*@Nullable*/[] interfaces, ImmutableList<MixinType> matchedMixinTypes) {
-        if (matchedMixinTypes.isEmpty()) {
+    private static String /*@Nullable*/[] getInterfacesIncludingShimsAndMixins(
+            String /*@Nullable*/[] interfaces, ImmutableList<ShimType> matchedShimTypes,
+            ImmutableList<MixinType> matchedMixinTypes) {
+        if (matchedMixinTypes.isEmpty() && matchedShimTypes.isEmpty()) {
             return interfaces;
         }
-        Set<String> interfacesIncludingMixins = Sets.newHashSet();
+        Set<String> interfacesIncludingShimsAndMixins = Sets.newHashSet();
         if (interfaces != null) {
-            interfacesIncludingMixins.addAll(Arrays.asList(interfaces));
+            interfacesIncludingShimsAndMixins.addAll(Arrays.asList(interfaces));
+        }
+        for (ShimType matchedShimType : matchedShimTypes) {
+            interfacesIncludingShimsAndMixins.add(matchedShimType.iface().getInternalName());
         }
         for (MixinType matchedMixinType : matchedMixinTypes) {
             for (Type mixinInterface : matchedMixinType.interfaces()) {
-                interfacesIncludingMixins.add(mixinInterface.getInternalName());
+                interfacesIncludingShimsAndMixins.add(mixinInterface.getInternalName());
             }
         }
-        return Iterables.toArray(interfacesIncludingMixins, String.class);
+        return Iterables.toArray(interfacesIncludingShimsAndMixins, String.class);
     }
 
     private boolean isInitWithMixins(String name) {
@@ -513,6 +525,30 @@ class WeavingClassVisitor extends ClassVisitor {
         return new WeavingMethodVisitor(mv, currMethodAccess, currMethodName, desc, type,
                 matchingAdvisors, metaHolderInternalName, methodMetaUniqueNum, loader == null,
                 outerMethodVisitor);
+    }
+
+    @RequiresNonNull("type")
+    private void addShim(ShimType shimType) {
+        for (java.lang.reflect.Method reflectMethod : shimType.shimMethods()) {
+            Method method = Method.getMethod(reflectMethod);
+            Shim shim = reflectMethod.getAnnotation(Shim.class);
+            checkNotNull(shim);
+            Method targetMethod = Method.getMethod(shim.value());
+            MethodVisitor mv = cv.visitMethod(ACC_PUBLIC, method.getName(), method.getDescriptor(),
+                    null, null);
+            checkNotNull(mv);
+            mv.visitCode();
+            int i = 0;
+            mv.visitVarInsn(ALOAD, i++);
+            for (Type argumentType : method.getArgumentTypes()) {
+                mv.visitVarInsn(argumentType.getOpcode(ILOAD), i++);
+            }
+            mv.visitMethodInsn(INVOKEVIRTUAL, type.getInternalName(), targetMethod.getName(),
+                    targetMethod.getDescriptor(), false);
+            mv.visitInsn(method.getReturnType().getOpcode(IRETURN));
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
     }
 
     @RequiresNonNull("type")
@@ -741,5 +777,18 @@ class WeavingClassVisitor extends ClassVisitor {
                     .analyzedMethod(analyzedMethod)
                     .build();
         }
+    }
+
+    public static class A {
+        String a(String x) {
+            return x;
+        }
+        Object b(String x) {
+            return a(x);
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        ASMifier.main(new String[] {A.class.getName()});
     }
 }

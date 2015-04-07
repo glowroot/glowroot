@@ -37,6 +37,7 @@ import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.api.weaving.Shim;
 
 public class SomeAspect {
 
@@ -654,12 +655,20 @@ public class SomeAspect {
         }
     }
 
+    @Shim("org.glowroot.weaving.ShimmedMisc")
+    public interface Shimmy {
+        @Shim("java.lang.String getString()")
+        Object shimmyGetString();
+        @Shim("void setString(java.lang.String)")
+        void shimmySetString(String string);
+    }
+
     public interface HasString {
         String getString();
         void setString(String string);
     }
 
-    @Mixin(target = "org.glowroot.weaving.BasicMisc")
+    @Mixin("org.glowroot.weaving.BasicMisc")
     public static class HasStringClassMixin implements HasString {
         private String string;
         @MixinInit
@@ -680,7 +689,7 @@ public class SomeAspect {
         }
     }
 
-    @Mixin(target = "org.glowroot.weaving.Misc")
+    @Mixin("org.glowroot.weaving.Misc")
     public static class HasStringInterfaceMixin implements HasString {
         private String string;
         @MixinInit
@@ -697,7 +706,7 @@ public class SomeAspect {
         }
     }
 
-    @Mixin(target = {"org.glowroot.weaving.Misc", "org.glowroot.weaving.Misc2"})
+    @Mixin({"org.glowroot.weaving.Misc", "org.glowroot.weaving.Misc2"})
     public static class HasStringMultipleMixin implements HasString {
         private String string;
         @MixinInit

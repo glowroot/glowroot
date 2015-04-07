@@ -95,6 +95,7 @@ public class LocalContainer implements Container {
         checkNotNull(glowrootModule);
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         AdviceCache adviceCache = glowrootModule.getTransactionModule().getAdviceCache();
+        loader.setShimTypes(adviceCache.getShimTypes());
         loader.setMixinTypes(adviceCache.getMixinTypes());
         List<Advice> advisors = Lists.newArrayList();
         advisors.addAll(adviceCache.getAdvisors());

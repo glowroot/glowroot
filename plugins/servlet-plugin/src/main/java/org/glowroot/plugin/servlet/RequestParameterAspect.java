@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,14 @@
  */
 package org.glowroot.plugin.servlet;
 
+import java.util.Map;
+
 import org.glowroot.api.PluginServices;
-import org.glowroot.api.weaving.BindClassMeta;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.IsEnabled;
 import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.plugin.servlet.ServletAspect.HttpServletShim;
 
 public class RequestParameterAspect {
 
@@ -34,16 +36,22 @@ public class RequestParameterAspect {
             return pluginServices.isEnabled();
         }
         @OnAfter
-        public static void onAfter(@BindReceiver Object request,
-                @BindClassMeta RequestInvoker requestInvoker) {
+        public static void onAfter(@BindReceiver Object req) {
+            if (!(req instanceof HttpServletShim)) {
+                return;
+            }
+            HttpServletShim request = (HttpServletShim) req;
             // only now is it safe to get parameters (if parameters are retrieved before this, it
             // could prevent a servlet from choosing to read the underlying stream instead of using
             // the getParameter* methods) see SRV.3.1.1 "When Parameters Are Available"
             ServletMessageSupplier messageSupplier = ServletAspect.getServletMessageSupplier();
             if (messageSupplier != null && !messageSupplier.isRequestParametersCaptured()) {
                 // the request is being traced and the parameter map hasn't been captured yet
-                messageSupplier.setCaptureRequestParameters(DetailCapture
-                        .captureRequestParameters(requestInvoker.getParameterMap(request)));
+                Map<String, String[]> parameterMap = request.getParameterMap();
+                if (parameterMap != null) {
+                    messageSupplier.setCaptureRequestParameters(
+                            DetailCapture.captureRequestParameters(parameterMap));
+                }
             }
         }
     }

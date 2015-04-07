@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,26 @@
  */
 package org.glowroot.weaving;
 
-class MixinMatcher {
+public class ShimmedMisc implements Misc {
 
-    private MixinMatcher() {}
+    private String string;
 
-    static boolean isTypeMatch(MixinType mixinType, String className) {
-        // currently only exact matching is supported
-        return mixinType.targets().contains(className);
+    public String getString() {
+        return string;
     }
+
+    public void setString(String string) {
+        this.string = string;
+    }
+
+    @Override
+    public void execute1() {}
+
+    @Override
+    public CharSequence executeWithReturn() {
+        return null;
+    }
+
+    @Override
+    public void executeWithArgs(String one, int two) {}
 }

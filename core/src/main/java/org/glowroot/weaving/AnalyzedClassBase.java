@@ -30,6 +30,7 @@ abstract class AnalyzedClassBase {
     abstract @Nullable String superName();
     abstract ImmutableList<String> interfaceNames();
     abstract ImmutableList<AnalyzedMethod> analyzedMethods();
+    abstract ImmutableList<ShimType> shimTypes();
     abstract ImmutableList<MixinType> mixinTypes();
 
     // not using @Value.Derived to keep down memory footprint

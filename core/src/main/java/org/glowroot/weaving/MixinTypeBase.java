@@ -40,7 +40,7 @@ public abstract class MixinTypeBase {
 
     public static MixinType from(Mixin mixin, Class<?> implementation) throws IOException {
         MixinType.Builder builder = MixinType.builder();
-        builder.addTargets(mixin.target());
+        builder.addTargets(mixin.value());
         builder.implementation(Type.getType(implementation));
         for (Class<?> iface : implementation.getInterfaces()) {
             builder.addInterfaces(Type.getType(iface));
@@ -79,8 +79,8 @@ public abstract class MixinTypeBase {
         return builder.build();
     }
 
-    abstract ImmutableList<String> targets();
     abstract Type implementation();
+    abstract ImmutableList<String> targets();
     abstract ImmutableList<Type> interfaces();
     abstract @Nullable String initMethodName();
     abstract byte[] implementationBytes();

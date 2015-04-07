@@ -45,15 +45,17 @@ class Weaver {
     private static final Logger logger = LoggerFactory.getLogger(Weaver.class);
 
     private final Supplier<List<Advice>> advisors;
+    private final ImmutableList<ShimType> shimTypes;
     private final ImmutableList<MixinType> mixinTypes;
     private final AnalyzedWorld analyzedWorld;
     private final WeavingTimerService weavingTimerService;
     private final boolean timerWrapperMethods;
 
-    Weaver(Supplier<List<Advice>> advisors, List<MixinType> mixinTypes,
+    Weaver(Supplier<List<Advice>> advisors, List<ShimType> shimTypes, List<MixinType> mixinTypes,
             AnalyzedWorld analyzedWorld, WeavingTimerService weavingTimerService,
             boolean timerWrapperMethods) {
         this.advisors = advisors;
+        this.shimTypes = ImmutableList.copyOf(shimTypes);
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.analyzedWorld = analyzedWorld;
         this.weavingTimerService = weavingTimerService;
@@ -102,8 +104,8 @@ class Weaver {
         //
         ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES, analyzedWorld,
                 loader, codeSource, className);
-        WeavingClassVisitor cv = new WeavingClassVisitor(cw, advisors.get(), mixinTypes, loader,
-                analyzedWorld, codeSource, timerWrapperMethods);
+        WeavingClassVisitor cv = new WeavingClassVisitor(cw, advisors.get(), shimTypes, mixinTypes,
+                loader, analyzedWorld, codeSource, timerWrapperMethods);
         ClassReader cr = new ClassReader(classBytes);
         boolean shortCircuitException = false;
         boolean pointcutClassFoundException = false;

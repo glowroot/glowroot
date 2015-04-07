@@ -15,8 +15,13 @@
  */
 package org.glowroot.plugin.servlet;
 
+import java.security.Principal;
+import java.util.Enumeration;
+import java.util.Map;
+
 import javax.annotation.Nullable;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.api.ErrorMessage;
@@ -24,7 +29,6 @@ import org.glowroot.api.FastThreadLocal;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
-import org.glowroot.api.weaving.BindClassMeta;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
@@ -34,6 +38,7 @@ import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.api.weaving.Shim;
 
 // only the calls to the top-most Filter and to the top-most Servlet are captured
 //
@@ -51,6 +56,48 @@ public class ServletAspect {
     private static final FastThreadLocal</*@Nullable*/ErrorMessage> sendError =
             new FastThreadLocal</*@Nullable*/ErrorMessage>();
 
+    @Shim("javax.servlet.http.HttpServletRequest")
+    public interface HttpServletShim {
+
+        @Shim("javax.servlet.http.HttpSession getSession(boolean)")
+        @Nullable
+        HttpSession glowrootShimGetSession(boolean create);
+
+        @Nullable
+        String getRequestURI();
+
+        @Nullable
+        String getQueryString();
+
+        @Nullable
+        String getMethod();
+
+        @Nullable
+        java.security.Principal getUserPrincipal();
+
+        @Nullable
+        Enumeration<String> getHeaderNames();
+
+        @Nullable
+        Enumeration<String> getHeaders(String name);
+
+        @Nullable
+        String getHeader(String name);
+
+        @Nullable
+        Map<String, String[]> getParameterMap();
+    }
+
+    @Shim("javax.servlet.http.HttpSession")
+    public interface HttpSession {
+
+        @Nullable
+        Object getAttribute(String attributePath);
+
+        @Nullable
+        Enumeration<?> getAttributeNames();
+    }
+
     @Pointcut(className = "javax.servlet.Servlet", methodName = "service",
             methodParameterTypes = {"javax.servlet.ServletRequest",
                     "javax.servlet.ServletResponse"}, timerName = "http request")
@@ -63,44 +110,45 @@ public class ServletAspect {
             return topLevel.get() == null && pluginServices.isEnabled();
         }
         @OnBefore
-        public static @Nullable TraceEntry onBefore(@BindParameter @Nullable Object request,
-                @BindClassMeta RequestInvoker requestInvoker,
-                @BindClassMeta SessionInvoker sessionInvoker) {
-            if (request == null) {
+        public static @Nullable TraceEntry onBefore(@BindParameter @Nullable Object req) {
+            if (req == null || !(req instanceof HttpServletShim)) {
                 // seems nothing sensible to do here other than ignore
                 return null;
             }
+            HttpServletShim request = (HttpServletShim) req;
             // request parameter map is collected in GetParameterAdvice
             // session info is collected here if the request already has a session
             ServletMessageSupplier messageSupplier;
-            Object session = requestInvoker.getSession(request);
-            String requestUri = requestInvoker.getRequestURI(request);
+            HttpSession session = request.glowrootShimGetSession(false);
+            String requestUri = Strings.nullToEmpty(request.getRequestURI());
             // don't convert null to empty, since null means no query string, while empty means
             // url ended with ? but nothing after that
-            String requestQueryString = requestInvoker.getQueryString(request);
-            String requestMethod = requestInvoker.getMethod(request);
+            String requestQueryString = request.getQueryString();
+            String requestMethod = Strings.nullToEmpty(request.getMethod());
             ImmutableMap<String, Object> requestHeaders =
-                    DetailCapture.captureRequestHeaders(request, requestInvoker);
+                    DetailCapture.captureRequestHeaders(request);
             if (session == null) {
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
                         requestQueryString, requestHeaders, ImmutableMap.<String, String>of());
             } else {
                 ImmutableMap<String, String> sessionAttributes =
-                        HttpSessions.getSessionAttributes(session, sessionInvoker);
+                        HttpSessions.getSessionAttributes(session);
                 messageSupplier = new ServletMessageSupplier(requestMethod, requestUri,
                         requestQueryString, requestHeaders, sessionAttributes);
             }
             topLevel.set(messageSupplier);
             TraceEntry traceEntry = pluginServices.startTransaction("Servlet", requestUri,
                     messageSupplier, timerName);
-            String userPrincipalName = requestInvoker.getUserPrincipalName(request);
-            if (userPrincipalName != null) {
-                pluginServices.setTransactionUser(userPrincipalName);
+            Principal userPrincipal = request.getUserPrincipal();
+            if (userPrincipal != null) {
+                String userPrincipalName = userPrincipal.getName();
+                if (userPrincipalName != null) {
+                    pluginServices.setTransactionUser(userPrincipalName);
+                }
             }
             // Glowroot-Transaction-Name header is useful for automated tests which want to send a
             // more specific name for the transaction
-            String transactionNameOverride =
-                    requestInvoker.getHeader(request, "Glowroot-Transaction-Name");
+            String transactionNameOverride = request.getHeader("Glowroot-Transaction-Name");
             if (transactionNameOverride != null) {
                 pluginServices.setTransactionName(transactionNameOverride);
             }
@@ -110,7 +158,7 @@ public class ServletAspect {
                 if (!sessionUserAttributePath.isEmpty()) {
                     // capture user now, don't use a lazy supplier
                     String user = HttpSessions.getSessionAttributeTextValue(session,
-                            sessionUserAttributePath, sessionInvoker);
+                            sessionUserAttributePath);
                     pluginServices.setTransactionUser(user);
                 }
             }
@@ -152,10 +200,8 @@ public class ServletAspect {
             return ServiceAdvice.isEnabled();
         }
         @OnBefore
-        public static @Nullable TraceEntry onBefore(@BindParameter @Nullable Object request,
-                @BindClassMeta RequestInvoker requestInvoker,
-                @BindClassMeta SessionInvoker sessionInvoker) {
-            return ServiceAdvice.onBefore(request, requestInvoker, sessionInvoker);
+        public static @Nullable TraceEntry onBefore(@BindParameter @Nullable Object request) {
+            return ServiceAdvice.onBefore(request);
         }
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
@@ -177,10 +223,8 @@ public class ServletAspect {
             return ServiceAdvice.isEnabled();
         }
         @OnBefore
-        public static @Nullable TraceEntry onBefore(@BindParameter @Nullable Object request,
-                @BindClassMeta RequestInvoker requestInvoker,
-                @BindClassMeta SessionInvoker sessionInvoker) {
-            return ServiceAdvice.onBefore(request, requestInvoker, sessionInvoker);
+        public static @Nullable TraceEntry onBefore(@BindParameter @Nullable Object request) {
+            return ServiceAdvice.onBefore(request);
         }
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {

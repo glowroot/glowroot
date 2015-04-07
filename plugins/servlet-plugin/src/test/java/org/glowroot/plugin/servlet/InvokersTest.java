@@ -15,13 +15,9 @@
  */
 package org.glowroot.plugin.servlet;
 
-import java.util.NoSuchElementException;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import org.glowroot.plugin.servlet.Invokers.EmptyStringEnumeration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,17 +34,5 @@ public class InvokersTest {
     @Test
     public void shouldReturnDefaultValueWhenMethodIsNull() {
         assertThat(Invokers.invoke(null, null, "the default")).isEqualTo("the default");
-        assertThat(Invokers.invoke(null, null, null, "the default")).isEqualTo("the default");
-    }
-
-    @Test
-    public void testEmptyStringEnumeration() {
-        assertThat(EmptyStringEnumeration.INSTANCE.hasMoreElements()).isFalse();
-    }
-
-    @Test
-    public void testEmptyStringEnumeration2() {
-        thrown.expect(NoSuchElementException.class);
-        EmptyStringEnumeration.INSTANCE.nextElement();
     }
 }

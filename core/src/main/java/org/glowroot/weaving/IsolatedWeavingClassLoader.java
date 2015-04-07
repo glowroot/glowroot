@@ -68,9 +68,10 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         return new Builder();
     }
 
-    private IsolatedWeavingClassLoader(List<Advice> advisors, List<MixinType> mixinTypes,
-            WeavingTimerService weavingTimerService, List<Class<?>> bridgeClasses,
-            List<String> excludePackages, boolean timerWrapperMethods) {
+    private IsolatedWeavingClassLoader(List<Advice> advisors, List<ShimType> shimTypes,
+            List<MixinType> mixinTypes, WeavingTimerService weavingTimerService,
+            List<Class<?>> bridgeClasses, List<String> excludePackages,
+            boolean timerWrapperMethods) {
         super(IsolatedWeavingClassLoader.class.getClassLoader());
         this.bridgeClasses = ImmutableList.<Class<?>>builder()
                 .addAll(bridgeClasses)
@@ -79,8 +80,9 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         this.excludePackages = ImmutableList.copyOf(excludePackages);
         Supplier<List<Advice>> advisorsSupplier =
                 Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
-        AnalyzedWorld analyzedWorld = new AnalyzedWorld(advisorsSupplier, mixinTypes, null);
-        Weaver weaver = new Weaver(advisorsSupplier, mixinTypes, analyzedWorld,
+        AnalyzedWorld analyzedWorld =
+                new AnalyzedWorld(advisorsSupplier, shimTypes, mixinTypes, null);
+        Weaver weaver = new Weaver(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
                 weavingTimerService, timerWrapperMethods);
         this.weaver = weaver;
     }
@@ -198,6 +200,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
     public static class Builder {
 
+        private List<ShimType> shimTypes = Lists.newArrayList();
         private List<MixinType> mixinTypes = Lists.newArrayList();
         private List<Advice> advisors = Lists.newArrayList();
         private @MonotonicNonNull WeavingTimerService weavingTimerService;
@@ -206,6 +209,10 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         private final List<String> excludePackages = Lists.newArrayList();
 
         private Builder() {}
+
+        public void setShimTypes(List<ShimType> shimTypes) {
+            this.shimTypes = shimTypes;
+        }
 
         public void setMixinTypes(List<MixinType> mixinTypes) {
             this.mixinTypes = mixinTypes;
@@ -242,7 +249,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                             // is
                             // @MonotonicNonNull, so it must be non-null here
                             checkNotNull(weavingTimerService);
-                            return new IsolatedWeavingClassLoader(advisors, mixinTypes,
+                            return new IsolatedWeavingClassLoader(advisors, shimTypes, mixinTypes,
                                     weavingTimerService, bridgeClasses, excludePackages,
                                     timerWrapperMethods);
                         }

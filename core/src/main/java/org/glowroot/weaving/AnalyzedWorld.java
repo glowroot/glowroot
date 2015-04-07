@@ -91,13 +91,15 @@ public class AnalyzedWorld {
             new ConcurrentHashMap<String, AnalyzedClass>();
 
     private final Supplier<List<Advice>> advisors;
+    private final ImmutableList<ShimType> shimTypes;
     private final ImmutableList<MixinType> mixinTypes;
 
     private final @Nullable ExtraBootResourceFinder extraBootResourceFinder;
 
-    public AnalyzedWorld(Supplier<List<Advice>> advisors, List<MixinType> mixinTypes,
-            @Nullable ExtraBootResourceFinder extraBootResourceFinder) {
+    public AnalyzedWorld(Supplier<List<Advice>> advisors, List<ShimType> shimTypes,
+            List<MixinType> mixinTypes, @Nullable ExtraBootResourceFinder extraBootResourceFinder) {
         this.advisors = advisors;
+        this.shimTypes = ImmutableList.copyOf(shimTypes);
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.extraBootResourceFinder = extraBootResourceFinder;
     }
@@ -288,8 +290,8 @@ public class AnalyzedWorld {
             // org.codehaus.groovy.runtime.callsite.CallSiteClassLoader
             return createAnalyzedClassPlanB(className, loader);
         }
-        AnalyzingClassVisitor cv =
-                new AnalyzingClassVisitor(advisors.get(), mixinTypes, loader, this, null);
+        AnalyzingClassVisitor cv = new AnalyzingClassVisitor(advisors.get(), shimTypes, mixinTypes,
+                loader, this, null);
         byte[] bytes = Resources.toByteArray(url);
         ClassReader cr = new ClassReader(bytes);
         try {
