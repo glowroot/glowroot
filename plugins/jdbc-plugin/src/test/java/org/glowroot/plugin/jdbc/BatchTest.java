@@ -120,7 +120,7 @@ public class BatchTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage().getText())
-                .isEqualTo("jdbc execution: (empty batch)");
+                .isEqualTo("jdbc execution: insert into employee (name) values ('1')");
     }
 
     @Test

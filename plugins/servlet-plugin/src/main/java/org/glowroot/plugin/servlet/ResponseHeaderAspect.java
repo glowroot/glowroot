@@ -192,8 +192,7 @@ public class ResponseHeaderAspect {
     }
 
     @Pointcut(className = "javax.servlet.http.HttpServletResponse", methodName = "setHeader",
-            methodParameterTypes = {"java.lang.String", "java.lang.String"},
-            ignoreSelfNested = true)
+            methodParameterTypes = {"java.lang.String", "java.lang.String"})
     public static class SetHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -279,8 +278,7 @@ public class ResponseHeaderAspect {
     }
 
     @Pointcut(className = "javax.servlet.http.HttpServletResponse", methodName = "addHeader",
-            methodParameterTypes = {"java.lang.String", "java.lang.String"},
-            ignoreSelfNested = true)
+            methodParameterTypes = {"java.lang.String", "java.lang.String"})
     public static class AddHeaderAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -367,8 +365,8 @@ public class ResponseHeaderAspect {
 
     private static boolean isEnabledCommon() {
         // good to short-cut advice if no response headers need to be captured
-        return pluginServices.isEnabled()
-                && !ServletPluginProperties.captureResponseHeaders().isEmpty() && !inAdvice.get();
+        return !ServletPluginProperties.captureResponseHeaders().isEmpty()
+                && pluginServices.isEnabled() && !inAdvice.get();
     }
 
     private static boolean captureResponseHeader(String name) {

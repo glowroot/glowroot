@@ -194,12 +194,12 @@ public class ServletAspect {
     }
 
     @Pointcut(className = "javax.servlet.http.HttpServletResponse", methodName = "sendError",
-            methodParameterTypes = {"int", ".."}, ignoreSelfNested = true)
+            methodParameterTypes = {"int", ".."})
     public static class SendErrorAdvice {
         @OnAfter
         public static void onAfter(@BindParameter Integer statusCode) {
             // only capture 5xx server errors
-            if (statusCode >= 500 && topLevel.get() != null) {
+            if (statusCode >= 500 && topLevel.get() != null && sendError.get() == null) {
                 ErrorMessage errorMessage =
                         ErrorMessage.from("sendError, HTTP status code " + statusCode);
                 pluginServices.addTraceEntry(errorMessage);
@@ -208,13 +208,15 @@ public class ServletAspect {
         }
     }
 
+    // not using ignoreSelfNested since only needed in uncommon case of 5xx status codes
+    // (at which time it is checked below)
     @Pointcut(className = "javax.servlet.http.HttpServletResponse", methodName = "setStatus",
-            methodParameterTypes = {"int", ".."}, ignoreSelfNested = true)
+            methodParameterTypes = {"int", ".."})
     public static class SetStatusAdvice {
         @OnAfter
         public static void onAfter(@BindParameter Integer statusCode) {
             // only capture 5xx server errors
-            if (statusCode >= 500 && topLevel.get() != null) {
+            if (statusCode >= 500 && topLevel.get() != null && sendError.get() == null) {
                 ErrorMessage errorMessage =
                         ErrorMessage.from("setStatus, HTTP status code " + statusCode);
                 pluginServices.addTraceEntry(errorMessage);

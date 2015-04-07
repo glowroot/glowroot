@@ -55,11 +55,10 @@ public class DataSourceAspect {
             pluginServices.getEnabledProperty("captureTransactionLifecycleTraceEntries");
 
     @Pointcut(className = "javax.sql.DataSource", methodName = "getConnection",
-            methodParameterTypes = {".."}, ignoreSelfNested = true,
-            timerName = "jdbc get connection")
-    public static class CommitAdvice {
+            methodParameterTypes = {".."}, timerName = "jdbc get connection")
+    public static class GetConnectionAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(CommitAdvice.class);
+                pluginServices.getTimerName(GetConnectionAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return pluginServices.isEnabled();
@@ -94,19 +93,19 @@ public class DataSourceAspect {
         private static void onReturnTraceEntry(Connection connection, Object entryOrTimer) {
             TraceEntry traceEntry = (TraceEntry) entryOrTimer;
             if (captureTransactionLifecycleTraceEntries.value()) {
-                String autoCommit;
-                try {
-                    autoCommit = Boolean.toString(connection.getAutoCommit());
-                } catch (SQLException e) {
-                    logger.warn(e.getMessage(), e);
-                    // using toString() instead of getMessage() in order to capture exception
-                    // class name
-                    autoCommit = "<error occurred: " + e.toString() + ">";
-                }
                 GetConnectionMessageSupplier messageSupplier =
                         (GetConnectionMessageSupplier) traceEntry.getMessageSupplier();
                 if (messageSupplier != null) {
                     // messageSupplier can be null if NopTraceEntry
+                    String autoCommit;
+                    try {
+                        autoCommit = Boolean.toString(connection.getAutoCommit());
+                    } catch (SQLException e) {
+                        logger.warn(e.getMessage(), e);
+                        // using toString() instead of getMessage() in order to capture exception
+                        // class name
+                        autoCommit = "<error occurred: " + e.toString() + ">";
+                    }
                     messageSupplier.setAutoCommit(autoCommit);
                 }
             }

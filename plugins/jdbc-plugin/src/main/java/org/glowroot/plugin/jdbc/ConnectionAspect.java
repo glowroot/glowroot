@@ -43,7 +43,7 @@ public class ConnectionAspect {
             pluginServices.getEnabledProperty("captureTransactionLifecycleTraceEntries");
 
     @Pointcut(className = "java.sql.Connection", methodName = "commit", methodParameterTypes = {},
-            ignoreSelfNested = true, timerName = "jdbc commit")
+            timerName = "jdbc commit")
     public static class CommitAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(CommitAdvice.class);
@@ -68,7 +68,7 @@ public class ConnectionAspect {
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "rollback", methodParameterTypes = {},
-            ignoreSelfNested = true, timerName = "jdbc rollback")
+            timerName = "jdbc rollback")
     public static class RollbackAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(RollbackAdvice.class);
@@ -94,7 +94,7 @@ public class ConnectionAspect {
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "close", methodParameterTypes = {},
-            ignoreSelfNested = true, timerName = "jdbc connection close")
+            timerName = "jdbc connection close")
     public static class CloseAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(CloseAdvice.class);
@@ -132,8 +132,7 @@ public class ConnectionAspect {
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "setAutoCommit",
-            ignoreSelfNested = true, methodParameterTypes = {"boolean"},
-            timerName = "jdbc set autocommit")
+            methodParameterTypes = {"boolean"}, timerName = "jdbc set autocommit")
     public static class SetAutoCommitAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(CloseAdvice.class);

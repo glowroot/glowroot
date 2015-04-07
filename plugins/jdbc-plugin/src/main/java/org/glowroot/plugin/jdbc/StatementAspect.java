@@ -97,8 +97,7 @@ public class StatementAspect {
 
     // capture the sql used to create the PreparedStatement
     @Pointcut(className = "java.sql.Connection", methodName = "prepare*",
-            methodParameterTypes = {"java.lang.String", ".."}, ignoreSelfNested = true,
-            timerName = "jdbc prepare")
+            methodParameterTypes = {"java.lang.String", ".."}, timerName = "jdbc prepare")
     public static class PrepareAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(PrepareAdvice.class);
@@ -129,7 +128,7 @@ public class StatementAspect {
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "createStatement",
-            methodParameterTypes = {".."}, ignoreSelfNested = true)
+            methodParameterTypes = {".."})
     public static class CreateStatementAdvice {
         @OnReturn
         public static void onReturn(@BindReturn HasStatementMirror statement) {
@@ -248,7 +247,7 @@ public class StatementAspect {
     // ================== Statement Batching ==================
 
     @Pointcut(className = "java.sql.Statement", methodName = "addBatch",
-            methodParameterTypes = {"java.lang.String"}, ignoreSelfNested = true)
+            methodParameterTypes = {"java.lang.String"})
     public static class StatementAddBatchAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror statement,
@@ -265,7 +264,7 @@ public class StatementAspect {
     }
 
     @Pointcut(className = "java.sql.PreparedStatement", methodName = "addBatch",
-            methodParameterTypes = {}, ignoreSelfNested = true)
+            methodParameterTypes = {})
     public static class PreparedStatementAddBatchAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement) {

@@ -174,6 +174,10 @@ public class TimerImpl implements Timer {
         selfNestingLevel--;
     }
 
+    public TimerName getTimerName() {
+        return timerName;
+    }
+
     public String getName() {
         return timerName.name();
     }

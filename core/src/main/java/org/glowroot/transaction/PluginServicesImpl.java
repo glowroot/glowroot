@@ -244,6 +244,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (transaction == null) {
             return NopTraceEntry.INSTANCE;
         }
+        TimerImpl currentTimer = transaction.getCurrentTimer();
+        if (currentTimer != null && currentTimer.getTimerName() == timerName) {
+            return NopTraceEntry.INSTANCE;
+        }
         return startTraceEntryInternal(transaction, timerName, messageSupplier);
     }
 
@@ -593,6 +597,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
     }
 
+    // TODO remove this class so TraceEntry can't go megamorphic
     private static class NopTraceEntry implements TraceEntry {
         private static final NopTraceEntry INSTANCE = new NopTraceEntry();
         private NopTraceEntry() {}
