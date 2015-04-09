@@ -426,14 +426,22 @@ public class Transaction {
     }
 
     // called by the transaction thread
-    public void onCompleteAndShouldStore(long captureTime) {
-        this.captureTime = captureTime;
+    public void onCompleteCaptureThreadInfo() {
         if (threadInfoComponent != null) {
-            threadInfoComponent.onTraceComplete();
+            threadInfoComponent.onComplete();
         }
+    }
+
+    // called by the transaction thread
+    public void onCompleteCaptureGcInfo() {
         if (gcInfoComponent != null) {
-            gcInfoComponent.onTraceComplete();
+            gcInfoComponent.onComplete();
         }
+    }
+
+    // called by the transaction thread
+    public void onComplete(long captureTime) {
+        this.captureTime = captureTime;
     }
 
     public long getCaptureTime() {

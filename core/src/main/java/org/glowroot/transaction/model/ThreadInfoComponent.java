@@ -70,7 +70,7 @@ public class ThreadInfoComponent {
     }
 
     // must be called from transaction thread
-    void onTraceComplete() {
+    void onComplete() {
         synchronized (lock) {
             completedThreadInfo = getThreadInfo();
         }

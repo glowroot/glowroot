@@ -115,13 +115,16 @@ public class TransactionCollectorImpl implements TransactionCollector {
             if (store) {
                 transaction.setWillBeStored();
             }
+            transaction.onCompleteCaptureThreadInfo();
             captureTime = aggregateCollector.add(transaction);
         }
         if (store) {
-            // onCompleteAndShouldStore must be called by the transaction thread, and needs to be
-            // called before putting the transaction into the pendingTransactions (since it can be
-            // picked up from pendingTransactions by the UI)
-            transaction.onCompleteAndShouldStore(captureTime);
+            if (aggregateCollector == null) {
+                // wasn't captured above but is needed
+                transaction.onCompleteCaptureThreadInfo();
+            }
+            transaction.onCompleteCaptureGcInfo();
+            transaction.onComplete(captureTime);
             if (pendingTransactions.size() < PENDING_LIMIT) {
                 pendingTransactions.add(transaction);
             } else {

@@ -56,7 +56,7 @@ public class GcInfoComponent {
     }
 
     // must be called from transaction thread
-    void onTraceComplete() {
+    void onComplete() {
         synchronized (lock) {
             completedGcInfos = getGcInfos();
         }
