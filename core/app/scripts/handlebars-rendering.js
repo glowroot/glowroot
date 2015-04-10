@@ -128,9 +128,7 @@ HandlebarsRendering = (function () {
   });
 
   Handlebars.registerHelper('formatAllocatedBytes', function (bytes) {
-    var units = ['bytes', 'KB', 'MB', 'GB', 'TB'];
-    var number = Math.floor(Math.log(bytes) / Math.log(1024));
-    return (bytes / Math.pow(1024, Math.floor(number))).toFixed(2) + ' ' + units[number];
+    return formatBytes(bytes);
   });
 
   Handlebars.registerHelper('eachGcInfoOrdered', function (gcInfos, options) {
@@ -157,11 +155,11 @@ HandlebarsRendering = (function () {
   });
 
   Handlebars.registerHelper('nanosToMillis', function (nanos) {
-    return (nanos / 1000000).toFixed(1);
+    return formatMillis(nanos / 1000000);
   });
 
   Handlebars.registerHelper('microsToMillis', function (micros) {
-    return (micros / 1000).toFixed(1);
+    return formatMillis(micros / 1000);
   });
 
   Handlebars.registerHelper('ifExistenceYes', function (existence, options) {
@@ -458,7 +456,7 @@ HandlebarsRendering = (function () {
     var html = '<div id="block' + start + '">';
     var i;
     for (i = start; i < Math.min(start + batchSize, traceEntries.length); i++) {
-      var maxDurationMillis = (traceEntries[0].duration / 1000000).toFixed(1);
+      var maxDurationMillis = formatMillis(traceEntries[0].duration / 1000000);
       traceEntries[i].offsetColumnWidth = maxDurationMillis.length / 2 + indent1;
       html += JST['trace-entry'](traceEntries[i]);
     }
@@ -824,6 +822,38 @@ HandlebarsRendering = (function () {
     return mergedCounts;
   }
 
+  function formatBytes(bytes) {
+    if (isNaN(parseFloat(bytes)) || !isFinite(bytes)) {
+      return '-';
+    }
+    if (bytes === 0) {
+      // no unit needed
+      return '0';
+    }
+    var units = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+    var number = Math.floor(Math.log(bytes) / Math.log(1024));
+    return (bytes / Math.pow(1024, Math.floor(number))).toFixed(1) + ' ' + units[number];
+  }
+
+  function formatMillis(number) {
+    if (Math.abs(number) < 0.0000005) {
+      // less than 0.5 nanoseconds
+      return '0.0';
+    }
+    if (Math.abs(number) < 0.000001) {
+      // between 0.5 and 1 nanosecond (round up)
+      return '0.000001';
+    }
+    if (Math.abs(number) < 0.00001) {
+      // less than 10 nanoseconds
+      return number.toPrecision(1);
+    }
+    if (Math.abs(number) < 1) {
+      return number.toPrecision(2);
+    }
+    return number.toFixed(1);
+  }
+
   return {
     renderTrace: function (trace, $selector) {
       var html = JST.trace(trace);
@@ -836,6 +866,8 @@ HandlebarsRendering = (function () {
       $selector.data('gtProfile', profile);
       this.renderTrace(trace, $selector);
     },
+    formatBytes: formatBytes,
+    formatMillis: formatMillis,
     profileToggle: profileToggle
   };
 })();

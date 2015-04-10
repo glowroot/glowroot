@@ -14,36 +14,14 @@
  * limitations under the License.
  */
 
-/* global glowroot, moment */
+/* global glowroot, moment, HandlebarsRendering */
 
 glowroot.filter('gtBytes', function () {
-  return function (bytes, precision) {
-    if (isNaN(parseFloat(bytes)) || !isFinite(bytes)) {
-      return '-';
-    }
-    if (bytes === 0) {
-      // no unit needed
-      return '0';
-    }
-    if (typeof precision === 'undefined') {
-      precision = 1;
-    }
-    var units = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
-    var number = Math.floor(Math.log(bytes) / Math.log(1024));
-    return (bytes / Math.pow(1024, Math.floor(number))).toFixed(precision) + ' ' + units[number];
-  };
+  return HandlebarsRendering.formatBytes;
 });
 
-glowroot.filter('gtNumber', function () {
-  return function (number, precision) {
-    if (isNaN(parseFloat(number)) || !isFinite(number)) {
-      return '-';
-    }
-    if (typeof precision === 'undefined') {
-      precision = 1;
-    }
-    return number.toFixed(precision);
-  };
+glowroot.filter('gtMillis', function () {
+  return HandlebarsRendering.formatMillis;
 });
 
 glowroot.filter('gtDuration', function () {

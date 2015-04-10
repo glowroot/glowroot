@@ -55,6 +55,9 @@ glowroot.controller('TransactionOverviewCtrl', [
           var to = xval;
           return charts.renderTooltipHtml(from, to, $scope.transactionCounts[xval], flotItem.dataIndex,
               flotItem.seriesIndex, chartState.plot, function (value) {
+                if (value < 0.01) {
+                  return value.toPrecision(2) + ' seconds';
+                }
                 return value.toFixed(3) + ' seconds';
               });
         }

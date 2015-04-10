@@ -105,8 +105,8 @@
           <div class="gt-break-word gt-second-line-indent">{{flattenedTimer.name}}</div>
         </div>
       </td>
-      <td>{{flattenedTimer.totalMicros / (1000 * mergedAggregate.transactionCount) | gtNumber}}</td>
-      <td>{{flattenedTimer.count / mergedAggregate.transactionCount | gtNumber}}</td>
+      <td>{{flattenedTimer.totalMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}}</td>
+      <td>{{(flattenedTimer.count / mergedAggregate.transactionCount).toFixed(1)}}</td>
       <td></td>
     </tr>
     </tbody>
@@ -136,8 +136,8 @@
           <div class="gt-break-word gt-second-line-indent">{{treeTimer.name}} {{treeTimer.metricIndent}}</div>
         </div>
       </td>
-      <td>{{treeTimer.totalMicros / (1000 * mergedAggregate.transactionCount) | gtNumber}}</td>
-      <td>{{treeTimer.count / mergedAggregate.transactionCount | gtNumber}}</td>
+      <td>{{treeTimer.totalMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}}</td>
+      <td>{{(treeTimer.count / mergedAggregate.transactionCount).toFixed(1)}}</td>
       <td></td>
     </tr>
     </tbody>
@@ -152,19 +152,19 @@
     <div class="gt-indent2">
       <div ng-show="threadInfoAggregate.totalCpuMicros">
         CPU time:
-        {{(threadInfoAggregate.totalCpuMicros / (1000 * mergedAggregate.transactionCount)).toFixed(1)}} ms
+        {{threadInfoAggregate.totalCpuMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}} ms
       </div>
       <div ng-show="threadInfoAggregate.totalBlockedMicros">
         Blocked time:
-        {{(threadInfoAggregate.totalBlockedMicros / (1000 * mergedAggregate.transactionCount)).toFixed(1)}} ms
+        {{threadInfoAggregate.totalBlockedMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}} ms
       </div>
       <div ng-show="threadInfoAggregate.totalWaitedMicros">
         Waited time:
-        {{(threadInfoAggregate.totalWaitedMicros / (1000 * mergedAggregate.transactionCount)).toFixed(1)}} ms
+        {{threadInfoAggregate.totalWaitedMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}} ms
       </div>
       <div ng-show="threadInfoAggregate.totalAllocatedKBytes">
         Allocated memory:
-        {{(threadInfoAggregate.totalAllocatedKBytes * 1024 / mergedAggregate.transactionCount).toFixed(1) | gtBytes}}
+        {{threadInfoAggregate.totalAllocatedKBytes * 1024 / mergedAggregate.transactionCount | gtBytes}}
       </div>
     </div>
   </div>

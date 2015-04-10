@@ -87,17 +87,20 @@ glowroot.config([
                 'throughput': 'By throughput (per min)'
               };
             },
-            summaryValueFn: function () {
-              return function (summary, sortOrder, overallSummary, durationMillis) {
-                if (sortOrder === 'total-time') {
-                  return (100 * summary.totalMicros / overallSummary.totalMicros).toFixed(1) + ' %';
-                } else if (sortOrder === 'average-time') {
-                  return (summary.totalMicros / (1000 * summary.transactionCount)).toFixed(1) + ' ms';
-                } else if (sortOrder === 'throughput') {
-                  return (60 * 1000 * summary.transactionCount / durationMillis).toFixed(1) + '/min';
-                }
-              };
-            }
+            summaryValueFn: [
+              '$filter',
+              function ($filter) {
+                return function (summary, sortOrder, overallSummary, durationMillis) {
+                  if (sortOrder === 'total-time') {
+                    return (100 * summary.totalMicros / overallSummary.totalMicros).toFixed(1) + ' %';
+                  } else if (sortOrder === 'average-time') {
+                    return $filter('gtMillis')(summary.totalMicros / (1000 * summary.transactionCount)) + ' ms';
+                  } else if (sortOrder === 'throughput') {
+                    return (60 * 1000 * summary.transactionCount / durationMillis).toFixed(1) + '/min';
+                  }
+                };
+              }
+            ]
           }
         },
         tabs: {
