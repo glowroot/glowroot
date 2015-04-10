@@ -61,7 +61,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 class TransactionJsonService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
-    private static final double MICROSECONDS_PER_SECOND = 1000000.0;
+    private static final double MICROSECONDS_PER_MILLISECOND = 1000.0;
 
     private final TransactionCommonService transactionCommonService;
     private final TraceDao traceDao;
@@ -305,11 +305,11 @@ class TransactionJsonService {
             LazyHistogram histogram = new LazyHistogram();
             histogram.decodeFromByteBuffer(ByteBuffer.wrap(aggregate.histogram()));
             dataSeries1.add(aggregate.captureTime(),
-                    histogram.getValueAtPercentile(50) / MICROSECONDS_PER_SECOND);
+                    histogram.getValueAtPercentile(50) / MICROSECONDS_PER_MILLISECOND);
             dataSeries2.add(aggregate.captureTime(),
-                    histogram.getValueAtPercentile(95) / MICROSECONDS_PER_SECOND);
+                    histogram.getValueAtPercentile(95) / MICROSECONDS_PER_MILLISECOND);
             dataSeries3.add(aggregate.captureTime(),
-                    histogram.getValueAtPercentile(99) / MICROSECONDS_PER_SECOND);
+                    histogram.getValueAtPercentile(99) / MICROSECONDS_PER_MILLISECOND);
         }
         if (lastAggregate != null) {
             dataSeriesHelper.addFinalDownslopeIfNeeded(request.to(), dataSeriesList, null,
@@ -365,7 +365,7 @@ class TransactionJsonService {
                     // convert to average seconds
                     dataSeries.add(aggregate.captureTime(),
                             (totalMicros.longValue() / (double) aggregate.transactionCount())
-                                    / MICROSECONDS_PER_SECOND);
+                                    / MICROSECONDS_PER_MILLISECOND);
                     totalOtherMicros -= totalMicros.longValue();
                 }
             }
@@ -375,7 +375,7 @@ class TransactionJsonService {
                 // convert to average seconds
                 otherDataSeries.add(aggregate.captureTime(),
                         (totalOtherMicros / (double) aggregate.transactionCount())
-                                / MICROSECONDS_PER_SECOND);
+                                / MICROSECONDS_PER_MILLISECOND);
             }
         }
         if (lastAggregate != null) {

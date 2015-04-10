@@ -20,8 +20,9 @@ glowroot.controller('TransactionOverviewCtrl', [
   '$scope',
   '$location',
   '$http',
+  '$filter',
   'charts',
-  function ($scope, $location, $http, charts) {
+  function ($scope, $location, $http, $filter, charts) {
 
     $scope.$parent.activeTabItem = 'overview';
 
@@ -55,10 +56,7 @@ glowroot.controller('TransactionOverviewCtrl', [
           var to = xval;
           return charts.renderTooltipHtml(from, to, $scope.transactionCounts[xval], flotItem.dataIndex,
               flotItem.seriesIndex, chartState.plot, function (value) {
-                if (value < 0.01) {
-                  return value.toPrecision(2) + ' seconds';
-                }
-                return value.toFixed(3) + ' seconds';
+                return $filter('gtMillis')(value) + ' milliseconds';
               });
         }
       }
