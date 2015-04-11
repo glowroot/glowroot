@@ -1,0 +1,29 @@
+cluster_name: 'Test Cluster'
+
+num_tokens: 256
+
+partitioner: org.apache.cassandra.dht.Murmur3Partitioner
+
+data_file_directories:
+    - target/cassandra/data
+
+commitlog_directory: target/cassandra/commitlog
+
+saved_caches_directory: target/cassandra/saved_caches
+
+commitlog_sync: periodic
+
+commitlog_sync_period_in_ms: 10000
+
+seed_provider:
+    - class_name: org.apache.cassandra.locator.SimpleSeedProvider
+      parameters:
+          - seeds: "127.0.0.1"
+
+listen_address: localhost
+
+start_native_transport: true
+
+native_transport_port: 9042
+
+endpoint_snitch: SimpleSnitch

@@ -109,7 +109,7 @@ case "$1" in
                  # property on the command line which which would make it visible to ps)
                  #
                  # need to use real IP address for jdbc connection since sonar.glowroot.org points to cloudflare
-                 mvn sonar:sonar -pl .,plugin-api,core,plugins/jdbc-plugin,plugins/servlet-plugin,plugins/logger-plugin \
+                 mvn sonar:sonar -pl .,plugin-api,core,plugins/cassandra-plugin,plugins/jdbc-plugin,plugins/logger-plugin,plugins/servlet-plugin \
                                  -Dsonar.jdbc.url=$SONAR_JDBC_URL \
                                  -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \
                                  -Dsonar.host.url=$SONAR_HOST_URL \
@@ -148,7 +148,7 @@ case "$1" in
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@Untainted\*/|/*@org.checkerframework.checker.tainting.qual.Untainted*/|g'
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@\([A-Za-z]*\)\*/|/*@org.checkerframework.checker.nullness.qual.\1*/|g'
 
-               mvn clean compile -pl .,misc/license-resource-bundle,plugin-api,core,test-harness,plugins/jdbc-plugin,plugins/servlet-plugin,plugins/logger-plugin \
+               mvn clean compile -pl .,misc/license-resource-bundle,plugin-api,core,test-harness,plugins/cassandra-plugin,plugins/jdbc-plugin,plugins/logger-plugin,plugins/servlet-plugin \
                                  -Pchecker \
                                  -Dchecker.install.dir=$HOME/checker-framework \
                                  -Dchecker.stubs.dir=$PWD/misc/checker-stubs \

@@ -23,6 +23,11 @@
     </dependency>
     <dependency>
       <groupId>org.glowroot.plugins</groupId>
+      <artifactId>cassandra-plugin</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot.plugins</groupId>
       <artifactId>http-client-plugin</artifactId>
       <version>${project.version}</version>
     </dependency>
