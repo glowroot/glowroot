@@ -96,7 +96,7 @@ public class DataSourceAspect {
                 GetConnectionMessageSupplier messageSupplier =
                         (GetConnectionMessageSupplier) traceEntry.getMessageSupplier();
                 if (messageSupplier != null) {
-                    // messageSupplier can be null if NopTraceEntry
+                    // messageSupplier can be null if max trace entries was exceeded
                     String autoCommit;
                     try {
                         autoCommit = Boolean.toString(connection.getAutoCommit());

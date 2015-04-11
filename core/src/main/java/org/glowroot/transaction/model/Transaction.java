@@ -177,8 +177,7 @@ public class Transaction {
 
     public String getHeadline() {
         MessageSupplier messageSupplier = traceEntryComponent.getRootEntry().getMessageSupplier();
-        // messageSupplier should never be null since entry.getMessageSupplier() is only null when
-        // the entry was created using addErrorEntry()
+        // root trace entry messageSupplier is never be null
         checkNotNull(messageSupplier);
         return ((ReadableMessage) messageSupplier.get()).getText();
     }
@@ -201,8 +200,7 @@ public class Transaction {
 
     public Map<String, ? extends /*@Nullable*/Object> getCustomDetail() {
         MessageSupplier messageSupplier = traceEntryComponent.getRootEntry().getMessageSupplier();
-        // messageSupplier should never be null since entry.getMessageSupplier() is only null when
-        // the entry was created using addErrorEntry()
+        // root trace entry messageSupplier is never be null
         checkNotNull(messageSupplier);
         return ((ReadableMessage) messageSupplier.get()).getDetail();
     }

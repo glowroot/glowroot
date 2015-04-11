@@ -67,8 +67,8 @@ public class StatementAspect {
         // the field and method names are verbose to avoid conflict since they will become fields
         // and methods in all classes that extend java.sql.Statement or java.sql.ResultSet
         //
-        // does not need to be volatile, app/framework must provide visibility of PreparedStatement
-        // if used across threads and this can piggyback
+        // does not need to be volatile, app/framework must provide visibility of Statements and
+        // ResultSets if used across threads and this can piggyback
         private @Nullable StatementMirror glowrootStatementMirror;
         @Override
         public @Nullable StatementMirror getGlowrootStatementMirror() {
@@ -326,7 +326,7 @@ public class StatementAspect {
             }
         }
         @OnReturn
-        public static void onReturn(@BindReturn Object returnValue,
+        public static void onReturn(@BindReturn @Nullable Object returnValue,
                 @BindReceiver HasStatementMirror statement,
                 @BindTraveler @Nullable TraceEntry traceEntry) {
             if (returnValue instanceof HasStatementMirror) {

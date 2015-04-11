@@ -8,7 +8,7 @@
       "default": true,
       "label": "Bind parameters",
       "checkboxLabel": "Capture jdbc bind parameters",
-      "description": "Capture jdbc bind parameters for PreparedStatement executions. This is disabled by default as it can cause Glowroot to capture potentially secure data, e.g. account data being stored to an account table."
+      "description": "Capture jdbc bind parameters for PreparedStatement executions."
     },
     {
       "name": "captureResultSetNavigate",
