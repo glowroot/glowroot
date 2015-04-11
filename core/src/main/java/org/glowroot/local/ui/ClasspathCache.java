@@ -103,7 +103,9 @@ class ClasspathCache {
         if (instrumentation != null) {
             List<String> loadedClassNames = Lists.newArrayList();
             for (Class<?> clazz : instrumentation.getAllLoadedClasses()) {
-                loadedClassNames.add(clazz.getName());
+                if (!clazz.getName().startsWith("[")) {
+                    loadedClassNames.add(clazz.getName());
+                }
             }
             i = Iterators.concat(i, loadedClassNames.iterator());
         }
