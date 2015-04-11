@@ -41,13 +41,13 @@ public abstract class GeneralConfigBase {
     // 0 means store all traces, -1 means store no traces
     @Value.Default
     public int traceStoreThresholdMillis() {
-        return 3000;
+        return 1000;
     }
 
     // 0 means profiling disabled
     @Value.Default
     public int profilingIntervalMillis() {
-        return 2000;
+        return 1000;
     }
 
     @Value.Default
