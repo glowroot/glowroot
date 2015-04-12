@@ -147,7 +147,6 @@ glowroot.controller('TracesCtrl', [
       $scope.$apply(function () {
         var from = plot.getAxes().xaxis.options.min;
         var to = plot.getAxes().xaxis.options.max;
-        updateFilter(from, to);
         charts.updateRange($scope, from, to, false, zoomingOut);
         if (zoomingOut) {
           // scroll zooming out, reset duration limits
