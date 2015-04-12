@@ -231,38 +231,44 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>1.4.0</version>
+        <groupId>com.github.eirslett</groupId>
+        <artifactId>frontend-maven-plugin</artifactId>
+        <version>0.0.23</version>
         <executions>
+          <execution>
+            <id>install-node-and-npm</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>install-node-and-npm</goal>
+            </goals>
+            <configuration>
+              <skip>${glowroot.ui.skip}</skip>
+              <nodeVersion>v0.12.2</nodeVersion>
+              <npmVersion>2.7.6</npmVersion>
+            </configuration>
+          </execution>
           <execution>
             <!-- could delete node_modules using maven-clean-plugin, but that adds unnecessary
               overhead to simple mvn clean install -->
             <id>npm-prune</id>
             <phase>generate-sources</phase>
             <goals>
-              <goal>exec</goal>
+              <goal>npm</goal>
             </goals>
             <configuration>
               <skip>${glowroot.ui.skip}</skip>
-              <executable>npm</executable>
-              <arguments>
-                <argument>prune</argument>
-              </arguments>
+              <arguments>prune</arguments>
             </configuration>
           </execution>
           <execution>
             <id>npm-install</id>
             <phase>generate-sources</phase>
             <goals>
-              <goal>exec</goal>
+              <goal>npm</goal>
             </goals>
             <configuration>
               <skip>${glowroot.ui.skip}</skip>
-              <executable>npm</executable>
-              <arguments>
-                <argument>install</argument>
-              </arguments>
+              <arguments>install</arguments>
             </configuration>
           </execution>
           <execution>
@@ -271,43 +277,33 @@
             <id>bower-prune</id>
             <phase>generate-sources</phase>
             <goals>
-              <goal>exec</goal>
+              <goal>bower</goal>
             </goals>
             <configuration>
               <skip>${glowroot.ui.skip}</skip>
-              <executable>bower</executable>
-              <arguments>
-                <argument>prune</argument>
-              </arguments>
+              <arguments>prune</arguments>
             </configuration>
           </execution>
           <execution>
-            <id>bower-update</id>
+            <id>bower-install</id>
             <phase>generate-sources</phase>
             <goals>
-              <goal>exec</goal>
+              <goal>bower</goal>
             </goals>
             <configuration>
               <skip>${glowroot.ui.skip}</skip>
-              <executable>bower</executable>
-              <arguments>
-                <argument>update</argument>
-              </arguments>
+              <arguments>install</arguments>
             </configuration>
           </execution>
           <execution>
             <id>grunt-build</id>
             <phase>generate-sources</phase>
             <goals>
-              <goal>exec</goal>
+              <goal>grunt</goal>
             </goals>
             <configuration>
               <skip>${glowroot.ui.skip}</skip>
-              <executable>grunt</executable>
-              <arguments>
-                <argument>--no-color</argument>
-                <argument>build</argument>
-              </arguments>
+              <arguments>--no-color build</arguments>
             </configuration>
           </execution>
         </executions>
@@ -330,7 +326,6 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <!-- TODO this is needed until https://jira.codehaus.org/browse/MSHADE-182 -->
           <groupId>org.eclipse.m2e</groupId>
           <artifactId>lifecycle-mapping</artifactId>
           <version>1.0.0</version>
@@ -338,12 +333,31 @@
             <lifecycleMappingMetadata>
               <pluginExecutions>
                 <pluginExecution>
+                  <!-- TODO this is needed until https://jira.codehaus.org/browse/MSHADE-182 -->
                   <pluginExecutionFilter>
                     <groupId>com.coderplus.maven.plugins</groupId>
                     <artifactId>copy-rename-maven-plugin</artifactId>
-                    <versionRange>[1.0,)</versionRange>
+                    <versionRange>[0.0,)</versionRange>
                     <goals>
                       <goal>rename</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore />
+                  </action>
+                </pluginExecution>
+                <pluginExecution>
+                  <!-- frontend-maven-plugin has nice m2e support, but the grunt build is slow and I
+                    don't use eclipse for ui work anyways -->
+                  <pluginExecutionFilter>
+                    <groupId>com.github.eirslett</groupId>
+                    <artifactId>frontend-maven-plugin</artifactId>
+                    <versionRange>[0.0,)</versionRange>
+                    <goals>
+                      <goal>install-node-and-npm</goal>
+                      <goal>npm</goal>
+                      <goal>bower</goal>
+                      <goal>grunt</goal>
                     </goals>
                   </pluginExecutionFilter>
                   <action>
