@@ -135,7 +135,11 @@ class AggregateBuilder {
                 .build();
     }
 
+    @Nullable
     ErrorPoint buildErrorPoint(long captureTime) {
+        if (errorCount == 0) {
+            return null;
+        }
         return ErrorPoint.builder()
                 .captureTime(captureTime)
                 .errorCount(errorCount)
