@@ -66,12 +66,16 @@ class LayoutJsonService {
         this.fixedAggregateRollupSeconds = fixedAggregateRollupSeconds;
         this.fixedGaugeIntervalSeconds = fixedGaugeIntervalSeconds;
         this.fixedGaugeRollupSeconds = fixedGaugeRollupSeconds;
-        configService.addConfigListener(new ConfigListener() {
+        ConfigListener listener = new ConfigListener() {
             @Override
             public void onChange() {
                 layout = null;
             }
-        });
+        };
+        configService.addConfigListener(listener);
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
+            configService.addPluginConfigListener(pluginDescriptor.id(), listener);
+        }
     }
 
     String getLayout() throws IOException {
@@ -117,8 +121,8 @@ class LayoutJsonService {
         List<String> transactionTypes = Lists.newArrayList(configService.getAllTransactionTypes());
         String defaultTransactionType = configService.getDefaultTransactionType();
         List<String> orderedTransactionTypes = Lists.newArrayList();
-        if (defaultTransactionType.isEmpty()) {
-            defaultTransactionType = "<no transaction types defined>";
+        if (transactionTypes.isEmpty()) {
+            defaultTransactionType = "NO TRANSACTION TYPES DEFINED";
         } else {
             if (!transactionTypes.contains(defaultTransactionType)) {
                 defaultTransactionType = transactionTypes.iterator().next();

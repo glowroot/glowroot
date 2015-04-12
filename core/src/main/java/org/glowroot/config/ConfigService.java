@@ -434,14 +434,14 @@ public class ConfigService {
     public ImmutableList<String> getAllTransactionTypes() {
         Set<String> transactionTypes = Sets.newLinkedHashSet();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            transactionTypes.addAll(pluginDescriptor.transactionTypes());
-        }
-        for (InstrumentationConfig config : getInstrumentationConfigs()) {
-            String transactionType = config.transactionType();
-            if (!transactionType.isEmpty()) {
-                transactionTypes.add(transactionType);
+            PluginConfig pluginConfig = getPluginConfig(pluginDescriptor.id());
+            if (pluginConfig != null && pluginConfig.enabled()) {
+                transactionTypes.addAll(pluginDescriptor.transactionTypes());
+                addInstrumentationTransactionTypes(pluginDescriptor.instrumentationConfigs(),
+                        transactionTypes, pluginConfig);
             }
         }
+        addInstrumentationTransactionTypes(getInstrumentationConfigs(), transactionTypes, null);
         return ImmutableList.copyOf(transactionTypes);
     }
 
@@ -493,6 +493,26 @@ public class ConfigService {
         for (ConfigListener configListener : listeners) {
             configListener.onChange();
         }
+    }
+
+    private void addInstrumentationTransactionTypes(List<InstrumentationConfig> configs,
+            Set<String> transactionTypes, @Nullable PluginConfig pluginConfig) {
+        for (InstrumentationConfig config : configs) {
+            String transactionType = config.transactionType();
+            if (!transactionType.isEmpty() && pluginConfig != null
+                    && isEnabled(config, pluginConfig)) {
+                transactionTypes.add(transactionType);
+            }
+        }
+    }
+
+    private boolean isEnabled(InstrumentationConfig config, PluginConfig pluginConfig) {
+        return isEnabled(config.enabledProperty(), pluginConfig)
+                && isEnabled(config.traceEntryEnabledProperty(), pluginConfig);
+    }
+
+    private boolean isEnabled(String propertyName, PluginConfig pluginConfig) {
+        return propertyName.isEmpty() || pluginConfig.getBooleanProperty(propertyName);
     }
 
     @OnlyUsedByTests
