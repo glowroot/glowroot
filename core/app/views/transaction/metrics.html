@@ -77,7 +77,7 @@
   <div class="gt-panel-overlay" ng-show="showChartSpinner"></div>
   <div>
     <label>
-      Average breakdown per transaction <span style="font-weight: normal;">(in milliseconds)</span>:
+      Average breakdown per transaction:
     </label>
   </div>
   <table class="gt-timers-table gt-indent2"
@@ -86,8 +86,8 @@
     <thead>
     <tr>
       <td></td>
-      <td>total</td>
-      <td>count</td>
+      <td style="font-weight: 600;">total (ms)</td>
+      <td style="font-weight: 600;">count</td>
       <td>
         <button class="gt-flat-btn gt-flat-btn-big gt-link-color"
                 ng-click="showTreeView = true"
@@ -117,8 +117,8 @@
     <thead>
     <tr>
       <td></td>
-      <td>total</td>
-      <td>count</td>
+      <td style="font-weight: 600;">total (ms)</td>
+      <td style="font-weight: 600;">count</td>
       <td>
         <button class="gt-flat-btn gt-flat-btn-big gt-link-color"
                 ng-click="showTreeView = false"
