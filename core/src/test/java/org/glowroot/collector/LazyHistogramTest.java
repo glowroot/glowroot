@@ -77,6 +77,22 @@ public class LazyHistogramTest {
         shouldDecodeOnTopOfExisting(100000, 200000);
     }
 
+    @Test
+    public void testResizingHistogramBetweenCompressedEncodings() {
+        // given
+        LazyHistogram lazyHistogram = new LazyHistogram();
+        for (int i = 0; i < 2000; i++) {
+            lazyHistogram.add(1);
+        }
+        ByteBuffer buffer = ByteBuffer.allocate(lazyHistogram.getNeededByteBufferCapacity());
+        lazyHistogram.encodeIntoByteBuffer(buffer);
+        // when
+        lazyHistogram.add(10000);
+        buffer = ByteBuffer.allocate(lazyHistogram.getNeededByteBufferCapacity());
+        lazyHistogram.encodeIntoByteBuffer(buffer);
+        // then
+    }
+
     private void shouldTestPercentiles(int num) {
         // given
         LazyHistogram lazyHistogram = new LazyHistogram();
