@@ -15,9 +15,16 @@
  */
 package org.glowroot.api;
 
-// it is faster to use a mutable holder object and always perform ThreadLocal.get() and never
-// use ThreadLocal.set(), because the value is more likely to be found in the ThreadLocalMap
-// direct hash slot and avoid the slow path ThreadLocalMap.getEntryAfterMiss()
+/**
+ * Wrapper that implements optimized {@link ThreadLocal} access pattern ideal for heavily used
+ * ThreadLocals.
+ * 
+ * It is faster to use a mutable holder object and always perform ThreadLocal.get() and never use
+ * ThreadLocal.set(), because the value is more likely to be found in the ThreadLocalMap direct hash
+ * slot and avoid the slow path ThreadLocalMap.getEntryAfterMiss().
+ * 
+ * Important: this thread local will live in ThreadLocalMap forever, so use with care.
+ */
 public class FastThreadLocal</*@Nullable*/T> {
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")

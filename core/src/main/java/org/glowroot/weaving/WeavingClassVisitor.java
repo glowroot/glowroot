@@ -51,7 +51,6 @@ import org.objectweb.asm.commons.SimpleRemapper;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.util.ASMifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -217,6 +216,16 @@ class WeavingClassVisitor extends ClassVisitor {
         handleInheritedMethodsThatNowFulfillAdvice(analyzedClass);
         // handle metas at end, since handleInheritedMethodsThatNowFulfillAdvice()
         // above could add new metas
+        handleMetaHolders();
+        cv.visitEnd();
+    }
+
+    boolean isInterfaceSoNothingToWeave() {
+        return interfaceSoNothingToWeave;
+    }
+
+    @RequiresNonNull("type")
+    private void handleMetaHolders() {
         if (metaHolderInternalName != null) {
             if (loader == null) {
                 initializeBoostrapMetaHolders();
@@ -229,11 +238,6 @@ class WeavingClassVisitor extends ClassVisitor {
                 }
             }
         }
-        cv.visitEnd();
-    }
-
-    boolean isInterfaceSoNothingToWeave() {
-        return interfaceSoNothingToWeave;
     }
 
     @RequiresNonNull({"type", "metaHolderInternalName"})
@@ -770,25 +774,12 @@ class WeavingClassVisitor extends ClassVisitor {
         @Value.Auxiliary
         abstract AnalyzedMethod analyzedMethod();
 
-        public static AnalyzedMethodKey wrap(AnalyzedMethod analyzedMethod) {
+        static AnalyzedMethodKey wrap(AnalyzedMethod analyzedMethod) {
             return AnalyzedMethodKey.builder()
                     .name(analyzedMethod.name())
                     .addAllParameterTypes(analyzedMethod.parameterTypes())
                     .analyzedMethod(analyzedMethod)
                     .build();
         }
-    }
-
-    public static class A {
-        String a(String x) {
-            return x;
-        }
-        Object b(String x) {
-            return a(x);
-        }
-    }
-
-    public static void main(String[] args) throws Exception {
-        ASMifier.main(new String[] {A.class.getName()});
     }
 }

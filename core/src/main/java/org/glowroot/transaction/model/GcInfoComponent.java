@@ -32,7 +32,7 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GcInfoComponent {
+class GcInfoComponent {
 
     private static final Logger logger = LoggerFactory.getLogger(GcInfoComponent.class);
 
@@ -43,7 +43,7 @@ public class GcInfoComponent {
 
     private final Object lock = new Object();
 
-    public GcInfoComponent() {
+    GcInfoComponent() {
         List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
         startingSnapshots = Maps.newHashMap();
         for (GarbageCollectorMXBean gcBean : gcBeans) {

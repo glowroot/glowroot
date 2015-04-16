@@ -36,9 +36,9 @@ import org.glowroot.local.store.DataSource.ResultSetExtractor;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
-public class GaugeDao {
+class GaugeDao {
 
-    private static Logger logger = LoggerFactory.getLogger(GaugeDao.class);
+    private static final Logger logger = LoggerFactory.getLogger(GaugeDao.class);
 
     private static final ImmutableList<Column> gaugeColumns = ImmutableList.<Column>of(
             Column.of("id", Types.BIGINT).withIdentity(true),

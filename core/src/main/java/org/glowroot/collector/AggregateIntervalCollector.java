@@ -37,21 +37,14 @@ public class AggregateIntervalCollector {
     private final Map<String, IntervalTypeCollector> typeCollectors = Maps.newConcurrentMap();
     private final Clock clock;
 
-    private final long startTime;
-
     AggregateIntervalCollector(long currentTime, long fixedAggregateIntervalMillis, Clock clock) {
         endTime = (long) Math.ceil(currentTime / (double) fixedAggregateIntervalMillis)
                 * fixedAggregateIntervalMillis;
-        startTime = endTime - fixedAggregateIntervalMillis;
         this.clock = clock;
     }
 
     public long getEndTime() {
         return endTime;
-    }
-
-    long getCurrentDuration() {
-        return clock.currentTimeMillis() - startTime;
     }
 
     void add(Transaction transaction) {
@@ -212,7 +205,7 @@ public class AggregateIntervalCollector {
         }
     }
 
-    static class IntervalTypeCollector {
+    private static class IntervalTypeCollector {
 
         private final String transactionType;
         private final AggregateBuilder overallBuilder;
@@ -223,7 +216,7 @@ public class AggregateIntervalCollector {
             overallBuilder = new AggregateBuilder(transactionType, null);
         }
 
-        void add(Transaction transaction) {
+        private void add(Transaction transaction) {
             Profile profile = transaction.getProfile();
             synchronized (overallBuilder) {
                 overallBuilder.add(transaction);

@@ -160,12 +160,6 @@ public class TimerImpl implements Timer {
         end(ticker.read());
     }
 
-    public void start(long startTick) {
-        this.startTick = startTick;
-        selfNestingLevel++;
-        transaction.setCurrentTimer(this);
-    }
-
     public void end(long endTick) {
         if (selfNestingLevel == 1) {
             recordData(endTick - startTick);
@@ -208,8 +202,8 @@ public class TimerImpl implements Timer {
             selfNestingLevel++;
             return this;
         }
-        long startTick = ticker.read();
-        return startNestedTimerInternal(timerName, startTick);
+        long nestedTimerStartTick = ticker.read();
+        return startNestedTimerInternal(timerName, nestedTimerStartTick);
     }
 
     // only called by transaction thread
@@ -222,22 +216,28 @@ public class TimerImpl implements Timer {
         return startNestedTimerInternal(timerName, startTick);
     }
 
+    void start(long startTick) {
+        this.startTick = startTick;
+        selfNestingLevel++;
+        transaction.setCurrentTimer(this);
+    }
+
     Transaction getTransaction() {
         return transaction;
     }
 
-    private TimerImpl startNestedTimerInternal(TimerName timerName, long startTick) {
+    private TimerImpl startNestedTimerInternal(TimerName timerName, long nestedTimerStartTick) {
         if (nestedTimers == null) {
             nestedTimers = new NestedTimerMap();
         }
         TimerNameImpl timerNameImpl = (TimerNameImpl) timerName;
         TimerImpl nestedTimer = nestedTimers.get(timerNameImpl);
         if (nestedTimer != null) {
-            nestedTimer.start(startTick);
+            nestedTimer.start(nestedTimerStartTick);
             return nestedTimer;
         }
         nestedTimer = new TimerImpl(transaction, this, timerNameImpl, ticker);
-        nestedTimer.start(startTick);
+        nestedTimer.start(nestedTimerStartTick);
         nestedTimers.put(timerNameImpl, nestedTimer);
         if (threadSafeNestedTimers == null) {
             threadSafeNestedTimers = Lists.newArrayList();

@@ -76,35 +76,27 @@ abstract class AnalyzedMethodBase {
     static Type getType(String type) {
         if (type.equals(Void.TYPE.getName())) {
             return Type.VOID_TYPE;
-        }
-        if (type.equals(Boolean.TYPE.getName())) {
+        } else if (type.equals(Boolean.TYPE.getName())) {
             return Type.BOOLEAN_TYPE;
-        }
-        if (type.equals(Character.TYPE.getName())) {
+        } else if (type.equals(Character.TYPE.getName())) {
             return Type.CHAR_TYPE;
-        }
-        if (type.equals(Byte.TYPE.getName())) {
+        } else if (type.equals(Byte.TYPE.getName())) {
             return Type.BYTE_TYPE;
-        }
-        if (type.equals(Short.TYPE.getName())) {
+        } else if (type.equals(Short.TYPE.getName())) {
             return Type.SHORT_TYPE;
-        }
-        if (type.equals(Integer.TYPE.getName())) {
+        } else if (type.equals(Integer.TYPE.getName())) {
             return Type.INT_TYPE;
-        }
-        if (type.equals(Float.TYPE.getName())) {
+        } else if (type.equals(Float.TYPE.getName())) {
             return Type.FLOAT_TYPE;
-        }
-        if (type.equals(Long.TYPE.getName())) {
+        } else if (type.equals(Long.TYPE.getName())) {
             return Type.LONG_TYPE;
-        }
-        if (type.equals(Double.TYPE.getName())) {
+        } else if (type.equals(Double.TYPE.getName())) {
             return Type.DOUBLE_TYPE;
-        }
-        if (type.endsWith("[]")) {
+        } else if (type.endsWith("[]")) {
             return getArrayType(type);
+        } else {
+            return Type.getObjectType(type.replace('.', '/'));
         }
-        return Type.getObjectType(type.replace('.', '/'));
     }
 
     private static Type getArrayType(String type) {

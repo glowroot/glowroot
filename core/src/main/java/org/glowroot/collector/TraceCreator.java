@@ -49,7 +49,7 @@ public class TraceCreator {
         return createTrace(transaction, true, false, captureTime, captureTick);
     }
 
-    public static Trace createPartialTrace(Transaction transaction, long captureTime,
+    static Trace createPartialTrace(Transaction transaction, long captureTime,
             long captureTick) throws IOException {
         // doesn't really matter whether pass true or false for "active" since this method is only
         // used for creating trace for storage and stored traces do not have "active" field

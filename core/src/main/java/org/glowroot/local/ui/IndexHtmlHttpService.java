@@ -33,27 +33,26 @@ import io.netty.handler.codec.http.HttpRequest;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
-class IndexHtmlHttpService implements HttpService {
+class IndexHtmlHttpService implements UnauthenticatedHttpService {
 
-    private static final String baseHref;
+    private static final String BASE_HREF;
 
-    private static final @Nullable String googleAnalyticsTrackingId =
+    private static final @Nullable String GOOGLE_ANALYTICS_TRACKING_ID =
             System.getProperty("glowroot.internal.googleAnalyticsTrackingId");
 
     static {
         String uiBase = System.getProperty("glowroot.ui.base");
         if (Strings.isNullOrEmpty(uiBase)) {
-            baseHref = "/";
+            BASE_HREF = "/";
         } else {
-            baseHref = uiBase;
+            BASE_HREF = uiBase;
         }
     }
 
     private final HttpSessionManager httpSessionManager;
-    private final LayoutJsonService layoutJsonService;
+    private final LayoutService layoutJsonService;
 
-    IndexHtmlHttpService(HttpSessionManager httpSessionManager,
-            LayoutJsonService layoutJsonService) {
+    IndexHtmlHttpService(HttpSessionManager httpSessionManager, LayoutService layoutJsonService) {
         this.httpSessionManager = httpSessionManager;
         this.layoutJsonService = layoutJsonService;
     }
@@ -73,7 +72,7 @@ class IndexHtmlHttpService implements HttpService {
         String layoutScript =
                 "var layout=" + layout + ";var authenticatedUser = " + authenticatedUser;
         indexHtml = indexHtml.replaceFirst("<base href=\"/\">",
-                "<base href=\"" + baseHref + "\"><script>" + layoutScript + "</script>");
+                "<base href=\"" + BASE_HREF + "\"><script>" + layoutScript + "</script>");
         // this is to work around an issue with IE10-11 (IE9 is OK)
         // (even without reverse proxy/non-root base href)
         // IE doesn't use the base href when loading the favicon
@@ -82,7 +81,7 @@ class IndexHtmlHttpService implements HttpService {
                 "<script>document.write('<link rel=\"shortcut icon\" href=\"'"
                         + " + document.getElementsByTagName(\"base\")[0].href"
                         + " + 'favicon.$1.ico\">');</script>");
-        if (googleAnalyticsTrackingId != null) {
+        if (GOOGLE_ANALYTICS_TRACKING_ID != null) {
             // this is for demo.glowroot.org
             indexHtml = indexHtml.replaceFirst(
                     "<div class=\"navbar-brand\">(\\s*)Glowroot(\\s*)</div>",
@@ -93,7 +92,7 @@ class IndexHtmlHttpService implements HttpService {
                     + "a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;"
                     + "m.parentNode.insertBefore(a,m)})(window,document,'script',"
                     + "'//www.google-analytics.com/analytics.js','ga');"
-                    + "ga('create', '" + googleAnalyticsTrackingId + "', 'auto');"
+                    + "ga('create', '" + GOOGLE_ANALYTICS_TRACKING_ID + "', 'auto');"
                     + "</script>\n</body>");
         }
         ByteBuf content = Unpooled.copiedBuffer(indexHtml, Charsets.ISO_8859_1);

@@ -247,18 +247,8 @@ public class TraceDao implements TraceRepository {
     }
 
     void deleteBefore(long captureTime) throws SQLException {
-        deleteBefore("trace_custom_attribute", captureTime);
-        deleteBefore("trace", captureTime);
-    }
-
-    private void deleteBefore(@Untainted String tableName, long captureTime) throws SQLException {
-        // delete 100 at a time, which is both faster than deleting all at once, and doesn't
-        // lock the single jdbc connection for one large chunk of time
-        int deleted;
-        do {
-            deleted = dataSource.update("delete from " + tableName
-                    + " where capture_time < ? limit 100", captureTime);
-        } while (deleted != 0);
+        dataSource.deleteBefore("trace_custom_attribute", captureTime);
+        dataSource.deleteBefore("trace", captureTime);
     }
 
     private @Nullable CharSource readFromCappedDatabase(@Untainted String columnName,

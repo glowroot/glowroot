@@ -45,7 +45,7 @@ public class AlertConfig {
         version = null;
     }
 
-    public AlertConfig(String version) {
+    private AlertConfig(String version) {
         this.version = version;
     }
 

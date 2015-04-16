@@ -562,7 +562,7 @@ class JvmJsonService {
 
     @Value.Immutable
     @JsonSerialize(as = Gauge.class)
-    public abstract static class GaugeBase {
+    abstract static class GaugeBase {
 
         static final Ordering<Gauge> ordering = new Ordering<Gauge>() {
             @Override

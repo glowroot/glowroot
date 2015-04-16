@@ -17,13 +17,13 @@ package org.glowroot.tests.plugin;
 
 import java.util.Map;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.Optional;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.BooleanProperty;
 import org.glowroot.api.PluginServices.StringProperty;

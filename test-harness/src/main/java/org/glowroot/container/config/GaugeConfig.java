@@ -43,7 +43,7 @@ public class GaugeConfig {
         version = null;
     }
 
-    public GaugeConfig(String display, String version) {
+    private GaugeConfig(String display, String version) {
         this.display = display;
         this.version = version;
     }

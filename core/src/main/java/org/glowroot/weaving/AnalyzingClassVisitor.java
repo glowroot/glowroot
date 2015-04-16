@@ -98,12 +98,12 @@ class AnalyzingClassVisitor extends ClassVisitor {
                 .addAllInterfaceNames(interfaceNames);
         adviceMatchers = AdviceMatcher.getAdviceMatchers(className, advisors);
         if (Modifier.isInterface(access)) {
-            ImmutableList<ShimType> matchedShimTypes = getMatchedShimTypes(className,
-                    ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
-            ImmutableList<MixinType> matchedMixinTypes = getMatchedMixinTypes(className,
-                    ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
             superAnalyzedClasses = ImmutableList.of();
+            matchedShimTypes = getMatchedShimTypes(className, ImmutableList.<AnalyzedClass>of(),
+                    ImmutableList.<AnalyzedClass>of());
             analyzedClassBuilder.addAllShimTypes(matchedShimTypes);
+            matchedMixinTypes = getMatchedMixinTypes(className, ImmutableList.<AnalyzedClass>of(),
+                    ImmutableList.<AnalyzedClass>of());
             analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
             if (adviceMatchers.isEmpty()) {
                 return analyzedClassBuilder.build();
@@ -128,9 +128,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
         matchedMixinTypes =
                 getMatchedMixinTypes(className, superAnalyzedHierarchy, interfaceAnalyzedHierarchy);
         analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
-
-        if (!hasSuperAdvice() && adviceMatchers.isEmpty() && matchedShimTypes.isEmpty()
-                && matchedMixinTypes.isEmpty()) {
+        if (isNonInteresting()) {
             return analyzedClassBuilder.build();
         } else {
             return null;
@@ -247,9 +245,14 @@ class AnalyzingClassVisitor extends ClassVisitor {
         return ImmutableList.copyOf(matchedMixinTypes);
     }
 
+    private boolean isNonInteresting() {
+        return !hasSuperAdvice() && adviceMatchers.isEmpty() && matchedShimTypes.isEmpty()
+                && matchedMixinTypes.isEmpty();
+    }
+
     private boolean hasSuperAdvice() {
-        for (AnalyzedClass analyzedClass : superAnalyzedClasses) {
-            if (!analyzedClass.analyzedMethods().isEmpty()) {
+        for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
+            if (!superAnalyzedClass.analyzedMethods().isEmpty()) {
                 return true;
             }
         }
@@ -267,8 +270,8 @@ class AnalyzingClassVisitor extends ClassVisitor {
         }
         // look at super types
         checkNotNull(superAnalyzedClasses, "Call to visit() is required");
-        for (AnalyzedClass analyzedClass : superAnalyzedClasses) {
-            for (AnalyzedMethod analyzedMethod : analyzedClass.analyzedMethods()) {
+        for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
+            for (AnalyzedMethod analyzedMethod : superAnalyzedClass.analyzedMethods()) {
                 if (analyzedMethod.isOverriddenBy(methodName, parameterTypes)) {
                     matchingAdvisors.addAll(analyzedMethod.advisors());
                 }

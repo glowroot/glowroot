@@ -16,6 +16,7 @@
 package org.glowroot.collector;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -23,14 +24,25 @@ import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.google.common.base.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.Optional;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 class DetailMapWriter {
 
     private static final Logger logger = LoggerFactory.getLogger(DetailMapWriter.class);
+
+    private static final String UNSHADED_GUAVA_OPTIONAL_CLASS_NAME;
+
+    static {
+        String className = Optional.class.getName();
+        if (className.startsWith("org.glowroot.shaded")) {
+            className = className.replace("org.glowroot.shaded", "com");
+        }
+        UNSHADED_GUAVA_OPTIONAL_CLASS_NAME = className;
+    }
 
     private final JsonGenerator jg;
 
@@ -73,11 +85,7 @@ class DetailMapWriter {
             jg.writeNumber(((Number) value).doubleValue());
         } else if (value instanceof Optional) {
             Optional<?> val = (Optional<?>) value;
-            if (val.isPresent()) {
-                writeValue(val.get());
-            } else {
-                jg.writeNull();
-            }
+            writeValue(val.orNull());
         } else if (value instanceof Map) {
             writeMap((Map<?, ?>) value);
         } else if (value instanceof List) {
@@ -86,9 +94,26 @@ class DetailMapWriter {
                 writeValue(v);
             }
             jg.writeEndArray();
+        } else if (isUnshadedGuavaOptionalClass(value)) {
+            // this is just for plugin tests that run against shaded glowroot-core
+            Class<?> optionalClass = value.getClass().getSuperclass();
+            // just tested that super class is not null in condition
+            checkNotNull(optionalClass);
+            try {
+                Method orNullMethod = optionalClass.getMethod("orNull");
+                writeValue(orNullMethod.invoke(value));
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
         } else {
             logger.warn("detail map has unexpected value type: {}", value.getClass().getName());
             jg.writeString(value.toString());
         }
+    }
+
+    private static boolean isUnshadedGuavaOptionalClass(Object value) {
+        Class<?> superClass = value.getClass().getSuperclass();
+        return superClass != null
+                && superClass.getName().equals(UNSHADED_GUAVA_OPTIONAL_CLASS_NAME);
     }
 }

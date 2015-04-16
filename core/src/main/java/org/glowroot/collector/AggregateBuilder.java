@@ -98,8 +98,8 @@ class AggregateBuilder {
         histogram.encodeIntoByteBuffer(buffer);
         int size = buffer.position();
         buffer.flip();
-        byte[] histogram = new byte[size];
-        buffer.get(histogram, 0, size);
+        byte[] histogramBytes = new byte[size];
+        buffer.get(histogramBytes, 0, size);
         return Aggregate.builder()
                 .transactionType(transactionType)
                 .transactionName(transactionName)
@@ -112,7 +112,7 @@ class AggregateBuilder {
                 .totalWaitedMicros(nullAwareNanosToMicros(totalWaitedTime))
                 .totalAllocatedKBytes(nullAwareBytesToKBytes(totalAllocatedBytes))
                 .timers(getTimersJson())
-                .histogram(histogram)
+                .histogram(histogramBytes)
                 .profileSampleCount(profileSampleCount)
                 .traceCount(traceCount)
                 .profile(getProfileJson())
@@ -145,10 +145,6 @@ class AggregateBuilder {
                 .errorCount(errorCount)
                 .transactionCount(transactionCount)
                 .build();
-    }
-
-    long getTransactionCount() {
-        return transactionCount;
     }
 
     long getProfileSampleCount() {

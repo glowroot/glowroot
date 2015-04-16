@@ -76,20 +76,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
 
     private byte /*@Nullable*/[] transformInternal(@Nullable ClassLoader loader, String className,
             @Nullable ProtectionDomain protectionDomain, byte[] bytes) {
-        // don't weave glowroot core classes, including shaded classes like h2 jdbc driver
-        if (isGlowrootCoreClass(className)) {
-            return null;
-        }
-        if (className.startsWith("sun/reflect/Generated")) {
-            // optimization, no need to try to weave the many classes generated for reflection:
-            // sun/reflect/GeneratedSerializationConstructorAccessor..
-            // sun/reflect/GeneratedConstructorAccessor..
-            // sun/reflect/GeneratedMethodAccessor..
-            return null;
-        }
-        if (className.startsWith("com/sun/proxy/$Proxy")) {
-            // optimization, especially for jdbc plugin to avoid weaving proxy wrappers when dealing
-            // with connection pools
+        if (ignoreClass(className)) {
             return null;
         }
         if (loader == null && !weaveBootstrapClassLoader) {
@@ -105,6 +92,26 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             logger.debug("transform(): transformed {}", className);
         }
         return transformedBytes;
+    }
+
+    private static boolean ignoreClass(String className) {
+        if (isGlowrootCoreClass(className)) {
+            // don't weave glowroot core classes, including shaded classes like h2 jdbc driver
+            return true;
+        }
+        if (className.startsWith("sun/reflect/Generated")) {
+            // optimization, no need to try to weave the many classes generated for reflection:
+            // sun/reflect/GeneratedSerializationConstructorAccessor..
+            // sun/reflect/GeneratedConstructorAccessor..
+            // sun/reflect/GeneratedMethodAccessor..
+            return true;
+        }
+        if (className.startsWith("com/sun/proxy/$Proxy")) {
+            // optimization, especially for jdbc plugin to avoid weaving proxy wrappers when dealing
+            // with connection pools
+            return true;
+        }
+        return false;
     }
 
     private static boolean isGlowrootCoreClass(String className) {

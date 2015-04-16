@@ -57,14 +57,14 @@ class HttpSessionManager {
 
     private final ConfigService configService;
     private final Clock clock;
-    private final LayoutJsonService layoutJsonService;
+    private final LayoutService layoutJsonService;
 
     private final SecureRandom secureRandom = new SecureRandom();
     private final Map<String, Long> adminSessionExpirations = Maps.newConcurrentMap();
     private final Map<String, Long> readOnlySessionExpirations = Maps.newConcurrentMap();
 
     HttpSessionManager(ConfigService configService, Clock clock,
-            LayoutJsonService layoutJsonService) {
+            LayoutService layoutJsonService) {
         this.configService = configService;
         this.clock = clock;
         this.layoutJsonService = layoutJsonService;

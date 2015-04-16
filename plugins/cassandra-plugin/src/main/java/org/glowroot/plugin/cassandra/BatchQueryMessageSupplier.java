@@ -38,20 +38,7 @@ class BatchQueryMessageSupplier extends MessageSupplier {
         String currQuery = null;
         int currCount = 0;
         for (Statement statement : statements) {
-            String query;
-            if (statement instanceof RegularStatement) {
-                String qs = ((RegularStatement) statement).getQueryString();
-                query = nullToEmpty(qs);
-            } else if (statement instanceof BoundStatement) {
-                PreparedStatement preparedStatement =
-                        ((BoundStatement) statement).preparedStatement();
-                String qs = preparedStatement == null ? "" : preparedStatement.getQueryString();
-                query = nullToEmpty(qs);
-            } else if (statement instanceof BatchStatement) {
-                query = "[nested batch statement]";
-            } else {
-                query = "[unexpected statement type: " + statement.getClass().getName() + "]";
-            }
+            String query = getQuery(statement);
             if (currQuery == null) {
                 currQuery = query;
                 currCount = 1;
@@ -93,6 +80,21 @@ class BatchQueryMessageSupplier extends MessageSupplier {
             sb.append(queries.get(i));
         }
         return Message.from(sb.toString());
+    }
+
+    private static String getQuery(Statement statement) {
+        if (statement instanceof RegularStatement) {
+            String qs = ((RegularStatement) statement).getQueryString();
+            return nullToEmpty(qs);
+        } else if (statement instanceof BoundStatement) {
+            PreparedStatement preparedStatement = ((BoundStatement) statement).preparedStatement();
+            String qs = preparedStatement == null ? "" : preparedStatement.getQueryString();
+            return nullToEmpty(qs);
+        } else if (statement instanceof BatchStatement) {
+            return "[nested batch statement]";
+        } else {
+            return "[unexpected statement type: " + statement.getClass().getName() + "]";
+        }
     }
 
     private static String nullToEmpty(@Nullable String string) {

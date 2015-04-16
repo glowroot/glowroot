@@ -45,7 +45,6 @@ public class TransactionModule {
     private final TransactionRegistry transactionRegistry;
     private final AdviceCache adviceCache;
     private final WeavingTimerService weavingTimerService;
-    private final @Nullable ThreadAllocatedBytes threadAllocatedBytes;
 
     private final ImmediateTraceStoreWatcher immedateTraceStoreWatcher;
 
@@ -60,7 +59,6 @@ public class TransactionModule {
             @Nullable Instrumentation instrumentation, File dataDir,
             @Nullable ExtraBootResourceFinder extraBootResourceFinder,
             ScheduledExecutorService scheduledExecutor) throws Exception {
-        this.threadAllocatedBytes = threadAllocatedBytes;
         ConfigService configService = configModule.getConfigService();
         transactionRegistry = new TransactionRegistry();
         adviceCache = new AdviceCache(configModule.getPluginDescriptors(),

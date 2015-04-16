@@ -19,6 +19,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class VoidReturnTest {
 
     @Rule
@@ -26,7 +28,6 @@ public class VoidReturnTest {
 
     @Test
     public void testNullVersion() {
-        thrown.expect(IllegalStateException.class);
-        VoidReturn.getInstance().getValue();
+        assertThat(VoidReturn.getInstance().getValue()).isNull();
     }
 }

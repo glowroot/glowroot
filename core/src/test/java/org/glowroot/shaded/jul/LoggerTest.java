@@ -245,6 +245,6 @@ public class LoggerTest {
     @Test
     public void testGetLogger() {
         Logger logger = Logger.getLogger("abc");
-        assertThat(logger.getLogger().getName()).isEqualTo("abc");
+        assertThat(logger.getSlf4jLogger().getName()).isEqualTo("abc");
     }
 }

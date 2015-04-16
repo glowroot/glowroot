@@ -769,16 +769,13 @@ glowroot.controller('JvmGaugesCtrl', [
               }
             }
 
-            function display(dataSeries, value) {
-              function sixDigitsOfPrecision(value) {
-                if (value < 1000000) {
-                  return parseFloat(value.toPrecision(6));
-                } else {
-                  return Math.round(value);
-                }
+            function displaySixDigitsOfPrecision(value) {
+              var nonScaledValue;
+              if (value < 1000000) {
+                nonScaledValue = parseFloat(value.toPrecision(6));
+              } else {
+                nonScaledValue = Math.round(value);
               }
-
-              var nonScaledValue = sixDigitsOfPrecision(yvalMaps[dataSeries.label][xval]);
               return $filter('number')(nonScaledValue);
             }
 
@@ -810,7 +807,7 @@ glowroot.controller('JvmGaugesCtrl', [
               '<div style="width: 4px; height: 0px; border: 5px solid ' + dataSeries.color + '; overflow: hidden;">' +
               '</div></div></td>' +
               '<td style="padding-right: 10px;">' + $scope.allShortGaugeNames[dataSeries.label] + '</td>' +
-              '<td style="font-weight: 600;">' + display(dataSeries, value) + '</td>' +
+              '<td style="font-weight: 600;">' + displaySixDigitsOfPrecision(value) + '</td>' +
               '</tr>';
             }
             if (noData) {

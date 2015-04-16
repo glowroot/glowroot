@@ -47,7 +47,7 @@ public class SmtpConfig {
 
     private final String version;
 
-    public SmtpConfig(String version) {
+    private SmtpConfig(String version) {
         this.version = version;
     }
 

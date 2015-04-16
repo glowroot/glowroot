@@ -42,7 +42,7 @@ public class UserInterfaceConfig {
 
     private final String version;
 
-    public UserInterfaceConfig(String version) {
+    private UserInterfaceConfig(String version) {
         this.version = version;
     }
 

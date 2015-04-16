@@ -68,7 +68,7 @@ public class InstrumentationConfig {
         version = null;
     }
 
-    public InstrumentationConfig(String version) {
+    private InstrumentationConfig(String version) {
         methodParameterTypes = ImmutableList.of();
         methodModifiers = ImmutableList.of();
         transactionCustomAttributeTemplates = ImmutableMap.of();

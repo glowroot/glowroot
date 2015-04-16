@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,10 +29,7 @@ public interface OptionalReturn {
     boolean isVoid();
 
     /**
-     * Returns the return value. Must check {@link #isVoid()} first.
-     * 
-     * @throws IllegalStateException
-     *             if the return is void ({@link #isVoid} returns {@code true})
+     * Returns the return value. Returns null if this instance represents a void return.
      */
     @Nullable
     Object getValue();

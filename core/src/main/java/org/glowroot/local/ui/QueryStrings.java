@@ -142,8 +142,12 @@ class QueryStrings {
     }
 
     private static boolean isSimpleSetter(Class<?> targetClass) {
-        return targetClass == String.class || isInteger(targetClass) || isLong(targetClass)
-                || isDouble(targetClass) || isBoolean(targetClass)
-                || Enum.class.isAssignableFrom(targetClass) || targetClass == Iterable.class;
+        return targetClass == String.class
+                || isInteger(targetClass)
+                || isLong(targetClass)
+                || isDouble(targetClass)
+                || isBoolean(targetClass)
+                || Enum.class.isAssignableFrom(targetClass)
+                || targetClass == Iterable.class;
     }
 }

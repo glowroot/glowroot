@@ -23,21 +23,21 @@ public class JavaVersionTest {
 
     @Test
     public void testNullVersion() {
-        assertThat(JavaVersion.parseIsJdk6(null)).isFalse();
+        assertThat(JavaVersion.parseIsJava6(null)).isFalse();
     }
 
     @Test
     public void testCorrectVersion() {
-        assertThat(JavaVersion.parseIsJdk6("1.6")).isTrue();
-        assertThat(JavaVersion.parseIsJdk6("1.6.0")).isTrue();
-        assertThat(JavaVersion.parseIsJdk6("1.6.0_45")).isTrue();
+        assertThat(JavaVersion.parseIsJava6("1.6")).isTrue();
+        assertThat(JavaVersion.parseIsJava6("1.6.0")).isTrue();
+        assertThat(JavaVersion.parseIsJava6("1.6.0_45")).isTrue();
     }
 
     @Test
     public void testIncorrectVersion() {
-        assertThat(JavaVersion.parseIsJdk6("1.5")).isFalse();
-        assertThat(JavaVersion.parseIsJdk6("1.7")).isFalse();
-        assertThat(JavaVersion.parseIsJdk6("1.7.0")).isFalse();
-        assertThat(JavaVersion.parseIsJdk6("1.8.0")).isFalse();
+        assertThat(JavaVersion.parseIsJava6("1.5")).isFalse();
+        assertThat(JavaVersion.parseIsJava6("1.7")).isFalse();
+        assertThat(JavaVersion.parseIsJava6("1.7.0")).isFalse();
+        assertThat(JavaVersion.parseIsJava6("1.8.0")).isFalse();
     }
 }

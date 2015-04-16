@@ -82,7 +82,7 @@ class ObjectNames {
         }
 
         private boolean isEndOfValue(char c) {
-            return inQuotedValue && c == '"' || inValue && !inQuotedValue && c == ',';
+            return isEndOfQuotedValue(c) || isEndOfNonQuotedValue(c);
         }
 
         private void endValue() {
@@ -90,6 +90,14 @@ class ObjectNames {
             inValue = false;
             inQuotedValue = false;
             currValue.setLength(0);
+        }
+
+        private boolean isEndOfQuotedValue(char c) {
+            return inQuotedValue && c == '"';
+        }
+
+        private boolean isEndOfNonQuotedValue(char c) {
+            return inValue && !inQuotedValue && c == ',';
         }
     }
 

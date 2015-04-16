@@ -194,42 +194,12 @@ class ConfigJsonService {
         UserInterfaceConfigDto configDto = mapper.readValue(content, UserInterfaceConfigDto.class);
         configDto.validate();
         UserInterfaceConfig priorConfig = configService.getUserInterfaceConfig();
-        UserInterfaceConfig.Builder builder = UserInterfaceConfig.builder()
-                .port(configDto.port())
-                .sessionTimeoutMinutes(configDto.sessionTimeoutMinutes());
-        if (configDto.currentAdminPassword().length() > 0
-                || configDto.newAdminPassword().length() > 0) {
-            AdminPasswordHelper adminPasswordHelper = new AdminPasswordHelper(
-                    configDto.currentAdminPassword(), configDto.newAdminPassword(),
-                    priorConfig.adminPasswordHash());
-            try {
-                builder.adminPasswordHash(adminPasswordHelper.verifyAndGenerateNewPasswordHash());
-            } catch (CurrentPasswordIncorrectException e) {
-                return "{\"currentPasswordIncorrect\":true}";
-            }
-        } else {
-            builder.adminPasswordHash(priorConfig.adminPasswordHash());
+        UserInterfaceConfig config;
+        try {
+            config = toConfig(configDto, priorConfig);
+        } catch (CurrentPasswordIncorrectException e) {
+            return "{\"currentPasswordIncorrect\":true}";
         }
-        if (!configDto.readOnlyPasswordEnabled()) {
-            // clear read only password
-            builder.readOnlyPasswordHash("");
-        } else if (configDto.readOnlyPasswordEnabled()
-                && !configDto.newReadOnlyPassword().isEmpty()) {
-            // change read only password
-            String readOnlyPasswordHash = PasswordHash.createHash(configDto.newReadOnlyPassword());
-            builder.readOnlyPasswordHash(readOnlyPasswordHash);
-        } else {
-            // keep existing read only password
-            builder.readOnlyPasswordHash(priorConfig.readOnlyPasswordHash());
-        }
-        if (priorConfig.anonymousAccess() != AnonymousAccess.ADMIN
-                && configDto.anonymousAccess() == AnonymousAccess.ADMIN
-                && configDto.currentAdminPassword().isEmpty()) {
-            // enabling admin access for anonymous users requires admin password
-            throw new IllegalStateException();
-        }
-        builder.anonymousAccess(configDto.anonymousAccess());
-        UserInterfaceConfig config = builder.build();
         try {
             configService.updateUserInterfaceConfig(config, configDto.version());
         } catch (OptimisticLockException e) {
@@ -366,6 +336,42 @@ class ConfigJsonService {
                 .activePort(httpServer.getPort())
                 .portChangeFailed(portChangeFailed)
                 .build());
+    }
+
+    private UserInterfaceConfig toConfig(UserInterfaceConfigDto configDto,
+            UserInterfaceConfig priorConfig) throws Exception {
+        UserInterfaceConfig.Builder builder = UserInterfaceConfig.builder()
+                .port(configDto.port())
+                .sessionTimeoutMinutes(configDto.sessionTimeoutMinutes());
+        if (configDto.currentAdminPassword().length() > 0
+                || configDto.newAdminPassword().length() > 0) {
+            AdminPasswordHelper adminPasswordHelper = new AdminPasswordHelper(
+                    configDto.currentAdminPassword(), configDto.newAdminPassword(),
+                    priorConfig.adminPasswordHash());
+            builder.adminPasswordHash(adminPasswordHelper.verifyAndGenerateNewPasswordHash());
+        } else {
+            builder.adminPasswordHash(priorConfig.adminPasswordHash());
+        }
+        if (!configDto.readOnlyPasswordEnabled()) {
+            // clear read only password
+            builder.readOnlyPasswordHash("");
+        } else if (configDto.readOnlyPasswordEnabled()
+                && !configDto.newReadOnlyPassword().isEmpty()) {
+            // change read only password
+            String readOnlyPasswordHash = PasswordHash.createHash(configDto.newReadOnlyPassword());
+            builder.readOnlyPasswordHash(readOnlyPasswordHash);
+        } else {
+            // keep existing read only password
+            builder.readOnlyPasswordHash(priorConfig.readOnlyPasswordHash());
+        }
+        if (priorConfig.anonymousAccess() != AnonymousAccess.ADMIN
+                && configDto.anonymousAccess() == AnonymousAccess.ADMIN
+                && configDto.currentAdminPassword().isEmpty()) {
+            // enabling admin access for anonymous users requires admin password
+            throw new IllegalStateException();
+        }
+        builder.anonymousAccess(configDto.anonymousAccess());
+        return builder.build();
     }
 
     private SmtpConfig toConfig(SmtpConfigDto configDto) throws Exception {

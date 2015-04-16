@@ -38,7 +38,7 @@ import org.glowroot.config.UserInterfaceConfig;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.OptionalService;
 
-class LayoutJsonService {
+class LayoutService {
 
     private static final JsonFactory jsonFactory = new JsonFactory();
     private static final ObjectMapper mapper = ObjectMappers.create();
@@ -54,7 +54,7 @@ class LayoutJsonService {
 
     private volatile @Nullable Layout layout;
 
-    LayoutJsonService(String version, ConfigService configService,
+    LayoutService(String version, ConfigService configService,
             List<PluginDescriptor> pluginDescriptors, OptionalService<HeapDumps> heapDumps,
             long fixedAggregateIntervalSeconds, long fixedAggregateRollupSeconds,
             long fixedGaugeIntervalSeconds, long fixedGaugeRollupSeconds) {

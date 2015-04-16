@@ -38,9 +38,9 @@ public class StorageModule {
 
     private static final long SNAPSHOT_REAPER_PERIOD_MINUTES = 5;
 
-    private static final long fixedGaugeRollupSeconds =
+    private static final long FIXED_GAUGE_ROLLUP_SECONDS =
             Long.getLong("glowroot.internal.gaugeRollup1", 60);
-    private static final long fixedAggregateRollupSeconds =
+    private static final long FIXED_AGGREGATE_ROLLUP_SECONDS =
             Long.getLong("glowroot.internal.aggregateRollup1", 300);
 
     private final DataSource dataSource;
@@ -76,20 +76,20 @@ public class StorageModule {
         int cappedDatabaseSizeMb = configService.getStorageConfig().cappedDatabaseSizeMb();
         cappedDatabase = new CappedDatabase(new File(dataDir, "glowroot.capped.db"),
                 cappedDatabaseSizeMb * 1024, scheduledExecutor, ticker);
-        aggregateDao = new AggregateDao(dataSource, cappedDatabase, fixedAggregateRollupSeconds);
+        aggregateDao = new AggregateDao(dataSource, cappedDatabase, FIXED_AGGREGATE_ROLLUP_SECONDS);
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
         AlertingService alertingService =
                 new AlertingService(configService, triggeredAlertDao, aggregateDao);
         aggregateRepositoryImpl = new AggregateRepositoryImpl(aggregateDao, alertingService);
         traceDao = new TraceDao(dataSource, cappedDatabase);
-        gaugePointDao = new GaugePointDao(configService, dataSource, clock,
-                fixedGaugeRollupSeconds);
+        gaugePointDao =
+                new GaugePointDao(configService, dataSource, clock, FIXED_GAUGE_ROLLUP_SECONDS);
         PreInitializeStorageShutdownClasses.preInitializeClasses();
         if (viewerModeEnabled) {
             reaperRunnable = null;
         } else {
-            reaperRunnable = new ReaperRunnable(configService, aggregateDao, traceDao,
-                    gaugePointDao, clock);
+            reaperRunnable =
+                    new ReaperRunnable(configService, aggregateDao, traceDao, gaugePointDao, clock);
             reaperRunnable.scheduleWithFixedDelay(scheduledExecutor, 0,
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         }
@@ -124,11 +124,11 @@ public class StorageModule {
     }
 
     public long getFixedAggregateRollupSeconds() {
-        return fixedAggregateRollupSeconds;
+        return FIXED_AGGREGATE_ROLLUP_SECONDS;
     }
 
     public long getFixedGaugeRollupSeconds() {
-        return fixedGaugeRollupSeconds;
+        return FIXED_GAUGE_ROLLUP_SECONDS;
     }
 
     @OnlyUsedByTests

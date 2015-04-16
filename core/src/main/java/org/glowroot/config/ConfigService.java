@@ -495,7 +495,15 @@ public class ConfigService {
         }
     }
 
-    private void addInstrumentationTransactionTypes(List<InstrumentationConfig> configs,
+    @OnlyUsedByTests
+    public void resetAllConfig() throws IOException {
+        configFile.delete();
+        config = configFile.loadConfig();
+        notifyConfigListeners();
+        notifyAllPluginConfigListeners();
+    }
+
+    private static void addInstrumentationTransactionTypes(List<InstrumentationConfig> configs,
             Set<String> transactionTypes, @Nullable PluginConfig pluginConfig) {
         for (InstrumentationConfig config : configs) {
             String transactionType = config.transactionType();
@@ -506,21 +514,13 @@ public class ConfigService {
         }
     }
 
-    private boolean isEnabled(InstrumentationConfig config, PluginConfig pluginConfig) {
+    private static boolean isEnabled(InstrumentationConfig config, PluginConfig pluginConfig) {
         return isEnabled(config.enabledProperty(), pluginConfig)
                 && isEnabled(config.traceEntryEnabledProperty(), pluginConfig);
     }
 
-    private boolean isEnabled(String propertyName, PluginConfig pluginConfig) {
+    private static boolean isEnabled(String propertyName, PluginConfig pluginConfig) {
         return propertyName.isEmpty() || pluginConfig.getBooleanProperty(propertyName);
-    }
-
-    @OnlyUsedByTests
-    public void resetAllConfig() throws IOException {
-        configFile.delete();
-        config = configFile.loadConfig();
-        notifyConfigListeners();
-        notifyAllPluginConfigListeners();
     }
 
     @SuppressWarnings("serial")

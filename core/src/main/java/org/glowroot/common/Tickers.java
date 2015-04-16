@@ -19,12 +19,15 @@ import com.google.common.base.Ticker;
 
 public class Tickers {
 
-    private static final boolean dummyTicker = Boolean.getBoolean("glowroot.internal.dummyTicker");
+    private static final boolean USE_DUMMY_TICKER =
+            Boolean.getBoolean("glowroot.internal.dummyTicker");
+
+    private Tickers() {}
 
     // normally Ticker should be injected, but in some memory sensitive classes it can be cached
     // in a static field
     public static Ticker getTicker() {
-        if (dummyTicker) {
+        if (USE_DUMMY_TICKER) {
             return new DummyTicker();
         } else {
             return Ticker.systemTicker();

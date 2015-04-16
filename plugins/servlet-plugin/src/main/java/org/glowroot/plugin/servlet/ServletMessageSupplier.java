@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -28,7 +29,6 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.Optional;
 
 // similar thread safety issues as {@link JdbcMessageSupplier}, see documentation in that class for
 // more info
@@ -60,7 +60,7 @@ class ServletMessageSupplier extends MessageSupplier {
 
     private final ImmutableMap<String, Object> requestHeaders;
 
-    private final ResponseHeaders responseHeaders = new ResponseHeaders();
+    private final ResponseHeaderComponent responseHeaderComponent = new ResponseHeaderComponent();
 
     // session attributes may not be thread safe, so they must be converted to Strings
     // within the request processing thread, which can then be safely read by the trace storage
@@ -96,7 +96,7 @@ class ServletMessageSupplier extends MessageSupplier {
         if (!requestHeaders.isEmpty()) {
             detail.put("Request headers", requestHeaders);
         }
-        Map<String, Object> responseHeaderStrings = responseHeaders.getMapOfStrings();
+        Map<String, Object> responseHeaderStrings = responseHeaderComponent.getMapOfStrings();
         if (!responseHeaderStrings.isEmpty()) {
             detail.put("Response headers", responseHeaderStrings);
         }
@@ -113,31 +113,31 @@ class ServletMessageSupplier extends MessageSupplier {
     }
 
     void setResponseHeader(String name, String value) {
-        responseHeaders.setHeader(name, value);
+        responseHeaderComponent.setHeader(name, value);
     }
 
     void setResponseDateHeader(String name, long date) {
-        responseHeaders.setHeader(name, date);
+        responseHeaderComponent.setHeader(name, date);
     }
 
     void setResponseIntHeader(String name, int value) {
-        responseHeaders.setHeader(name, value);
+        responseHeaderComponent.setHeader(name, value);
     }
 
     void setResponseLongHeader(String name, long value) {
-        responseHeaders.setHeader(name, value);
+        responseHeaderComponent.setHeader(name, value);
     }
 
     void addResponseHeader(String name, String value) {
-        responseHeaders.addHeader(name, value);
+        responseHeaderComponent.addHeader(name, value);
     }
 
     void addResponseDateHeader(String name, long date) {
-        responseHeaders.addHeader(name, date);
+        responseHeaderComponent.addHeader(name, date);
     }
 
     void addResponseIntHeader(String name, int value) {
-        responseHeaders.addHeader(name, value);
+        responseHeaderComponent.addHeader(name, value);
     }
 
     void putSessionAttributeChangedValue(String name, @Nullable String value) {

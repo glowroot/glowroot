@@ -24,7 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 
 public class Logger {
 
-    private final org.slf4j.Logger logger;
+    private final org.slf4j.Logger slf4jLogger;
 
     public static Logger getLogger(String name) {
         return new Logger(name);
@@ -36,146 +36,146 @@ public class Logger {
 
     @VisibleForTesting
     Logger(org.slf4j.Logger logger) {
-        this.logger = logger;
+        this.slf4jLogger = logger;
     }
 
     @VisibleForTesting
-    org.slf4j.Logger getLogger() {
-        return logger;
+    org.slf4j.Logger getSlf4jLogger() {
+        return slf4jLogger;
     }
 
     public String getName() {
-        return logger.getName();
+        return slf4jLogger.getName();
     }
 
     public void severe(String msg) {
-        logger.error(msg);
+        slf4jLogger.error(msg);
     }
 
     public void warning(String msg) {
-        logger.warn(msg);
+        slf4jLogger.warn(msg);
     }
 
     public void info(String msg) {
-        logger.info(msg);
+        slf4jLogger.info(msg);
     }
 
     public void config(String msg) {
-        logger.info(msg);
+        slf4jLogger.info(msg);
     }
 
     public void fine(String msg) {
-        logger.debug(msg);
+        slf4jLogger.debug(msg);
     }
 
     public void finer(String msg) {
-        logger.trace(msg);
+        slf4jLogger.trace(msg);
     }
 
     public void finest(String msg) {
-        logger.trace(msg);
+        slf4jLogger.trace(msg);
     }
 
     public void log(Level level, String msg) {
         if (level.intValue() >= Level.SEVERE.intValue()) {
-            logger.error(msg);
+            slf4jLogger.error(msg);
         } else if (level.intValue() >= Level.WARNING.intValue()) {
-            logger.warn(msg);
+            slf4jLogger.warn(msg);
         } else if (level.intValue() >= Level.CONFIG.intValue()) {
-            logger.info(msg);
+            slf4jLogger.info(msg);
         } else if (level.intValue() >= Level.FINE.intValue()) {
-            logger.debug(msg);
+            slf4jLogger.debug(msg);
         } else {
-            logger.trace(msg);
+            slf4jLogger.trace(msg);
         }
     }
 
     public void log(Level level, String msg, Object param1) {
         if (level.intValue() >= Level.SEVERE.intValue()) {
-            if (logger.isErrorEnabled()) {
-                logger.error(MessageFormat.format(msg, param1));
+            if (slf4jLogger.isErrorEnabled()) {
+                slf4jLogger.error(MessageFormat.format(msg, param1));
             }
         } else if (level.intValue() >= Level.WARNING.intValue()) {
-            if (logger.isWarnEnabled()) {
-                logger.warn(MessageFormat.format(msg, param1));
+            if (slf4jLogger.isWarnEnabled()) {
+                slf4jLogger.warn(MessageFormat.format(msg, param1));
             }
         } else if (level.intValue() >= Level.CONFIG.intValue()) {
-            if (logger.isInfoEnabled()) {
-                logger.info(MessageFormat.format(msg, param1));
+            if (slf4jLogger.isInfoEnabled()) {
+                slf4jLogger.info(MessageFormat.format(msg, param1));
             }
         } else if (level.intValue() >= Level.FINE.intValue()) {
-            if (logger.isDebugEnabled()) {
-                logger.debug(MessageFormat.format(msg, param1));
+            if (slf4jLogger.isDebugEnabled()) {
+                slf4jLogger.debug(MessageFormat.format(msg, param1));
             }
         } else {
-            if (logger.isTraceEnabled()) {
-                logger.trace(MessageFormat.format(msg, param1));
+            if (slf4jLogger.isTraceEnabled()) {
+                slf4jLogger.trace(MessageFormat.format(msg, param1));
             }
         }
     }
 
     public void log(Level level, String msg, Object[] params) {
         if (level.intValue() >= Level.SEVERE.intValue()) {
-            if (logger.isErrorEnabled()) {
-                logger.error(MessageFormat.format(msg, params));
+            if (slf4jLogger.isErrorEnabled()) {
+                slf4jLogger.error(MessageFormat.format(msg, params));
             }
         } else if (level.intValue() >= Level.WARNING.intValue()) {
-            if (logger.isWarnEnabled()) {
-                logger.warn(MessageFormat.format(msg, params));
+            if (slf4jLogger.isWarnEnabled()) {
+                slf4jLogger.warn(MessageFormat.format(msg, params));
             }
         } else if (level.intValue() >= Level.CONFIG.intValue()) {
-            if (logger.isInfoEnabled()) {
-                logger.info(MessageFormat.format(msg, params));
+            if (slf4jLogger.isInfoEnabled()) {
+                slf4jLogger.info(MessageFormat.format(msg, params));
             }
         } else if (level.intValue() >= Level.FINE.intValue()) {
-            if (logger.isDebugEnabled()) {
-                logger.debug(MessageFormat.format(msg, params));
+            if (slf4jLogger.isDebugEnabled()) {
+                slf4jLogger.debug(MessageFormat.format(msg, params));
             }
         } else {
-            if (logger.isTraceEnabled()) {
-                logger.trace(MessageFormat.format(msg, params));
+            if (slf4jLogger.isTraceEnabled()) {
+                slf4jLogger.trace(MessageFormat.format(msg, params));
             }
         }
     }
 
     public void log(Level level, String msg, Throwable thrown) {
         if (level.intValue() >= Level.SEVERE.intValue()) {
-            logger.error(msg, thrown);
+            slf4jLogger.error(msg, thrown);
         } else if (level.intValue() >= Level.WARNING.intValue()) {
-            logger.warn(msg, thrown);
+            slf4jLogger.warn(msg, thrown);
         } else if (level.intValue() >= Level.CONFIG.intValue()) {
-            logger.info(msg, thrown);
+            slf4jLogger.info(msg, thrown);
         } else if (level.intValue() >= Level.FINE.intValue()) {
-            logger.debug(msg, thrown);
+            slf4jLogger.debug(msg, thrown);
         } else {
-            logger.trace(msg, thrown);
+            slf4jLogger.trace(msg, thrown);
         }
     }
 
     public boolean isLoggable(Level level) {
         if (level.intValue() >= Level.SEVERE.intValue()) {
-            return logger.isErrorEnabled();
+            return slf4jLogger.isErrorEnabled();
         } else if (level.intValue() >= Level.WARNING.intValue()) {
-            return logger.isWarnEnabled();
+            return slf4jLogger.isWarnEnabled();
         } else if (level.intValue() >= Level.CONFIG.intValue()) {
-            return logger.isInfoEnabled();
+            return slf4jLogger.isInfoEnabled();
         } else if (level.intValue() >= Level.FINE.intValue()) {
-            return logger.isDebugEnabled();
+            return slf4jLogger.isDebugEnabled();
         } else {
-            return logger.isTraceEnabled();
+            return slf4jLogger.isTraceEnabled();
         }
     }
 
     public Level getLevel() {
-        if (logger.isErrorEnabled()) {
+        if (slf4jLogger.isErrorEnabled()) {
             return Level.SEVERE;
-        } else if (logger.isWarnEnabled()) {
+        } else if (slf4jLogger.isWarnEnabled()) {
             return Level.WARNING;
-        } else if (logger.isInfoEnabled()) {
+        } else if (slf4jLogger.isInfoEnabled()) {
             return Level.CONFIG;
-        } else if (logger.isDebugEnabled()) {
+        } else if (slf4jLogger.isDebugEnabled()) {
             return Level.FINE;
-        } else if (logger.isTraceEnabled()) {
+        } else if (slf4jLogger.isTraceEnabled()) {
             return Level.FINEST;
         } else {
             return Level.OFF;

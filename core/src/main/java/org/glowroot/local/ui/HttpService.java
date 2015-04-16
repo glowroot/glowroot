@@ -26,3 +26,6 @@ interface HttpService {
     @Nullable
     FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request) throws Exception;
 }
+
+// marker for http services that allow unauthenticated requests
+interface UnauthenticatedHttpService extends HttpService {}

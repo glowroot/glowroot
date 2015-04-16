@@ -22,7 +22,7 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
-public class PropertyValueDeserializer extends JsonDeserializer<PropertyValue> {
+class PropertyValueDeserializer extends JsonDeserializer<PropertyValue> {
 
     @Override
     public PropertyValue deserialize(JsonParser parser, DeserializationContext ctxt)

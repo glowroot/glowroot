@@ -15,9 +15,22 @@
  */
 package org.glowroot.api.weaving;
 
-// primary use cases for matching on modifier include
-// * matching "public static void main(String[] args)"
-// * matching all public instance methods
+/**
+ * Used for restricting a {@link Pointcut} to methods with or without particular modifiers.
+ * 
+ * <p>
+ * {@link #PUBLIC} and {@link #NOT_STATIC} are useful for creating a pointcut that applies to all
+ * public instance methods in a class.
+ * 
+ * <p>
+ * {@link #STATIC} is useful for creating a pointcut that applies to
+ * {@code public static void main(String[] args)} methods.
+ * 
+ * <p>
+ * Additional modifiers can easily be supported if additional use cases arise.
+ * 
+ * @see Pointcut#methodModifiers()
+ */
 public enum MethodModifier {
 
     PUBLIC, STATIC, NOT_STATIC;

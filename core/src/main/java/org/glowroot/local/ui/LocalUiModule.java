@@ -67,16 +67,18 @@ public class LocalUiModule {
 
         TransactionRegistry transactionRegistry = transactionModule.getTransactionRegistry();
 
-        LayoutJsonService layoutJsonService = new LayoutJsonService(version, configService,
+        LayoutService layoutService = new LayoutService(version, configService,
                 configModule.getPluginDescriptors(), jvmModule.getHeapDumps(),
                 collectorModule.getFixedAggregateIntervalSeconds(),
                 storageModule.getFixedAggregateRollupSeconds(),
                 collectorModule.getFixedGaugeIntervalSeconds(),
                 storageModule.getFixedGaugeRollupSeconds());
         HttpSessionManager httpSessionManager =
-                new HttpSessionManager(configService, clock, layoutJsonService);
+                new HttpSessionManager(configService, clock, layoutService);
         IndexHtmlHttpService indexHtmlHttpService =
-                new IndexHtmlHttpService(httpSessionManager, layoutJsonService);
+                new IndexHtmlHttpService(httpSessionManager, layoutService);
+        LayoutHttpService layoutHttpService =
+                new LayoutHttpService(httpSessionManager, layoutService);
         TransactionCommonService transactionCommonService = new TransactionCommonService(
                 aggregateDao, collectorModule.getAggregateCollector(),
                 storageModule.getFixedAggregateRollupSeconds());
@@ -121,7 +123,6 @@ public class LocalUiModule {
                 transactionCollector, dataSource, transactionRegistry);
 
         List<Object> jsonServices = Lists.newArrayList();
-        jsonServices.add(layoutJsonService);
         jsonServices.add(transactionJsonService);
         jsonServices.add(tracePointJsonService);
         jsonServices.add(traceJsonService);
@@ -136,9 +137,9 @@ public class LocalUiModule {
         int port = configService.getUserInterfaceConfig().port();
         String bindAddress = getBindAddress(properties);
         lazyHttpServer = new LazyHttpServer(bindAddress, port, httpSessionManager,
-                indexHtmlHttpService, layoutJsonService, traceDetailHttpService,
+                indexHtmlHttpService, layoutHttpService, layoutService, traceDetailHttpService,
                 traceExportHttpService, jsonServices);
-        if (instrumentation == null || JavaVersion.isJdk6()) {
+        if (instrumentation == null || JavaVersion.isJava6()) {
             lazyHttpServer.initNonLazy(configJsonService);
         } else {
             // this checkNotNull is safe because of above conditional

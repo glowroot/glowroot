@@ -34,7 +34,7 @@ public class GeneralConfig {
 
     private final String version;
 
-    public GeneralConfig(String version) {
+    private GeneralConfig(String version) {
         this.version = version;
     }
 

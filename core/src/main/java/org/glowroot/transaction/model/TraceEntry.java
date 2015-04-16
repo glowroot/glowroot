@@ -177,7 +177,9 @@ public class TraceEntry implements org.glowroot.api.TraceEntry {
         checkNotNull(timer);
         Transaction transaction = timer.getTransaction();
         timer.end(endTick);
-        transaction.popEntry(this, endTick, errorMessage);
+        setErrorMessage(errorMessage);
+        setEndTick(endTick);
+        transaction.popEntry(this, endTick);
     }
 
     static TraceEntry getLimitExceededMarker() {

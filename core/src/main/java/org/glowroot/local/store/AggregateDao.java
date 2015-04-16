@@ -57,7 +57,7 @@ public class AggregateDao {
 
     public static final long ROLLUP_THRESHOLD_MILLIS = HOURS.toMillis(1);
 
-    public static final String OVERWRITTEN = "{\"overwritten\":true}";
+    static final String OVERWRITTEN = "{\"overwritten\":true}";
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
@@ -150,8 +150,8 @@ public class AggregateDao {
                 "select ifnull(max(capture_time), 0) from overall_aggregate_rollup_1");
     }
 
-    public void store(final List<Aggregate> overallAggregates,
-            List<Aggregate> transactionAggregates, long captureTime) throws Exception {
+    void store(final List<Aggregate> overallAggregates, List<Aggregate> transactionAggregates,
+            long captureTime) throws Exception {
         store(overallAggregates, transactionAggregates, "");
         long rollupTime =
                 (long) Math.floor(captureTime / (double) fixedRollupMillis) * fixedRollupMillis;
@@ -162,7 +162,6 @@ public class AggregateDao {
     }
 
     // captureTimeFrom is non-inclusive
-    // TODO optimize by going against rollup table for majority of data
     public TransactionSummary readOverallTransactionSummary(String transactionType,
             long captureTimeFrom, long captureTimeTo) throws SQLException {
         // it's important that all these columns are in a single index so h2 can return the
@@ -181,9 +180,8 @@ public class AggregateDao {
     }
 
     // captureTimeFrom is non-inclusive
-    // TODO optimize by going against rollup table for majority of data
-    public QueryResult<TransactionSummary> readTransactionSummaries(
-            TransactionSummaryQuery query) throws SQLException {
+    public QueryResult<TransactionSummary> readTransactionSummaries(TransactionSummaryQuery query)
+            throws SQLException {
         // it's important that all these columns are in a single index so h2 can return the
         // result set directly from the index without having to reference the table for each row
         ImmutableList<TransactionSummary> summaries = dataSource.query("select transaction_name,"
@@ -197,7 +195,6 @@ public class AggregateDao {
     }
 
     // captureTimeFrom is non-inclusive
-    // TODO optimize by going against rollup table for majority of data
     public ErrorSummary readOverallErrorSummary(String transactionType, long captureTimeFrom,
             long captureTimeTo) throws SQLException {
         ErrorSummary result = dataSource.query("select sum(error_count), sum(transaction_count)"
@@ -213,7 +210,6 @@ public class AggregateDao {
     }
 
     // captureTimeFrom is non-inclusive
-    // TODO optimize by going against rollup table for majority of data
     public QueryResult<ErrorSummary> readTransactionErrorSummaries(ErrorSummaryQuery query)
             throws SQLException {
         ImmutableList<ErrorSummary> summary = dataSource.query("select transaction_name,"
@@ -254,7 +250,6 @@ public class AggregateDao {
     }
 
     // captureTimeFrom is non-inclusive
-    // TODO optimize by going against rollup table for majority of data
     public ImmutableList<CharSource> readOverallProfiles(String transactionType,
             long captureTimeFrom, long captureTimeTo) throws SQLException {
         return dataSource.query("select profile_capped_id from overall_aggregate"
@@ -264,7 +259,6 @@ public class AggregateDao {
     }
 
     // captureTimeFrom is non-inclusive
-    // TODO optimize by going against rollup table for majority of data
     public ImmutableList<CharSource> readTransactionProfiles(String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo) throws SQLException {
         return dataSource.query("select profile_capped_id from transaction_aggregate"
@@ -298,7 +292,6 @@ public class AggregateDao {
     // captureTimeFrom is non-inclusive
     public long readOverallProfileSampleCount(String transactionType, long captureTimeFrom,
             long captureTimeTo) throws SQLException {
-        // TODO optimize by going against rollup table for majority of data
         return dataSource.queryForLong("select sum(profile_sample_count) from overall_aggregate"
                 + " where transaction_type = ? and capture_time > ? and capture_time <= ?"
                 + " and profile_capped_id >= ?", transactionType, captureTimeFrom, captureTimeTo,
@@ -308,7 +301,6 @@ public class AggregateDao {
     // captureTimeFrom is non-inclusive
     public long readTransactionProfileSampleCount(String transactionType, String transactionName,
             long captureTimeFrom, long captureTimeTo) throws SQLException {
-        // TODO optimize by going against rollup table for majority of data
         return dataSource.queryForLong("select sum(profile_sample_count) from"
                 + " transaction_aggregate where transaction_type = ? and transaction_name = ?"
                 + " and capture_time > ? and capture_time <= ? and profile_capped_id >= ?",
@@ -375,25 +367,11 @@ public class AggregateDao {
         dataSource.execute("truncate table transaction_aggregate_rollup_1");
     }
 
-    long getLastRollupTime() throws SQLException {
-        return dataSource.queryForLong("select max(capture_time) from overall_aggregate_rollup_1");
-    }
-
     void deleteBefore(long captureTime) throws SQLException {
-        deleteBefore("overall_aggregate", captureTime);
-        deleteBefore("overall_aggregate_rollup_1", captureTime);
-        deleteBefore("transaction_aggregate", captureTime);
-        deleteBefore("transaction_aggregate_rollup_1", captureTime);
-    }
-
-    private void deleteBefore(@Untainted String tableName, long captureTime) throws SQLException {
-        // delete 100 at a time, which is both faster than deleting all at once, and doesn't
-        // lock the single jdbc connection for one large chunk of time
-        int deleted;
-        do {
-            deleted = dataSource.update("delete from " + tableName
-                    + " where capture_time < ? limit 100", captureTime);
-        } while (deleted != 0);
+        dataSource.deleteBefore("overall_aggregate", captureTime);
+        dataSource.deleteBefore("overall_aggregate_rollup_1", captureTime);
+        dataSource.deleteBefore("transaction_aggregate", captureTime);
+        dataSource.deleteBefore("transaction_aggregate_rollup_1", captureTime);
     }
 
     private void rollup(long lastRollupTime, long curentRollupTime) throws Exception {
@@ -853,10 +831,6 @@ public class AggregateDao {
             this.profileSampleCount += profileSampleCount;
         }
 
-        public void addTraceCount(long traceCount) {
-            this.traceCount += traceCount;
-        }
-
         public void addTimers(String timers) throws IOException {
             AggregateTimer syntheticRootTimers = mapper.readValue(timers, AggregateTimer.class);
             this.syntheticRootTimer.mergeMatchedTimer(syntheticRootTimers);
@@ -864,12 +838,6 @@ public class AggregateDao {
 
         public void addHistogram(byte[] histogram) throws DataFormatException {
             lazyHistogram.decodeFromByteBuffer(ByteBuffer.wrap(histogram));
-        }
-
-        public void addProfile(String profileContent) throws IOException {
-            AggregateProfileNode profileNode = ObjectMappers.readRequiredValue(
-                    mapper, profileContent, AggregateProfileNode.class);
-            syntheticProfileNode.mergeMatchedNode(profileNode);
         }
 
         public Aggregate toAggregate(ScratchBuffer scratchBuffer) throws IOException {
@@ -899,6 +867,16 @@ public class AggregateDao {
                     .histogram(histogram)
                     .profile(getProfileJson())
                     .build();
+        }
+
+        private void addTraceCount(long traceCount) {
+            this.traceCount += traceCount;
+        }
+
+        private void addProfile(String profileContent) throws IOException {
+            AggregateProfileNode profileNode = ObjectMappers.readRequiredValue(
+                    mapper, profileContent, AggregateProfileNode.class);
+            syntheticProfileNode.mergeMatchedNode(profileNode);
         }
 
         private String getTimersJson() throws IOException {

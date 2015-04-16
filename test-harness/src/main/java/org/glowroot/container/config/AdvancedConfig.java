@@ -39,7 +39,7 @@ public class AdvancedConfig {
 
     private final String version;
 
-    public AdvancedConfig(String version) {
+    private AdvancedConfig(String version) {
         this.version = version;
     }
 

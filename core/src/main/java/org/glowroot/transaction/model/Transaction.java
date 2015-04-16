@@ -220,10 +220,6 @@ public class Transaction {
         return rootTimer;
     }
 
-    public void setCurrentTimer(@Nullable TimerImpl currentTimer) {
-        this.currentTimer = currentTimer;
-    }
-
     public @Nullable TimerImpl getCurrentTimer() {
         return currentTimer;
     }
@@ -380,24 +376,6 @@ public class Transaction {
         memoryBarrier = true;
     }
 
-    // typically pop() methods don't require the objects to pop, but for safety, the entry to pop is
-    // passed in just to make sure it is the one on top (and if not, then pop until is is found,
-    // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    public void popEntry(TraceEntry entry, long endTick, @Nullable ErrorMessage errorMessage) {
-        traceEntryComponent.popEntry(entry, endTick, errorMessage);
-        memoryBarrier = true;
-        if (isCompleted()) {
-            // the root entry has been popped off
-            if (immedateTraceStoreRunnable != null) {
-                immedateTraceStoreRunnable.cancel();
-            }
-            if (userProfileRunnable != null) {
-                userProfileRunnable.cancel();
-            }
-            completionCallback.completed(this);
-        }
-    }
-
     public void captureStackTrace(@Nullable ThreadInfo threadInfo, int limit,
             boolean mayHaveSyntheticTimerMethods) {
         if (threadInfo == null) {
@@ -444,6 +422,28 @@ public class Transaction {
 
     public long getCaptureTime() {
         return captureTime;
+    }
+
+    // typically pop() methods don't require the objects to pop, but for safety, the entry to pop is
+    // passed in just to make sure it is the one on top (and if not, then pop until is is found,
+    // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
+    void popEntry(TraceEntry entry, long endTick) {
+        traceEntryComponent.popEntry(entry, endTick);
+        memoryBarrier = true;
+        if (isCompleted()) {
+            // the root entry has been popped off
+            if (immedateTraceStoreRunnable != null) {
+                immedateTraceStoreRunnable.cancel();
+            }
+            if (userProfileRunnable != null) {
+                userProfileRunnable.cancel();
+            }
+            completionCallback.completed(this);
+        }
+    }
+
+    void setCurrentTimer(@Nullable TimerImpl currentTimer) {
+        this.currentTimer = currentTimer;
     }
 
     private boolean readMemoryBarrier() {

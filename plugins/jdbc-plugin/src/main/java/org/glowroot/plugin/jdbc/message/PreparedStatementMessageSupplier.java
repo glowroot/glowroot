@@ -43,7 +43,7 @@ public class PreparedStatementMessageSupplier extends JdbcMessageSupplier {
         return Message.from(sb.toString());
     }
 
-    private static void appendParameters(StringBuilder sb, BindParameterList parameters) {
+    static void appendParameters(StringBuilder sb, BindParameterList parameters) {
         sb.append(" [");
         boolean first = true;
         for (Object parameter : parameters) {

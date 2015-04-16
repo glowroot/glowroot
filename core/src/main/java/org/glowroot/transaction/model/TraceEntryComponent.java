@@ -114,9 +114,7 @@ class TraceEntryComponent {
     // typically pop() methods don't require the objects to pop, but for safety, the entry is
     // passed in just to make sure it is the one on top (and if not, then pop until it is found,
     // preventing any nasty bugs from a missed pop, e.g. an entry never being marked as complete)
-    void popEntry(TraceEntry entry, long endTick, @Nullable ErrorMessage errorMessage) {
-        entry.setErrorMessage(errorMessage);
-        entry.setEndTick(endTick);
+    void popEntry(TraceEntry entry, long endTick) {
         popEntrySafe(entry);
         if (activeEntry == null) {
             this.endTick = endTick;

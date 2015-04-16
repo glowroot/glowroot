@@ -32,9 +32,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class CollectorModule {
 
-    private static final long fixedAggregateIntervalSeconds =
+    private static final long FIXED_AGGREGATE_INTERVAL_SECONDS =
             Long.getLong("glowroot.internal.aggregateInterval", 60);
-    private static final long fixedGaugeIntervalSeconds =
+    private static final long FIXED_GAUGE_INTERVAL_SECONDS =
             Long.getLong("glowroot.internal.gaugeInterval", 5);
 
     private final TransactionCollectorImpl transactionCollector;
@@ -54,14 +54,14 @@ public class CollectorModule {
             stackTraceCollector = null;
         } else {
             aggregateCollector = new AggregateCollector(scheduledExecutor, aggregateRepository,
-                    clock, fixedAggregateIntervalSeconds);
+                    clock, FIXED_AGGREGATE_INTERVAL_SECONDS);
             gaugeCollector = new GaugeCollector(configService, gaugePointRepository,
                     jvmModule.getLazyPlatformMBeanServer(), clock, null);
             // using fixed rate to keep gauge collections close to on the second mark
-            long initialDelay = fixedGaugeIntervalSeconds
-                    - (clock.currentTimeMillis() % fixedGaugeIntervalSeconds);
+            long initialDelay = FIXED_GAUGE_INTERVAL_SECONDS
+                    - (clock.currentTimeMillis() % FIXED_GAUGE_INTERVAL_SECONDS);
             gaugeCollector.scheduleAtFixedRate(scheduledExecutor, initialDelay,
-                    fixedGaugeIntervalSeconds, SECONDS);
+                    FIXED_GAUGE_INTERVAL_SECONDS, SECONDS);
             stackTraceCollector = StackTraceCollector.create(transactionRegistry, configService,
                     scheduledExecutor);
         }
@@ -81,11 +81,11 @@ public class CollectorModule {
     }
 
     public long getFixedAggregateIntervalSeconds() {
-        return fixedAggregateIntervalSeconds;
+        return FIXED_AGGREGATE_INTERVAL_SECONDS;
     }
 
     public long getFixedGaugeIntervalSeconds() {
-        return fixedGaugeIntervalSeconds;
+        return FIXED_GAUGE_INTERVAL_SECONDS;
     }
 
     @OnlyUsedByTests

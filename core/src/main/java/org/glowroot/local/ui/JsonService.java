@@ -41,24 +41,26 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @SuppressWarnings("serial")
 class JsonServiceException extends RuntimeException {
 
-    private final HttpResponseStatus status;
+    // storing (serializable) int instead of (non-serializable) HttpResponseStatus since Throwable
+    // implements Serializable
+    private final int statusCode;
 
     JsonServiceException(HttpResponseStatus status, Throwable cause) {
         super("", cause);
-        this.status = status;
+        this.statusCode = status.code();
     }
 
     JsonServiceException(HttpResponseStatus status, String message) {
         super(message);
-        this.status = status;
+        this.statusCode = status.code();
     }
 
     JsonServiceException(HttpResponseStatus status) {
         super();
-        this.status = status;
+        this.statusCode = status.code();
     }
 
     HttpResponseStatus getStatus() {
-        return status;
+        return HttpResponseStatus.valueOf(statusCode);
     }
 }

@@ -124,7 +124,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     private final ChannelGroup allChannels;
 
-    private final LayoutJsonService layoutJsonService;
+    private final LayoutService layoutService;
     private final ImmutableMap<Pattern, HttpService> httpServices;
     private final ImmutableList<JsonServiceMapping> jsonServiceMappings;
     private final HttpSessionManager httpSessionManager;
@@ -132,10 +132,9 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     private final ThreadLocal</*@Nullable*/Channel> currentChannel =
             new ThreadLocal</*@Nullable*/Channel>();
 
-    HttpServerHandler(LayoutJsonService layoutJsonService,
-            Map<Pattern, HttpService> httpServices, HttpSessionManager httpSessionManager,
-            List<Object> jsonServices) {
-        this.layoutJsonService = layoutJsonService;
+    HttpServerHandler(LayoutService layoutService, Map<Pattern, HttpService> httpServices,
+            HttpSessionManager httpSessionManager, List<Object> jsonServices) {
+        this.layoutService = layoutService;
         this.httpServices = ImmutableMap.copyOf(httpServices);
         this.httpSessionManager = httpSessionManager;
         List<JsonServiceMapping> jsonServiceMappings = Lists.newArrayList();
@@ -211,7 +210,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 && !response.headers().contains("Set-Cookie")) {
             httpSessionManager.deleteSessionCookie(response);
         }
-        response.headers().add("Glowroot-Layout-Version", layoutJsonService.getLayoutVersion());
+        response.headers().add("Glowroot-Layout-Version", layoutService.getLayoutVersion());
         if (response.headers().get("Glowroot-Port-Changed") != null) {
             // current connection is the only open channel on the old port, keepAlive=false will add
             // the listener below to close the channel after the response completes
@@ -244,32 +243,9 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
         String path = decoder.path();
         logger.debug("handleRequest(): path={}", path);
-        if (path.equals("/backend/authenticated-user")) {
-            // this is only used when running under 'grunt serve'
-            String authenticatedUser = httpSessionManager.getAuthenticatedUser(request);
-            if (authenticatedUser == null) {
-                return HttpServices.createJsonResponse("null", OK);
-            } else {
-                return HttpServices.createJsonResponse("\"" + authenticatedUser + "\"", OK);
-            }
-        }
-        if (path.equals("/backend/admin-login")) {
-            return httpSessionManager.login(request, true);
-        }
-        if (path.equals("/backend/read-only-login")) {
-            return httpSessionManager.login(request, false);
-        }
-        if (path.equals("/backend/sign-out")) {
-            return httpSessionManager.signOut(request);
-        }
-        if (path.equals("/backend/layout")) {
-            String layout;
-            if (httpSessionManager.hasReadAccess(request)) {
-                layout = layoutJsonService.getLayout();
-            } else {
-                layout = layoutJsonService.getNeedsAuthenticationLayout();
-            }
-            return HttpServices.createJsonResponse(layout, OK);
+        FullHttpResponse response = handleIfLoginOrLogoutRequest(path, request);
+        if (response != null) {
+            return response;
         }
         HttpService httpService = getHttpService(path);
         if (httpService != null) {
@@ -281,6 +257,33 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                     jsonServiceMatcher.matcher);
         }
         return handleStaticResource(path, request);
+    }
+
+    private @Nullable FullHttpResponse handleIfLoginOrLogoutRequest(String path,
+            FullHttpRequest request) throws IOException {
+        if (path.equals("/backend/authenticated-user")) {
+            // this is only used when running under 'grunt serve'
+            return handleAuthenticatedUserRequest(request);
+        }
+        if (path.equals("/backend/admin-login")) {
+            return httpSessionManager.login(request, true);
+        }
+        if (path.equals("/backend/read-only-login")) {
+            return httpSessionManager.login(request, false);
+        }
+        if (path.equals("/backend/sign-out")) {
+            return httpSessionManager.signOut(request);
+        }
+        return null;
+    }
+
+    private FullHttpResponse handleAuthenticatedUserRequest(FullHttpRequest request) {
+        String authenticatedUser = httpSessionManager.getAuthenticatedUser(request);
+        if (authenticatedUser == null) {
+            return HttpServices.createJsonResponse("null", OK);
+        } else {
+            return HttpServices.createJsonResponse("\"" + authenticatedUser + "\"", OK);
+        }
     }
 
     private @Nullable HttpService getHttpService(String path) throws Exception {
@@ -295,8 +298,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     private @Nullable FullHttpResponse handleHttpService(ChannelHandlerContext ctx,
             FullHttpRequest request, HttpService httpService) throws Exception {
-        if (!(httpService instanceof IndexHtmlHttpService)
-                && !httpSessionManager.hasReadAccess(request)) {
+        if (!httpSessionManager.hasReadAccess(request)
+                && !(httpService instanceof UnauthenticatedHttpService)) {
             return handleNotAuthenticated(request);
         }
         boolean isGetRequest = request.getMethod().name().equals(HttpMethod.GET.name());
@@ -610,7 +613,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    static enum HttpMethod {
+    private static enum HttpMethod {
         GET, POST
     }
 }

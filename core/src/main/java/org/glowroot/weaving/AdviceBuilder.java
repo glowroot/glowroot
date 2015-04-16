@@ -332,7 +332,7 @@ public class AdviceBuilder {
     }
 
     @SuppressWarnings("serial")
-    public static class AdviceConstructionException extends Exception {
+    private static class AdviceConstructionException extends Exception {
         private AdviceConstructionException(@Nullable String message) {
             super(message);
         }

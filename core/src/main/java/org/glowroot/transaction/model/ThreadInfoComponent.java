@@ -31,11 +31,12 @@ import org.glowroot.jvm.ThreadAllocatedBytes;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class ThreadInfoComponent {
+class ThreadInfoComponent {
 
     private static final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-    private static final boolean isThreadCpuTimeSupported = threadMXBean.isThreadCpuTimeSupported();
-    private static final boolean isThreadContentionMonitoringSupported =
+    private static final boolean IS_THREAD_CPU_TIME_SUPPORTED =
+            threadMXBean.isThreadCpuTimeSupported();
+    private static final boolean IS_THREAD_CONTENTION_MONITORING_SUPPORTED =
             threadMXBean.isThreadContentionMonitoringSupported();
 
     private final long threadId;
@@ -48,16 +49,16 @@ public class ThreadInfoComponent {
 
     private final Object lock = new Object();
 
-    public ThreadInfoComponent(@Nullable ThreadAllocatedBytes threadAllocatedBytes) {
+    ThreadInfoComponent(@Nullable ThreadAllocatedBytes threadAllocatedBytes) {
         threadId = Thread.currentThread().getId();
         ThreadInfo threadInfo = threadMXBean.getThreadInfo(threadId, 0);
         // thread info for current thread cannot be null
         checkNotNull(threadInfo);
         ThreadInfoSnapshot.Builder builder = ThreadInfoSnapshot.builder();
-        if (isThreadCpuTimeSupported) {
+        if (IS_THREAD_CPU_TIME_SUPPORTED) {
             builder.threadCpuTime(threadMXBean.getCurrentThreadCpuTime());
         }
-        if (isThreadContentionMonitoringSupported) {
+        if (IS_THREAD_CONTENTION_MONITORING_SUPPORTED) {
             builder.threadBlockedTimeMillis(threadInfo.getBlockedTime());
             builder.threadWaitedTimeMillis(threadInfo.getWaitedTime());
         }
@@ -97,10 +98,10 @@ public class ThreadInfoComponent {
             // thread must have just recently terminated
             return builder.build();
         }
-        if (isThreadCpuTimeSupported) {
+        if (IS_THREAD_CPU_TIME_SUPPORTED) {
             addThreadCpuTime(builder);
         }
-        if (isThreadContentionMonitoringSupported) {
+        if (IS_THREAD_CONTENTION_MONITORING_SUPPORTED) {
             addThreadBlockedAndWaitedTime(builder, threadInfo);
         }
         if (threadAllocatedBytes != null) {

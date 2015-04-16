@@ -25,17 +25,8 @@ import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ThrowableInfo;
 
 /**
- * The detail map can contain only {@link String}, {@link Double}, {@link Boolean} and null value
- * types. It can also contain nested maps (which have the same restrictions on value types,
- * including additional levels of nested maps). The detail map cannot have null keys.
- * 
- * As an extra bonus, detail map can also contain org.glowroot.api.Optional values which is useful
- * for Maps that do not accept null values, e.g. java.util.concurrent.ConcurrentHashMap and
- * org.glowroot.shaded.google.common.collect.ImmutableMap.
- * 
- * The detail map does not need to be thread safe as long as it is only instantiated in response to
- * either MessageSupplier.get() or Message.getDetail() which are called by the thread that needs the
- * map.
+ * @see TraceEntry#endWithError(ErrorMessage)
+ * @see PluginServices#addTraceEntry(ErrorMessage)
  */
 public abstract class ErrorMessage {
 

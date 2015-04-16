@@ -54,9 +54,9 @@ class HttpServer {
     private volatile Channel serverChannel;
     private volatile int port;
 
-    HttpServer(String bindAddress, int port, int numWorkerThreads,
-            LayoutJsonService layoutJsonService, Map<Pattern, HttpService> httpServices,
-            HttpSessionManager httpSessionManager, List<Object> jsonServices) throws Exception {
+    HttpServer(String bindAddress, int port, int numWorkerThreads, LayoutService layoutService,
+            Map<Pattern, HttpService> httpServices, HttpSessionManager httpSessionManager,
+            List<Object> jsonServices) throws Exception {
 
         InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
 
@@ -67,7 +67,7 @@ class HttpServer {
         bossGroup = new NioEventLoopGroup(1, bossThreadFactory);
         workerGroup = new NioEventLoopGroup(numWorkerThreads, workerThreadFactory);
 
-        final HttpServerHandler handler = new HttpServerHandler(layoutJsonService, httpServices,
+        final HttpServerHandler handler = new HttpServerHandler(layoutService, httpServices,
                 httpSessionManager, jsonServices);
 
         bootstrap = new ServerBootstrap();

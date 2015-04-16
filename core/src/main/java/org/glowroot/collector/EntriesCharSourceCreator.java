@@ -94,7 +94,7 @@ public class EntriesCharSourceCreator {
         private final Iterator<TraceEntry> entries;
         private final long transactionStartTick;
         private final long captureTick;
-        private final CharArrayWriter writer;
+        private final EntriesCharArrayWriter writer;
         private final JsonGenerator jg;
 
         private int writerIndex;
@@ -105,7 +105,7 @@ public class EntriesCharSourceCreator {
             this.entries = entries.iterator();
             this.transactionStartTick = transactionStartTick;
             this.captureTick = captureTick;
-            writer = new CharArrayWriter();
+            writer = new EntriesCharArrayWriter();
             jg = jsonFactory.createGenerator(writer);
             jg.writeStartArray();
         }
@@ -115,7 +115,7 @@ public class EntriesCharSourceCreator {
             int writerRemaining = writer.size() - writerIndex;
             if (writerRemaining > 0) {
                 int nChars = Math.min(len, writerRemaining);
-                writer.arraycopy(writerIndex, cbuf, off, nChars);
+                writer.copyInto(cbuf, off, writerIndex, nChars);
                 writerIndex += nChars;
                 return nChars;
             }
@@ -223,10 +223,10 @@ public class EntriesCharSourceCreator {
         }
     }
 
-    private static class CharArrayWriter extends java.io.CharArrayWriter {
+    // subclass is needed in order to access protected char buffer
+    private static class EntriesCharArrayWriter extends java.io.CharArrayWriter {
 
-        // provides access to protected char buffer
-        public void arraycopy(int srcPos, char[] dest, int destPos, int length) {
+        public void copyInto(char[] dest, int destPos, int srcPos, int length) {
             System.arraycopy(buf, srcPos, dest, destPos, length);
         }
     }

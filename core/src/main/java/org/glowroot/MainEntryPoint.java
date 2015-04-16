@@ -112,7 +112,7 @@ public class MainEntryPoint {
         if (!pluginNames.isEmpty()) {
             startupLogger.info("Glowroot plugins loaded: {}", Joiner.on(", ").join(pluginNames));
         }
-        if (instrumentation == null || JavaVersion.isJdk6()) {
+        if (instrumentation == null || JavaVersion.isJava6()) {
             // otherwise http server is lazy instantiated, see LocalUiModule
             startupLogger.info("Glowroot listening at http://localhost:{}",
                     glowrootModule.getUiModule().getNonLazyPort());

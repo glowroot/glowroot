@@ -188,7 +188,7 @@ class ConfigFile {
         GaugeConfig.Builder operatingSystemMBean = GaugeConfig.builder()
                 .mbeanObjectName("java.lang:type=OperatingSystem")
                 .addMbeanAttributes(MBeanAttribute.of("FreePhysicalMemorySize", false));
-        if (!JavaVersion.isJdk6()) {
+        if (!JavaVersion.isJava6()) {
             // these are only available since 1.7
             operatingSystemMBean.addMbeanAttributes(MBeanAttribute.of("ProcessCpuLoad", false));
             operatingSystemMBean.addMbeanAttributes(MBeanAttribute.of("SystemCpuLoad", false));

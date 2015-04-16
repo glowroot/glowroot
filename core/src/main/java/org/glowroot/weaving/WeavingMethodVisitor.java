@@ -154,8 +154,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     @Override
     public void visitInsn(int opcode) {
-        if (needsOnReturn && (opcode == RETURN || opcode == IRETURN || opcode == FRETURN
-                || opcode == ARETURN || opcode == LRETURN || opcode == DRETURN)) {
+        if (needsOnReturn && isReturnOpcode(opcode)) {
             // ATHROW not included, instructions to catch throws will be written (if necessary) in
             // visitMaxs
             checkNotNull(onReturnLabel, "Call to onMethodEnter() is required");
@@ -164,6 +163,10 @@ class WeavingMethodVisitor extends AdviceAdapter {
         } else {
             super.visitInsn(opcode);
         }
+    }
+
+    private static boolean isReturnOpcode(int opcode) {
+        return opcode >= IRETURN && opcode <= RETURN;
     }
 
     @Override
@@ -645,7 +648,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         }
     }
 
-    public void loadArgArray(boolean useSavedArgs) {
+    private void loadArgArray(boolean useSavedArgs) {
         push(argumentTypes.length);
         newArray(objectType);
         for (int i = 0; i < argumentTypes.length; i++) {

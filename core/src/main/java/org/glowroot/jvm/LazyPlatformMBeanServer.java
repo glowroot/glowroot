@@ -42,11 +42,11 @@ public class LazyPlatformMBeanServer {
 
     private final boolean jbossModules;
 
+    private volatile @MonotonicNonNull MBeanServer mbeanServer;
+
     LazyPlatformMBeanServer(boolean jbossModules) {
         this.jbossModules = jbossModules;
     }
-
-    private volatile @MonotonicNonNull MBeanServer mbeanServer;
 
     void getObjectInstance(ObjectName name) throws Exception {
         ensureInit();

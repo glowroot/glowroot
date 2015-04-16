@@ -38,14 +38,15 @@ class LazyHttpServer {
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
     // default two http worker threads to keep # of threads down
-    private static final int numWorkerThreads =
+    private static final int NUM_WORKER_THREADS =
             Integer.getInteger("glowroot.internal.ui.workerThreads", 2);
 
     private final String bindAddress;
     private final int port;
     private final HttpSessionManager httpSessionManager;
     private final IndexHtmlHttpService indexHtmlHttpService;
-    private final LayoutJsonService layoutJsonService;
+    private final LayoutHttpService layoutHttpService;
+    private final LayoutService layoutService;
     private final TraceDetailHttpService traceDetailHttpService;
     private final TraceExportHttpService traceExportHttpService;
     private final List<Object> jsonServices;
@@ -54,14 +55,15 @@ class LazyHttpServer {
     private volatile @Nullable HttpServer httpServer;
 
     LazyHttpServer(String bindAddress, int port, HttpSessionManager httpSessionManager,
-            IndexHtmlHttpService indexHtmlHttpService, LayoutJsonService layoutJsonService,
-            TraceDetailHttpService traceDetailHttpService,
+            IndexHtmlHttpService indexHtmlHttpService, LayoutHttpService layoutHttpService,
+            LayoutService layoutService, TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService, List<Object> jsonServices) {
         this.bindAddress = bindAddress;
         this.port = port;
         this.httpSessionManager = httpSessionManager;
         this.indexHtmlHttpService = indexHtmlHttpService;
-        this.layoutJsonService = layoutJsonService;
+        this.layoutHttpService = layoutHttpService;
+        this.layoutService = layoutService;
         this.traceDetailHttpService = traceDetailHttpService;
         this.traceExportHttpService = traceExportHttpService;
         this.jsonServices = jsonServices;
@@ -122,6 +124,7 @@ class LazyHttpServer {
         httpServices.put(Pattern.compile("^/jvm/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/config/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/login$"), indexHtmlHttpService);
+        httpServices.put(Pattern.compile("^/backend/layout$"), layoutHttpService);
         // export service is not bound under /backend since the export url is visible to users
         // as the download url for the export file
         httpServices.put(Pattern.compile("^/export/trace/.*$"), traceExportHttpService);
@@ -129,7 +132,7 @@ class LazyHttpServer {
         httpServices.put(Pattern.compile("^/backend/trace/profile$"), traceDetailHttpService);
         // services
         try {
-            return new HttpServer(bindAddress, port, numWorkerThreads, layoutJsonService,
+            return new HttpServer(bindAddress, port, NUM_WORKER_THREADS, layoutService,
                     httpServices, httpSessionManager, jsonServices);
         } catch (Exception e) {
             // binding to the specified port failed and binding to port 0 (any port) failed

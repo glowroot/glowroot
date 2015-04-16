@@ -22,20 +22,20 @@ import com.google.common.base.StandardSystemProperty;
 
 public class JavaVersion {
 
-    private static final boolean jdk6;
+    private static final boolean IS_JAVA_6;
 
     static {
-        jdk6 = parseIsJdk6(StandardSystemProperty.JAVA_VERSION.value());
+        IS_JAVA_6 = parseIsJava6(StandardSystemProperty.JAVA_VERSION.value());
     }
 
     private JavaVersion() {}
 
-    public static boolean isJdk6() {
-        return jdk6;
+    public static boolean isJava6() {
+        return IS_JAVA_6;
     }
 
     @VisibleForTesting
-    static boolean parseIsJdk6(@Nullable String javaVersion) {
+    static boolean parseIsJava6(@Nullable String javaVersion) {
         return javaVersion != null && javaVersion.startsWith("1.6");
     }
 }

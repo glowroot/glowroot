@@ -42,28 +42,9 @@ public class BatchPreparedStatementMessageSupplier extends JdbcMessageSupplier {
         }
         sb.append(sql);
         for (BindParameterList oneParameters : batchedParameters) {
-            appendParameters(sb, oneParameters);
+            PreparedStatementMessageSupplier.appendParameters(sb, oneParameters);
         }
         appendRowCount(sb);
         return Message.from(sb.toString());
-    }
-
-    private static void appendParameters(StringBuilder sb, BindParameterList parameters) {
-        sb.append(" [");
-        boolean first = true;
-        for (Object parameter : parameters) {
-            if (!first) {
-                sb.append(", ");
-            }
-            if (parameter instanceof String) {
-                sb.append("\'");
-                sb.append((String) parameter);
-                sb.append("\'");
-            } else {
-                sb.append(String.valueOf(parameter));
-            }
-            first = false;
-        }
-        sb.append("]");
     }
 }

@@ -105,10 +105,17 @@ public class LocalContainer implements Container {
         loader.setTimerWrapperMethods(glowrootModule.getConfigModule().getConfigService()
                 .getAdvancedConfig().timerWrapperMethods());
         loader.addBridgeClasses(AppUnderTest.class, AppUnderTestServices.class);
-        loader.addExcludePackages("org.glowroot.api", "org.glowroot.advicegen",
-                "org.glowroot.collector", "org.glowroot.common", "org.glowroot.config",
-                "org.glowroot.jvm", "org.glowroot.local", "org.glowroot.shaded",
-                "org.glowroot.transaction", "org.glowroot.weaving");
+        loader.addExcludePackages("org.glowroot.api",
+                "org.glowroot.advicegen",
+                "org.glowroot.collector",
+                "org.glowroot.common",
+                "org.glowroot.config",
+                "org.glowroot.jvm",
+                "org.glowroot.local",
+                "org.glowroot.shaded",
+                "org.glowroot.transaction",
+                "org.glowroot.weaving",
+                "com.google.common");
         isolatedWeavingClassLoader = loader.build();
         httpClient = new HttpClient(glowrootModule.getUiModule().getPort());
         configService = new ConfigService(httpClient, new GetUiPortCommand() {

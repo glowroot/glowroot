@@ -82,9 +82,8 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                 Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
         AnalyzedWorld analyzedWorld =
                 new AnalyzedWorld(advisorsSupplier, shimTypes, mixinTypes, null);
-        Weaver weaver = new Weaver(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
+        this.weaver = new Weaver(advisorsSupplier, shimTypes, mixinTypes, analyzedWorld,
                 weavingTimerService, timerWrapperMethods);
-        this.weaver = weaver;
     }
 
     public </*@Nullable*/S, T extends S> S newInstance(Class<T> implClass, Class<S> bridgeClass)

@@ -242,6 +242,8 @@ public class Beans {
         try {
             return clazz.getMethod(methodName);
         } catch (NoSuchMethodException e) {
+            // log exception at trace level
+            logger.trace(e.getMessage(), e);
             return clazz.getDeclaredMethod(methodName);
         }
     }
@@ -250,6 +252,8 @@ public class Beans {
         try {
             return clazz.getField(fieldName);
         } catch (NoSuchFieldException e) {
+            // log exception at trace level
+            logger.trace(e.getMessage(), e);
             return clazz.getDeclaredField(fieldName);
         }
     }

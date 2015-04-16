@@ -47,7 +47,8 @@ public class DataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(DataSource.class);
 
-    private static final int cacheSize = Integer.getInteger("glowroot.internal.h2.cacheSize", 8192);
+    private static final int CACHE_SIZE =
+            Integer.getInteger("glowroot.internal.h2.cacheSize", 8192);
 
     // null means use memDb
     private final @Nullable File dbFile;
@@ -240,6 +241,16 @@ public class DataSource {
         }
     }
 
+    void deleteBefore(@Untainted String tableName, long captureTime) throws SQLException {
+        // delete 100 at a time, which is both faster than deleting all at once, and doesn't
+        // lock the single jdbc connection for one large chunk of time
+        int deleted;
+        do {
+            deleted = update("delete from " + tableName + " where capture_time < ? limit 100",
+                    captureTime);
+        } while (deleted != 0);
+    }
+
     void syncTable(@Untainted String tableName, ImmutableList<Column> columns) throws SQLException {
         synchronized (lock) {
             if (closing) {
@@ -338,7 +349,7 @@ public class DataSource {
             props.setProperty("password", "");
             // db_close_on_exit=false since jvm shutdown hook is handled by DataSource
             String url = "jdbc:h2:" + dbPath + ";compress=true;db_close_on_exit=false;cache_size="
-                    + cacheSize;
+                    + CACHE_SIZE;
             return new JdbcConnection(url, props);
         }
     }

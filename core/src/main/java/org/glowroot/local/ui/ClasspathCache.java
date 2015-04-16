@@ -252,22 +252,9 @@ class ClasspathCache {
         List<URL> urls = getURLs(loader);
         List<File> locations = Lists.newArrayList();
         for (URL url : urls) {
-            if (url.getProtocol().equals("vfs")) {
-                try {
-                    locations.add(getFileFromJBossVfsURL(url, loader));
-                } catch (Exception e) {
-                    logger.warn(e.getMessage(), e);
-                }
-            } else {
-                try {
-                    URI uri = url.toURI();
-                    if (uri.getScheme().equals("file")) {
-                        locations.add(new File(uri));
-                    }
-                } catch (URISyntaxException e) {
-                    // log exception at debug level
-                    logger.debug(e.getMessage(), e);
-                }
+            File file = tryToGetFileFromURL(url, loader);
+            if (file != null) {
+                locations.add(file);
             }
         }
         for (File location : locations) {
@@ -276,6 +263,28 @@ class ClasspathCache {
                 classpathLocations.add(location);
             }
         }
+    }
+
+    private @Nullable File tryToGetFileFromURL(URL url, ClassLoader loader) {
+        if (url.getProtocol().equals("vfs")) {
+            // special case for
+            try {
+                return getFileFromJBossVfsURL(url, loader);
+            } catch (Exception e) {
+                logger.warn(e.getMessage(), e);
+            }
+        } else {
+            try {
+                URI uri = url.toURI();
+                if (uri.getScheme().equals("file")) {
+                    return new File(uri);
+                }
+            } catch (URISyntaxException e) {
+                // log exception at debug level
+                logger.debug(e.getMessage(), e);
+            }
+        }
+        return null;
     }
 
     private List<URL> getURLs(ClassLoader loader) {
