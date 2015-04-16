@@ -94,11 +94,11 @@ case "$1" in
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
                                  -DargLine=$surefire_jvm_args \
                                  -B
-                 # also running logger-plugin-tests with shading and javaagent in order to get
+                 # also running logger-plugin tests with shading and javaagent in order to get
                  # code coverage for Slf4jTest and Slf4jMarkerTest
                  # (see comments in those classes for more detail)
                  mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install \
-                                 -pl plugin-api,core,plugins/logger-plugin-tests \
+                                 -pl plugin-api,core,plugins/logger-plugin \
                                  -Dglowroot.test.harness=javaagent \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
                                  -DargLine=$surefire_jvm_args \

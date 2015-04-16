@@ -50,7 +50,6 @@
     <module>plugins/jdbc-plugin-microbenchmarks</module>
     <module>plugins/jms-plugin</module>
     <module>plugins/logger-plugin</module>
-    <module>plugins/logger-plugin-tests</module>
     <module>plugins/quartz-plugin</module>
     <module>plugins/servlet-plugin</module>
     <module>plugins/servlet-plugin-microbenchmarks</module>
