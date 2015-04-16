@@ -83,7 +83,8 @@ case "$1" in
                                  -Dglowroot.shading.skip=true \
                                  -Dglowroot.test.harness=javaagent \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
-                                 -DargLine=$surefire_jvm_args \
+                                 -Djacoco.propertyName=jacocoArgLine \
+                                 -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                  -B
                  # also running integration-tests with local test harness to capture a couple methods
                  # exercised only by the local test harness
@@ -92,7 +93,8 @@ case "$1" in
                                  -Dglowroot.shading.skip=true \
                                  -Dglowroot.test.harness=local \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
-                                 -DargLine=$surefire_jvm_args \
+                                 -Djacoco.propertyName=jacocoArgLine \
+                                 -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                  -B
                  # also running logger-plugin tests with shading and javaagent in order to get
                  # code coverage for Slf4jTest and Slf4jMarkerTest
@@ -101,7 +103,8 @@ case "$1" in
                                  -pl plugin-api,core,plugins/logger-plugin \
                                  -Dglowroot.test.harness=javaagent \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
-                                 -DargLine=$surefire_jvm_args \
+                                 -Djacoco.propertyName=jacocoArgLine \
+                                 -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                  -B
 
                  # the sonar.jdbc.password system property is set in the pom.xml using the
