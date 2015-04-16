@@ -10,9 +10,8 @@
       ],
       "captureKind": "transaction",
       "timerName": "jms message",
-      "traceEntryTemplate": "{{this.class.simpleName}}.onMessage()",
-      "transactionType": "JMS Message",
-      "transactionNameTemplate": "{{this.class.simpleName}}"
+      "transactionType": "Background",
+      "transactionNameTemplate": "JMS Message: {{this.class.simpleName}}"
     },
     {
       "className": "javax.jms.MessageProducer",

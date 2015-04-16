@@ -1,5 +1,5 @@
 {
-  "name": "Http Client Plugin",
+  "name": "HTTP Client Plugin",
   "id": "http-client",
   "instrumentation": [
     {

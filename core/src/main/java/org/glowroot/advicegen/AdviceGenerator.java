@@ -642,6 +642,9 @@ public class AdviceGenerator {
         mv.visitVarInsn(ALOAD, 0);
         if (config.isTraceEntryOrGreater()) {
             String traceEntryTemplate = config.traceEntryTemplate();
+            if (traceEntryTemplate.isEmpty() && config.isTransaction()) {
+                traceEntryTemplate = config.transactionNameTemplate();
+            }
             if (traceEntryTemplate.isEmpty()) {
                 mv.visitLdcInsn("<no message template provided>");
             } else {

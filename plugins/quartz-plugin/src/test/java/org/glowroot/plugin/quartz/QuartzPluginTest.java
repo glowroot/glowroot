@@ -58,7 +58,7 @@ public class QuartzPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getTransactionType()).isEqualTo("Background");
         assertThat(trace.getTransactionName()).isEqualTo("Quartz job: ajob");
-        assertThat(trace.getHeadline()).isEqualTo("quartz job: ajob");
+        assertThat(trace.getHeadline()).isEqualTo("Quartz job: ajob");
     }
 
     public static class ExecuteJob implements AppUnderTest {

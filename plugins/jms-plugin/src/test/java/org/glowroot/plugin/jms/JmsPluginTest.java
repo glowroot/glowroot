@@ -64,9 +64,9 @@ public class JmsPluginTest {
     public void shouldReceiveMessage() throws Exception {
         container.executeAppUnderTest(ReceiveMessage.class);
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getTransactionType()).isEqualTo("JMS Message");
-        assertThat(trace.getTransactionName()).isEqualTo("TestMessageListener");
-        assertThat(trace.getHeadline()).isEqualTo("TestMessageListener.onMessage()");
+        assertThat(trace.getTransactionType()).isEqualTo("Background");
+        assertThat(trace.getTransactionName()).isEqualTo("JMS Message: TestMessageListener");
+        assertThat(trace.getHeadline()).isEqualTo("JMS Message: TestMessageListener");
     }
 
     @Test

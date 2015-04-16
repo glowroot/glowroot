@@ -11,8 +11,7 @@
       "methodParameterTypes": [ ],
       "captureKind": "transaction",
       "transactionNameTemplate": "transaction worthy",
-      "timerName": "transaction worthy",
-      "traceEntryTemplate": "transaction worthy"
+      "timerName": "transaction worthy"
     },
     {
       "className": "org.glowroot.microbenchmarks.core.support.TraceEntryWorthy",
