@@ -178,7 +178,6 @@ public class ConfigTest extends WebDriverTest {
         configSidebar.getAdvancedLink().click();
 
         // when
-        page.getTimerWrapperMethodsCheckBox().click();
         page.getImmediatePartialStoreThresholdTextField().clear();
         page.getImmediatePartialStoreThresholdTextField().sendKeys("1234");
         page.getMaxTraceEntriesPerTransactionTextField().clear();
@@ -187,17 +186,12 @@ public class ConfigTest extends WebDriverTest {
         page.getMaxStackTraceSamplesPerTransactionTextField().sendKeys("3456");
         page.getThreadInfoCheckBox().click();
         page.getGcInfoCheckBox().click();
-        page.getMBeanGaugeNotFoundDelayTextField().clear();
-        page.getMBeanGaugeNotFoundDelayTextField().sendKeys("4567");
-        page.getInternalQueryTimeoutTextField().clear();
-        page.getInternalQueryTimeoutTextField().sendKeys("5678");
         page.clickSaveButton();
 
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getAdvancedLink().click();
-        assertThat(page.getTimerWrapperMethodsCheckBox().isSelected()).isTrue();
         assertThat(page.getImmediatePartialStoreThresholdTextField().getAttribute("value"))
                 .isEqualTo("1234");
         assertThat(page.getMaxTraceEntriesPerTransactionTextField().getAttribute("value"))
@@ -206,9 +200,6 @@ public class ConfigTest extends WebDriverTest {
                 .isEqualTo("3456");
         assertThat(page.getThreadInfoCheckBox().isSelected()).isFalse();
         assertThat(page.getGcInfoCheckBox().isSelected()).isFalse();
-        assertThat(page.getMBeanGaugeNotFoundDelayTextField().getAttribute("value"))
-                .isEqualTo("4567");
-        assertThat(page.getInternalQueryTimeoutTextField().getAttribute("value")).isEqualTo("5678");
     }
 
     // TODO test servlet, jdbc and logger plugin config pages

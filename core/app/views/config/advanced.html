@@ -26,44 +26,6 @@
          class="form-horizontal"
          name="formCtrl">
       <div gt-form-group
-           gt-label="Timer wrapper methods"
-           gt-checkbox-label="Wrap woven methods with timer marker methods"
-           gt-model="config.timerWrapperMethods"
-           gt-type="checkbox">
-        <div class="help-block">
-          <div class="gt-yellow"
-               ng-show="originalConfig.timerWrapperMethods !== originalData.timerWrapperMethodsActive"
-               style="padding-bottom: 5px;">
-            Active value is <code>{{originalData.timerWrapperMethodsActive ? 'ON' : 'OFF'}}</code>.
-            The newly configured value will take effect on next JVM restart.
-          </div>
-          <p>
-            When enabled, all methods that are woven for timing are renamed with suffix
-            <code>$glowroot$timer$&lt;timer name&gt;</code>
-            and a new method is generated in its place that simply calls the renamed method. The purpose of this is so
-            that stack traces gathered by the profiler can see what timings are active, and the resulting
-            profiles can be filtered in the UI by timer names. For example, a profile can be filtered
-            to see only the profile of code that is executing jdbc queries. Or, even more useful, filter to see only
-            the profile of code that has no timings, which helps to discover new bottlenecks that would be
-            worth timing via new timings.
-            <em>Changes to this setting will take effect on next JVM restart.</em>
-          </p>
-        </div>
-      </div>
-      <div gt-form-group
-           gt-label="Weaving timer"
-           gt-checkbox-label="Enable transaction timer to capture glowroot weaving time"
-           gt-model="config.weavingTimer"
-           gt-type="checkbox">
-        <div class="help-block">
-          <p>
-            When enabled, glowroot weaving time (performed during class loading) will be captured as a standard
-            transaction timer under the timer name "glowroot weaving". Typically only the initial transaction(s) through
-            an application perform class loading/weaving.
-          </p>
-        </div>
-      </div>
-      <div gt-form-group
            gt-label="Immediate partial trace store threshold"
            gt-model="config.immediatePartialStoreThresholdSeconds"
            gt-number="true"
@@ -124,34 +86,6 @@
            gt-type="checkbox">
         <div class="help-block">
           Capture global garbage collection info per transaction.
-        </div>
-      </div>
-      <div gt-form-group
-           gt-label="MBean gauge not found delay"
-           gt-model="config.mbeanGaugeNotFoundDelaySeconds"
-           gt-number="true"
-           gt-pattern="pattern.integer"
-           gt-required="loaded"
-           gt-width="7em"
-           gt-addon="seconds">
-        <div class="help-block">
-          The amount of time to wait during startup before logging any MBean Not Found warning messages.
-          This gives the application time during startup to register MBeans.
-        </div>
-      </div>
-      <div gt-form-group
-           gt-label="Internal query timeout"
-           gt-model="config.internalQueryTimeoutSeconds"
-           gt-number="true"
-           gt-pattern="pattern.integer"
-           gt-required="loaded"
-           gt-width="7em"
-           gt-addon="seconds">
-        <div class="help-block">
-          The query timeout applied to all internal queries against the embedded H2 database.
-          This is currently useful as some queries may not have been tuned against large data sets,
-          and this timeout will prevent them from using too many resources on the host machine, or from blocking
-          the limited number of UI threads.
         </div>
       </div>
       <div class="form-group gt-form-buttons">

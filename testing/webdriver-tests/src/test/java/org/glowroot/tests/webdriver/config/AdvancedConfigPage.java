@@ -33,10 +33,6 @@ public class AdvancedConfigPage {
         this.driver = driver;
     }
 
-    public WebElement getTimerWrapperMethodsCheckBox() {
-        return withWait(xpath("//div[@gt-label='Timer wrapper methods']//input"));
-    }
-
     public WebElement getImmediatePartialStoreThresholdTextField() {
         return withWait(xpath("//div[@gt-label='Immediate partial trace store threshold']//input"));
     }
@@ -55,14 +51,6 @@ public class AdvancedConfigPage {
 
     public WebElement getGcInfoCheckBox() {
         return withWait(xpath("//div[@gt-label='GC info']//input"));
-    }
-
-    public WebElement getMBeanGaugeNotFoundDelayTextField() {
-        return withWait(xpath("//div[@gt-label='MBean gauge not found delay']//input"));
-    }
-
-    public WebElement getInternalQueryTimeoutTextField() {
-        return withWait(xpath("//div[@gt-label='Internal query timeout']//input"));
     }
 
     public void clickSaveButton() {
