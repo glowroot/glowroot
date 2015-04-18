@@ -109,7 +109,7 @@ public class Profile {
 
     // must be holding lock to call
     @VisibleForTesting
-    public void addToStackTree(List<?> stackTrace, String threadState) {
+    public void addToStackTree(List<? extends /*@NonNull*/Object> stackTrace, String threadState) {
         syntheticRootNode.incrementSampleCount(1);
         ProfileNode lastMatchedNode = syntheticRootNode;
         List<ProfileNode> nextChildNodes = syntheticRootNode.getChildNodes();

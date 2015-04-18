@@ -195,7 +195,7 @@ public abstract class TracePointQueryBase {
             args.add(arg);
         }
 
-        public void addArgs(List<?> args) {
+        public void addArgs(List<Object> args) {
             this.args.addAll(args);
         }
 

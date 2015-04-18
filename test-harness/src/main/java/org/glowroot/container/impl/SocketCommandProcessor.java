@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,7 +171,7 @@ class SocketCommandProcessor implements Runnable {
         respond(null, commandNum);
     }
 
-    private void executeAppAndRespond(int commandNum, List<?> args) throws Exception {
+    private void executeAppAndRespond(int commandNum, List<Object> args) throws Exception {
         String appClassName = (String) args.get(0);
         Class<?> appClass = Class.forName(appClassName);
         try {
@@ -184,7 +184,7 @@ class SocketCommandProcessor implements Runnable {
         }
     }
 
-    private void addExpectedMessageAndRespond(int commandNum, List<?> args) throws Exception {
+    private void addExpectedMessageAndRespond(int commandNum, List<Object> args) throws Exception {
         String loggerName = (String) args.get(0);
         String partialMessage = (String) args.get(1);
         SpyingLogbackFilter.addExpectedMessage(loggerName, partialMessage);

@@ -85,7 +85,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                 weavingTimerService, timerWrapperMethods);
     }
 
-    public </*@Nullable*/S, T extends S> S newInstance(Class<T> implClass, Class<S> bridgeClass)
+    public <S, T extends S> S newInstance(Class<T> implClass, Class<S> bridgeClass)
             throws Exception {
         validateBridgeable(bridgeClass.getName());
         return bridgeClass.cast(loadClass(implClass.getName()).newInstance());
@@ -220,7 +220,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             this.advisors = advisors;
         }
 
-        @EnsuresNonNull("weavingTimerService")
+        @EnsuresNonNull("#1")
         public void setWeavingTimerService(WeavingTimerService weavingTimerService) {
             this.weavingTimerService = weavingTimerService;
         }

@@ -210,6 +210,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
+    @SuppressWarnings("argument.type.incompatible")
     private void sendFullResponse(ChannelHandlerContext ctx, FullHttpRequest request,
             FullHttpResponse response) {
         boolean keepAlive = HttpHeaders.isKeepAlive(request);

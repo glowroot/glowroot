@@ -154,8 +154,8 @@ public class DataSource {
         }
     }
 
-    </*@NonNull*/T> ImmutableList<T> query(@Untainted String sql, RowMapper<T> rowMapper,
-            Object... args) throws SQLException {
+    <T extends /*@NonNull*/Object> ImmutableList<T> query(@Untainted String sql,
+            RowMapper<T> rowMapper, Object... args) throws SQLException {
         debug(sql, args);
         synchronized (lock) {
             if (closing) {
@@ -184,7 +184,7 @@ public class DataSource {
         }
     }
 
-    </*@Nullable*/T> T query(@Untainted String sql, ResultSetExtractor<T> rse, Object... args)
+    <T> /*@Nullable*/T query(@Untainted String sql, ResultSetExtractor<T> rse, Object... args)
             throws SQLException {
         debug(sql, args);
         synchronized (lock) {
@@ -298,7 +298,7 @@ public class DataSource {
     }
 
     // lock must be acquired prior to calling this method
-    private </*@Nullable*/T> T queryUnderLock(@Untainted String sql, Object[] args,
+    private <T extends /*@Nullable*/Object> T queryUnderLock(@Untainted String sql, Object[] args,
             ResultSetExtractor<T> rse) throws SQLException {
         PreparedStatement preparedStatement = prepareStatement(sql);
         for (int i = 0; i < args.length; i++) {

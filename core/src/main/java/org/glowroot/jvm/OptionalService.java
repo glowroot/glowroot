@@ -25,11 +25,11 @@ import org.immutables.value.Value;
 public abstract class OptionalService<T> {
 
     static <T> OptionalService<T> available(T service) {
-        return new NonLazyOptionalService<T>(Availability.of(true, ""), service);
+        return new PresentOptionalService<T>(service);
     }
 
     static <T> OptionalService<T> unavailable(String reason) {
-        return new NonLazyOptionalService<T>(Availability.of(false, reason), null);
+        return new AbsentOptionalService<T>(reason);
     }
 
     static <T> OptionalService<T> lazy(Supplier<OptionalService<T>> supplier) {
@@ -50,13 +50,13 @@ public abstract class OptionalService<T> {
         public abstract String getReason();
     }
 
-    private static class NonLazyOptionalService<T> extends OptionalService<T> {
+    private static class PresentOptionalService<T> extends OptionalService<T> {
 
         private final Availability availability;
-        private final @Nullable T service;
+        private final T service;
 
-        public NonLazyOptionalService(Availability availability, @Nullable T service) {
-            this.availability = availability;
+        public PresentOptionalService(T service) {
+            this.availability = Availability.of(true, "");
             this.service = service;
         }
 
@@ -66,8 +66,27 @@ public abstract class OptionalService<T> {
         }
 
         @Override
-        public @Nullable T getService() {
+        public T getService() {
             return service;
+        }
+    }
+
+    private static class AbsentOptionalService<T> extends OptionalService<T> {
+
+        private final Availability availability;
+
+        public AbsentOptionalService(String reason) {
+            this.availability = Availability.of(false, reason);
+        }
+
+        @Override
+        public Availability getAvailability() {
+            return availability;
+        }
+
+        @Override
+        public @Nullable T getService() {
+            return null;
         }
     }
 

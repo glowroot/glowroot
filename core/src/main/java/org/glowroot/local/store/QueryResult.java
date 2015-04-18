@@ -37,7 +37,7 @@ public class QueryResult<T> {
         return moreAvailable;
     }
 
-    static </*@NonNull*/T> QueryResult<T> from(ImmutableList<T> records, int limit) {
+    static <T extends /*@NonNull*/Object> QueryResult<T> from(ImmutableList<T> records, int limit) {
         if (limit == 0) {
             return new QueryResult<T>(records, false);
         } else if (records.size() > limit) {

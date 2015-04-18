@@ -406,13 +406,13 @@
       <properties>
         <checker.qual.group.id>org.checkerframework</checker.qual.group.id>
         <checker.qual.artifact.id>checker-qual</checker.qual.artifact.id>
-        <checker.qual.version>1.8.11</checker.qual.version>
+        <checker.qual.version>1.9.0</checker.qual.version>
       </properties>
       <dependencies>
         <dependency>
           <groupId>org.checkerframework</groupId>
           <artifactId>checker</artifactId>
-          <version>1.8.11</version>
+          <version>1.9.0</version>
           <optional>true</optional>
         </dependency>
         <dependency>
@@ -457,8 +457,10 @@
                 <annotationProcessor>
                   org.checkerframework.checker.nullness.NullnessChecker
                 </annotationProcessor>
+                <!-- using the tainting classic checker due to
+                  https://code.google.com/p/checker-framework/issues/detail?id=431 -->
                 <annotationProcessor>
-                  org.checkerframework.checker.tainting.TaintingChecker
+                  org.checkerframework.checker.tainting.classic.TaintingClassicChecker
                 </annotationProcessor>
               </annotationProcessors>
               <compilerArgs>

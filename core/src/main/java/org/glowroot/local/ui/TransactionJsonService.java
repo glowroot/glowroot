@@ -411,6 +411,7 @@ class TransactionJsonService {
                     }
                 });
         List<String> timerNames = Lists.newArrayList();
+        @SuppressWarnings("assignment.type.incompatible")
         List<Entry<String, MutableLong>> topTimerTotals =
                 valueOrdering.greatestOf(timerTotals.entrySet(), topX);
         for (Entry<String, MutableLong> entry : topTimerTotals) {

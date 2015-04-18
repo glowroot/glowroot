@@ -395,6 +395,10 @@ public class AggregateDao {
                 + " from overall_aggregate where capture_time > ? and capture_time <= ?",
                 new OverallRollupResultSetExtractor(rollupTime), rollupTime - fixedRollupMillis,
                 rollupTime);
+        if (overallAggregates == null) {
+            // data source is closing
+            return;
+        }
         List<Aggregate> transactionAggregates = dataSource.query("select transaction_type,"
                 + " transaction_name, total_micros, error_count, transaction_count,"
                 + " total_cpu_micros, total_blocked_micros, total_waited_micros,"
@@ -402,12 +406,15 @@ public class AggregateDao {
                 + " timers, histogram from transaction_aggregate where capture_time > ?"
                 + " and capture_time <= ?", new TransactionRollupResultSetExtractor(rollupTime),
                 rollupTime - fixedRollupMillis, rollupTime);
+        if (transactionAggregates == null) {
+            // data source is closing
+            return;
+        }
         store(overallAggregates, transactionAggregates, "_rollup_1");
     }
 
-    private void store(final List<Aggregate> overallAggregates,
-            List<Aggregate> transactionAggregates, @Untainted String rollupSuffix)
-            throws Exception {
+    private void store(List<Aggregate> overallAggregates, List<Aggregate> transactionAggregates,
+            @Untainted String rollupSuffix) throws Exception {
         dataSource.batchUpdate("insert into overall_aggregate" + rollupSuffix
                 + " (transaction_type, capture_time, total_micros, error_count, transaction_count,"
                 + " total_cpu_micros, total_blocked_micros, total_waited_micros,"

@@ -514,7 +514,9 @@ class JvmJsonService {
             // TabularData.keySet() returns "Set<List<?>> but is declared Set<?> for
             // compatibility reasons" (see javadocs) so safe to cast to List<?>
             List<?> keyList = (List<?>) key;
+            @SuppressWarnings("argument.type.incompatible")
             String keyString = Joiner.on(", ").join(keyList);
+            @SuppressWarnings("argument.type.incompatible")
             CompositeData compositeData = tabularData.get(keyList.toArray());
             // linked hash map used to preserve attribute ordering
             Map<String, /*@Nullable*/Object> valueMap = Maps.newLinkedHashMap();

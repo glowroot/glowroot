@@ -15,6 +15,10 @@ public class String {
     public @PolyTainted String toLowerCase(Locale locale) @PolyTainted;
 }
 
+public class Class<T> {
+    public @NonNull T[] getEnumConstants();
+}
+
 /* ========================================================================== */
 package java.lang.instrument;
 

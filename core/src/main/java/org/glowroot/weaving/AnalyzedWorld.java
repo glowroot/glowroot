@@ -434,10 +434,11 @@ public class AnalyzedWorld {
         // toString() is used in logger warning construction
         @Override
         public String toString() {
-            if (codeSource() == null) {
+            CodeSource codeSource = codeSource();
+            if (codeSource == null) {
                 return className();
             } else {
-                return className() + " (" + codeSource().getLocation() + ")";
+                return className() + " (" + codeSource.getLocation() + ")";
             }
         }
     }

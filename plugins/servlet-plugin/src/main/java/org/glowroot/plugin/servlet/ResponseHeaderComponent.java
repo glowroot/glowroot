@@ -22,7 +22,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-import com.google.common.collect.ImmutableList;
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -58,14 +59,15 @@ class ResponseHeaderComponent {
         Map<String, Object> responseHeaderStrings = Maps.newHashMap();
         for (ResponseHeader responseHeader : responseHeaders.values()) {
             String name = responseHeader.getName();
-            Object value = responseHeader.getValue();
-            if (value instanceof List) {
-                List<String> values = Lists.newArrayList();
-                for (Object v : (List<?>) value) {
-                    values.add(headerValueString(v));
+            List<Object> values = responseHeader.getValues();
+            if (values != null) {
+                List<String> headerValueStrings = Lists.newArrayList();
+                for (Object v : values) {
+                    headerValueStrings.add(headerValueString(v));
                 }
-                responseHeaderStrings.put(name, values);
+                responseHeaderStrings.put(name, headerValueStrings);
             } else {
+                Object value = responseHeader.getValue();
                 responseHeaderStrings.put(name, headerValueString(value));
             }
         }
@@ -94,15 +96,7 @@ class ResponseHeaderComponent {
         if (responseHeader == null) {
             responseHeaders.put(nameUpper, new ResponseHeader(name, value));
         } else {
-            Object existingValue = responseHeader.getValue();
-            if (existingValue instanceof List) {
-                List<Object> updatedValues = Lists.newArrayList();
-                updatedValues.addAll((List<?>) existingValue);
-                updatedValues.add(value);
-                responseHeader.setValue(ImmutableList.copyOf(updatedValues));
-            } else {
-                responseHeader.setValue(ImmutableList.of(existingValue, value));
-            }
+            responseHeader.addValue(value);
         }
     }
 
@@ -126,6 +120,7 @@ class ResponseHeaderComponent {
     private static class ResponseHeader {
         private final String name;
         private volatile Object value;
+        private volatile @MonotonicNonNull List<Object> values;
         private ResponseHeader(String name, Object value) {
             this.name = name;
             this.value = value;
@@ -136,8 +131,18 @@ class ResponseHeaderComponent {
         private Object getValue() {
             return value;
         }
-        private void setValue(Object value) {
+        private @Nullable List<Object> getValues() {
+            return values;
+        }
+        public void setValue(Object value) {
             this.value = value;
+        }
+        private void addValue(Object newValue) {
+            if (values == null) {
+                values = Lists.newCopyOnWriteArrayList();
+                values.add(value);
+            }
+            values.add(newValue);
         }
     }
 }
