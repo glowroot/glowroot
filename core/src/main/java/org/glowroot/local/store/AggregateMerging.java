@@ -17,7 +17,6 @@ package org.glowroot.local.store;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Iterator;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -31,6 +30,7 @@ import org.immutables.value.Value;
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.LazyHistogram;
 import org.glowroot.common.ObjectMappers;
+import org.glowroot.transaction.model.ProfileNode;
 
 public class AggregateMerging {
 
@@ -90,21 +90,16 @@ public class AggregateMerging {
                 .build();
     }
 
-    public static AggregateProfileNode getProfile(List<CharSource> profiles,
-            double truncateLeafPercentage) throws IOException {
-        AggregateProfileNode syntheticRootNode = AggregateProfileNode.createSyntheticRootNode();
+    public static ProfileNode getProfile(List<CharSource> profiles) throws IOException {
+        ProfileNode syntheticRootNode = ProfileNode.createSyntheticRoot();
         for (CharSource profile : profiles) {
             String profileContent = profile.read();
             if (profileContent.equals(AggregateDao.OVERWRITTEN)) {
                 continue;
             }
-            AggregateProfileNode toBeMergedRootNode = ObjectMappers.readRequiredValue(mapper,
-                    profileContent, AggregateProfileNode.class);
+            ProfileNode toBeMergedRootNode =
+                    ObjectMappers.readRequiredValue(mapper, profileContent, ProfileNode.class);
             syntheticRootNode.mergeMatchedNode(toBeMergedRootNode);
-        }
-        if (truncateLeafPercentage != 0) {
-            int minSamples = (int) (syntheticRootNode.getSampleCount() * truncateLeafPercentage);
-            truncateLeafs(syntheticRootNode, minSamples);
         }
         if (syntheticRootNode.getChildNodes().size() == 1) {
             // strip off synthetic root node
@@ -122,18 +117,6 @@ public class AggregateMerging {
             return x;
         }
         return x + y;
-    }
-
-    private static void truncateLeafs(AggregateProfileNode node, int minSamples) {
-        for (Iterator<AggregateProfileNode> i = node.getChildNodes().iterator(); i.hasNext();) {
-            AggregateProfileNode childNode = i.next();
-            if (childNode.getSampleCount() < minSamples) {
-                i.remove();
-                node.setEllipsed();
-            } else {
-                truncateLeafs(childNode, minSamples);
-            }
-        }
     }
 
     // could use @Value.Immutable, but it's not technically immutable since it contains

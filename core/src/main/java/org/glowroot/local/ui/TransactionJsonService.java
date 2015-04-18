@@ -46,13 +46,13 @@ import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
 import org.glowroot.local.store.AggregateMerging;
 import org.glowroot.local.store.AggregateMerging.HistogramMergedAggregate;
 import org.glowroot.local.store.AggregateMerging.TimerMergedAggregate;
-import org.glowroot.local.store.AggregateProfileNode;
 import org.glowroot.local.store.AggregateTimer;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.ThreadInfoAggregate;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.store.TransactionSummaryQuery;
 import org.glowroot.transaction.TransactionRegistry;
+import org.glowroot.transaction.model.ProfileNode;
 import org.glowroot.transaction.model.Transaction;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -158,8 +158,8 @@ class TransactionJsonService {
         TransactionProfileRequest request =
                 QueryStrings.decode(queryString, TransactionProfileRequest.class);
 
-        AggregateProfileNode profile = transactionCommonService.getProfile(
-                request.transactionType(), request.transactionName(), request.from(), request.to(),
+        ProfileNode profile = transactionCommonService.getProfile(request.transactionType(),
+                request.transactionName(), request.from(), request.to(),
                 request.truncateLeafPercentage());
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -252,10 +252,10 @@ class TransactionJsonService {
     @GET("/backend/transaction/flame-graph")
     String getFlameGraph(String queryString) throws Exception {
         FlameGraphRequest request = QueryStrings.decode(queryString, FlameGraphRequest.class);
-        AggregateProfileNode profile = transactionCommonService.getProfile(
-                request.transactionType(), request.transactionName(), request.from(),
-                request.to(), request.truncateLeafPercentage());
-        AggregateProfileNode interestingNode = profile;
+        ProfileNode profile = transactionCommonService.getProfile(request.transactionType(),
+                request.transactionName(), request.from(), request.to(),
+                request.truncateLeafPercentage());
+        ProfileNode interestingNode = profile;
         while (interestingNode.getChildNodes().size() == 1) {
             interestingNode = interestingNode.getChildNodes().get(0);
         }
@@ -439,17 +439,16 @@ class TransactionJsonService {
         return true;
     }
 
-    private static void writeFlameGraphNode(AggregateProfileNode node, JsonGenerator jg)
-            throws IOException {
+    private static void writeFlameGraphNode(ProfileNode node, JsonGenerator jg) throws IOException {
         jg.writeObjectFieldStart(Strings.nullToEmpty(node.getStackTraceElement()));
         int svUnique = node.getSampleCount();
-        for (AggregateProfileNode childNode : node.getChildNodes()) {
+        for (ProfileNode childNode : node.getChildNodes()) {
             svUnique -= childNode.getSampleCount();
         }
         jg.writeNumberField("svUnique", svUnique);
         jg.writeNumberField("svTotal", node.getSampleCount());
         jg.writeObjectFieldStart("svChildren");
-        for (AggregateProfileNode childNode : node.getChildNodes()) {
+        for (ProfileNode childNode : node.getChildNodes()) {
             writeFlameGraphNode(childNode, jg);
         }
         jg.writeEndObject();

@@ -32,7 +32,7 @@ import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.api.internal.ThrowableInfo;
 import org.glowroot.common.Tickers;
 import org.glowroot.transaction.model.Profile;
-import org.glowroot.transaction.model.Profile.StackTraceElementPlus;
+import org.glowroot.transaction.model.StackTraceElementPlus;
 import org.glowroot.transaction.model.TraceEntry;
 
 public class EntriesCharSourceCreator {
@@ -65,7 +65,7 @@ public class EntriesCharSourceCreator {
         jw.writeStartArray();
         List<StackTraceElementPlus> elements = Profile.stripSyntheticTimerMethods(stackTrace);
         for (StackTraceElementPlus element : elements) {
-            jw.writeString(element.getStackTraceElement().toString());
+            jw.writeString(element.stackTraceElement().toString());
         }
         jw.writeEndArray();
     }

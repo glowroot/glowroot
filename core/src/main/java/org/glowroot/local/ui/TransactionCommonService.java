@@ -17,6 +17,9 @@ package org.glowroot.local.ui;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -36,9 +39,9 @@ import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregateDao.MergedAggregate;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
 import org.glowroot.local.store.AggregateMerging;
-import org.glowroot.local.store.AggregateProfileNode;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TransactionSummaryQuery;
+import org.glowroot.transaction.model.ProfileNode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -171,10 +174,15 @@ class TransactionCommonService {
         return aggregates;
     }
 
-    AggregateProfileNode getProfile(String transactionType, @Nullable String transactionName,
-            long from, long to, double truncateLeafPercentage) throws Exception {
+    ProfileNode getProfile(String transactionType, @Nullable String transactionName, long from,
+            long to, double truncateLeafPercentage) throws Exception {
         List<CharSource> profiles = getProfiles(transactionType, transactionName, from, to);
-        return AggregateMerging.getProfile(profiles, truncateLeafPercentage);
+        ProfileNode rootNode = AggregateMerging.getProfile(profiles);
+        if (truncateLeafPercentage != 0) {
+            int minSamples = (int) (rootNode.getSampleCount() * truncateLeafPercentage);
+            truncateLeafs(rootNode, minSamples);
+        }
+        return rootNode;
     }
 
     private List<AggregateIntervalCollector> getOrderedIntervalCollectorsInRange(long from,
@@ -352,6 +360,24 @@ class TransactionCommonService {
                 .totalMicros(summary1.totalMicros() + summary2.totalMicros())
                 .transactionCount(summary1.transactionCount() + summary2.transactionCount())
                 .build();
+    }
+
+    // using non-recursive algorithm to avoid stack overflow error on deep profiles
+    private static void truncateLeafs(ProfileNode rootNode, int minSamples) {
+        Deque<ProfileNode> toBeVisited = new ArrayDeque<ProfileNode>();
+        toBeVisited.add(rootNode);
+        ProfileNode node;
+        while ((node = toBeVisited.poll()) != null) {
+            for (Iterator<ProfileNode> i = node.getChildNodes().iterator(); i.hasNext();) {
+                ProfileNode childNode = i.next();
+                if (childNode.getSampleCount() < minSamples) {
+                    i.remove();
+                    node.setEllipsed();
+                } else {
+                    toBeVisited.add(childNode);
+                }
+            }
+        }
     }
 
     private static List<TransactionSummary> sortTransactionSummaries(

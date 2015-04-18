@@ -48,6 +48,7 @@ import org.glowroot.common.ScratchBuffer;
 import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.ResultSetExtractor;
 import org.glowroot.local.store.DataSource.RowMapper;
+import org.glowroot.transaction.model.ProfileNode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -784,8 +785,7 @@ public class AggregateDao {
         private final AggregateTimer syntheticRootTimer =
                 AggregateTimer.createSyntheticRootTimer();
         private final LazyHistogram lazyHistogram = new LazyHistogram();
-        private final AggregateProfileNode syntheticProfileNode =
-                AggregateProfileNode.createSyntheticRootNode();
+        private final ProfileNode syntheticProfileNode = ProfileNode.createSyntheticRoot();
 
         public MergedAggregate(long captureTime, String transactionType,
                 @Nullable String transactionName) {
@@ -874,8 +874,8 @@ public class AggregateDao {
         }
 
         private void addProfile(String profileContent) throws IOException {
-            AggregateProfileNode profileNode = ObjectMappers.readRequiredValue(
-                    mapper, profileContent, AggregateProfileNode.class);
+            ProfileNode profileNode =
+                    ObjectMappers.readRequiredValue(mapper, profileContent, ProfileNode.class);
             syntheticProfileNode.mergeMatchedNode(profileNode);
         }
 

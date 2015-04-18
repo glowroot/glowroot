@@ -16,24 +16,19 @@
 package org.glowroot.collector;
 
 import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.lang.Thread.State;
-import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.google.common.collect.Lists;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.CharSource;
 
+import org.glowroot.common.ObjectMappers;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.ProfileNode;
 
 public class ProfileCharSourceCreator {
 
-    private static final JsonFactory jsonFactory = new JsonFactory();
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private ProfileCharSourceCreator() {}
 
@@ -62,88 +57,6 @@ public class ProfileCharSourceCreator {
             rootNode = syntheticRootNode;
         }
         // need to convert profile into bytes entirely inside of the above lock (no lazy CharSource)
-        StringWriter sw = new StringWriter(32768);
-        new ProfileWriter(rootNode, sw).write();
-        return sw.toString();
-    }
-
-    private static class ProfileWriter {
-
-        private final List<Object> toVisit;
-        private final JsonGenerator jg;
-        private final List<String> timerNameStack = Lists.newArrayList();
-
-        private ProfileWriter(ProfileNode rootNode, Writer writer) throws IOException {
-            this.toVisit = Lists.newArrayList((Object) rootNode);
-            jg = jsonFactory.createGenerator(writer);
-        }
-
-        private void write() throws IOException {
-            while (!toVisit.isEmpty()) {
-                writeNext();
-            }
-            jg.close();
-        }
-
-        private void writeNext() throws IOException {
-            Object curr = toVisit.remove(toVisit.size() - 1);
-            if (curr instanceof ProfileNode) {
-                ProfileNode currNode = (ProfileNode) curr;
-                jg.writeStartObject();
-                toVisit.add(JsonGeneratorOp.END_OBJECT);
-                StackTraceElement stackTraceElement = currNode.getStackTraceElement();
-                if (stackTraceElement == null) {
-                    jg.writeStringField("stackTraceElement", "<multiple root nodes>");
-                    jg.writeNumberField("sampleCount", currNode.getSampleCount());
-                } else {
-                    writeStackTraceElement(stackTraceElement, currNode);
-                }
-                List<ProfileNode> childNodes = currNode.getChildNodes();
-                if (!childNodes.isEmpty()) {
-                    jg.writeArrayFieldStart("childNodes");
-                    toVisit.add(JsonGeneratorOp.END_ARRAY);
-                    toVisit.addAll(Lists.reverse(childNodes));
-                }
-            } else if (curr == JsonGeneratorOp.END_ARRAY) {
-                jg.writeEndArray();
-            } else if (curr == JsonGeneratorOp.END_OBJECT) {
-                jg.writeEndObject();
-            } else if (curr == JsonGeneratorOp.POP_TIMER_NAME) {
-                timerNameStack.remove(timerNameStack.size() - 1);
-            }
-        }
-
-        private void writeStackTraceElement(StackTraceElement stackTraceElement,
-                ProfileNode currNode) throws IOException {
-            jg.writeStringField("stackTraceElement", stackTraceElement.toString());
-            List<String> currTimerNames = currNode.getTimerNames();
-            for (String currTimerName : currTimerNames) {
-                if (timerNameStack.isEmpty() || !currTimerName.equals(
-                        timerNameStack.get(timerNameStack.size() - 1))) {
-                    // filter out successive duplicates which are common from weaving groups
-                    // of overloaded methods
-                    timerNameStack.add(currTimerName);
-                    toVisit.add(JsonGeneratorOp.POP_TIMER_NAME);
-                }
-            }
-            jg.writeNumberField("sampleCount", currNode.getSampleCount());
-            State leafThreadState = currNode.getLeafThreadState();
-            if (leafThreadState != null) {
-                writeLeaf(leafThreadState);
-            }
-        }
-
-        private void writeLeaf(State leafThreadState) throws IOException {
-            jg.writeStringField("leafThreadState", leafThreadState.name());
-            jg.writeArrayFieldStart("timerNames");
-            for (String timerName : timerNameStack) {
-                jg.writeString(timerName);
-            }
-            jg.writeEndArray();
-        }
-
-        private static enum JsonGeneratorOp {
-            END_OBJECT, END_ARRAY, POP_TIMER_NAME
-        }
+        return mapper.writeValueAsString(rootNode);
     }
 }

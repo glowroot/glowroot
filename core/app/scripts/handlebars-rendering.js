@@ -707,7 +707,7 @@ HandlebarsRendering = (function () {
     var html = generateHtml();
     $selector.find('.gt-profile').html(html);
 
-    var mergedCounts = calculateTimerCounts(rootNode);
+    var mergedCounts = calculateTimerCounts(rootNode, []);
     if ($.isEmptyObject(mergedCounts)) {
       // display filter text input
       var $profileTextFilter = $selector.find('.gt-profile-text-filter');
@@ -790,11 +790,20 @@ HandlebarsRendering = (function () {
     }
   }
 
-  function calculateTimerCounts(node) {
-    var mergedCounts = {};
-    if (node.leafThreadState && node.timerNames && node.timerNames.length) {
-      var partial = '';
+  function calculateTimerCounts(node, timerNameStack) {
+    var numTimerNamesAdded = 0;
+    if (node.timerNames && node.timerNames.length) {
       $.each(node.timerNames, function (i, timerName) {
+        if (timerName !== timerNameStack[timerNameStack.length - 1]) {
+          timerNameStack.push(timerName);
+          numTimerNamesAdded++;
+        }
+      });
+    }
+    var mergedCounts = {};
+    if (node.leafThreadState && timerNameStack.length) {
+      var partial = '';
+      $.each(timerNameStack, function (i, timerName) {
         if (i > 0) {
           partial += ' / ';
         }
@@ -814,11 +823,14 @@ HandlebarsRendering = (function () {
         }
       };
       for (i = 0; i < childNodes.length; i++) {
-        var timerCounts = calculateTimerCounts(childNodes[i]);
+        var timerCounts = calculateTimerCounts(childNodes[i], timerNameStack);
         $.each(timerCounts, processTimer);
       }
     }
     node.timerCounts = mergedCounts;
+    if (numTimerNamesAdded !== 0) {
+      timerNameStack.splice(-numTimerNamesAdded, numTimerNamesAdded);
+    }
     return mergedCounts;
   }
 

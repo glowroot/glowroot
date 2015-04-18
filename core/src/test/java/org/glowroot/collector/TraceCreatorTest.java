@@ -19,17 +19,21 @@ import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.Arrays;
 
-import com.google.common.io.CharSource;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
+import org.glowroot.common.ObjectMappers;
 import org.glowroot.transaction.model.Profile;
+import org.glowroot.transaction.model.ProfileNode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TraceCreatorTest {
 
+    private static final ObjectMapper mapper = ObjectMappers.create();
+
     @Test
-    public void shouldStoreVeryLargeProfile() throws IOException {
+    public void shouldWriteVeryLargeProfile() throws IOException {
         // given
         Profile profile = new Profile(false);
         // StackOverflowError was previously occurring somewhere around 1300 stack trace elements
@@ -40,13 +44,30 @@ public class TraceCreatorTest {
                     "method" + i, TraceCreatorTest.class.getName() + ".java", 100 + 10 * i);
         }
         profile.addToStackTree(Profile.stripSyntheticTimerMethods(Arrays.asList(stackTrace)),
-                State.RUNNABLE);
+                State.RUNNABLE.name());
         // when
-        CharSource profileCharSource =
-                ProfileCharSourceCreator.createProfileCharSource(profile);
-        assertThat(profileCharSource).isNotNull();
+        String profileJson = mapper.writeValueAsString(profile.getSyntheticRootNode());
         // then don't blow up with StackOverflowError
         // (and an extra verification just to make sure the test was valid)
-        assertThat(profileCharSource.read().length()).isGreaterThan(1000000);
+        assertThat(profileJson.length()).isGreaterThan(1000000);
+    }
+
+    @Test
+    public void shouldReadVeryLargeProfile() throws IOException {
+        // given
+        Profile profile = new Profile(false);
+        StackTraceElement[] stackTrace = new StackTraceElement[10000];
+        for (int i = 0; i < stackTrace.length; i++) {
+            stackTrace[i] = new StackTraceElement(TraceCreatorTest.class.getName(),
+                    "method" + i, TraceCreatorTest.class.getName() + ".java", 100 + 10 * i);
+        }
+        profile.addToStackTree(Profile.stripSyntheticTimerMethods(Arrays.asList(stackTrace)),
+                State.RUNNABLE.name());
+        String profileJson = mapper.writeValueAsString(profile.getSyntheticRootNode());
+        // when
+        ProfileNode rootNode = mapper.readValue(profileJson, ProfileNode.class);
+        // then don't blow up with StackOverflowError
+        // (and an extra verification just to make sure the test was valid)
+        assertThat(rootNode.getSampleCount()).isEqualTo(1);
     }
 }

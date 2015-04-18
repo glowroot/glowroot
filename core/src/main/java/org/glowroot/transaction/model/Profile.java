@@ -15,7 +15,6 @@
  */
 package org.glowroot.transaction.model;
 
-import java.lang.Thread.State;
 import java.lang.management.ThreadInfo;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -29,6 +28,7 @@ import javax.annotation.concurrent.GuardedBy;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.immutables.value.Value;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -42,7 +42,7 @@ public class Profile {
     @GuardedBy("lock")
     private final List<List<StackTraceElement>> unmergedStackTraces = Lists.newArrayList();
     @GuardedBy("lock")
-    private final List<State> unmergedStackTraceThreadStates = Lists.newArrayList();
+    private final List<String> unmergedStackTraceThreadStates = Lists.newArrayList();
     @GuardedBy("lock")
     private final ProfileNode syntheticRootNode = ProfileNode.createSyntheticRoot();
 
@@ -83,7 +83,7 @@ public class Profile {
             }
             List<StackTraceElement> stackTrace = Arrays.asList(threadInfo.getStackTrace());
             unmergedStackTraces.add(stackTrace);
-            unmergedStackTraceThreadStates.add(threadInfo.getThreadState());
+            unmergedStackTraceThreadStates.add(threadInfo.getThreadState().name());
             if (unmergedStackTraces.size() >= 10) {
                 // merged stack tree takes up less memory, so merge from time to time
                 mergeTheUnmergedStackTraces();
@@ -95,7 +95,7 @@ public class Profile {
     private void mergeTheUnmergedStackTraces() {
         for (int i = 0; i < unmergedStackTraces.size(); i++) {
             List<StackTraceElement> stackTrace = unmergedStackTraces.get(i);
-            State threadState = unmergedStackTraceThreadStates.get(i);
+            String threadState = unmergedStackTraceThreadStates.get(i);
             if (mayHaveSyntheticTimerMethods) {
                 addToStackTree(stripSyntheticTimerMethods(stackTrace), threadState);
             } else {
@@ -109,7 +109,7 @@ public class Profile {
 
     // must be holding lock to call
     @VisibleForTesting
-    public void addToStackTree(List<?> stackTrace, State threadState) {
+    public void addToStackTree(List<?> stackTrace, String threadState) {
         syntheticRootNode.incrementSampleCount(1);
         ProfileNode lastMatchedNode = syntheticRootNode;
         List<ProfileNode> nextChildNodes = syntheticRootNode.getChildNodes();
@@ -148,11 +148,12 @@ public class Profile {
         for (int i = nextIndex; i >= 0; i--) {
             Object element = stackTrace.get(i);
             ProfileNode nextNode;
+            String stackTraceElement = getStackTraceElement(element);
             if (i == 0) {
                 // leaf node
-                nextNode = ProfileNode.create(getStackTraceElement(element), threadState);
+                nextNode = ProfileNode.create(stackTraceElement, threadState);
             } else {
-                nextNode = ProfileNode.create(getStackTraceElement(element), null);
+                nextNode = ProfileNode.create(stackTraceElement, null);
             }
             nextNode.setTimerNames(getTimerNames(element));
             nextNode.incrementSampleCount(1);
@@ -172,7 +173,7 @@ public class Profile {
             StackTraceElement element = i.next();
             String timerName = getTimerName(element);
             if (timerName == null) {
-                stackTracePlus.add(new StackTraceElementPlus(element, ImmutableList.<String>of()));
+                stackTracePlus.add(StackTraceElementPlus.of(element, ImmutableList.<String>of()));
                 continue;
             }
             String originalMethodName = element.getMethodName();
@@ -196,7 +197,7 @@ public class Profile {
             // synthetic $timer$ methods
             StackTraceElement originalElement = new StackTraceElement(element.getClassName(),
                     originalMethodName, element.getFileName(), element.getLineNumber());
-            stackTracePlus.add(new StackTraceElementPlus(originalElement, timerNames));
+            stackTracePlus.add(StackTraceElementPlus.of(originalElement, timerNames));
         }
         return stackTracePlus;
     }
@@ -217,10 +218,9 @@ public class Profile {
         }
     }
 
-    private static boolean matches(StackTraceElement stackTraceElement,
-            ProfileNode childNode, boolean leaf, State threadState) {
-
-        State leafThreadState = childNode.getLeafThreadState();
+    private static boolean matches(String stackTraceElement, ProfileNode childNode, boolean leaf,
+            String threadState) {
+        String leafThreadState = childNode.getLeafThreadState();
         if (leafThreadState != null && leaf) {
             // only consider thread state when matching the leaf node
             return stackTraceElement.equals(childNode.getStackTraceElement())
@@ -231,35 +231,30 @@ public class Profile {
         }
     }
 
-    private static StackTraceElement getStackTraceElement(Object stackTraceElementOrPlus) {
+    private static String getStackTraceElement(Object stackTraceElementOrPlus) {
+        StackTraceElement stackTraceElement;
         if (stackTraceElementOrPlus instanceof StackTraceElement) {
-            return (StackTraceElement) stackTraceElementOrPlus;
+            stackTraceElement = (StackTraceElement) stackTraceElementOrPlus;
         } else {
-            return ((StackTraceElementPlus) stackTraceElementOrPlus).getStackTraceElement();
+            stackTraceElement =
+                    ((StackTraceElementPlus) stackTraceElementOrPlus).stackTraceElement();
         }
+        return stackTraceElement.toString();
     }
 
     private static List<String> getTimerNames(Object stackTraceElementOrPlus) {
         if (stackTraceElementOrPlus instanceof StackTraceElement) {
             return ImmutableList.of();
         } else {
-            return ((StackTraceElementPlus) stackTraceElementOrPlus).getTimerNames();
+            return ((StackTraceElementPlus) stackTraceElementOrPlus).timerNames();
         }
     }
 
-    public static class StackTraceElementPlus {
-        private final StackTraceElement stackTraceElement;
-        private final ImmutableList<String> timerNames;
-        private StackTraceElementPlus(StackTraceElement stackTraceElement,
-                List<String> timerNames) {
-            this.stackTraceElement = stackTraceElement;
-            this.timerNames = ImmutableList.copyOf(timerNames);
-        }
-        public StackTraceElement getStackTraceElement() {
-            return stackTraceElement;
-        }
-        private ImmutableList<String> getTimerNames() {
-            return timerNames;
-        }
+    @Value.Immutable
+    public abstract static class StackTraceElementPlusBase {
+        @Value.Parameter
+        public abstract StackTraceElement stackTraceElement();
+        @Value.Parameter
+        abstract ImmutableList<String> timerNames();
     }
 }

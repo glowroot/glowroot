@@ -66,7 +66,7 @@ class AggregateProfileBuilder {
             if (foundMatchingChildNode == null) {
                 // since to-be-merged nodes may still be used when storing the trace, need to make
                 // copy here
-                StackTraceElement stackTraceElement = toBeMergedChildNode.getStackTraceElement();
+                String stackTraceElement = toBeMergedChildNode.getStackTraceElement();
                 // stackTraceElement is only null for synthetic root
                 checkNotNull(stackTraceElement);
                 foundMatchingChildNode = ProfileNode.create(stackTraceElement,
