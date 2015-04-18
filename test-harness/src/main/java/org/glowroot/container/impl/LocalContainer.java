@@ -30,8 +30,8 @@ import com.google.common.io.Files;
 
 import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
+import org.glowroot.common.MessageCount;
 import org.glowroot.common.SpyingLogbackFilter;
-import org.glowroot.common.SpyingLogbackFilter.MessageCount;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.AppUnderTestServices;
 import org.glowroot.container.Container;
@@ -192,10 +192,10 @@ public class LocalContainer implements Container {
         configService.setTraceStoreThresholdMillis(0);
         // check and reset log messages
         MessageCount logMessageCount = SpyingLogbackFilter.clearMessages();
-        if (logMessageCount.getExpectedCount() > 0) {
+        if (logMessageCount.expectedCount() > 0) {
             throw new AssertionError("One or more expected messages were not logged");
         }
-        if (logMessageCount.getUnexpectedCount() > 0) {
+        if (logMessageCount.unexpectedCount() > 0) {
             throw new AssertionError("One or more unexpected messages were logged");
         }
     }

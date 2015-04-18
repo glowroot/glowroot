@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Iterables;
 import com.google.common.io.CharSource;
+import org.immutables.value.Value;
 
 import org.glowroot.collector.EntriesCharSourceCreator;
 import org.glowroot.collector.ProfileCharSourceCreator;
@@ -106,16 +107,24 @@ class TraceCommonService {
                 transactionCollectorImpl.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
                 Trace trace = createTrace(transaction);
-                return new TraceExport(trace, mapper.writeValueAsString(trace),
-                        createEntries(transaction), createProfile(transaction));
+                return TraceExport.builder()
+                        .trace(trace)
+                        .traceJson(mapper.writeValueAsString(trace))
+                        .entries(createEntries(transaction))
+                        .profile(createProfile(transaction))
+                        .build();
             }
         }
         Trace trace = traceDao.readTrace(traceId);
         if (trace == null) {
             return null;
         }
-        return new TraceExport(trace, mapper.writeValueAsString(trace),
-                traceDao.readEntries(traceId), traceDao.readProfile(traceId));
+        return TraceExport.builder()
+                .trace(trace)
+                .traceJson(mapper.writeValueAsString(trace))
+                .entries(traceDao.readEntries(traceId))
+                .profile(traceDao.readProfile(traceId))
+                .build();
     }
 
     private Trace createTrace(Transaction transaction) throws IOException {
@@ -136,37 +145,12 @@ class TraceCommonService {
         return ProfileCharSourceCreator.createProfileCharSource(active.getProfile());
     }
 
-    static class TraceExport {
+    @Value.Immutable
+    static abstract class TraceExportBase {
 
-        private final Trace trace;
-        private final String traceJson;
-        private @Nullable final CharSource entries;
-        private @Nullable final CharSource profile;
-
-        private TraceExport(Trace trace, String traceJson, @Nullable CharSource entries,
-                @Nullable CharSource profile) {
-            this.trace = trace;
-            this.traceJson = traceJson;
-            this.entries = entries;
-            this.profile = profile;
-        }
-
-        Trace getTrace() {
-            return trace;
-        }
-
-        String getTraceJson() {
-            return traceJson;
-        }
-
-        @Nullable
-        CharSource getEntries() {
-            return entries;
-        }
-
-        @Nullable
-        CharSource getProfile() {
-            return profile;
-        }
+        abstract Trace trace();
+        abstract String traceJson();
+        abstract @Nullable CharSource entries();
+        abstract @Nullable CharSource profile();
     }
 }

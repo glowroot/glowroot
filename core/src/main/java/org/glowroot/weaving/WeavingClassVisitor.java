@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -250,14 +251,14 @@ class WeavingClassVisitor extends ClassVisitor {
                     classMetaType, type);
         }
         for (MethodMetaGroup methodMetaGroup : methodMetaGroups) {
-            for (Type methodMetaType : methodMetaGroup.getMethodMetaTypes()) {
+            for (Type methodMetaType : methodMetaGroup.methodMetaTypes()) {
                 String methodMetaInternalName = methodMetaType.getInternalName();
                 String methodMetaFieldName = "glowroot$method$meta$"
-                        + methodMetaGroup.getUniqueNum() + '$'
+                        + methodMetaGroup.uniqueNum() + '$'
                         + methodMetaInternalName.replace('/', '$');
                 BootstrapMetaHolders.createMethodMetaHolder(metaHolderInternalName,
-                        methodMetaFieldName, methodMetaType, type, methodMetaGroup.getReturnType(),
-                        methodMetaGroup.getParameterTypes());
+                        methodMetaFieldName, methodMetaType, type, methodMetaGroup.returnType(),
+                        methodMetaGroup.parameterTypes());
             }
         }
     }
@@ -291,10 +292,10 @@ class WeavingClassVisitor extends ClassVisitor {
                     "L" + classMetaInternalName + ";");
         }
         for (MethodMetaGroup methodMetaGroup : methodMetaGroups) {
-            for (Type methodMetaType : methodMetaGroup.getMethodMetaTypes()) {
+            for (Type methodMetaType : methodMetaGroup.methodMetaTypes()) {
                 String methodMetaInternalName = methodMetaType.getInternalName();
                 String methodMetaFieldName = "glowroot$method$meta$"
-                        + methodMetaGroup.getUniqueNum() + '$'
+                        + methodMetaGroup.uniqueNum() + '$'
                         + methodMetaInternalName.replace('/', '$');
                 FieldVisitor fv = cw.visitField(ACC_PUBLIC + ACC_FINAL + ACC_STATIC,
                         methodMetaFieldName, "L" + methodMetaInternalName + ";", null, null);
@@ -302,14 +303,14 @@ class WeavingClassVisitor extends ClassVisitor {
                 mv.visitTypeInsn(NEW, methodMetaInternalName);
                 mv.visitInsn(DUP);
                 loadType(mv, type, metaHolderType);
-                loadType(mv, methodMetaGroup.getReturnType(), metaHolderType);
+                loadType(mv, methodMetaGroup.returnType(), metaHolderType);
 
-                mv.visitIntInsn(BIPUSH, methodMetaGroup.getParameterTypes().size());
+                mv.visitIntInsn(BIPUSH, methodMetaGroup.parameterTypes().size());
                 mv.visitTypeInsn(ANEWARRAY, "java/lang/Class");
-                for (int i = 0; i < methodMetaGroup.getParameterTypes().size(); i++) {
+                for (int i = 0; i < methodMetaGroup.parameterTypes().size(); i++) {
                     mv.visitInsn(DUP);
                     mv.visitIntInsn(BIPUSH, i);
-                    loadType(mv, methodMetaGroup.getParameterTypes().get(i), metaHolderType);
+                    loadType(mv, methodMetaGroup.parameterTypes().get(i), metaHolderType);
                     mv.visitInsn(AASTORE);
                 }
 
@@ -471,8 +472,12 @@ class WeavingClassVisitor extends ClassVisitor {
             methodMetaUniqueNum = ++methodMetaCounter;
             List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(desc));
             Type returnType = Type.getReturnType(desc);
-            methodMetaGroups.add(new MethodMetaGroup(returnType, parameterTypes,
-                    methodMetaUniqueNum, methodMetaTypes));
+            methodMetaGroups.add(MethodMetaGroup.builder()
+                    .returnType(returnType)
+                    .parameterTypes(parameterTypes)
+                    .uniqueNum(methodMetaUniqueNum)
+                    .methodMetaTypes(methodMetaTypes)
+                    .build());
         }
         if ((!classMetaTypes.isEmpty() || !methodMetaTypes.isEmpty())
                 && metaHolderInternalName == null) {
@@ -732,36 +737,12 @@ class WeavingClassVisitor extends ClassVisitor {
         }
     }
 
-    private static class MethodMetaGroup {
-
-        private final Type returnType;
-        private final List<Type> parameterTypes;
-        private final int uniqueNum;
-        private final Set<Type> methodMetaTypes;
-
-        private MethodMetaGroup(Type returnType, List<Type> parameterTypes, int uniqueNum,
-                Set<Type> methodMetaTypes) {
-            this.returnType = returnType;
-            this.parameterTypes = parameterTypes;
-            this.uniqueNum = uniqueNum;
-            this.methodMetaTypes = methodMetaTypes;
-        }
-
-        private Type getReturnType() {
-            return returnType;
-        }
-
-        private List<Type> getParameterTypes() {
-            return parameterTypes;
-        }
-
-        private int getUniqueNum() {
-            return uniqueNum;
-        }
-
-        private Set<Type> getMethodMetaTypes() {
-            return methodMetaTypes;
-        }
+    @Value.Immutable
+    static abstract class MethodMetaGroupBase {
+        abstract Type returnType();
+        abstract ImmutableList<Type> parameterTypes();
+        abstract int uniqueNum();
+        abstract ImmutableSet<Type> methodMetaTypes();
     }
 
     // AnalyzedMethod equivalence defined only in terms of method name and parameter types

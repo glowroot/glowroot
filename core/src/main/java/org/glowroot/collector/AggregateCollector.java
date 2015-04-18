@@ -22,6 +22,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +92,7 @@ public class AggregateCollector {
         // flush, then no new traces will come in with prior captureTime)
         synchronized (lock) {
             long captureTime = clock.currentTimeMillis();
-            pendingTransactionQueue.add(new PendingTransaction(captureTime, transaction));
+            pendingTransactionQueue.add(PendingTransaction.of(captureTime, transaction));
             return captureTime;
         }
     }
@@ -143,16 +144,16 @@ public class AggregateCollector {
                 maybeEndOfInterval();
                 return;
             }
-            if (pendingTransaction.getCaptureTime() > activeIntervalCollector.getEndTime()) {
+            if (pendingTransaction.captureTime() > activeIntervalCollector.getEndTime()) {
                 // flush in separate thread to avoid pending transactions from piling up quickly
                 scheduledExecutor.execute(new IntervalFlusher(activeIntervalCollector));
                 activeIntervalCollector = new AggregateIntervalCollector(
-                        pendingTransaction.getCaptureTime(), fixedAggregateIntervalMillis, clock);
+                        pendingTransaction.captureTime(), fixedAggregateIntervalMillis, clock);
             }
             // the synchronized block is to ensure visibility of updates to this particular
             // activeIntervalCollector
             synchronized (activeIntervalCollector) {
-                activeIntervalCollector.add(pendingTransaction.getTransaction());
+                activeIntervalCollector.add(pendingTransaction.transaction());
             }
         }
 
@@ -205,22 +206,11 @@ public class AggregateCollector {
         }
     }
 
-    private static class PendingTransaction {
-
-        private final long captureTime;
-        private final Transaction transaction;
-
-        private PendingTransaction(long captureTime, Transaction transaction) {
-            this.captureTime = captureTime;
-            this.transaction = transaction;
-        }
-
-        private long getCaptureTime() {
-            return captureTime;
-        }
-
-        private Transaction getTransaction() {
-            return transaction;
-        }
+    @Value.Immutable
+    static abstract class PendingTransactionBase {
+        @Value.Parameter
+        abstract long captureTime();
+        @Value.Parameter
+        abstract Transaction transaction();
     }
 }

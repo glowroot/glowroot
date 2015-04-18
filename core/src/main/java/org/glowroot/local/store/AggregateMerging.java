@@ -21,6 +21,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -48,13 +49,15 @@ public class AggregateMerging {
                     mapper.readValue(aggregate.timers(), AggregateTimer.class);
             syntheticRootTimer.mergeMatchedTimer(toBeMergedSyntheticRootTimer);
         }
+        TimerMergedAggregate.Builder timerMergedAggregate = TimerMergedAggregate.builder();
         if (syntheticRootTimer.getNestedTimers().size() == 1) {
             // strip off synthetic root node
-            return new TimerMergedAggregate(syntheticRootTimer.getNestedTimers().get(0),
-                    transactionCount);
+            timerMergedAggregate.rootTimer(syntheticRootTimer.getNestedTimers().get(0));
         } else {
-            return new TimerMergedAggregate(syntheticRootTimer, transactionCount);
+            timerMergedAggregate.rootTimer(syntheticRootTimer);
         }
+        timerMergedAggregate.transactionCount(transactionCount);
+        return timerMergedAggregate.build();
     }
 
     public static HistogramMergedAggregate getHistogramMergedAggregate(List<Aggregate> aggregates)
@@ -67,7 +70,11 @@ public class AggregateMerging {
             totalMicros += aggregate.totalMicros();
             histogram.decodeFromByteBuffer(ByteBuffer.wrap(aggregate.histogram()));
         }
-        return new HistogramMergedAggregate(histogram, transactionCount, totalMicros);
+        return HistogramMergedAggregate.builder()
+                .histogram(histogram)
+                .totalMicros(totalMicros)
+                .transactionCount(transactionCount)
+                .build();
     }
 
     public static ThreadInfoAggregate getThreadInfoAggregate(List<Aggregate> aggregates) {
@@ -119,60 +126,32 @@ public class AggregateMerging {
         return x + y;
     }
 
-    // could use @Value.Immutable, but it's not technically immutable since it contains
-    // non-immutable state (AggregateTimer)
-    public static class TimerMergedAggregate {
-
-        private final AggregateTimer rootTimer;
-        private final long transactionCount;
-
-        private TimerMergedAggregate(AggregateTimer rootTimer, long transactionCount) {
-            this.rootTimer = rootTimer;
-            this.transactionCount = transactionCount;
-        }
-
-        public AggregateTimer getTimers() {
-            return rootTimer;
-        }
-
-        public long getTransactionCount() {
-            return transactionCount;
-        }
+    @Value.Immutable
+    @JsonSerialize(as = TimerMergedAggregate.class)
+    public static abstract class TimerMergedAggregateBase {
+        @JsonProperty("timers")
+        public abstract AggregateTimer rootTimer();
+        public abstract long transactionCount();
     }
 
-    // could use @Value.Immutable, but it's not technically immutable since it contains
-    // non-immutable state (LazyHistogram)
-    public static class HistogramMergedAggregate {
+    @Value.Immutable
+    @JsonSerialize(as = HistogramMergedAggregate.class)
+    public static abstract class HistogramMergedAggregateBase {
 
-        private final long totalMicros;
-        private final long transactionCount;
-        private final LazyHistogram histogram;
+        public abstract LazyHistogram histogram();
+        public abstract long totalMicros();
+        public abstract long transactionCount();
 
-        private HistogramMergedAggregate(LazyHistogram histogram, long transactionCount,
-                long totalMicros) {
-            this.histogram = histogram;
-            this.transactionCount = transactionCount;
-            this.totalMicros = totalMicros;
+        public long percentile1() {
+            return histogram().getValueAtPercentile(50);
         }
 
-        public long getTransactionCount() {
-            return transactionCount;
+        public long percentile2() {
+            return histogram().getValueAtPercentile(95);
         }
 
-        public long getTotalMicros() {
-            return totalMicros;
-        }
-
-        public long getPercentile1() {
-            return histogram.getValueAtPercentile(50);
-        }
-
-        public long getPercentile2() {
-            return histogram.getValueAtPercentile(95);
-        }
-
-        public long getPercentile3() {
-            return histogram.getValueAtPercentile(99);
+        public long percentile3() {
+            return histogram().getValueAtPercentile(99);
         }
     }
 
@@ -180,6 +159,7 @@ public class AggregateMerging {
     @JsonSerialize(as = ThreadInfoAggregate.class)
     @JsonDeserialize(as = ThreadInfoAggregate.class)
     public abstract static class ThreadInfoAggregateBase {
+
         abstract @Nullable Long totalCpuMicros();
         abstract @Nullable Long totalBlockedMicros();
         abstract @Nullable Long totalWaitedMicros();

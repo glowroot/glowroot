@@ -53,7 +53,6 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     private final ImmutableList<Class<?>> bridgeClasses;
     private final ImmutableList<String> excludePackages;
     private final Weaver weaver;
-    // guarded by 'this'
     private final Map<String, Class<?>> classes = Maps.newConcurrentMap();
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")

@@ -34,6 +34,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
+import org.immutables.value.Value;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
@@ -424,20 +425,19 @@ public class AnalyzedWorld {
         return matchingAdvisors;
     }
 
-    static class ParseContext {
-        private final String className;
-        private final @Nullable CodeSource codeSource;
-        ParseContext(String className, @Nullable CodeSource codeSource) {
-            this.codeSource = codeSource;
-            this.className = className;
-        }
+    @Value.Immutable
+    static abstract class ParseContextBase {
+        @Value.Parameter
+        abstract String className();
+        @Value.Parameter
+        abstract @Nullable CodeSource codeSource();
         // toString() is used in logger warning construction
         @Override
         public String toString() {
-            if (codeSource == null) {
-                return className;
+            if (codeSource() == null) {
+                return className();
             } else {
-                return className + " (" + codeSource.getLocation() + ")";
+                return className() + " (" + codeSource().getLocation() + ")";
             }
         }
     }

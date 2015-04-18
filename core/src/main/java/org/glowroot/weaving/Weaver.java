@@ -33,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ClassNames;
-import org.glowroot.weaving.AnalyzedWorld.ParseContext;
 import org.glowroot.weaving.WeavingClassVisitor.PointcutClassFoundException;
 import org.glowroot.weaving.WeavingClassVisitor.ShortCircuitException;
 import org.glowroot.weaving.WeavingTimerService.WeavingTimer;
@@ -161,7 +160,7 @@ class Weaver {
             super(flags);
             this.analyzedWorld = analyzedWorld;
             this.loader = loader;
-            this.parseContext = new ParseContext(className, codeSource);
+            this.parseContext = ParseContext.of(className, codeSource);
         }
 
         // implements logic similar to org.objectweb.asm.ClassWriter.getCommonSuperClass()

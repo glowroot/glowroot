@@ -32,7 +32,6 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
 import org.glowroot.common.ClassNames;
-import org.glowroot.weaving.AnalyzedWorld.ParseContext;
 import org.glowroot.weaving.WeavingClassVisitor.ShortCircuitException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -111,7 +110,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
                 return null;
             }
         }
-        ParseContext parseContext = new ParseContext(className, codeSource);
+        ParseContext parseContext = ParseContext.of(className, codeSource);
         List<AnalyzedClass> superAnalyzedHierarchy =
                 analyzedWorld.getAnalyzedHierarchy(superClassName, loader, parseContext);
         List<AnalyzedClass> interfaceAnalyzedHierarchy =

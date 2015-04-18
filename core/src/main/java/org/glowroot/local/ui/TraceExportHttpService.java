@@ -43,7 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.Trace;
-import org.glowroot.local.ui.TraceCommonService.TraceExport;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
@@ -76,7 +75,7 @@ class TraceExportHttpService implements HttpService {
         response.headers().set(Names.TRANSFER_ENCODING, Values.CHUNKED);
         response.headers().set(CONTENT_TYPE, MediaType.ZIP.toString());
         response.headers().set("Content-Disposition",
-                "attachment; filename=" + getFilename(export.getTrace()) + ".zip");
+                "attachment; filename=" + getFilename(export.trace()) + ".zip");
         HttpServices.preventCaching(response);
         ctx.write(response);
         ctx.write(in);
@@ -87,7 +86,7 @@ class TraceExportHttpService implements HttpService {
     private ChunkedInput<HttpContent> getExportChunkedInput(TraceExport export) throws IOException {
         CharSource charSource = render(export);
         return ChunkedInputs.fromReaderToZipFileDownload(charSource.openStream(),
-                getFilename(export.getTrace()));
+                getFilename(export.trace()));
     }
 
     private static String getFilename(Trace trace) {
@@ -130,18 +129,18 @@ class TraceExportHttpService implements HttpService {
                 charSources.add(CharSource.wrap("</script>"));
             } else if (match.equals(tracePlaceholder)) {
                 charSources.add(CharSource.wrap("<script type=\"text/json\" id=\"traceJson\">"));
-                charSources.add(CharSource.wrap(traceExport.getTraceJson()));
+                charSources.add(CharSource.wrap(traceExport.traceJson()));
                 charSources.add(CharSource.wrap("</script>"));
             } else if (match.equals(entriesPlaceholder)) {
                 charSources.add(CharSource.wrap("<script type=\"text/json\" id=\"entriesJson\">"));
-                CharSource entries = traceExport.getEntries();
+                CharSource entries = traceExport.entries();
                 if (entries != null) {
                     charSources.add(entries);
                 }
                 charSources.add(CharSource.wrap("</script>"));
             } else if (match.equals(profilePlaceholder)) {
                 charSources.add(CharSource.wrap("<script type=\"text/json\" id=\"profileJson\">"));
-                CharSource profile = traceExport.getProfile();
+                CharSource profile = traceExport.profile();
                 if (profile != null) {
                     charSources.add(profile);
                 }

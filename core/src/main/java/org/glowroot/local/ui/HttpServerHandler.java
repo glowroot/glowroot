@@ -65,6 +65,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import org.h2.api.ErrorCode;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,20 +143,27 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             for (Method method : jsonService.getClass().getDeclaredMethods()) {
                 GET annotationGET = method.getAnnotation(GET.class);
                 if (annotationGET != null) {
-                    jsonServiceMappings.add(new JsonServiceMapping(HttpMethod.GET,
-                            annotationGET.value(), jsonService, method.getName()));
+                    jsonServiceMappings.add(JsonServiceMapping.builder()
+                            .httpMethod(HttpMethod.GET)
+                            .path(annotationGET.value())
+                            .service(jsonService)
+                            .methodName(method.getName())
+                            .build());
                 }
                 POST annotationPOST = method.getAnnotation(POST.class);
                 if (annotationPOST != null) {
-                    jsonServiceMappings.add(new JsonServiceMapping(HttpMethod.POST,
-                            annotationPOST.value(), jsonService, method.getName()));
+                    jsonServiceMappings.add(JsonServiceMapping.builder()
+                            .httpMethod(HttpMethod.POST)
+                            .path(annotationPOST.value())
+                            .service(jsonService)
+                            .methodName(method.getName())
+                            .build());
                 }
             }
         }
         this.jsonServiceMappings = ImmutableList.copyOf(jsonServiceMappings);
         allChannels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
     }
-
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         allChannels.add(ctx.channel());
@@ -253,8 +261,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         }
         JsonServiceMatcher jsonServiceMatcher = getJsonServiceMatcher(request, path);
         if (jsonServiceMatcher != null) {
-            return handleJsonServiceMappings(request, jsonServiceMatcher.jsonServiceMapping,
-                    jsonServiceMatcher.matcher);
+            return handleJsonServiceMappings(request, jsonServiceMatcher.jsonServiceMapping(),
+                    jsonServiceMatcher.matcher());
         }
         return handleStaticResource(path, request);
     }
@@ -312,12 +320,12 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     private @Nullable JsonServiceMatcher getJsonServiceMatcher(FullHttpRequest request,
             String path) {
         for (JsonServiceMapping jsonServiceMapping : jsonServiceMappings) {
-            if (!jsonServiceMapping.httpMethod.name().equals(request.getMethod().name())) {
+            if (!jsonServiceMapping.httpMethod().name().equals(request.getMethod().name())) {
                 continue;
             }
-            Matcher matcher = jsonServiceMapping.pattern.matcher(path);
+            Matcher matcher = jsonServiceMapping.pattern().matcher(path);
             if (matcher.matches()) {
-                return new JsonServiceMatcher(jsonServiceMapping, matcher);
+                return JsonServiceMatcher.of(jsonServiceMapping, matcher);
             }
         }
         return null;
@@ -340,12 +348,11 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             args[i] = group;
         }
         logger.debug("handleJsonRequest(): serviceMethodName={}, args={}, requestText={}",
-                jsonServiceMapping.methodName, args, requestText);
+                jsonServiceMapping.methodName(), args, requestText);
         Object responseObject;
         try {
-            responseObject = callMethod(jsonServiceMapping.service,
-                    jsonServiceMapping.methodName,
-                    args, requestText);
+            responseObject = callMethod(jsonServiceMapping.service(),
+                    jsonServiceMapping.methodName(), args, requestText);
         } catch (Exception e) {
             return newHttpResponseFromException(e);
         }
@@ -582,38 +589,35 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private static class JsonServiceMatcher {
+    @Value.Immutable
+    static abstract class JsonServiceMatcherBase {
 
-        private final JsonServiceMapping jsonServiceMapping;
-        private final Matcher matcher;
-
-        private JsonServiceMatcher(JsonServiceMapping jsonServiceMapping, Matcher matcher) {
-            this.jsonServiceMapping = jsonServiceMapping;
-            this.matcher = matcher;
-        }
+        @Value.Parameter
+        abstract JsonServiceMapping jsonServiceMapping();
+        @Value.Parameter
+        abstract Matcher matcher();
     }
 
-    private static class JsonServiceMapping {
+    @Value.Immutable
+    static abstract class JsonServiceMappingBase {
 
-        private final HttpMethod httpMethod;
-        private final Pattern pattern;
-        private final Object service;
-        private final String methodName;
+        abstract HttpMethod httpMethod();
+        abstract String path();
+        abstract Object service();
+        abstract String methodName();
 
-        private JsonServiceMapping(HttpMethod httpMethod, String path, Object service,
-                String methodName) {
-            this.httpMethod = httpMethod;
-            this.service = service;
-            this.methodName = methodName;
+        @Value.Derived
+        Pattern pattern() {
+            String path = path();
             if (path.contains("(")) {
-                pattern = Pattern.compile(path);
+                return Pattern.compile(path);
             } else {
-                pattern = Pattern.compile(Pattern.quote(path));
+                return Pattern.compile(Pattern.quote(path));
             }
         }
     }
 
-    private static enum HttpMethod {
+    static enum HttpMethod {
         GET, POST
     }
 }

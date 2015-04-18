@@ -47,7 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.Agent;
-import org.glowroot.common.SpyingLogbackFilter.MessageCount;
+import org.glowroot.common.MessageCount;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
@@ -208,10 +208,10 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
             throw new AssertionError("Command returned null: "
                     + SocketCommandProcessor.CLEAR_LOG_MESSAGES);
         }
-        if (logMessageCount.getExpectedCount() > 0) {
+        if (logMessageCount.expectedCount() > 0) {
             throw new AssertionError("One or more expected messages were not logged");
         }
-        if (logMessageCount.getUnexpectedCount() > 0) {
+        if (logMessageCount.unexpectedCount() > 0) {
             throw new AssertionError("One or more unexpected messages were logged");
         }
     }
