@@ -112,7 +112,7 @@
     <dependency>
       <groupId>com.sun.mail</groupId>
       <artifactId>mailapi</artifactId>
-      <version>1.5.2</version>
+      <version>1.5.3</version>
       <exclusions>
         <exclusion>
           <!-- JAF included in Java SE 6+ -->
@@ -124,7 +124,7 @@
     <dependency>
       <groupId>com.sun.mail</groupId>
       <artifactId>smtp</artifactId>
-      <version>1.5.2</version>
+      <version>1.5.3</version>
       <exclusions>
         <exclusion>
           <!-- JAF included in Java SE 6+ -->
