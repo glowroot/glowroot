@@ -17,6 +17,7 @@ package org.glowroot.tests.plugin;
 
 import java.util.Map.Entry;
 
+import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.TimerName;
@@ -55,7 +56,7 @@ public class TraceGeneratorAspect {
                 pluginServices.setTransactionCustomAttribute(entry.getKey(), entry.getValue());
             }
             if (traceGenerator.error() != null) {
-                pluginServices.setTransactionError(traceGenerator.error(), null);
+                pluginServices.setTransactionError(ErrorMessage.from(traceGenerator.error()));
             }
             return traceEntry;
         }

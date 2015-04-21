@@ -40,10 +40,9 @@ public abstract class ErrorMessage {
         return new ErrorMessageImpl(getRootCause(t).toString(), ThrowableInfo.from(t));
     }
 
-    // accepts null message so callers don't have to check if passing it in from elsewhere
-    public static ErrorMessage from(@Nullable String message, Throwable t) {
+    // accepts null values so callers don't have to check if passing it in from elsewhere
+    public static ErrorMessage from(@Nullable String message, @Nullable Throwable t) {
         if (t == null) {
-            logger.warn("from(): argument 't' must be non-null");
             return from(message);
         }
         return new ErrorMessageImpl(message, ThrowableInfo.from(t));

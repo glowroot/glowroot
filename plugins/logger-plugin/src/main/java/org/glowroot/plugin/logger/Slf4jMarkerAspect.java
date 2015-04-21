@@ -44,7 +44,7 @@ public class Slf4jMarkerAspect {
         String formattedMessage = nullToEmpty(formattingTuple.getMessage());
         Throwable throwable = formattingTuple.getThrowable();
         if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), throwable != null)) {
-            pluginServices.setTransactionError(formattedMessage, throwable);
+            pluginServices.setTransactionError(ErrorMessage.from(formattedMessage, throwable));
         }
         TraceEntry traceEntry = pluginServices.startTraceEntry(
                 MessageSupplier.from("log {}: {}", methodName, formattedMessage),
@@ -77,7 +77,7 @@ public class Slf4jMarkerAspect {
                 @BindParameter @Nullable String message, @BindMethodName String methodName) {
             LoggerPlugin.inAdvice(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
-                pluginServices.setTransactionError(message, null);
+                pluginServices.setTransactionError(ErrorMessage.from(message));
             }
             return pluginServices.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, message),

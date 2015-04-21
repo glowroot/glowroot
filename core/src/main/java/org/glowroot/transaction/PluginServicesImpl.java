@@ -309,10 +309,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public void setTransactionError(@Nullable String message, @Nullable Throwable t) {
+    public void setTransactionError(ErrorMessage errorMessage) {
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
-            transaction.setError(message, t);
+            transaction.setError(errorMessage);
         }
     }
 

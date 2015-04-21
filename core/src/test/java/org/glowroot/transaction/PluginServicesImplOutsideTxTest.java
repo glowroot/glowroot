@@ -91,7 +91,7 @@ public class PluginServicesImplOutsideTxTest {
 
     @Test
     public void testSetTransactionError() {
-        pluginServices.setTransactionError("te", null);
+        pluginServices.setTransactionError(ErrorMessage.from("te"));
     }
 
     @Test

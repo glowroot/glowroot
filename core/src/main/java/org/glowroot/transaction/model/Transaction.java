@@ -37,7 +37,6 @@ import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
-import org.glowroot.api.internal.ThrowableInfo;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 
@@ -76,7 +75,7 @@ public class Transaction {
     private volatile @MonotonicNonNull SetMultimap<String, String> customAttributes;
 
     // trace-level error
-    private volatile @Nullable ReadableErrorMessage errorMessage;
+    private volatile @Nullable ErrorMessage errorMessage;
 
     private final TimerImpl rootTimer;
     // currentTimer doesn't need to be thread safe as it is only accessed by transaction thread
@@ -209,7 +208,7 @@ public class Transaction {
         // don't prefer the root entry error message since it is likely a more generic error
         // message, e.g. servlet response sendError(500)
         if (errorMessage != null) {
-            return errorMessage;
+            return (ReadableErrorMessage) errorMessage;
         }
         return traceEntryComponent.getRootEntry().getErrorMessage();
     }
@@ -317,10 +316,10 @@ public class Transaction {
         }
     }
 
-    public void setError(@Nullable String message, @Nullable Throwable t) {
-        if (errorMessage == null) {
+    public void setError(ErrorMessage errorMessage) {
+        if (this.errorMessage == null) {
             // first call to this method for this trace
-            errorMessage = new ReadableErrorMessageImpl(message, t);
+            this.errorMessage = errorMessage;
         }
     }
 
@@ -452,31 +451,5 @@ public class Transaction {
 
     public static interface CompletionCallback {
         void completed(Transaction transaction);
-    }
-
-    private static class ReadableErrorMessageImpl implements ReadableErrorMessage {
-
-        private final @Nullable String message;
-        private final @Nullable ThrowableInfo throwableInfo;
-
-        private ReadableErrorMessageImpl(@Nullable String message,
-                @Nullable Throwable t) {
-            this.message = message;
-            if (t == null) {
-                this.throwableInfo = null;
-            } else {
-                this.throwableInfo = ThrowableInfo.from(t);
-            }
-        }
-
-        @Override
-        public String getMessage() {
-            return Strings.nullToEmpty(message);
-        }
-
-        @Override
-        public @Nullable ThrowableInfo getThrowable() {
-            return throwableInfo;
-        }
     }
 }
