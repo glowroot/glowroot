@@ -21,6 +21,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -138,18 +139,22 @@ public class AggregateMerging {
     @JsonSerialize(as = HistogramMergedAggregate.class)
     public static abstract class HistogramMergedAggregateBase {
 
+        @JsonIgnore
         public abstract LazyHistogram histogram();
         public abstract long totalMicros();
         public abstract long transactionCount();
 
+        @Value.Derived
         public long percentile1() {
             return histogram().getValueAtPercentile(50);
         }
 
+        @Value.Derived
         public long percentile2() {
             return histogram().getValueAtPercentile(95);
         }
 
+        @Value.Derived
         public long percentile3() {
             return histogram().getValueAtPercentile(99);
         }
