@@ -32,7 +32,7 @@ public class ExternalJvmMainAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-sandbox");
 
-    @Pointcut(className = "org.glowroot.container.javaagent.JavaagentContainer",
+    @Pointcut(className = "org.glowroot.container.impl.JavaagentMain",
             methodName = "main", methodParameterTypes = {"java.lang.String[]"},
             timerName = "external jvm main")
     public static class MainAdvice {
@@ -48,7 +48,7 @@ public class ExternalJvmMainAspect {
         @OnBefore
         public static TraceEntry onBefore() {
             return pluginServices.startTransaction("Sandbox", "javaagent container main",
-                    MessageSupplier.from("org.glowroot.container.javaagent.JavaagentContainer"
+                    MessageSupplier.from("org.glowroot.container.impl.JavaagentMain"
                             + ".main()"), timerName);
         }
 
@@ -58,7 +58,7 @@ public class ExternalJvmMainAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.container.javaagent.JavaagentContainer",
+    @Pointcut(className = "org.glowroot.container.impl.JavaagentMain",
             methodName = "timerMarkerOne", methodParameterTypes = {}, timerName = "timer one")
     public static class TimerMarkerOneAdvice {
 
@@ -81,7 +81,7 @@ public class ExternalJvmMainAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.container.javaagent.JavaagentContainer",
+    @Pointcut(className = "org.glowroot.container.impl.JavaagentMain",
             methodName = "timerMarkerTwo", methodParameterTypes = {}, timerName = "timer two")
     public static class TimerMarkerTwoAdvice {
 

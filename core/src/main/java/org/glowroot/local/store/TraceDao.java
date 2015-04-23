@@ -72,6 +72,7 @@ public class TraceDao implements TraceRepository {
             Column.of("entry_count", Types.BIGINT),
             Column.of("entries_capped_id", Types.VARCHAR), // capped database id
             Column.of("profile_sample_count", Types.BIGINT),
+            // profile json is always from "synthetic root"
             Column.of("profile_capped_id", Types.VARCHAR)); // capped database id
 
     // capture_time column is used for expiring records without using FK with on delete cascade

@@ -38,7 +38,6 @@ import org.glowroot.common.ScratchBuffer;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregateDao.MergedAggregate;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
-import org.glowroot.local.store.AggregateMerging;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TransactionSummaryQuery;
 import org.glowroot.transaction.model.ProfileNode;
@@ -177,12 +176,13 @@ class TransactionCommonService {
     ProfileNode getProfile(String transactionType, @Nullable String transactionName, long from,
             long to, double truncateLeafPercentage) throws Exception {
         List<CharSource> profiles = getProfiles(transactionType, transactionName, from, to);
-        ProfileNode rootNode = AggregateMerging.getProfile(profiles);
+        ProfileNode syntheticRootNode = AggregateMerging.getProfile(profiles);
         if (truncateLeafPercentage != 0) {
-            int minSamples = (int) (rootNode.getSampleCount() * truncateLeafPercentage);
-            truncateLeafs(rootNode, minSamples);
+            int minSamples = (int) (syntheticRootNode.getSampleCount() * truncateLeafPercentage);
+            // don't truncate any root nodes
+            truncateLeafs(syntheticRootNode.getChildNodes(), minSamples);
         }
-        return rootNode;
+        return syntheticRootNode;
     }
 
     private List<AggregateIntervalCollector> getOrderedIntervalCollectorsInRange(long from,
@@ -363,9 +363,9 @@ class TransactionCommonService {
     }
 
     // using non-recursive algorithm to avoid stack overflow error on deep profiles
-    private static void truncateLeafs(ProfileNode rootNode, int minSamples) {
+    private static void truncateLeafs(List<ProfileNode> rootNodes, int minSamples) {
         Deque<ProfileNode> toBeVisited = new ArrayDeque<ProfileNode>();
-        toBeVisited.add(rootNode);
+        toBeVisited.addAll(rootNodes);
         ProfileNode node;
         while ((node = toBeVisited.poll()) != null) {
             for (Iterator<ProfileNode> i = node.getChildNodes().iterator(); i.hasNext();) {

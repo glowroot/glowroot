@@ -66,8 +66,7 @@ public class ProfileNode {
         return new ProfileNode(stackTraceElement, leafThreadState);
     }
 
-    private ProfileNode(@Nullable String stackTraceElement,
-            @Nullable String leafThreadState) {
+    private ProfileNode(@Nullable String stackTraceElement, @Nullable String leafThreadState) {
         this.stackTraceElement = stackTraceElement;
         this.leafThreadState = leafThreadState;
     }

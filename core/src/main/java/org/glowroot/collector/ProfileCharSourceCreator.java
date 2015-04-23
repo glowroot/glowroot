@@ -47,16 +47,10 @@ public class ProfileCharSourceCreator {
     }
 
     static @Nullable String createProfileJson(ProfileNode syntheticRootNode) throws IOException {
-        ProfileNode rootNode;
         if (syntheticRootNode.getChildNodes().isEmpty()) {
             return null;
-        } else if (syntheticRootNode.getChildNodes().size() == 1) {
-            // strip off synthetic root node since only one real root node
-            rootNode = syntheticRootNode.getChildNodes().get(0);
-        } else {
-            rootNode = syntheticRootNode;
         }
         // need to convert profile into bytes entirely inside of the above lock (no lazy CharSource)
-        return mapper.writeValueAsString(rootNode);
+        return mapper.writeValueAsString(syntheticRootNode);
     }
 }

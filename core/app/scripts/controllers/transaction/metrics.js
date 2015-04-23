@@ -19,9 +19,8 @@
 glowroot.controller('TransactionMetricsCtrl', [
   '$scope',
   '$location',
-  '$http',
   'charts',
-  function ($scope, $location, $http, charts) {
+  function ($scope, $location, charts) {
 
     $scope.$parent.activeTabItem = 'metrics';
 
@@ -34,6 +33,14 @@ glowroot.controller('TransactionMetricsCtrl', [
     });
 
     function onRefreshData(data) {
+      // mergedAggregate.timers is always synthetic root timer
+      var syntheticRootTimer = data.mergedAggregate.timers;
+      if (syntheticRootTimer.nestedTimers.length === 1) {
+        // strip off synthetic root node
+        data.mergedAggregate.timers = syntheticRootTimer.nestedTimers[0];
+      } else {
+        syntheticRootTimer.name = '<multiple root nodes>';
+      }
       $scope.transactionCounts = data.transactionCounts;
       $scope.mergedAggregate = data.mergedAggregate;
       $scope.threadInfoAggregate = data.threadInfoAggregate;

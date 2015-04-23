@@ -27,23 +27,25 @@ import com.google.common.collect.Lists;
 
 import org.glowroot.markers.UsedByJsonBinding;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.orEmpty;
 
 @UsedByJsonBinding
 public class AggregateTimer {
 
-    private final String name;
+    // only null for synthetic root timer
+    private final @Nullable String name;
     // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
     private long totalMicros;
     private long count;
     private final List<AggregateTimer> nestedTimers;
 
     public static AggregateTimer createSyntheticRootTimer() {
-        return new AggregateTimer("<multiple root nodes>", 0, 0, new ArrayList<AggregateTimer>());
+        return new AggregateTimer(null, 0, 0, new ArrayList<AggregateTimer>());
     }
 
-    private AggregateTimer(String name, long totalMicros, long count,
+    private AggregateTimer(@Nullable String name, long totalMicros, long count,
             List<AggregateTimer> nestedTimers) {
         this.name = name;
         this.totalMicros = totalMicros;
@@ -55,23 +57,26 @@ public class AggregateTimer {
         count += aggregateTimer.getCount();
         totalMicros += aggregateTimer.getTotalMicros();
         for (AggregateTimer toBeMergedNestedTimer : aggregateTimer.getNestedTimers()) {
-            // for each to-be-merged child node look for a match
-            AggregateTimer foundMatchingChildTimer = null;
-            for (AggregateTimer childTimer : nestedTimers) {
-                if (toBeMergedNestedTimer.getName().equals(childTimer.getName())) {
-                    foundMatchingChildTimer = childTimer;
+            // for each to-be-merged nested node look for a match
+            AggregateTimer foundMatchingNestedTimer = null;
+            for (AggregateTimer nestedTimer : nestedTimers) {
+                // timer names are only null for synthetic root timer
+                String toBeMergedNestedTimerName = checkNotNull(toBeMergedNestedTimer.getName());
+                String nestedTimerName = checkNotNull(nestedTimer.getName());
+                if (toBeMergedNestedTimerName.equals(nestedTimerName)) {
+                    foundMatchingNestedTimer = nestedTimer;
                     break;
                 }
             }
-            if (foundMatchingChildTimer == null) {
+            if (foundMatchingNestedTimer == null) {
                 nestedTimers.add(toBeMergedNestedTimer);
             } else {
-                foundMatchingChildTimer.mergeMatchedTimer(toBeMergedNestedTimer);
+                foundMatchingNestedTimer.mergeMatchedTimer(toBeMergedNestedTimer);
             }
         }
     }
 
-    public String getName() {
+    public @Nullable String getName() {
         return name;
     }
 
@@ -95,7 +100,6 @@ public class AggregateTimer {
             @JsonProperty("nestedTimers") @Nullable List</*@Nullable*/AggregateTimer> uncheckedNestedTimers)
             throws JsonMappingException {
         List<AggregateTimer> nestedTimers = orEmpty(uncheckedNestedTimers, "nestedTimers");
-        checkRequiredProperty(name, "name");
         checkRequiredProperty(totalMicros, "totalMicros");
         checkRequiredProperty(count, "count");
         return new AggregateTimer(name, totalMicros, count, nestedTimers);

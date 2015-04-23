@@ -58,7 +58,7 @@ public class AggregateDao {
 
     public static final long ROLLUP_THRESHOLD_MILLIS = HOURS.toMillis(1);
 
-    static final String OVERWRITTEN = "{\"overwritten\":true}";
+    public static final String OVERWRITTEN = "{\"overwritten\":true}";
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 

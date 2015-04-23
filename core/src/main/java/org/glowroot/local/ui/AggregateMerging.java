@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.local.store;
+package org.glowroot.local.ui;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -32,6 +32,8 @@ import org.immutables.value.Value;
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.LazyHistogram;
 import org.glowroot.common.ObjectMappers;
+import org.glowroot.local.store.AggregateDao;
+import org.glowroot.local.store.AggregateTimer;
 import org.glowroot.transaction.model.ProfileNode;
 
 public class AggregateMerging {
@@ -51,12 +53,7 @@ public class AggregateMerging {
             syntheticRootTimer.mergeMatchedTimer(toBeMergedSyntheticRootTimer);
         }
         TimerMergedAggregate.Builder timerMergedAggregate = TimerMergedAggregate.builder();
-        if (syntheticRootTimer.getNestedTimers().size() == 1) {
-            // strip off synthetic root node
-            timerMergedAggregate.rootTimer(syntheticRootTimer.getNestedTimers().get(0));
-        } else {
-            timerMergedAggregate.rootTimer(syntheticRootTimer);
-        }
+        timerMergedAggregate.syntheticRootTimer(syntheticRootTimer);
         timerMergedAggregate.transactionCount(transactionCount);
         return timerMergedAggregate.build();
     }
@@ -109,12 +106,7 @@ public class AggregateMerging {
                     ObjectMappers.readRequiredValue(mapper, profileContent, ProfileNode.class);
             syntheticRootNode.mergeMatchedNode(toBeMergedRootNode);
         }
-        if (syntheticRootNode.getChildNodes().size() == 1) {
-            // strip off synthetic root node
-            return syntheticRootNode.getChildNodes().get(0);
-        } else {
-            return syntheticRootNode;
-        }
+        return syntheticRootNode;
     }
 
     private static @Nullable Long nullAwareAdd(@Nullable Long x, @Nullable Long y) {
@@ -131,7 +123,7 @@ public class AggregateMerging {
     @JsonSerialize(as = TimerMergedAggregate.class)
     public static abstract class TimerMergedAggregateBase {
         @JsonProperty("timers")
-        public abstract AggregateTimer rootTimer();
+        public abstract AggregateTimer syntheticRootTimer();
         public abstract long transactionCount();
     }
 

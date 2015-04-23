@@ -43,12 +43,8 @@ import org.glowroot.common.Clock;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
-import org.glowroot.local.store.AggregateMerging;
 import org.glowroot.local.store.AggregateTimer;
-import org.glowroot.local.store.HistogramMergedAggregate;
 import org.glowroot.local.store.QueryResult;
-import org.glowroot.local.store.ThreadInfoAggregate;
-import org.glowroot.local.store.TimerMergedAggregate;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.store.TransactionSummaryQuery;
 import org.glowroot.transaction.TransactionRegistry;
@@ -157,7 +153,6 @@ class TransactionJsonService {
     String getProfile(String queryString) throws Exception {
         TransactionProfileRequest request =
                 QueryStrings.decode(queryString, TransactionProfileRequest.class);
-
         ProfileNode profile = transactionCommonService.getProfile(request.transactionType(),
                 request.transactionName(), request.from(), request.to(),
                 request.truncateLeafPercentage());
@@ -497,7 +492,9 @@ class TransactionJsonService {
                 totalNestedMicros += nestedTimer.getTotalMicros();
                 addToStackedTimer(nestedTimer, stackedTimers);
             }
-            stackedTimers.add(timer.getName(), timer.getTotalMicros() - totalNestedMicros);
+            // timer name is only null for synthetic root timer which is never passed to this method
+            String timerName = checkNotNull(timer.getName());
+            stackedTimers.add(timerName, timer.getTotalMicros() - totalNestedMicros);
         }
     }
 

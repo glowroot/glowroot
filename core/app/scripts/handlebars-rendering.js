@@ -297,10 +297,12 @@ HandlebarsRendering = (function () {
   });
 
   var mousedownPageX, mousedownPageY;
+
   $(document).mousedown(function (e) {
     mousedownPageX = e.pageX;
     mousedownPageY = e.pageY;
   });
+
   $(document).on('click', '.gt-timers-view-toggle', function () {
     var $timers = $(this).parents('.gt-timers');
     $timers.children('table').toggleClass('hide');
@@ -310,9 +312,11 @@ HandlebarsRendering = (function () {
     $timersViewToggle.css('outline', 'none');
     $timersViewToggle.focus();
   });
+
   $(document).on('click', '.gt-unexpanded-content, .gt-expanded-content', function (e, keyboard) {
     smartToggle($(this).parent(), e, keyboard);
   });
+
   $(document).on('click', '.gt-sps-toggle', function () {
     var $selector = $('#sps');
     if ($selector.data('gtLoading')) {
@@ -375,6 +379,7 @@ HandlebarsRendering = (function () {
       $selector.addClass('hide');
     }
   });
+
   $(document).on('click', '.gt-profile-toggle', function () {
     var $traceParent = $(this).parents('.gt-trace-parent');
     var $button = $(this);
@@ -385,6 +390,8 @@ HandlebarsRendering = (function () {
     }
     profileToggle($button, '#profileOuter', profile, url);
   });
+
+  var MULTIPLE_ROOT_NODES = '<multiple root nodes>';
 
   function profileToggle($button, selector, profile, url) {
     var $selector = $(selector);
@@ -499,6 +506,15 @@ HandlebarsRendering = (function () {
   }
 
   function buildMergedStackTree(rootNode, selector) {
+
+    // root node is always synthetic root node
+    if (rootNode.childNodes.length === 1) {
+      // strip off synthetic root node
+      rootNode = rootNode.childNodes[0];
+    } else {
+      rootNode.stackTraceElement = MULTIPLE_ROOT_NODES;
+    }
+
     function escapeHtml(html) {
       return html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
@@ -527,6 +543,10 @@ HandlebarsRendering = (function () {
       }
 
       function highlightAndEscapeHtml(text) {
+        if (text === MULTIPLE_ROOT_NODES) {
+          // don't highlight any part of "<multiple root nodes>"
+          return escapeHtml(text);
+        }
         if (!filterTextUpper) {
           return text;
         }
@@ -547,8 +567,12 @@ HandlebarsRendering = (function () {
         }
         var i;
         var currMatchingNode = false;
+        var stackTraceElement;
         for (i = 0; i < nodes.length; i++) {
-          if (nodes[i].stackTraceElement.toUpperCase().indexOf(filterTextUpper) !== -1) {
+          stackTraceElement = nodes[i].stackTraceElement;
+          // don't match any part of "<multiple root nodes>"
+          if (stackTraceElement !== MULTIPLE_ROOT_NODES
+              && stackTraceElement.toUpperCase().indexOf(filterTextUpper) !== -1) {
             currMatchingNode = true;
             break;
           }
