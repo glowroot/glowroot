@@ -73,8 +73,6 @@ public class PluginServicesImplDefensiveCheckTest {
     @After
     public void afterEachTest() {
         verify(mockConfigService).addConfigListener(any(ConfigListener.class));
-        verify(mockConfigService).getGeneralConfig();
-        verify(mockConfigService).getAdvancedConfig();
         verifyNoMoreInteractions(mocks.toArray());
     }
 

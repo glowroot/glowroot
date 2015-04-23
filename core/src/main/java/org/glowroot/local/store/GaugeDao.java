@@ -67,7 +67,6 @@ class GaugeDao {
                 }
             }
         });
-        gaugeDao.updateGauges(configService.getGaugeConfigs());
         return gaugeDao;
     }
 

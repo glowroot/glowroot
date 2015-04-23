@@ -96,14 +96,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         PluginServicesImpl pluginServices = new PluginServicesImpl(transactionRegistry,
                 transactionCollector, configService, timerNameCache, threadAllocatedBytes,
                 userProfileScheduler, ticker, clock, pluginDescriptors, pluginId);
-        // add config listeners first before caching configuration property values to avoid a
-        // (remotely) possible race condition
-        configService.addConfigListener(pluginServices);
         if (pluginId != null) {
             configService.addPluginConfigListener(pluginId, pluginServices);
         }
-        // call onChange() to initialize the cached configuration property values
-        pluginServices.onChange();
+        configService.addConfigListener(pluginServices);
         return pluginServices;
     }
 

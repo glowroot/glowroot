@@ -146,6 +146,7 @@ public class ConfigService {
 
     public void addConfigListener(ConfigListener listener) {
         configListeners.add(listener);
+        listener.onChange();
     }
 
     public void addPluginConfigListener(String pluginId, ConfigListener listener) {

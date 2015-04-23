@@ -57,7 +57,6 @@ class StackTraceCollector implements Runnable {
                 stackTraceCollector.updateScheduleIfNeeded();
             }
         });
-        stackTraceCollector.updateScheduleIfNeeded();
         return stackTraceCollector;
     }
 

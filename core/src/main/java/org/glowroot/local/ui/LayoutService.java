@@ -72,10 +72,10 @@ class LayoutService {
                 layout = null;
             }
         };
-        configService.addConfigListener(listener);
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             configService.addPluginConfigListener(pluginDescriptor.id(), listener);
         }
+        configService.addConfigListener(listener);
     }
 
     String getLayout() throws IOException {
