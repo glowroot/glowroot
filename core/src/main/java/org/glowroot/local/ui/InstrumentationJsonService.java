@@ -26,7 +26,6 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
@@ -242,14 +241,14 @@ class InstrumentationJsonService {
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = MethodSignaturesRequest.class)
+    @JsonSerialize
     abstract static class MethodSignaturesRequestBase {
         abstract String className();
         abstract String methodName();
     }
 
     @Value.Immutable
-    @JsonSerialize(as = MethodSignature.class)
+    @JsonSerialize
     abstract static class MethodSignatureBase {
         abstract String name();
         abstract ImmutableList<String> parameterTypes();
@@ -258,7 +257,7 @@ class InstrumentationJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = InstrumentationListResponse.class)
+    @JsonSerialize
     abstract static class InstrumentationListResponseBase {
         abstract ImmutableList<InstrumentationConfigDto> configs();
         abstract boolean jvmOutOfSync();
@@ -266,15 +265,14 @@ class InstrumentationJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = InstrumentationConfigResponse.class)
+    @JsonSerialize
     abstract static class InstrumentationConfigResponseBase {
         abstract InstrumentationConfigDto config();
         abstract ImmutableList<MethodSignature> methodSignatures();
     }
 
     @Value.Immutable
-    @JsonSerialize(as = InstrumentationConfigDto.class)
-    @JsonDeserialize(as = InstrumentationConfigDto.class)
+    @JsonSerialize
     abstract static class InstrumentationConfigDtoBase {
 
         abstract String className();

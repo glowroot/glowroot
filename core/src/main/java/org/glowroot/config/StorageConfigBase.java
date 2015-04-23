@@ -16,13 +16,11 @@
 package org.glowroot.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = StorageConfig.class)
-@JsonDeserialize(as = StorageConfig.class)
+@JsonSerialize
 public abstract class StorageConfigBase {
 
     // currently aggregate expiration should be at least as big as trace expiration

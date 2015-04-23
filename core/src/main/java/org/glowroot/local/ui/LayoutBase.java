@@ -23,7 +23,7 @@ import org.glowroot.config.AnonymousAccess;
 import org.glowroot.config.Versions;
 
 @Value.Immutable
-@JsonSerialize(as = Layout.class)
+@JsonSerialize
 abstract class LayoutBase {
 
     abstract boolean jvmHeapDump();

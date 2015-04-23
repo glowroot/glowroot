@@ -28,7 +28,6 @@ import javax.mail.internet.MimeMessage;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
@@ -445,7 +444,7 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = UserInterfaceConfigResponse.class)
+    @JsonSerialize
     abstract static class UserInterfaceConfigResponseBase {
         abstract UserInterfaceConfigDto config();
         abstract int activePort();
@@ -453,21 +452,21 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = SmtpConfigResponse.class)
+    @JsonSerialize
     abstract static class SmtpConfigResponseBase {
         abstract SmtpConfigDto config();
         abstract String localServerName();
     }
 
     @Value.Immutable
-    @JsonSerialize(as = AdvancedConfigResponse.class)
+    @JsonSerialize
     abstract static class AdvancedConfigResponseBase {
         abstract AdvancedConfigDto config();
         abstract boolean timerWrapperMethodsActive();
     }
 
     @Value.Immutable
-    @JsonSerialize(as = PluginResponse.class)
+    @JsonSerialize
     abstract static class PluginResponseBase {
         abstract String id();
         abstract String name();
@@ -475,7 +474,7 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = PluginConfigResponse.class)
+    @JsonSerialize
     abstract static class PluginConfigResponseBase {
         abstract String name();
         abstract PluginConfigDto config();
@@ -486,8 +485,7 @@ class ConfigJsonService {
     // attribute, and that they have no default attribute values
 
     @Value.Immutable
-    @JsonSerialize(as = GeneralConfigDto.class)
-    @JsonDeserialize(as = GeneralConfigDto.class)
+    @JsonSerialize
     abstract static class GeneralConfigDtoBase {
 
         abstract boolean enabled();
@@ -517,8 +515,7 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = UserInterfaceConfigDto.class)
-    @JsonDeserialize(as = UserInterfaceConfigDto.class)
+    @JsonSerialize
     abstract static class UserInterfaceConfigDtoBase {
 
         abstract int port();
@@ -567,8 +564,7 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = StorageConfigDto.class)
-    @JsonDeserialize(as = StorageConfigDto.class)
+    @JsonSerialize
     abstract static class StorageConfigDtoBase {
 
         abstract int aggregateExpirationHours();
@@ -595,8 +591,7 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = SmtpConfigDto.class)
-    @JsonDeserialize(as = SmtpConfigDto.class)
+    @JsonSerialize
     abstract static class SmtpConfigDtoBase {
 
         abstract String fromEmailAddress();
@@ -632,8 +627,7 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = UserRecordingConfigDto.class)
-    @JsonDeserialize(as = UserRecordingConfigDto.class)
+    @JsonSerialize
     abstract static class UserRecordingConfigDtoBase {
 
         abstract boolean enabled();
@@ -660,8 +654,7 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = AdvancedConfigDto.class)
-    @JsonDeserialize(as = AdvancedConfigDto.class)
+    @JsonSerialize
     abstract static class AdvancedConfigDtoBase {
 
         abstract boolean timerWrapperMethods();
@@ -708,8 +701,7 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = PluginConfigDto.class)
-    @JsonDeserialize(as = PluginConfigDto.class)
+    @JsonSerialize
     abstract static class PluginConfigDtoBase {
 
         abstract boolean enabled();

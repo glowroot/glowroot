@@ -16,13 +16,11 @@
 package org.glowroot.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = GeneralConfig.class)
-@JsonDeserialize(as = GeneralConfig.class)
+@JsonSerialize
 public abstract class GeneralConfigBase {
 
     // if tracing is disabled mid-trace there should be no issue

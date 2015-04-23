@@ -24,7 +24,6 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.io.CharSource;
 import org.immutables.value.Value;
@@ -120,7 +119,7 @@ public class AggregateMerging {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = TimerMergedAggregate.class)
+    @JsonSerialize
     public static abstract class TimerMergedAggregateBase {
         @JsonProperty("timers")
         public abstract AggregateTimer syntheticRootTimer();
@@ -128,7 +127,7 @@ public class AggregateMerging {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = HistogramMergedAggregate.class)
+    @JsonSerialize
     public static abstract class HistogramMergedAggregateBase {
 
         @JsonIgnore
@@ -153,8 +152,7 @@ public class AggregateMerging {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = ThreadInfoAggregate.class)
-    @JsonDeserialize(as = ThreadInfoAggregate.class)
+    @JsonSerialize
     public abstract static class ThreadInfoAggregateBase {
 
         abstract @Nullable Long totalCpuMicros();

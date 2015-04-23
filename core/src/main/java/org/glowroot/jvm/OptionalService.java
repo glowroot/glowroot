@@ -41,7 +41,7 @@ public abstract class OptionalService<T> {
     public abstract @Nullable T getService();
 
     @Value.Immutable
-    @JsonSerialize(as = Availability.class)
+    @JsonSerialize
     public abstract static class AvailabilityBase {
         @Value.Parameter
         public abstract boolean isAvailable();

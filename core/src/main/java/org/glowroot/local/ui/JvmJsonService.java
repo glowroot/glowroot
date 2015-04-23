@@ -42,7 +42,6 @@ import javax.management.openmbean.TabularData;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
@@ -554,7 +553,7 @@ class JvmJsonService {
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = GaugePointRequest.class)
+    @JsonSerialize
     abstract static class GaugePointRequestBase {
         abstract long from();
         abstract long to();
@@ -563,7 +562,7 @@ class JvmJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = Gauge.class)
+    @JsonSerialize
     abstract static class GaugeBase {
 
         static final Ordering<Gauge> ordering = new Ordering<Gauge>() {
@@ -659,19 +658,19 @@ class JvmJsonService {
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = MBeanTreeRequest.class)
+    @JsonSerialize
     abstract static class MBeanTreeRequestBase {
         abstract public List<String> expanded();
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = MBeanAttributeMapRequest.class)
+    @JsonSerialize
     abstract static class MBeanAttributeMapRequestBase {
         abstract String objectName();
     }
 
     @Value.Immutable
-    @JsonDeserialize(as = RequestWithDirectory.class)
+    @JsonSerialize
     abstract static class RequestWithDirectoryBase {
         abstract String directory();
     }

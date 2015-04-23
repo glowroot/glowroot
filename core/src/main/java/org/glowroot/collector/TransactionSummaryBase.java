@@ -17,7 +17,6 @@ package org.glowroot.collector;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
@@ -27,8 +26,7 @@ import org.immutables.value.Value;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Value.Immutable
-@JsonSerialize(as = TransactionSummary.class)
-@JsonDeserialize(as = TransactionSummary.class)
+@JsonSerialize
 public abstract class TransactionSummaryBase {
 
     public static final Ordering<TransactionSummary> orderingByTotalTimeDesc =

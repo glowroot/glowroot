@@ -20,13 +20,11 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = SmtpConfig.class)
-@JsonDeserialize(as = SmtpConfig.class)
+@JsonSerialize
 public abstract class SmtpConfigBase {
 
     @Value.Default

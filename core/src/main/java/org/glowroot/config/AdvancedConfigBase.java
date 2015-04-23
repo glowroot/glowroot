@@ -16,13 +16,11 @@
 package org.glowroot.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = AdvancedConfig.class)
-@JsonDeserialize(as = AdvancedConfig.class)
+@JsonSerialize
 public abstract class AdvancedConfigBase {
 
     @Value.Default

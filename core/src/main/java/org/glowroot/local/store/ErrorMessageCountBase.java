@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = ErrorMessageCount.class)
+@JsonSerialize
 public abstract class ErrorMessageCountBase {
 
     public abstract String message();

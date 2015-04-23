@@ -113,7 +113,7 @@ class GcInfoComponent {
     }
 
     @Value.Immutable
-    @JsonSerialize(as = GcInfo.class)
+    @JsonSerialize
     public abstract static class GcInfoBase {
         abstract String name();
         abstract long collectionCount();

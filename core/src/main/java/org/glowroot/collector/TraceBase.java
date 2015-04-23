@@ -19,14 +19,12 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonRawValue;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableSetMultimap;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize(as = Trace.class)
-@JsonDeserialize(as = Trace.class)
+@JsonSerialize
 public abstract class TraceBase {
 
     public abstract String id();
