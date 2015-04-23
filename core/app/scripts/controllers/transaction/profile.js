@@ -64,8 +64,11 @@ glowroot.controller('TransactionProfileCtrl', [
             $('#profileOuter').removeData('gtLoaded');
             if ($scope.showProfile) {
               $scope.sampleCount = data.sampleCount;
-              // update tab bar in case viewing live data and tab bar sample count is now out of sync
-              $scope.$parent.$broadcast('updateProfileTabCount', data.sampleCount);
+              // parent scope can be null if user has moved on to another controller by the time http get returns
+              if ($scope.$parent) {
+                // update tab bar in case viewing live data and tab bar sample count is now out of sync
+                $scope.$parent.$broadcast('updateProfileTabCount', data.sampleCount);
+              }
               HandlebarsRendering.profileToggle(undefined, '#profileOuter', data);
             }
           })

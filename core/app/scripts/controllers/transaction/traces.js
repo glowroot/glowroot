@@ -98,8 +98,11 @@ glowroot.controller('TracesCtrl', [
             $scope.tracesExpired = data.tracesExpired;
             $scope.chartLimitExceeded = data.limitExceeded;
             $scope.chartLimit = limit;
-            // update tab bar in case viewing live data and tab bar trace count is now out of sync
-            $scope.$parent.$broadcast('updateTraceTabCount', traceCount);
+            // parent scope can be null if user has moved on to another controller by the time http get returns
+            if ($scope.$parent) {
+              // update tab bar in case viewing live data and tab bar sample count is now out of sync
+              $scope.$parent.$broadcast('updateTraceTabCount', traceCount);
+            }
             // user clicked on Refresh button, need to reset axes
             plot.getAxes().xaxis.options.min = from;
             plot.getAxes().xaxis.options.max = to;
