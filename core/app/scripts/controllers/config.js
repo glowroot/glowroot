@@ -57,8 +57,8 @@ glowroot.controller('ConfigCtrl', [
     };
 
     $scope.isAlerts = function () {
-      return $location.path() === '/config/alert-list' || $location.path() === '/config/alert' ||
-          $location.path() === '/config/smtp';
+      return $location.path() === '/config/alert-list' || $location.path() === '/config/alert'
+          || $location.path() === '/config/smtp';
     };
 
     $scope.isPlugins = function () {

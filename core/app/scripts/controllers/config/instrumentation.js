@@ -106,8 +106,8 @@ glowroot.controller('ConfigInstrumentationCtrl', [
     var removeConfirmIfHasChangesListener = $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
     $scope.hasMethodSignatureError = function () {
-      return !$scope.methodSignatures || !$scope.methodSignatures.length ||
-          $scope.formCtrl.selectedMethodSignature.$invalid;
+      return !$scope.methodSignatures || !$scope.methodSignatures.length
+          || $scope.formCtrl.selectedMethodSignature.$invalid;
     };
 
     $scope.showClassNameSpinner = 0;
@@ -327,8 +327,8 @@ glowroot.controller('ConfigInstrumentationCtrl', [
     });
 
     function isSignatureAll(methodSignature) {
-      return methodSignature.modifiers.length === 0 && methodSignature.returnType === '' &&
-          methodSignature.parameterTypes.length === 1 && methodSignature.parameterTypes[0] === '..';
+      return methodSignature.modifiers.length === 0 && methodSignature.returnType === ''
+          && methodSignature.parameterTypes.length === 1 && methodSignature.parameterTypes[0] === '..';
     }
   }
 ]);

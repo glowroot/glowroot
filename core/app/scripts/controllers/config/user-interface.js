@@ -32,8 +32,8 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
     };
 
     $scope.showChangeReadOnlyPassword = function () {
-      return $scope.config && $scope.config.readOnlyPasswordEnabled && $scope.originalConfig.readOnlyPasswordEnabled &&
-          $scope.config.adminPasswordEnabled;
+      return $scope.config && $scope.config.readOnlyPasswordEnabled && $scope.originalConfig.readOnlyPasswordEnabled
+          && $scope.config.adminPasswordEnabled;
     };
 
     $scope.$watch('config.anonymousAccess', function (newValue, oldValue) {
@@ -99,8 +99,8 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
           return false;
         }
       }
-      return !angular.equals($scope.config, $scope.originalConfig) || $scope.page.newAdminPassword ||
-          $scope.page.newReadOnlyPassword;
+      return !angular.equals($scope.config, $scope.originalConfig) || $scope.page.newAdminPassword
+          || $scope.page.newReadOnlyPassword;
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
@@ -133,8 +133,8 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
         postData.currentAdminPassword = $scope.page.verifyCurrentAdminPassword;
         postData.newAdminPassword = '';
         disablingAdminPassword = true;
-      } else if ($scope.originalConfig.adminPasswordEnabled && $scope.config.adminPasswordEnabled &&
-          $scope.page.currentAdminPassword) {
+      } else if ($scope.originalConfig.adminPasswordEnabled && $scope.config.adminPasswordEnabled
+          && $scope.page.currentAdminPassword) {
         // changing admin password
         if ($scope.page.newAdminPassword !== $scope.page.verifyNewAdminPassword) {
           deferred.reject('Passwords do not match');
@@ -153,8 +153,8 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
       } else if ($scope.originalConfig.readOnlyPasswordEnabled && !$scope.config.readOnlyPasswordEnabled) {
         // disabling read only password
         postData.newReadOnlyPassword = '';
-      } else if ($scope.originalConfig.readOnlyPasswordEnabled && $scope.config.readOnlyPasswordEnabled &&
-          $scope.page.newReadOnlyPassword) {
+      } else if ($scope.originalConfig.readOnlyPasswordEnabled && $scope.config.readOnlyPasswordEnabled
+          && $scope.page.newReadOnlyPassword) {
         // changing read only password
         if ($scope.page.newReadOnlyPassword !== $scope.page.verifyNewReadOnlyPassword) {
           deferred.reject('Passwords do not match');
