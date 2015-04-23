@@ -50,6 +50,7 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
         if ($scope.config.adminPasswordEnabled && $scope.config.anonymousAccess === 'admin') {
           $scope.config.anonymousAccess = 'none';
         } else if (!$scope.config.adminPasswordEnabled) {
+          $scope.config.readOnlyPasswordEnabled = false;
           $scope.config.anonymousAccess = 'admin';
         }
       }

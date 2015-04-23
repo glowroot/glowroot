@@ -103,10 +103,13 @@ class LayoutService {
     }
 
     String getNeedsAuthenticationLayout() throws IOException {
+        UserInterfaceConfig userInterfaceConfig = configService.getUserInterfaceConfig();
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeBooleanField("needsAuthentication", true);
+        jg.writeBooleanField("readOnlyPasswordEnabled",
+                userInterfaceConfig.readOnlyPasswordEnabled());
         jg.writeStringField("footerMessage", "version " + version);
         jg.writeEndObject();
         jg.close();
