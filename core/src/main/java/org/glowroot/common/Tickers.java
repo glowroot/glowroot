@@ -15,6 +15,7 @@
  */
 package org.glowroot.common;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
 
 public class Tickers {
@@ -27,11 +28,7 @@ public class Tickers {
     // normally Ticker should be injected, but in some memory sensitive classes it can be cached
     // in a static field
     public static Ticker getTicker() {
-        if (USE_DUMMY_TICKER) {
-            return new DummyTicker();
-        } else {
-            return Ticker.systemTicker();
-        }
+        return getTicker(USE_DUMMY_TICKER);
     }
 
     // Nano times roll over every 292 years, so it is important to test differences between nano
@@ -39,6 +36,15 @@ public class Tickers {
     // (see http://java.sun.com/javase/7/docs/api/java/lang/System.html#nanoTime())
     public static boolean lessThanOrEqual(long tick1, long tick2) {
         return tick2 - tick1 >= 0;
+    }
+
+    @VisibleForTesting
+    static Ticker getTicker(boolean dummyTicker) {
+        if (dummyTicker) {
+            return new DummyTicker();
+        } else {
+            return Ticker.systemTicker();
+        }
     }
 
     private static class DummyTicker extends Ticker {

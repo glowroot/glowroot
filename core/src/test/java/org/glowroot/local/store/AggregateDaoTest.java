@@ -69,6 +69,35 @@ public class AggregateDaoTest {
     @Test
     public void shouldReadTransactions() throws Exception {
         // given
+        populateAggregates();
+        // when
+        List<Aggregate> overallAggregates =
+                aggregateDao.readOverallAggregates("a type", 0, 100000, 0);
+        TransactionSummaryQuery query = TransactionSummaryQuery.builder()
+                .transactionType("a type")
+                .from(0)
+                .to(100000)
+                .sortOrder(TransactionSummarySortOrder.TOTAL_TIME)
+                .limit(10)
+                .build();
+        QueryResult<TransactionSummary> queryResult =
+                aggregateDao.readTransactionSummaries(query);
+        // then
+        assertThat(overallAggregates).hasSize(2);
+        assertThat(queryResult.records()).hasSize(3);
+        assertThat(queryResult.records().get(0).transactionName()).isEqualTo("seven");
+        assertThat(queryResult.records().get(0).totalMicros()).isEqualTo(2800000);
+        assertThat(queryResult.records().get(0).transactionCount()).isEqualTo(14);
+        assertThat(queryResult.records().get(1).transactionName()).isEqualTo("two");
+        assertThat(queryResult.records().get(1).totalMicros()).isEqualTo(600000);
+        assertThat(queryResult.records().get(1).transactionCount()).isEqualTo(4);
+        assertThat(queryResult.records().get(2).transactionName()).isEqualTo("one");
+        assertThat(queryResult.records().get(2).totalMicros()).isEqualTo(200000);
+        assertThat(queryResult.records().get(2).transactionCount()).isEqualTo(2);
+    }
+
+    // also used by TransactionCommonServiceTest
+    public void populateAggregates() throws Exception {
         Aggregate overallAggregate = Aggregate.builder()
                 .transactionType("a type")
                 .transactionName(null)
@@ -169,32 +198,12 @@ public class AggregateDaoTest {
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build());
-
         aggregateDao.store(ImmutableList.of(overallAggregate2), transactionAggregates2, 20000);
-        // when
-        List<Aggregate> overallAggregates =
-                aggregateDao.readOverallAggregates("a type", 0, 100000, 0);
-        TransactionSummaryQuery query = TransactionSummaryQuery.builder()
-                .transactionType("a type")
-                .from(0)
-                .to(100000)
-                .sortOrder(TransactionSummarySortOrder.TOTAL_TIME)
-                .limit(10)
-                .build();
-        QueryResult<TransactionSummary> queryResult =
-                aggregateDao.readTransactionSummaries(query);
-        // then
-        assertThat(overallAggregates).hasSize(2);
-        assertThat(queryResult.records()).hasSize(3);
-        assertThat(queryResult.records().get(0).transactionName()).isEqualTo("seven");
-        assertThat(queryResult.records().get(0).totalMicros()).isEqualTo(2800000);
-        assertThat(queryResult.records().get(0).transactionCount()).isEqualTo(14);
-        assertThat(queryResult.records().get(1).transactionName()).isEqualTo("two");
-        assertThat(queryResult.records().get(1).totalMicros()).isEqualTo(600000);
-        assertThat(queryResult.records().get(1).transactionCount()).isEqualTo(4);
-        assertThat(queryResult.records().get(2).transactionName()).isEqualTo("one");
-        assertThat(queryResult.records().get(2).totalMicros()).isEqualTo(200000);
-        assertThat(queryResult.records().get(2).transactionCount()).isEqualTo(2);
+    }
+
+    // used by TransactionCommonServiceTest
+    public AggregateDao getAggregateDao() {
+        return aggregateDao;
     }
 
     private static String getFakeTimers() {

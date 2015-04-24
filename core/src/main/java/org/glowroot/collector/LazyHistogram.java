@@ -22,6 +22,7 @@ import java.util.zip.DataFormatException;
 
 import javax.annotation.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.HdrHistogram.Histogram;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -105,21 +106,21 @@ public class LazyHistogram {
         }
     }
 
-    public void encodeIntoByteBuffer(ByteBuffer targetBuffer) {
+    public byte[] encodeUsingTempByteBuffer(ByteBuffer tempBuffer) {
         if (histogram == null) {
-            targetBuffer.putInt(0);
+            tempBuffer.putInt(0);
             // write the size so can pre-allocate correctly sized array when reading
-            targetBuffer.putInt(size);
+            tempBuffer.putInt(size);
             if (!sorted) {
                 // sort values before storing so don't have to sort each time later when calculating
                 // percentiles
                 sortValues();
             }
             for (int i = 0; i < size; i++) {
-                targetBuffer.putLong(values[i]);
+                tempBuffer.putLong(values[i]);
             }
         } else {
-            targetBuffer.putInt(1);
+            tempBuffer.putInt(1);
             if (hdrHistogramInternalField != null) {
                 // this is temporary workaround until next HdrHistogram release
                 // see https://github.com/HdrHistogram/HdrHistogram/pull/59
@@ -131,11 +132,17 @@ public class LazyHistogram {
                     logger.error(e.getMessage(), e);
                 }
             }
-            histogram.encodeIntoCompressedByteBuffer(targetBuffer);
+            histogram.encodeIntoCompressedByteBuffer(tempBuffer);
         }
+        int size = tempBuffer.position();
+        tempBuffer.flip();
+        byte[] histogramBytes = new byte[size];
+        tempBuffer.get(histogramBytes, 0, size);
+        return histogramBytes;
     }
 
-    void add(long value) {
+    @VisibleForTesting
+    public void add(long value) {
         ensureCapacity(size + 1);
         if (histogram != null) {
             histogram.recordValue(value);

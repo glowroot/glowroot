@@ -218,12 +218,12 @@ public class ConfigTest {
         // given
         InstrumentationConfig config = createInstrumentationConfig();
         // when
-        container.getConfigService().addInstrumentationConfig(config);
+        String version = container.getConfigService().addInstrumentationConfig(config).getVersion();
+        InstrumentationConfig newConfig =
+                container.getConfigService().getInstrumentationConfig(version);
         // then
-        List<InstrumentationConfig> configs =
-                container.getConfigService().getInstrumentationConfigs();
-        assertThat(configs).hasSize(1);
-        assertThat(configs.get(0)).isEqualTo(config);
+        assertThat(container.getConfigService().getInstrumentationConfigs()).hasSize(1);
+        assertThat(newConfig).isEqualTo(config);
     }
 
     @Test
@@ -233,12 +233,13 @@ public class ConfigTest {
         config = container.getConfigService().addInstrumentationConfig(config);
         // when
         updateAllFields(config);
-        container.getConfigService().updateInstrumentationConfig(config);
+        String version =
+                container.getConfigService().updateInstrumentationConfig(config).getVersion();
+        InstrumentationConfig newConfig =
+                container.getConfigService().getInstrumentationConfig(version);
         // then
-        List<InstrumentationConfig> configs =
-                container.getConfigService().getInstrumentationConfigs();
-        assertThat(configs).hasSize(1);
-        assertThat(configs.get(0)).isEqualTo(config);
+        assertThat(container.getConfigService().getInstrumentationConfigs()).hasSize(1);
+        assertThat(newConfig).isEqualTo(config);
     }
 
     @Test
@@ -249,9 +250,7 @@ public class ConfigTest {
         // when
         container.getConfigService().removeInstrumentationConfig(config.getVersion());
         // then
-        List<InstrumentationConfig> configs =
-                container.getConfigService().getInstrumentationConfigs();
-        assertThat(configs).isEmpty();
+        assertThat(container.getConfigService().getInstrumentationConfigs()).isEmpty();
     }
 
     @Test
@@ -261,13 +260,12 @@ public class ConfigTest {
                 container.getConfigService().getGaugeConfigs();
         GaugeConfig config = createGauge();
         // when
-        container.getConfigService().addGaugeConfig(config);
+        String version = container.getConfigService().addGaugeConfig(config).getVersion();
         // then
-        List<GaugeConfig> configs =
-                Lists.newArrayList(container.getConfigService().getGaugeConfigs());
-        configs.removeAll(originalConfigs);
-        assertThat(configs).hasSize(1);
-        assertThat(configs.get(0)).isEqualTo(config);
+        List<GaugeConfig> configs = container.getConfigService().getGaugeConfigs();
+        assertThat(configs).hasSize(originalConfigs.size() + 1);
+        GaugeConfig newConfig = container.getConfigService().getGaugeConfig(version);
+        assertThat(newConfig).isEqualTo(config);
     }
 
     @Test
@@ -279,13 +277,12 @@ public class ConfigTest {
         config = container.getConfigService().addGaugeConfig(config);
         // when
         updateAllFields(config);
-        container.getConfigService().updateGaugeConfig(config);
+        String version = container.getConfigService().updateGaugeConfig(config).getVersion();
         // then
-        List<GaugeConfig> configs =
-                Lists.newArrayList(container.getConfigService().getGaugeConfigs());
-        configs.removeAll(originalConfigs);
-        assertThat(configs).hasSize(1);
-        assertThat(configs.get(0)).isEqualTo(config);
+        List<GaugeConfig> configs = container.getConfigService().getGaugeConfigs();
+        assertThat(configs).hasSize(originalConfigs.size() + 1);
+        GaugeConfig newConfig = container.getConfigService().getGaugeConfig(version);
+        assertThat(newConfig).isEqualTo(config);
     }
 
     @Test
@@ -305,45 +302,38 @@ public class ConfigTest {
     @Test
     public void shouldInsertAlert() throws Exception {
         // given
-        List<? extends AlertConfig> originalConfigs =
-                container.getConfigService().getAlertConfigs();
         AlertConfig config = createAlert();
         // when
-        container.getConfigService().addAlertConfig(config);
+        String version = container.getConfigService().addAlertConfig(config).getVersion();
+        AlertConfig newConfig = container.getConfigService().getAlertConfig(version);
         // then
-        List<AlertConfig> configs = container.getConfigService().getAlertConfigs();
-        assertThat(configs).hasSize(originalConfigs.size() + 1);
-        assertThat(configs.get(configs.size() - 1)).isEqualTo(config);
+        assertThat(container.getConfigService().getAlertConfigs()).hasSize(1);
+        assertThat(newConfig).isEqualTo(config);
     }
 
     @Test
     public void shouldUpdateAlert() throws Exception {
         // given
-        List<? extends AlertConfig> originalConfigs =
-                container.getConfigService().getAlertConfigs();
         AlertConfig config = createAlert();
         config = container.getConfigService().addAlertConfig(config);
         // when
         updateAllFields(config);
-        container.getConfigService().updateAlertConfig(config);
+        String version = container.getConfigService().updateAlertConfig(config).getVersion();
+        AlertConfig newConfig = container.getConfigService().getAlertConfig(version);
         // then
-        List<AlertConfig> configs = container.getConfigService().getAlertConfigs();
-        assertThat(configs).hasSize(originalConfigs.size() + 1);
-        assertThat(configs.get(configs.size() - 1)).isEqualTo(config);
+        assertThat(container.getConfigService().getAlertConfigs()).hasSize(1);
+        assertThat(newConfig).isEqualTo(config);
     }
 
     @Test
     public void shouldDeleteAlert() throws Exception {
         // given
-        List<? extends AlertConfig> originalConfigs =
-                container.getConfigService().getAlertConfigs();
         AlertConfig config = createAlert();
         config = container.getConfigService().addAlertConfig(config);
         // when
         container.getConfigService().removeAlertConfig(config.getVersion());
         // then
-        List<? extends AlertConfig> configs = container.getConfigService().getAlertConfigs();
-        assertThat(configs).isEqualTo(originalConfigs);
+        assertThat(container.getConfigService().getAlertConfigs()).isEmpty();
     }
 
     private static void updateAllFields(GeneralConfig config) {

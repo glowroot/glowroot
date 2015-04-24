@@ -29,20 +29,22 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @JsonSerialize
 public abstract class ErrorSummaryBase {
 
-    public static final Ordering<ErrorSummary> orderingByErrorCountDesc =
-            new Ordering<ErrorSummary>() {
+    public static final Ordering<ErrorSummaryBase> orderingByErrorCountDesc =
+            new Ordering<ErrorSummaryBase>() {
                 @Override
-                public int compare(@Nullable ErrorSummary left, @Nullable ErrorSummary right) {
+                public int compare(@Nullable ErrorSummaryBase left,
+                        @Nullable ErrorSummaryBase right) {
                     checkNotNull(left);
                     checkNotNull(right);
                     return Longs.compare(right.errorCount(), left.errorCount());
                 }
             };
 
-    public static final Ordering<ErrorSummary> orderingByErrorRateDesc =
-            new Ordering<ErrorSummary>() {
+    public static final Ordering<ErrorSummaryBase> orderingByErrorRateDesc =
+            new Ordering<ErrorSummaryBase>() {
                 @Override
-                public int compare(@Nullable ErrorSummary left, @Nullable ErrorSummary right) {
+                public int compare(@Nullable ErrorSummaryBase left,
+                        @Nullable ErrorSummaryBase right) {
                     checkNotNull(left);
                     checkNotNull(right);
                     return Doubles.compare(right.errorCount() / (double) right.transactionCount(),

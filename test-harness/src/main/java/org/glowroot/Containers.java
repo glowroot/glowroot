@@ -67,15 +67,13 @@ public class Containers {
 
     public static Container getSharedJavaagentContainer() throws Exception {
         if (!SharedContainerRunListener.useSharedContainer()) {
-            return new JavaagentContainer(null, false, 0, false, false, false,
-                    ImmutableList.<String>of());
+            return JavaagentContainer.create();
         }
         JavaagentContainer container =
                 (JavaagentContainer) SharedContainerRunListener.getSharedJavaagentContainer();
         if (container == null) {
-            container =
-                    new JavaagentContainer(null, false, 0, true, false, false,
-                            ImmutableList.<String>of());
+            container = new JavaagentContainer(null, false, 0, true, false, false,
+                    ImmutableList.<String>of());
             SharedContainerRunListener.setSharedJavaagentContainer(container);
         }
         return container;

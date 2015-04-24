@@ -1,4 +1,4 @@
-Glowroot &nbsp;&nbsp; [![Build Status](https://travis-ci.org/glowroot/glowroot.png?branch=master)](https://travis-ci.org/glowroot/glowroot)
+Glowroot &nbsp;&nbsp; [![Build Status](https://travis-ci.org/glowroot/glowroot.png?branch=master)](https://travis-ci.org/glowroot/glowroot)  [![Code Coverage](https://img.shields.io/sonar/http/sonar.glowroot.org/org.glowroot:glowroot-parent/coverage.svg)](https://sonar.glowroot.org/dashboard/index?id=org.glowroot%3Aglowroot-parent)
 =========
 
 ## Quick start

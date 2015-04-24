@@ -29,7 +29,7 @@ import org.junit.Test;
 // see https://github.com/jacoco/jacoco/wiki/FilteringOptions
 // #filters-for-code-where-test-execution-is-questionable-or-impossible-by-design
 //
-// also see copies of this in jdbc-plugin, servlet-plugin and logger-plugin
+// also see copies of this in cassandra-plugin, jdbc-plugin, servlet-plugin and logger-plugin
 public class NeverUsedDefaultConstructorTest {
 
     @Test

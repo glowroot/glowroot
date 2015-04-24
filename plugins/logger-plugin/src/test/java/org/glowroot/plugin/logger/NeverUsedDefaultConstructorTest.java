@@ -35,7 +35,7 @@ import org.glowroot.container.Container;
 // see https://github.com/jacoco/jacoco/wiki/FilteringOptions
 // #filters-for-code-where-test-execution-is-questionable-or-impossible-by-design
 //
-// also see copies of this in glowroot-core, jdbc-plugin and servlet-plugin
+// also see copies of this in glowroot-core, cassandra-plugin, jdbc-plugin and servlet-plugin
 public class NeverUsedDefaultConstructorTest {
 
     private static Container container;
@@ -55,16 +55,16 @@ public class NeverUsedDefaultConstructorTest {
         ClassLoader loader = NeverUsedDefaultConstructorTest.class.getClassLoader();
         ImmutableSet<ClassInfo> classInfos = ClassPath.from(loader).getAllClasses();
         for (ClassInfo classInfo : classInfos) {
-            if (!classInfo.getName().startsWith("org.glowroot.plugin.logger")) {
+            if (!classInfo.getName().startsWith(getClass().getPackage().getName())) {
                 continue;
             }
-            Class<?> loggerPluginClass = classInfo.load();
+            Class<?> pluginClass = classInfo.load();
             try {
-                testDefaultConstructorIfPointcutAdviceClass(loggerPluginClass);
+                testDefaultConstructorIfPointcutAdviceClass(pluginClass);
             } catch (Exception e) {
             }
             try {
-                testPrivateDefaultConstructorIfUtilityClass(loggerPluginClass);
+                testPrivateDefaultConstructorIfUtilityClass(pluginClass);
             } catch (Exception e) {
             }
         }

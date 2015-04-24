@@ -94,4 +94,14 @@ public class DataDirTest {
         assertThat(dataDir.getPath())
                 .isEqualTo(new File(glowrootJarFile.getParentFile(), "x/y").getPath());
     }
+
+    @Test
+    public void testWithBadAbsoluteDataDirPropertyAndGlowrootJarFile() {
+        // given
+        Map<String, String> properties = ImmutableMap.of("data.dir", glowrootJarFile.getPath());
+        // when
+        File dataDir = DataDir.getDataDir(properties, glowrootJarFile);
+        // then
+        assertThat(dataDir.getPath()).isEqualTo(new File(".").getPath());
+    }
 }

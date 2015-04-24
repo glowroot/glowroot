@@ -20,9 +20,26 @@ import org.junit.Test;
 import org.glowroot.tests.webdriver.config.ConfigSidebar;
 import org.glowroot.tests.webdriver.config.GaugeConfigPage;
 
+import static org.openqa.selenium.By.linkText;
 import static org.openqa.selenium.By.xpath;
 
 public class GaugeConfigTest extends WebDriverTest {
+
+    @Test
+    public void shouldOpenGauge() throws Exception {
+        // given
+        App app = new App(driver, "http://localhost:" + container.getUiPort());
+        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getGaugesLink().click();
+
+        // when
+        Utils.withWait(driver, linkText("java.lang/Memory")).click();
+        Utils.withWait(driver, linkText("Return to list")).click();
+    }
 
     @Test
     public void shouldAddGauge() throws Exception {

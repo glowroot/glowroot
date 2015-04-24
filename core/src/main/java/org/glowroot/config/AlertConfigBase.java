@@ -29,9 +29,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @JsonSerialize
 public abstract class AlertConfigBase {
 
-    public static final Ordering<AlertConfig> orderingByName = new Ordering<AlertConfig>() {
+    public static final Ordering<AlertConfigBase> orderingByName = new Ordering<AlertConfigBase>() {
         @Override
-        public int compare(@Nullable AlertConfig left, @Nullable AlertConfig right) {
+        public int compare(@Nullable AlertConfigBase left, @Nullable AlertConfigBase right) {
             checkNotNull(left);
             checkNotNull(right);
             return left.transactionType().compareToIgnoreCase(right.transactionType());

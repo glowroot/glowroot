@@ -36,6 +36,7 @@ import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.CappedDatabase;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.GaugePointDao;
+import org.glowroot.local.store.MailService;
 import org.glowroot.local.store.StorageModule;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.markers.OnlyUsedByTests;
@@ -109,7 +110,7 @@ public class LocalUiModule {
                 storageModule.getFixedGaugeRollupSeconds());
         ConfigJsonService configJsonService = new ConfigJsonService(configService,
                 cappedDatabase, configModule.getPluginDescriptors(), httpSessionManager,
-                transactionModule);
+                transactionModule, new MailService());
         ClasspathCache classpathCache = new ClasspathCache(analyzedWorld, instrumentation);
         InstrumentationJsonService instrumentationJsonService = new InstrumentationJsonService(
                 configService, transactionModule.getAdviceCache(), classpathCache,

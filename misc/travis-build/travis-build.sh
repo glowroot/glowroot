@@ -110,8 +110,6 @@ case "$1" in
                  # the sonar.jdbc.password system property is set in the pom.xml using the
                  # environment variable SONAR_DB_PASSWORD (instead of setting the system
                  # property on the command line which which would make it visible to ps)
-                 #
-                 # need to use real IP address for jdbc connection since sonar.glowroot.org points to cloudflare
                  mvn sonar:sonar -pl .,plugin-api,core,plugins/cassandra-plugin,plugins/jdbc-plugin,plugins/logger-plugin,plugins/servlet-plugin \
                                  -Dsonar.jdbc.url=$SONAR_JDBC_URL \
                                  -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \

@@ -851,12 +851,7 @@ public class AggregateDao {
             ByteBuffer buffer =
                     scratchBuffer.getBuffer(lazyHistogram.getNeededByteBufferCapacity());
             buffer.clear();
-            lazyHistogram.encodeIntoByteBuffer(buffer);
-            int size = buffer.position();
-            buffer.flip();
-            byte[] histogram = new byte[size];
-            buffer.get(histogram, 0, size);
-
+            byte[] histogram = lazyHistogram.encodeUsingTempByteBuffer(buffer);
             return Aggregate.builder()
                     .transactionType(transactionType)
                     .transactionName(transactionName)

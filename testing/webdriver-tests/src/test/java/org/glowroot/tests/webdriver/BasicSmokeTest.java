@@ -16,7 +16,9 @@
 package org.glowroot.tests.webdriver;
 
 import java.util.List;
+import java.util.concurrent.Executors;
 
+import com.google.common.base.Stopwatch;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
@@ -25,23 +27,39 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.tests.webdriver.jvm.JvmSidebar;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.xpath;
 
 public class BasicSmokeTest extends WebDriverTest {
+
+    private static final Logger logger = LoggerFactory.getLogger(BasicSmokeTest.class);
 
     @BeforeClass
     public static void setUp() throws Exception {
         GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
         generalConfig.setProfilingIntervalMillis(10);
         container.getConfigService().updateGeneralConfig(generalConfig);
-        container.executeAppUnderTest(JdbcServlet.class);
-        container.executeAppUnderTest(ErrorServlet.class);
-        // sleep for a bit to give glowroot aggregator time to process these requests
-        Thread.sleep(1000);
+        Executors.newSingleThreadExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Stopwatch stopwatch = Stopwatch.createStarted();
+                    while (stopwatch.elapsed(SECONDS) < 5) {
+                        container.executeAppUnderTest(JdbcServlet.class);
+                        container.executeAppUnderTest(ErrorServlet.class);
+                    }
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+        });
+        Thread.sleep(6000);
     }
 
     @Test

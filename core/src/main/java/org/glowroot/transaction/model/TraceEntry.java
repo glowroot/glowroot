@@ -157,11 +157,6 @@ public class TraceEntry implements org.glowroot.api.TraceEntry {
         this.nextTraceEntry = nextTraceEntry;
     }
 
-    @Nullable
-    TimerImpl getTimer() {
-        return timer;
-    }
-
     void setErrorMessage(@Nullable ErrorMessage errorMessage) {
         this.errorMessage = errorMessage;
     }

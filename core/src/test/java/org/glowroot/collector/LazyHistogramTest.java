@@ -85,11 +85,11 @@ public class LazyHistogramTest {
             lazyHistogram.add(1);
         }
         ByteBuffer buffer = ByteBuffer.allocate(lazyHistogram.getNeededByteBufferCapacity());
-        lazyHistogram.encodeIntoByteBuffer(buffer);
+        lazyHistogram.encodeUsingTempByteBuffer(buffer);
         // when
         lazyHistogram.add(10000);
         buffer = ByteBuffer.allocate(lazyHistogram.getNeededByteBufferCapacity());
-        lazyHistogram.encodeIntoByteBuffer(buffer);
+        lazyHistogram.encodeUsingTempByteBuffer(buffer);
         // then
     }
 
@@ -114,12 +114,11 @@ public class LazyHistogramTest {
         for (int i = num; i > 0; i--) {
             lazyHistogram.add(i);
         }
-        ByteBuffer buffer = ByteBuffer.allocate(lazyHistogram.getNeededByteBufferCapacity());
-        lazyHistogram.encodeIntoByteBuffer(buffer);
+        ByteBuffer tempBuffer = ByteBuffer.allocate(lazyHistogram.getNeededByteBufferCapacity());
+        byte[] histogram = lazyHistogram.encodeUsingTempByteBuffer(tempBuffer);
         lazyHistogram = new LazyHistogram();
-        buffer.flip();
         // when
-        lazyHistogram.decodeFromByteBuffer(buffer);
+        lazyHistogram.decodeFromByteBuffer(ByteBuffer.wrap(histogram));
         // then
         assertPercentile(lazyHistogram, num, 50);
         assertPercentile(lazyHistogram, num, 95);
@@ -134,12 +133,11 @@ public class LazyHistogramTest {
         for (int i = num; i > 0; i--) {
             lazyHistogram.add(i);
         }
-        ByteBuffer buffer = ByteBuffer.allocate(lazyHistogram.getNeededByteBufferCapacity());
-        lazyHistogram.encodeIntoByteBuffer(buffer);
+        ByteBuffer tempBuffer = ByteBuffer.allocate(lazyHistogram.getNeededByteBufferCapacity());
+        byte[] histogram = lazyHistogram.encodeUsingTempByteBuffer(tempBuffer);
         lazyHistogram = new LazyHistogram();
-        buffer.flip();
         // when
-        lazyHistogram.decodeFromByteBuffer(buffer);
+        lazyHistogram.decodeFromByteBuffer(ByteBuffer.wrap(histogram));
         for (int i = 2 * num; i > num; i--) {
             lazyHistogram.add(i);
         }
@@ -156,15 +154,14 @@ public class LazyHistogramTest {
         for (int i = encodedSize; i > 0; i--) {
             lazyHistogram.add(i);
         }
-        ByteBuffer buffer = ByteBuffer.allocate(lazyHistogram.getNeededByteBufferCapacity());
-        lazyHistogram.encodeIntoByteBuffer(buffer);
+        ByteBuffer tempBuffer = ByteBuffer.allocate(lazyHistogram.getNeededByteBufferCapacity());
+        byte[] histogram = lazyHistogram.encodeUsingTempByteBuffer(tempBuffer);
         lazyHistogram = new LazyHistogram();
-        buffer.flip();
         // when
         for (int i = nonEncodedSize + encodedSize; i > encodedSize; i--) {
             lazyHistogram.add(i);
         }
-        lazyHistogram.decodeFromByteBuffer(buffer);
+        lazyHistogram.decodeFromByteBuffer(ByteBuffer.wrap(histogram));
         // then
         assertPercentile(lazyHistogram, encodedSize + nonEncodedSize, 50);
         assertPercentile(lazyHistogram, encodedSize + nonEncodedSize, 95);

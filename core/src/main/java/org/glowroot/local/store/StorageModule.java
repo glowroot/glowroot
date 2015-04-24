@@ -78,8 +78,8 @@ public class StorageModule {
                 cappedDatabaseSizeMb * 1024, scheduledExecutor, ticker);
         aggregateDao = new AggregateDao(dataSource, cappedDatabase, FIXED_AGGREGATE_ROLLUP_SECONDS);
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
-        AlertingService alertingService =
-                new AlertingService(configService, triggeredAlertDao, aggregateDao);
+        AlertingService alertingService = new AlertingService(configService, triggeredAlertDao,
+                aggregateDao, new MailService());
         aggregateRepositoryImpl = new AggregateRepositoryImpl(aggregateDao, alertingService);
         traceDao = new TraceDao(dataSource, cappedDatabase);
         gaugePointDao =

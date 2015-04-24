@@ -36,7 +36,7 @@ public abstract class GeneralConfigBase {
         return true;
     }
 
-    // 0 means store all traces, -1 means store no traces
+    // 0 means store all traces
     @Value.Default
     public int traceStoreThresholdMillis() {
         return 1000;

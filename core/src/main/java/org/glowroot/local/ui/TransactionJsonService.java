@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
@@ -421,7 +422,8 @@ class TransactionJsonService {
                 && request.from() < currentTimeMillis;
     }
 
-    private boolean matchesActive(Transaction transaction, TransactionDataRequest request) {
+    @VisibleForTesting
+    boolean matchesActive(Transaction transaction, TransactionDataRequest request) {
         if (!transactionCollector.shouldStore(transaction)) {
             return false;
         }

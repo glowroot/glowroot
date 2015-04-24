@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.jdbc;
+package org.glowroot.plugin.cassandra;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -35,7 +35,7 @@ import org.glowroot.container.Container;
 // see https://github.com/jacoco/jacoco/wiki/FilteringOptions
 // #filters-for-code-where-test-execution-is-questionable-or-impossible-by-design
 //
-// also see copies of this in glowroot-core, cassandra-plugin, servlet-plugin and logger-plugin
+// also see copies of this in glowroot-core, jdbc-plugin, logger-plugin and servlet-plugin
 public class NeverUsedDefaultConstructorTest {
 
     private static Container container;

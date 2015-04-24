@@ -91,9 +91,8 @@ public class JavaagentMain {
             }
         });
         Stopwatch stopwatch = Stopwatch.createStarted();
-        // need to wait a bit longer than expected here when running under jacoco javaagent on
-        // travis ci boxes
-        while (stopwatch.elapsed(SECONDS) < 10) {
+        // need to wait longer than expected here when running with jacoco on travis ci boxes
+        while (stopwatch.elapsed(SECONDS) < 30) {
             if (MainEntryPoint.getGlowrootModule() != null) {
                 break;
             }

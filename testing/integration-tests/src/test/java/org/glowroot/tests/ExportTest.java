@@ -16,6 +16,9 @@
 package org.glowroot.tests;
 
 import java.io.InputStream;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.zip.ZipInputStream;
 
 import com.google.common.io.ByteStreams;
@@ -25,11 +28,15 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
+import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
+import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.tests.DetailMapTest.ShouldGenerateTraceWithNestedEntries;
 import org.glowroot.tests.ProfilingTest.ShouldGenerateTraceWithProfile;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ExportTest {
 
@@ -77,5 +84,48 @@ public class ExportTest {
         ZipInputStream zipIn = new ZipInputStream(in);
         zipIn.getNextEntry();
         ByteStreams.toByteArray(zipIn);
+    }
+
+    @Test
+    public void shouldExportActiveTrace() throws Exception {
+        // given
+        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
+        generalConfig.setProfilingIntervalMillis(20);
+        container.getConfigService().updateGeneralConfig(generalConfig);
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        executorService.submit(new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                try {
+                    container.executeAppUnderTest(ShouldWaitForInterrupt.class);
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
+                return null;
+            }
+        });
+        // when
+        Trace trace = container.getTraceService().getActiveTrace(5, SECONDS);
+        InputStream in = container.getTraceService().getTraceExport(trace.getId());
+        // then should not bomb
+        ZipInputStream zipIn = new ZipInputStream(in);
+        zipIn.getNextEntry();
+        ByteStreams.toByteArray(zipIn);
+        // clean up
+        container.interruptAppUnderTest();
+    }
+
+    public static class ShouldWaitForInterrupt implements AppUnderTest, TraceMarker {
+        @Override
+        public void executeApp() {
+            traceMarker();
+        }
+        @Override
+        public void traceMarker() {
+            try {
+                Thread.sleep(Long.MAX_VALUE);
+            } catch (InterruptedException e) {
+            }
+        }
     }
 }

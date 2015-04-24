@@ -22,7 +22,6 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import javax.mail.Message;
 import javax.mail.Session;
-import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
@@ -59,6 +58,7 @@ import org.glowroot.config.UserInterfaceConfig;
 import org.glowroot.config.UserRecordingConfig;
 import org.glowroot.local.store.AlertingService;
 import org.glowroot.local.store.CappedDatabase;
+import org.glowroot.local.store.MailService;
 import org.glowroot.local.ui.HttpServer.PortChangeFailedException;
 import org.glowroot.transaction.TransactionModule;
 
@@ -79,17 +79,19 @@ class ConfigJsonService {
     private final ImmutableList<PluginDescriptor> pluginDescriptors;
     private final HttpSessionManager httpSessionManager;
     private final TransactionModule transactionModule;
+    private final MailService mailService;
 
     private volatile @MonotonicNonNull HttpServer httpServer;
 
     ConfigJsonService(ConfigService configService, CappedDatabase cappedDatabase,
             List<PluginDescriptor> pluginDescriptors, HttpSessionManager httpSessionManager,
-            TransactionModule transactionModule) {
+            TransactionModule transactionModule, MailService mailService) {
         this.configService = configService;
         this.cappedDatabase = cappedDatabase;
         this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
         this.httpSessionManager = httpSessionManager;
         this.transactionModule = transactionModule;
+        this.mailService = mailService;
     }
 
     void setHttpServer(HttpServer httpServer) {
@@ -286,7 +288,7 @@ class ConfigJsonService {
         message.setRecipient(Message.RecipientType.TO, to);
         message.setSubject("Test email from Glowroot (EOM)");
         message.setText("");
-        Transport.send(message);
+        mailService.send(message);
     }
 
     @RequiresNonNull("httpServer")

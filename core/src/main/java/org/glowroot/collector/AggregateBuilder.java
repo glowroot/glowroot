@@ -95,11 +95,7 @@ class AggregateBuilder {
     Aggregate build(long captureTime, ScratchBuffer scratchBuffer) throws IOException {
         ByteBuffer buffer = scratchBuffer.getBuffer(histogram.getNeededByteBufferCapacity());
         buffer.clear();
-        histogram.encodeIntoByteBuffer(buffer);
-        int size = buffer.position();
-        buffer.flip();
-        byte[] histogramBytes = new byte[size];
-        buffer.get(histogramBytes, 0, size);
+        byte[] histogramBytes = histogram.encodeUsingTempByteBuffer(buffer);
         return Aggregate.builder()
                 .transactionType(transactionType)
                 .transactionName(transactionName)

@@ -126,23 +126,6 @@ public class ProfilingTest {
         assertThat(trace.getProfileExistence()).isEqualTo(Existence.NO);
     }
 
-    public static class ShouldWaitForInterrupt implements AppUnderTest, TraceMarker {
-        @Override
-        public void executeApp() throws InterruptedException {
-            traceMarker();
-        }
-        @Override
-        public void traceMarker() throws InterruptedException {
-            while (true) {
-                try {
-                    Thread.sleep(5);
-                } catch (InterruptedException e) {
-                    return;
-                }
-            }
-        }
-    }
-
     public static class ShouldGenerateTraceWithProfile implements AppUnderTest, TraceMarker {
         @Override
         public void executeApp() throws InterruptedException {

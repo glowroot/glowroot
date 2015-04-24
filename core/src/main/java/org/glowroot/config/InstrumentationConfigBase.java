@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
@@ -35,7 +36,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @JsonSerialize
 public abstract class InstrumentationConfigBase {
 
-    public static final Ordering<InstrumentationConfig> defaultOrdering =
+    public static final Ordering<InstrumentationConfigBase> defaultOrdering =
             new InstrumentationConfigOrdering();
 
     public abstract String className();
@@ -124,10 +125,11 @@ public abstract class InstrumentationConfigBase {
         return captureKind() == CaptureKind.TRANSACTION;
     }
 
-    private static class InstrumentationConfigOrdering extends Ordering<InstrumentationConfig> {
+    @VisibleForTesting
+    static class InstrumentationConfigOrdering extends Ordering<InstrumentationConfigBase> {
         @Override
-        public int compare(@Nullable InstrumentationConfig left,
-                @Nullable InstrumentationConfig right) {
+        public int compare(@Nullable InstrumentationConfigBase left,
+                @Nullable InstrumentationConfigBase right) {
             checkNotNull(left);
             checkNotNull(right);
             int compare = left.className().compareToIgnoreCase(right.className());
@@ -144,7 +146,7 @@ public abstract class InstrumentationConfigBase {
                 return compare;
             }
             List<String> leftParameterTypes = left.methodParameterTypes();
-            List<String> rightParameterTypes = left.methodParameterTypes();
+            List<String> rightParameterTypes = right.methodParameterTypes();
             for (int i = 0; i < leftParameterTypes.size(); i++) {
                 compare = leftParameterTypes.get(i).compareToIgnoreCase(rightParameterTypes.get(i));
                 if (compare != 0) {

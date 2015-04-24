@@ -15,9 +15,15 @@
  */
 package org.glowroot.plugin.servlet;
 
+import java.lang.reflect.Method;
+
+import com.google.common.base.Optional;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import org.glowroot.common.SpyingLogbackFilter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,13 +32,39 @@ public class InvokersTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
+    @After
+    public void afterEachTest() {
+        if (SpyingLogbackFilter.active()) {
+            SpyingLogbackFilter.clearMessages();
+        }
+    }
+
     @Test
     public void shouldReturnNullMethodWhenClassIsNull() {
         assertThat(Invokers.getMethod(null, null)).isNull();
     }
 
     @Test
+    public void shouldReturnNullMethodWhenMethodNotFound() {
+        assertThat(Invokers.getMethod(String.class, "thereWillNeverBeMethodWithThisName")).isNull();
+    }
+
+    @Test
     public void shouldReturnDefaultValueWhenMethodIsNull() {
         assertThat(Invokers.invoke(null, null, "the default")).isEqualTo("the default");
+    }
+
+    @Test
+    public void shouldReturnDefaultValueWhenMethodReturnsNull() throws Exception {
+        Method method = Optional.class.getMethod("orNull");
+        assertThat(Invokers.invoke(method, Optional.absent(), "the default"))
+                .isEqualTo("the default");
+    }
+
+    @Test
+    public void shouldReturnDefaultValueWhenMethodThrowsException() throws Exception {
+        Method method = Optional.class.getMethod("get");
+        assertThat(Invokers.invoke(method, Optional.absent(), "the default"))
+                .isEqualTo("the default");
     }
 }

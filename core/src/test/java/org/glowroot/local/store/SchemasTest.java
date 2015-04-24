@@ -37,10 +37,8 @@ public class SchemasTest {
         statement.execute("create index tab_idx on tab (a)");
         // when
         Set<Index> indexes = Schemas.getIndexes("tab", connection);
+        // then
         assertThat(indexes).hasSize(1);
         assertThat(indexes.iterator().next()).isEqualTo(Index.of("tab_idx", ImmutableList.of("a")));
-        // then
     }
-
-    // Schemas.syncIndexes("tab", indexes, connection);
 }

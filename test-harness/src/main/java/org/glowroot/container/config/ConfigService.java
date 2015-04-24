@@ -119,6 +119,14 @@ public class ConfigService {
         httpClient.post("/backend/config/plugin/" + pluginId, mapper.writeValueAsString(config));
     }
 
+    public InstrumentationConfig getInstrumentationConfig(String version) throws Exception {
+        String response = httpClient.get("/backend/config/instrumentation/" + version);
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
+        return mapper.readValue(mapper.treeAsTokens(configNode),
+                new TypeReference<InstrumentationConfig>() {});
+    }
+
     public List<InstrumentationConfig> getInstrumentationConfigs() throws Exception {
         String response = httpClient.get("/backend/config/instrumentation");
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
@@ -149,6 +157,14 @@ public class ConfigService {
     public void removeInstrumentationConfig(String version) throws Exception {
         httpClient.post("/backend/config/instrumentation/remove",
                 mapper.writeValueAsString(version));
+    }
+
+    public GaugeConfig getGaugeConfig(String version) throws Exception {
+        String response = httpClient.get("/backend/config/gauges/" + version);
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
+        return mapper.readValue(mapper.treeAsTokens(configNode),
+                new TypeReference<GaugeConfig>() {});
     }
 
     public List<GaugeConfig> getGaugeConfigs() throws Exception {
@@ -182,6 +198,11 @@ public class ConfigService {
 
     public void removeGaugeConfig(String version) throws Exception {
         httpClient.post("/backend/config/gauges/remove", mapper.writeValueAsString(version));
+    }
+
+    public AlertConfig getAlertConfig(String version) throws Exception {
+        String response = httpClient.get("/backend/config/alerts/" + version);
+        return mapper.readValue(response, new TypeReference<AlertConfig>() {});
     }
 
     public List<AlertConfig> getAlertConfigs() throws Exception {

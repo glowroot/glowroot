@@ -77,6 +77,11 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
     private final TraceService traceService;
     private final Thread shutdownHook;
 
+    public static JavaagentContainer create() throws Exception {
+        return new JavaagentContainer(null, false, 0, false, false, false,
+                ImmutableList.<String>of());
+    }
+
     public static JavaagentContainer createWithFileDb(File dataDir) throws Exception {
         return new JavaagentContainer(dataDir, true, 0, false, false, false,
                 ImmutableList.<String>of());

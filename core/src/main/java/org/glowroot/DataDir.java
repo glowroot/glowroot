@@ -16,13 +16,11 @@
 package org.glowroot;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
 import com.google.common.base.Strings;
-import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,14 +66,13 @@ class DataDir {
     }
 
     private static File getAbsoluteDataDir(File dataDir) {
-        try {
-            Files.createParentDirs(dataDir);
-            return dataDir;
-        } catch (IOException e) {
+        dataDir.mkdirs();
+        if (!dataDir.isDirectory()) {
             File processCurrDir = new File(".");
             logger.warn("error creating data directory: {} (using directory {} instead)",
-                    dataDir.getAbsolutePath(), processCurrDir.getAbsolutePath(), e);
+                    dataDir.getAbsolutePath(), processCurrDir.getAbsolutePath());
             return processCurrDir;
         }
+        return dataDir;
     }
 }

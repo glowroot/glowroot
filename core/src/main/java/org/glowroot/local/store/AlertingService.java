@@ -28,10 +28,10 @@ import javax.mail.Authenticator;
 import javax.mail.Message;
 import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
-import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,12 +53,14 @@ public class AlertingService {
     private final ConfigService configService;
     private final TriggeredAlertDao triggeredAlertDao;
     private final AggregateDao aggregateDao;
+    private final MailService mailService;
 
     AlertingService(ConfigService configService, TriggeredAlertDao triggeredAlertDao,
-            AggregateDao aggregateDao) {
+            AggregateDao aggregateDao, MailService mailService) {
         this.configService = configService;
         this.triggeredAlertDao = triggeredAlertDao;
         this.aggregateDao = aggregateDao;
+        this.mailService = mailService;
     }
 
     void checkAlerts(long endTime) {
@@ -135,9 +137,7 @@ public class AlertingService {
         }
         message.setSubject(subject);
         StringBuilder sb = new StringBuilder();
-        String percentile = new DecimalFormat("0.#########").format(alertConfig.percentile());
-        sb.append(percentile);
-        sb.append(getPercentileSuffix(percentile));
+        sb.append(getPercentileWithSuffix(alertConfig.percentile()));
         sb.append(" percentile over the last ");
         sb.append(alertConfig.timePeriodMinutes());
         sb.append(" minutes was ");
@@ -148,7 +148,7 @@ public class AlertingService {
         sb.append(transactionCount);
         sb.append(".");
         message.setText(sb.toString());
-        Transport.send(message);
+        mailService.send(message);
     }
 
     public static Session createMailSession(SmtpConfig smtpConfig, SecretKey secretKey)
@@ -190,8 +190,21 @@ public class AlertingService {
         }
     }
 
-    private static String getPercentileSuffix(String percentile) {
-        switch (percentile.charAt(percentile.length() - 1)) {
+    @VisibleForTesting
+    static String getPercentileWithSuffix(double percentile) {
+        String percentileText = new DecimalFormat("0.#########").format(percentile);
+        return percentileText + getPercentileSuffix(percentileText);
+    }
+
+    private static String getPercentileSuffix(String percentileText) {
+        if (percentileText.equals("11") || percentileText.endsWith(".11")) {
+            return "th";
+        } else if (percentileText.equals("12") || percentileText.endsWith(".12")) {
+            return "th";
+        } else if (percentileText.equals("13") || percentileText.endsWith(".13")) {
+            return "th";
+        }
+        switch (percentileText.charAt(percentileText.length() - 1)) {
             case '1':
                 return "st";
             case '2':
