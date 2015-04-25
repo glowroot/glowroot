@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  */
 package org.glowroot.plugin.servlet;
 
+import java.io.IOException;
 import java.security.Principal;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -61,6 +63,14 @@ public class UserTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getUser()).isEqualTo("my name is mock");
+    }
+
+    @Test
+    public void testHasRequestWithExceptionOnGetUserPrincipal() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(HasRequestWithExceptionOnGetUserPrincipal.class);
+        // then don't blow up
     }
 
     @Test
@@ -155,6 +165,22 @@ public class UserTest {
         protected void before(HttpServletRequest request, HttpServletResponse response) {
             ((MockHttpServletRequest) request).setUserPrincipal(new MockPrincipal());
         }
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            // user principal is only captured if app actually uses it
+            // (since it may throw exception)
+            request.getUserPrincipal();
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class HasRequestWithExceptionOnGetUserPrincipal extends TestServlet {
+        @Override
+        protected void service(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException {
+            MockHttpServletRequest request = new UserPrincipalThrowingMHSR("GET", "/testservlet");
+            super.service(request, resp);
+        }
     }
 
     @SuppressWarnings("serial")
@@ -198,6 +224,16 @@ public class UserTest {
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
             request.getSession().setAttribute("userone", new NestedTwo("xyz"));
+        }
+    }
+
+    public static class UserPrincipalThrowingMHSR extends MockCatalinaHttpServletRequest {
+        public UserPrincipalThrowingMHSR(String method, String requestURI) {
+            super(method, requestURI);
+        }
+        @Override
+        public Principal getUserPrincipal() {
+            throw new RuntimeException("Glowroot should not call this directly as it may fail");
         }
     }
 

@@ -21,6 +21,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 
@@ -30,6 +31,7 @@ import org.glowroot.api.PluginServices;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindParameter;
+import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
@@ -71,9 +73,6 @@ public class ServletAspect {
 
         @Nullable
         String getMethod();
-
-        @Nullable
-        java.security.Principal getUserPrincipal();
 
         @Nullable
         Enumeration<String> getHeaderNames();
@@ -137,30 +136,24 @@ public class ServletAspect {
                         requestQueryString, requestHeaders, sessionAttributes);
             }
             topLevel.set(messageSupplier);
-            TraceEntry traceEntry = pluginServices.startTransaction("Servlet", requestUri,
-                    messageSupplier, timerName);
-            Principal userPrincipal = request.getUserPrincipal();
-            if (userPrincipal != null) {
-                String userPrincipalName = userPrincipal.getName();
-                if (userPrincipalName != null) {
-                    pluginServices.setTransactionUser(userPrincipalName);
-                }
-            }
-            // Glowroot-Transaction-Name header is useful for automated tests which want to send a
-            // more specific name for the transaction
-            String transactionNameOverride = request.getHeader("Glowroot-Transaction-Name");
-            if (transactionNameOverride != null) {
-                pluginServices.setTransactionName(transactionNameOverride);
-            }
+            String user = null;
             if (session != null) {
                 String sessionUserAttributePath =
                         ServletPluginProperties.sessionUserAttributePath();
                 if (!sessionUserAttributePath.isEmpty()) {
                     // capture user now, don't use a lazy supplier
-                    String user = HttpSessions.getSessionAttributeTextValue(session,
+                    user = HttpSessions.getSessionAttributeTextValue(session,
                             sessionUserAttributePath);
-                    pluginServices.setTransactionUser(user);
                 }
+            }
+            // Glowroot-Transaction-Name header is useful for automated tests which want to send a
+            // more specific name for the transaction
+            String transactionNameOverride = request.getHeader("Glowroot-Transaction-Name");
+            String transactionName = MoreObjects.firstNonNull(transactionNameOverride, requestUri);
+            TraceEntry traceEntry = pluginServices.startTransaction("Servlet", transactionName,
+                    messageSupplier, timerName);
+            if (user != null) {
+                pluginServices.setTransactionUser(user);
             }
             return traceEntry;
         }
@@ -265,6 +258,17 @@ public class ServletAspect {
                         ErrorMessage.from("setStatus, HTTP status code " + statusCode);
                 pluginServices.addTraceEntry(errorMessage);
                 sendError.set(errorMessage);
+            }
+        }
+    }
+
+    @Pointcut(className = "javax.servlet.http.HttpServletRequest", methodName = "getUserPrincipal",
+            methodParameterTypes = {}, methodReturnType = "java.security.Principal")
+    public static class GetUserPrincipalAdvice {
+        @OnReturn
+        public static void onReturn(@BindReturn Principal principal) {
+            if (principal != null) {
+                pluginServices.setTransactionUser(principal.getName());
             }
         }
     }
