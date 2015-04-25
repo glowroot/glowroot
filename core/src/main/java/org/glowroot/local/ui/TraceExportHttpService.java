@@ -29,11 +29,13 @@ import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import com.google.common.io.Resources;
 import com.google.common.net.MediaType;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpHeaders.Names;
 import io.netty.handler.codec.http.HttpHeaders.Values;
 import io.netty.handler.codec.http.HttpRequest;
@@ -76,9 +78,17 @@ class TraceExportHttpService implements HttpService {
         response.headers().set(CONTENT_TYPE, MediaType.ZIP.toString());
         response.headers().set("Content-Disposition",
                 "attachment; filename=" + getFilename(export.trace()) + ".zip");
+        boolean keepAlive = HttpHeaders.isKeepAlive(request);
+        if (keepAlive && !request.getProtocolVersion().isKeepAliveDefault()) {
+            response.headers().set(Names.CONNECTION, Values.KEEP_ALIVE);
+        }
         HttpServices.preventCaching(response);
         ctx.write(response);
-        ctx.write(in);
+        ChannelFuture future = ctx.write(in);
+        HttpServices.addErrorListener(future);
+        if (!keepAlive) {
+            HttpServices.addCloseListener(future);
+        }
         // return null to indicate streaming
         return null;
     }

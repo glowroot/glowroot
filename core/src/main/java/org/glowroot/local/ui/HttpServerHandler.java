@@ -21,7 +21,6 @@ import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.nio.channels.ClosedChannelException;
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
@@ -39,7 +38,6 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
@@ -97,11 +95,6 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     private static final String RESOURCE_BASE = "org/glowroot/local/ui/app-dist";
     // only null when running tests with glowroot.ui.skip=true (e.g. travis "deploy" build)
     private static final @Nullable String RESOURCE_BASE_URL_PREFIX;
-
-    private static final ImmutableSet<String> BROWSER_DISCONNECT_MESSAGES = ImmutableSet.of(
-            "An existing connection was forcibly closed by the remote host",
-            "An established connection was aborted by the software in your host machine",
-            "Connection reset by peer");
 
     private static final ImmutableMap<String, MediaType> mediaTypes =
             ImmutableMap.<String, MediaType>builder()
@@ -230,17 +223,18 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             keepAlive = false;
         }
         response.headers().add(Names.CONTENT_LENGTH, response.content().readableBytes());
-        ChannelFuture f = ctx.write(response);
-        if (keepAlive) {
+        if (keepAlive && !request.getProtocolVersion().isKeepAliveDefault()) {
             response.headers().set(Names.CONNECTION, Values.KEEP_ALIVE);
-        } else {
+        }
+        ChannelFuture f = ctx.write(response);
+        if (!keepAlive) {
             f.addListener(ChannelFutureListener.CLOSE);
         }
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        if (shouldLogException(cause)) {
+        if (HttpServices.shouldLogException(cause)) {
             logger.warn(cause.getMessage(), cause);
         }
         ctx.close();
@@ -422,23 +416,6 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         response.headers().add(Names.CONTENT_TYPE, mediaType);
         response.headers().add(Names.CONTENT_LENGTH, Resources.toByteArray(url).length);
         return response;
-    }
-
-    @VisibleForTesting
-    static boolean shouldLogException(Throwable t) {
-        if (t instanceof InterruptedException) {
-            // ignore, probably just termination
-            return false;
-        }
-        if (t instanceof IOException && BROWSER_DISCONNECT_MESSAGES.contains(t.getMessage())) {
-            // ignore, just a browser disconnect
-            return false;
-        }
-        if (t instanceof ClosedChannelException) {
-            // ignore, just a browser disconnect
-            return false;
-        }
-        return true;
     }
 
     private static @Nullable URL getSecureUrlForPath(String path) {

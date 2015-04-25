@@ -17,7 +17,6 @@ package org.glowroot.local.ui;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.channels.ClosedChannelException;
 import java.sql.SQLException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -137,46 +136,5 @@ public class HttpServerHandlerTest {
         assertThat(node.get("message").asText()).isEqualTo("Wrapped message");
         assertThat(node.get("stackTrace")).isNotNull();
         assertThat(httpResponse.getStatus()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    @Test
-    public void shouldLogRegularException() {
-        // given
-        Exception e = new Exception();
-        // when
-        assertThat(HttpServerHandler.shouldLogException(e)).isTrue();
-    }
-
-    @Test
-    public void shouldNotLogInterruptedException() {
-        // given
-        Exception e = new InterruptedException();
-        // when
-        assertThat(HttpServerHandler.shouldLogException(e)).isFalse();
-    }
-
-    @Test
-    public void shouldNotLogClosedChannelException() {
-        // given
-        Exception e = new ClosedChannelException();
-        // when
-        assertThat(HttpServerHandler.shouldLogException(e)).isFalse();
-    }
-
-    @Test
-    public void shouldNotLogBrowserDisconnectMessageException() {
-        // given
-        Exception e = new IOException(
-                "An existing connection was forcibly closed by the remote host");
-        // when
-        assertThat(HttpServerHandler.shouldLogException(e)).isFalse();
-    }
-
-    @Test
-    public void shouldLogRegularIOException() {
-        // given
-        Exception e = new IOException();
-        // when
-        assertThat(HttpServerHandler.shouldLogException(e)).isTrue();
     }
 }

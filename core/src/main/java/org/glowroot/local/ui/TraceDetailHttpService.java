@@ -20,10 +20,12 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import com.google.common.io.CharSource;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpHeaders.Names;
 import io.netty.handler.codec.http.HttpHeaders.Values;
 import io.netty.handler.codec.http.HttpRequest;
@@ -65,9 +67,17 @@ class TraceDetailHttpService implements HttpService {
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.headers().set(Names.TRANSFER_ENCODING, Values.CHUNKED);
         response.headers().set(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
+        boolean keepAlive = HttpHeaders.isKeepAlive(request);
+        if (keepAlive && !request.getProtocolVersion().isKeepAliveDefault()) {
+            response.headers().set(Names.CONNECTION, Values.KEEP_ALIVE);
+        }
         HttpServices.preventCaching(response);
         ctx.write(response);
-        ctx.write(ChunkedInputs.fromReader(charSource.openStream()));
+        ChannelFuture future = ctx.write(ChunkedInputs.fromReader(charSource.openStream()));
+        HttpServices.addErrorListener(future);
+        if (!keepAlive) {
+            HttpServices.addCloseListener(future);
+        }
         // return null to indicate streaming
         return null;
     }
