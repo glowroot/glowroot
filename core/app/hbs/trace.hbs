@@ -207,14 +207,17 @@
       </div>
     </div>
     <div class="gt-nowrap hide" id="profileOuter" style="margin: 10px 0;">
-      <div class="hide" style="padding-bottom: 10px;">
-        <input class="form-control gt-profile-text-filter"
-               style="width: 25em;"
+      <div style="padding-bottom: 10px;">
+        <input class="form-control gt-profile-text-filter hide"
+               style="display: inline-block; width: 25em;"
                placeholder="filter the profile tree">
+        <select class="form-control gt-profile-filter gt-input-xlarge hide" onchange="this.blur()"
+                style="display: inline-block; vertical-align: middle;">
+        </select>
+        <button type="button" class="btn btn-default hide" style="margin-left: 20px;">
+          Switch to text filter
+        </button>
       </div>
-      <select class="form-control gt-profile-filter gt-input-xlarge hide" onchange="this.blur()"
-              style="margin: 4px 0 10px;">
-      </select>
 
       <div class="gt-profile gt-indent1"></div>
     </div>

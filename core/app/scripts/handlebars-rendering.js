@@ -732,27 +732,27 @@ HandlebarsRendering = (function () {
     $selector.find('.gt-profile').html(html);
 
     var mergedCounts = calculateTimerCounts(rootNode, []);
-    if ($.isEmptyObject(mergedCounts)) {
-      // display filter text input
-      var $profileTextFilter = $selector.find('.gt-profile-text-filter');
-      $profileTextFilter.parent().removeClass('hide');
-      var timer;
-      $profileTextFilter.off('input.gtProfileFilter');
-      $profileTextFilter.on('input.gtProfileFilter', function () {
-        // primarily timer is used to deal with lagging when holding down backspace to clear out filter
-        clearTimeout(timer);
-        timer = setTimeout(function () {
-          // update merged stack tree based on filter
-          var filterText = $profileTextFilter.val();
-          filter(filterText);
-        }, 50);
-      });
-      // apply initial filter text if any (e.g. user changes Last 30 min to Last 60 min) triggering profile refresh
-      // but filter text stays the same (which seems good)
-      var filterText = $profileTextFilter.val();
-      if (filterText) {
+    // set up text filter
+    var $profileTextFilter = $selector.find('.gt-profile-text-filter');
+    var timer;
+    $profileTextFilter.off('input.gtProfileFilter');
+    $profileTextFilter.on('input.gtProfileFilter', function () {
+      // primarily timer is used to deal with lagging when holding down backspace to clear out filter
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        // update merged stack tree based on filter
+        var filterText = $profileTextFilter.val();
         filter(filterText);
-      }
+      }, 50);
+    });
+    // apply initial filter text if any (e.g. user changes Last 30 min to Last 60 min) triggering profile refresh
+    // but filter text stays the same (which seems good)
+    var filterText = $profileTextFilter.val();
+    if (filterText) {
+      filter(filterText);
+    }
+    if ($.isEmptyObject(mergedCounts)) {
+      $profileTextFilter.removeClass('hide');
     } else {
       // build tree
       var tree = {name: '', childNodes: {}};
@@ -800,8 +800,6 @@ HandlebarsRendering = (function () {
       // build filter dropdown
       var $profileFilter = $selector.find('.gt-profile-filter');
       $profileFilter.removeClass('hide');
-      // remove hide from parent is for aggregate profile so the hide/show contains the help icon
-      $profileFilter.parent().removeClass('hide');
       $.each(orderedNodes, function (i, node) {
         $profileFilter.append($('<option />').val(node.name)
             .text(node.name + ' (' + rootNode.timerCounts[node.name] + ')'));
@@ -810,6 +808,22 @@ HandlebarsRendering = (function () {
         // update merged stack tree based on filter
         var html = generateHtml($(this).val());
         $selector.find('.gt-profile').html(html);
+      });
+      var $switchFilterButton = $profileFilter.parent().find(':button');
+      $switchFilterButton.removeClass('hide');
+      $switchFilterButton.click(function () {
+        $profileTextFilter.toggleClass('hide');
+        $profileFilter.toggleClass('hide');
+        if ($profileFilter.is(':visible')) {
+          $profileTextFilter.val('');
+          filter('');
+          $switchFilterButton.text('Switch to text filter');
+        } else {
+          $profileFilter.find('option:first-child').attr('selected', 'selected');
+          var html = generateHtml();
+          $selector.find('.gt-profile').html(html);
+          $switchFilterButton.text('Switch to dropdown filter');
+        }
       });
     }
   }

@@ -47,16 +47,18 @@
           Profile based on {{sampleCount}} samples
         </div>
       </div>
-      <div class="hide" style="margin-bottom: 10px;">
-        <input class="form-control gt-profile-text-filter"
-               style="width: 25em;"
+      <div style="margin-bottom: 10px;">
+        <input class="form-control gt-profile-text-filter hide"
+               style="display: inline-block; width: 25em;"
                placeholder="filter the profile tree">
+        <select class="form-control gt-profile-filter gt-input-xlarge hide"
+                onchange="this.blur()"
+                style="display: inline-block; vertical-align: middle;">
+        </select>
+        <button type="button" class="btn btn-default hide" style="margin-left: 20px;">
+          Switch to text filter
+        </button>
       </div>
-      <select class="form-control gt-profile-filter gt-input-xlarge hide"
-              onchange="this.blur()"
-              style="vertical-align: middle; margin-bottom: 10px;">
-      </select>
-
       <!-- background-color: white is to help the text not overlap the right hand panel border -->
       <span class="gt-profile" style="background-color: white;"></span>
     </div>
