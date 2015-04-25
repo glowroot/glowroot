@@ -20,14 +20,14 @@
   <li ng-class="{active: activeTabItem === 'metrics'}">
     <a ng-href="transaction/metrics{{tabQueryString()}}">Metrics</a>
   </li>
-  <li ng-class="{active: activeTabItem === 'traces'}">
-    <a ng-href="transaction/traces{{tabQueryString()}}">
-      Traces ({{traceCount()}})
-    </a>
-  </li>
   <li ng-class="{active: activeTabItem === 'profile'}">
     <a ng-href="transaction/profile{{tabQueryString()}}">
       Profile ({{profileSampleCount()}})
+    </a>
+  </li>
+  <li ng-class="{active: activeTabItem === 'traces'}">
+    <a ng-href="transaction/traces{{tabQueryString()}}">
+      Traces ({{traceCount()}})
     </a>
   </li>
 </ul>
