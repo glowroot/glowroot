@@ -18,10 +18,7 @@ package org.glowroot.local.store;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
-import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.junit.After;
@@ -38,7 +35,6 @@ public class AggregateDaoTest {
 
     private DataSource dataSource;
     private File cappedFile;
-    private ScheduledExecutorService scheduledExecutor;
     private CappedDatabase cappedDatabase;
     private AggregateDao aggregateDao;
 
@@ -52,15 +48,12 @@ public class AggregateDaoTest {
             dataSource.execute("drop table transaction_point");
         }
         cappedFile = File.createTempFile("glowroot-test-", ".capped.db");
-        scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-        cappedDatabase = new CappedDatabase(cappedFile, 1000000, scheduledExecutor,
-                Ticker.systemTicker());
+        cappedDatabase = new CappedDatabase(cappedFile, 1000000);
         aggregateDao = new AggregateDao(dataSource, cappedDatabase, 15);
     }
 
     @After
     public void afterEachTest() throws Exception {
-        scheduledExecutor.shutdownNow();
         dataSource.close();
         cappedDatabase.close();
         cappedFile.delete();

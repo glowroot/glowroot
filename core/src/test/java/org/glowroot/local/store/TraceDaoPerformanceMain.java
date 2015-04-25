@@ -16,11 +16,8 @@
 package org.glowroot.local.store;
 
 import java.io.File;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.base.Ticker;
 import com.google.common.io.CharSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,16 +28,13 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class TraceDaoPerformanceMain {
 
-    private static final Logger logger = LoggerFactory
-            .getLogger(TraceDaoPerformanceMain.class);
+    private static final Logger logger = LoggerFactory.getLogger(TraceDaoPerformanceMain.class);
 
     private TraceDaoPerformanceMain() {}
 
     public static void main(String... args) throws Exception {
         DataSource dataSource = new DataSource();
-        ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-        CappedDatabase cappedDatabase = new CappedDatabase(new File("glowroot.capped.db"), 1000000,
-                scheduledExecutor, Ticker.systemTicker());
+        CappedDatabase cappedDatabase = new CappedDatabase(new File("glowroot.capped.db"), 1000000);
         TraceDao traceDao = new TraceDao(dataSource, cappedDatabase);
 
         Stopwatch stopwatch = Stopwatch.createStarted();

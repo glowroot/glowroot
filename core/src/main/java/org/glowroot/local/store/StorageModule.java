@@ -21,8 +21,6 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Ticker;
-
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.collector.AggregateRepository;
 import org.glowroot.collector.TraceRepository;
@@ -51,7 +49,7 @@ public class StorageModule {
     private final GaugePointDao gaugePointDao;
     private final @Nullable ReaperRunnable reaperRunnable;
 
-    public StorageModule(File dataDir, Map<String, String> properties, Ticker ticker, Clock clock,
+    public StorageModule(File dataDir, Map<String, String> properties, Clock clock,
             ConfigModule configModule, ScheduledExecutorService scheduledExecutor,
             boolean viewerModeEnabled) throws Exception {
         // mem db is only used for testing (by glowroot-test-container)
@@ -75,7 +73,7 @@ public class StorageModule {
         this.dataSource = dataSource;
         int cappedDatabaseSizeMb = configService.getStorageConfig().cappedDatabaseSizeMb();
         cappedDatabase = new CappedDatabase(new File(dataDir, "glowroot.capped.db"),
-                cappedDatabaseSizeMb * 1024, scheduledExecutor, ticker);
+                cappedDatabaseSizeMb * 1024);
         aggregateDao = new AggregateDao(dataSource, cappedDatabase, FIXED_AGGREGATE_ROLLUP_SECONDS);
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
         AlertingService alertingService = new AlertingService(configService, triggeredAlertDao,

@@ -24,12 +24,10 @@ import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 import java.io.Reader;
 import java.io.Writer;
-import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Ticker;
 import com.google.common.io.CharSource;
 import com.google.common.primitives.Longs;
 import com.ning.compress.lzf.LZFInputStream;
@@ -52,10 +50,9 @@ public class CappedDatabase {
     private RandomAccessFile inFile;
     private volatile boolean closing = false;
 
-    CappedDatabase(File file, int requestedSizeKb, ScheduledExecutorService scheduledExecutor,
-            Ticker ticker) throws IOException {
+    CappedDatabase(File file, int requestedSizeKb) throws IOException {
         this.file = file;
-        out = CappedDatabaseOutputStream.create(file, requestedSizeKb, scheduledExecutor, ticker);
+        out = new CappedDatabaseOutputStream(file, requestedSizeKb);
         inFile = new RandomAccessFile(file, "r");
         shutdownHookThread = new ShutdownHookThread();
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);

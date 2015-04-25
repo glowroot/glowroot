@@ -16,10 +16,7 @@
 package org.glowroot.local.store;
 
 import java.io.File;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
-import com.google.common.base.Ticker;
 import com.google.common.io.CharSource;
 import org.junit.After;
 import org.junit.Before;
@@ -33,7 +30,6 @@ public class TraceDaoTest {
 
     private DataSource dataSource;
     private File cappedFile;
-    private ScheduledExecutorService scheduledExecutor;
     private CappedDatabase cappedDatabase;
     private TraceDao traceDao;
 
@@ -44,15 +40,12 @@ public class TraceDaoTest {
             dataSource.execute("drop table trace");
         }
         cappedFile = File.createTempFile("glowroot-test-", ".capped.db");
-        scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-        cappedDatabase = new CappedDatabase(cappedFile, 1000000, scheduledExecutor,
-                Ticker.systemTicker());
+        cappedDatabase = new CappedDatabase(cappedFile, 1000000);
         traceDao = new TraceDao(dataSource, cappedDatabase);
     }
 
     @After
     public void afterEachTest() throws Exception {
-        scheduledExecutor.shutdownNow();
         dataSource.close();
         cappedDatabase.close();
         cappedFile.delete();

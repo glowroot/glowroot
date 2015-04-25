@@ -123,7 +123,7 @@ public class GlowrootModule {
         transactionModule = new TransactionModule(clock, ticker, configModule,
                 transactionCollectorProxy, jvmModule.getThreadAllocatedBytes().getService(),
                 instrumentation, dataDir, extraBootResourceFinder, scheduledExecutor);
-        storageModule = new StorageModule(dataDir, properties, ticker, clock, configModule,
+        storageModule = new StorageModule(dataDir, properties, clock, configModule,
                 scheduledExecutor, viewerModeEnabled);
         collectorModule = new CollectorModule(clock, ticker, jvmModule, configModule,
                 storageModule.getTraceRepository(), storageModule.getAggregateRepository(),
