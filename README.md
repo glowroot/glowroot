@@ -1,4 +1,4 @@
-Glowroot &nbsp;&nbsp; [![Build Status](https://travis-ci.org/glowroot/glowroot.png?branch=master)](https://travis-ci.org/glowroot/glowroot)  [![Code Coverage](https://img.shields.io/sonar/http/sonar.glowroot.org/org.glowroot:glowroot-parent/coverage.svg)](https://sonar.glowroot.org/dashboard/index?id=org.glowroot%3Aglowroot-parent)
+Glowroot &nbsp;&nbsp; [![Build Status](https://img.shields.io/travis/glowroot/glowroot.svg)](https://travis-ci.org/glowroot/glowroot)  [![Code Coverage](https://img.shields.io/sonar/https/sonar.glowroot.org/org.glowroot:glowroot-parent/coverage.svg)](https://sonar.glowroot.org/dashboard/index?id=org.glowroot%3Aglowroot-parent) [![SonarQube Tech Debt](https://img.shields.io/sonar/https/sonar.glowroot.org/org.glowroot:glowroot-parent/tech_debt.svg)](https://sonar.glowroot.org/dashboard/index?id=org.glowroot%3Aglowroot-parent)
 =========
 
 ## Quick start
