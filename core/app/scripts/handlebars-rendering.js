@@ -795,14 +795,23 @@ HandlebarsRendering = (function () {
       };
 
       var orderedNodes = nodesDepthFirst(tree);
-      // remove the root '' since all nodes are already under the single root timer
-      orderedNodes.splice(0, 1);
+      if (Object.keys(tree.childNodes).length === 1) {
+        // remove the root '' since all nodes are already under the single root timer
+        orderedNodes.splice(0, 1);
+      } else {
+        var sampleCount = 0;
+        $.each(tree.childNodes, function (name, childNode) {
+          sampleCount += rootNode.timerCounts[childNode.name];
+        });
+        rootNode.timerCounts[tree.name] = sampleCount;
+      }
       // build filter dropdown
       var $profileFilter = $selector.find('.gt-profile-filter');
       $profileFilter.removeClass('hide');
       $.each(orderedNodes, function (i, node) {
+        var name = node.name || '<multiple root nodes>';
         $profileFilter.append($('<option />').val(node.name)
-            .text(node.name + ' (' + rootNode.timerCounts[node.name] + ')'));
+            .text(name + ' (' + rootNode.timerCounts[node.name] + ')'));
       });
       $profileFilter.change(function () {
         // update merged stack tree based on filter
