@@ -260,6 +260,10 @@
           <div class="help-block">
             The transaction type is used for aggregation and filtering.
           </div>
+          <div class="help-block">
+            This can be one of the current transaction types ({{layout.transactionTypes.join(', ')}})
+            or a new transaction type.
+          </div>
         </div>
         <div gt-form-group
              gt-label="Transaction name"
@@ -273,7 +277,7 @@
           <div ng-non-bindable
                class="help-block">
             This is a template which can be populated with values from the method invocation.
-            The same rules apply as for the trace entry template, except that the return value {{_}} cannot be used.
+            The same rules apply as for the root trace entry, except that the return value {{_}} cannot be used.
           </div>
         </div>
       </fieldset>
@@ -285,7 +289,14 @@
              gt-width="40em"
              ng-hide="captureKindTransaction">
           <div class="help-block">
-            This will override the transaction type for the containing transaction.
+            The transaction type is used for aggregation and filtering.
+          </div>
+          <div class="help-block">
+            This can be one of the current transaction types ({{layout.transactionTypes.join(', ')}})
+            or a new transaction type.
+          </div>
+          <div class="help-block">
+            The value provided will override the transaction type for the containing transaction.
             If the transaction type is overridden more than once for a given transaction,
             the first non-null/non-empty value will be used.
           </div>
@@ -296,14 +307,36 @@
              gt-width="40em"
              ng-hide="captureKindTransaction">
           <div class="help-block">
-            This will override the transaction name for the containing transaction.
+            The transaction name is used for aggregation and filtering.
+          </div>
+          <div class="help-block">
+            The value provided will override the transaction name for the containing transaction.
             If the transaction name is overridden more than once for a given transaction,
             the first non-null/non-empty value will be used.
           </div>
           <div ng-non-bindable
                class="help-block">
-            This is a template which can be populated with values from the method invocation.
-            The same rules apply as for the trace entry template, except that the return value {{_}} cannot be used.
+            This is a template which can be populated with values from the method invocation:
+            <ul>
+              <li>
+                {{0}}, {{1}}, ... resolve to the method parameters
+              </li>
+              <li>
+                {{this}} resolves to the object that the method is invoked on (except for static methods)
+              </li>
+              <li>
+                {{methodName}} resolves to the method name, which can be useful if
+                <code style="font-size: 120%;">*</code> or <code style="font-size: 120%;">|</code>
+                are used to define the method name above
+              </li>
+            </ul>
+          </div>
+          <div ng-non-bindable
+               class="help-block">
+            Nested paths are resolved as well, e.g. {{0.size}} and {{this.class.name}}.
+            If a path resolves to <code>null</code> at any point,
+            then the entire path will resolve to <code>null</code>.
+            Finally, resolved value is rendered into the template using <code>String.valueOf()</code>.
           </div>
         </div>
         <div gt-form-group
