@@ -20,7 +20,6 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -134,9 +133,7 @@ abstract class PluginCacheBase {
         List<PluginDescriptor> pluginDescriptors = readPluginDescriptors(descriptorURLs);
         List<PluginDescriptor> pluginDescriptorsWithoutAdvice = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            pluginDescriptorsWithoutAdvice.add(pluginDescriptor
-                    .withInstrumentationConfigs(new ArrayList<InstrumentationConfig>())
-                    .withAspects());
+            pluginDescriptorsWithoutAdvice.add(pluginDescriptor.withAspects());
         }
         return sorted(pluginDescriptorsWithoutAdvice);
     }
