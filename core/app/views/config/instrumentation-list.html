@@ -41,7 +41,11 @@
              style="margin-right: 10px;">
             Add new
           </a>
-
+          <button class="btn btn-default"
+                  ng-click="displayImportModal()"
+                  style="margin-right: 10px;">
+            Import
+          </button>
           <div gt-button
                gt-show="jvmRetransformClassesSupported && dirty"
                gt-btn-class="btn-danger"
@@ -53,6 +57,44 @@
              style="padding-top: 20px;">
           JVM restart is required to apply changes
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal" id="importModal" tabindex="-1">
+  <div class="modal-dialog"
+       style="width: 500px;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Import instrumentation</h3>
+      </div>
+      <div class="modal-body" style="padding-top: 20px; padding-bottom: 20px;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="jsonToImport" class="control-label">JSON definition</label>
+          <textarea class="form-control"
+                    ng-model="jsonToImport"
+                    id="jsonToImport"
+                    rows="15">
+          </textarea>
+        </div>
+        <div style="min-height: 60px;">
+          <div class="gt-inline-block">
+            <div gt-spinner
+                 gt-show="importing"
+                 class="gt-left-aligned-spinner"
+                 style="width: 50px; margin-bottom: -30px;">
+            </div>
+          </div>
+          <div class="gt-button-message gt-button-message-error"
+               style="margin-left: 0;"
+               ng-show="importErrorMessage">
+            {{importErrorMessage}}
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-default" ng-click="importFromJson()">Import</button>
+        <button class="btn btn-primary" data-dismiss="modal">Cancel</button>
       </div>
     </div>
   </div>

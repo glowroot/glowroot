@@ -25,6 +25,8 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -38,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.common.Encryption;
+import org.glowroot.common.ObjectMappers;
 import org.glowroot.markers.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -69,6 +72,21 @@ public class ConfigService {
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
             config = configFile.getDefaultConfig();
+        }
+        for (InstrumentationConfig instrumentationConfig : config.instrumentationConfigs()) {
+            ImmutableList<String> errors = instrumentationConfig.validationErrors();
+            if (!errors.isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Invalid instrumentation config: ");
+                sb.append(Joiner.on(", ").join(errors));
+                sb.append(" ");
+                try {
+                    sb.append(ObjectMappers.create().writeValueAsString(instrumentationConfig));
+                } catch (JsonProcessingException e) {
+                    logger.error(e.getMessage(), e);
+                }
+                logger.error(sb.toString());
+            }
         }
     }
 

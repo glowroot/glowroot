@@ -144,6 +144,12 @@ class InstrumentationJsonService {
         InstrumentationConfigDto configDto =
                 mapper.readValue(content, InstrumentationConfigDto.class);
         InstrumentationConfig config = configDto.toConfig();
+        ImmutableList<String> errors = config.validationErrors();
+        if (!errors.isEmpty()) {
+            return mapper.writeValueAsString(InstrumentationErrorResponse.builder()
+                    .addAllErrors(errors)
+                    .build());
+        }
         String version = configService.insertInstrumentationConfig(config);
         return getInstrumentationConfig(version);
     }
@@ -269,6 +275,12 @@ class InstrumentationJsonService {
     abstract static class InstrumentationConfigResponseBase {
         abstract InstrumentationConfigDto config();
         abstract ImmutableList<MethodSignature> methodSignatures();
+    }
+
+    @Value.Immutable
+    @JsonSerialize
+    abstract static class InstrumentationErrorResponseBase {
+        abstract ImmutableList<String> errors();
     }
 
     @Value.Immutable

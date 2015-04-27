@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 import org.immutables.value.Value;
@@ -123,6 +124,33 @@ public abstract class InstrumentationConfigBase {
     @JsonIgnore
     public boolean isTransaction() {
         return captureKind() == CaptureKind.TRANSACTION;
+    }
+
+    @JsonIgnore
+    public ImmutableList<String> validationErrors() {
+        List<String> errors = Lists.newArrayList();
+        if (className().isEmpty()) {
+            errors.add("className is empty");
+        }
+        if (methodName().isEmpty()) {
+            errors.add("methodName is empty");
+        }
+        if (isTimerOrGreater() && timerName().isEmpty()) {
+            errors.add("timerName is empty");
+        }
+        if (captureKind() == CaptureKind.TRACE_ENTRY && traceEntryTemplate().isEmpty()) {
+            errors.add("traceEntryTemplate is empty");
+        }
+        if (isTransaction() && transactionType().isEmpty()) {
+            errors.add("transactionType is empty");
+        }
+        if (isTransaction() && transactionNameTemplate().isEmpty()) {
+            errors.add("transactionNameTemplate is empty");
+        }
+        if (!timerName().matches("[a-zA-Z0-9 ]*")) {
+            errors.add("timerName contains invalid characters: " + timerName());
+        }
+        return ImmutableList.copyOf(errors);
     }
 
     @VisibleForTesting

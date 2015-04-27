@@ -86,6 +86,9 @@ public class AdviceGenerator {
             List<InstrumentationConfig> configs, @Nullable String pluginId) {
         Map<Advice, LazyDefinedClass> advisors = Maps.newHashMap();
         for (InstrumentationConfig config : configs) {
+            if (!config.validationErrors().isEmpty()) {
+                continue;
+            }
             try {
                 LazyDefinedClass lazyAdviceClass =
                         new AdviceGenerator(config, pluginId).generate();

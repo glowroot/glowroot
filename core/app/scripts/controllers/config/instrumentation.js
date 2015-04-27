@@ -25,8 +25,8 @@ glowroot.controller('ConfigInstrumentationCtrl', [
   'confirmIfHasChanges',
   'httpErrors',
   'queryStrings',
-  'conversions',
-  function ($scope, $location, $http, $rootScope, $timeout, confirmIfHasChanges, httpErrors, queryStrings) {
+  'modals',
+  function ($scope, $location, $http, $rootScope, $timeout, confirmIfHasChanges, httpErrors, queryStrings, modals) {
 
     var version = $location.search().v;
 
@@ -265,6 +265,56 @@ glowroot.controller('ConfigInstrumentationCtrl', [
             $location.url('config/instrumentation-list').replace();
           })
           .error(httpErrors.handler($scope, deferred));
+    };
+
+    $scope.exportToJson = function (deferred) {
+      var data = angular.copy($scope.config);
+      delete data.version;
+      if (!data.methodReturnType) {
+        delete data.methodReturnType;
+      }
+      if (!data.methodModifiers.length) {
+        delete data.methodModifiers;
+      }
+      if (!data.timerName) {
+        delete data.timerName;
+      }
+      if (!data.traceEntryTemplate) {
+        delete data.traceEntryTemplate;
+      }
+      if (!data.traceEntryStackThresholdMillis) {
+        delete data.traceEntryStackThresholdMillis;
+      }
+      if (!data.traceEntryCaptureSelfNested) {
+        delete data.traceEntryCaptureSelfNested;
+      }
+      if (!data.transactionType) {
+        delete data.transactionType;
+      }
+      if (!data.transactionNameTemplate) {
+        delete data.transactionNameTemplate;
+      }
+      if (!data.traceStoreThresholdMillis) {
+        delete data.traceStoreThresholdMillis;
+      }
+      if (!data.transactionUserTemplate) {
+        delete data.transactionUserTemplate;
+      }
+      if (!Object.keys(data.transactionCustomAttributeTemplates).length) {
+        delete data.transactionCustomAttributeTemplates;
+      }
+      if (!data.enabledProperty) {
+        delete data.enabledProperty;
+      }
+      if (!data.traceEntryEnabledProperty) {
+        delete data.traceEntryEnabledProperty;
+      }
+      $scope.jsonExport = JSON.stringify(data, null, 2);
+      // need to wait to display jsonExport until after jsonExport gets bound to the dom
+      // otherwise vertical centering won't work correctly
+      $timeout(function () {
+        modals.display('#jsonExportModal', true);
+      });
     };
 
     function matchingMethods(methodName) {
