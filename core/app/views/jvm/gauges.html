@@ -18,10 +18,7 @@
     <h2>Gauges</h2>
   </div>
   <div class="panel-body">
-    <div gt-spinner
-         gt-show="!loaded && !httpError"
-         class="gt-left-aligned-spinner">
-    </div>
+    <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-show="loaded">
       <div ng-hide="allGauges.length" style="font-size: 16px; margin-top: 20px;">

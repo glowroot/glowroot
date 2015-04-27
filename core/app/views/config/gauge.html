@@ -21,11 +21,13 @@
          href="config/gauge-list">
         Return to list
       </a>
-      Gauges
-      <span class="gt-inline-block gt-separator">
-        |
+      <span ng-class="{'gt-lighten-font': !loaded && !httpError}">
+        Gauges
+        <span class="gt-inline-block gt-separator">
+          |
+        </span>
+        <span style="font-size: 24px;">{{heading}}</span>
       </span>
-      <span style="font-size: 24px;">{{heading}}</span>
     </h2>
   </div>
   <div class="panel-body">

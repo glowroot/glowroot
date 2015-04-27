@@ -109,13 +109,7 @@ glowroot.directive('gtButton', [
         gtDisabled: '&',
         gtNoSpinner: '@'
       },
-      templateUrl: function (tElement, tAttrs) {
-        if (tAttrs.hasOwnProperty('gtButtonRightAligned')) {
-          return 'template/gt-button-right-aligned.html';
-        } else {
-          return 'template/gt-button.html';
-        }
-      },
+      templateUrl: 'template/gt-button.html',
       require: '^?gtButtonGroup',
       link: function (scope, iElement, iAttrs, gtButtonGroup) {
         scope.ngShow = function () {

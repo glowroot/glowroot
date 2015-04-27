@@ -21,11 +21,13 @@
          href="config/alert-list">
         Return to list
       </a>
-      Alerts
-      <span class="gt-inline-block gt-separator">
-        |
+      <span ng-class="{'gt-lighten-font': !loaded && !httpError}">
+        Alerts
+        <span class="gt-inline-block gt-separator">
+          |
+        </span>
+        <span style="font-size: 24px;">{{heading}}</span>
       </span>
-      <span style="font-size: 24px;">{{heading}}</span>
     </h2>
   </div>
   <div class="panel-body">

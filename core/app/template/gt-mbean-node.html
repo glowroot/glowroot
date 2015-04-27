@@ -13,14 +13,12 @@
           gt-smart-click="toggleMBean(node)">
       {{node.nodeName}}
     </span>
+
     <div class="gt-inline-block gt-mbean-expanded-content"
          style="margin-left: -10px;"
          ng-show="node.expanded"
          gt-smart-click="toggleMBean(node)">
       <label>{{node.nodeName}}</label>
-      <div gt-spinner
-           gt-show="node.loading && !httpError">
-      </div>
       <table>
         <tr ng-repeat="(key, value) in node.attributeMap">
           <td valign="top">{{key}}</td>
@@ -35,7 +33,7 @@
           </td>
         </tr>
         <!-- all the platform mbeans already expose ObjectName attribute -->
-        <tr ng-hide="node.attributeMap.ObjectName">
+        <tr ng-hide="node.attributeMap.ObjectName || node.loading">
           <td valign="top"><em>ObjectName</em></td>
           <td style="padding-left: 10px;">
             <div class="gt-break-word">
@@ -44,6 +42,12 @@
           </td>
         </tr>
       </table>
+      <div ng-show="node.loading && !httpError"
+           style="position: relative; height: 50px; margin-bottom: 10px;">
+        <div gt-spinner
+             gt-show="node.loading && !httpError">
+        </div>
+      </div>
     </div>
   </div>
 </div>

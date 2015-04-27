@@ -13,12 +13,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div gt-spinner
-     gt-show="!loaded && !httpError"
-     class="gt-left-aligned-spinner">
-</div>
-<div ng-include src="'template/gt-http-error.html'"></div>
-<div class="panel panel-default" ng-show="loaded">
+<div class="panel panel-default">
   <div class="panel-heading">
     <h2>
       <a class="pull-right"
@@ -26,17 +21,23 @@
          href="config/plugin-list">
         Return to list
       </a>
-      Plugins
-      <span class="gt-inline-block gt-separator">
-        |
+
+      <span ng-class="{'gt-lighten-font': !loaded && !httpError}">
+        Plugins
+        <span class="gt-inline-block gt-separator">
+          |
+        </span>
+        <span style="font-size: 24px;">{{plugin.name}}</span>
       </span>
-      <span style="font-size: 24px;">{{plugin.name}}</span>
     </h2>
   </div>
   <div class="panel-body">
+    <div ng-include src="'template/gt-loading-overlay.html'"></div>
+    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
     <div ng-form
          gt-form-with-primary-button
          gt-form-autofocus-on-first-input
+         ng-show="loaded"
          class="form-horizontal"
          name="formCtrl">
       <div gt-form-group
