@@ -16,10 +16,18 @@
 
 <div style="position: relative; min-height: 100px;">
   <div gt-spinner
-       gt-show="showSpinner"
+       gt-show="showSpinner && !showProfile"
        class="gt-left-aligned-spinner">
   </div>
-  <div class="gt-panel-overlay" ng-show="showSpinner">
+  <div style="position: absolute; width: 100%; margin-top: 50px;">
+    <div gt-spinner
+         gt-show="showSpinner && showProfile">
+    </div>
+  </div>
+  <!-- negative right position is so overlay will cover view flame graph link which sticks slightly beyond container -->
+  <div class="gt-panel-overlay"
+       ng-show="showSpinner"
+       style="right: -20px;">
   </div>
   <div ng-show="!showSpinner && chartNoData"
        style="display: table; width: 100%; height: 100%; margin-top: 50px;">

@@ -98,11 +98,6 @@ glowroot.controller('TracesCtrl', [
             $scope.tracesExpired = data.tracesExpired;
             $scope.chartLimitExceeded = data.limitExceeded;
             $scope.chartLimit = limit;
-            // parent scope can be null if user has moved on to another controller by the time http get returns
-            if ($scope.$parent) {
-              // update tab bar in case viewing live data and tab bar sample count is now out of sync
-              $scope.$parent.$broadcast('updateTraceTabCount', traceCount);
-            }
             // user clicked on Refresh button, need to reset axes
             plot.getAxes().xaxis.options.min = from;
             plot.getAxes().xaxis.options.max = to;
@@ -112,6 +107,7 @@ glowroot.controller('TracesCtrl', [
             // setupGrid is needed in case yaxis.max === undefined
             plot.setupGrid();
             plot.draw();
+            broadcastTraceTabCount();
             if (deferred) {
               deferred.resolve('Success');
             }
@@ -120,6 +116,19 @@ glowroot.controller('TracesCtrl', [
             $scope.showChartSpinner--;
             httpErrors.handler($scope, deferred)(data, status);
           });
+    }
+
+    function broadcastTraceTabCount() {
+      var data = plot.getData();
+      var traceCount = data[0].data.length + data[1].data.length + data[2].data.length;
+      // parent scope can be null if user has moved on to another controller by the time http get returns
+      if ($scope.$parent) {
+        if ($scope.chartLimitExceeded) {
+          $scope.$parent.$broadcast('updateTraceTabCount', undefined);
+        } else {
+          $scope.$parent.$broadcast('updateTraceTabCount', traceCount);
+        }
+      }
     }
 
     $scope.refreshButtonClick = function () {
@@ -166,9 +175,11 @@ glowroot.controller('TracesCtrl', [
         } else {
           // no need to fetch new data
           $scope.suppressChartRefresh = true;
-          plot.setData(getFilteredData());
+          var data = getFilteredData();
+          plot.setData(data);
           plot.setupGrid();
           plot.draw();
+          broadcastTraceTabCount();
           updateLocation();
         }
       });
@@ -196,6 +207,7 @@ glowroot.controller('TracesCtrl', [
           // setupGrid needs to be after setData
           plot.setupGrid();
           plot.draw();
+          broadcastTraceTabCount();
           updateLocation();
         }
       });

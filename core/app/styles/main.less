@@ -328,3 +328,8 @@ hr.soften {
   // this is needed to prevent highlight around the navbar items after clicking on them (at least in firefox)
   outline: 0;
 }
+
+.gt-transaction-tabs li.active > a:hover {
+  // keep default (pointer) cursor to indicate active tab can be clicked to refresh tab
+  cursor: inherit;
+}

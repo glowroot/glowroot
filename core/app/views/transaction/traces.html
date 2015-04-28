@@ -44,9 +44,15 @@
   <div gt-spinner
        gt-show="showChartSpinner"
        gt-no-delay="true"
-       class="spinner gt-panel-overlay"
        id="chartSpinner"
-       style="position: absolute; width: 100%; height: 100%; pointer-events: none;">
+       style="pointer-events: none;">
+  </div>
+  <div style="position: relative; height: 100%;">
+    <!-- negative positions are so that overlay will cover chart legend which sometimes stick beyond container -->
+    <div class="gt-panel-overlay"
+         ng-show="showChartSpinner"
+         style="right: -20px; bottom: -20px;">
+    </div>
   </div>
   <div class="gt-chart-dimensions" id="chart"></div>
   <div class="gt-chart-error" ng-show="refreshChartError">

@@ -15,10 +15,14 @@
 -->
 <ul class="nav nav-tabs gt-transaction-tabs">
   <li ng-class="{active: activeTabItem === 'messages'}">
-    <a ng-href="error/messages{{tabQueryString()}}">Messages</a>
+    <a ng-href="error/messages{{tabQueryString()}}"
+       ng-click="clickTab('messages', $event)">
+      Messages
+    </a>
   </li>
   <li ng-class="{active: activeTabItem === 'traces'}">
-    <a ng-href="error/traces{{tabQueryString()}}">
+    <a ng-href="error/traces{{tabQueryString()}}"
+       ng-click="clickTab('traces', $event)">
       Traces ({{traceCount()}})
     </a>
   </li>

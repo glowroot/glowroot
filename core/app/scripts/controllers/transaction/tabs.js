@@ -35,16 +35,16 @@ glowroot.controller('TransactionTabCtrl', [
     });
 
     $scope.$on('updateProfileTabCount', function (event, args) {
-      if ($scope.tabBarData) {
-        $scope.tabBarData.profileSampleCount = args;
-      }
+      $scope.activeProfileTabCount = args;
     });
 
     $scope.$on('updateTraceTabCount', function (event, args) {
-      // only update tab count if displayed trace count is larger (since if filter criteria present it may be smaller)
-      if ($scope.tabBarData && args > $scope.tabBarData.traceCount) {
-        $scope.tabBarData.traceCount = args;
-      }
+      $scope.activeTraceTabCount = args;
+    });
+
+    $scope.$on('$stateChangeStart', function () {
+      delete $scope.activeProfileTabCount;
+      delete $scope.activeTraceTabCount;
     });
 
     $scope.profileSampleCount = function () {
@@ -53,6 +53,9 @@ glowroot.controller('TransactionTabCtrl', [
       }
       if ($scope.tabBarData.profileExpired) {
         return '*';
+      }
+      if ($scope.activeProfileTabCount !== undefined) {
+        return $scope.activeProfileTabCount;
       }
       return $scope.tabBarData.profileSampleCount;
     };
@@ -64,7 +67,19 @@ glowroot.controller('TransactionTabCtrl', [
       if ($scope.tabBarData.tracesExpired) {
         return '*';
       }
+      if ($scope.activeTraceTabCount !== undefined) {
+        return $scope.activeTraceTabCount;
+      }
       return $scope.tabBarData.traceCount;
+    };
+
+    $scope.clickTab = function (tabItem, e) {
+      if (tabItem === $scope.activeTabItem && !event.ctrlKey) {
+        $scope.$parent.chartRefresh++;
+        // suppress normal link
+        event.preventDefault();
+        return false;
+      }
     };
 
     function updateTabBarData() {

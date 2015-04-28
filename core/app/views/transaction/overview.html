@@ -38,67 +38,72 @@
     </button>
   </div>
 </div>
-<div class="gt-chart-container">
-  <!-- pointer-events: none is to allow scrollwheel events to pass through to flot in order to handle rapid zooming
-       and to prevent the browser from intercepting rapid ctrl + scrollwheel and doing browser level zoom -->
-  <div gt-spinner
-       gt-show="showChartSpinner"
-       gt-no-delay="true"
-       class="spinner gt-panel-overlay"
-       id="chartSpinner"
-       style="position: absolute; width: 100%; height: 100%; pointer-events: none;">
+<div style="position: relative;">
+  <!-- negative position is so that overlay will cover chart legend which sometimes stick beyond container -->
+  <div class="gt-panel-overlay"
+       ng-show="showChartSpinner"
+       style="right: -20px;">
   </div>
-  <div class="gt-chart-dimensions" id="chart"></div>
-  <div ng-show="chartNoData && !showChartSpinner"
-       style="display: table; width: 100%; height: 100%;">
-    <div style="display: table-cell; text-align: center; vertical-align: middle;">
-      <div class="gt-chart-no-data">No data for this time period</div>
+  <div class="gt-chart-container">
+    <!-- pointer-events: none is to allow scrollwheel events to pass through to flot in order to handle rapid zooming
+         and to prevent the browser from intercepting rapid ctrl + scrollwheel and doing browser level zoom -->
+    <div gt-spinner
+         gt-show="showChartSpinner"
+         gt-no-delay="true"
+         id="chartSpinner"
+         style="position: absolute; width: 100%; height: 100%; pointer-events: none;">
     </div>
-  </div>
-</div>
-<div class="legend" id="chartLegend"
-     ng-hide="chartNoData"
-     style="text-align: center; margin-top: 10px; width: 100%;">
-  <div class="gt-inline-block" style="max-width: 600px;">
-    <div class="gt-inline-block" ng-repeat="seriesLabel in seriesLabels"
-         style="margin: 0 6px;">
-      <div class="legendColorBox gt-inline-block"
-           style="border: 1px solid rgb(204, 204, 204); padding: 1px;">
-        <div style="width: 4px; height: 0px; border: 5px solid rgb(237, 194, 64); overflow: hidden;"
-             ng-style="{'border': '5px solid ' + seriesLabel.color}">
-        </div>
+    <div class="gt-chart-dimensions" id="chart"></div>
+    <div ng-show="chartNoData && !showChartSpinner"
+         style="display: table; width: 100%; height: 100%;">
+      <div style="display: table-cell; text-align: center; vertical-align: middle;">
+        <div class="gt-chart-no-data">No data for this time period</div>
       </div>
-      <div class="legendLabel gt-inline-block">{{seriesLabel.text}}</div>
     </div>
   </div>
-</div>
-<div ng-show="mergedAggregate.transactionCount"
-     style="position: relative; padding-top: 30px; margin-left: 40px;">
-  <div class="gt-panel-overlay" ng-show="showChartSpinner"></div>
-  <div>
-    <label>Average:</label>
-    {{mergedAggregate.totalMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}} ms
+  <div class="legend" id="chartLegend"
+       ng-hide="chartNoData"
+       style="position: relative; text-align: center; margin-top: 10px; width: 100%;">
+    <div class="gt-inline-block" style="max-width: 600px;">
+      <div class="gt-inline-block" ng-repeat="seriesLabel in seriesLabels"
+           style="margin: 0 6px;">
+        <div class="legendColorBox gt-inline-block"
+             style="border: 1px solid rgb(204, 204, 204); padding: 1px;">
+          <div style="width: 4px; height: 0px; border: 5px solid rgb(237, 194, 64); overflow: hidden;"
+               ng-style="{'border': '5px solid ' + seriesLabel.color}">
+          </div>
+        </div>
+        <div class="legendLabel gt-inline-block">{{seriesLabel.text}}</div>
+      </div>
+    </div>
   </div>
-  <div>
-    <label>Throughput:</label>
-    {{(60 * 1000 * mergedAggregate.transactionCount / lastDurationMillis).toFixed(1)}}/min
-    ({{mergedAggregate.transactionCount}}
+  <div ng-show="mergedAggregate.transactionCount"
+       style="position: relative; padding-top: 30px; margin-left: 40px;">
+    <div>
+      <label>Average:</label>
+      {{mergedAggregate.totalMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}} ms
+    </div>
+    <div>
+      <label>Throughput:</label>
+      {{(60 * 1000 * mergedAggregate.transactionCount / lastDurationMillis).toFixed(1)}}/min
+      ({{mergedAggregate.transactionCount}}
     <span ng-pluralize
           count="mergedAggregate.transactionCount"
           when="{'1':'transaction','other':'transactions'}">
     </span>
-    in this period)
-  </div>
-  <div>
-    <label>50th percentile:</label>
-    {{mergedAggregate.percentile1 / 1000 | gtMillis}} ms
-  </div>
-  <div>
-    <label>95th percentile:</label>
-    {{mergedAggregate.percentile2 / 1000 | gtMillis}} ms
-  </div>
-  <div>
-    <label>99th percentile:</label>
-    {{mergedAggregate.percentile3 / 1000 | gtMillis}} ms
+      in this period)
+    </div>
+    <div>
+      <label>50th percentile:</label>
+      {{mergedAggregate.percentile1 / 1000 | gtMillis}} ms
+    </div>
+    <div>
+      <label>95th percentile:</label>
+      {{mergedAggregate.percentile2 / 1000 | gtMillis}} ms
+    </div>
+    <div>
+      <label>99th percentile:</label>
+      {{mergedAggregate.percentile3 / 1000 | gtMillis}} ms
+    </div>
   </div>
 </div>

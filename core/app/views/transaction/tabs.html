@@ -15,18 +15,26 @@
 -->
 <ul class="nav nav-tabs gt-transaction-tabs">
   <li ng-class="{active: activeTabItem === 'overview'}">
-    <a ng-href="transaction/overview{{tabQueryString()}}">Overview</a>
+    <a ng-href="transaction/overview{{tabQueryString()}}"
+       ng-click="clickTab('overview', $event)">
+      Overview
+    </a>
   </li>
   <li ng-class="{active: activeTabItem === 'metrics'}">
-    <a ng-href="transaction/metrics{{tabQueryString()}}">Metrics</a>
+    <a ng-href="transaction/metrics{{tabQueryString()}}"
+       ng-click="clickTab('metrics', $event)">
+      Metrics
+    </a>
   </li>
   <li ng-class="{active: activeTabItem === 'profile'}">
-    <a ng-href="transaction/profile{{tabQueryString()}}">
+    <a ng-href="transaction/profile{{tabQueryString()}}"
+       ng-click="clickTab('profile', $event)">
       Profile ({{profileSampleCount()}})
     </a>
   </li>
   <li ng-class="{active: activeTabItem === 'traces'}">
-    <a ng-href="transaction/traces{{tabQueryString()}}">
+    <a ng-href="transaction/traces{{tabQueryString()}}"
+       ng-click="clickTab('traces', $event)">
       Traces ({{traceCount()}})
     </a>
   </li>
