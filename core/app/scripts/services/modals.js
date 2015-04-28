@@ -17,12 +17,14 @@
 /* global glowroot, $ */
 
 glowroot.factory('modals', [
-  function () {
-
+  '$timeout',
+  '$location',
+  function ($timeout, $location) {
     function display(selector, centerVertically) {
       var $selector = $(selector);
       if (centerVertically) {
         // see http://stackoverflow.com/questions/18053408/vertically-centering-bootstrap-modal-window/20444744#20444744
+        $selector.off('show.bs.modal');
         $selector.on('show.bs.modal', function () {
           $(this).css('display', 'block');
           var $dialog = $(this).find('.modal-dialog');
@@ -34,7 +36,15 @@ glowroot.factory('modals', [
       var $body = $('body');
       $('.navbar-fixed-top').css('padding-right', $body.css('padding-right'));
       $('.navbar-fixed-bottom').css('padding-right', $body.css('padding-right'));
+      $selector.off('hide.bs.modal');
       $selector.on('hide.bs.modal', function () {
+        // using $timeout as this may be reached inside angular digest or not
+        $timeout(function() {
+          var query = $selector.data('location-query');
+          if (query) {
+            $location.search(query, null);
+          }
+        });
         $('.navbar-fixed-top').css('padding-right', '');
         $('.navbar-fixed-bottom').css('padding-right', '');
       });

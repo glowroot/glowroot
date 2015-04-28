@@ -79,11 +79,12 @@
     </div>
   </div>
 </div>
-<div ng-form
+<div ng-form="formCtrl"
      gt-form-with-primary-button
      class="col-xs-12 col-sm-9 form-horizontal"
      style="float: left; margin: 20px auto 0 auto;">
-  <div class="form-group">
+  <div class="form-group"
+       ng-class="{'has-error': formCtrl.filterDurationLow.$invalid || formCtrl.filterDurationHigh.$invalid}">
     <label class="col-lg-4 control-label"
            for="{{filterDurationComparator !== 'less' ? 'filterDurationLow' : 'filterDurationHigh'}}">
       Duration
@@ -97,22 +98,27 @@
         <div gt-input-group-dropdown
              gt-model="filterDurationComparator"
              gt-items="filterDurationComparatorOptions"
-             gt-class="input-group-btn-fix">
+             class="input-group-left">
         </div>
         <input type="text"
                ng-model="filter.durationLow"
                ng-show="filterDurationComparator !== 'less'"
+               ng-pattern="/^(0|[1-9][0-9]*)?(\.[0-9]*)?$/"
                class="form-control"
-               id="filterDurationLow">
+               id="filterDurationLow"
+               name="filterDurationLow">
         <span ng-show="filterDurationComparator === 'between'"
-              class="input-group-addon">
+              class="input-group-addon"
+              style="border-left-width: 0; border-right-width: 0;">
           and
         </span>
         <input type="text"
                ng-model="filter.durationHigh"
                ng-show="filterDurationComparator !== 'greater'"
+               ng-pattern="/^(0|[1-9][0-9]*)?(\.[0-9]*)?$/"
                class="form-control"
-               id="filterDurationHigh">
+               id="filterDurationHigh"
+               name="filterDurationHigh">
         <span class="input-group-addon">
           seconds
         </span>
@@ -131,7 +137,8 @@
            style="width: 25em;">
         <div gt-input-group-dropdown
              gt-model="filter.errorComparator"
-             gt-items="filterTextComparatorOptions">
+             gt-items="filterTextComparatorOptions"
+             class="input-group-left">
         </div>
         <input type="text"
                ng-model="filter.error"
@@ -151,7 +158,8 @@
            style="width: 25em;">
         <div gt-input-group-dropdown
              gt-model="filter.headlineComparator"
-             gt-items="filterTextComparatorOptions">
+             gt-items="filterTextComparatorOptions"
+             class="input-group-left">
         </div>
         <input type="text"
                ng-model="filter.headline"
@@ -171,7 +179,8 @@
            style="width: 25em;">
         <div gt-input-group-dropdown
              gt-model="filter.userComparator"
-             gt-items="filterTextComparatorOptions">
+             gt-items="filterTextComparatorOptions"
+             class="input-group-left">
         </div>
         <input type="text"
                ng-model="filter.user"
@@ -211,7 +220,8 @@
            style="width: 25em;">
         <div gt-input-group-dropdown
              gt-model="filter.customAttributeValueComparator"
-             gt-items="filterTextComparatorOptions">
+             gt-items="filterTextComparatorOptions"
+             class="input-group-left">
         </div>
         <input type="text"
                ng-model="filter.customAttributeValue"
@@ -243,7 +253,8 @@
   <div class="form-group">
     <div class="col-lg-offset-4 col-lg-8">
       <button class="btn btn-primary"
-              gt-click-and-blur="refreshButtonClick()">
+              gt-click-and-blur="refreshButtonClick()"
+              ng-disabled="formCtrl.$invalid">
         Refresh
       </button>
       <button class="btn btn-default"

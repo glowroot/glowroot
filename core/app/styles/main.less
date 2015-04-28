@@ -315,3 +315,16 @@ hr.soften {
   // this is to match padding on modal-body
   padding-left: 30px;
 }
+
+.input-group-left button {
+  border-right-width: 0;
+}
+
+.has-error .input-group-left button {
+  border-color: @gt-red;
+}
+
+.navbar .nav a:focus {
+  // this is needed to prevent highlight around the navbar items after clicking on them (at least in firefox)
+  outline: 0;
+}

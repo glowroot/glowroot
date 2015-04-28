@@ -276,7 +276,7 @@ glowroot.directive('gtNavbarItem', [
           var $navbarCollapse = $('.navbar-collapse');
           $navbarCollapse.removeClass('in');
           $navbarCollapse.addClass('collapse');
-          if (!event.ctrlKey) {
+          if ($location.path() === '/' + scope.gtUrl && !event.ctrlKey) {
             // inherit false prevents current state from being passed
             // e.g. without inherit false transaction-type=Background will be passed
             // which will defeat the point of reloading the page fresh (with no explicit transaction-type)
@@ -285,8 +285,6 @@ glowroot.directive('gtNavbarItem', [
             event.preventDefault();
             return false;
           }
-          // blur navbar item so it doesn't have highlight around it (at least in firefox)
-          document.activeElement.blur();
         };
       }
     };
@@ -295,7 +293,6 @@ glowroot.directive('gtNavbarItem', [
 
 glowroot.directive('gtSidebarItem', [
   '$location',
-  '$state',
   function ($location) {
     return {
       scope: {

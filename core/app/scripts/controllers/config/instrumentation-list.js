@@ -61,14 +61,8 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
           .error(httpErrors.handler($scope, deferred));
     }
 
-    refresh();
-
     $scope.displayImportModal = function () {
-      $scope.jsonToImport = '';
-      $scope.importErrorMessage = '';
-      $scope.importing = false;
-      modals.display('#importModal', true);
-      $('#importModal textarea').focus();
+      $location.search('import', true);
     };
 
     $scope.$watch('jsonToImport', function () {
@@ -135,5 +129,23 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
           })
           .error(httpErrors.handler($scope, deferred));
     };
+
+    refresh();
+
+    function onLocationChangeSuccess() {
+      if ($location.search().import) {
+        $scope.jsonToImport = '';
+        $scope.importErrorMessage = '';
+        $scope.importing = false;
+        $('#importModal').data('location-query', 'import');
+        modals.display('#importModal', true);
+        $('#importModal textarea').focus();
+      } else {
+        $('#importModal').modal('hide');
+      }
+    }
+
+    $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
+    onLocationChangeSuccess();
   }
 ]);
