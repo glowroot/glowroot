@@ -79,7 +79,7 @@
       <dependency>
         <groupId>org.immutables</groupId>
         <artifactId>value</artifactId>
-        <version>2.0.7</version>
+        <version>2.0.10</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
@@ -119,17 +119,17 @@
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-core</artifactId>
-        <version>2.5.2</version>
+        <version>2.5.3</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>2.5.2</version>
+        <version>2.5.3</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-annotations</artifactId>
-        <version>2.5.2</version>
+        <version>2.5.3</version>
       </dependency>
       <dependency>
         <groupId>org.assertj</groupId>
@@ -156,12 +156,12 @@
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-core</artifactId>
-        <version>1.9</version>
+        <version>1.9.1</version>
       </dependency>
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-generator-annprocess</artifactId>
-        <version>1.9</version>
+        <version>1.9.1</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -300,7 +300,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>sonar-maven-plugin</artifactId>
-          <version>2.5</version>
+          <version>2.6</version>
         </plugin>
         <plugin>
           <groupId>org.jacoco</groupId>
@@ -420,7 +420,7 @@
             the classpath for the explicit annotation processing setup below -->
           <groupId>org.immutables</groupId>
           <artifactId>value</artifactId>
-          <version>2.0.7</version>
+          <version>2.0.10</version>
         </dependency>
       </dependencies>
       <build>

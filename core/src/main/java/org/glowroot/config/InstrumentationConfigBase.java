@@ -104,29 +104,33 @@ public abstract class InstrumentationConfigBase {
         return "";
     }
 
-    @Value.Derived
     @JsonIgnore
+    @Value.Derived
     public String version() {
         return Versions.getVersion(this);
     }
 
     @JsonIgnore
+    @Value.Derived
     public boolean isTimerOrGreater() {
         return captureKind() == CaptureKind.TIMER || captureKind() == CaptureKind.TRACE_ENTRY
                 || captureKind() == CaptureKind.TRANSACTION;
     }
 
     @JsonIgnore
+    @Value.Derived
     public boolean isTraceEntryOrGreater() {
         return captureKind() == CaptureKind.TRACE_ENTRY || captureKind() == CaptureKind.TRANSACTION;
     }
 
     @JsonIgnore
+    @Value.Derived
     public boolean isTransaction() {
         return captureKind() == CaptureKind.TRANSACTION;
     }
 
     @JsonIgnore
+    @Value.Derived
     public ImmutableList<String> validationErrors() {
         List<String> errors = Lists.newArrayList();
         if (className().isEmpty()) {
