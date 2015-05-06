@@ -42,4 +42,5 @@ public @interface Pointcut {
     // timers already handle self nested calls, so it is only needed for trace entries
     boolean ignoreSelfNested() default false;
     String timerName() default "";
+    int priority() default 0;
 }

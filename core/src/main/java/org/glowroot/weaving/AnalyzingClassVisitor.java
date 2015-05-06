@@ -276,7 +276,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
                 }
             }
         }
-        // sort for consistency since the order affects timer nesting
+        // sort since the order affects advice and timer nesting
         return sortAdvisors(matchingAdvisors);
     }
 
@@ -287,7 +287,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
             case 1:
                 return ImmutableList.copyOf(matchingAdvisors);
             default:
-                return Advice.orderingByTimerName.immutableSortedCopy(matchingAdvisors);
+                return Advice.ordering.immutableSortedCopy(matchingAdvisors);
         }
     }
 }

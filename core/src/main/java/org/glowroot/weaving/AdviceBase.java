@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
+import com.google.common.primitives.Ints;
 import org.immutables.value.Value;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
@@ -36,12 +37,28 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Value.Immutable
 public abstract class AdviceBase {
 
-    static final Ordering<Advice> orderingByTimerName = new Ordering<Advice>() {
+    static final Ordering<Advice> ordering = new Ordering<Advice>() {
         @Override
         public int compare(@Nullable Advice left, @Nullable Advice right) {
             checkNotNull(left);
             checkNotNull(right);
-            return left.pointcut().timerName().compareToIgnoreCase(right.pointcut().timerName());
+            int compare = Ints.compare(left.pointcut().priority(), right.pointcut().priority());
+            if (compare != 0) {
+                return compare;
+            }
+            String leftTimerName = left.pointcut().timerName();
+            String rightTimerName = right.pointcut().timerName();
+            // empty timer names are placed at the end
+            if (leftTimerName.isEmpty() && rightTimerName.isEmpty()) {
+                return 0;
+            }
+            if (leftTimerName.isEmpty()) {
+                return 1;
+            }
+            if (rightTimerName.isEmpty()) {
+                return -1;
+            }
+            return leftTimerName.compareToIgnoreCase(rightTimerName);
         }
     };
 
