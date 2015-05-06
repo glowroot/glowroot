@@ -157,7 +157,11 @@ public class TimerImpl implements Timer {
 
     @Override
     public void stop() {
-        end(ticker.read());
+        if (selfNestingLevel == 1) {
+            recordData(ticker.read() - startTick);
+            transaction.setCurrentTimer(parent);
+        }
+        selfNestingLevel--;
     }
 
     public void end(long endTick) {
