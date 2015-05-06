@@ -19,6 +19,11 @@ public class Class<T> {
     public @NonNull T[] getEnumConstants();
 }
 
+public class StackTraceElement {
+    // methodName can be null after hotswapping under Eclipse debugger
+    public @Nullable String getMethodName();
+}
+
 /* ========================================================================== */
 package java.lang.instrument;
 

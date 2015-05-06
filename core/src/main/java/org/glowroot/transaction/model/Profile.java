@@ -171,24 +171,33 @@ public class Profile {
                 Lists.newArrayListWithCapacity(stackTrace.size());
         for (Iterator<StackTraceElement> i = stackTrace.iterator(); i.hasNext();) {
             StackTraceElement element = i.next();
-            String timerName = getTimerName(element);
+            String originalMethodName = element.getMethodName();
+            if (originalMethodName == null) {
+                // methodName can be null after hotswapping under Eclipse debugger
+                continue;
+            }
+            String timerName = getTimerName(originalMethodName);
             if (timerName == null) {
                 stackTracePlus.add(StackTraceElementPlus.of(element, ImmutableList.<String>of()));
                 continue;
             }
-            String originalMethodName = element.getMethodName();
             List<String> timerNames = Lists.newArrayListWithCapacity(2);
             timerNames.add(timerName);
             // skip over successive $glowroot$timer$ methods up to and including the "original"
             // method
             while (i.hasNext()) {
                 StackTraceElement skipElement = i.next();
-                timerName = getTimerName(skipElement);
+                String skipMethodName = skipElement.getMethodName();
+                if (skipMethodName == null) {
+                    // methodName can be null after hotswapping under Eclipse debugger
+                    continue;
+                }
+                timerName = getTimerName(skipMethodName);
                 if (timerName == null) {
                     // loop should always terminate here since synthetic $glowroot$timer$
                     // methods should never be the last element (the last element is the first
                     // element in the call stack)
-                    originalMethodName = skipElement.getMethodName();
+                    originalMethodName = skipMethodName;
                     break;
                 }
                 timerNames.add(timerName);
@@ -202,8 +211,7 @@ public class Profile {
         return stackTracePlus;
     }
 
-    private static @Nullable String getTimerName(StackTraceElement stackTraceElement) {
-        String methodName = stackTraceElement.getMethodName();
+    private static @Nullable String getTimerName(String methodName) {
         if (!methodName.contains("$glowroot$timer$")) {
             // fast contains check for common case
             return null;
