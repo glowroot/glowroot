@@ -27,6 +27,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
+import org.immutables.value.Value;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -76,11 +77,13 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private final Map<Advice, Integer> enabledLocals = Maps.newHashMap();
     private final Map<Advice, Integer> travelerLocals = Maps.newHashMap();
 
+    private final List<CatchHandler> catchHandlers = Lists.newArrayList();
+
     private @MonotonicNonNull Integer returnOpcode;
 
     private @MonotonicNonNull Label methodStartLabel;
     private @MonotonicNonNull Label onReturnLabel;
-    private @MonotonicNonNull Label onCatchStartLabel;
+    private @MonotonicNonNull Label catchStartLabel;
     private boolean visitedLocalVariableThis;
 
     private int[] savedArgLocals = new int[0];
@@ -137,18 +140,23 @@ class WeavingMethodVisitor extends AdviceAdapter {
             defineAndEvaluateEnabledLocalVar(advice);
             defineTravelerLocalVar(advice);
         }
-        // all advice should be executed outside of the try/catch, otherwise a programming error in
-        // the advice will trigger @OnThrow which is confusing at best
-        for (Advice advice : advisors) {
-            invokeOnBefore(advice, travelerLocals.get(advice));
-        }
         saveArgsForMethodExit();
+        for (int i = 0; i < advisors.size(); i++) {
+            Advice advice = advisors.get(i);
+            invokeOnBefore(advice, travelerLocals.get(advice));
+            if (advice.onAfterAdvice() != null || advice.onThrowAdvice() != null) {
+                Label catchStartLabel = new Label();
+                visitLabel(catchStartLabel);
+                catchHandlers.add(CatchHandler.of(catchStartLabel, advisors.subList(0, i + 1)));
+            }
+        }
         if (needsOnReturn) {
             onReturnLabel = new Label();
         }
-        if (needsOnThrow) {
-            onCatchStartLabel = new Label();
-            visitLabel(onCatchStartLabel);
+        if (needsOnThrow && catchHandlers.isEmpty()) {
+            // need catch for resetting thread locals
+            catchStartLabel = new Label();
+            visitLabel(catchStartLabel);
         }
     }
 
@@ -231,9 +239,10 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     @Override
     public void visitMaxs(int maxStack, int maxLocals) {
-        Label onCatchEndLabel = new Label();
+        // catch end should not precede @OnReturn and @OnAfter
+        Label catchEndLabel = new Label();
         if (needsOnThrow) {
-            visitLabel(onCatchEndLabel);
+            visitLabel(catchEndLabel);
         }
         // returnOpCode can be null if only ATHROW in method in which case method doesn't need
         // onReturn advice
@@ -251,19 +260,36 @@ class WeavingMethodVisitor extends AdviceAdapter {
             super.visitInsn(returnOpcode);
         }
         if (needsOnThrow) {
-            checkNotNull(onCatchStartLabel, "Call to onMethodEnter() is required");
-            Label onCatchHandlerLabel = new Label();
-            visitTryCatchBlock(onCatchStartLabel, onCatchEndLabel, onCatchHandlerLabel,
-                    "java/lang/Throwable");
-            visitLabel(onCatchHandlerLabel);
-            visitOnThrowAdvice();
-            for (Advice advice : Lists.reverse(advisors)) {
-                visitOnAfterAdvice(advice);
-            }
-            resetAdviceFlowIfNecessary();
-            visitInsn(ATHROW);
+            visitCatchHandlers(catchEndLabel);
         }
         super.visitMaxs(maxStack, maxLocals);
+    }
+
+    private void visitCatchHandlers(Label catchEndLabel) {
+        if (catchHandlers.isEmpty()) {
+            checkNotNull(catchStartLabel, "Call to onMethodEnter() is required");
+            Label catchHandlerLabel = new Label();
+            visitTryCatchBlock(catchStartLabel, catchEndLabel, catchHandlerLabel,
+                    "java/lang/Throwable");
+            visitLabel(catchHandlerLabel);
+            resetAdviceFlowIfNecessary();
+            visitInsn(ATHROW);
+        } else {
+            for (CatchHandler catchHandler : Lists.reverse(catchHandlers)) {
+                Label catchHandlerLabel = new Label();
+                visitTryCatchBlock(catchHandler.catchStartLabel(), catchEndLabel,
+                        catchHandlerLabel, "java/lang/Throwable");
+                visitLabel(catchHandlerLabel);
+                for (Advice advice : Lists.reverse(catchHandler.advisors())) {
+                    visitOnThrowAdvice(advice);
+                }
+                for (Advice advice : Lists.reverse(catchHandler.advisors())) {
+                    visitOnAfterAdvice(advice);
+                }
+                resetAdviceFlowIfNecessary();
+                visitInsn(ATHROW);
+            }
+        }
     }
 
     private void defineAndEvaluateEnabledLocalVar(Advice advice) {
@@ -486,37 +512,35 @@ class WeavingMethodVisitor extends AdviceAdapter {
         }
     }
 
-    private void visitOnThrowAdvice() {
-        for (Advice advice : Lists.reverse(advisors)) {
-            Method onThrowAdvice = advice.onThrowAdvice();
-            if (onThrowAdvice == null) {
-                continue;
+    private void visitOnThrowAdvice(Advice advice) {
+        Method onThrowAdvice = advice.onThrowAdvice();
+        if (onThrowAdvice == null) {
+            return;
+        }
+        Integer enabledLocal = enabledLocals.get(advice);
+        Label onThrowBlockEnd = null;
+        if (enabledLocal != null) {
+            onThrowBlockEnd = new Label();
+            loadLocal(enabledLocal);
+            visitJumpInsn(IFEQ, onThrowBlockEnd);
+        }
+        if (onThrowAdvice.getArgumentTypes().length == 0) {
+            visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
+                    onThrowAdvice.getName(), onThrowAdvice.getDescriptor(), false);
+        } else {
+            int startIndex = 0;
+            if (advice.onThrowParameters().get(0).kind() == ParameterKind.THROWABLE) {
+                // @BindThrowable must be the first argument to @OnThrow (if present)
+                visitInsn(DUP);
+                startIndex++;
             }
-            Integer enabledLocal = enabledLocals.get(advice);
-            Label onThrowBlockEnd = null;
-            if (enabledLocal != null) {
-                onThrowBlockEnd = new Label();
-                loadLocal(enabledLocal);
-                visitJumpInsn(IFEQ, onThrowBlockEnd);
-            }
-            if (onThrowAdvice.getArgumentTypes().length == 0) {
-                visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
-                        onThrowAdvice.getName(), onThrowAdvice.getDescriptor(), false);
-            } else {
-                int startIndex = 0;
-                if (advice.onThrowParameters().get(0).kind() == ParameterKind.THROWABLE) {
-                    // @BindThrowable must be the first argument to @OnThrow (if present)
-                    visitInsn(DUP);
-                    startIndex++;
-                }
-                loadMethodParameters(advice.onThrowParameters(), startIndex,
-                        travelerLocals.get(advice), advice.adviceType(), OnThrow.class, true);
-                visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
-                        onThrowAdvice.getName(), onThrowAdvice.getDescriptor(), false);
-            }
-            if (onThrowBlockEnd != null) {
-                visitLabel(onThrowBlockEnd);
-            }
+            loadMethodParameters(advice.onThrowParameters(), startIndex,
+                    travelerLocals.get(advice), advice.adviceType(), OnThrow.class, true);
+            visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
+                    onThrowAdvice.getName(), onThrowAdvice.getDescriptor(), false);
+        }
+        if (onThrowBlockEnd != null) {
+            visitLabel(onThrowBlockEnd);
         }
     }
 
@@ -743,5 +767,16 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 visitInsn(ACONST_NULL);
                 break;
         }
+    }
+
+    @Value.Immutable
+    abstract static class CatchHandlerBase {
+
+        @Value.Parameter
+        abstract Label catchStartLabel();
+
+        // advisors that have successfully executed @OnBefore
+        @Value.Parameter
+        abstract List<Advice> advisors();
     }
 }

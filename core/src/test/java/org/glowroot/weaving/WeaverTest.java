@@ -30,6 +30,7 @@ import org.glowroot.api.weaving.Shim;
 import org.glowroot.weaving.AbstractMisc.ExtendsAbstractMisc;
 import org.glowroot.weaving.AbstractNotMisc.ExtendsAbstractNotMisc;
 import org.glowroot.weaving.SomeAspect.BasicAdvice;
+import org.glowroot.weaving.SomeAspect.BasicLowPriorityAdvice;
 import org.glowroot.weaving.SomeAspect.BasicMiscAllConstructorAdvice;
 import org.glowroot.weaving.SomeAspect.BasicMiscConstructorAdvice;
 import org.glowroot.weaving.SomeAspect.BasicWithInnerClassAdvice;
@@ -92,6 +93,7 @@ import org.glowroot.weaving.SomeAspect.TestBytecodeWithStackFramesAdvice6;
 import org.glowroot.weaving.SomeAspect.TestClassMeta;
 import org.glowroot.weaving.SomeAspect.TestMethodMeta;
 import org.glowroot.weaving.SomeAspect.TestTroublesomeBytecodeAdvice;
+import org.glowroot.weaving.SomeAspect.ThrowInOnBeforeAdvice;
 import org.glowroot.weaving.SomeAspect.ThrowableToStringAdvice;
 import org.glowroot.weaving.SomeAspect.WildMethodAdvice;
 import org.glowroot.weaving.SomeAspectThreadLocals.IntegerThreadLocal;
@@ -574,6 +576,7 @@ public class WeaverTest {
         }
         // then
         assertThat(SomeAspectThreadLocals.throwable.get()).isNotNull();
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(1);
     }
 
     // ===================== @BindMethodName =====================
@@ -663,6 +666,45 @@ public class WeaverTest {
         test.executeWithArgs("one", 2);
         // then
         assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+    }
+
+    // ===================== throw in lower priority @OnBefore =====================
+
+    // motivation for this test: any dangerous code in @OnBefore should occur before calling
+    // pluginServices.start..., since @OnAfter will not be called if an exception occurs
+    // however, if there are multiple pointcuts for one method, the dangerous code in @OnBefore
+    // of the lower priority pointcut occurs after the @OnBefore of the higher priority pointcut
+    // and so if the dangerous code in the lower priority pointcut throws an exception, need to make
+    // sure the @OnAfter of the higher priority pointcut is still called
+
+    @Test
+    public void shouldStillCallOnAfterOfHigherPriorityPointcut() throws Exception {
+        // given
+        IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
+        Advice advice1 = new AdviceBuilder(BasicAdvice.class, false).build();
+        Advice advice3 = new AdviceBuilder(BindThrowableAdvice.class, false).build();
+        Advice advice2 = new AdviceBuilder(ThrowInOnBeforeAdvice.class, false).build();
+        Advice advice4 = new AdviceBuilder(BasicLowPriorityAdvice.class, false).build();
+        loader.setAdvisors(ImmutableList.of(advice1, advice2, advice3, advice4));
+        loader.setWeavingTimerService(NopWeavingTimerService.INSTANCE);
+        // SomeAspectThreadLocals is passed as bridgeable so that the static thread locals will be
+        // accessible for test verification
+        loader.addBridgeClasses(Misc.class, SomeAspectThreadLocals.class, IntegerThreadLocal.class);
+        Misc test = loader.build().newInstance(BasicMisc.class, Misc.class);
+        // when
+        RuntimeException exception = null;
+        try {
+            test.execute1();
+        } catch (RuntimeException e) {
+            exception = e;
+        }
+        // then
+        assertThat(exception.getMessage()).isEqualTo("Abxy");
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(2);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.throwable.get().getMessage()).isEqualTo("Abxy");
     }
 
     // ===================== @Shim =====================

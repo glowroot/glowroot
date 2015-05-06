@@ -343,6 +343,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.BootstrapMetaHolders");
         types.add("org.glowroot.weaving.BootstrapMetaHolders$ClassMetaHolder");
         types.add("org.glowroot.weaving.BootstrapMetaHolders$MethodMetaHolder");
+        types.add("org.glowroot.weaving.CatchHandler");
         types.add("org.glowroot.weaving.ClassLoaders");
         types.add("org.glowroot.weaving.ExtraBootResourceFinder");
         types.add("org.glowroot.weaving.GeneratedBytecodeUtil");
@@ -366,6 +367,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.weaving.WeavingClassVisitor$PointcutClassFoundException");
         types.add("org.glowroot.weaving.WeavingClassVisitor$ShortCircuitException");
         types.add("org.glowroot.weaving.WeavingMethodVisitor");
+        types.add("org.glowroot.weaving.WeavingMethodVisitor$CatchHandlerBase");
         types.add("org.glowroot.weaving.WeavingTimerService");
         types.add("org.glowroot.weaving.WeavingTimerService$WeavingTimer");
         return types;

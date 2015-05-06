@@ -576,7 +576,60 @@ public class SomeAspect {
     public static class BindThrowableAdvice {
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t) {
+            SomeAspectThreadLocals.onThrowCount.increment();
             SomeAspectThreadLocals.throwable.set(t);
+        }
+    }
+
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
+            methodParameterTypes = {}, priority = 1)
+    public static class ThrowInOnBeforeAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            SomeAspectThreadLocals.enabledCount.increment();
+            return true;
+        }
+        @OnBefore
+        public static void onBefore() {
+            throw new RuntimeException("Abxy");
+        }
+        @OnReturn
+        public static void onReturn() {
+            SomeAspectThreadLocals.onReturnCount.increment();
+        }
+        @OnThrow
+        public static void onThrow() {
+            SomeAspectThreadLocals.onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            SomeAspectThreadLocals.onAfterCount.increment();
+        }
+    }
+
+    @Pointcut(className = "org.glowroot.weaving.Misc", methodName = "execute1",
+            methodParameterTypes = {}, priority = 1000)
+    public static class BasicLowPriorityAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            SomeAspectThreadLocals.enabledCount.increment();
+            return true;
+        }
+        @OnBefore
+        public static void onBefore() {
+            SomeAspectThreadLocals.onBeforeCount.increment();
+        }
+        @OnReturn
+        public static void onReturn() {
+            SomeAspectThreadLocals.onReturnCount.increment();
+        }
+        @OnThrow
+        public static void onThrow() {
+            SomeAspectThreadLocals.onThrowCount.increment();
+        }
+        @OnAfter
+        public static void onAfter() {
+            SomeAspectThreadLocals.onAfterCount.increment();
         }
     }
 
