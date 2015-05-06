@@ -37,30 +37,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Value.Immutable
 public abstract class AdviceBase {
 
-    static final Ordering<Advice> ordering = new Ordering<Advice>() {
-        @Override
-        public int compare(@Nullable Advice left, @Nullable Advice right) {
-            checkNotNull(left);
-            checkNotNull(right);
-            int compare = Ints.compare(left.pointcut().priority(), right.pointcut().priority());
-            if (compare != 0) {
-                return compare;
-            }
-            String leftTimerName = left.pointcut().timerName();
-            String rightTimerName = right.pointcut().timerName();
-            // empty timer names are placed at the end
-            if (leftTimerName.isEmpty() && rightTimerName.isEmpty()) {
-                return 0;
-            }
-            if (leftTimerName.isEmpty()) {
-                return 1;
-            }
-            if (rightTimerName.isEmpty()) {
-                return -1;
-            }
-            return leftTimerName.compareToIgnoreCase(rightTimerName);
-        }
-    };
+    static final Ordering<Advice> ordering = new AdviceOrdering();
 
     abstract Pointcut pointcut();
     abstract Type adviceType();
@@ -119,6 +96,31 @@ public abstract class AdviceBase {
             }
         }
         return types;
+    }
+
+    private static final class AdviceOrdering extends Ordering<Advice> {
+        @Override
+        public int compare(@Nullable Advice left, @Nullable Advice right) {
+            checkNotNull(left);
+            checkNotNull(right);
+            int compare = Ints.compare(left.pointcut().priority(), right.pointcut().priority());
+            if (compare != 0) {
+                return compare;
+            }
+            String leftTimerName = left.pointcut().timerName();
+            String rightTimerName = right.pointcut().timerName();
+            // empty timer names are placed at the end
+            if (leftTimerName.isEmpty() && rightTimerName.isEmpty()) {
+                return 0;
+            }
+            if (leftTimerName.isEmpty()) {
+                return 1;
+            }
+            if (rightTimerName.isEmpty()) {
+                return -1;
+            }
+            return leftTimerName.compareToIgnoreCase(rightTimerName);
+        }
     }
 
     @Value.Immutable

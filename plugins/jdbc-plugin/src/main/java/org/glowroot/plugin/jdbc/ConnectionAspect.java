@@ -78,8 +78,7 @@ public class ConnectionAspect {
         }
         @OnBefore
         public static TraceEntry onBefore() {
-            return pluginServices
-                    .startTraceEntry(MessageSupplier.from("jdbc rollback"), timerName);
+            return pluginServices.startTraceEntry(MessageSupplier.from("jdbc rollback"), timerName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {

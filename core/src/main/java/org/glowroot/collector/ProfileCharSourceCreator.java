@@ -38,19 +38,14 @@ public class ProfileCharSourceCreator {
             return null;
         }
         synchronized (profile.getLock()) {
-            String profileJson = createProfileJson(profile.getSyntheticRootNode());
-            if (profileJson == null) {
+            ProfileNode syntheticRootNode = profile.getSyntheticRootNode();
+            if (syntheticRootNode.getChildNodes().isEmpty()) {
                 return null;
             }
+            // need to convert profile into bytes entirely inside of the above lock
+            // (no lazy CharSource)
+            String profileJson = mapper.writeValueAsString(syntheticRootNode);
             return CharSource.wrap(profileJson);
         }
-    }
-
-    static @Nullable String createProfileJson(ProfileNode syntheticRootNode) throws IOException {
-        if (syntheticRootNode.getChildNodes().isEmpty()) {
-            return null;
-        }
-        // need to convert profile into bytes entirely inside of the above lock (no lazy CharSource)
-        return mapper.writeValueAsString(syntheticRootNode);
     }
 }

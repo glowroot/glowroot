@@ -70,7 +70,7 @@ class InstrumentationJsonService {
     @GET("/backend/config/instrumentation")
     String getInstrumentationConfigs() throws Exception {
         List<InstrumentationConfig> configs = configService.getInstrumentationConfigs();
-        configs = InstrumentationConfig.defaultOrdering.immutableSortedCopy(configs);
+        configs = InstrumentationConfig.ordering.immutableSortedCopy(configs);
         List<InstrumentationConfigDto> dtos = Lists.newArrayList();
         for (InstrumentationConfig config : configs) {
             dtos.add(InstrumentationConfigDtoBase.fromConfig(config));
@@ -230,7 +230,7 @@ class InstrumentationJsonService {
             }
         }
         // order methods by accessibility, then by name, then by number of args
-        return UiAnalyzedMethod.ordering().sortedCopy(analyzedMethods);
+        return UiAnalyzedMethodBase.ordering.sortedCopy(analyzedMethods);
     }
 
     @Value.Immutable

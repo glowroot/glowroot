@@ -17,17 +17,15 @@ package org.glowroot.collector;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.google.common.collect.Maps;
-import com.google.common.io.CharStreams;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.glowroot.common.ObjectMappers;
 import org.glowroot.common.ScratchBuffer;
 import org.glowroot.transaction.model.Profile;
+import org.glowroot.transaction.model.ProfileNode;
 import org.glowroot.transaction.model.ThreadInfoData;
 import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.Transaction;
@@ -37,7 +35,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 // must be used under an appropriate lock
 class AggregateBuilder {
 
-    private static final JsonFactory jsonFactory = new JsonFactory();
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final String transactionType;
     private final @Nullable String transactionName;
@@ -51,8 +49,8 @@ class AggregateBuilder {
     private long profileSampleCount;
     private long traceCount;
     // histogram uses microseconds to reduce (or at least simplify) bucket allocations
-    private final LazyHistogram histogram = new LazyHistogram();
-    private final AggregateTimer syntheticRootTimer = new AggregateTimer("");
+    private final LazyHistogram lazyHistogram = new LazyHistogram();
+    private final AggregateTimer syntheticRootTimer = AggregateTimer.createSyntheticRootTimer();
     private final AggregateProfileBuilder aggregateProfile = new AggregateProfileBuilder();
 
     AggregateBuilder(String transactionType, @Nullable String transactionName) {
@@ -78,13 +76,11 @@ class AggregateBuilder {
             totalAllocatedBytes = nullAwareAdd(totalAllocatedBytes,
                     threadInfo.threadAllocatedBytes());
         }
-        histogram.add(durationMicros);
+        lazyHistogram.add(durationMicros);
     }
 
     void addToTimers(TimerImpl rootTimer) {
-        syntheticRootTimer.totalMicros += NANOSECONDS.toMicros(rootTimer.getTotal());
-        syntheticRootTimer.count += rootTimer.getCount();
-        mergeAsChildTimer(syntheticRootTimer, rootTimer);
+        syntheticRootTimer.mergeAsChildTimer(rootTimer);
     }
 
     void addToProfile(Profile profile) {
@@ -93,9 +89,9 @@ class AggregateBuilder {
     }
 
     Aggregate build(long captureTime, ScratchBuffer scratchBuffer) throws IOException {
-        ByteBuffer buffer = scratchBuffer.getBuffer(histogram.getNeededByteBufferCapacity());
+        ByteBuffer buffer = scratchBuffer.getBuffer(lazyHistogram.getNeededByteBufferCapacity());
         buffer.clear();
-        byte[] histogramBytes = histogram.encodeUsingTempByteBuffer(buffer);
+        byte[] histogram = lazyHistogram.encodeUsingTempByteBuffer(buffer);
         return Aggregate.builder()
                 .transactionType(transactionType)
                 .transactionName(transactionName)
@@ -107,10 +103,10 @@ class AggregateBuilder {
                 .totalBlockedMicros(nullAwareNanosToMicros(totalBlockedTime))
                 .totalWaitedMicros(nullAwareNanosToMicros(totalWaitedTime))
                 .totalAllocatedKBytes(nullAwareBytesToKBytes(totalAllocatedBytes))
-                .timers(getTimersJson())
-                .histogram(histogramBytes)
                 .profileSampleCount(profileSampleCount)
                 .traceCount(traceCount)
+                .histogram(histogram)
+                .timers(mapper.writeValueAsString(syntheticRootTimer))
                 .profile(getProfileJson())
                 .build();
     }
@@ -147,46 +143,13 @@ class AggregateBuilder {
         return profileSampleCount;
     }
 
-    private void mergeAsChildTimer(AggregateTimer parentAggregateTimer, TimerImpl timer) {
-        String name = timer.getName();
-        AggregateTimer aggregateTimer = parentAggregateTimer.nestedTimers.get(name);
-        if (aggregateTimer == null) {
-            aggregateTimer = new AggregateTimer(name);
-            parentAggregateTimer.nestedTimers.put(name, aggregateTimer);
-        }
-        aggregateTimer.totalMicros += NANOSECONDS.toMicros(timer.getTotal());
-        aggregateTimer.count += timer.getCount();
-        for (TimerImpl nestedTimer : timer.getNestedTimers()) {
-            mergeAsChildTimer(aggregateTimer, nestedTimer);
-        }
-    }
-
-    private String getTimersJson() throws IOException {
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        writeTimer(jg, syntheticRootTimer);
-        jg.close();
-        return sb.toString();
-    }
-
     @Nullable
     String getProfileJson() throws IOException {
-        return ProfileCharSourceCreator.createProfileJson(aggregateProfile.getSyntheticRootNode());
-    }
-
-    private void writeTimer(JsonGenerator jg, AggregateTimer aggregateTimer) throws IOException {
-        jg.writeStartObject();
-        jg.writeStringField("name", aggregateTimer.name);
-        jg.writeNumberField("totalMicros", aggregateTimer.totalMicros);
-        jg.writeNumberField("count", aggregateTimer.count);
-        if (!aggregateTimer.nestedTimers.isEmpty()) {
-            jg.writeArrayFieldStart("nestedTimers");
-            for (AggregateTimer timer : aggregateTimer.nestedTimers.values()) {
-                writeTimer(jg, timer);
-            }
-            jg.writeEndArray();
+        ProfileNode syntheticRootNode = aggregateProfile.getSyntheticRootNode();
+        if (syntheticRootNode.getChildNodes().isEmpty()) {
+            return null;
         }
-        jg.writeEndObject();
+        return mapper.writeValueAsString(syntheticRootNode);
     }
 
     private static @Nullable Long nullAwareNanosToMicros(@Nullable Long nanoseconds) {
@@ -211,16 +174,5 @@ class AggregateBuilder {
             return x;
         }
         return x + y;
-    }
-
-    private static class AggregateTimer {
-        private final String name;
-        // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
-        private long totalMicros;
-        private long count;
-        private final Map<String, AggregateTimer> nestedTimers = Maps.newHashMap();
-        private AggregateTimer(String name) {
-            this.name = name;
-        }
     }
 }

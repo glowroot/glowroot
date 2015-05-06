@@ -15,15 +15,12 @@
  */
 package org.glowroot.config;
 
+import com.google.common.collect.Ordering;
 import org.junit.Test;
-
-import org.glowroot.config.InstrumentationConfigBase.InstrumentationConfigOrdering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class InstrumentationConfigOrderingTest {
-
-    private final InstrumentationConfigOrdering ordering = new InstrumentationConfigOrdering();
 
     private final InstrumentationConfig left = InstrumentationConfig.builder()
             .className("a")
@@ -59,6 +56,7 @@ public class InstrumentationConfigOrderingTest {
     @Test
     public void testDifferentClassNames() {
         // given
+        Ordering<InstrumentationConfig> ordering = InstrumentationConfigBase.ordering;
         // when
         int compare = ordering.compare(left, right);
         // then
@@ -68,6 +66,7 @@ public class InstrumentationConfigOrderingTest {
     @Test
     public void testSameClassNames() {
         // given
+        Ordering<InstrumentationConfig> ordering = InstrumentationConfigBase.ordering;
         // when
         int compare = ordering.compare(left, right.withClassName("a"));
         // then
@@ -77,6 +76,7 @@ public class InstrumentationConfigOrderingTest {
     @Test
     public void testSameClassAndMethodNames() {
         // given
+        Ordering<InstrumentationConfig> ordering = InstrumentationConfigBase.ordering;
         // when
         int compare = ordering.compare(left.withMethodName("m"), right.withClassName("a"));
         // then
@@ -86,6 +86,7 @@ public class InstrumentationConfigOrderingTest {
     @Test
     public void testSameClassAndMethodNamesAndParamCount() {
         // given
+        Ordering<InstrumentationConfig> ordering = InstrumentationConfigBase.ordering;
         // when
         int compare = ordering.compare(left.withMethodName("m"),
                 right.withClassName("a").withMethodParameterTypes("java.lang.Throwable"));
@@ -96,6 +97,7 @@ public class InstrumentationConfigOrderingTest {
     @Test
     public void testSameEverything() {
         // given
+        Ordering<InstrumentationConfig> ordering = InstrumentationConfigBase.ordering;
         // when
         int compare = ordering.compare(left.withMethodName("m"),
                 right.withClassName("a").withMethodParameterTypes("java.lang.String"));

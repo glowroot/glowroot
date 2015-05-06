@@ -37,6 +37,7 @@ import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
 import org.glowroot.collector.Aggregate;
+import org.glowroot.collector.AggregateTimer;
 import org.glowroot.collector.LazyHistogram;
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.collector.TransactionSummary;
@@ -44,7 +45,6 @@ import org.glowroot.common.Clock;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
-import org.glowroot.local.store.AggregateTimer;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.store.TransactionSummaryQuery;

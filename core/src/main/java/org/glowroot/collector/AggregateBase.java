@@ -37,10 +37,11 @@ public abstract class AggregateBase {
     public abstract @Nullable Long totalAllocatedKBytes();
     public abstract long profileSampleCount();
     public abstract long traceCount();
+    public abstract byte[] histogram();
     // timers json is always from "synthetic root"
     @JsonRawValue
     public abstract String timers();
-    public abstract byte[] histogram();
     // profile json is always from "synthetic root"
+    @JsonRawValue
     public abstract @Nullable String profile();
 }

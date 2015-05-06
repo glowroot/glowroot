@@ -36,8 +36,8 @@ import org.glowroot.api.internal.ReadableMessage;
  * Lists are supported to simulate multimaps, e.g. for http request parameters and http headers,
  * both of which can have multiple values for the same key.
  * 
- * As an extra bonus, detail map can also contain org.glowroot.api.Optional values which is useful
- * for Maps that do not accept null values, e.g.
+ * As an extra bonus, detail map can also contain org.glowroot.shaded.google.common.base.Optional
+ * values which is useful for Maps that do not accept null values, e.g.
  * org.glowroot.shaded.google.common.collect.ImmutableMap.
  * 
  * The detail map does not need to be thread safe as long as it is only instantiated in response to

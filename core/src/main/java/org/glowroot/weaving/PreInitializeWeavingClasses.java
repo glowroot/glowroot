@@ -320,7 +320,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.transaction.model.Transaction");
         types.add("org.glowroot.weaving.Advice");
         types.add("org.glowroot.weaving.AdviceBase");
-        types.add("org.glowroot.weaving.AdviceBase$1");
+        types.add("org.glowroot.weaving.AdviceBase$AdviceOrdering");
         types.add("org.glowroot.weaving.AdviceBase$AdviceParameterBase");
         types.add("org.glowroot.weaving.AdviceFlowOuterHolder");
         types.add("org.glowroot.weaving.AdviceFlowOuterHolder$1");
@@ -449,6 +449,7 @@ public class PreInitializeWeavingClasses {
         // accessing the private constructor in an enclosed type
         // (see http://stackoverflow.com/questions/2883181)
         types.add("org.glowroot.transaction.model.NestedTimerMap$1");
+        types.add("org.glowroot.weaving.AdviceBase$1");
         types.add("org.glowroot.weaving.AnalyzedClass$1");
         types.add("org.glowroot.weaving.AnalyzedMethod$1");
         types.add("org.glowroot.weaving.AnalyzedMethodKey$1");

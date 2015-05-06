@@ -38,7 +38,7 @@ public class UiAnalyzedMethodOrderingTest {
         ClasspathCache classpathCache = new ClasspathCache(analyzedWorld, null);
         List<UiAnalyzedMethod> methods = classpathCache.getAnalyzedMethods(A.class.getName());
         // when
-        methods = UiAnalyzedMethod.ordering().sortedCopy(methods);
+        methods = UiAnalyzedMethodBase.ordering.sortedCopy(methods);
         assertThat(methods.get(0).name()).isEqualTo("z");
         assertThat(methods.get(1).name()).isEqualTo("x");
         assertThat(methods.get(2).name()).isEqualTo("y");

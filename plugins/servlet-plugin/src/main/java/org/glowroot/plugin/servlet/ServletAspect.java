@@ -59,7 +59,7 @@ public class ServletAspect {
             new FastThreadLocal</*@Nullable*/ErrorMessage>();
 
     @Shim("javax.servlet.http.HttpServletRequest")
-    public interface HttpServletShim {
+    public interface HttpServletRequest {
 
         @Shim("javax.servlet.http.HttpSession getSession(boolean)")
         @Nullable
@@ -110,11 +110,11 @@ public class ServletAspect {
         }
         @OnBefore
         public static @Nullable TraceEntry onBefore(@BindParameter @Nullable Object req) {
-            if (req == null || !(req instanceof HttpServletShim)) {
+            if (req == null || !(req instanceof HttpServletRequest)) {
                 // seems nothing sensible to do here other than ignore
                 return null;
             }
-            HttpServletShim request = (HttpServletShim) req;
+            HttpServletRequest request = (HttpServletRequest) req;
             // request parameter map is collected in GetParameterAdvice
             // session info is collected here if the request already has a session
             ServletMessageSupplier messageSupplier;

@@ -29,10 +29,10 @@ import com.google.common.io.CharSource;
 import org.immutables.value.Value;
 
 import org.glowroot.collector.Aggregate;
+import org.glowroot.collector.AggregateTimer;
 import org.glowroot.collector.LazyHistogram;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.AggregateDao;
-import org.glowroot.local.store.AggregateTimer;
 import org.glowroot.transaction.model.ProfileNode;
 
 public class AggregateMerging {

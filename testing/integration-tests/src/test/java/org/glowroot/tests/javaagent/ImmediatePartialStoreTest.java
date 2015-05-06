@@ -78,7 +78,8 @@ public class ImmediatePartialStoreTest {
             }
         });
         // give time for partial store to occur
-        Thread.sleep(2000);
+        // (this has been source of sporadic failures on slow travis builds)
+        Thread.sleep(5000);
         // interrupt trace which will then call System.exit() to kill jvm without completing trace
         container.interruptAppUnderTest();
         ((JavaagentContainer) container).cleanup();

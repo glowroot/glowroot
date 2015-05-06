@@ -29,6 +29,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Value.Immutable(prehash = true)
 abstract class UiAnalyzedMethodBase {
 
+    static final Ordering<UiAnalyzedMethod> ordering = new UiAnalyzedMethodOrdering();
+
     public abstract String name();
     // these are class names
     public abstract ImmutableList<String> parameterTypes();
@@ -37,13 +39,7 @@ abstract class UiAnalyzedMethodBase {
     abstract @Nullable String signature();
     abstract ImmutableList<String> exceptions();
 
-    static Ordering<UiAnalyzedMethod> ordering() {
-        return UiAnalyzedMethodOrdering.INSTANCE;
-    }
-
     private static class UiAnalyzedMethodOrdering extends Ordering<UiAnalyzedMethod> {
-
-        static final UiAnalyzedMethodOrdering INSTANCE = new UiAnalyzedMethodOrdering();
 
         @Override
         public int compare(@Nullable UiAnalyzedMethod left, @Nullable UiAnalyzedMethod right) {

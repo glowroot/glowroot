@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.local.store;
+package org.glowroot.collector;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,8 +26,10 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.collect.Lists;
 
 import org.glowroot.markers.UsedByJsonBinding;
+import org.glowroot.transaction.model.TimerImpl;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.ObjectMappers.orEmpty;
 
@@ -90,6 +92,29 @@ public class AggregateTimer {
 
     public List<AggregateTimer> getNestedTimers() {
         return nestedTimers;
+    }
+
+    void mergeAsChildTimer(TimerImpl timer) {
+        String timerName = timer.getName();
+        AggregateTimer matchingAggregateTimer = null;
+        for (AggregateTimer nestedTimer : nestedTimers) {
+            // timer names are only null for synthetic root timer
+            String nestedTimerName = checkNotNull(nestedTimer.getName());
+            if (timerName.equals(nestedTimerName)) {
+                matchingAggregateTimer = nestedTimer;
+                break;
+            }
+        }
+        if (matchingAggregateTimer == null) {
+            matchingAggregateTimer =
+                    new AggregateTimer(timerName, 0, 0, new ArrayList<AggregateTimer>());
+            nestedTimers.add(matchingAggregateTimer);
+        }
+        matchingAggregateTimer.totalMicros += NANOSECONDS.toMicros(timer.getTotal());
+        matchingAggregateTimer.count = timer.getCount();
+        for (TimerImpl nestedTimer : timer.getNestedTimers()) {
+            matchingAggregateTimer.mergeAsChildTimer(nestedTimer);
+        }
     }
 
     @JsonCreator
