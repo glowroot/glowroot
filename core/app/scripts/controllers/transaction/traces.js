@@ -39,6 +39,8 @@ glowroot.controller('TracesCtrl', [
 
     var defaultFilterLimit = 500;
 
+    var highlightedActiveTraceId;
+
     $scope.$watchGroup(['containerWidth', 'windowHeight'], function () {
       plot.resize();
       plot.setupGrid();
@@ -105,8 +107,23 @@ glowroot.controller('TracesCtrl', [
             plot.getAxes().yaxis.options.realMax = durationHigh;
             plot.setData([data.normalPoints, data.errorPoints, data.activePoints]);
             // setupGrid is needed in case yaxis.max === undefined
+            if (highlightedActiveTraceId) {
+              plot.unhighlight();
+            }
             plot.setupGrid();
             plot.draw();
+            if (highlightedActiveTraceId) {
+              var i;
+              var activePoint;
+              var activePointSeries = plot.getData()[2];
+              for (i = 0; i < data.activePoints.length; i++) {
+                activePoint = data.activePoints[i];
+                if (activePoint[2] === highlightedActiveTraceId) {
+                  plot.highlight(activePointSeries, activePoint.slice(0, 2));
+                  break;
+                }
+              }
+            }
             broadcastTraceTabCount();
             if (deferred) {
               deferred.resolve('Success');
@@ -159,9 +176,12 @@ glowroot.controller('TracesCtrl', [
       $scope.$apply(function () {
         var from = plot.getAxes().xaxis.options.min;
         var to = plot.getAxes().xaxis.options.max;
+        charts.updateRange($scope, from, to, false, zoomingOut);
+        // use updated $scope.chartFrom/To as bounds for from/to:
+        from = Math.max(from, $scope.chartFrom);
+        to = Math.min(to, $scope.chartTo);
         $scope.traceChartFrom = from;
         $scope.traceChartTo = to;
-        charts.updateRange($scope, from, to, false, zoomingOut);
         if (zoomingOut) {
           // scroll zooming out, reset duration limits
           updateFilter(from, to, 0, undefined);
@@ -264,16 +284,13 @@ glowroot.controller('TracesCtrl', [
       if (item) {
         plot.unhighlight();
         plot.highlight(item.series, item.datapoint);
-        showTrace(item);
+        var traceId = plot.getData()[item.seriesIndex].data[item.dataIndex][2];
+        $scope.$apply(function () {
+          $location.search('modal-trace-id', traceId);
+        });
+        highlightedActiveTraceId = item.seriesIndex === 2 ? traceId : null;
       }
     });
-
-    function showTrace(item) {
-      var traceId = plot.getData()[item.seriesIndex].data[item.dataIndex][2];
-      $scope.$apply(function () {
-        $location.search('modal-trace-id', traceId);
-      });
-    }
 
     $scope.filterDurationComparatorOptions = [
       {
