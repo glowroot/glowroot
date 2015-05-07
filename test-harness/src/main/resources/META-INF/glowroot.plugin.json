@@ -1,10 +1,15 @@
 {
   "name": "Test Container Plugin",
   "id": "glowroot-test-container",
-  "transactionTypes": [
-    "Test harness"
-  ],
-  "aspects": [
-    "org.glowroot.container.TraceMarkerAspect"
+  "instrumentation": [
+    {
+      "className": "org.glowroot.container.TraceMarker",
+      "methodName": "traceMarker",
+      "methodParameterTypes": [ ],
+      "captureKind": "transaction",
+      "timerName": "mock trace marker",
+      "transactionType": "Test harness",
+      "transactionNameTemplate": "trace marker / {{this.class.simpleName}}"
+    }
   ]
 }
