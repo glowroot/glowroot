@@ -28,6 +28,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.api.Timer;
 import org.glowroot.api.TimerName;
+import org.glowroot.common.Tickers;
 
 // instances are updated by a single thread, but can be read by other threads
 // memory visibility is therefore an issue for the reading threads
@@ -48,14 +49,14 @@ import org.glowroot.api.TimerName;
 // all timing data is in nanoseconds
 public class TimerImpl implements Timer {
 
+    private static final Ticker ticker = Tickers.getTicker();
+
     private final Transaction transaction;
     private final @Nullable TimerImpl parent;
     private final TimerNameImpl timerName;
 
     // nanosecond rollover (292 years) isn't a concern for total time on a single transaction
     private long total;
-    private long min = Long.MAX_VALUE;
-    private long max = Long.MIN_VALUE;
     private long count;
 
     private long startTick;
@@ -73,19 +74,15 @@ public class TimerImpl implements Timer {
     // lazy initialize to save memory in common case where this is a leaf timer
     private volatile @MonotonicNonNull List<TimerImpl> threadSafeNestedTimers;
 
-    private final Ticker ticker;
-
-    public static TimerImpl createRootTimer(Transaction transaction, TimerNameImpl timerName,
-            Ticker ticker) {
-        return new TimerImpl(transaction, null, timerName, ticker);
+    public static TimerImpl createRootTimer(Transaction transaction, TimerNameImpl timerName) {
+        return new TimerImpl(transaction, null, timerName);
     }
 
-    private TimerImpl(Transaction transaction, @Nullable TimerImpl parent, TimerNameImpl timerName,
-            Ticker ticker) {
+    private TimerImpl(Transaction transaction, @Nullable TimerImpl parent,
+            TimerNameImpl timerName) {
         this.timerName = timerName;
         this.parent = parent;
         this.transaction = transaction;
-        this.ticker = ticker;
     }
 
     // safe to be called from another thread
@@ -109,37 +106,17 @@ public class TimerImpl implements Timer {
             long curr = ticker.read() - theStartTick;
             if (theTotal == 0) {
                 jg.writeNumberField("total", curr);
-                jg.writeNumberField("min", curr);
-                jg.writeNumberField("max", curr);
                 jg.writeNumberField("count", 1);
                 jg.writeBooleanField("active", true);
-                jg.writeBooleanField("minActive", true);
-                jg.writeBooleanField("maxActive", true);
             } else {
                 jg.writeNumberField("total", theTotal + curr);
-                jg.writeNumberField("min", min);
-                if (curr > max) {
-                    jg.writeNumberField("max", curr);
-                } else {
-                    jg.writeNumberField("max", max);
-                }
                 jg.writeNumberField("count", count + 1);
                 jg.writeBooleanField("active", true);
-                jg.writeBooleanField("minActive", false);
-                if (curr > max) {
-                    jg.writeBooleanField("maxActive", true);
-                } else {
-                    jg.writeBooleanField("maxActive", false);
-                }
             }
         } else {
             jg.writeNumberField("total", total);
-            jg.writeNumberField("min", min);
-            jg.writeNumberField("max", max);
             jg.writeNumberField("count", count);
             jg.writeBooleanField("active", false);
-            jg.writeBooleanField("minActive", false);
-            jg.writeBooleanField("maxActive", false);
         }
         if (threadSafeNestedTimers != null) {
             ImmutableList<TimerImpl> copyOfNestedTimers;
@@ -157,19 +134,15 @@ public class TimerImpl implements Timer {
 
     @Override
     public void stop() {
-        if (selfNestingLevel == 1) {
-            recordData(ticker.read() - startTick);
-            transaction.setCurrentTimer(parent);
+        if (--selfNestingLevel == 0) {
+            endInternal(ticker.read());
         }
-        selfNestingLevel--;
     }
 
     public void end(long endTick) {
-        if (selfNestingLevel == 1) {
-            recordData(endTick - startTick);
-            transaction.setCurrentTimer(parent);
+        if (--selfNestingLevel == 0) {
+            endInternal(endTick);
         }
-        selfNestingLevel--;
     }
 
     public TimerName getTimerName() {
@@ -220,6 +193,42 @@ public class TimerImpl implements Timer {
         return startNestedTimerInternal(timerName, startTick);
     }
 
+    public Timer extend(TimerName altTimerName) {
+        TimerImpl currentTimer = transaction.getCurrentTimer();
+        if (currentTimer == null) {
+            return NopTimer.INSTANCE;
+        }
+        if (currentTimer == parent) {
+            count--;
+            start(ticker.read());
+            return this;
+        }
+        if (currentTimer == this) {
+            selfNestingLevel++;
+            return this;
+        }
+        // otherwise can't just restart timer, so need to use altTimerName
+        return currentTimer.startNestedTimer(altTimerName);
+    }
+
+    public Timer extend(TimerName altTimerName, long startTick) {
+        TimerImpl currentTimer = transaction.getCurrentTimer();
+        if (currentTimer == null) {
+            return NopTimer.INSTANCE;
+        }
+        if (currentTimer == parent) {
+            count--;
+            start(startTick);
+            return this;
+        }
+        if (currentTimer == this) {
+            selfNestingLevel++;
+            return this;
+        }
+        // otherwise can't just restart timer, so need to use altTimerName
+        return currentTimer.startNestedTimer(altTimerName, startTick);
+    }
+
     void start(long startTick) {
         this.startTick = startTick;
         selfNestingLevel++;
@@ -228,6 +237,12 @@ public class TimerImpl implements Timer {
 
     Transaction getTransaction() {
         return transaction;
+    }
+
+    private void endInternal(long endTick) {
+        total += endTick - startTick;
+        count++;
+        transaction.setCurrentTimer(parent);
     }
 
     private TimerImpl startNestedTimerInternal(TimerName timerName, long nestedTimerStartTick) {
@@ -240,7 +255,7 @@ public class TimerImpl implements Timer {
             nestedTimer.start(nestedTimerStartTick);
             return nestedTimer;
         }
-        nestedTimer = new TimerImpl(transaction, this, timerNameImpl, ticker);
+        nestedTimer = new TimerImpl(transaction, this, timerNameImpl);
         nestedTimer.start(nestedTimerStartTick);
         nestedTimers.put(timerNameImpl, nestedTimer);
         if (threadSafeNestedTimers == null) {
@@ -252,14 +267,9 @@ public class TimerImpl implements Timer {
         return nestedTimer;
     }
 
-    private void recordData(long time) {
-        if (time > max) {
-            max = time;
-        }
-        if (time < min) {
-            min = time;
-        }
-        count++;
-        total += time;
+    private static class NopTimer implements Timer {
+        private static final NopTimer INSTANCE = new NopTimer();
+        @Override
+        public void stop() {}
     }
 }

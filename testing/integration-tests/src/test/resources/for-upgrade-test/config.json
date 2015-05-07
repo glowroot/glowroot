@@ -2,7 +2,7 @@
   "general": {
     "enabled": true,
     "traceStoreThresholdMillis": 0,
-    "profilingIntervalMillis": 2000,
+    "profilingIntervalMillis": 1000,
     "defaultTransactionType": "Integration test"
   },
   "ui": {

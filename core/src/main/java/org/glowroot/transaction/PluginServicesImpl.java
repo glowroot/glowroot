@@ -275,7 +275,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (transaction != null
                 && transaction.getEntryCount() < 2 * maxTraceEntriesPerTransaction) {
             long currTick = ticker.read();
-            org.glowroot.transaction.model.TraceEntry entry =
+            org.glowroot.transaction.model.TraceEntryImpl entry =
                     transaction.addEntry(currTick, currTick, null, errorMessage, true);
             if (((ReadableErrorMessage) errorMessage).getThrowable() == null) {
                 StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
@@ -421,7 +421,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (currentTimer == null) {
             // this really shouldn't happen as current timer should be non-null unless transaction
             // has completed
-            return TimerImpl.createRootTimer(transaction, (TimerNameImpl) timerName, ticker);
+            return TimerImpl.createRootTimer(transaction, (TimerNameImpl) timerName);
         }
         return currentTimer.startNestedTimer(timerName, startTick);
     }
@@ -473,7 +473,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                     && transaction.getEntryCount() < 2 * maxTraceEntriesPerTransaction) {
                 // entry won't necessarily be nested properly, and won't have any timing data, but
                 // at least the long entry and stack trace will get captured
-                org.glowroot.transaction.model.TraceEntry entry =
+                org.glowroot.transaction.model.TraceEntryImpl entry =
                         transaction.addEntry(startTick, endTick, messageSupplier, null, true);
                 StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
                 // need to strip back a few stack calls:
@@ -498,6 +498,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 // entry won't be nested properly, but at least the error will get captured
                 transaction.addEntry(startTick, endTick, messageSupplier, errorMessage, true);
             }
+        }
+        @Override
+        public Timer extend(TimerName altTimerName) {
+            return timer.extend(altTimerName);
         }
         @Override
         public MessageSupplier getMessageSupplier() {
@@ -603,6 +607,10 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         public void endWithStackTrace(long threshold, TimeUnit unit) {}
         @Override
         public void endWithError(ErrorMessage errorMessage) {}
+        @Override
+        public Timer extend(TimerName altTimerName) {
+            return NopTimer.INSTANCE;
+        }
         @Override
         public @Nullable MessageSupplier getMessageSupplier() {
             return null;

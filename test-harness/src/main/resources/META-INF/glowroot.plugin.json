@@ -10,6 +10,14 @@
       "timerName": "mock trace marker",
       "transactionType": "Test harness",
       "transactionNameTemplate": "trace marker / {{this.class.simpleName}}"
+    },
+    {
+      "className": "org.glowroot.container.TraceEntryMarker",
+      "methodName": "traceEntryMarker",
+      "methodParameterTypes": [ ],
+      "captureKind": "trace-entry",
+      "timerName": "mock trace entry marker",
+      "traceEntryTemplate": "trace entry marker / {{this.class.simpleName}}"
     }
   ]
 }

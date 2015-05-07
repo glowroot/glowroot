@@ -46,25 +46,16 @@ public class Timer {
 
     private final String name;
     private final long total;
-    private final long min;
-    private final long max;
     private final long count;
     private final boolean active;
-    private final boolean minActive;
-    private final boolean maxActive;
 
     private final ImmutableList<Timer> nestedTimers;
 
-    private Timer(String name, long total, long min, long max, long count, boolean active,
-            boolean minActive, boolean maxActive, List<Timer> nestedTimers) {
+    private Timer(String name, long total, long count, boolean active, List<Timer> nestedTimers) {
         this.name = name;
         this.total = total;
-        this.min = min;
-        this.max = max;
         this.count = count;
         this.active = active;
-        this.minActive = minActive;
-        this.maxActive = maxActive;
         this.nestedTimers = ImmutableList.copyOf(nestedTimers);
     }
 
@@ -76,28 +67,12 @@ public class Timer {
         return total;
     }
 
-    public long getMin() {
-        return min;
-    }
-
-    public long getMax() {
-        return max;
-    }
-
     public long getCount() {
         return count;
     }
 
     public boolean isActive() {
         return active;
-    }
-
-    public boolean isMinActive() {
-        return minActive;
-    }
-
-    public boolean isMaxActive() {
-        return maxActive;
     }
 
     public ImmutableList<Timer> getNestedTimers() {
@@ -118,12 +93,8 @@ public class Timer {
         return MoreObjects.toStringHelper(this)
                 .add("name", name)
                 .add("total", total)
-                .add("min", min)
-                .add("max", max)
                 .add("count", count)
                 .add("active", active)
-                .add("minActive", minActive)
-                .add("maxActive", maxActive)
                 .add("nestedTimers", nestedTimers)
                 .toString();
     }
@@ -132,24 +103,15 @@ public class Timer {
     static Timer readValue(
             @JsonProperty("name") @Nullable String name,
             @JsonProperty("total") @Nullable Long total,
-            @JsonProperty("min") @Nullable Long min,
-            @JsonProperty("max") @Nullable Long max,
             @JsonProperty("count") @Nullable Long count,
             @JsonProperty("active") @Nullable Boolean active,
-            @JsonProperty("minActive") @Nullable Boolean minActive,
-            @JsonProperty("maxActive") @Nullable Boolean maxActive,
             @JsonProperty("nestedTimers") @Nullable List</*@Nullable*/Timer> uncheckedNestedTimers)
             throws JsonMappingException {
         List<Timer> nestedTimers = orEmpty(uncheckedNestedTimers, "nestedTimers");
         checkRequiredProperty(name, "name");
         checkRequiredProperty(total, "total");
-        checkRequiredProperty(min, "min");
-        checkRequiredProperty(max, "max");
         checkRequiredProperty(count, "count");
         checkRequiredProperty(active, "active");
-        checkRequiredProperty(minActive, "minActive");
-        checkRequiredProperty(maxActive, "maxActive");
-        return new Timer(name, total, min, max, count, active, minActive, maxActive,
-                nestedTimers);
+        return new Timer(name, total, count, active, nestedTimers);
     }
 }

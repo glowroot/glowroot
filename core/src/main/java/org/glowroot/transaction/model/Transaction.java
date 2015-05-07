@@ -128,7 +128,7 @@ public class Transaction {
         id = new TraceUniqueId(startTime);
         // suppress warning for passing @UnderInitialization this
         @SuppressWarnings("argument.type.incompatible")
-        TimerImpl rootTimer = TimerImpl.createRootTimer(this, (TimerNameImpl) timerName, ticker);
+        TimerImpl rootTimer = TimerImpl.createRootTimer(this, (TimerNameImpl) timerName);
         this.rootTimer = rootTimer;
         rootTimer.start(startTick);
         traceEntryComponent =
@@ -233,7 +233,7 @@ public class Transaction {
         return gcInfoComponent == null ? null : gcInfoComponent.getGcInfos();
     }
 
-    public TraceEntry getRootEntry() {
+    public TraceEntryImpl getRootEntry() {
         return traceEntryComponent.getRootEntry();
     }
 
@@ -241,7 +241,7 @@ public class Transaction {
         return traceEntryComponent.getEntryCount();
     }
 
-    public List<TraceEntry> getEntriesCopy() {
+    public List<TraceEntryImpl> getEntriesCopy() {
         readMemoryBarrier();
         return traceEntryComponent.getEntriesCopy();
     }
@@ -357,14 +357,15 @@ public class Transaction {
         willBeStored = true;
     }
 
-    public TraceEntry pushEntry(long startTick, MessageSupplier messageSupplier, TimerImpl timer) {
+    public TraceEntryImpl pushEntry(long startTick, MessageSupplier messageSupplier,
+            TimerImpl timer) {
         return traceEntryComponent.pushEntry(startTick, messageSupplier, timer);
     }
 
-    public TraceEntry addEntry(long startTick, long endTick,
+    public TraceEntryImpl addEntry(long startTick, long endTick,
             @Nullable MessageSupplier messageSupplier, @Nullable ErrorMessage errorMessage,
             boolean limitBypassed) {
-        TraceEntry entry = traceEntryComponent.addEntry(startTick, endTick, messageSupplier,
+        TraceEntryImpl entry = traceEntryComponent.addEntry(startTick, endTick, messageSupplier,
                 errorMessage, limitBypassed);
         memoryBarrier = true;
         return entry;
@@ -426,7 +427,7 @@ public class Transaction {
     // typically pop() methods don't require the objects to pop, but for safety, the entry to pop is
     // passed in just to make sure it is the one on top (and if not, then pop until is is found,
     // preventing any nasty bugs from a missed pop, e.g. a trace never being marked as complete)
-    void popEntry(TraceEntry entry, long endTick) {
+    void popEntry(TraceEntryImpl entry, long endTick) {
         traceEntryComponent.popEntry(entry, endTick);
         memoryBarrier = true;
         if (isCompleted()) {

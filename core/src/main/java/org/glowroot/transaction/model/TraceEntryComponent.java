@@ -40,12 +40,12 @@ class TraceEntryComponent {
     // not volatile, so depends on memory barrier in Transaction for visibility
     private long endTick;
 
-    private final TraceEntry rootEntry;
+    private final TraceEntryImpl rootEntry;
 
     @Nullable
-    private TraceEntry activeEntry;
+    private TraceEntryImpl activeEntry;
 
-    private TraceEntry tailEntry;
+    private TraceEntryImpl tailEntry;
 
     // entries.size() is accessed a lot, but only by transaction thread, so storing size separately
     // so it can be accessed without synchronization
@@ -60,19 +60,19 @@ class TraceEntryComponent {
             Ticker ticker) {
         this.startTick = startTick;
         this.ticker = ticker;
-        rootEntry = new TraceEntry(null, messageSupplier, startTick, -1, timer);
+        rootEntry = new TraceEntryImpl(null, messageSupplier, startTick, -1, timer);
         activeEntry = rootEntry;
         tailEntry = rootEntry;
     }
 
-    TraceEntry getRootEntry() {
+    TraceEntryImpl getRootEntry() {
         return rootEntry;
     }
 
     // this does not include root trace entry
-    List<TraceEntry> getEntriesCopy() {
-        List<TraceEntry> entries = Lists.newArrayList();
-        TraceEntry entry = rootEntry.getNextTraceEntry();
+    List<TraceEntryImpl> getEntriesCopy() {
+        List<TraceEntryImpl> entries = Lists.newArrayList();
+        TraceEntryImpl entry = rootEntry.getNextTraceEntry();
         while (entry != null) {
             entries.add(entry);
             entry = entry.getNextTraceEntry();
@@ -102,8 +102,8 @@ class TraceEntryComponent {
         return completed ? endTick - startTick : ticker.read() - startTick;
     }
 
-    TraceEntry pushEntry(long startTick, MessageSupplier messageSupplier, TimerImpl timer) {
-        TraceEntry entry = createEntry(startTick, messageSupplier, null, timer, false);
+    TraceEntryImpl pushEntry(long startTick, MessageSupplier messageSupplier, TimerImpl timer) {
+        TraceEntryImpl entry = createEntry(startTick, messageSupplier, null, timer, false);
         tailEntry.setNextTraceEntry(entry);
         tailEntry = entry;
         activeEntry = entry;
@@ -114,7 +114,7 @@ class TraceEntryComponent {
     // typically pop() methods don't require the objects to pop, but for safety, the entry is
     // passed in just to make sure it is the one on top (and if not, then pop until it is found,
     // preventing any nasty bugs from a missed pop, e.g. an entry never being marked as complete)
-    void popEntry(TraceEntry entry, long endTick) {
+    void popEntry(TraceEntryImpl entry, long endTick) {
         popEntrySafe(entry);
         if (activeEntry == null) {
             this.endTick = endTick;
@@ -122,9 +122,9 @@ class TraceEntryComponent {
         }
     }
 
-    TraceEntry addEntry(long startTick, long endTick, @Nullable MessageSupplier messageSupplier,
+    TraceEntryImpl addEntry(long startTick, long endTick, @Nullable MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage, boolean limitBypassed) {
-        TraceEntry entry =
+        TraceEntryImpl entry =
                 createEntry(startTick, messageSupplier, errorMessage, null, limitBypassed);
         tailEntry.setNextTraceEntry(entry);
         tailEntry = entry;
@@ -138,13 +138,13 @@ class TraceEntryComponent {
             return;
         }
         entryLimitExceeded = true;
-        TraceEntry entry = TraceEntry.getLimitExceededMarker();
+        TraceEntryImpl entry = TraceEntryImpl.getLimitExceededMarker();
         tailEntry.setNextTraceEntry(entry);
         tailEntry = entry;
         entryCount++;
     }
 
-    private TraceEntry createEntry(long startTick, @Nullable MessageSupplier messageSupplier,
+    private TraceEntryImpl createEntry(long startTick, @Nullable MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage, @Nullable TimerImpl timer, boolean limitBypassed) {
         if (entryLimitExceeded && !limitBypassed) {
             // just in case the entryLimit property is changed in the middle of a trace this resets
@@ -152,7 +152,7 @@ class TraceEntryComponent {
             entryLimitExceeded = false;
             // also a different marker ("limit extended") is placed in the entries so that the ui
             // can display this scenario sensibly
-            TraceEntry entry = TraceEntry.getLimitExtendedMarker();
+            TraceEntryImpl entry = TraceEntryImpl.getLimitExtendedMarker();
             tailEntry.setNextTraceEntry(entry);
             tailEntry = entry;
             entryCount++;
@@ -166,13 +166,13 @@ class TraceEntryComponent {
             checkNotNull(activeEntry);
             nestingLevel = activeEntry.getNestingLevel() + 1;
         }
-        TraceEntry entry =
-                new TraceEntry(activeEntry, messageSupplier, startTick, nestingLevel, timer);
+        TraceEntryImpl entry =
+                new TraceEntryImpl(activeEntry, messageSupplier, startTick, nestingLevel, timer);
         entry.setErrorMessage(errorMessage);
         return entry;
     }
 
-    private void popEntrySafe(TraceEntry entry) {
+    private void popEntrySafe(TraceEntryImpl entry) {
         if (activeEntry == null) {
             logger.error("entry stack is empty, cannot pop entry: {}", entry);
             return;
@@ -186,7 +186,7 @@ class TraceEntryComponent {
     }
 
     // split typically unused path into separate method to not affect inlining budget
-    private void popEntryBailout(TraceEntry expectingEntry) {
+    private void popEntryBailout(TraceEntryImpl expectingEntry) {
         logger.error("found entry {} at top of stack when expecting entry {}", activeEntry,
                 expectingEntry);
         while (activeEntry != null && activeEntry != expectingEntry) {

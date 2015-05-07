@@ -76,12 +76,8 @@ HandlebarsRendering = (function () {
         flattenedTimer = {
           name: timer.name,
           total: timer.total,
-          min: timer.min,
-          max: timer.max,
           count: timer.count,
-          active: timer.active,
-          minActive: timer.minActive,
-          maxActive: timer.maxActive
+          active: timer.active
         };
         flattenedTimerMap[timer.name] = flattenedTimer;
         flattenedTimers.push(flattenedTimer);
@@ -90,14 +86,6 @@ HandlebarsRendering = (function () {
         // (this is possible when they are separated by another timer)
         flattenedTimer.total += timer.total;
         flattenedTimer.active = flattenedTimer.active || timer.active;
-        if (timer.min < flattenedTimer.min) {
-          flattenedTimer.min = timer.min;
-          flattenedTimer.minActive = timer.minActive;
-        }
-        if (timer.max > flattenedTimer.max) {
-          flattenedTimer.max = timer.max;
-          flattenedTimer.maxActive = timer.maxActive;
-        }
         flattenedTimer.count += timer.count;
       }
       if (timer.nestedTimers) {

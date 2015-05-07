@@ -33,7 +33,7 @@ import org.glowroot.api.internal.ThrowableInfo;
 import org.glowroot.common.Tickers;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.StackTraceElementPlus;
-import org.glowroot.transaction.model.TraceEntry;
+import org.glowroot.transaction.model.TraceEntryImpl;
 
 public class EntriesCharSourceCreator {
 
@@ -41,7 +41,7 @@ public class EntriesCharSourceCreator {
 
     private EntriesCharSourceCreator() {}
 
-    public static CharSource createEntriesCharSource(List<TraceEntry> entries,
+    public static CharSource createEntriesCharSource(List<TraceEntryImpl> entries,
             long transactionStartTick, long captureTick) {
         return new EntriesCharSource(entries, transactionStartTick, captureTick);
     }
@@ -72,11 +72,11 @@ public class EntriesCharSourceCreator {
 
     private static class EntriesCharSource extends CharSource {
 
-        private final List<TraceEntry> entries;
+        private final List<TraceEntryImpl> entries;
         private final long transactionStartTick;
         private final long captureTick;
 
-        private EntriesCharSource(List<TraceEntry> entries, long transactionStartTick,
+        private EntriesCharSource(List<TraceEntryImpl> entries, long transactionStartTick,
                 long captureTick) {
             this.entries = entries;
             this.transactionStartTick = transactionStartTick;
@@ -91,7 +91,7 @@ public class EntriesCharSourceCreator {
 
     private static class EntriesReader extends Reader {
 
-        private final Iterator<TraceEntry> entries;
+        private final Iterator<TraceEntryImpl> entries;
         private final long transactionStartTick;
         private final long captureTick;
         private final EntriesCharArrayWriter writer;
@@ -100,7 +100,8 @@ public class EntriesCharSourceCreator {
         private int writerIndex;
         private boolean closed;
 
-        private EntriesReader(List<TraceEntry> entries, long transactionStartTick, long captureTick)
+        private EntriesReader(List<TraceEntryImpl> entries, long transactionStartTick,
+                long captureTick)
                 throws IOException {
             this.entries = entries.iterator();
             this.transactionStartTick = transactionStartTick;
@@ -144,7 +145,7 @@ public class EntriesCharSourceCreator {
         // order to *attempt* to present a picture of the transaction at that exact tick
         // (without using synchronization to block updates to the transaction while it is being
         // read)
-        private void writeEntry(TraceEntry traceEntry) throws IOException {
+        private void writeEntry(TraceEntryImpl traceEntry) throws IOException {
             if (!Tickers.lessThanOrEqual(traceEntry.getStartTick(), captureTick)) {
                 // this entry started after the capture tick
                 return;
@@ -170,15 +171,17 @@ public class EntriesCharSourceCreator {
             jg.writeEndObject();
         }
 
-        private void writeNormalEntry(TraceEntry traceEntry) throws IOException {
+        private void writeNormalEntry(TraceEntryImpl traceEntry) throws IOException {
             jg.writeStartObject();
             jg.writeNumberField("offset", traceEntry.getStartTick() - transactionStartTick);
             jg.writeFieldName("duration");
             long endTick = traceEntry.getEndTick();
             if (traceEntry.isCompleted() && Tickers.lessThanOrEqual(endTick, captureTick)) {
-                jg.writeNumber(endTick - traceEntry.getStartTick());
+                // duration is calculated relative to revised start tick
+                jg.writeNumber(endTick - traceEntry.getRevisedStartTick());
             } else {
-                jg.writeNumber(captureTick - traceEntry.getStartTick());
+                // duration is calculated relative to revised start tick
+                jg.writeNumber(captureTick - traceEntry.getRevisedStartTick());
                 jg.writeBooleanField("active", true);
             }
             jg.writeNumberField("nestingLevel", traceEntry.getNestingLevel());

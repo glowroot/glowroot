@@ -119,10 +119,8 @@ public class ActiveTraceTest {
         assertThat(trace).isNotNull();
         assertThat(trace.isActive()).isTrue();
         assertThat(trace.isPartial()).isFalse();
-        assertThat(trace.getRootTimer().isMaxActive()).isTrue();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         if (stuckOnNonRoot) {
-            assertThat(trace.getRootTimer().getNestedTimers().get(0).isMaxActive()).isTrue();
             assertThat(entries).hasSize(2);
         } else {
             assertThat(entries).isEmpty();

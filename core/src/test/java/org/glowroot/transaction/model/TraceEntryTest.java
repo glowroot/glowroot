@@ -31,7 +31,7 @@ public class TraceEntryTest {
         TimerImpl timer = mock(TimerImpl.class);
         Transaction transaction = mock(Transaction.class);
         when(timer.getTransaction()).thenReturn(transaction);
-        TraceEntry traceEntry = new TraceEntry(null, null, 0, 0, timer);
+        TraceEntryImpl traceEntry = new TraceEntryImpl(null, null, 0, 0, timer);
         // when
         traceEntry.endWithError(null);
         // then

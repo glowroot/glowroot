@@ -57,6 +57,12 @@ public interface TraceEntry {
     void endWithError(ErrorMessage errorMessage);
 
     /**
+     * Example of query and subsequent iterating over results which goes back to database and pulls
+     * more results.
+     */
+    Timer extend(TimerName altTimerName);
+
+    /**
      * Returns the {@code MessageSupplier} that was supplied when the {@code TraceEntry} was
      * created.
      * 

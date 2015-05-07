@@ -95,8 +95,6 @@ public class TimerTest {
         assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
         assertThat(trace.getRootTimer().getCount()).isEqualTo(1);
         assertThat(trace.getRootTimer().isActive()).isTrue();
-        assertThat(trace.getRootTimer().isMinActive()).isTrue();
-        assertThat(trace.getRootTimer().isMaxActive()).isTrue();
         // cleanup
         // interrupt trace
         container.interruptAppUnderTest();

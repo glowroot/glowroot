@@ -26,45 +26,55 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.Timer;
+import org.glowroot.api.TimerName;
+import org.glowroot.api.TraceEntry;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.common.Tickers;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 // this supports updating by a single thread and reading by multiple threads
-public class TraceEntry implements org.glowroot.api.TraceEntry {
+public class TraceEntryImpl implements TraceEntry, Timer {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceEntry.class);
+    private static final Logger logger = LoggerFactory.getLogger(TraceEntryImpl.class);
     private static final Ticker ticker = Tickers.getTicker();
 
-    private final @Nullable TraceEntry parentTraceEntry;
+    private final @Nullable TraceEntryImpl parentTraceEntry;
     private final @Nullable MessageSupplier messageSupplier;
     // not volatile, so depends on memory barrier in Transaction for visibility
     private @Nullable ErrorMessage errorMessage;
 
     private final long startTick;
+    private long revisedStartTick;
     // not volatile, so depends on memory barrier in Transaction for visibility
-    private boolean completed;
+    private int selfNestingLevel;
     // not volatile, so depends on memory barrier in Transaction for visibility
     private long endTick;
 
     private final int nestingLevel;
 
-    // this is for maintaining linear list of traces
-    private @Nullable TraceEntry nextTraceEntry;
+    // this is for maintaining linear list of trace entries
+    private @Nullable TraceEntryImpl nextTraceEntry;
 
     // only null for limitExceededMarker and limitExtendedMarker
     private final @Nullable TimerImpl timer;
     // not volatile, so depends on memory barrier in Transaction for visibility
     private @Nullable ImmutableList<StackTraceElement> stackTrace;
 
-    TraceEntry(@Nullable TraceEntry parentTraceEntry, @Nullable MessageSupplier messageSupplier,
-            long startTick, int nesting, @Nullable TimerImpl timer) {
+    // only used by transaction thread
+    private long stackTraceThreshold;
+
+    TraceEntryImpl(@Nullable TraceEntryImpl parentTraceEntry,
+            @Nullable MessageSupplier messageSupplier, long startTick, int nestingLevel,
+            @Nullable TimerImpl timer) {
         this.parentTraceEntry = parentTraceEntry;
         this.messageSupplier = messageSupplier;
         this.startTick = startTick;
-        this.nestingLevel = nesting;
+        this.nestingLevel = nestingLevel;
         this.timer = timer;
+        revisedStartTick = startTick;
+        selfNestingLevel = 1;
     }
 
     @Override
@@ -80,8 +90,12 @@ public class TraceEntry implements org.glowroot.api.TraceEntry {
         return startTick;
     }
 
+    public long getRevisedStartTick() {
+        return revisedStartTick;
+    }
+
     public boolean isCompleted() {
-        return completed;
+        return selfNestingLevel == 0;
     }
 
     public long getEndTick() {
@@ -117,13 +131,17 @@ public class TraceEntry implements org.glowroot.api.TraceEntry {
             return;
         }
         long endTick = ticker.read();
-        if (endTick - startTick >= unit.toNanos(threshold)) {
+        long thresholdNanos = unit.toNanos(threshold);
+        if (endTick - startTick >= thresholdNanos) {
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
             // need to strip back a few stack calls:
             // skip i=0 which is "java.lang.Thread.getStackTrace()"
             // skip i=1 which is "...TraceEntry.endWithStackTrace()"
             // skip i=2 which is the plugin advice
             this.stackTrace = ImmutableList.copyOf(stackTrace).subList(3, stackTrace.length);
+        } else {
+            // store threshold in case this trace entry is extended, see extend() below
+            stackTraceThreshold = thresholdNanos;
         }
         endInternal(endTick, null);
     }
@@ -139,21 +157,59 @@ public class TraceEntry implements org.glowroot.api.TraceEntry {
         endInternal(ticker.read(), errorMessage);
     }
 
+    @Override
+    public Timer extend(TimerName altTimerName) {
+        // timer is only null for limitExceededMarker, limitExtendedMarker and trace entries added
+        // using addEntry(), and none of these trace entries are returned from plugin api so
+        // no way for extend() to be called
+        checkNotNull(timer);
+        if (selfNestingLevel++ == 0) {
+            long duration = endTick - revisedStartTick;
+            revisedStartTick = ticker.read() - duration;
+            timer.extend(altTimerName, revisedStartTick);
+        } else {
+            timer.extend(altTimerName);
+        }
+        return this;
+    }
+
+    @Override
+    public void stop() {
+        // timer is only null for limitExceededMarker, limitExtendedMarker and trace entries added
+        // using addEntry(), and none of these trace entries are returned from plugin api so
+        // no way for stop() to be called
+        checkNotNull(timer);
+        if (--selfNestingLevel == 0) {
+            endTick = ticker.read();
+            timer.end(endTick);
+            if (stackTraceThreshold != 0 && endTick - revisedStartTick >= stackTraceThreshold) {
+                StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+                // need to strip back a few stack calls:
+                // skip i=0 which is "java.lang.Thread.getStackTrace()"
+                // skip i=1 which is "...Timer.stop()"
+                // skip i=2 which is the plugin advice
+                this.stackTrace = ImmutableList.copyOf(stackTrace).subList(3, stackTrace.length);
+            }
+        } else {
+            timer.stop();
+        }
+    }
+
     public void setStackTrace(ImmutableList<StackTraceElement> stackTrace) {
         this.stackTrace = stackTrace;
     }
 
     @Nullable
-    TraceEntry getParentTraceEntry() {
+    TraceEntryImpl getParentTraceEntry() {
         return parentTraceEntry;
     }
 
     @Nullable
-    TraceEntry getNextTraceEntry() {
+    TraceEntryImpl getNextTraceEntry() {
         return nextTraceEntry;
     }
 
-    void setNextTraceEntry(TraceEntry nextTraceEntry) {
+    void setNextTraceEntry(TraceEntryImpl nextTraceEntry) {
         this.nextTraceEntry = nextTraceEntry;
     }
 
@@ -163,12 +219,13 @@ public class TraceEntry implements org.glowroot.api.TraceEntry {
 
     void setEndTick(long endTick) {
         this.endTick = endTick;
-        this.completed = true;
+        this.selfNestingLevel--;
     }
 
     private void endInternal(long endTick, @Nullable ErrorMessage errorMessage) {
         // timer is only null for limitExceededMarker, limitExtendedMarker and trace entries added
-        // using addEntry()
+        // using addEntry(), and none of these trace entries are returned from plugin api so
+        // no way for end...() to be called
         checkNotNull(timer);
         Transaction transaction = timer.getTransaction();
         timer.end(endTick);
@@ -177,15 +234,15 @@ public class TraceEntry implements org.glowroot.api.TraceEntry {
         transaction.popEntry(this, endTick);
     }
 
-    static TraceEntry getLimitExceededMarker() {
+    static TraceEntryImpl getLimitExceededMarker() {
         return new LimitExceededTraceEntry();
     }
 
-    static TraceEntry getLimitExtendedMarker() {
+    static TraceEntryImpl getLimitExtendedMarker() {
         return new LimitExtendedTraceEntry();
     }
 
-    private static class LimitExceededTraceEntry extends TraceEntry {
+    private static class LimitExceededTraceEntry extends TraceEntryImpl {
         private LimitExceededTraceEntry() {
             super(null, null, 0, 0, null);
         }
@@ -195,7 +252,7 @@ public class TraceEntry implements org.glowroot.api.TraceEntry {
         }
     }
 
-    private static class LimitExtendedTraceEntry extends TraceEntry {
+    private static class LimitExtendedTraceEntry extends TraceEntryImpl {
         private LimitExtendedTraceEntry() {
             super(null, null, 0, 0, null);
         }

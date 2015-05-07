@@ -519,9 +519,11 @@ public class AdviceGenerator {
         mv.visitCode();
         if (!config.traceEntryEnabledProperty().isEmpty()) {
             mv.visitVarInsn(ALOAD, travelerParamIndex);
-            mv.visitTypeInsn(INSTANCEOF, "org/glowroot/api/Timer");
+            // TraceEntryImpl implements both TraceEntry and Timer so cannot check instanceof Timer
+            // to differentiate here (but can check isntanceof TraceEntry)
+            mv.visitTypeInsn(INSTANCEOF, "org/glowroot/api/TraceEntry");
             Label label = new Label();
-            mv.visitJumpInsn(IFEQ, label);
+            mv.visitJumpInsn(IFNE, label);
             mv.visitVarInsn(ALOAD, travelerParamIndex);
             mv.visitTypeInsn(CHECKCAST, "org/glowroot/api/Timer");
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/api/Timer", "stop", "()V", true);
