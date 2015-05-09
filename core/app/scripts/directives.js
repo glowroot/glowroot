@@ -99,7 +99,8 @@ glowroot.directive('gtButtonGroup', [
 
 glowroot.directive('gtButton', [
   'gtButtonGroupControllerFactory',
-  function (gtButtonGroupControllerFactory) {
+  'modals',
+  function (gtButtonGroupControllerFactory, modals) {
     return {
       scope: {
         gtLabel: '@',
@@ -107,7 +108,9 @@ glowroot.directive('gtButton', [
         gtShow: '&',
         gtBtnClass: '@',
         gtDisabled: '&',
-        gtNoSpinner: '@'
+        gtNoSpinner: '@',
+        gtConfirmHeader: '@',
+        gtConfirmBody: '@'
       },
       templateUrl: 'template/gt-button.html',
       require: '^?gtButtonGroup',
@@ -120,8 +123,22 @@ glowroot.directive('gtButton', [
           gtButtonGroup = gtButtonGroupControllerFactory.create(iElement, scope.gtNoSpinner);
         }
         scope.onClick = function () {
-          gtButtonGroup.onClick(scope.gtClick);
-          document.activeElement.blur();
+          if (scope.gtConfirmHeader) {
+            var $modal = $('#confirmationModal');
+            $modal.find('.modal-header h3').text(scope.gtConfirmHeader);
+            $modal.find('.modal-body p').text(scope.gtConfirmBody);
+            modals.display('#confirmationModal', true);
+            $('#confirmationModalButton').off('click');
+            $('#confirmationModalButton').on('click', function () {
+              scope.$apply(function () {
+                $('#confirmationModal').modal('hide');
+                gtButtonGroup.onClick(scope.gtClick);
+              });
+            });
+          } else {
+            gtButtonGroup.onClick(scope.gtClick);
+            document.activeElement.blur();
+          }
         };
       }
     };

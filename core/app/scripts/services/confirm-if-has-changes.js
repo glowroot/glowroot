@@ -31,13 +31,16 @@ glowroot.factory('confirmIfHasChanges', [
         if (!$scope.httpError && !confirmed && $scope.hasChanges()) {
           event.preventDefault();
 
-          modals.display('#unsavedChangesModal', true);
+          var $modal = $('#confirmationModal');
+          $modal.find('.modal-header h3').text('You have unsaved changes');
+          $modal.find('.modal-body p').text('Are you sure you want to navigate away from this page?');
+          modals.display('#confirmationModal', true);
 
-          $('#unsavedChangesConfirm').off('click');
-          $('#unsavedChangesConfirm').on('click', function () {
-            $scope.$apply(function () {
+          $('#confirmationModalButton').off('click');
+          $('#confirmationModalButton').on('click', function () {
+            $rootScope.$apply(function () {
               confirmed = true;
-              $('#unsavedChangesModal').modal('hide');
+              $('#confirmationModal').modal('hide');
               $location.$$parse(newUrl);
             });
           });

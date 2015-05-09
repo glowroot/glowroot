@@ -41,7 +41,7 @@
              style="margin-right: 10px;">
             Add new
           </a>
-          <button class="btn btn-default"
+          <button class="btn btn-default pull-left"
                   ng-click="displayImportModal()"
                   style="margin-right: 10px;">
             Import
@@ -50,7 +50,9 @@
                gt-show="jvmRetransformClassesSupported && dirty"
                gt-btn-class="btn-danger"
                gt-label="Apply changes to running JVM"
-               gt-click="retransformClasses(deferred)">
+               gt-click="retransformClasses(deferred)"
+               gt-confirm-header="Apply changes to running JVM?"
+               gt-confirm-body="Important: Do not use this in production as it has chance of crashing the JVM.">
           </div>
         </div>
         <div ng-show="!jvmRetransformClassesSupported && dirty"
