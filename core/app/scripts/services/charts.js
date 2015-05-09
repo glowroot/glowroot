@@ -88,7 +88,7 @@ glowroot.factory('charts', [
       var dataPointIntervalMillis = getDataPointIntervalMillis(from, to);
       var revisedFrom;
       var revisedTo;
-      if (zoomingOut) {
+      if (zoomingOut || selection) {
         revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
         revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
         var revisedDataPointIntervalMillis = getDataPointIntervalMillis(revisedFrom, revisedTo);

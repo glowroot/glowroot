@@ -98,6 +98,8 @@ glowroot.controller('TransactionHeaderCtrl', [
 
     $scope.headerRangeQueryString = function (last) {
       var query = $scope.buildQueryObject();
+      delete query['trace-chart-from'];
+      delete query['trace-chart-to'];
       delete query.from;
       delete query.to;
       query.last = last;
