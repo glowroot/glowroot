@@ -29,6 +29,7 @@ public class StorageConfig {
 
     private int aggregateExpirationHours;
     private int traceExpirationHours;
+    private int gaugeExpirationHours;
     private int cappedDatabaseSizeMb;
 
     private final String version;
@@ -53,6 +54,14 @@ public class StorageConfig {
         this.traceExpirationHours = traceExpirationHours;
     }
 
+    public int getGaugeExpirationHours() {
+        return gaugeExpirationHours;
+    }
+
+    public void setGaugeExpirationHours(int gaugeExpirationHours) {
+        this.gaugeExpirationHours = gaugeExpirationHours;
+    }
+
     public int getCappedDatabaseSizeMb() {
         return cappedDatabaseSizeMb;
     }
@@ -74,6 +83,7 @@ public class StorageConfig {
             // the server
             return Objects.equal(aggregateExpirationHours, that.aggregateExpirationHours)
                     && Objects.equal(traceExpirationHours, that.traceExpirationHours)
+                    && Objects.equal(gaugeExpirationHours, that.gaugeExpirationHours)
                     && Objects.equal(cappedDatabaseSizeMb, that.cappedDatabaseSizeMb);
         }
         return false;
@@ -85,7 +95,7 @@ public class StorageConfig {
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(aggregateExpirationHours, traceExpirationHours,
-                cappedDatabaseSizeMb);
+                gaugeExpirationHours, cappedDatabaseSizeMb);
     }
 
     @Override
@@ -93,6 +103,7 @@ public class StorageConfig {
         return MoreObjects.toStringHelper(this)
                 .add("aggregateExpirationHours", aggregateExpirationHours)
                 .add("traceExpirationHours", traceExpirationHours)
+                .add("gaugeExpirationHours", gaugeExpirationHours)
                 .add("cappedDatabaseSizeMb", cappedDatabaseSizeMb)
                 .add("version", version)
                 .toString();
@@ -102,15 +113,18 @@ public class StorageConfig {
     static StorageConfig readValue(
             @JsonProperty("aggregateExpirationHours") @Nullable Integer aggregateExpirationHours,
             @JsonProperty("traceExpirationHours") @Nullable Integer traceExpirationHours,
+            @JsonProperty("gaugeExpirationHours") @Nullable Integer gaugeExpirationHours,
             @JsonProperty("cappedDatabaseSizeMb") @Nullable Integer cappedDatabaseSizeMb,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(aggregateExpirationHours, "aggregateExpirationHours");
         checkRequiredProperty(traceExpirationHours, "traceExpirationHours");
+        checkRequiredProperty(gaugeExpirationHours, "gaugeExpirationHours");
         checkRequiredProperty(cappedDatabaseSizeMb, "cappedDatabaseSizeMb");
         checkRequiredProperty(version, "version");
         StorageConfig config = new StorageConfig(version);
         config.setAggregateExpirationHours(aggregateExpirationHours);
         config.setTraceExpirationHours(traceExpirationHours);
+        config.setGaugeExpirationHours(gaugeExpirationHours);
         config.setCappedDatabaseSizeMb(cappedDatabaseSizeMb);
         return config;
     }

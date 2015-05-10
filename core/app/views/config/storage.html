@@ -26,7 +26,7 @@
          class="form-horizontal"
          name="formCtrl">
       <div gt-form-group
-           gt-label="Keep aggregates for"
+           gt-label="Keep aggregated transactions for"
            gt-model="page.aggregateExpirationDays"
            gt-number="true"
            gt-pattern="pattern.integer"
@@ -34,7 +34,7 @@
            gt-width="7em"
            gt-addon="days">
         <div class="help-block">
-          Defines how long aggregates should be retained.
+          Defines how long aggregated transaction data should be retained.
           Aggregate profiles may expire sooner than this, see <em>Profiles/trace entries capped db</em> below.
         </div>
       </div>
@@ -49,6 +49,18 @@
         <div class="help-block">
           Defines how long traces should be retained.
           Profiles and trace entries may expire sooner than this, see <em>Profiles/trace entries capped db</em> below.
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Keep gauge data for"
+           gt-model="page.gaugeExpirationDays"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-required="loaded"
+           gt-width="7em"
+           gt-addon="days">
+        <div class="help-block">
+          Defines how long gauge data should be retained.
         </div>
       </div>
       <div gt-form-group

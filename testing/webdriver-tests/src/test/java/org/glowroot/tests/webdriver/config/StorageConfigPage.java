@@ -34,11 +34,15 @@ public class StorageConfigPage {
     }
 
     public WebElement getAggregateExpirationTextField() {
-        return withWait(xpath("//div[@gt-label='Keep aggregates for']//input"));
+        return withWait(xpath("//div[@gt-label='Keep aggregated transactions for']//input"));
     }
 
     public WebElement getTraceExpirationTextField() {
         return withWait(xpath("//div[@gt-label='Keep traces for']//input"));
+    }
+
+    public WebElement getGaugeExpirationTextField() {
+        return withWait(xpath("//div[@gt-label='Keep gauge data for']//input"));
     }
 
     public WebElement getCappedDatabaseSizeTextField() {

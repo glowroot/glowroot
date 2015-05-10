@@ -50,6 +50,8 @@ class ReaperRunnable extends ScheduledRunnable {
                 - HOURS.toMillis(configService.getStorageConfig().traceExpirationHours());
         traceDao.deleteBefore(traceCaptureTime);
 
-        gaugePointDao.deleteBefore(aggregateCaptureTime);
+        long gaugeCaptureTime = clock.currentTimeMillis()
+                - HOURS.toMillis(configService.getStorageConfig().gaugeExpirationHours());
+        gaugePointDao.deleteBefore(gaugeCaptureTime);
     }
 }

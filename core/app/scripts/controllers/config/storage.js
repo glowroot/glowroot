@@ -42,6 +42,12 @@ glowroot.controller('ConfigStorageCtrl', [
       }
     });
 
+    $scope.$watch('page.gaugeExpirationDays', function (newValue) {
+      if ($scope.config) {
+        $scope.config.gaugeExpirationHours = newValue * 24;
+      }
+    });
+
     function onNewData(data) {
       $scope.loaded = true;
       $scope.config = data;
@@ -49,6 +55,7 @@ glowroot.controller('ConfigStorageCtrl', [
 
       $scope.page.aggregateExpirationDays = data.aggregateExpirationHours / 24;
       $scope.page.traceExpirationDays = data.traceExpirationHours / 24;
+      $scope.page.gaugeExpirationDays = data.gaugeExpirationHours / 24;
     }
 
     $scope.save = function (deferred) {

@@ -219,8 +219,8 @@ public class ConfigTest {
         InstrumentationConfig config = createInstrumentationConfig();
         // when
         String version = container.getConfigService().addInstrumentationConfig(config).getVersion();
-        InstrumentationConfig newConfig =
-                container.getConfigService().getInstrumentationConfig(version);
+        InstrumentationConfig newConfig = container.getConfigService()
+                .getInstrumentationConfig(version);
         // then
         assertThat(container.getConfigService().getInstrumentationConfigs()).hasSize(1);
         assertThat(newConfig).isEqualTo(config);
@@ -233,10 +233,10 @@ public class ConfigTest {
         config = container.getConfigService().addInstrumentationConfig(config);
         // when
         updateAllFields(config);
-        String version =
-                container.getConfigService().updateInstrumentationConfig(config).getVersion();
-        InstrumentationConfig newConfig =
-                container.getConfigService().getInstrumentationConfig(version);
+        String version = container.getConfigService().updateInstrumentationConfig(config)
+                .getVersion();
+        InstrumentationConfig newConfig = container.getConfigService()
+                .getInstrumentationConfig(version);
         // then
         assertThat(container.getConfigService().getInstrumentationConfigs()).hasSize(1);
         assertThat(newConfig).isEqualTo(config);
@@ -256,8 +256,8 @@ public class ConfigTest {
     @Test
     public void shouldInsertGauge() throws Exception {
         // given
-        List<? extends GaugeConfig> originalConfigs =
-                container.getConfigService().getGaugeConfigs();
+        List<? extends GaugeConfig> originalConfigs = container.getConfigService()
+                .getGaugeConfigs();
         GaugeConfig config = createGauge();
         // when
         String version = container.getConfigService().addGaugeConfig(config).getVersion();
@@ -271,8 +271,8 @@ public class ConfigTest {
     @Test
     public void shouldUpdateGauge() throws Exception {
         // given
-        List<? extends GaugeConfig> originalConfigs =
-                container.getConfigService().getGaugeConfigs();
+        List<? extends GaugeConfig> originalConfigs = container.getConfigService()
+                .getGaugeConfigs();
         GaugeConfig config = createGauge();
         config = container.getConfigService().addGaugeConfig(config);
         // when
@@ -288,8 +288,8 @@ public class ConfigTest {
     @Test
     public void shouldDeleteGauge() throws Exception {
         // given
-        List<? extends GaugeConfig> originalConfigs =
-                container.getConfigService().getGaugeConfigs();
+        List<? extends GaugeConfig> originalConfigs = container.getConfigService()
+                .getGaugeConfigs();
         GaugeConfig config = createGauge();
         config = container.getConfigService().addGaugeConfig(config);
         // when
@@ -351,7 +351,8 @@ public class ConfigTest {
     private static void updateAllFields(StorageConfig config) {
         config.setAggregateExpirationHours(config.getAggregateExpirationHours() + 1);
         config.setTraceExpirationHours(config.getTraceExpirationHours() + 10);
-        config.setCappedDatabaseSizeMb(config.getCappedDatabaseSizeMb() + 100);
+        config.setGaugeExpirationHours(config.getGaugeExpirationHours() + 100);
+        config.setCappedDatabaseSizeMb(config.getCappedDatabaseSizeMb() + 1000);
     }
 
     private static void updateAllFields(SmtpConfig config) {
@@ -393,8 +394,8 @@ public class ConfigTest {
         config.setProperty("alternateHeadline", alternateHeadline + "x");
         String hasDefaultVal = (String) config.getProperty("hasDefaultVal");
         config.setProperty("hasDefaultVal", hasDefaultVal + "x");
-        boolean captureTraceEntryStackTraces =
-                (Boolean) config.getProperty("captureTraceEntryStackTraces");
+        boolean captureTraceEntryStackTraces = (Boolean) config
+                .getProperty("captureTraceEntryStackTraces");
         config.setProperty("captureTraceEntryStackTraces", !captureTraceEntryStackTraces);
     }
 
@@ -448,8 +449,8 @@ public class ConfigTest {
             config.setTraceStoreThresholdMillis(storeThresholdOverrideMillis + 10);
         }
         config.setTransactionUserTemplate(config.getTransactionUserTemplate() + "i");
-        Map<String, String> transactionCustomAttributeTemplates =
-                Maps.newHashMap(config.getTransactionCustomAttributeTemplates());
+        Map<String, String> transactionCustomAttributeTemplates = Maps
+                .newHashMap(config.getTransactionCustomAttributeTemplates());
         transactionCustomAttributeTemplates.put("Test attr name", "Test attr value");
         config.setTransactionCustomAttributeTemplates(transactionCustomAttributeTemplates);
         config.setEnabledProperty(config.getEnabledProperty() + "k");

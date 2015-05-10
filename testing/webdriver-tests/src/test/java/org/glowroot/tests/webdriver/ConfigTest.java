@@ -111,8 +111,8 @@ public class ConfigTest extends WebDriverTest {
         app.open();
         globalNavbar.getConfigurationLink().click();
         // user recording config is not accessible via config sidebar currently
-        String userRecordingUrl =
-                driver.getCurrentUrl().replace("/config/general", "/config/user-recording");
+        String userRecordingUrl = driver.getCurrentUrl().replace("/config/general",
+                "/config/user-recording");
         driver.navigate().to(userRecordingUrl);
 
         // when
@@ -152,6 +152,8 @@ public class ConfigTest extends WebDriverTest {
         page.getAggregateExpirationTextField().sendKeys("44");
         page.getTraceExpirationTextField().clear();
         page.getTraceExpirationTextField().sendKeys("55");
+        page.getGaugeExpirationTextField().clear();
+        page.getGaugeExpirationTextField().sendKeys("66");
         page.getCappedDatabaseSizeTextField().clear();
         page.getCappedDatabaseSizeTextField().sendKeys("678");
         page.clickSaveButton();
@@ -162,6 +164,7 @@ public class ConfigTest extends WebDriverTest {
         configSidebar.getStorageLink().click();
         assertThat(page.getAggregateExpirationTextField().getAttribute("value")).isEqualTo("44");
         assertThat(page.getTraceExpirationTextField().getAttribute("value")).isEqualTo("55");
+        assertThat(page.getGaugeExpirationTextField().getAttribute("value")).isEqualTo("66");
         assertThat(page.getCappedDatabaseSizeTextField().getAttribute("value")).isEqualTo("678");
     }
 

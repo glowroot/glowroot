@@ -389,8 +389,8 @@ class ConfigJsonService {
             builder.encryptedPassword("");
         } else if (configDto.passwordExists() && !configDto.newPassword().isEmpty()) {
             // change password
-            String newEncryptedPassword =
-                    Encryption.encrypt(configDto.newPassword(), configService.getSecretKey());
+            String newEncryptedPassword = Encryption.encrypt(configDto.newPassword(),
+                    configService.getSecretKey());
             builder.encryptedPassword(newEncryptedPassword);
         } else {
             // keep existing password
@@ -571,6 +571,7 @@ class ConfigJsonService {
 
         abstract int aggregateExpirationHours();
         abstract int traceExpirationHours();
+        abstract int gaugeExpirationHours();
         abstract int cappedDatabaseSizeMb();
         abstract String version();
 
@@ -578,6 +579,7 @@ class ConfigJsonService {
             return StorageConfig.builder()
                     .aggregateExpirationHours(aggregateExpirationHours())
                     .traceExpirationHours(traceExpirationHours())
+                    .gaugeExpirationHours(gaugeExpirationHours())
                     .cappedDatabaseSizeMb(cappedDatabaseSizeMb())
                     .build();
         }
@@ -586,6 +588,7 @@ class ConfigJsonService {
             return StorageConfigDto.builder()
                     .aggregateExpirationHours(config.aggregateExpirationHours())
                     .traceExpirationHours(config.traceExpirationHours())
+                    .gaugeExpirationHours(config.gaugeExpirationHours())
                     .cappedDatabaseSizeMb(config.cappedDatabaseSizeMb())
                     .version(config.version())
                     .build();

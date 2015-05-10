@@ -35,6 +35,11 @@ public abstract class StorageConfigBase {
         return 24 * 7;
     }
 
+    @Value.Default
+    public int gaugeExpirationHours() {
+        return 24 * 7;
+    }
+
     // size of capped database for storing trace details (entries and profiles)
     @Value.Default
     public int cappedDatabaseSizeMb() {
