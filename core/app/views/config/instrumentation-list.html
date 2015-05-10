@@ -47,7 +47,7 @@
             Import
           </button>
           <div gt-button
-               gt-show="jvmRetransformClassesSupported && dirty"
+               ng-show="jvmRetransformClassesSupported && dirty"
                gt-btn-class="btn-danger"
                gt-label="Apply changes to running JVM"
                gt-click="retransformClasses(deferred)"

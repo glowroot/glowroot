@@ -105,7 +105,6 @@ glowroot.directive('gtButton', [
       scope: {
         gtLabel: '@',
         gtClick: '&',
-        gtShow: '&',
         gtBtnClass: '@',
         gtDisabled: '&',
         gtNoSpinner: '@',
@@ -115,9 +114,6 @@ glowroot.directive('gtButton', [
       templateUrl: 'template/gt-button.html',
       require: '^?gtButtonGroup',
       link: function (scope, iElement, iAttrs, gtButtonGroup) {
-        scope.ngShow = function () {
-          return iAttrs.gtShow ? scope.gtShow() : true;
-        };
         if (!gtButtonGroup) {
           scope.noGroup = true;
           gtButtonGroup = gtButtonGroupControllerFactory.create(iElement, scope.gtNoSpinner);
@@ -274,17 +270,13 @@ glowroot.directive('gtNavbarItem', [
         gtDisplay: '@',
         gtItemName: '@',
         gtUrl: '@',
-        gtState: '@',
-        gtShow: '&'
+        gtState: '@'
       },
       // replace is needed in order to not mess up bootstrap css hierarchical selectors
       replace: true,
       transclude: true,
       templateUrl: 'template/gt-navbar-item.html',
       link: function (scope, iElement, iAttrs) {
-        scope.ngShow = function () {
-          return iAttrs.gtShow ? scope.gtShow() : true;
-        };
         scope.isActive = function () {
           return scope.$parent.activeNavbarItem === scope.gtItemName;
         };
@@ -316,16 +308,12 @@ glowroot.directive('gtSidebarItem', [
         gtDisplay: '@',
         gtDisplayRight: '@',
         gtUrl: '@',
-        gtShow: '&',
         gtActive: '&'
       },
       // replace is needed in order to not mess up bootstrap css hierarchical selectors
       replace: true,
       templateUrl: 'template/gt-sidebar-item.html',
       link: function (scope, iElement, iAttrs) {
-        scope.ngShow = function () {
-          return iAttrs.gtShow ? scope.gtShow() : true;
-        };
         scope.isActive = function () {
           return iAttrs.gtActive ? scope.gtActive() : $location.path() === '/' + scope.gtUrl;
         };
