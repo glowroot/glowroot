@@ -82,26 +82,28 @@
         <div class="col-lg-offset-3 col-lg-9">
           <div gt-button-group>
             <div gt-button
-                 class="gt-inline-block"
                  gt-label="Save changes"
                  gt-click="save(deferred)"
-                 gt-disabled="!hasChanges() || formCtrl.$invalid">
+                 gt-disabled="!hasChanges() || formCtrl.$invalid"
+                 class="pull-left"
+                 style="margin-right: 8px;">
             </div>
             <div gt-button
-                 class="gt-inline-block"
                  gt-label="Defrag"
                  gt-click="defragData(deferred)"
                  gt-btn-class="btn-warning"
-                 gt-dont-validate-form="true">
+                 gt-dont-validate-form="true"
+                 class="pull-left"
+                 style="margin-right: 8px;">
             </div>
             <div gt-button
-                 class="gt-inline-block"
                  gt-label="Delete all data"
                  gt-click="deleteAllData(deferred)"
                  gt-btn-class="btn-danger"
                  gt-dont-validate-form="true"
                  gt-confirm-header="Delete all data?"
-                 gt-confirm-body="This will delete all captured data, including aggregated transaction data, traces and gauge data.">
+                 gt-confirm-body="This will delete all captured data, including aggregated transaction data, traces and gauge data."
+                 class="pull-left">
             </div>
           </div>
         </div>

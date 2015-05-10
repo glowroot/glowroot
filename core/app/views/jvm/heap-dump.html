@@ -47,16 +47,18 @@
       <div class="form-group gt-form-buttons">
         <div class="col-lg-offset-2 col-lg-10">
           <div gt-button-group>
-            <span gt-button
-                  gt-label="Dump heap"
-                  gt-click="dumpHeap(deferred)">
-            </span>
-            <span gt-button
-                  gt-label="Check disk space"
-                  gt-click="checkDiskSpace(deferred)"
-                  gt-btn-class="btn-default"
-                  style="margin-left: 5px;">
-            </span>
+            <div gt-button
+                 gt-label="Dump heap"
+                 gt-click="dumpHeap(deferred)"
+                 class="pull-left">
+            </div>
+            <div gt-button
+                 gt-label="Check disk space"
+                 gt-click="checkDiskSpace(deferred)"
+                 gt-btn-class="btn-default"
+                 class="pull-left"
+                 style="margin-left: 8px;">
+            </div>
           </div>
         </div>
       </div>

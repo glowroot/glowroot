@@ -35,15 +35,16 @@
            before it gets pushed down by existing gauge sections -->
       <div ng-show="loaded"
            style="font-size: 16px; margin-top: 30px;">
-        <div class="clearfix">
+        <!-- using gt-button-group even though only a single gt-button because otherwise the success message will be
+             tied to the gt-button which will then get hidden due to ng-show="dirty" -->
+        <div gt-button-group>
           <a class="btn btn-primary pull-left"
-             href="config/instrumentation?new"
-             style="margin-right: 10px;">
+             href="config/instrumentation?new">
             Add new
           </a>
-          <button class="btn btn-default pull-left"
-                  ng-click="displayImportModal()"
-                  style="margin-right: 10px;">
+          <button ng-click="displayImportModal()"
+                  class="btn btn-default pull-left"
+                  style="margin-left: 8px;">
             Import
           </button>
           <div gt-button
@@ -52,13 +53,15 @@
                gt-label="Apply changes to running JVM"
                gt-click="retransformClasses(deferred)"
                gt-confirm-header="Apply changes to running JVM?"
-               gt-confirm-body="Important: Do not use this in production as it has chance of crashing the JVM.">
+               gt-confirm-body="Important: Do not use this in production as it has chance of crashing the JVM."
+               class="pull-left"
+               style="margin-left: 8px;">
           </div>
         </div>
-        <div ng-show="!jvmRetransformClassesSupported && dirty"
-             style="padding-top: 20px;">
-          JVM restart is required to apply changes
-        </div>
+      </div>
+      <div ng-show="!jvmRetransformClassesSupported && dirty"
+           style="padding-top: 20px;">
+        JVM restart is required to apply changes
       </div>
     </div>
   </div>

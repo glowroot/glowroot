@@ -364,20 +364,20 @@
                  gt-label="{{config.version ? 'Save changes' : 'Add'}}"
                  gt-click="save(deferred)"
                  gt-disabled="!hasChanges() || formCtrl.$invalid"
-                 class="gt-inline-block">
+                 class="pull-left">
             </div>
             <div gt-button
                  ng-show="config.version"
                  gt-label="Delete"
                  gt-click="delete(deferred)"
                  gt-btn-class="btn-default"
-                 class="gt-inline-block"
-                 style="margin-left: 5px;">
+                 class="pull-left"
+                 style="margin-left: 8px;">
             </div>
-            <button class="btn btn-default"
-                    ng-disabled="formCtrl.$invalid"
+            <button ng-disabled="formCtrl.$invalid"
                     ng-click="exportToJson()"
-                    style="margin-left: 5px;">
+                    class="btn btn-default pull-left"
+                    style="margin-left: 8px;">
               Export to JSON
             </button>
           </div>
