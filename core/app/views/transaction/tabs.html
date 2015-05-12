@@ -16,25 +16,33 @@
 <ul class="nav nav-tabs gt-transaction-tabs">
   <li ng-class="{active: activeTabItem === 'overview'}">
     <a ng-href="transaction/overview{{tabQueryString()}}"
-       ng-click="clickTab('overview', $event)">
+       ng-click="clickTab('overview', $event)"
+       ng-keydown="keydownTab(null, 'tab_metrics', $event)"
+       id="tab_overview">
       Overview
     </a>
   </li>
   <li ng-class="{active: activeTabItem === 'metrics'}">
     <a ng-href="transaction/metrics{{tabQueryString()}}"
-       ng-click="clickTab('metrics', $event)">
+       ng-click="clickTab('metrics', $event)"
+       ng-keydown="keydownTab('tab_overview', 'tab_profile', $event)"
+       id="tab_metrics">
       Metrics
     </a>
   </li>
   <li ng-class="{active: activeTabItem === 'profile'}">
     <a ng-href="transaction/profile{{tabQueryString()}}"
-       ng-click="clickTab('profile', $event)">
+       ng-click="clickTab('profile', $event)"
+       ng-keydown="keydownTab('tab_metrics', 'tab_traces', $event)"
+       id="tab_profile">
       Profile ({{profileSampleCount()}})
     </a>
   </li>
   <li ng-class="{active: activeTabItem === 'traces'}">
     <a ng-href="transaction/traces{{tabQueryString()}}"
-       ng-click="clickTab('traces', $event)">
+       ng-click="clickTab('traces', $event)"
+       ng-keydown="keydownTab('tab_profile', null, $event)"
+       id="tab_traces">
       Traces ({{traceCount()}})
     </a>
   </li>

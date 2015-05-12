@@ -172,6 +172,13 @@ body {
   padding: 3px 20px 4px;
   background: #edeae4;
   border-radius: 8px;
+  color: inherit;
+}
+
+.gt-header-page-name .dropdown-toggle:hover,
+.gt-header-page-name .dropdown-toggle:focus {
+  background-color: darken(#edeae4, 5%);
+  text-decoration: none;
 }
 
 .gt-header-page-name .gt-separator {
@@ -323,12 +330,39 @@ hr.soften {
   border-color: @gt-red;
 }
 
-.navbar .nav a:focus {
-  // this is needed to prevent highlight around the navbar items after clicking on them (at least in firefox)
-  outline: 0;
-}
-
 .gt-transaction-tabs li.active > a:hover {
   // keep default (pointer) cursor to indicate active tab can be clicked to refresh tab
   cursor: inherit;
+}
+
+.gt-transaction-tabs a {
+  // outline covers up tab, plus the tabs already have focus indicator (gray background)
+  outline: none;
+}
+
+.list-group-item:focus {
+  // need higher z-index so outline won't get hidden by adjacent list-group-item
+  z-index: 3;
+}
+
+.btn-group > .btn.focus {
+  // need higher z-index so outline won't get hidden by adjacent btn-group btns
+  // this is only used by On/Off config switches
+  z-index: 3;
+}
+
+.btn-primary:focus:not(:hover) {
+  // this is to keep focus normal color, since focus already has outline to indicate focus
+  // otherwise button looks like it stays "pressed" after clicking it
+  color: @btn-primary-color;
+  background-color: @btn-primary-bg;
+  border-color: @btn-primary-border;
+}
+
+.btn-default:focus:not(:hover) {
+  // this is to keep focus normal color, since focus already has outline to indicate focus
+  // otherwise button looks like it stays "pressed" after clicking it
+  color: @btn-default-color;
+  background-color: @btn-default-bg;
+  border-color: @btn-default-border;
 }

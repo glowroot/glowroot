@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot */
+/* global glowroot, $ */
 
 glowroot.controller('TransactionSidebarCtrl', [
   '$scope',
@@ -63,6 +63,17 @@ glowroot.controller('TransactionSidebarCtrl', [
     $scope.$watchGroup(['chartFrom', 'chartTo', 'summarySortOrder', 'chartRefresh'], function (newValues, oldValues) {
       if (newValues !== oldValues) {
         updateSummaries();
+      }
+    });
+
+    $scope.$on('$stateChangeStart', function () {
+      // don't let the active sidebar selection get out of sync (which can happen after using the back button)
+      var activeElement = document.activeElement;
+      if (activeElement && $(activeElement).closest('.gt-sidebar').length) {
+        var gtUrl = activeElement.getAttribute('gt-url');
+        if (gtUrl && gtUrl !== $location.url()) {
+          activeElement.blur();
+        }
       }
     });
 

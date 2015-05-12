@@ -64,5 +64,15 @@ glowroot.controller('ConfigCtrl', [
     $scope.isPlugins = function () {
       return $location.path() === '/config/plugin-list' || $location.path() === '/config/plugin';
     };
+
+    $scope.$on('$stateChangeStart', function () {
+      // don't let the active sidebar selection get out of sync (which can happen after using the back button)
+      if (document.activeElement) {
+        var gtUrl = document.activeElement.getAttribute('gt-url');
+        if (gtUrl && gtUrl !== $location.path().substring(1)) {
+          document.activeElement.blur();
+        }
+      }
+    });
   }
 ]);

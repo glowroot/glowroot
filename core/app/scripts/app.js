@@ -237,3 +237,9 @@ Glowroot = (function () {
     showSpinner: showSpinner
   };
 })();
+
+// hack using some code from bootstrap's button.js until https://github.com/angular-ui/bootstrap/issues/3264
+$(document)
+    .on('focus.bs.button.data-api blur.bs.button.data-api', '[data-toggle^="button"]', function (e) {
+      $(e.target).closest('.btn').toggleClass('focus', /^focus(in)?$/.test(e.type));
+    });

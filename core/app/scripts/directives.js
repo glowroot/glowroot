@@ -133,7 +133,6 @@ glowroot.directive('gtButton', [
             });
           } else {
             gtButtonGroup.onClick(scope.gtClick);
-            document.activeElement.blur();
           }
         };
       }
@@ -397,11 +396,12 @@ glowroot.directive('gtFormAutofocusOnFirstInput', [
   function ($timeout) {
     return function (scope, iElement) {
       $timeout(function () {
+        var selector = 'input:not(.gt-autofocus-ignore)';
         var unregisterWatch = scope.$watch(function () {
-          return iElement.find('input').length && iElement.find('input').first().is(':visible');
+          return iElement.find(selector).length && iElement.find('input').first().is(':visible');
         }, function (newValue) {
           if (newValue) {
-            iElement.find('input').first().focus();
+            iElement.find(selector).first().focus();
             unregisterWatch();
           }
         });
@@ -451,22 +451,6 @@ glowroot.directive('gtSelectpicker', function () {
 
       scope.$on('$destroy', function () {
         iElement.selectpicker('destroy');
-      });
-    }
-  };
-});
-
-glowroot.directive('gtClickAndBlur', function () {
-  return {
-    scope: {
-      gtClickAndBlur: '&'
-    },
-    link: function (scope, iElement) {
-      iElement.click(function () {
-        scope.$apply(function () {
-          scope.gtClickAndBlur();
-        });
-        document.activeElement.blur();
       });
     }
   };

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot */
+/* global glowroot, $ */
 
 glowroot.controller('TransactionTabCtrl', [
   '$scope',
@@ -73,7 +73,7 @@ glowroot.controller('TransactionTabCtrl', [
       return $scope.tabBarData.traceCount;
     };
 
-    $scope.clickTab = function (tabItem, e) {
+    $scope.clickTab = function (tabItem, event) {
       if (tabItem === $scope.activeTabItem && !event.ctrlKey) {
         $scope.$parent.chartRefresh++;
         // suppress normal link
@@ -81,6 +81,37 @@ glowroot.controller('TransactionTabCtrl', [
         return false;
       }
     };
+
+    $scope.keydownTab = function (left, right, event) {
+      if (event.which === 37 && !event.altKey && !event.ctrlKey && left) {
+        // prevent default so page doesn't scroll horizontally prior to switching tabs
+        event.preventDefault();
+        $timeout(function () {
+          var $left = $('#' + left);
+          $left.click();
+          $left.focus();
+        });
+      } else if (event.which === 39 && !event.altKey && !event.ctrlKey && right) {
+        // prevent default so page doesn't scroll horizontally prior to switching tabs (e.g. on the wide profile tab)
+        event.preventDefault();
+        $timeout(function () {
+          var $right = $('#' + right);
+          $right.click();
+          $right.focus();
+        });
+      }
+    };
+
+    $scope.$on('$stateChangeStart', function () {
+      // don't let the active tab selection get out of sync (which can happen after using the back button)
+      var activeElement = document.activeElement;
+      if (activeElement && $(activeElement).closest('.gt-transaction-tabs').length) {
+        var ngHref = activeElement.getAttribute('ng-href');
+        if (ngHref && ngHref !== $location.url().substring(1)) {
+          activeElement.blur();
+        }
+      }
+    });
 
     function updateTabBarData() {
       var query = {

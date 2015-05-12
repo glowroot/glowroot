@@ -22,9 +22,13 @@
   <div class="col-lg-9">
     <div ng-switch="gtType">
       <div ng-switch-when="switch">
-        <div class="btn-group">
-          <label class="btn gt-btn-switch" ng-model="$parent.ngModel" btn-radio="true">On</label>
-          <label class="btn gt-btn-switch" ng-model="$parent.ngModel" btn-radio="false">Off</label>
+        <div class="btn-group" data-toggle="buttons">
+          <label class="btn btn-default" ng-model="$parent.ngModel" btn-radio="true">
+            <input type="radio" class="gt-autofocus-ignore">On
+          </label>
+          <label class="btn btn-default" ng-model="$parent.ngModel" btn-radio="false">
+            <input type="radio" class="gt-autofocus-ignore">Off
+          </label>
         </div>
       </div>
       <div ng-switch-when="checkbox">

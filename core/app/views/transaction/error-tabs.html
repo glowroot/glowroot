@@ -16,13 +16,17 @@
 <ul class="nav nav-tabs gt-transaction-tabs">
   <li ng-class="{active: activeTabItem === 'messages'}">
     <a ng-href="error/messages{{tabQueryString()}}"
-       ng-click="clickTab('messages', $event)">
+       ng-click="clickTab('messages', $event)"
+       ng-keydown="keydownTab(null, 'tab_traces', $event)"
+       id="tab_messages">
       Messages
     </a>
   </li>
   <li ng-class="{active: activeTabItem === 'traces'}">
     <a ng-href="error/traces{{tabQueryString()}}"
-       ng-click="clickTab('traces', $event)">
+       ng-click="clickTab('traces', $event)"
+       ng-keydown="keydownTab('tab_messages', null, $event)"
+       id="tab_traces">
       Traces ({{traceCount()}})
     </a>
   </li>

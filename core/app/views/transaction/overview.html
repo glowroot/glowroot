@@ -16,26 +16,32 @@
 <!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
 <div class="clearfix" style="position: relative; z-index: 800;">
   <div class="pull-right" style="margin-top: -20px; margin-bottom: -8px; font-size: 22px;">
-    <button class="gt-chart-button"
-            ng-click="zoomOut()"
-            style="border: none;">
+    <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
+    <a role="button"
+       class="gt-chart-button"
+       href="#"
+       ng-click="zoomOut()">
       <i title="Zoom out"
-         class="fa fa-search-minus"></i>
-    </button>
-    <button class="gt-chart-button"
-            ng-click="refresh()"
-            style="border: none;">
+         class="fa fa-search-minus"></i><!-- lack of space here is significant
+ --></a>
+    <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
+    <a role="button"
+       class="gt-chart-button"
+       href="#"
+       ng-click="refresh()">
       <i title="Refresh"
-         class="fa fa-refresh"></i>
-    </button>
-    <button popover-template="'template/help/chart.html'"
-            popover-placement="left"
-            popover-trigger="focus"
-            class="gt-chart-button"
-            style="border: none;">
+         class="fa fa-refresh"></i><!-- lack of space here is significant
+ --></a>
+    <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
+    <a role="button"
+       class="gt-chart-button"
+       href="#"
+       popover-template="'template/help/chart.html'"
+       popover-placement="left"
+       popover-trigger="focus">
       <i title="Help"
-         class="fa fa-question-circle"></i>
-    </button>
+         class="fa fa-question-circle"></i><!-- lack of space here is significant
+ --></a>
   </div>
 </div>
 <div style="position: relative;">
