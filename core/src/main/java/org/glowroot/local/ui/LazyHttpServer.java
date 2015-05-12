@@ -49,6 +49,7 @@ class LazyHttpServer {
     private final LayoutService layoutService;
     private final TraceDetailHttpService traceDetailHttpService;
     private final TraceExportHttpService traceExportHttpService;
+    private final GlowrootLogHttpService glowrootLogHttpService;
     private final List<Object> jsonServices;
 
     private volatile boolean initialized;
@@ -57,7 +58,8 @@ class LazyHttpServer {
     LazyHttpServer(String bindAddress, int port, HttpSessionManager httpSessionManager,
             IndexHtmlHttpService indexHtmlHttpService, LayoutHttpService layoutHttpService,
             LayoutService layoutService, TraceDetailHttpService traceDetailHttpService,
-            TraceExportHttpService traceExportHttpService, List<Object> jsonServices) {
+            TraceExportHttpService traceExportHttpService,
+            GlowrootLogHttpService glowrootLogHttpService, List<Object> jsonServices) {
         this.bindAddress = bindAddress;
         this.port = port;
         this.httpSessionManager = httpSessionManager;
@@ -66,6 +68,7 @@ class LazyHttpServer {
         this.layoutService = layoutService;
         this.traceDetailHttpService = traceDetailHttpService;
         this.traceExportHttpService = traceExportHttpService;
+        this.glowrootLogHttpService = glowrootLogHttpService;
         this.jsonServices = jsonServices;
     }
 
@@ -130,6 +133,7 @@ class LazyHttpServer {
         httpServices.put(Pattern.compile("^/export/trace/.*$"), traceExportHttpService);
         httpServices.put(Pattern.compile("^/backend/trace/entries$"), traceDetailHttpService);
         httpServices.put(Pattern.compile("^/backend/trace/profile$"), traceDetailHttpService);
+        httpServices.put(Pattern.compile("^/backend/jvm/glowroot-log$"), glowrootLogHttpService);
         // services
         try {
             return new HttpServer(bindAddress, port, NUM_WORKER_THREADS, layoutService,

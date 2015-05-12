@@ -80,7 +80,7 @@ class AdminJsonService {
 
     @POST("/backend/admin/delete-all-data")
     void deleteAllData() throws SQLException {
-        // clear in memory aggregates first
+        // clear in-memory aggregates first
         if (aggregateCollector != null) {
             aggregateCollector.clearAll();
         }
@@ -93,8 +93,8 @@ class AdminJsonService {
 
     @POST("/backend/admin/reweave")
     String reweave() throws Exception {
-        // this command is filtered out of the UI when instrumentation is null (which is only in dev
-        // mode anyways)
+        // this action is not displayed in the UI when instrumentation is null
+        // (which is only in dev mode anyways)
         checkNotNull(instrumentation);
         // this command is filtered out of the UI when retransform classes is not supported
         checkState(instrumentation.isRetransformClassesSupported(),

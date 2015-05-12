@@ -132,8 +132,9 @@ public class GlowrootModule {
         // now inject the real TransactionCollector into the proxy
         transactionCollectorProxy.setInstance(collectorModule.getTransactionCollector());
         initPlugins(configModule.getPluginDescriptors());
-        uiModule = new LocalUiModule(ticker, clock, jvmModule, configModule, storageModule,
-                collectorModule, transactionModule, instrumentation, properties, version);
+        uiModule = new LocalUiModule(ticker, clock, dataDir, jvmModule, configModule,
+                storageModule, collectorModule, transactionModule, instrumentation, properties,
+                version);
         this.dataDir = dataDir;
     }
 

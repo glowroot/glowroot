@@ -15,6 +15,7 @@
  */
 package org.glowroot.local.ui;
 
+import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +51,7 @@ public class LocalUiModule {
 
     private final LazyHttpServer lazyHttpServer;
 
-    public LocalUiModule(Ticker ticker, Clock clock, JvmModule jvmModule,
+    public LocalUiModule(Ticker ticker, Clock clock, File dataDir, JvmModule jvmModule,
             ConfigModule configModule, StorageModule storageModule,
             CollectorModule collectorModule, TransactionModule transactionModule,
             @Nullable Instrumentation instrumentation, Map<String, String> properties,
@@ -96,6 +97,7 @@ public class LocalUiModule {
                 new TraceDetailHttpService(traceCommonService);
         TraceExportHttpService traceExportHttpService =
                 new TraceExportHttpService(traceCommonService);
+        GlowrootLogHttpService glowrootLogHttpService = new GlowrootLogHttpService(dataDir);
         ErrorCommonService errorCommonService = new ErrorCommonService(
                 aggregateDao, collectorModule.getAggregateCollector(),
                 storageModule.getFixedAggregateRollupSeconds());
@@ -139,7 +141,7 @@ public class LocalUiModule {
         String bindAddress = getBindAddress(properties);
         lazyHttpServer = new LazyHttpServer(bindAddress, port, httpSessionManager,
                 indexHtmlHttpService, layoutHttpService, layoutService, traceDetailHttpService,
-                traceExportHttpService, jsonServices);
+                traceExportHttpService, glowrootLogHttpService, jsonServices);
         if (instrumentation == null || JavaVersion.isJava6()) {
             lazyHttpServer.initNonLazy(configJsonService);
         } else {
