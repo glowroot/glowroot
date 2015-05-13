@@ -47,8 +47,8 @@ glowroot.controller('ErrorMessagesCtrl', [
         to: $scope.chartTo,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
-        includes: $scope.errorFilterIncludes,
-        excludes: $scope.errorFilterExcludes,
+        include: $scope.errorFilterIncludes,
+        exclude: $scope.errorFilterExcludes,
         errorMessageLimit: errorMessageLimit
       };
       if (deferred) {
@@ -122,13 +122,7 @@ glowroot.controller('ErrorMessagesCtrl', [
     };
 
     $scope.refreshButtonClick = function () {
-      $scope.parsingError = undefined;
-      parseQuery($scope.errorFilter || '');
-      if ($scope.parsingError) {
-        return;
-      }
-      $scope.applyLast();
-      refreshData();
+      $location.search('filter', $scope.errorFilter);
     };
 
     function parseQuery(text) {
@@ -212,6 +206,7 @@ glowroot.controller('ErrorMessagesCtrl', [
               return moment(millis).format('LTS');
             }
           }
+
           var from = xval - chartState.dataPointIntervalMillis;
           // this math is to deal with active aggregate
           from = Math.ceil(from / chartState.dataPointIntervalMillis) * chartState.dataPointIntervalMillis;
@@ -227,6 +222,19 @@ glowroot.controller('ErrorMessagesCtrl', [
 
     charts.init(chartState, $('#chart'), $scope);
     charts.plot([[]], chartOptions, chartState, $('#chart'), $scope);
-    refreshData();
+
+    function onLocationChangeSuccess() {
+      $scope.errorFilter = $location.search().filter || '';
+      $scope.parsingError = undefined;
+      parseQuery($scope.errorFilter);
+      if ($scope.parsingError) {
+        return;
+      }
+      $scope.applyLast();
+      refreshData();
+    }
+
+    $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
+    onLocationChangeSuccess();
   }
 ]);

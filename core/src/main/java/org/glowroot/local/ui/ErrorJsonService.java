@@ -81,8 +81,8 @@ class ErrorJsonService {
                 .transactionName(request.transactionName())
                 .from(request.from())
                 .to(request.to())
-                .addAllIncludes(request.includes())
-                .addAllExcludes(request.excludes())
+                .addAllIncludes(request.include())
+                .addAllExcludes(request.exclude())
                 .limit(request.errorMessageLimit())
                 .build();
         QueryResult<ErrorMessageCount> queryResult = traceDao.readErrorMessageCounts(query);
@@ -245,8 +245,10 @@ class ErrorJsonService {
         abstract long to();
         abstract String transactionType();
         abstract @Nullable String transactionName();
-        public abstract ImmutableList<String> includes();
-        public abstract ImmutableList<String> excludes();
+        // intentionally not plural since maps from query string
+        abstract ImmutableList<String> include();
+        // intentionally not plural since maps from query string
+        abstract ImmutableList<String> exclude();
         abstract int errorMessageLimit();
     }
 }
