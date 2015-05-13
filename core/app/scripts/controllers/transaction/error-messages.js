@@ -140,7 +140,7 @@ glowroot.controller('ErrorMessagesCtrl', [
       var inQuote;
       var inExclude;
 
-      function pushCurrTerm(inExclude) {
+      function pushCurrTerm() {
         if (inExclude) {
           excludes.push(currTerm);
         } else {
