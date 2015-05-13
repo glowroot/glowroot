@@ -28,15 +28,15 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
-import io.netty.handler.codec.http.Cookie;
-import io.netty.handler.codec.http.CookieDecoder;
-import io.netty.handler.codec.http.DefaultCookie;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.ServerCookieEncoder;
+import io.netty.handler.codec.http.cookie.Cookie;
+import io.netty.handler.codec.http.cookie.DefaultCookie;
+import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
+import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -158,7 +158,7 @@ class HttpSessionManager {
         Cookie cookie = new DefaultCookie("GLOWROOT_SESSION_ID", sessionId);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
-        response.headers().add(SET_COOKIE, ServerCookieEncoder.encode(cookie));
+        response.headers().add(SET_COOKIE, ServerCookieEncoder.STRICT.encode(cookie));
         purgeExpiredSessions();
     }
 
@@ -167,7 +167,7 @@ class HttpSessionManager {
         cookie.setHttpOnly(true);
         cookie.setMaxAge(0);
         cookie.setPath("/");
-        response.headers().add(SET_COOKIE, ServerCookieEncoder.encode(cookie));
+        response.headers().add(SET_COOKIE, ServerCookieEncoder.STRICT.encode(cookie));
     }
 
     void clearAllSessions() {
@@ -181,10 +181,10 @@ class HttpSessionManager {
         if (cookieHeader == null) {
             return null;
         }
-        Set<Cookie> cookies = CookieDecoder.decode(cookieHeader);
+        Set<Cookie> cookies = ServerCookieDecoder.STRICT.decode(cookieHeader);
         for (Cookie cookie : cookies) {
-            if (cookie.getName().equals("GLOWROOT_SESSION_ID")) {
-                return cookie.getValue();
+            if (cookie.name().equals("GLOWROOT_SESSION_ID")) {
+                return cookie.value();
             }
         }
         return null;

@@ -15,7 +15,7 @@
     "grunt-contrib-concat": "0.5.1",
     "grunt-contrib-connect": "0.10.1",
     "grunt-contrib-copy": "0.8.0",
-    "grunt-contrib-cssmin": "0.12.2",
+    "grunt-contrib-cssmin": "0.12.3",
     "grunt-contrib-handlebars": "0.10.2",
     "grunt-contrib-htmlmin": "0.4.0",
     "grunt-contrib-jshint": "0.11.2",
@@ -27,8 +27,8 @@
     "grunt-filerev": "2.3.1",
     "grunt-newer": "1.1.0",
     "grunt-usemin": "3.0.0",
-    "jshint-stylish": "1.0.1",
+    "jshint-stylish": "1.0.2",
     "load-grunt-tasks": "3.1.0",
-    "time-grunt": "1.1.1"
+    "time-grunt": "1.2.0"
   }
 }

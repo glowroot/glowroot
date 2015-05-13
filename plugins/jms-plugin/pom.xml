@@ -40,16 +40,18 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <!-- activemq 5.11.0 requires JDK 7+ -->
       <groupId>org.apache.activemq</groupId>
-      <artifactId>activemq-core</artifactId>
-      <version>5.5.0</version>
+      <artifactId>activemq-client</artifactId>
+      <version>5.10.2</version>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.springframework</groupId>
-          <artifactId>spring-context</artifactId>
-        </exclusion>
-      </exclusions>
+    </dependency>
+    <dependency>
+      <!-- activemq 5.11.0 requires JDK 7+ -->
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>activemq-broker</artifactId>
+      <version>5.10.2</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
