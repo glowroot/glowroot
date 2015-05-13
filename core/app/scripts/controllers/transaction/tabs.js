@@ -38,13 +38,15 @@ glowroot.controller('TransactionTabCtrl', [
       $scope.activeProfileTabCount = args;
     });
 
-    $scope.$on('updateTraceTabCount', function (event, args) {
-      $scope.activeTraceTabCount = args;
+    $scope.$on('updateTraceTabCount', function (event, traceCount) {
+      $scope.activeTraceTabCount = traceCount;
     });
 
     $scope.$on('$stateChangeStart', function () {
-      delete $scope.activeProfileTabCount;
+      // need to clear trace tab count right away since it is based on filter criteria
       delete $scope.activeTraceTabCount;
+      // don't clear profile tab count since it is really more accurate
+      // (it will be cleared on next updateTabBarData())
     });
 
     $scope.profileSampleCount = function () {
@@ -127,6 +129,8 @@ glowroot.controller('TransactionTabCtrl', [
             if (concurrentUpdateCount) {
               return;
             }
+            delete $scope.activeProfileTabCount;
+            delete $scope.activeTraceTabCount;
             // set in parent scope so profiles tab and traces tab can access profileExpired and tracesExpired
             $scope.$parent.tabBarData = data;
           })

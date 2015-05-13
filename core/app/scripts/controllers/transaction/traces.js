@@ -400,7 +400,7 @@ glowroot.controller('TracesCtrl', [
       appliedFilter.customAttributeValue = $location.search()['custom-attribute-value'] || '';
       appliedFilter.limit = Number($location.search().limit) || defaultFilterLimit;
 
-      if (!angular.equals(appliedFilter, priorAppliedFilter)) {
+      if (priorAppliedFilter && !angular.equals(appliedFilter, priorAppliedFilter)) {
         // e.g. back or forward button was used to navigate
         $scope.$parent.chartRefresh++;
       }
