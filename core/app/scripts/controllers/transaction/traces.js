@@ -39,7 +39,7 @@ glowroot.controller('TracesCtrl', [
 
     var defaultFilterLimit = 500;
 
-    var highlightedActiveTraceId;
+    var highlightedTraceId;
 
     $scope.$watchGroup(['containerWidth', 'windowHeight'], function () {
       plot.resize();
@@ -91,6 +91,27 @@ glowroot.controller('TracesCtrl', [
       $scope.showChartSpinner++;
       $http.get('backend/trace/points' + queryStrings.encodeObject(query))
           .success(function (data) {
+            function tryHighlight(dataPoints, dataSeries) {
+              var i;
+              for (i = 0; i < dataPoints.length; i++) {
+                var activePoint = dataPoints[i];
+                if (activePoint[2] === highlightedTraceId) {
+                  plot.highlight(dataSeries, activePoint.slice(0, 2));
+                  return true;
+                }
+              }
+              return false;
+            }
+            function highlight() {
+              if (tryHighlight(data.normalPoints, plot.getData()[0])) {
+                return;
+              }
+              if (tryHighlight(data.errorPoints, plot.getData()[1])) {
+                return;
+              }
+              tryHighlight(data.activePoints, plot.getData()[2]);
+            }
+
             $scope.showChartSpinner--;
             if ($scope.showChartSpinner) {
               return;
@@ -107,22 +128,13 @@ glowroot.controller('TracesCtrl', [
             plot.getAxes().yaxis.options.realMax = durationHigh;
             plot.setData([data.normalPoints, data.errorPoints, data.activePoints]);
             // setupGrid is needed in case yaxis.max === undefined
-            if (highlightedActiveTraceId) {
+            if (highlightedTraceId) {
               plot.unhighlight();
             }
             plot.setupGrid();
             plot.draw();
-            if (highlightedActiveTraceId) {
-              var i;
-              var activePoint;
-              var activePointSeries = plot.getData()[2];
-              for (i = 0; i < data.activePoints.length; i++) {
-                activePoint = data.activePoints[i];
-                if (activePoint[2] === highlightedActiveTraceId) {
-                  plot.highlight(activePointSeries, activePoint.slice(0, 2));
-                  break;
-                }
-              }
+            if (highlightedTraceId) {
+              highlight();
             }
             broadcastTraceTabCount();
             if (deferred) {
@@ -305,15 +317,26 @@ glowroot.controller('TracesCtrl', [
       return data;
     }
 
-    $chart.bind('plotclick', function (event, pos, item) {
+    $chart.bind('plotclick', function (event, pos, item, originalEvent) {
       if (item) {
         plot.unhighlight();
         plot.highlight(item.series, item.datapoint);
         var traceId = plot.getData()[item.seriesIndex].data[item.dataIndex][2];
-        $scope.$apply(function () {
-          $location.search('modal-trace-id', traceId);
-        });
-        highlightedActiveTraceId = item.seriesIndex === 2 ? traceId : null;
+        if (originalEvent.ctrlKey) {
+          var url = $location.url();
+          if (url.indexOf('?') === -1) {
+            url += '?';
+          } else {
+            url += '&';
+          }
+          url += 'modal-trace-id=' + traceId;
+          window.open(url);
+        } else {
+          $scope.$apply(function () {
+            $location.search('modal-trace-id', traceId);
+          });
+        }
+        highlightedTraceId = item.seriesIndex === 2 ? traceId : null;
       }
     });
 
@@ -397,6 +420,7 @@ glowroot.controller('TracesCtrl', [
 
       var modalTraceId = $location.search()['modal-trace-id'];
       if (modalTraceId) {
+        highlightedTraceId = modalTraceId;
         $('#traceModal').data('location-query', 'modal-trace-id');
         traceModal.displayModal(modalTraceId);
       } else {
