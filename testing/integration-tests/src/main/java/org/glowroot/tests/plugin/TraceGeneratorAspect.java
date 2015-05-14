@@ -53,7 +53,7 @@ public class TraceGeneratorAspect {
                     traceGenerator.transactionType(), traceGenerator.transactionName(),
                     MessageSupplier.from(traceGenerator.headline()), timerName);
             for (Entry<String, String> entry : traceGenerator.customAttributes().entrySet()) {
-                pluginServices.setTransactionCustomAttribute(entry.getKey(), entry.getValue());
+                pluginServices.addTransactionCustomAttribute(entry.getKey(), entry.getValue());
             }
             if (traceGenerator.error() != null) {
                 pluginServices.setTransactionError(ErrorMessage.from(traceGenerator.error()));

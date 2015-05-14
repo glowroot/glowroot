@@ -324,14 +324,14 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public void setTransactionCustomAttribute(String name, @Nullable String value) {
+    public void addTransactionCustomAttribute(String name, @Nullable String value) {
         if (name == null) {
-            logger.error("setTransactionCustomAttribute(): argument 'name' must be non-null");
+            logger.error("addTransactionCustomAttribute(): argument 'name' must be non-null");
             return;
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
-            transaction.putCustomAttribute(name, value);
+            transaction.addCustomAttribute(name, value);
         }
     }
 

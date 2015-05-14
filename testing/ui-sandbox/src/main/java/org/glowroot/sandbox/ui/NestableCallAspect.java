@@ -86,20 +86,20 @@ public class NestableCallAspect {
                 pluginServices.setTransactionUser(null);
             }
             if (random.nextBoolean()) {
-                pluginServices.setTransactionCustomAttribute("My First Attribute", "hello world");
-                pluginServices.setTransactionCustomAttribute("My First Attribute", "hello world");
-                pluginServices.setTransactionCustomAttribute("My First Attribute",
+                pluginServices.addTransactionCustomAttribute("My First Attribute", "hello world");
+                pluginServices.addTransactionCustomAttribute("My First Attribute", "hello world");
+                pluginServices.addTransactionCustomAttribute("My First Attribute",
                         "hello world " + random.nextInt(10));
             }
             if (random.nextBoolean()) {
-                pluginServices.setTransactionCustomAttribute("Second", "val " + random.nextInt(10));
+                pluginServices.addTransactionCustomAttribute("Second", "val " + random.nextInt(10));
             }
             if (random.nextBoolean()) {
-                pluginServices.setTransactionCustomAttribute("A Very Long Attribute Value",
+                pluginServices.addTransactionCustomAttribute("A Very Long Attribute Value",
                         Strings.repeat("abcdefghijklmnopqrstuvwxyz", 3));
             }
             if (random.nextBoolean()) {
-                pluginServices.setTransactionCustomAttribute("Another",
+                pluginServices.addTransactionCustomAttribute("Another",
                         "a b c d e f g h i j k l m n o p q r s t u v w x y z"
                                 + " a b c d e f g h i j k l m n o p q r s t u v w x y z");
             }

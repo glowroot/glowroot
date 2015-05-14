@@ -127,8 +127,8 @@ public class PluginServicesImplDefensiveCheckTest {
     }
 
     @Test
-    public void testSetTransactionCustomAttribute() {
-        pluginServices.setTransactionCustomAttribute(null, null);
+    public void testAddTransactionCustomAttribute() {
+        pluginServices.addTransactionCustomAttribute(null, null);
     }
 
     @Test

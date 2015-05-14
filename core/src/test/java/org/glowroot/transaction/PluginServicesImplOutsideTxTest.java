@@ -100,8 +100,8 @@ public class PluginServicesImplOutsideTxTest {
     }
 
     @Test
-    public void testSetTransactionCustomAttribute() {
-        pluginServices.setTransactionCustomAttribute("x", null);
+    public void testAddTransactionCustomAttribute() {
+        pluginServices.addTransactionCustomAttribute("x", null);
     }
 
     @Test

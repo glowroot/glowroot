@@ -102,12 +102,12 @@ public class LevelOneAspect {
             TraceEntry traceEntry = pluginServices.startTransaction("Integration test",
                     "basic test", messageSupplier, timerName);
             // several trace attributes to test ordering
-            pluginServices.setTransactionCustomAttribute("Zee One", String.valueOf(arg2));
-            pluginServices.setTransactionCustomAttribute("Yee Two", "yy3");
-            pluginServices.setTransactionCustomAttribute("Yee Two", "yy");
-            pluginServices.setTransactionCustomAttribute("Yee Two", "Yy2");
-            pluginServices.setTransactionCustomAttribute("Xee Three", "xx");
-            pluginServices.setTransactionCustomAttribute("Wee Four", "ww");
+            pluginServices.addTransactionCustomAttribute("Zee One", String.valueOf(arg2));
+            pluginServices.addTransactionCustomAttribute("Yee Two", "yy3");
+            pluginServices.addTransactionCustomAttribute("Yee Two", "yy");
+            pluginServices.addTransactionCustomAttribute("Yee Two", "Yy2");
+            pluginServices.addTransactionCustomAttribute("Xee Three", "xx");
+            pluginServices.addTransactionCustomAttribute("Wee Four", "ww");
             return traceEntry;
         }
         @OnReturn

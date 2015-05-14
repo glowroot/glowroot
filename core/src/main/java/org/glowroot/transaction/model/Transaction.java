@@ -305,7 +305,7 @@ public class Transaction {
         }
     }
 
-    public void putCustomAttribute(String name, @Nullable String value) {
+    public void addCustomAttribute(String name, @Nullable String value) {
         if (customAttributes == null) {
             // no race condition here since only transaction thread calls addAttribute()
             customAttributes = HashMultimap.create(CUSTOM_ATTRIBUTE_KEYS_INITIAL_CAPACITY, 1);

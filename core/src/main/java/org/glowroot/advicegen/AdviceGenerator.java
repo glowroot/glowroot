@@ -473,7 +473,7 @@ public class AdviceGenerator {
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/advicegen/GenericMessageSupplier",
                     "getMessageText", "()Ljava/lang/String;", false);
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices",
-                    "setTransactionCustomAttribute", "(Ljava/lang/String;Ljava/lang/String;)V",
+                    "addTransactionCustomAttribute", "(Ljava/lang/String;Ljava/lang/String;)V",
                     false);
         }
         Long traceStoreThresholdMillis = config.traceStoreThresholdMillis();

@@ -290,7 +290,7 @@ public abstract class PluginServices {
      * 
      * {@code null} values are normalized to the empty string.
      */
-    public abstract void setTransactionCustomAttribute(String name, @Nullable String value);
+    public abstract void addTransactionCustomAttribute(String name, @Nullable String value);
 
     /**
      * Overrides the default trace store threshold (Configuration &gt; Traces &gt; Default store
