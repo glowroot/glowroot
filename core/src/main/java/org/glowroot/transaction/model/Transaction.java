@@ -16,6 +16,7 @@
 package org.glowroot.transaction.model;
 
 import java.lang.management.ThreadInfo;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -54,6 +55,9 @@ public class Transaction {
 
     // initial capacity is very important, see ThreadSafeCollectionOfTenBenchmark
     private static final int CUSTOM_ATTRIBUTE_KEYS_INITIAL_CAPACITY = 16;
+
+    // this is just to limit memory (and also to limit display size of trace)
+    private static final long CUSTOM_ATTRIBUTE_VALUES_PER_KEY_LIMIT = 10000;
 
     // a unique identifier
     private final TraceUniqueId id;
@@ -312,7 +316,10 @@ public class Transaction {
         }
         String val = Strings.nullToEmpty(value);
         synchronized (customAttributes) {
-            customAttributes.put(name, val);
+            Collection<String> values = customAttributes.get(name);
+            if (values.size() < CUSTOM_ATTRIBUTE_VALUES_PER_KEY_LIMIT) {
+                values.add(val);
+            }
         }
     }
 
