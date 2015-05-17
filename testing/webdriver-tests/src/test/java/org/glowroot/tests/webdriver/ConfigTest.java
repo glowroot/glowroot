@@ -183,6 +183,8 @@ public class ConfigTest extends WebDriverTest {
         // when
         page.getImmediatePartialStoreThresholdTextField().clear();
         page.getImmediatePartialStoreThresholdTextField().sendKeys("1234");
+        page.getMaxAggregateQueriesPerQueryTypeTextField().clear();
+        page.getMaxAggregateQueriesPerQueryTypeTextField().sendKeys("789");
         page.getMaxTraceEntriesPerTransactionTextField().clear();
         page.getMaxTraceEntriesPerTransactionTextField().sendKeys("2345");
         page.getMaxStackTraceSamplesPerTransactionTextField().clear();
@@ -197,6 +199,8 @@ public class ConfigTest extends WebDriverTest {
         configSidebar.getAdvancedLink().click();
         assertThat(page.getImmediatePartialStoreThresholdTextField().getAttribute("value"))
                 .isEqualTo("1234");
+        assertThat(page.getMaxAggregateQueriesPerQueryTypeTextField().getAttribute("value"))
+                .isEqualTo("789");
         assertThat(page.getMaxTraceEntriesPerTransactionTextField().getAttribute("value"))
                 .isEqualTo("2345");
         assertThat(page.getMaxStackTraceSamplesPerTransactionTextField().getAttribute("value"))

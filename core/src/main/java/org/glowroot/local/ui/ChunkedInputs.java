@@ -15,11 +15,8 @@
  */
 package org.glowroot.local.ui;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.PushbackReader;
-import java.io.Reader;
 import java.io.Writer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -28,6 +25,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultHttpContent;
@@ -35,15 +33,18 @@ import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.stream.ChunkedInput;
 
+import org.glowroot.common.ChunkSource;
+import org.glowroot.common.ChunkSource.ChunkCopier;
+
 class ChunkedInputs {
 
-    static ChunkedInput<HttpContent> fromReader(Reader reader) {
-        return new ReaderChunkedInput(reader);
+    static ChunkedInput<HttpContent> from(ChunkSource chunkSource) throws IOException {
+        return new ChunkSourceChunkedInput(chunkSource);
     }
 
-    static ChunkedInput<HttpContent> fromReaderToZipFileDownload(Reader reader, String filename)
-            throws IOException {
-        return new ZipFileChunkedInput(reader, filename);
+    static ChunkedInput<HttpContent> fromChunkSourceToZipFileDownload(ChunkSource chunkSource,
+            String filename) throws IOException {
+        return new ZipFileChunkedInput(chunkSource, filename);
     }
 
     private ChunkedInputs() {}
@@ -54,15 +55,16 @@ class ChunkedInputs {
 
         @Override
         public @Nullable HttpContent readChunk(ChannelHandlerContext ctx) throws IOException {
-            if (hasMoreBytes()) {
-                return new DefaultHttpContent(readNextChunk());
-            } else if (!hasSentTerminatingChunk) {
-                // chunked transfer encoding must be terminated by a final chunk of length zero
-                hasSentTerminatingChunk = true;
-                return LastHttpContent.EMPTY_LAST_CONTENT;
-            } else {
+            if (hasSentTerminatingChunk) {
                 return null;
             }
+            ByteBuf nextChunk = readNextChunk();
+            if (nextChunk != null) {
+                return new DefaultHttpContent(nextChunk);
+            }
+            // chunked transfer encoding must be terminated by a final chunk of length zero
+            hasSentTerminatingChunk = true;
+            return LastHttpContent.EMPTY_LAST_CONTENT;
         }
 
         @Override
@@ -70,110 +72,93 @@ class ChunkedInputs {
             return hasSentTerminatingChunk;
         }
 
-        protected abstract boolean hasMoreBytes() throws IOException;
+        @Override
+        public void close() throws IOException {}
 
-        protected abstract ByteBuf readNextChunk() throws IOException;
-
-        private static boolean hasMoreBytes(PushbackReader reader) throws IOException {
-            int b = reader.read();
-            if (b == -1) {
-                return false;
-            } else {
-                reader.unread(b);
-                return true;
-            }
-        }
-
-        private static int readFully(Reader reader, char[] buffer) throws IOException {
-            int total = 0;
-            while (true) {
-                int n = reader.read(buffer, total, buffer.length - total);
-                if (n == -1) {
-                    break;
-                }
-                total += n;
-                if (total == buffer.length) {
-                    break;
-                }
-            }
-            return total;
-        }
+        protected abstract @Nullable ByteBuf readNextChunk() throws IOException;
     }
 
-    private static class ReaderChunkedInput extends BaseChunkedInput {
+    private static class ChunkSourceChunkedInput extends BaseChunkedInput {
 
-        private static final int CHUNK_SIZE = 8192;
+        private final ByteBuf byteBuf;
+        private final ByteBufOutputStream bbos;
+        private final Writer writer;
+        private final ChunkCopier chunkCopier;
 
-        private final PushbackReader reader;
-        private final char[] buffer = new char[CHUNK_SIZE];
+        private boolean closed;
 
-        private ReaderChunkedInput(Reader reader) {
-            this.reader = new PushbackReader(reader);
+        private ChunkSourceChunkedInput(ChunkSource chunkSource) throws IOException {
+            byteBuf = Unpooled.buffer();
+            bbos = new ByteBufOutputStream(byteBuf);
+            writer = new OutputStreamWriter(bbos, Charsets.UTF_8);
+            chunkCopier = chunkSource.getCopier(writer);
         }
 
         @Override
-        public void close() throws IOException {
-            reader.close();
-        }
-
-        @Override
-        protected boolean hasMoreBytes() throws IOException {
-            return BaseChunkedInput.hasMoreBytes(reader);
-        }
-
-        @Override
-        public ByteBuf readNextChunk() throws IOException {
-            int len = BaseChunkedInput.readFully(reader, buffer);
-            return Unpooled.copiedBuffer(buffer, 0, len, Charsets.ISO_8859_1);
+        public @Nullable ByteBuf readNextChunk() throws IOException {
+            if (closed) {
+                return null;
+            }
+            if (byteBuf.refCnt() > 1) {
+                throw new IOException("ByteBuf is still in use by another");
+            }
+            byteBuf.clear();
+            if (chunkCopier.copyNext()) {
+                // flush to byteBuf
+                writer.flush();
+                // increment retain count since still using byteBuf
+                byteBuf.retain();
+                return byteBuf;
+            }
+            closed = true;
+            return null;
         }
     }
 
     private static class ZipFileChunkedInput extends BaseChunkedInput {
 
-        private static final int CHUNK_SIZE = 8192;
-
-        private final PushbackReader reader;
-        private final ByteArrayOutputStream baos;
+        private final ByteBuf byteBuf;
+        private final ByteBufOutputStream bbos;
         private final Writer zipWriter;
-        // need lots more chars to end up with compressed chunk of given size
-        private final char[] buffer = new char[8 * CHUNK_SIZE];
+        private final ChunkCopier chunkCopier;
 
-        private ZipFileChunkedInput(Reader reader, String filename) throws IOException {
-            this.reader = new PushbackReader(reader);
-            // write to baos until size >= CHUNK_SIZE, so give it a little extra room
-            baos = new ByteArrayOutputStream(2 * CHUNK_SIZE);
-            ZipOutputStream zipOut = new ZipOutputStream(baos);
+        private boolean firstChunk = true;
+        private boolean closed;
+
+        private ZipFileChunkedInput(ChunkSource chunkSource, String filename) throws IOException {
+            byteBuf = Unpooled.buffer();
+            bbos = new ByteBufOutputStream(byteBuf);
+            ZipOutputStream zipOut = new ZipOutputStream(bbos);
             zipOut.putNextEntry(new ZipEntry(filename + ".html"));
             zipWriter = new OutputStreamWriter(zipOut, Charsets.UTF_8);
+            chunkCopier = chunkSource.getCopier(zipWriter);
         }
 
         @Override
-        public void close() throws IOException {
-            reader.close();
-        }
-
-        @Override
-        protected boolean hasMoreBytes() throws IOException {
-            return BaseChunkedInput.hasMoreBytes(reader);
-        }
-
-        @Override
-        protected ByteBuf readNextChunk() throws IOException {
-            int len = BaseChunkedInput.readFully(reader, buffer);
-            // no need to flush, there's no buffering except in ZipOutputStream, and that buffering
-            // is for compression and doesn't respond to flush() anyways
-            zipWriter.write(buffer, 0, len);
-            if (baos.size() < CHUNK_SIZE && hasMoreBytes()) {
-                return readNextChunk();
+        protected @Nullable ByteBuf readNextChunk() throws IOException {
+            if (closed) {
+                return null;
             }
-            if (!hasMoreBytes()) {
-                // write remaining compressed data
-                zipWriter.close();
+            if (!firstChunk) {
+                // don't clear before the first chunk since byteBuf contains zip header
+                byteBuf.clear();
             }
-            // toByteArray returns a copy so it's ok to reset the ByteArrayOutputStream afterwards
-            byte[] bytes = baos.toByteArray();
-            baos.reset();
-            return Unpooled.wrappedBuffer(bytes);
+            firstChunk = false;
+            while (true) {
+                if (!chunkCopier.copyNext()) {
+                    // write remaining compressed data
+                    zipWriter.close();
+                    closed = true;
+                    return byteBuf;
+                }
+                if (byteBuf.writerIndex() > 0) {
+                    // flush to byteBuf
+                    zipWriter.flush();
+                    // increment retain count since still using byteBuf
+                    byteBuf.retain();
+                    return byteBuf;
+                }
+            }
         }
     }
 }

@@ -25,6 +25,7 @@ import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.Message;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.QueryEntry;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindClassMeta;
@@ -57,23 +58,28 @@ public class ExpensiveCallAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
+        public static QueryEntry onBefore(@BindReceiver Object expensiveCall,
                 @BindClassMeta ExpensiveCallInvoker expensiveCallInvoker) {
             // not delegating to onBeforeInternal(), this pointcut returns message supplier with
             // detail
             MessageSupplier messageSupplier =
                     getMessageSupplierWithDetail(expensiveCall, expensiveCallInvoker);
-            return pluginServices.startTraceEntry(messageSupplier, timerName);
+            char randomChar = (char) ('a' + random.nextInt(26));
+            String queryText = "this is a query " + randomChar;
+            return pluginServices.startQueryEntry("EQL", queryText, messageSupplier, timerName);
         }
         @OnAfter
-        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
+        public static void onAfter(@BindTraveler QueryEntry query) {
+            query.incrementCurrRow();
+            query.incrementCurrRow();
+            query.incrementCurrRow();
             if (random.nextDouble() < 0.05) {
                 // TraceEntry.endWithStackTrace() must be called directly from @On.. method so it
                 // can
                 // strip back the stack trace to the method picked out by the @Pointcut
-                traceEntry.endWithStackTrace(0, NANOSECONDS);
+                query.endWithStackTrace(0, NANOSECONDS);
             } else {
-                onAfterInternal(traceEntry, 0);
+                onAfterInternal(query, 0);
             }
         }
     }

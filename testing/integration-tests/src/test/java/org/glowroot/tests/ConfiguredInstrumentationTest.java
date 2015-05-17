@@ -119,8 +119,7 @@ public class ConfiguredInstrumentationTest {
         assertThat(trace.getTransactionName()).isEqualTo("Misc / executeWithArgs");
         assertThat(trace.getRootTimer().getName()).isEqualTo("execute with args");
         assertThat(trace.getRootTimer().getNestedTimers()).isEmpty();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).isEmpty();
+        assertThat(trace.getEntryCount()).isZero();
     }
 
     protected static void addInstrumentationForExecute1() throws Exception {

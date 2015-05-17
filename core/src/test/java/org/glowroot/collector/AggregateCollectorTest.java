@@ -23,6 +23,8 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.glowroot.common.Clock;
+import org.glowroot.config.AdvancedConfig;
+import org.glowroot.config.ConfigService;
 import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.Transaction;
 
@@ -48,8 +50,10 @@ public class AggregateCollectorTest {
             }
         }).when(scheduledExecutorService).execute(any(Runnable.class));
         MockAggregateRepository aggregateRepository = new MockAggregateRepository();
-        AggregateCollector aggregateCollector = new AggregateCollector(
-                scheduledExecutorService, aggregateRepository, Clock.systemClock(), 1);
+        ConfigService configService = mock(ConfigService.class);
+        when(configService.getAdvancedConfig()).thenReturn(AdvancedConfig.builder().build());
+        AggregateCollector aggregateCollector = new AggregateCollector(scheduledExecutorService,
+                aggregateRepository, configService, 1, Clock.systemClock());
 
         Transaction transaction = mock(Transaction.class);
         TimerImpl timer = mock(TimerImpl.class);

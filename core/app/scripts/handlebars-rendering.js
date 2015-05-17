@@ -19,7 +19,7 @@
 // and that would significantly increase the size of the exported trace files
 
 // Glowroot dependency is used for spinner, but is not used in export file
-/* global $, Handlebars, JST, moment, Glowroot */
+/* global $, Handlebars, JST, moment, Glowroot, SqlPrettyPrinter, console */
 
 // IMPORTANT: DO NOT USE ANGULAR IN THIS FILE
 // that would require adding angular to trace-export.js
@@ -215,6 +215,13 @@ HandlebarsRendering = (function () {
 
   Handlebars.registerHelper('ifLongMessage', function (message, options) {
     if (message.length > traceEntryLineLength) {
+      return options.fn(this);
+    }
+    return options.inverse(this);
+  });
+
+  Handlebars.registerHelper('ifSqlMessage', function (message, options) {
+    if (message.startsWith('jdbc execution: ')) {
       return options.fn(this);
     }
     return options.inverse(this);
@@ -467,6 +474,37 @@ HandlebarsRendering = (function () {
   function basicToggle(parent) {
     var expanded = parent.find('.gt-expanded-content');
     var unexpanded = parent.find('.gt-unexpanded-content');
+    if (expanded.hasClass('hide') && !expanded.data('formattingAttempted')) {
+      // TODO deal with this hacky special case for SQL formatting
+      var text = expanded.text();
+      if (text.startsWith('jdbc execution: ')) {
+        var beforeRowsStripped = text.substring('jdbc execution: '.length);
+        var beforeParamsStripped = beforeRowsStripped.replace(/ => [0-9]+ rows?$/, '');
+        var sql = beforeParamsStripped.replace(/ \[.*?]$/, '');
+        var formatted = SqlPrettyPrinter.format(sql);
+        if (typeof formatted === 'object') {
+          // intentional console logging
+          console.log(formatted.message);
+          console.log(sql);
+        } else {
+          var rows = beforeRowsStripped.substring(beforeParamsStripped.length);
+          var parameters = beforeParamsStripped.substring(sql.length);
+          var html = 'jdbc execution:<br><pre style="padding: 0 15px; white-space: pre-wrap;">'
+              + formatted + '</pre>';
+          if (parameters) {
+            html += 'parameters:<br><pre style="padding: 0 15px; white-space: pre-wrap;">'
+                + parameters + '</pre>';
+          }
+          if (rows) {
+            html += 'rows:<br><pre style="padding: 0 15px; white-space: pre-wrap;">'
+                + rows + '</pre>';
+          }
+          expanded.html(html);
+          expanded.css('min-width', 0.8 * unexpanded.width());
+        }
+      }
+      expanded.data('formattingAttempted', true);
+    }
     unexpanded.toggleClass('hide');
     expanded.toggleClass('hide');
     // re-focus on visible element, otherwise up/down/pgup/pgdown/ESC don't work
@@ -901,6 +939,13 @@ HandlebarsRendering = (function () {
     return number.toFixed(1);
   }
 
+  function formatRowCount(number) {
+    if (Math.abs(number) < 1) {
+      return number.toPrecision(1);
+    }
+    return number.toFixed(1);
+  }
+
   return {
     renderTrace: function (trace, $selector) {
       var html = JST.trace(trace);
@@ -915,6 +960,7 @@ HandlebarsRendering = (function () {
     },
     formatBytes: formatBytes,
     formatMillis: formatMillis,
+    formatRowCount: formatRowCount,
     profileToggle: profileToggle
   };
 })();

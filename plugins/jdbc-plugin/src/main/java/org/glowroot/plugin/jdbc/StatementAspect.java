@@ -22,9 +22,9 @@ import javax.annotation.Nullable;
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.BooleanProperty;
+import org.glowroot.api.QueryEntry;
 import org.glowroot.api.Timer;
 import org.glowroot.api.TimerName;
-import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
@@ -50,6 +50,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 // many of the pointcuts are not restricted to pluginServices.isEnabled() because StatementMirrors
 // must be tracked for their entire life
 public class StatementAspect {
+
+    private static final String QUERY_TYPE = "SQL";
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
@@ -292,7 +294,7 @@ public class StatementAspect {
 
     // =================== Statement Execution ===================
 
-    @Pointcut(className = "java.sql.Statement", methodName = "execute*",
+    @Pointcut(className = "java.sql.Statement", methodName = "execute",
             methodParameterTypes = {"java.lang.String", ".."}, ignoreSelfNested = true,
             timerName = "jdbc execute")
     public static class StatementExecuteAdvice {
@@ -303,7 +305,7 @@ public class StatementAspect {
             return statement.hasGlowrootStatementMirror();
         }
         @OnBefore
-        public static @Nullable TraceEntry onBefore(@BindReceiver HasStatementMirror statement,
+        public static @Nullable QueryEntry onBefore(@BindReceiver HasStatementMirror statement,
                 @BindParameter @Nullable String sql) {
             if (sql == null) {
                 // seems nothing sensible to do here other than ignore
@@ -316,45 +318,105 @@ public class StatementAspect {
             }
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier = new StatementMessageSupplier(sql);
-                mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startTraceEntry(jdbcMessageSupplier, timerName);
+                QueryEntry query = pluginServices.startQueryEntry(QUERY_TYPE, sql,
+                        jdbcMessageSupplier, timerName);
+                mirror.setLastQuery(query);
+                return query;
             } else {
-                // clear lastJdbcMessageSupplier so that its numRows won't be updated if the plugin
+                // clear lastJdbcQuery so that its numRows won't be updated if the plugin
                 // is re-enabled in the middle of iterating over a different result set
-                mirror.clearLastJdbcMessageSupplier();
+                mirror.clearLastQuery();
                 return null;
             }
         }
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable Object returnValue,
-                @BindReceiver HasStatementMirror statement,
-                @BindTraveler @Nullable TraceEntry traceEntry) {
-            if (returnValue instanceof HasStatementMirror) {
-                // Statement can always be retrieved from ResultSet.getStatement(), and
-                // StatementMirror from that, but ResultSet.getStatement() is sometimes not super
-                // duper fast due to ResultSet wrapping and other checks, so StatementMirror is
-                // stored directly in ResultSet as an optimization
-                StatementMirror mirror = statement.getGlowrootStatementMirror();
-                ((HasStatementMirror) returnValue).setGlowrootStatementMirror(mirror);
-            }
-            if (traceEntry != null) {
-                traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+        public static void onReturn(@BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
+                queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                         MILLISECONDS);
             }
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry != null) {
-                traceEntry.endWithError(ErrorMessage.from(t));
+                @BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
+                queryEntry.endWithError(ErrorMessage.from(t));
             }
         }
     }
 
-    // executeBatch is not included since it is handled separately (below)
-    @Pointcut(className = "java.sql.PreparedStatement",
-            methodName = "execute|executeQuery|executeUpdate", methodParameterTypes = {},
+    @Pointcut(className = "java.sql.Statement", methodName = "executeQuery",
+            methodParameterTypes = {"java.lang.String"}, methodReturnType = "java.sql.ResultSet",
             ignoreSelfNested = true, timerName = "jdbc execute")
+    public static class StatementExecuteQueryAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
+            return statement.hasGlowrootStatementMirror();
+        }
+        @OnBefore
+        public static @Nullable QueryEntry onBefore(@BindReceiver HasStatementMirror statement,
+                @BindParameter @Nullable String sql) {
+            return StatementExecuteAdvice.onBefore(statement, sql);
+        }
+        @OnReturn
+        public static void onReturn(@BindReturn @Nullable HasStatementMirror resultSet,
+                @BindReceiver HasStatementMirror statement,
+                @BindTraveler @Nullable QueryEntry queryEntry) {
+            // Statement can always be retrieved from ResultSet.getStatement(), and
+            // StatementMirror from that, but ResultSet.getStatement() is sometimes not super
+            // duper fast due to ResultSet wrapping and other checks, so StatementMirror is
+            // stored directly in ResultSet as an optimization
+            if (resultSet != null) {
+                StatementMirror mirror = statement.getGlowrootStatementMirror();
+                resultSet.setGlowrootStatementMirror(mirror);
+            }
+            if (queryEntry != null) {
+                queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+                        MILLISECONDS);
+            }
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
+                queryEntry.endWithError(ErrorMessage.from(t));
+            }
+        }
+    }
+
+    @Pointcut(className = "java.sql.Statement", methodName = "executeUpdate",
+            methodParameterTypes = {"java.lang.String", ".."}, methodReturnType = "int",
+            ignoreSelfNested = true, timerName = "jdbc execute")
+    public static class StatementExecuteUpdateAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
+            return statement.hasGlowrootStatementMirror();
+        }
+        @OnBefore
+        public static @Nullable QueryEntry onBefore(@BindReceiver HasStatementMirror statement,
+                @BindParameter @Nullable String sql) {
+            return StatementExecuteAdvice.onBefore(statement, sql);
+        }
+        @OnReturn
+        public static void onReturn(@BindReturn int rowCount,
+                @BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
+                queryEntry.setCurrRow(rowCount);
+                queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+                        MILLISECONDS);
+            }
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
+                queryEntry.endWithError(ErrorMessage.from(t));
+            }
+        }
+    }
+
+    @Pointcut(className = "java.sql.PreparedStatement", methodName = "execute",
+            methodParameterTypes = {}, ignoreSelfNested = true, timerName = "jdbc execute")
     public static class PreparedStatementExecuteAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(PreparedStatementExecuteAdvice.class);
@@ -363,7 +425,7 @@ public class StatementAspect {
             return preparedStatement.hasGlowrootStatementMirror();
         }
         @OnBefore
-        public static @Nullable TraceEntry onBefore(
+        public static @Nullable QueryEntry onBefore(
                 @BindReceiver HasStatementMirror preparedStatement) {
             PreparedStatementMirror mirror =
                     (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
@@ -373,43 +435,106 @@ public class StatementAspect {
             }
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier;
+                String queryText = mirror.getSql();
                 if (captureBindParameters.value()) {
-                    jdbcMessageSupplier = new PreparedStatementMessageSupplier(mirror.getSql(),
+                    jdbcMessageSupplier = new PreparedStatementMessageSupplier(queryText,
                             mirror.getParametersCopy());
                 } else {
-                    jdbcMessageSupplier = new StatementMessageSupplier(mirror.getSql());
+                    jdbcMessageSupplier = new StatementMessageSupplier(queryText);
                 }
-                mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startTraceEntry(jdbcMessageSupplier, timerName);
+                QueryEntry queryEntry = pluginServices.startQueryEntry(QUERY_TYPE, queryText,
+                        jdbcMessageSupplier, timerName);
+                mirror.setLastQuery(queryEntry);
+                return queryEntry;
             } else {
-                // clear lastJdbcMessageSupplier so that its numRows won't be updated if the plugin
+                // clear lastJdbcQuery so that its numRows won't be updated if the plugin
                 // is re-enabled in the middle of iterating over a different result set
-                mirror.clearLastJdbcMessageSupplier();
+                mirror.clearLastQuery();
                 return null;
             }
         }
         @OnReturn
-        public static void onReturn(@BindReturn Object returnValue,
-                @BindReceiver HasStatementMirror preparedStatement,
-                @BindTraveler @Nullable TraceEntry traceEntry) {
-            if (returnValue instanceof HasStatementMirror) {
-                // PreparedStatement can always be retrieved from ResultSet.getStatement(), and
-                // StatementMirror from that, but ResultSet.getStatement() is sometimes not super
-                // duper fast due to ResultSet wrapping and other checks, so StatementMirror is
-                // stored directly in ResultSet as an optimization
-                StatementMirror mirror = preparedStatement.getGlowrootStatementMirror();
-                ((HasStatementMirror) returnValue).setGlowrootStatementMirror(mirror);
-            }
-            if (traceEntry != null) {
-                traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+        public static void onReturn(@BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
+                queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                         MILLISECONDS);
             }
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry != null) {
-                traceEntry.endWithError(ErrorMessage.from(t));
+                @BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
+                queryEntry.endWithError(ErrorMessage.from(t));
+            }
+        }
+    }
+
+    @Pointcut(className = "java.sql.PreparedStatement", methodName = "executeQuery",
+            methodParameterTypes = {}, methodReturnType = "java.sql.ResultSet",
+            ignoreSelfNested = true, timerName = "jdbc execute")
+    public static class PreparedStatementExecuteQueryAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver HasStatementMirror preparedStatement) {
+            return preparedStatement.hasGlowrootStatementMirror();
+        }
+        @OnBefore
+        public static @Nullable QueryEntry onBefore(
+                @BindReceiver HasStatementMirror preparedStatement) {
+            return PreparedStatementExecuteAdvice.onBefore(preparedStatement);
+        }
+        @OnReturn
+        public static void onReturn(@BindReturn @Nullable HasStatementMirror resultSet,
+                @BindReceiver HasStatementMirror preparedStatement,
+                @BindTraveler @Nullable QueryEntry queryEntry) {
+            // PreparedStatement can always be retrieved from ResultSet.getStatement(), and
+            // StatementMirror from that, but ResultSet.getStatement() is sometimes not super
+            // duper fast due to ResultSet wrapping and other checks, so StatementMirror is
+            // stored directly in ResultSet as an optimization
+            if (resultSet != null) {
+                StatementMirror mirror = preparedStatement.getGlowrootStatementMirror();
+                resultSet.setGlowrootStatementMirror(mirror);
+            }
+            if (queryEntry != null) {
+                queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+                        MILLISECONDS);
+            }
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
+                queryEntry.endWithError(ErrorMessage.from(t));
+            }
+        }
+    }
+
+    @Pointcut(className = "java.sql.PreparedStatement", methodName = "executeUpdate",
+            methodParameterTypes = {}, methodReturnType = "int", ignoreSelfNested = true,
+            timerName = "jdbc execute")
+    public static class PreparedStatementExecuteUpdateAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver HasStatementMirror preparedStatement) {
+            return preparedStatement.hasGlowrootStatementMirror();
+        }
+        @OnBefore
+        public static @Nullable QueryEntry onBefore(
+                @BindReceiver HasStatementMirror preparedStatement) {
+            return PreparedStatementExecuteAdvice.onBefore(preparedStatement);
+        }
+        @OnReturn
+        public static void onReturn(@BindReturn int rowCount,
+                @BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
+                queryEntry.setCurrRow(rowCount);
+                queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+                        MILLISECONDS);
+            }
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
+                queryEntry.endWithError(ErrorMessage.from(t));
             }
         }
     }
@@ -424,7 +549,7 @@ public class StatementAspect {
             return statement.hasGlowrootStatementMirror();
         }
         @OnBefore
-        public static @Nullable TraceEntry onBefore(@BindReceiver HasStatementMirror statement) {
+        public static @Nullable QueryEntry onBefore(@BindReceiver HasStatementMirror statement) {
             if (statement instanceof PreparedStatement) {
                 PreparedStatementMirror mirror =
                         (PreparedStatementMirror) statement.getGlowrootStatementMirror();
@@ -443,48 +568,53 @@ public class StatementAspect {
             }
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry != null) {
-                traceEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
+        public static void onReturn(@BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
+                queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                         MILLISECONDS);
             }
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry != null) {
-                traceEntry.endWithError(ErrorMessage.from(t));
+                @BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
+                queryEntry.endWithError(ErrorMessage.from(t));
             }
         }
-        private static @Nullable TraceEntry onBeforePreparedStatement(
+        private static @Nullable QueryEntry onBeforePreparedStatement(
                 PreparedStatementMirror mirror) {
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier;
+                String queryText = mirror.getSql();
                 if (captureBindParameters.value()) {
-                    jdbcMessageSupplier = new BatchPreparedStatementMessageSupplier(
-                            mirror.getSql(), mirror.getBatchedParametersCopy());
+                    jdbcMessageSupplier = new BatchPreparedStatementMessageSupplier(queryText,
+                            mirror.getBatchedParametersCopy());
                 } else {
-                    jdbcMessageSupplier = new StatementMessageSupplier(mirror.getSql());
+                    jdbcMessageSupplier = new StatementMessageSupplier(queryText);
                 }
-                mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startTraceEntry(jdbcMessageSupplier, timerName);
+                QueryEntry queryEntry = pluginServices.startQueryEntry(QUERY_TYPE, queryText,
+                        jdbcMessageSupplier, timerName);
+                mirror.setLastQuery(queryEntry);
+                return queryEntry;
             } else {
-                // clear lastJdbcMessageSupplier so that its numRows won't be updated if the
+                // clear lastJdbcQuery so that its numRows won't be updated if the
                 // plugin is re-enabled in the middle of iterating over a different result set
-                mirror.clearLastJdbcMessageSupplier();
+                mirror.clearLastQuery();
                 return null;
             }
         }
-        private static @Nullable TraceEntry onBeforeStatement(StatementMirror mirror) {
+        private static @Nullable QueryEntry onBeforeStatement(StatementMirror mirror) {
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier =
                         new BatchStatementMessageSupplier(mirror.getBatchedSqlCopy());
-                mirror.setLastJdbcMessageSupplier(jdbcMessageSupplier);
-                return pluginServices.startTraceEntry(jdbcMessageSupplier, timerName);
+                QueryEntry queryEntry = pluginServices.startQueryEntry(QUERY_TYPE, "<batch sql>",
+                        jdbcMessageSupplier, timerName);
+                mirror.setLastQuery(queryEntry);
+                return queryEntry;
             } else {
-                // clear lastJdbcMessageSupplier so that its numRows won't be updated if the
+                // clear lastJdbcQuery so that its numRows won't be updated if the
                 // plugin is re-enabled in the middle of iterating over a different result set
-                mirror.clearLastJdbcMessageSupplier();
+                mirror.clearLastQuery();
                 return null;
             }
         }
@@ -524,7 +654,7 @@ public class StatementAspect {
             StatementMirror mirror = statement.getGlowrootStatementMirror();
             if (mirror != null) {
                 // this should always be true since just checked hasGlowrootStatementMirror() above
-                mirror.clearLastJdbcMessageSupplier();
+                mirror.clearLastQuery();
             }
             if (captureStatementClose.value()) {
                 return pluginServices.startTimer(timerName);

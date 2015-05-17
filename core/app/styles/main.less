@@ -366,3 +366,60 @@ hr.soften {
   background-color: @btn-default-bg;
   border-color: @btn-default-border;
 }
+
+.gt-query-text-column {
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gt-query-text-column:hover {
+  color: @gt-blue;
+}
+
+.gt-query-total-column {
+  width: 60px;
+}
+
+.gt-query-other-column {
+  width: 80px;
+}
+
+.caret.gt-caret-reversed {
+  border-top-width: 0;
+  border-bottom: 4px solid;
+}
+
+.gt-sortable-table-header {
+  text-decoration: none !important;
+  display: inline-block;
+}
+
+.gt-sortable-table-header:focus:not(:hover) {
+  color: @gt-blue;
+}
+
+#formattingToggle {
+  text-decoration: none !important;
+  display: inline-block;
+}
+
+#formattingToggle:focus:not(:hover) {
+  color: @gt-blue;
+}
+
+@media screen and (min-width: @screen-lg-min) {
+  .gt-query-text-column {
+    // !important is needed to override normal td padding-right
+    padding-right: 25px !important;
+  }
+
+  .gt-query-total-column {
+    width: 90px;
+  }
+
+  .gt-query-other-column {
+    width: 90px;
+  }
+}

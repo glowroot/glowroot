@@ -15,8 +15,6 @@
  */
 package org.glowroot.tests;
 
-import java.util.List;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -27,7 +25,6 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,8 +58,7 @@ public class PluginConfiguredInstrumentationTest {
         assertThat(trace.getUser()).isEqualTo("uzzz");
         assertThat(trace.getCustomAttributes().get("View")).containsExactly("vabc");
         assertThat(trace.getCustomAttributes().get("Z")).containsExactly("zabc");
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).isEmpty();
+        assertThat(trace.getEntryCount()).isZero();
     }
 
     public static class ShouldExecuteAAA implements AppUnderTest, TraceMarker {

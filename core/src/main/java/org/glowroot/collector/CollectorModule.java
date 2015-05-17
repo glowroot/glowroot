@@ -54,7 +54,7 @@ public class CollectorModule {
             stackTraceCollector = null;
         } else {
             aggregateCollector = new AggregateCollector(scheduledExecutor, aggregateRepository,
-                    clock, FIXED_AGGREGATE_INTERVAL_SECONDS);
+                    configModule.getConfigService(), FIXED_AGGREGATE_INTERVAL_SECONDS, clock);
             gaugeCollector = new GaugeCollector(configService, gaugePointRepository,
                     jvmModule.getLazyPlatformMBeanServer(), clock, null);
             // using fixed rate to keep gauge collections close to on the second mark

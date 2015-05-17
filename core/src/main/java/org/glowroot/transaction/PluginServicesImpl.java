@@ -36,6 +36,7 @@ import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
+import org.glowroot.api.QueryEntry;
 import org.glowroot.api.Timer;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
@@ -47,6 +48,7 @@ import org.glowroot.config.GeneralConfig;
 import org.glowroot.config.PluginConfig;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.jvm.ThreadAllocatedBytes;
+import org.glowroot.transaction.model.QueryData;
 import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.TimerNameImpl;
 import org.glowroot.transaction.model.Transaction;
@@ -79,6 +81,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     private boolean enabled;
     private boolean captureThreadInfo;
     private boolean captureGcInfo;
+    private int maxAggregateQueriesPerQueryType;
     private int maxTraceEntriesPerTransaction;
     private @MonotonicNonNull PluginConfig pluginConfig;
 
@@ -244,7 +247,38 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (currentTimer != null && currentTimer.getTimerName() == timerName) {
             return NopTraceEntry.INSTANCE;
         }
-        return startTraceEntryInternal(transaction, timerName, messageSupplier);
+        return startTraceEntryInternal(transaction, messageSupplier, null, null, timerName);
+    }
+
+    @Override
+    public QueryEntry startQueryEntry(String queryType, String queryText,
+            MessageSupplier messageSupplier, TimerName timerName) {
+        if (queryType == null) {
+            logger.error("startQuery(): argument 'queryType' must be non-null");
+            return NopQuery.INSTANCE;
+        }
+        if (queryText == null) {
+            logger.error("startQuery(): argument 'queryText' must be non-null");
+            return NopQuery.INSTANCE;
+        }
+        if (messageSupplier == null) {
+            logger.error("startQuery(): argument 'messageSupplier' must be non-null");
+            return NopQuery.INSTANCE;
+        }
+        if (timerName == null) {
+            logger.error("startQuery(): argument 'timerName' must be non-null");
+            return NopQuery.INSTANCE;
+        }
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction == null) {
+            return NopQuery.INSTANCE;
+        }
+        TimerImpl currentTimer = transaction.getCurrentTimer();
+        if (currentTimer != null && currentTimer.getTimerName() == timerName) {
+            return NopQuery.INSTANCE;
+        }
+        return startTraceEntryInternal(transaction, messageSupplier, queryType, queryText,
+                timerName);
     }
 
     @Override
@@ -371,6 +405,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             this.pluginConfig = pluginConfig;
         }
         AdvancedConfig advancedConfig = configService.getAdvancedConfig();
+        maxAggregateQueriesPerQueryType = advancedConfig.maxAggregateQueriesPerQueryType();
         maxTraceEntriesPerTransaction = advancedConfig.maxTraceEntriesPerTransaction();
         captureThreadInfo = advancedConfig.captureThreadInfo();
         captureGcInfo = advancedConfig.captureGcInfo();
@@ -388,32 +423,40 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             long startTick = ticker.read();
             transaction = new Transaction(clock.currentTimeMillis(), transactionType,
                     transactionName, messageSupplier, timerName, startTick, captureThreadInfo,
-                    captureGcInfo, threadAllocatedBytes, transactionCompletionCallback, ticker);
+                    captureGcInfo, maxAggregateQueriesPerQueryType, threadAllocatedBytes,
+                    transactionCompletionCallback, ticker);
             transactionRegistry.addTransaction(transaction);
             return transaction.getRootEntry();
         } else {
-            return startTraceEntryInternal(transaction, timerName, messageSupplier);
+            return startTraceEntryInternal(transaction, messageSupplier, null, null, timerName);
         }
     }
 
-    private TraceEntry startTraceEntryInternal(Transaction transaction, TimerName timerName,
-            MessageSupplier messageSupplier) {
+    private QueryEntry startTraceEntryInternal(Transaction transaction,
+            MessageSupplier messageSupplier, @Nullable String queryType,
+            @Nullable String queryText, TimerName timerName) {
         long startTick = ticker.read();
         if (transaction.getEntryCount() < maxTraceEntriesPerTransaction) {
             TimerImpl timer = startTimer(timerName, startTick, transaction);
-            return transaction.pushEntry(startTick, messageSupplier, timer);
-        } else {
-            // split out to separate method so as not to affect inlining budget of common path
-            return startDummyTraceEntry(transaction, timerName, messageSupplier, startTick);
+            return transaction.pushEntry(startTick, messageSupplier, queryType, queryText, timer);
         }
+        // split out to separate method so as not to affect inlining budget of common path
+        return startDummyTraceEntry(transaction, timerName, messageSupplier, queryType, queryText,
+                startTick);
     }
 
-    private TraceEntry startDummyTraceEntry(Transaction transaction, TimerName timerName,
-            MessageSupplier messageSupplier, long startTick) {
+    private QueryEntry startDummyTraceEntry(Transaction transaction, TimerName timerName,
+            MessageSupplier messageSupplier, @Nullable String queryType,
+            @Nullable String queryText, long startTick) {
         // the entry limit has been exceeded for this trace
+        QueryData queryData = null;
+        if (queryType != null && queryText != null) {
+            queryData = transaction.getOrCreateQueryDataIfPossible(queryType, queryText);
+        }
         transaction.addEntryLimitExceededMarkerIfNeeded();
         TimerImpl timer = startTimer(timerName, startTick, transaction);
-        return new DummyTraceEntry(timer, startTick, transaction, messageSupplier);
+        return new DummyTraceEntryOrQuery(timer, startTick, transaction, messageSupplier,
+                queryData);
     }
 
     private TimerImpl startTimer(TimerName timerName, long startTick, Transaction transaction) {
@@ -443,22 +486,41 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
     }
 
-    private class DummyTraceEntry implements TraceEntry {
+    private class DummyTraceEntryOrQuery implements QueryEntry, Timer {
+
         private final TimerImpl timer;
         private final long startTick;
         private final Transaction transaction;
         private final MessageSupplier messageSupplier;
-        public DummyTraceEntry(TimerImpl timer, long startTick, Transaction transaction,
-                MessageSupplier messageSupplier) {
+
+        // not volatile, so depends on memory barrier in Transaction for visibility
+        private int selfNestingLevel;
+        // only used by transaction thread
+        private @MonotonicNonNull TimerImpl extendedTimer;
+
+        // queryData, currRow and maxRow are only used by query entries
+        private final @Nullable QueryData queryData;
+        // row numbers start at 1
+        private long currRow = -1;
+        private long maxRow;
+
+        public DummyTraceEntryOrQuery(TimerImpl timer, long startTick, Transaction transaction,
+                MessageSupplier messageSupplier, @Nullable QueryData queryData) {
             this.timer = timer;
             this.startTick = startTick;
             this.transaction = transaction;
             this.messageSupplier = messageSupplier;
+            this.queryData = queryData;
+            if (queryData != null) {
+                queryData.start(startTick);
+            }
         }
+
         @Override
         public void end() {
-            timer.stop();
+            endInternal(ticker.read());
         }
+
         @Override
         public void endWithStackTrace(long threshold, TimeUnit unit) {
             if (threshold < 0) {
@@ -466,23 +528,9 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 end();
                 return;
             }
-            long endTick = ticker.read();
-            timer.end(endTick);
-            // use higher entry limit when adding slow entries, but still need some kind of cap
-            if (endTick - startTick >= unit.toNanos(threshold)
-                    && transaction.getEntryCount() < 2 * maxTraceEntriesPerTransaction) {
-                // entry won't necessarily be nested properly, and won't have any timing data, but
-                // at least the long entry and stack trace will get captured
-                org.glowroot.transaction.model.TraceEntryImpl entry =
-                        transaction.addEntry(startTick, endTick, messageSupplier, null, true);
-                StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-                // need to strip back a few stack calls:
-                // skip i=0 which is "java.lang.Thread.getStackTrace()"
-                // skip i=1 which is "...PluginServicesImpl$DummyTraceEntry.addTraceEntry()"
-                // skip i=2 which is the plugin advice
-                entry.setStackTrace(ImmutableList.copyOf(stackTrace).subList(3, stackTrace.length));
-            }
+            endInternal(ticker.read());
         }
+
         @Override
         public void endWithError(ErrorMessage errorMessage) {
             if (errorMessage == null) {
@@ -492,20 +540,86 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
                 return;
             }
             long endTick = ticker.read();
-            timer.end(endTick);
+            endInternal(endTick);
             // use higher entry limit when adding errors, but still need some kind of cap
             if (transaction.getEntryCount() < 2 * maxTraceEntriesPerTransaction) {
                 // entry won't be nested properly, but at least the error will get captured
                 transaction.addEntry(startTick, endTick, messageSupplier, errorMessage, true);
             }
         }
-        @Override
-        public Timer extend(TimerName altTimerName) {
-            return timer.extend(altTimerName);
+
+        private void endInternal(long endTick) {
+            timer.end(endTick);
+            if (queryData != null) {
+                queryData.end(endTick);
+            }
         }
+
+        @Override
+        public Timer extend() {
+            if (selfNestingLevel++ == 0) {
+                long currTick = ticker.read();
+                extendedTimer = timer.extend(currTick);
+                if (queryData != null) {
+                    queryData.extend(currTick);
+                }
+            }
+            return this;
+        }
+
+        // this is called for stopping an extension
+        @Override
+        public void stop() {
+            // the timer interface for this class is only expose through return value of extend()
+            if (--selfNestingLevel == 0) {
+                long stopTick = ticker.read();
+                checkNotNull(extendedTimer);
+                extendedTimer.end(stopTick);
+                if (queryData != null) {
+                    queryData.end(stopTick);
+                }
+            }
+        }
+
         @Override
         public MessageSupplier getMessageSupplier() {
             return messageSupplier;
+        }
+
+        @Override
+        public void incrementCurrRow() {
+            if (currRow == -1) {
+                currRow = 1;
+                maxRow = 1;
+                if (queryData != null) {
+                    // queryData can be null here if the aggregated query limit is exceeded
+                    // (though typically query limit is larger than trace entry limit)
+                    queryData.incrementRowCount(1);
+                }
+            } else if (currRow == maxRow) {
+                currRow++;
+                maxRow = currRow;
+                if (queryData != null) {
+                    // queryData can be null here if the aggregated query limit is exceeded
+                    // (though typically query limit is larger than trace entry limit)
+                    queryData.incrementRowCount(1);
+                }
+            } else {
+                currRow++;
+            }
+        }
+
+        @Override
+        public void setCurrRow(long row) {
+            if (row > maxRow) {
+                if (queryData != null) {
+                    // queryData can be null here if the query limit is exceeded
+                    // (though typically query limit is larger than trace entry limit)
+                    queryData.incrementRowCount(row - maxRow);
+                }
+                maxRow = row;
+            }
+            currRow = row;
         }
     }
 
@@ -608,13 +722,22 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         @Override
         public void endWithError(ErrorMessage errorMessage) {}
         @Override
-        public Timer extend(TimerName altTimerName) {
+        public Timer extend() {
             return NopTimer.INSTANCE;
         }
         @Override
         public @Nullable MessageSupplier getMessageSupplier() {
             return null;
         }
+    }
+
+    private static class NopQuery extends NopTraceEntry implements QueryEntry {
+        private static final NopQuery INSTANCE = new NopQuery();
+        private NopQuery() {}
+        @Override
+        public void incrementCurrRow() {}
+        @Override
+        public void setCurrRow(long row) {}
     }
 
     private static class NopTimer implements Timer {

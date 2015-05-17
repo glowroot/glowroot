@@ -19,6 +19,7 @@ import java.lang.management.ThreadInfo;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
@@ -91,6 +92,11 @@ public class Transaction {
     // root entry for this trace
     private final TraceEntryComponent traceEntryComponent;
 
+    // TODO optimize this, many options, need to benchmark
+    private final Map<String, Map<String, QueryData>> queries =
+            new ConcurrentHashMap<String, Map<String, QueryData>>(1, 0.75f, 1);
+    private final int maxAggregateQueriesPerQueryType;
+
     // stack trace data constructed from profiling
     private volatile @MonotonicNonNull Profile profile;
 
@@ -123,7 +129,7 @@ public class Transaction {
 
     public Transaction(long startTime, String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName, long startTick,
-            boolean captureThreadInfo, boolean captureGcInfo,
+            boolean captureThreadInfo, boolean captureGcInfo, int maxAggregateQueriesPerQueryType,
             @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             CompletionCallback completionCallback, Ticker ticker) {
         this.startTime = startTime;
@@ -141,6 +147,7 @@ public class Transaction {
         threadInfoComponent =
                 captureThreadInfo ? new ThreadInfoComponent(threadAllocatedBytes) : null;
         gcInfoComponent = captureGcInfo ? new GcInfoComponent() : null;
+        this.maxAggregateQueriesPerQueryType = maxAggregateQueriesPerQueryType;
         this.completionCallback = completionCallback;
     }
 
@@ -245,9 +252,15 @@ public class Transaction {
         return traceEntryComponent.getEntryCount();
     }
 
-    public List<TraceEntryImpl> getEntriesCopy() {
+    public Map<String, Map<String, QueryData>> getQueries() {
+        // read memory barrier is for QueryData values (the map itself is concurrent map)
         readMemoryBarrier();
-        return traceEntryComponent.getEntriesCopy();
+        return queries;
+    }
+
+    public Iterable<TraceEntryImpl> getEntries() {
+        readMemoryBarrier();
+        return traceEntryComponent;
     }
 
     public int getProfileSampleCount() {
@@ -365,8 +378,26 @@ public class Transaction {
     }
 
     public TraceEntryImpl pushEntry(long startTick, MessageSupplier messageSupplier,
-            TimerImpl timer) {
-        return traceEntryComponent.pushEntry(startTick, messageSupplier, timer);
+            @Nullable String queryType, @Nullable String queryText, TimerImpl timer) {
+        QueryData queryData = null;
+        if (queryType != null && queryText != null) {
+            queryData = getOrCreateQueryDataIfPossible(queryType, queryText);
+        }
+        return traceEntryComponent.pushEntry(startTick, messageSupplier, queryData, timer);
+    }
+
+    public @Nullable QueryData getOrCreateQueryDataIfPossible(String queryType, String queryText) {
+        Map<String, QueryData> queriesForQueryType = queries.get(queryType);
+        if (queriesForQueryType == null) {
+            queriesForQueryType = new ConcurrentHashMap<String, QueryData>(16, 0.75f, 1);
+            queries.put(queryType, queriesForQueryType);
+        }
+        QueryData queryData = queriesForQueryType.get(queryText);
+        if (queryData == null && queriesForQueryType.size() < maxAggregateQueriesPerQueryType) {
+            queryData = new QueryData();
+            queriesForQueryType.put(queryText, queryData);
+        }
+        return queryData;
     }
 
     public TraceEntryImpl addEntry(long startTick, long endTick,

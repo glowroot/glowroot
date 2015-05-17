@@ -19,6 +19,7 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.List;
@@ -32,8 +33,10 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.AppUnderTestServices;
 import org.glowroot.container.Container;
+import org.glowroot.container.TraceEntryMarker;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.PluginConfig;
+import org.glowroot.container.trace.Query;
 import org.glowroot.container.trace.Timer;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
@@ -69,6 +72,13 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteCallableStatement.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo(
+                "insert into employee (name, misc) values (?, ?)");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows()).isEqualTo(0);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry jdbcEntry = entries.get(0);
@@ -77,20 +87,48 @@ public class JdbcPluginTest {
     }
 
     @Test
-    public void testResultSetValueTimer() throws Exception {
+    public void testWithoutResultSetValueTimerNormal() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        boolean found = findExtendedTimerName(trace.getRootTimer(), "jdbc execute");
+        assertThat(found).isFalse();
+    }
+
+    @Test
+    public void testWithResultSetValueTimerNormal() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResultSetGet", true);
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        boolean found = false;
-        for (Timer timer : trace.getRootTimer().getNestedTimers()) {
-            if (timer.getName().equals("jdbc resultset value")) {
-                found = true;
-                break;
-            }
-        }
+        boolean found = findExtendedTimerName(trace.getRootTimer(), "jdbc execute");
+        assertThat(found).isFalse();
+    }
+
+    @Test
+    public void testWithoutResultSetValueTimerUnderSeparateTraceEntry() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(GetResultSetValueUnderSeparateTraceEntry.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        boolean found = findExtendedTimerName(trace.getRootTimer(), "jdbc execute");
+        assertThat(found).isFalse();
+    }
+
+    @Test
+    public void testWithResultSetValueTimerUnderSeparateTraceEntry() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResultSetGet", true);
+        // when
+        container.executeAppUnderTest(GetResultSetValueUnderSeparateTraceEntry.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        boolean found = findExtendedTimerName(trace.getRootTimer(), "jdbc execute");
         assertThat(found).isTrue();
     }
 
@@ -102,49 +140,55 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResultsUsingColumnName.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        boolean found = false;
-        for (Timer timer : trace.getRootTimer().getNestedTimers()) {
-            if (timer.getName().equals("jdbc resultset value")) {
-                found = true;
-                break;
-            }
-        }
+        boolean found = findExtendedTimerName(trace.getRootTimer(), "jdbc execute");
+        assertThat(found).isFalse();
+    }
+
+    @Test
+    public void testResultSetValueTimerUsingColumnNameUnderSeparateTraceEntry() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResultSetGet", true);
+        // when
+        container.executeAppUnderTest(
+                ExecuteStatementAndIterateOverResultsUsingColumnNameUnderSeparateTraceEntry.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        boolean found = findExtendedTimerName(trace.getRootTimer(), "jdbc execute");
         assertThat(found).isTrue();
     }
 
     @Test
-    public void testWithResultSetNavigateTimer() throws Exception {
+    public void testWithResultSetNavigateTimerNormal() throws Exception {
         // given
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        boolean found = false;
-        for (Timer timer : trace.getRootTimer().getNestedTimers()) {
-            if (timer.getName().equals("jdbc resultset navigate")) {
-                found = true;
-                break;
-            }
-        }
+        boolean found = findExtendedTimerName(trace.getRootTimer(), "jdbc execute");
+        assertThat(found).isFalse();
+    }
+
+    @Test
+    public void testWithResultSetNavigateTimerUnderSeparateTraceEntry() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(IterateOverResultsUnderSeparateTraceEntry.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        boolean found = findExtendedTimerName(trace.getRootTimer(), "jdbc execute");
         assertThat(found).isTrue();
     }
 
     @Test
-    public void testWithoutResultSetNavigateTimer() throws Exception {
+    public void testWithoutResultSetNavigateTimerUnderSeparateTraceEntry() throws Exception {
         // given
         container.getConfigService()
                 .setPluginProperty(PLUGIN_ID, "captureResultSetNavigate", false);
         // when
-        container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
+        container.executeAppUnderTest(IterateOverResultsUnderSeparateTraceEntry.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        boolean found = false;
-        for (Timer timer : trace.getRootTimer().getNestedTimers()) {
-            if (timer.getName().equals("jdbc resultset navigate")) {
-                found = true;
-                break;
-            }
-        }
+        boolean found = findExtendedTimerName(trace.getRootTimer(), "jdbc execute");
         assertThat(found).isFalse();
     }
 
@@ -158,6 +202,12 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteStatementDisableReEnableMidIterating.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo("select * from employee where name like ?");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows()).isEqualTo(0);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage().getText()).isEqualTo(
@@ -171,6 +221,12 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo("select * from employee");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows()).isEqualTo(3);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry jdbcEntry = entries.get(0);
@@ -222,8 +278,19 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).isEmpty();
+        assertThat(trace.getEntryCount()).isZero();
+    }
+
+    private boolean findExtendedTimerName(Timer timer, String timerName) {
+        if (timer.getName().equals(timerName) && timer.isExtended()) {
+            return true;
+        }
+        for (Timer nestedTimer : timer.getNestedTimers()) {
+            if (findExtendedTimerName(nestedTimer, timerName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static class ExecuteStatementAndIterateOverResults implements AppUnderTest, TraceMarker {
@@ -252,6 +319,70 @@ public class JdbcPluginTest {
         }
     }
 
+    public static class IterateOverResultsUnderSeparateTraceEntry implements AppUnderTest,
+            TraceMarker, TraceEntryMarker {
+        private Connection connection;
+        private Statement statement;
+        @Override
+        public void executeApp() throws Exception {
+            connection = Connections.createConnection();
+            try {
+                traceMarker();
+            } finally {
+                Connections.closeConnection(connection);
+            }
+        }
+        @Override
+        public void traceMarker() throws Exception {
+            statement = connection.createStatement();
+            try {
+                statement.execute("select * from employee");
+                traceEntryMarker();
+            } finally {
+                statement.close();
+            }
+        }
+        @Override
+        public void traceEntryMarker() throws SQLException {
+            ResultSet rs = statement.getResultSet();
+            while (rs.next()) {
+                rs.getString(1);
+            }
+        }
+    }
+
+    public static class GetResultSetValueUnderSeparateTraceEntry implements AppUnderTest,
+            TraceMarker, TraceEntryMarker {
+        private Connection connection;
+        private ResultSet rs;
+        @Override
+        public void executeApp() throws Exception {
+            connection = Connections.createConnection();
+            try {
+                traceMarker();
+            } finally {
+                Connections.closeConnection(connection);
+            }
+        }
+        @Override
+        public void traceMarker() throws Exception {
+            Statement statement = connection.createStatement();
+            try {
+                statement.execute("select * from employee");
+                rs = statement.getResultSet();
+                while (rs.next()) {
+                    traceEntryMarker();
+                }
+            } finally {
+                statement.close();
+            }
+        }
+        @Override
+        public void traceEntryMarker() throws SQLException {
+            rs.getString(1);
+        }
+    }
+
     public static class ExecuteStatementAndIterateOverResultsUsingColumnName implements
             AppUnderTest, TraceMarker {
         private Connection connection;
@@ -275,6 +406,38 @@ public class JdbcPluginTest {
                 }
             } finally {
                 statement.close();
+            }
+        }
+    }
+
+    public static class ExecuteStatementAndIterateOverResultsUsingColumnNameUnderSeparateTraceEntry
+            implements AppUnderTest, TraceMarker, TraceEntryMarker {
+        private Connection connection;
+        private Statement statement;
+        @Override
+        public void executeApp() throws Exception {
+            connection = Connections.createConnection();
+            try {
+                traceMarker();
+            } finally {
+                Connections.closeConnection(connection);
+            }
+        }
+        @Override
+        public void traceMarker() throws Exception {
+            statement = connection.createStatement();
+            try {
+                statement.execute("select * from employee");
+                traceEntryMarker();
+            } finally {
+                statement.close();
+            }
+        }
+        @Override
+        public void traceEntryMarker() throws SQLException {
+            ResultSet rs = statement.getResultSet();
+            while (rs.next()) {
+                rs.getString("name");
             }
         }
     }

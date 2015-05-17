@@ -127,6 +127,15 @@ glowroot.config([
         }
       }
     });
+    $stateProvider.state('transaction.detail.queries', {
+      url: '/queries?transaction-name',
+      views: {
+        'main@transaction': {
+          templateUrl: 'views/transaction/queries.html',
+          controller: 'TransactionQueriesCtrl'
+        }
+      }
+    });
     $stateProvider.state('transaction.detail.profile', {
       url: '/profile?transaction-name',
       views: {

@@ -165,6 +165,11 @@ public class TraceService {
         return traces;
     }
 
+    public List<Query> getQueries(String traceId) throws Exception {
+        String content = httpClient.get("/backend/trace/queries?trace-id=" + traceId);
+        return mapper.readValue(content, new TypeReference<List<Query>>() {});
+    }
+
     public List<TraceEntry> getEntries(String traceId) throws Exception {
         String content = httpClient.get("/backend/trace/entries?trace-id=" + traceId);
         return mapper.readValue(content, new TypeReference<List<TraceEntry>>() {});

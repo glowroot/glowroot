@@ -71,14 +71,41 @@ public class StatementTest {
     }
 
     @Test
+    public void testStatementQuery() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ExecuteStatementQueryAndIterateOverResults.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getText()).isEqualTo(
+                "jdbc execution: select * from employee => 3 rows");
+    }
+
+    @Test
+    public void testStatementUpdate() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ExecuteStatementUpdate.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(1);
+        TraceEntry entry = entries.get(0);
+        assertThat(entry.getMessage().getText()).isEqualTo(
+                "jdbc execution: update employee set name = 'nobody' => 3 rows");
+    }
+
+    @Test
     public void testNullStatement() throws Exception {
         // given
         // when
         container.executeAppUnderTest(ExecuteNullStatement.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).isEmpty();
+        assertThat(trace.getEntryCount()).isZero();
     }
 
     @Test
@@ -201,6 +228,54 @@ public class StatementTest {
                 while (rs.next()) {
                     rs.getString(1);
                 }
+            } finally {
+                statement.close();
+            }
+        }
+    }
+
+    public static class ExecuteStatementQueryAndIterateOverResults implements AppUnderTest,
+            TraceMarker {
+        private Connection connection;
+        @Override
+        public void executeApp() throws Exception {
+            connection = Connections.createConnection();
+            try {
+                traceMarker();
+            } finally {
+                Connections.closeConnection(connection);
+            }
+        }
+        @Override
+        public void traceMarker() throws Exception {
+            Statement statement = connection.createStatement();
+            try {
+                ResultSet rs = statement.executeQuery("select * from employee");
+                while (rs.next()) {
+                    rs.getString(1);
+                }
+            } finally {
+                statement.close();
+            }
+        }
+    }
+
+    public static class ExecuteStatementUpdate implements AppUnderTest, TraceMarker {
+        private Connection connection;
+        @Override
+        public void executeApp() throws Exception {
+            connection = Connections.createConnection();
+            try {
+                traceMarker();
+            } finally {
+                Connections.closeConnection(connection);
+            }
+        }
+        @Override
+        public void traceMarker() throws Exception {
+            Statement statement = connection.createStatement();
+            try {
+                statement.executeUpdate("update employee set name = 'nobody'");
             } finally {
                 statement.close();
             }

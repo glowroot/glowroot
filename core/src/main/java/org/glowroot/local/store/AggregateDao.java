@@ -41,9 +41,12 @@ import org.glowroot.collector.AggregateTimer;
 import org.glowroot.collector.ErrorPoint;
 import org.glowroot.collector.ErrorSummary;
 import org.glowroot.collector.LazyHistogram;
+import org.glowroot.collector.QueryComponent;
+import org.glowroot.collector.QueryComponent.AggregateQueryData;
 import org.glowroot.collector.TransactionSummary;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.common.ScratchBuffer;
+import org.glowroot.config.ConfigService;
 import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.ResultSetExtractor;
 import org.glowroot.local.store.DataSource.RowMapper;
@@ -72,8 +75,8 @@ public class AggregateDao {
                     Column.of("total_blocked_micros", Types.BIGINT),
                     Column.of("total_waited_micros", Types.BIGINT),
                     Column.of("total_allocated_kbytes", Types.BIGINT),
-                    Column.of("profile_sample_count", Types.BIGINT),
                     Column.of("trace_count", Types.BIGINT),
+                    Column.of("queries_capped_id", Types.BIGINT), // capped database id
                     // profile json is always from "synthetic root"
                     Column.of("profile_capped_id", Types.BIGINT), // capped database id
                     Column.of("histogram", Types.BLOB),
@@ -92,8 +95,8 @@ public class AggregateDao {
                     Column.of("total_blocked_micros", Types.BIGINT),
                     Column.of("total_waited_micros", Types.BIGINT),
                     Column.of("total_allocated_kbytes", Types.BIGINT),
-                    Column.of("profile_sample_count", Types.BIGINT),
                     Column.of("trace_count", Types.BIGINT),
+                    Column.of("queries_capped_id", Types.BIGINT), // capped database id
                     // profile json is always from "synthetic root"
                     Column.of("profile_capped_id", Types.BIGINT), // capped database id
                     Column.of("histogram", Types.BLOB),
@@ -127,15 +130,17 @@ public class AggregateDao {
 
     private final DataSource dataSource;
     private final CappedDatabase cappedDatabase;
+    private final ConfigService configService;
 
     private final long fixedRollupMillis;
 
     private volatile long lastRollupTime;
 
-    AggregateDao(DataSource dataSource, CappedDatabase cappedDatabase, long fixedRollupSeconds)
-            throws SQLException {
+    AggregateDao(DataSource dataSource, CappedDatabase cappedDatabase, ConfigService configService,
+            long fixedRollupSeconds) throws SQLException {
         this.dataSource = dataSource;
         this.cappedDatabase = cappedDatabase;
+        this.configService = configService;
         fixedRollupMillis = fixedRollupSeconds * 1000;
         dataSource.syncTable("overall_aggregate", overallAggregatePointColumns);
         dataSource.syncIndexes("overall_aggregate", overallAggregateIndexes);
@@ -228,11 +233,11 @@ public class AggregateDao {
         String rollupSuffix = getRollupSuffix(rollupLevel);
         return dataSource.query("select capture_time, total_micros, error_count,"
                 + " transaction_count, total_cpu_micros, total_blocked_micros,"
-                + " total_waited_micros, total_allocated_kbytes, profile_sample_count,"
-                + " trace_count, histogram, timers from overall_aggregate" + rollupSuffix
-                + " where transaction_type = ? and capture_time >= ? and capture_time <= ?"
-                + " order by capture_time", new AggregateRowMapper(transactionType, null),
-                transactionType, captureTimeFrom, captureTimeTo);
+                + " total_waited_micros, total_allocated_kbytes, trace_count, histogram, timers"
+                + " from overall_aggregate" + rollupSuffix + " where transaction_type = ?"
+                + " and capture_time >= ? and capture_time <= ? order by capture_time",
+                new AggregateRowMapper(transactionType, null), transactionType, captureTimeFrom,
+                captureTimeTo);
     }
 
     public ImmutableList<Aggregate> readTransactionAggregates(String transactionType,
@@ -241,31 +246,39 @@ public class AggregateDao {
         String rollupSuffix = getRollupSuffix(rollupLevel);
         return dataSource.query("select capture_time, total_micros, error_count,"
                 + " transaction_count, total_cpu_micros, total_blocked_micros,"
-                + " total_waited_micros, total_allocated_kbytes, profile_sample_count,"
-                + " trace_count, histogram, timers from transaction_aggregate" + rollupSuffix
-                + " where transaction_type = ? and transaction_name = ? and capture_time >= ?"
-                + " and capture_time <= ?",
+                + " total_waited_micros, total_allocated_kbytes, trace_count, histogram, timers"
+                + " from transaction_aggregate" + rollupSuffix + " where transaction_type = ?"
+                + " and transaction_name = ? and capture_time >= ? and capture_time <= ?",
                 new AggregateRowMapper(transactionType, transactionName), transactionType,
+                transactionName, captureTimeFrom, captureTimeTo);
+    }
+
+    // captureTimeFrom is non-inclusive
+    public ImmutableList<CharSource> readOverallQueries(String transactionType,
+            long captureTimeFrom, long captureTimeTo) throws SQLException {
+        return readOverallCappedDatabaseRows("queries_capped_id", transactionType, captureTimeFrom,
+                captureTimeTo);
+    }
+
+    // captureTimeFrom is non-inclusive
+    public ImmutableList<CharSource> readTransactionQueries(String transactionType,
+            String transactionName, long captureTimeFrom, long captureTimeTo) throws SQLException {
+        return readTransactionCappedDatabaseRows("queries_capped_id", transactionType,
                 transactionName, captureTimeFrom, captureTimeTo);
     }
 
     // captureTimeFrom is non-inclusive
     public ImmutableList<CharSource> readOverallProfiles(String transactionType,
             long captureTimeFrom, long captureTimeTo) throws SQLException {
-        return dataSource.query("select profile_capped_id from overall_aggregate"
-                + " where transaction_type = ? and capture_time > ? and capture_time <= ? and"
-                + " profile_capped_id >= ?", new CappedDatabaseRowMapper(), transactionType,
-                captureTimeFrom, captureTimeTo, cappedDatabase.getSmallestNonExpiredId());
+        return readOverallCappedDatabaseRows("profile_capped_id", transactionType,
+                captureTimeFrom, captureTimeTo);
     }
 
     // captureTimeFrom is non-inclusive
     public ImmutableList<CharSource> readTransactionProfiles(String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo) throws SQLException {
-        return dataSource.query("select profile_capped_id from transaction_aggregate"
-                + " where transaction_type = ? and transaction_name = ? and capture_time > ?"
-                + " and capture_time <= ? and profile_capped_id >= ?",
-                new CappedDatabaseRowMapper(), transactionType, transactionName, captureTimeFrom,
-                captureTimeTo, cappedDatabase.getSmallestNonExpiredId());
+        return readTransactionCappedDatabaseRows("profile_capped_id", transactionType,
+                transactionName, captureTimeFrom, captureTimeTo);
     }
 
     public ImmutableList<ErrorPoint> readOverallErrorPoints(String transactionType,
@@ -290,74 +303,31 @@ public class AggregateDao {
     }
 
     // captureTimeFrom is non-inclusive
-    public long readOverallProfileSampleCount(String transactionType, long captureTimeFrom,
-            long captureTimeTo) throws SQLException {
-        return dataSource.queryForLong("select sum(profile_sample_count) from overall_aggregate"
-                + " where transaction_type = ? and capture_time > ? and capture_time <= ?"
-                + " and profile_capped_id >= ?", transactionType, captureTimeFrom, captureTimeTo,
-                cappedDatabase.getSmallestNonExpiredId());
-    }
-
-    // captureTimeFrom is non-inclusive
-    public long readTransactionProfileSampleCount(String transactionType, String transactionName,
-            long captureTimeFrom, long captureTimeTo) throws SQLException {
-        return dataSource.queryForLong("select sum(profile_sample_count) from"
-                + " transaction_aggregate where transaction_type = ? and transaction_name = ?"
-                + " and capture_time > ? and capture_time <= ? and profile_capped_id >= ?",
-                transactionType, transactionName, captureTimeFrom, captureTimeTo,
-                cappedDatabase.getSmallestNonExpiredId());
-    }
-
-    // captureTimeFrom is non-inclusive
-    public boolean shouldHaveOverallProfiles(String transactionType, long captureTimeFrom,
-            long captureTimeTo) throws SQLException {
-        return dataSource.queryForExists("select 1 from overall_aggregate"
-                + " where transaction_type = ? and capture_time > ? and capture_time <= ?"
-                + " and profile_sample_count > 0 limit 1", transactionType, captureTimeFrom,
-                captureTimeTo);
-    }
-
-    // captureTimeFrom is non-inclusive
-    public boolean shouldHaveTransactionProfiles(String transactionType, String transactionName,
-            long captureTimeFrom, long captureTimeTo) throws SQLException {
-        return dataSource.queryForExists("select 1 from transaction_aggregate"
-                + " where transaction_type = ? and transaction_name = ? and capture_time > ?"
-                + " and capture_time <= ? and profile_sample_count > 0 limit 1", transactionType,
-                transactionName, captureTimeFrom, captureTimeTo);
-    }
-
-    // captureTimeFrom is non-inclusive
     public boolean shouldHaveOverallTraces(String transactionType, long captureTimeFrom,
             long captureTimeTo) throws SQLException {
-        return dataSource.queryForExists("select 1 from overall_aggregate"
-                + " where transaction_type = ? and capture_time > ? and capture_time <= ?"
-                + " and trace_count > 0 limit 1", transactionType, captureTimeFrom, captureTimeTo);
+        return shouldHaveOverallSomething("trace_count", transactionType, captureTimeFrom,
+                captureTimeTo);
     }
 
     // captureTimeFrom is non-inclusive
     public boolean shouldHaveTransactionTraces(String transactionType, String transactionName,
             long captureTimeFrom, long captureTimeTo) throws SQLException {
-        return dataSource.queryForExists("select 1 from transaction_aggregate"
-                + " where transaction_type = ? and transaction_name = ? and capture_time > ?"
-                + " and capture_time <= ? and trace_count > 0 limit 1", transactionType,
-                transactionName, captureTimeFrom, captureTimeTo);
+        return shouldHaveTransactionSomething("trace_count", transactionType, transactionName,
+                captureTimeFrom, captureTimeTo);
     }
 
     // captureTimeFrom is non-inclusive
     public boolean shouldHaveOverallErrorTraces(String transactionType, long captureTimeFrom,
             long captureTimeTo) throws SQLException {
-        return dataSource.queryForExists("select 1 from overall_aggregate"
-                + " where transaction_type = ? and capture_time > ? and capture_time <= ?"
-                + " and error_count > 0 limit 1", transactionType, captureTimeFrom, captureTimeTo);
+        return shouldHaveOverallSomething("error_count", transactionType, captureTimeFrom,
+                captureTimeTo);
     }
 
     // captureTimeFrom is non-inclusive
     public boolean shouldHaveTransactionErrorTraces(String transactionType, String transactionName,
             long captureTimeFrom, long captureTimeTo) throws SQLException {
-        return dataSource.queryForExists("select 1 from transaction_aggregate"
-                + " where transaction_type = ? and transaction_name = ? and capture_time > ?"
-                + " and capture_time <= ? and error_count > 0 limit 1", transactionType,
-                transactionName, captureTimeFrom, captureTimeTo);
+        return shouldHaveTransactionSomething("error_count", transactionType, transactionName,
+                captureTimeFrom, captureTimeTo);
     }
 
     public void deleteAll() throws SQLException {
@@ -390,7 +360,7 @@ public class AggregateDao {
         List<Aggregate> overallAggregates = dataSource.query("select transaction_type,"
                 + " total_micros, error_count, transaction_count, total_cpu_micros,"
                 + " total_blocked_micros, total_waited_micros, total_allocated_kbytes,"
-                + " profile_sample_count, trace_count, profile_capped_id, histogram, timers"
+                + " trace_count, queries_capped_id, profile_capped_id, histogram, timers"
                 + " from overall_aggregate where capture_time > ? and capture_time <= ?",
                 new OverallRollupResultSetExtractor(rollupTime), rollupTime - fixedRollupMillis,
                 rollupTime);
@@ -401,7 +371,7 @@ public class AggregateDao {
         List<Aggregate> transactionAggregates = dataSource.query("select transaction_type,"
                 + " transaction_name, total_micros, error_count, transaction_count,"
                 + " total_cpu_micros, total_blocked_micros, total_waited_micros,"
-                + " total_allocated_kbytes, profile_sample_count, trace_count, profile_capped_id,"
+                + " total_allocated_kbytes, trace_count, queries_capped_id, profile_capped_id,"
                 + " histogram, timers from transaction_aggregate where capture_time > ?"
                 + " and capture_time <= ?", new TransactionRollupResultSetExtractor(rollupTime),
                 rollupTime - fixedRollupMillis, rollupTime);
@@ -417,20 +387,62 @@ public class AggregateDao {
         dataSource.batchUpdate("insert into overall_aggregate" + rollupSuffix
                 + " (transaction_type, capture_time, total_micros, error_count, transaction_count,"
                 + " total_cpu_micros, total_blocked_micros, total_waited_micros,"
-                + " total_allocated_kbytes, profile_sample_count, trace_count, profile_capped_id,"
+                + " total_allocated_kbytes, trace_count, queries_capped_id, profile_capped_id,"
                 + " histogram, timers) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 new OverallBatchAdder(overallAggregates));
         dataSource.batchUpdate("insert into transaction_aggregate" + rollupSuffix
                 + " (transaction_type, transaction_name, capture_time, total_micros, error_count,"
                 + " transaction_count, total_cpu_micros, total_blocked_micros,"
-                + " total_waited_micros, total_allocated_kbytes, profile_sample_count,"
-                + " trace_count, profile_capped_id, histogram, timers)"
+                + " total_waited_micros, total_allocated_kbytes, trace_count, queries_capped_id,"
+                + " profile_capped_id, histogram, timers)"
                 + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 new TransactionBatchAdder(transactionAggregates));
     }
 
+    // captureTimeFrom is non-inclusive
+    private ImmutableList<CharSource> readOverallCappedDatabaseRows(@Untainted String columnName,
+            String transactionType, long captureTimeFrom, long captureTimeTo) throws SQLException {
+        return dataSource.query("select " + columnName + " from overall_aggregate"
+                + " where transaction_type = ? and capture_time > ? and capture_time <= ? and "
+                + columnName + " >= ?", new CappedDatabaseRowMapper(), transactionType,
+                captureTimeFrom, captureTimeTo, cappedDatabase.getSmallestNonExpiredId());
+    }
+
+    // captureTimeFrom is non-inclusive
+    private ImmutableList<CharSource> readTransactionCappedDatabaseRows(
+            @Untainted String columnName, String transactionType, String transactionName,
+            long captureTimeFrom, long captureTimeTo) throws SQLException {
+        return dataSource.query("select " + columnName + " from transaction_aggregate"
+                + " where transaction_type = ? and transaction_name = ? and capture_time > ?"
+                + " and capture_time <= ? and " + columnName + " >= ?",
+                new CappedDatabaseRowMapper(), transactionType, transactionName, captureTimeFrom,
+                captureTimeTo, cappedDatabase.getSmallestNonExpiredId());
+    }
+
+    private boolean shouldHaveOverallSomething(@Untainted String countColumnName,
+            String transactionType, long captureTimeFrom, long captureTimeTo) throws SQLException {
+        return dataSource.queryForExists("select 1 from overall_aggregate"
+                + " where transaction_type = ? and capture_time > ? and capture_time <= ?"
+                + " and " + countColumnName + " > 0 limit 1", transactionType, captureTimeFrom,
+                captureTimeTo);
+    }
+
+    private boolean shouldHaveTransactionSomething(@Untainted String countColumnName,
+            String transactionType, String transactionName, long captureTimeFrom,
+            long captureTimeTo) throws SQLException {
+        return dataSource.queryForExists("select 1 from transaction_aggregate"
+                + " where transaction_type = ? and transaction_name = ? and capture_time > ?"
+                + " and capture_time <= ? and  " + countColumnName + " > 0 limit 1",
+                transactionType, transactionName, captureTimeFrom, captureTimeTo);
+    }
+
     private void bindCommon(PreparedStatement preparedStatement, Aggregate overallAggregate,
             int startIndex) throws Exception {
+        Long queriesCappedId = null;
+        String queries = overallAggregate.queries();
+        if (queries != null) {
+            queriesCappedId = cappedDatabase.write(CharSource.wrap(queries));
+        }
         Long profileCappedId = null;
         String profile = overallAggregate.profile();
         if (profile != null) {
@@ -445,8 +457,8 @@ public class AggregateDao {
         RowMappers.setLong(preparedStatement, i++, overallAggregate.totalBlockedMicros());
         RowMappers.setLong(preparedStatement, i++, overallAggregate.totalWaitedMicros());
         RowMappers.setLong(preparedStatement, i++, overallAggregate.totalAllocatedKBytes());
-        preparedStatement.setLong(i++, overallAggregate.profileSampleCount());
         preparedStatement.setLong(i++, overallAggregate.traceCount());
+        RowMappers.setLong(preparedStatement, i++, queriesCappedId);
         RowMappers.setLong(preparedStatement, i++, profileCappedId);
         preparedStatement.setBytes(i++, overallAggregate.histogram());
         preparedStatement.setString(i++, overallAggregate.timers());
@@ -626,7 +638,6 @@ public class AggregateDao {
                     .totalBlockedMicros(resultSet.getLong(i++))
                     .totalWaitedMicros(resultSet.getLong(i++))
                     .totalAllocatedKBytes(resultSet.getLong(i++))
-                    .profileSampleCount(resultSet.getLong(i++))
                     .traceCount(resultSet.getLong(i++))
                     .histogram(checkNotNull(resultSet.getBytes(i++)))
                     .timers(checkNotNull(resultSet.getString(i++)))
@@ -669,8 +680,8 @@ public class AggregateDao {
             Long totalBlockedMicros = RowMappers.getLong(resultSet, i++);
             Long totalWaitedMicros = RowMappers.getLong(resultSet, i++);
             Long totalAllocatedKBytes = RowMappers.getLong(resultSet, i++);
-            long profileSampleCount = resultSet.getLong(i++);
             long traceCount = resultSet.getLong(i++);
+            Long queriesCappedId = RowMappers.getLong(resultSet, i++);
             Long profileCappedId = RowMappers.getLong(resultSet, i++);
             byte[] histogram = checkNotNull(resultSet.getBytes(i++));
             String timers = checkNotNull(resultSet.getString(i++));
@@ -682,10 +693,16 @@ public class AggregateDao {
             mergedAggregate.addTotalBlockedMicros(totalBlockedMicros);
             mergedAggregate.addTotalWaitedMicros(totalWaitedMicros);
             mergedAggregate.addTotalAllocatedKBytes(totalAllocatedKBytes);
-            mergedAggregate.addProfileSampleCount(profileSampleCount);
             mergedAggregate.addTraceCount(traceCount);
             mergedAggregate.addHistogram(histogram);
             mergedAggregate.addTimers(timers);
+            if (queriesCappedId != null) {
+                String queriesContent =
+                        cappedDatabase.read(queriesCappedId, AggregateDao.OVERWRITTEN).read();
+                if (!queriesContent.equals(AggregateDao.OVERWRITTEN)) {
+                    mergedAggregate.addQueries(queriesContent);
+                }
+            }
             if (profileCappedId != null) {
                 String profileContent =
                         cappedDatabase.read(profileCappedId, AggregateDao.OVERWRITTEN).read();
@@ -708,7 +725,8 @@ public class AggregateDao {
                 String transactionType = checkNotNull(resultSet.getString(1));
                 MergedAggregate mergedAggregate = mergedAggregates.get(transactionType);
                 if (mergedAggregate == null) {
-                    mergedAggregate = new MergedAggregate(rollupCaptureTime, transactionType, null);
+                    mergedAggregate = new MergedAggregate(rollupCaptureTime, transactionType, null,
+                            configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
                     mergedAggregates.put(transactionType, mergedAggregate);
                 }
                 merge(mergedAggregate, resultSet, 2);
@@ -742,7 +760,8 @@ public class AggregateDao {
                 MergedAggregate mergedAggregate = mergedAggregateMap.get(transactionName);
                 if (mergedAggregate == null) {
                     mergedAggregate = new MergedAggregate(rollupCaptureTime, transactionType,
-                            transactionName);
+                            transactionName, configService.getAdvancedConfig()
+                                    .maxAggregateQueriesPerQueryType());
                     mergedAggregateMap.put(transactionName, mergedAggregate);
                 }
                 merge(mergedAggregate, resultSet, 3);
@@ -770,17 +789,19 @@ public class AggregateDao {
         private @Nullable Long totalBlockedMicros;
         private @Nullable Long totalWaitedMicros;
         private @Nullable Long totalAllocatedKBytes;
-        private long profileSampleCount;
         private long traceCount;
         private final LazyHistogram lazyHistogram = new LazyHistogram();
         private final AggregateTimer syntheticRootTimer = AggregateTimer.createSyntheticRootTimer();
+        private final QueryComponent queryComponent;
         private final ProfileNode syntheticProfileNode = ProfileNode.createSyntheticRoot();
 
         public MergedAggregate(long captureTime, String transactionType,
-                @Nullable String transactionName) {
+                @Nullable String transactionName, int maxAggregateQueriesPerQueryType) {
             this.captureTime = captureTime;
             this.transactionType = transactionType;
             this.transactionName = transactionName;
+            // MAX_VALUE because when merging apply limit at the end
+            queryComponent = new QueryComponent(maxAggregateQueriesPerQueryType, true);
         }
 
         public void setCaptureTime(long captureTime) {
@@ -816,10 +837,6 @@ public class AggregateDao {
                     totalAllocatedKBytes);
         }
 
-        public void addProfileSampleCount(long profileSampleCount) {
-            this.profileSampleCount += profileSampleCount;
-        }
-
         public void addTraceCount(long traceCount) {
             this.traceCount += traceCount;
         }
@@ -849,18 +866,31 @@ public class AggregateDao {
                     .totalBlockedMicros(totalBlockedMicros)
                     .totalWaitedMicros(totalWaitedMicros)
                     .totalAllocatedKBytes(totalAllocatedKBytes)
-                    .profileSampleCount(profileSampleCount)
                     .traceCount(traceCount)
                     .histogram(histogram)
                     .timers(mapper.writeValueAsString(syntheticRootTimer))
+                    .queries(getQueriesJson())
                     .profile(getProfileJson())
                     .build();
         }
 
-        private void addProfile(String content) throws IOException {
+        private void addQueries(String queryContent) throws IOException {
+            queryComponent.mergeQueries(queryContent);
+        }
+
+        private void addProfile(String profileContent) throws IOException {
             ProfileNode profileNode =
-                    ObjectMappers.readRequiredValue(mapper, content, ProfileNode.class);
+                    ObjectMappers.readRequiredValue(mapper, profileContent, ProfileNode.class);
             syntheticProfileNode.mergeMatchedNode(profileNode);
+        }
+
+        private @Nullable String getQueriesJson() throws IOException {
+            Map<String, Map<String, AggregateQueryData>> queries = queryComponent
+                    .getMergedQueries();
+            if (queries.isEmpty()) {
+                return null;
+            }
+            return mapper.writeValueAsString(queries);
         }
 
         private @Nullable String getProfileJson() throws IOException {

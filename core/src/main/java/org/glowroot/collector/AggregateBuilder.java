@@ -17,15 +17,19 @@ package org.glowroot.collector;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.glowroot.collector.QueryComponent.AggregateQueryData;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.common.ScratchBuffer;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.ProfileNode;
+import org.glowroot.transaction.model.QueryData;
 import org.glowroot.transaction.model.ThreadInfoData;
 import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.Transaction;
@@ -46,16 +50,18 @@ class AggregateBuilder {
     private @Nullable Long totalBlockedTime;
     private @Nullable Long totalWaitedTime;
     private @Nullable Long totalAllocatedBytes;
-    private long profileSampleCount;
     private long traceCount;
     // histogram uses microseconds to reduce (or at least simplify) bucket allocations
     private final LazyHistogram lazyHistogram = new LazyHistogram();
     private final AggregateTimer syntheticRootTimer = AggregateTimer.createSyntheticRootTimer();
+    private final QueryComponent queryComponent;
     private final AggregateProfileBuilder aggregateProfile = new AggregateProfileBuilder();
 
-    AggregateBuilder(String transactionType, @Nullable String transactionName) {
+    AggregateBuilder(String transactionType, @Nullable String transactionName,
+            int maxAggregateQueriesPerQueryType) {
         this.transactionType = transactionType;
         this.transactionName = transactionName;
+        queryComponent = new QueryComponent(maxAggregateQueriesPerQueryType, true);
     }
 
     void add(Transaction transaction) {
@@ -83,9 +89,14 @@ class AggregateBuilder {
         syntheticRootTimer.mergeAsChildTimer(rootTimer);
     }
 
+    void addToQueries(Map<String, Map<String, QueryData>> queries) {
+        for (Entry<String, Map<String, QueryData>> entry : queries.entrySet()) {
+            queryComponent.mergeQueries(entry.getKey(), entry.getValue());
+        }
+    }
+
     void addToProfile(Profile profile) {
         aggregateProfile.addProfile(profile);
-        profileSampleCount += profile.getSampleCount();
     }
 
     Aggregate build(long captureTime, ScratchBuffer scratchBuffer) throws IOException {
@@ -103,10 +114,10 @@ class AggregateBuilder {
                 .totalBlockedMicros(nullAwareNanosToMicros(totalBlockedTime))
                 .totalWaitedMicros(nullAwareNanosToMicros(totalWaitedTime))
                 .totalAllocatedKBytes(nullAwareBytesToKBytes(totalAllocatedBytes))
-                .profileSampleCount(profileSampleCount)
                 .traceCount(traceCount)
                 .histogram(histogram)
                 .timers(mapper.writeValueAsString(syntheticRootTimer))
+                .queries(getQueriesJson())
                 .profile(getProfileJson())
                 .build();
     }
@@ -139,8 +150,13 @@ class AggregateBuilder {
                 .build();
     }
 
-    long getProfileSampleCount() {
-        return profileSampleCount;
+    @Nullable
+    String getQueriesJson() throws IOException {
+        Map<String, Map<String, AggregateQueryData>> queries = queryComponent.getMergedQueries();
+        if (queries.isEmpty()) {
+            return null;
+        }
+        return mapper.writeValueAsString(queries);
     }
 
     @Nullable

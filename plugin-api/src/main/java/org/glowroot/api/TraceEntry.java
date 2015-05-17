@@ -60,7 +60,7 @@ public interface TraceEntry {
      * Example of query and subsequent iterating over results which goes back to database and pulls
      * more results.
      */
-    Timer extend(TimerName altTimerName);
+    Timer extend();
 
     /**
      * Returns the {@code MessageSupplier} that was supplied when the {@code TraceEntry} was

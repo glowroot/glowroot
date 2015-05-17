@@ -377,13 +377,15 @@ public class ConfigTest {
         config.setWeavingTimer(!config.isWeavingTimer());
         config.setImmediatePartialStoreThresholdSeconds(
                 config.getImmediatePartialStoreThresholdSeconds() + 1);
-        config.setMaxTraceEntriesPerTransaction(config.getMaxTraceEntriesPerTransaction() + 10);
+        config.setMaxAggregateQueriesPerQueryType(config.getMaxAggregateQueriesPerQueryType() + 10);
+        config.setMaxTraceEntriesPerTransaction(config.getMaxTraceEntriesPerTransaction() + 100);
         config.setMaxStackTraceSamplesPerTransaction(
-                config.getMaxStackTraceSamplesPerTransaction() + 100);
+                config.getMaxStackTraceSamplesPerTransaction() + 1000);
         config.setCaptureThreadInfo(!config.isCaptureThreadInfo());
         config.setCaptureGcInfo(!config.isCaptureGcInfo());
-        config.setMBeanGaugeNotFoundDelaySeconds(config.getMBeanGaugeNotFoundDelaySeconds() + 1000);
-        config.setInternalQueryTimeoutSeconds(config.getInternalQueryTimeoutSeconds() + 10000);
+        config.setMBeanGaugeNotFoundDelaySeconds(
+                config.getMBeanGaugeNotFoundDelaySeconds() + 10000);
+        config.setInternalQueryTimeoutSeconds(config.getInternalQueryTimeoutSeconds() + 100000);
     }
 
     private static void updateAllFields(PluginConfig config) {

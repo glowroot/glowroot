@@ -37,6 +37,10 @@ public class AdvancedConfigPage {
         return withWait(xpath("//div[@gt-label='Immediate partial trace store threshold']//input"));
     }
 
+    public WebElement getMaxAggregateQueriesPerQueryTypeTextField() {
+        return withWait(xpath("//div[@gt-label='Max aggregate queries per query type']//input"));
+    }
+
     public WebElement getMaxTraceEntriesPerTransactionTextField() {
         return withWait(xpath("//div[@gt-label='Max trace entries per transaction']//input"));
     }

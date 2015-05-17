@@ -1,0 +1,137 @@
+<!--
+  Copyright 2015 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<div style="position: relative; min-height: 100px;">
+  <div gt-spinner
+       gt-show="showSpinner && !showQueries"
+       class="gt-left-aligned-spinner">
+  </div>
+  <div style="position: absolute; width: 100%; margin-top: 50px;">
+    <div gt-spinner
+         gt-show="showSpinner && showQueries">
+    </div>
+  </div>
+  <!-- negative right position is so overlay will cover view flame graph link which sticks slightly beyond container -->
+  <div class="gt-panel-overlay"
+       ng-show="showSpinner"
+       style="right: -20px;">
+  </div>
+  <div ng-show="!showSpinner && !showQueries"
+       style="display: table; width: 100%; height: 100%; margin-top: 50px;">
+    <div style="display: table-cell; text-align: center; vertical-align: middle;">
+      <div class="gt-chart-no-data"
+           ng-hide="tabBarData.queriesExpired">
+        No data for this time period
+      </div>
+      <div class="gt-chart-no-data"
+           ng-show="tabBarData.queriesExpired">
+        *There was query data but it has expired, see <a href="config/storage">storage configuration</a>
+      </div>
+    </div>
+  </div>
+  <div ng-show="showQueries">
+    <table class="table query-table"
+           style="table-layout: fixed;">
+      <thead>
+      <tr>
+        <th></th>
+        <th class="gt-query-total-column">
+          <a ng-href="{{currentTabUrl()}}{{sortQueryString('total-time')}}" class="gt-sortable-table-header">
+            Total<br>
+            time<br>
+            (ms)
+            <span ng-class="sortIconClass('total-time')"
+                  ng-show="sortAttribute === 'total-time'">
+            </span>
+          </a>
+        </th>
+        <th class="gt-query-other-column">
+          <a ng-href="{{currentTabUrl()}}{{sortQueryString('execution-count')}}" class="gt-sortable-table-header">
+            Execution<br>
+            count
+            <span ng-class="sortIconClass('execution-count')"
+                  ng-show="sortAttribute === 'execution-count'">
+            </span>
+          </a>
+        </th>
+        <th class="gt-query-other-column">
+          <a ng-href="{{currentTabUrl()}}{{sortQueryString('time-per-execution')}}" class="gt-sortable-table-header">
+            Time per<br>
+            execution<br>
+            (ms)
+            <span ng-class="sortIconClass('time-per-execution')"
+                  ng-show="sortAttribute === 'time-per-execution'">
+            </span>
+          </a>
+        </th>
+        <th class="gt-query-other-column">
+          <a ng-href="{{currentTabUrl()}}{{sortQueryString('rows-per-execution')}}" class="gt-sortable-table-header">
+            Rows per<br>
+            execution
+            <span ng-class="sortIconClass('rows-per-execution')"
+                  ng-show="sortAttribute === 'rows-per-execution'">
+            </span>
+          </a>
+        </th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr ng-repeat="query in queries | orderBy:sortAttr:sortReverse">
+        <td class="gt-query-text-column"
+            ng-click="showQueryModal(query)">
+          {{query.queryText}}
+        </td>
+        <td class="gt-query-total-column">
+          {{query.totalMicros / 1000 | gtMillis}}
+        </td>
+        <td class="gt-query-other-column">
+          {{query.executionCount}}
+        </td>
+        <td class="gt-query-other-column">
+          {{query.timePerExecution | gtMillis}}
+        </td>
+        <td class="gt-query-other-column">
+          {{query.rowsPerExecution | gtRowCount}}
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="modal gt-full-screen-modal" id="queryModal" tabindex="-1">
+  <button type="button"
+          class="close"
+          data-dismiss="modal">
+    &times;
+  </button>
+  <div class="modal-dialog">
+    <div class="modal-body">
+      <!-- display: inline-block is so that true width can be calculated and modal shrunk to fit if possible -->
+      <!-- not using ng-show/hide here since need it to be visible for size calculation -->
+      <pre id="formattedQuery"
+           style="white-space: pre-wrap; display: inline-block; margin: 0;">
+      </pre>
+      <div id="unformattedQuery" style="padding-bottom: 5px;"></div>
+      <a href="#"
+         id="formattingToggle"
+         ng-show="formattedQuery"
+         ng-click="toggleFormatted()"
+         style="display: block; margin: 15px 0 0 20px;">
+        {{ showFormatted ? '(show unformatted)' : '(show formatted)' }}
+      </a>
+    </div>
+  </div>
+</div>

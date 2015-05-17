@@ -82,7 +82,7 @@ public class LocalUiModule {
         LayoutHttpService layoutHttpService =
                 new LayoutHttpService(httpSessionManager, layoutService);
         TransactionCommonService transactionCommonService = new TransactionCommonService(
-                aggregateDao, collectorModule.getAggregateCollector(),
+                aggregateDao, collectorModule.getAggregateCollector(), configService,
                 storageModule.getFixedAggregateRollupSeconds());
         TraceCommonService traceCommonService = new TraceCommonService(traceDao,
                 transactionRegistry, transactionCollector, clock, ticker);

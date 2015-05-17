@@ -32,6 +32,8 @@ import io.netty.handler.codec.http.HttpHeaders.Values;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 
+import org.glowroot.common.ChunkSource;
+
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
@@ -60,7 +62,7 @@ class GlowrootLogHttpService implements UnauthenticatedHttpService {
         HttpServices.preventCaching(response);
         ctx.write(response);
         ChannelFuture future =
-                ctx.write(ChunkedInputs.fromReader(glowrootLogCharSource.openStream()));
+                ctx.write(ChunkedInputs.from(ChunkSource.from(glowrootLogCharSource)));
         HttpServices.addErrorListener(future);
         if (!keepAlive) {
             HttpServices.addCloseListener(future);

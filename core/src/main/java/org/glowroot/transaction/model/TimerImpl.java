@@ -25,6 +25,8 @@ import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.Timer;
 import org.glowroot.api.TimerName;
@@ -48,6 +50,8 @@ import org.glowroot.common.Tickers;
 //
 // all timing data is in nanoseconds
 public class TimerImpl implements Timer {
+
+    private static final Logger logger = LoggerFactory.getLogger(TimerImpl.class);
 
     private static final Ticker ticker = Tickers.getTicker();
 
@@ -88,21 +92,25 @@ public class TimerImpl implements Timer {
     // safe to be called from another thread
     public void writeValue(JsonGenerator jg) throws IOException {
         jg.writeStartObject();
-        jg.writeStringField("name", getName());
+        jg.writeStringField("name", timerName.name());
+        if (timerName.extended()) {
+            // only write this rare attribute when needed
+            jg.writeBooleanField("extended", true);
+        }
 
         boolean active = selfNestingLevel > 0;
 
         if (active) {
-            // try to grab a quick, consistent trace, but no guarantee on consistency since the
+            // try to grab a quick, consistent view, but no guarantee on consistency since the
             // transaction is active
             //
             // grab total before curr, to avoid case where total is updated in between
             // these two lines and then "total + curr" would overstate the correct value
             // (it seems better to understate the correct value if there is an update to the
             // timer values in between these two lines)
-            long theTotal = this.total;
+            long theTotal = total;
             // capture startTick before ticker.read() so curr is never < 0
-            long theStartTick = this.startTick;
+            long theStartTick = startTick;
             long curr = ticker.read() - theStartTick;
             if (theTotal == 0) {
                 jg.writeNumberField("total", curr);
@@ -116,7 +124,6 @@ public class TimerImpl implements Timer {
         } else {
             jg.writeNumberField("total", total);
             jg.writeNumberField("count", count);
-            jg.writeBooleanField("active", false);
         }
         if (threadSafeNestedTimers != null) {
             ImmutableList<TimerImpl> copyOfNestedTimers;
@@ -145,7 +152,7 @@ public class TimerImpl implements Timer {
         }
     }
 
-    public TimerName getTimerName() {
+    public TimerNameImpl getTimerName() {
         return timerName;
     }
 
@@ -153,17 +160,21 @@ public class TimerImpl implements Timer {
         return timerName.name();
     }
 
-    // only called by transaction thread
+    public boolean isExtended() {
+        return timerName.extended();
+    }
+
+    // only called after transaction completion
     public long getTotal() {
         return total;
     }
 
-    // only called by transaction thread
+    // only called after transaction completion
     public long getCount() {
         return count;
     }
 
-    // only called by transaction thread at transaction completion
+    // only called after transaction completion
     public List<TimerImpl> getNestedTimers() {
         if (threadSafeNestedTimers == null) {
             return ImmutableList.of();
@@ -193,12 +204,14 @@ public class TimerImpl implements Timer {
         return startNestedTimerInternal(timerName, startTick);
     }
 
-    public Timer extend(TimerName altTimerName) {
+    public TimerImpl extend() {
         TimerImpl currentTimer = transaction.getCurrentTimer();
         if (currentTimer == null) {
-            return NopTimer.INSTANCE;
+            logger.warn("extend() transaction currentTimer is null");
+            return this;
         }
         if (currentTimer == parent) {
+            // restarting a previously stopped execution, so need to decrement count
             count--;
             start(ticker.read());
             return this;
@@ -207,16 +220,25 @@ public class TimerImpl implements Timer {
             selfNestingLevel++;
             return this;
         }
-        // otherwise can't just restart timer, so need to use altTimerName
-        return currentTimer.startNestedTimer(altTimerName);
+        // otherwise can't just restart timer, so need to start an "extended" timer under the
+        // current timer
+        TimerNameImpl extendedTimer = timerName.extendedTimer();
+        if (extendedTimer == null) {
+            logger.warn("extend() should only be accessible to non-extended timers");
+            return this;
+        }
+        return currentTimer.startNestedTimer(extendedTimer);
     }
 
-    public Timer extend(TimerName altTimerName, long startTick) {
+    // copy of no-arg extend() that by-passes ticker read when it is already available
+    public TimerImpl extend(long startTick) {
         TimerImpl currentTimer = transaction.getCurrentTimer();
         if (currentTimer == null) {
-            return NopTimer.INSTANCE;
+            logger.warn("extend() transaction currentTimer is null");
+            return this;
         }
         if (currentTimer == parent) {
+            // restarting a previously stopped execution, so need to decrement count
             count--;
             start(startTick);
             return this;
@@ -225,8 +247,14 @@ public class TimerImpl implements Timer {
             selfNestingLevel++;
             return this;
         }
-        // otherwise can't just restart timer, so need to use altTimerName
-        return currentTimer.startNestedTimer(altTimerName, startTick);
+        // otherwise can't just restart timer, so need to start an "extended" timer under the
+        // current timer
+        TimerNameImpl extendedTimer = timerName.extendedTimer();
+        if (extendedTimer == null) {
+            logger.warn("extend() should only be accessible to non-extended timers");
+            return this;
+        }
+        return currentTimer.startNestedTimer(extendedTimer);
     }
 
     void start(long startTick) {
@@ -265,11 +293,5 @@ public class TimerImpl implements Timer {
             threadSafeNestedTimers.add(nestedTimer);
         }
         return nestedTimer;
-    }
-
-    private static class NopTimer implements Timer {
-        private static final NopTimer INSTANCE = new NopTimer();
-        @Override
-        public void stop() {}
     }
 }

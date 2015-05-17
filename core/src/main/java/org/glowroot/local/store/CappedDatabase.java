@@ -35,6 +35,7 @@ import com.ning.compress.lzf.LZFOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.ChunkSource;
 import org.glowroot.markers.OnlyUsedByTests;
 
 public class CappedDatabase {
@@ -67,6 +68,20 @@ public class CappedDatabase {
             Writer compressedWriter =
                     new OutputStreamWriter(new LZFOutputStream(out), Charsets.UTF_8);
             charSource.copyTo(compressedWriter);
+            compressedWriter.flush();
+            return out.endBlock();
+        }
+    }
+
+    long write(ChunkSource chunkSource) throws IOException {
+        synchronized (lock) {
+            if (closing) {
+                return -1;
+            }
+            out.startBlock();
+            Writer compressedWriter =
+                    new OutputStreamWriter(new LZFOutputStream(out), Charsets.UTF_8);
+            chunkSource.copyTo(compressedWriter);
             compressedWriter.flush();
             return out.endBlock();
         }

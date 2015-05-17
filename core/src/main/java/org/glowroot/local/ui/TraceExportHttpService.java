@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.Trace;
+import org.glowroot.common.ChunkSource;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
@@ -94,8 +95,8 @@ class TraceExportHttpService implements HttpService {
     }
 
     private ChunkedInput<HttpContent> getExportChunkedInput(TraceExport export) throws IOException {
-        CharSource charSource = render(export);
-        return ChunkedInputs.fromReaderToZipFileDownload(charSource.openStream(),
+        ChunkSource chunkSource = render(export);
+        return ChunkedInputs.fromChunkSourceToZipFileDownload(chunkSource,
                 getFilename(export.trace()));
     }
 
@@ -104,7 +105,7 @@ class TraceExportHttpService implements HttpService {
         return "trace-" + timestamp;
     }
 
-    private static CharSource render(TraceExport traceExport) throws IOException {
+    private static ChunkSource render(TraceExport traceExport) throws IOException {
         String htmlStartTag = "<html>";
         String exportCssPlaceholder = "<link rel=\"stylesheet\" href=\"styles/export.css\">";
         String exportJsPlaceholder = "<script src=\"scripts/export.js\"></script>";
@@ -118,49 +119,55 @@ class TraceExportHttpService implements HttpService {
                 + profilePlaceholder + ")");
         Matcher matcher = pattern.matcher(templateContent);
         int curr = 0;
-        List<CharSource> charSources = Lists.newArrayList();
+        List<ChunkSource> chunkSources = Lists.newArrayList();
         while (matcher.find()) {
-            charSources.add(CharSource.wrap(
+            chunkSources.add(ChunkSource.wrap(
                     templateContent.substring(curr, matcher.start())));
             curr = matcher.end();
             String match = matcher.group();
             if (match.equals(htmlStartTag)) {
                 // Need to add "Mark of the Web" for IE, otherwise IE won't run javascript
                 // see http://msdn.microsoft.com/en-us/library/ms537628(v=vs.85).aspx
-                charSources.add(CharSource.wrap(
+                chunkSources.add(ChunkSource.wrap(
                         "<!-- saved from url=(0014)about:internet -->\r\n<html>"));
             } else if (match.equals(exportCssPlaceholder)) {
-                charSources.add(CharSource.wrap("<style>"));
-                charSources.add(asCharSource("styles/export.css"));
-                charSources.add(CharSource.wrap("</style>"));
+                chunkSources.add(ChunkSource.wrap("<style>"));
+                chunkSources.add(asChunkSource("styles/export.css"));
+                chunkSources.add(ChunkSource.wrap("</style>"));
             } else if (match.equals(exportJsPlaceholder)) {
-                charSources.add(CharSource.wrap("<script>"));
-                charSources.add(asCharSource("scripts/export.js"));
-                charSources.add(CharSource.wrap("</script>"));
+                chunkSources.add(ChunkSource.wrap("<script>"));
+                chunkSources.add(asChunkSource("scripts/export.js"));
+                chunkSources.add(ChunkSource.wrap("</script>"));
             } else if (match.equals(tracePlaceholder)) {
-                charSources.add(CharSource.wrap("<script type=\"text/json\" id=\"traceJson\">"));
-                charSources.add(CharSource.wrap(traceExport.traceJson()));
-                charSources.add(CharSource.wrap("</script>"));
+                chunkSources.add(ChunkSource.wrap("<script type=\"text/json\" id=\"traceJson\">"));
+                chunkSources.add(ChunkSource.wrap(traceExport.traceJson()));
+                chunkSources.add(ChunkSource.wrap("</script>"));
             } else if (match.equals(entriesPlaceholder)) {
-                charSources.add(CharSource.wrap("<script type=\"text/json\" id=\"entriesJson\">"));
-                CharSource entries = traceExport.entries();
+                chunkSources
+                        .add(ChunkSource.wrap("<script type=\"text/json\" id=\"entriesJson\">"));
+                ChunkSource entries = traceExport.entries();
                 if (entries != null) {
-                    charSources.add(entries);
+                    chunkSources.add(entries);
                 }
-                charSources.add(CharSource.wrap("</script>"));
+                chunkSources.add(ChunkSource.wrap("</script>"));
             } else if (match.equals(profilePlaceholder)) {
-                charSources.add(CharSource.wrap("<script type=\"text/json\" id=\"profileJson\">"));
-                CharSource profile = traceExport.profile();
+                chunkSources
+                        .add(ChunkSource.wrap("<script type=\"text/json\" id=\"profileJson\">"));
+                ChunkSource profile = traceExport.profile();
                 if (profile != null) {
-                    charSources.add(profile);
+                    chunkSources.add(profile);
                 }
-                charSources.add(CharSource.wrap("</script>"));
+                chunkSources.add(ChunkSource.wrap("</script>"));
             } else {
                 logger.error("unexpected match: {}", match);
             }
         }
-        charSources.add(CharSource.wrap(templateContent.substring(curr)));
-        return CharSource.concat(charSources);
+        chunkSources.add(ChunkSource.wrap(templateContent.substring(curr)));
+        return ChunkSource.concat(chunkSources);
+    }
+
+    private static ChunkSource asChunkSource(String exportResourceName) {
+        return ChunkSource.from(asCharSource(exportResourceName));
     }
 
     private static CharSource asCharSource(String exportResourceName) {

@@ -15,12 +15,12 @@
  */
 package org.glowroot.transaction.model;
 
-import java.util.List;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import javax.annotation.Nullable;
 
 import com.google.common.base.Ticker;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +30,7 @@ import org.glowroot.api.MessageSupplier;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 // this supports updating by a single thread and reading by multiple threads
-class TraceEntryComponent {
+class TraceEntryComponent implements Iterable<TraceEntryImpl> {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceEntryComponent.class);
 
@@ -60,7 +60,7 @@ class TraceEntryComponent {
             Ticker ticker) {
         this.startTick = startTick;
         this.ticker = ticker;
-        rootEntry = new TraceEntryImpl(null, messageSupplier, startTick, -1, timer);
+        rootEntry = new TraceEntryImpl(null, messageSupplier, null, startTick, -1, timer);
         activeEntry = rootEntry;
         tailEntry = rootEntry;
     }
@@ -70,14 +70,9 @@ class TraceEntryComponent {
     }
 
     // this does not include root trace entry
-    List<TraceEntryImpl> getEntriesCopy() {
-        List<TraceEntryImpl> entries = Lists.newArrayList();
-        TraceEntryImpl entry = rootEntry.getNextTraceEntry();
-        while (entry != null) {
-            entries.add(entry);
-            entry = entry.getNextTraceEntry();
-        }
-        return entries;
+    @Override
+    public Iterator<TraceEntryImpl> iterator() {
+        return new TraceEntryIterator(rootEntry);
     }
 
     // this does not include root trace entry
@@ -102,8 +97,10 @@ class TraceEntryComponent {
         return completed ? endTick - startTick : ticker.read() - startTick;
     }
 
-    TraceEntryImpl pushEntry(long startTick, MessageSupplier messageSupplier, TimerImpl timer) {
-        TraceEntryImpl entry = createEntry(startTick, messageSupplier, null, timer, false);
+    TraceEntryImpl pushEntry(long startTick, MessageSupplier messageSupplier,
+            @Nullable QueryData queryData, TimerImpl timer) {
+        TraceEntryImpl entry =
+                createEntry(startTick, messageSupplier, queryData, null, timer, false);
         tailEntry.setNextTraceEntry(entry);
         tailEntry = entry;
         activeEntry = entry;
@@ -122,10 +119,11 @@ class TraceEntryComponent {
         }
     }
 
-    TraceEntryImpl addEntry(long startTick, long endTick, @Nullable MessageSupplier messageSupplier,
+    TraceEntryImpl addEntry(long startTick, long endTick,
+            @Nullable MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage, boolean limitBypassed) {
         TraceEntryImpl entry =
-                createEntry(startTick, messageSupplier, errorMessage, null, limitBypassed);
+                createEntry(startTick, messageSupplier, null, errorMessage, null, limitBypassed);
         tailEntry.setNextTraceEntry(entry);
         tailEntry = entry;
         entryCount++;
@@ -145,7 +143,8 @@ class TraceEntryComponent {
     }
 
     private TraceEntryImpl createEntry(long startTick, @Nullable MessageSupplier messageSupplier,
-            @Nullable ErrorMessage errorMessage, @Nullable TimerImpl timer, boolean limitBypassed) {
+            @Nullable QueryData queryData, @Nullable ErrorMessage errorMessage,
+            @Nullable TimerImpl timer, boolean limitBypassed) {
         if (entryLimitExceeded && !limitBypassed) {
             // just in case the entryLimit property is changed in the middle of a trace this resets
             // the flag so that it can be triggered again (and possibly then a second limit marker)
@@ -166,8 +165,8 @@ class TraceEntryComponent {
             checkNotNull(activeEntry);
             nestingLevel = activeEntry.getNestingLevel() + 1;
         }
-        TraceEntryImpl entry =
-                new TraceEntryImpl(activeEntry, messageSupplier, startTick, nestingLevel, timer);
+        TraceEntryImpl entry = new TraceEntryImpl(activeEntry, messageSupplier, queryData,
+                startTick, nestingLevel, timer);
         entry.setErrorMessage(errorMessage);
         return entry;
     }
@@ -197,6 +196,30 @@ class TraceEntryComponent {
             activeEntry = activeEntry.getParentTraceEntry();
         } else {
             logger.error("popped entire stack, never found entry: {}", expectingEntry);
+        }
+    }
+
+    private static class TraceEntryIterator implements Iterator<TraceEntryImpl> {
+        private TraceEntryImpl curr;
+        private TraceEntryIterator(TraceEntryImpl rootEntry) {
+            this.curr = rootEntry;
+        }
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+        @Override
+        public TraceEntryImpl next() {
+            TraceEntryImpl next = curr.getNextTraceEntry();
+            if (next == null) {
+                throw new NoSuchElementException();
+            }
+            curr = next;
+            return curr;
+        }
+        @Override
+        public boolean hasNext() {
+            return curr.getNextTraceEntry() != null;
         }
     }
 }

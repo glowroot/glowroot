@@ -665,6 +665,7 @@ class ConfigJsonService {
         abstract boolean timerWrapperMethods();
         abstract boolean weavingTimer();
         abstract int immediatePartialStoreThresholdSeconds();
+        abstract int maxAggregateQueriesPerQueryType();
         abstract int maxTraceEntriesPerTransaction();
         abstract int maxStackTraceSamplesPerTransaction();
         abstract boolean captureThreadInfo();
@@ -678,6 +679,7 @@ class ConfigJsonService {
                     .timerWrapperMethods(timerWrapperMethods())
                     .weavingTimer(weavingTimer())
                     .immediatePartialStoreThresholdSeconds(immediatePartialStoreThresholdSeconds())
+                    .maxAggregateQueriesPerQueryType(maxAggregateQueriesPerQueryType())
                     .maxTraceEntriesPerTransaction(maxTraceEntriesPerTransaction())
                     .maxStackTraceSamplesPerTransaction(maxStackTraceSamplesPerTransaction())
                     .captureThreadInfo(captureThreadInfo())
@@ -693,6 +695,7 @@ class ConfigJsonService {
                     .weavingTimer(config.weavingTimer())
                     .immediatePartialStoreThresholdSeconds(
                             config.immediatePartialStoreThresholdSeconds())
+                    .maxAggregateQueriesPerQueryType(config.maxAggregateQueriesPerQueryType())
                     .maxTraceEntriesPerTransaction(config.maxTraceEntriesPerTransaction())
                     .maxStackTraceSamplesPerTransaction(
                             config.maxStackTraceSamplesPerTransaction())

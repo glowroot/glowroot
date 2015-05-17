@@ -25,11 +25,11 @@ import javax.annotation.concurrent.GuardedBy;
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Sets;
-import com.google.common.io.CharSource;
 import com.google.common.util.concurrent.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.ChunkSource;
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigService;
 import org.glowroot.markers.OnlyUsedByTests;
@@ -189,10 +189,12 @@ public class TransactionCollectorImpl implements TransactionCollector {
         } else {
             captureTick = ticker.read();
         }
-        CharSource entries = EntriesCharSourceCreator.createEntriesCharSource(
-                transaction.getEntriesCopy(), transaction.getStartTick(), captureTick);
-        CharSource profile =
-                ProfileCharSourceCreator.createProfileCharSource(transaction.getProfile());
-        traceRepository.store(trace, entries, profile);
+        ChunkSource queries =
+                QueriesChunkSourceCreator.createQueriesChunkSource(transaction.getQueries());
+        ChunkSource entries = EntriesChunkSourceCreator.createEntriesChunkSource(
+                transaction.getEntries(), transaction.getStartTick(), captureTick);
+        ChunkSource profile =
+                ProfileChunkSourceCreator.createProfileChunkSource(transaction.getProfile());
+        traceRepository.store(trace, queries, entries, profile);
     }
 }

@@ -123,7 +123,9 @@
       <tr class="align-top">
         <td style="text-align: left;">
           <div style="margin-left: {{timerIndent .}}em;">
-            <div class="gt-break-word gt-second-line-indent">{{name}}</div>
+            <div class="gt-break-word gt-second-line-indent">
+              {{name}}{{#if extended}} (extended){{/if}}
+            </div>
           </div>
         </td>
         <td>{{nanosToMillis total}}{{#if active}}..{{/if}}</td>

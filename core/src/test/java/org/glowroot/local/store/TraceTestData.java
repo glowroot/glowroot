@@ -18,7 +18,6 @@ package org.glowroot.local.store;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.io.CharSource;
 
 import org.glowroot.collector.Existence;
 import org.glowroot.collector.Trace;
@@ -45,24 +44,12 @@ class TraceTestData {
                 .customAttributes("{\"abc\":\"xyz\", \"xyz\":\"abc\"}")
                 .customAttributesForIndexing(ImmutableSetMultimap.of("abc", "xyz", "xyz", "abc"))
                 .customDetail("{\"abc1\":\"xyz1\", \"xyz2\":\"abc2\"}")
-                .entryCount(1)
-                .profileSampleCount(0)
+                .queryCount(0)
+                .queriesExistence(Existence.NO)
+                .entryCount(0)
                 .entriesExistence(Existence.NO)
+                .profileSampleCount(0)
                 .profileExistence(Existence.NO)
                 .build();
-    }
-
-    static CharSource createEntries() {
-        return CharSource.wrap("[{\"offset\":0,\"duration\":0,\"index\":0,"
-                + "\"level\":0,\"message\":{\"text\":\"Level One\","
-                + "\"detail\":{\"arg1\":\"a\",\"arg2\":\"b\","
-                + "\"nested1\":{\"nestedkey11\":\"a\",\"nestedkey12\":\"b\","
-                + "\"subnestedkey1\":{\"subnestedkey1\":\"a\",\"subnestedkey2\":\"b\"}},"
-                + "\"nested2\":{\"nestedkey21\":\"a\",\"nestedkey22\":\"b\"}}}},"
-                + "{\"offset\":0,\"duration\":0,\"index\":1,\"level\":1,"
-                + "\"message\":{\"text\":\"Level Two\",\"detail\":{\"arg1\":\"ax\","
-                + "\"arg2\":\"bx\"}}},{\"offset\":0,\"duration\":0,\"index\":2,"
-                + "\"level\":2,\"message\":{\"text\":\"Level Three\","
-                + "\"detail\":{\"arg1\":\"axy\",\"arg2\":\"bxy\"}}}]");
     }
 }

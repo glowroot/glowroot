@@ -24,6 +24,7 @@ import org.glowroot.api.Logger;
 import org.glowroot.api.LoggerFactory;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.BooleanProperty;
+import org.glowroot.api.QueryEntry;
 import org.glowroot.api.Timer;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.weaving.BindReceiver;
@@ -35,7 +36,6 @@ import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.plugin.jdbc.StatementAspect.HasStatementMirror;
-import org.glowroot.plugin.jdbc.message.JdbcMessageSupplier;
 
 public class ResultSetAspect {
 
@@ -56,9 +56,9 @@ public class ResultSetAspect {
             return resultSet.hasGlowrootStatementMirror() && pluginServices.isEnabled();
         }
         @OnBefore
-        public static @Nullable Timer onBefore() {
+        public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
             if (timerEnabled.value()) {
-                return pluginServices.startTimer(timerName);
+                return onBeforeCommon(resultSet, timerName);
             } else {
                 return null;
             }
@@ -72,17 +72,17 @@ public class ResultSetAspect {
                 // bizarre concurrent mis-usage of ResultSet
                 return;
             }
-            JdbcMessageSupplier lastJdbcMessageSupplier = mirror.getLastJdbcMessageSupplier();
-            if (lastJdbcMessageSupplier == null) {
+            QueryEntry lastQuery = mirror.getLastQuery();
+            if (lastQuery == null) {
                 // tracing must be disabled (e.g. exceeded trace entry limit)
                 return;
             }
             if (currentRowValid) {
                 // ResultSet.getRow() is sometimes not super duper fast due to ResultSet
                 // wrapping and other checks, so this optimizes the common case
-                lastJdbcMessageSupplier.incrementNumRows();
+                lastQuery.incrementCurrRow();
             } else {
-                lastJdbcMessageSupplier.setHasPerformedNavigation();
+                lastQuery.setCurrRow(0);
             }
         }
         @OnAfter
@@ -107,16 +107,15 @@ public class ResultSetAspect {
             return resultSet.hasGlowrootStatementMirror() && pluginServices.isEnabled();
         }
         @OnBefore
-        public static @Nullable Timer onBefore() {
+        public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
             if (timerEnabled.value()) {
-                return pluginServices.startTimer(timerName);
+                return onBeforeCommon(resultSet, timerName);
             } else {
                 return null;
             }
         }
         @OnReturn
-        public static void onReturn(@BindReturn boolean currentRowValid,
-                @BindReceiver HasStatementMirror resultSet) {
+        public static void onReturn(@BindReceiver HasStatementMirror resultSet) {
             try {
                 StatementMirror mirror = resultSet.getGlowrootStatementMirror();
                 if (mirror == null) {
@@ -124,16 +123,12 @@ public class ResultSetAspect {
                     // bizarre concurrent mis-usage of ResultSet
                     return;
                 }
-                JdbcMessageSupplier lastJdbcMessageSupplier = mirror.getLastJdbcMessageSupplier();
-                if (lastJdbcMessageSupplier == null) {
+                QueryEntry lastQuery = mirror.getLastQuery();
+                if (lastQuery == null) {
                     // tracing must be disabled (e.g. exceeded trace entry limit)
                     return;
                 }
-                if (currentRowValid) {
-                    lastJdbcMessageSupplier.updateNumRows(((ResultSet) resultSet).getRow());
-                } else {
-                    lastJdbcMessageSupplier.setHasPerformedNavigation();
-                }
+                lastQuery.setCurrRow(((ResultSet) resultSet).getRow());
             } catch (SQLException e) {
                 logger.warn(e.getMessage(), e);
             }
@@ -159,8 +154,8 @@ public class ResultSetAspect {
             return timerEnabled.value() && resultSet.hasGlowrootStatementMirror();
         }
         @OnBefore
-        public static Timer onBefore() {
-            return pluginServices.startTimer(timerName);
+        public static Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
+            return onBeforeCommon(resultSet, timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Timer timer) {
@@ -181,12 +176,27 @@ public class ResultSetAspect {
             return timerEnabled.value() && resultSet.hasGlowrootStatementMirror();
         }
         @OnBefore
-        public static Timer onBefore() {
-            return pluginServices.startTimer(timerName);
+        public static Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
+            return onBeforeCommon(resultSet, timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler Timer timer) {
             timer.stop();
         }
+    }
+
+    private static Timer onBeforeCommon(HasStatementMirror resultSet, TimerName timerName) {
+        StatementMirror mirror = resultSet.getGlowrootStatementMirror();
+        if (mirror == null) {
+            // this shouldn't happen since just checked above in isEnabled(), unless some
+            // bizarre concurrent mis-usage of ResultSet
+            return pluginServices.startTimer(timerName);
+        }
+        QueryEntry lastQuery = mirror.getLastQuery();
+        if (lastQuery == null) {
+            // tracing must be disabled (e.g. exceeded trace entry limit)
+            return pluginServices.startTimer(timerName);
+        }
+        return lastQuery.extend();
     }
 }

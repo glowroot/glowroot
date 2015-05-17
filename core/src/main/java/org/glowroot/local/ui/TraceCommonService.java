@@ -20,17 +20,20 @@ import java.sql.SQLException;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Iterables;
 import com.google.common.io.CharSource;
 import org.immutables.value.Value;
 
-import org.glowroot.collector.EntriesCharSourceCreator;
-import org.glowroot.collector.ProfileCharSourceCreator;
+import org.glowroot.collector.ProfileChunkSourceCreator;
+import org.glowroot.collector.QueriesChunkSourceCreator;
 import org.glowroot.collector.Trace;
 import org.glowroot.collector.TraceCreator;
+import org.glowroot.collector.EntriesChunkSourceCreator;
 import org.glowroot.collector.TransactionCollectorImpl;
+import org.glowroot.common.ChunkSource;
 import org.glowroot.common.Clock;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.TraceDao;
@@ -70,9 +73,24 @@ class TraceCommonService {
     }
 
     // overwritten entries will return {"overwritten":true}
-    // expired trace will return {"expired":true}
+    // expired (not found) trace will return {"expired":true}
     @Nullable
-    CharSource getEntries(String traceId) throws SQLException {
+    ChunkSource getQueries(String traceId) throws Exception {
+        // check active traces first, then pending traces, and finally stored traces
+        // to make sure that the trace is not missed if it is in transition between these states
+        for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
+                transactionCollectorImpl.getPendingTransactions())) {
+            if (transaction.getId().equals(traceId)) {
+                return createQueries(transaction);
+            }
+        }
+        return toNullableChunkSource(traceDao.readQueries(traceId));
+    }
+
+    // overwritten entries will return {"overwritten":true}
+    // expired (not found) trace will return {"expired":true}
+    @Nullable
+    ChunkSource getEntries(String traceId) throws SQLException {
         // check active traces first, then pending traces, and finally stored traces
         // to make sure that the trace is not missed if it is in transition between these states
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
@@ -81,13 +99,13 @@ class TraceCommonService {
                 return createEntries(transaction);
             }
         }
-        return traceDao.readEntries(traceId);
+        return toNullableChunkSource(traceDao.readEntries(traceId));
     }
 
     // overwritten profile will return {"overwritten":true}
-    // expired trace will return {"expired":true}
+    // expired (not found) trace will return {"expired":true}
     @Nullable
-    CharSource getProfile(String traceId) throws Exception {
+    ChunkSource getProfile(String traceId) throws Exception {
         // check active traces first, then pending traces, and finally stored traces
         // to make sure that the trace is not missed if it is in transition between these states
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
@@ -96,7 +114,7 @@ class TraceCommonService {
                 return createProfile(transaction);
             }
         }
-        return traceDao.readProfile(traceId);
+        return toNullableChunkSource(traceDao.readProfile(traceId));
     }
 
     @Nullable
@@ -110,6 +128,7 @@ class TraceCommonService {
                 return TraceExport.builder()
                         .trace(trace)
                         .traceJson(mapper.writeValueAsString(trace))
+                        .queries(createQueries(transaction))
                         .entries(createEntries(transaction))
                         .profile(createProfile(transaction))
                         .build();
@@ -122,8 +141,9 @@ class TraceCommonService {
         return TraceExport.builder()
                 .trace(trace)
                 .traceJson(mapper.writeValueAsString(trace))
-                .entries(traceDao.readEntries(traceId))
-                .profile(traceDao.readProfile(traceId))
+                .queries(toNullableChunkSource(traceDao.readQueries(traceId)))
+                .entries(toNullableChunkSource(traceDao.readEntries(traceId)))
+                .profile(toNullableChunkSource(traceDao.readProfile(traceId)))
                 .build();
     }
 
@@ -136,13 +156,24 @@ class TraceCommonService {
         }
     }
 
-    private CharSource createEntries(Transaction active) {
-        return EntriesCharSourceCreator.createEntriesCharSource(active.getEntriesCopy(),
+    private @Nullable ChunkSource createQueries(Transaction active) throws JsonProcessingException {
+        return QueriesChunkSourceCreator.createQueriesChunkSource(active.getQueries());
+    }
+
+    private @Nullable ChunkSource createEntries(Transaction active) {
+        return EntriesChunkSourceCreator.createEntriesChunkSource(active.getEntries(),
                 active.getStartTick(), ticker.read());
     }
 
-    private @Nullable CharSource createProfile(Transaction active) throws IOException {
-        return ProfileCharSourceCreator.createProfileCharSource(active.getProfile());
+    private @Nullable ChunkSource createProfile(Transaction active) throws IOException {
+        return ProfileChunkSourceCreator.createProfileChunkSource(active.getProfile());
+    }
+
+    private @Nullable ChunkSource toNullableChunkSource(@Nullable CharSource charSource) {
+        if (charSource == null) {
+            return null;
+        }
+        return ChunkSource.from(charSource);
     }
 
     @Value.Immutable
@@ -150,7 +181,8 @@ class TraceCommonService {
 
         abstract Trace trace();
         abstract String traceJson();
-        abstract @Nullable CharSource entries();
-        abstract @Nullable CharSource profile();
+        abstract @Nullable ChunkSource queries();
+        abstract @Nullable ChunkSource entries();
+        abstract @Nullable ChunkSource profile();
     }
 }

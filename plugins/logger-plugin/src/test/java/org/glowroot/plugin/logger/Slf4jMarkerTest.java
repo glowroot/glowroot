@@ -231,8 +231,7 @@ public class Slf4jMarkerTest {
         container.executeAppUnderTest(ShouldLog.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).isEmpty();
+        assertThat(trace.getEntryCount()).isZero();
     }
 
     public static class ShouldLog implements AppUnderTest, TraceMarker {

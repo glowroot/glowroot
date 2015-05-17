@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Clock;
+import org.glowroot.config.ConfigService;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.transaction.model.Transaction;
 
@@ -42,6 +43,7 @@ public class AggregateCollector {
 
     private final ScheduledExecutorService scheduledExecutor;
     private final AggregateRepository aggregateRepository;
+    private final ConfigService configService;
     private final Clock clock;
 
     private final long fixedAggregateIntervalMillis;
@@ -54,14 +56,16 @@ public class AggregateCollector {
     private final Object lock = new Object();
 
     AggregateCollector(ScheduledExecutorService scheduledExecutor,
-            AggregateRepository aggregateRepository, Clock clock,
-            long fixedAggregateIntervalSeconds) {
+            AggregateRepository aggregateRepository, ConfigService configService,
+            long fixedAggregateIntervalSeconds, Clock clock) {
         this.scheduledExecutor = scheduledExecutor;
         this.aggregateRepository = aggregateRepository;
+        this.configService = configService;
         this.clock = clock;
         this.fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
         activeIntervalCollector = new AggregateIntervalCollector(clock.currentTimeMillis(),
-                fixedAggregateIntervalMillis, clock);
+                fixedAggregateIntervalMillis, configService.getAdvancedConfig()
+                        .maxAggregateQueriesPerQueryType(), clock);
         // dedicated thread to aggregating transaction data
         processingThread = new Thread(new TransactionProcessor());
         processingThread.setDaemon(true);
@@ -148,7 +152,8 @@ public class AggregateCollector {
                 // flush in separate thread to avoid pending transactions from piling up quickly
                 scheduledExecutor.execute(new IntervalFlusher(activeIntervalCollector));
                 activeIntervalCollector = new AggregateIntervalCollector(
-                        pendingTransaction.captureTime(), fixedAggregateIntervalMillis, clock);
+                        pendingTransaction.captureTime(), fixedAggregateIntervalMillis,
+                        configService.getAdvancedConfig().maxAggregateQueriesPerQueryType(), clock);
             }
             // the synchronized block is to ensure visibility of updates to this particular
             // activeIntervalCollector
@@ -174,7 +179,8 @@ public class AggregateCollector {
                     // flush in separate thread to avoid pending transactions from piling up quickly
                     scheduledExecutor.execute(new IntervalFlusher(activeIntervalCollector));
                     activeIntervalCollector = new AggregateIntervalCollector(currentTime,
-                            fixedAggregateIntervalMillis, clock);
+                            fixedAggregateIntervalMillis, configService.getAdvancedConfig()
+                                    .maxAggregateQueriesPerQueryType(), clock);
                 }
             }
         }

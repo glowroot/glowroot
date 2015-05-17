@@ -18,6 +18,7 @@ package org.glowroot.local.ui;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -31,6 +32,8 @@ import org.immutables.value.Value;
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.AggregateTimer;
 import org.glowroot.collector.LazyHistogram;
+import org.glowroot.collector.QueryComponent;
+import org.glowroot.collector.QueryComponent.AggregateQueryData;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.transaction.model.ProfileNode;
@@ -94,16 +97,29 @@ public class AggregateMerging {
                 .build();
     }
 
-    public static ProfileNode getProfile(List<CharSource> profiles) throws IOException {
-        ProfileNode syntheticRootNode = ProfileNode.createSyntheticRoot();
-        for (CharSource profile : profiles) {
-            String profileContent = profile.read();
-            if (profileContent.equals(AggregateDao.OVERWRITTEN)) {
-                continue;
+    public static Map<String, Map<String, AggregateQueryData>> getMergedQueries(
+            List<CharSource> queriesContents, int maxAggregateQueriesPerQueryType)
+            throws IOException {
+        QueryComponent queryComponent = new QueryComponent(maxAggregateQueriesPerQueryType, false);
+        for (CharSource queriesContent : queriesContents) {
+            String queries = queriesContent.read();
+            if (!queries.equals(AggregateDao.OVERWRITTEN)) {
+                queryComponent.mergeQueries(queries);
             }
-            ProfileNode toBeMergedRootNode =
-                    ObjectMappers.readRequiredValue(mapper, profileContent, ProfileNode.class);
-            syntheticRootNode.mergeMatchedNode(toBeMergedRootNode);
+        }
+        return queryComponent.getMergedQueries();
+    }
+
+    public static ProfileNode getMergedProfile(List<CharSource> profileContents)
+            throws IOException {
+        ProfileNode syntheticRootNode = ProfileNode.createSyntheticRoot();
+        for (CharSource profileContent : profileContents) {
+            String profile = profileContent.read();
+            if (!profile.equals(AggregateDao.OVERWRITTEN)) {
+                ProfileNode toBeMergedRootNode =
+                        ObjectMappers.readRequiredValue(mapper, profile, ProfileNode.class);
+                syntheticRootNode.mergeMatchedNode(toBeMergedRootNode);
+            }
         }
         return syntheticRootNode;
     }

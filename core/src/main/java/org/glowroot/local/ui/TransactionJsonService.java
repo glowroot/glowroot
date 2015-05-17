@@ -17,6 +17,8 @@ package org.glowroot.local.ui;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,11 +36,13 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
+import com.google.common.primitives.Longs;
 import org.immutables.value.Value;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.AggregateTimer;
 import org.glowroot.collector.LazyHistogram;
+import org.glowroot.collector.QueryComponent.AggregateQueryData;
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.collector.TransactionSummary;
 import org.glowroot.common.Clock;
@@ -150,6 +154,42 @@ class TransactionJsonService {
         return sb.toString();
     }
 
+    @GET("/backend/transaction/queries")
+    String getQueries(String queryString) throws Exception {
+        TransactionDataRequest request =
+                QueryStrings.decode(queryString, TransactionDataRequest.class);
+        Map<String, Map<String, AggregateQueryData>> queries = transactionCommonService.getQueries(
+                request.transactionType(), request.transactionName(), request.from(), request.to());
+        List<Query> queryList = Lists.newArrayList();
+        for (Entry<String, Map<String, AggregateQueryData>> entry : queries.entrySet()) {
+            Map<String, AggregateQueryData> queriesByQueryType = entry.getValue();
+            for (Entry<String, AggregateQueryData> query : queriesByQueryType.entrySet()) {
+                AggregateQueryData data = query.getValue();
+                queryList.add(Query.builder()
+                        .queryType(entry.getKey())
+                        .queryText(query.getKey())
+                        .totalMicros(data.getTotalMicros())
+                        .executionCount(data.getExecutionCount())
+                        .totalRows(data.getTotalRows())
+                        .build());
+            }
+        }
+        Collections.sort(queryList, new Comparator<Query>() {
+            @Override
+            public int compare(@Nullable Query left, @Nullable Query right) {
+                checkNotNull(left);
+                checkNotNull(right);
+                // sort descending
+                return Longs.compare(right.totalMicros(), left.totalMicros());
+            }
+        });
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeObject(queryList);
+        jg.close();
+        return sb.toString();
+    }
+
     @GET("/backend/transaction/profile")
     String getProfile(String queryString) throws Exception {
         TransactionProfileRequest request =
@@ -201,13 +241,6 @@ class TransactionJsonService {
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
 
         String transactionName = request.transactionName();
-        long profileSampleCount = transactionCommonService.getProfileSampleCount(
-                request.transactionType(), transactionName, request.from(), request.to());
-        boolean profileExpired = false;
-        if (profileSampleCount == 0) {
-            profileExpired = transactionCommonService.shouldHaveProfiles(request.transactionType(),
-                    transactionName, request.from(), request.to());
-        }
         long traceCount;
         if (transactionName == null) {
             traceCount = traceDao.readOverallCount(request.transactionType(), request.from(),
@@ -236,8 +269,6 @@ class TransactionJsonService {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeNumberField("profileSampleCount", profileSampleCount);
-        jg.writeBooleanField("profileExpired", profileExpired);
         jg.writeNumberField("traceCount", traceCount);
         jg.writeBooleanField("tracesExpired", tracesExpired);
         jg.writeEndObject();
@@ -563,5 +594,15 @@ class TransactionJsonService {
         abstract String transactionType();
         abstract @Nullable String transactionName();
         abstract double truncateLeafPercentage();
+    }
+
+    @Value.Immutable
+    @JsonSerialize
+    abstract static class QueryBase {
+        abstract String queryType();
+        abstract String queryText();
+        abstract long totalMicros();
+        abstract long executionCount();
+        abstract long totalRows();
     }
 }

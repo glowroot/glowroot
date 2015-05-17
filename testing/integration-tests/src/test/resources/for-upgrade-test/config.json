@@ -15,6 +15,7 @@
   "storage": {
     "aggregateExpirationHours": 2147483647,
     "traceExpirationHours": 2147483647,
+    "gaugeExpirationHours": 168,
     "cappedDatabaseSizeMb": 1000
   },
   "smtp": {

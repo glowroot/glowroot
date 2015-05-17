@@ -36,11 +36,6 @@ glowroot.factory('traceModal', [
             } else {
               data.showExport = true;
               HandlebarsRendering.renderTrace(data, $modalContent);
-              // need to focus on something inside the modal, otherwise keyboard events won't be captured,
-              // in particular, page up / page down won't scroll the modal and escape won't close it
-              $('#traceModal .modal-body > div:first-of-type').attr('tabIndex', -1);
-              $('#traceModal .modal-body > div:first-of-type').css('outline', 'none');
-              $('#traceModal .modal-body > div:first-of-type').focus();
               $('#traceModal .modal-body button.download-trace').click(function () {
                 var $traceParent = $(this).parents('.gt-trace-parent');
                 var traceId = $traceParent.data('gtTraceId');

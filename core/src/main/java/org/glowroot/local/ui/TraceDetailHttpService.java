@@ -19,7 +19,6 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.google.common.io.CharSource;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
@@ -33,6 +32,8 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.glowroot.common.ChunkSource;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
@@ -60,8 +61,8 @@ class TraceDetailHttpService implements HttpService {
         String traceId = traceIds.get(0);
         logger.debug("handleRequest(): traceComponent={}, traceId={}", traceComponent, traceId);
 
-        CharSource charSource = getDetailCharSource(traceComponent, traceId);
-        if (charSource == null) {
+        ChunkSource chunkSource = getDetailChunkSource(traceComponent, traceId);
+        if (chunkSource == null) {
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
@@ -73,7 +74,7 @@ class TraceDetailHttpService implements HttpService {
         }
         HttpServices.preventCaching(response);
         ctx.write(response);
-        ChannelFuture future = ctx.write(ChunkedInputs.fromReader(charSource.openStream()));
+        ChannelFuture future = ctx.write(ChunkedInputs.from(chunkSource));
         HttpServices.addErrorListener(future);
         if (!keepAlive) {
             HttpServices.addCloseListener(future);
@@ -82,8 +83,11 @@ class TraceDetailHttpService implements HttpService {
         return null;
     }
 
-    private @Nullable CharSource getDetailCharSource(String traceComponent, String traceId)
+    private @Nullable ChunkSource getDetailChunkSource(String traceComponent, String traceId)
             throws Exception {
+        if (traceComponent.equals("queries")) {
+            return traceCommonService.getQueries(traceId);
+        }
         if (traceComponent.equals("entries")) {
             return traceCommonService.getEntries(traceId);
         }

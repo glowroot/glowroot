@@ -13,28 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.transaction.model;
+package org.glowroot.collector;
 
-import java.text.ParseException;
+import java.io.IOException;
 
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.glowroot.common.ChunkSource;
+import org.glowroot.transaction.model.Profile;
 
-public class TraceEntryTest {
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class ProfileChunkSourceCreatorTest {
 
     @Test
-    public void testDefensiveCheck() throws ParseException {
+    public void shouldReturnNullIfEmpty() throws IOException {
         // given
-        TimerImpl timer = mock(TimerImpl.class);
-        Transaction transaction = mock(Transaction.class);
-        when(timer.getTransaction()).thenReturn(transaction);
-        TraceEntryImpl traceEntry = new TraceEntryImpl(null, null, null, 0, 0, timer);
+        Profile profile = new Profile(false);
         // when
-        traceEntry.endWithError(null);
+        ChunkSource charSource = ProfileChunkSourceCreator.createProfileChunkSource(profile);
         // then
-        assertThat(traceEntry.isCompleted()).isTrue();
+        assertThat(charSource).isNull();
     }
 }

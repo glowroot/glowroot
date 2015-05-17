@@ -15,7 +15,7 @@
  */
 
 .gt-full-screen-modal .modal-dialog {
-  width: auto !important;
+  width: auto;
   overflow-y: scroll;
   position: fixed;
   left: 25px;
@@ -29,13 +29,17 @@
   border: 1px solid #aaa;
 }
 
-// override bootstrap styling for modal close icon
-.modal-dialog .close {
+.modal .close {
+  position: absolute;
+  right: 60px;
+  top: 35px;
+  z-index: 100;
+  // override bootstrap styling for modal close icon
   opacity: .4 !important;
   font-size: 24px !important;
 }
 
 // override bootstrap styling for modal close icon
-.modal-dialog .close:hover {
+.modal .close:hover {
   opacity: .6 !important;
 }

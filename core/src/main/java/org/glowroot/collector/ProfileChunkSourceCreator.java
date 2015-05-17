@@ -20,19 +20,19 @@ import java.io.IOException;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.CharSource;
 
+import org.glowroot.common.ChunkSource;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.ProfileNode;
 
-public class ProfileCharSourceCreator {
+public class ProfileChunkSourceCreator {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private ProfileCharSourceCreator() {}
+    private ProfileChunkSourceCreator() {}
 
-    public static @Nullable CharSource createProfileCharSource(@Nullable Profile profile)
+    public static @Nullable ChunkSource createProfileChunkSource(@Nullable Profile profile)
             throws IOException {
         if (profile == null) {
             return null;
@@ -44,8 +44,11 @@ public class ProfileCharSourceCreator {
             }
             // need to convert profile into bytes entirely inside of the above lock
             // (no lazy CharSource)
+            //
+            // TODO only needs to be entirely inside lock when dealing with live trace
+            // optimize other cases to do streaming instead of building single large string
             String profileJson = mapper.writeValueAsString(syntheticRootNode);
-            return CharSource.wrap(profileJson);
+            return ChunkSource.wrap(profileJson);
         }
     }
 }

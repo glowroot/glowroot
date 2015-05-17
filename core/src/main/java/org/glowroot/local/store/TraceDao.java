@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.Trace;
 import org.glowroot.collector.TraceRepository;
+import org.glowroot.common.ChunkSource;
 import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.ResultSetExtractor;
 import org.glowroot.local.store.DataSource.RowMapper;
@@ -69,6 +70,8 @@ public class TraceDao implements TraceRepository {
             Column.of("thread_waited_time", Types.BIGINT), // nanoseconds
             Column.of("thread_allocated_bytes", Types.BIGINT),
             Column.of("gc_infos", Types.VARCHAR), // json data
+            Column.of("query_count", Types.BIGINT),
+            Column.of("queries_capped_id", Types.VARCHAR), // capped database id
             Column.of("entry_count", Types.BIGINT),
             Column.of("entries_capped_id", Types.VARCHAR), // capped database id
             Column.of("profile_sample_count", Types.BIGINT),
@@ -116,9 +119,16 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public void store(final Trace trace, CharSource entries, @Nullable CharSource profile)
-            throws Exception {
-        long entriesId = cappedDatabase.write(entries);
+    public void store(final Trace trace, @Nullable ChunkSource queries,
+            @Nullable ChunkSource entries, @Nullable ChunkSource profile) throws Exception {
+        Long queriesId = null;
+        if (queries != null) {
+            queriesId = cappedDatabase.write(queries);
+        }
+        Long entriesId = null;
+        if (entries != null) {
+            entriesId = cappedDatabase.write(entries);
+        }
         Long profileId = null;
         if (profile != null) {
             profileId = cappedDatabase.write(profile);
@@ -127,16 +137,16 @@ public class TraceDao implements TraceRepository {
                 + " duration, transaction_type, transaction_name, headline, user,"
                 + " custom_attributes, custom_detail, error_message, error_throwable, timers,"
                 + " thread_cpu_time, thread_blocked_time, thread_waited_time,"
-                + " thread_allocated_bytes, gc_infos, entry_count, entries_capped_id,"
-                + " profile_sample_count, profile_capped_id) values"
-                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                + " thread_allocated_bytes, gc_infos, query_count, queries_capped_id, entry_count,"
+                + " entries_capped_id, profile_sample_count, profile_capped_id) values (?, ?, ?,"
+                + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 trace.id(), trace.partial(), trace.error(), trace.startTime(), trace.captureTime(),
                 trace.duration(), trace.transactionType(), trace.transactionName(),
                 trace.headline(), trace.user(), trace.customAttributes(), trace.customDetail(),
                 trace.errorMessage(), trace.errorThrowable(), trace.timers(),
                 trace.threadCpuTime(), trace.threadBlockedTime(), trace.threadWaitedTime(),
-                trace.threadAllocatedBytes(), trace.gcInfos(), trace.entryCount(), entriesId,
-                trace.profileSampleCount(), profileId);
+                trace.threadAllocatedBytes(), trace.gcInfos(), trace.queryCount(), queriesId,
+                trace.entryCount(), entriesId, trace.profileSampleCount(), profileId);
         final ImmutableSetMultimap<String, String> customAttributesForIndexing =
                 trace.customAttributesForIndexing();
         if (!customAttributesForIndexing.isEmpty()) {
@@ -222,9 +232,9 @@ public class TraceDao implements TraceRepository {
                 + " capture_time, duration, transaction_type, transaction_name, headline, user,"
                 + " custom_attributes, custom_detail, error_message, error_throwable,"
                 + " timers, thread_cpu_time, thread_blocked_time, thread_waited_time,"
-                + " thread_allocated_bytes, gc_infos, entry_count, entries_capped_id,"
-                + " profile_sample_count, profile_capped_id from trace where id = ?",
-                new TraceRowMapper(), traceId);
+                + " thread_allocated_bytes, gc_infos, query_count, queries_capped_id, entry_count,"
+                + " entries_capped_id, profile_sample_count, profile_capped_id from trace"
+                + " where id = ?", new TraceRowMapper(), traceId);
         if (traces.isEmpty()) {
             return null;
         }
@@ -232,6 +242,10 @@ public class TraceDao implements TraceRepository {
             logger.error("multiple records returned for trace id: {}", traceId);
         }
         return traces.get(0);
+    }
+
+    public @Nullable CharSource readQueries(String traceId) throws SQLException {
+        return readFromCappedDatabase("queries_capped_id", traceId);
     }
 
     public @Nullable CharSource readEntries(String traceId) throws SQLException {
@@ -358,6 +372,9 @@ public class TraceDao implements TraceRepository {
                     .threadWaitedTime(RowMappers.getLong(resultSet, columnIndex++))
                     .threadAllocatedBytes(RowMappers.getLong(resultSet, columnIndex++))
                     .gcInfos(resultSet.getString(columnIndex++))
+                    .queryCount(resultSet.getLong(columnIndex++))
+                    .queriesExistence(
+                            RowMappers.getExistence(resultSet, columnIndex++, cappedDatabase))
                     .entryCount(resultSet.getLong(columnIndex++))
                     .entriesExistence(
                             RowMappers.getExistence(resultSet, columnIndex++, cappedDatabase))

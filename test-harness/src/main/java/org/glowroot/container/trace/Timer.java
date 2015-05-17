@@ -45,14 +45,17 @@ public class Timer {
     };
 
     private final String name;
+    private final boolean extended;
     private final long total;
     private final long count;
     private final boolean active;
 
     private final ImmutableList<Timer> nestedTimers;
 
-    private Timer(String name, long total, long count, boolean active, List<Timer> nestedTimers) {
+    private Timer(String name, boolean extended, long total, long count, boolean active,
+            List<Timer> nestedTimers) {
         this.name = name;
+        this.extended = extended;
         this.total = total;
         this.count = count;
         this.active = active;
@@ -61,6 +64,10 @@ public class Timer {
 
     public String getName() {
         return name;
+    }
+
+    public boolean isExtended() {
+        return extended;
     }
 
     public long getTotal() {
@@ -92,6 +99,7 @@ public class Timer {
     public String toString() {
         return MoreObjects.toStringHelper(this)
                 .add("name", name)
+                .add("extended", extended)
                 .add("total", total)
                 .add("count", count)
                 .add("active", active)
@@ -102,6 +110,7 @@ public class Timer {
     @JsonCreator
     static Timer readValue(
             @JsonProperty("name") @Nullable String name,
+            @JsonProperty("extended") @Nullable Boolean extended,
             @JsonProperty("total") @Nullable Long total,
             @JsonProperty("count") @Nullable Long count,
             @JsonProperty("active") @Nullable Boolean active,
@@ -111,7 +120,10 @@ public class Timer {
         checkRequiredProperty(name, "name");
         checkRequiredProperty(total, "total");
         checkRequiredProperty(count, "count");
-        checkRequiredProperty(active, "active");
-        return new Timer(name, total, count, active, nestedTimers);
+        return new Timer(name, orFalse(extended), total, count, orFalse(active), nestedTimers);
+    }
+
+    private static boolean orFalse(@Nullable Boolean value) {
+        return value != null && value;
     }
 }

@@ -15,7 +15,6 @@
  */
 package org.glowroot.tests;
 
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,7 +34,6 @@ import org.glowroot.container.config.GeneralConfig;
 import org.glowroot.container.trace.ProfileNode;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.Trace.Existence;
-import org.glowroot.container.trace.TraceEntry;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -119,11 +117,10 @@ public class ActiveTraceTest {
         assertThat(trace).isNotNull();
         assertThat(trace.isActive()).isTrue();
         assertThat(trace.isPartial()).isFalse();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         if (stuckOnNonRoot) {
-            assertThat(entries).hasSize(2);
+            assertThat(trace.getEntryCount()).isEqualTo(2);
         } else {
-            assertThat(entries).isEmpty();
+            assertThat(trace.getEntryCount()).isZero();
         }
         assertThat(profile).isNotNull();
         // interrupt trace

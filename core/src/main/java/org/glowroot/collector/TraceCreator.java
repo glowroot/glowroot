@@ -99,9 +99,22 @@ public class TraceCreator {
         if (gcInfos != null) {
             builder.gcInfos(mapper.writeValueAsString(gcInfos));
         }
-        builder.entryCount(transaction.getEntryCount());
-        builder.profileSampleCount(transaction.getProfileSampleCount());
-        builder.entriesExistence(Existence.YES);
+        int queryCount = transaction.getEntryCount();
+        int entryCount = transaction.getEntryCount();
+        int profileSampleCount = transaction.getProfileSampleCount();
+        builder.queryCount(queryCount);
+        builder.entryCount(entryCount);
+        builder.profileSampleCount(profileSampleCount);
+        if (queryCount == 0) {
+            builder.queriesExistence(Existence.NO);
+        } else {
+            builder.queriesExistence(Existence.YES);
+        }
+        if (entryCount == 0) {
+            builder.entriesExistence(Existence.NO);
+        } else {
+            builder.entriesExistence(Existence.YES);
+        }
         if (transaction.getProfile() == null) {
             builder.profileExistence(Existence.NO);
         } else {
@@ -149,7 +162,7 @@ public class TraceCreator {
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        EntriesCharSourceCreator.writeThrowable(exception, jg);
+        EntriesChunkSourceCreator.writeThrowable(exception, jg);
         jg.close();
         return sb.toString();
     }

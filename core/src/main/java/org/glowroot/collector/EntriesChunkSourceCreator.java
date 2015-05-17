@@ -16,34 +16,41 @@
 package org.glowroot.collector;
 
 import java.io.IOException;
-import java.io.Reader;
+import java.io.Writer;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.CharSource;
 
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.api.internal.ThrowableInfo;
+import org.glowroot.common.ChunkSource;
+import org.glowroot.common.ChunkSource.ChunkCopier;
 import org.glowroot.common.Tickers;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.StackTraceElementPlus;
 import org.glowroot.transaction.model.TraceEntryImpl;
 
-public class EntriesCharSourceCreator {
+public class EntriesChunkSourceCreator {
 
     private static final JsonFactory jsonFactory = new JsonFactory();
 
-    private EntriesCharSourceCreator() {}
+    private EntriesChunkSourceCreator() {}
 
-    public static CharSource createEntriesCharSource(List<TraceEntryImpl> entries,
+    public static @Nullable ChunkSource createEntriesChunkSource(Iterable<TraceEntryImpl> entries,
             long transactionStartTick, long captureTick) {
-        return new EntriesCharSource(entries, transactionStartTick, captureTick);
+        Iterator<TraceEntryImpl> entriesIterator = entries.iterator();
+        if (!entriesIterator.hasNext()) {
+            return null;
+        }
+        return new EntriesChunkSource(entriesIterator, transactionStartTick, captureTick);
     }
 
     static void writeThrowable(ThrowableInfo exception, JsonGenerator jg) throws IOException {
@@ -70,85 +77,59 @@ public class EntriesCharSourceCreator {
         jw.writeEndArray();
     }
 
-    private static class EntriesCharSource extends CharSource {
+    private static class EntriesChunkSource extends ChunkSource {
 
-        private final List<TraceEntryImpl> entries;
+        private final Iterator<TraceEntryImpl> entries;
         private final long transactionStartTick;
         private final long captureTick;
 
-        private EntriesCharSource(List<TraceEntryImpl> entries, long transactionStartTick,
-                long captureTick) {
+        private EntriesChunkSource(Iterator<TraceEntryImpl> entries,
+                long transactionStartTick, long captureTick) {
             this.entries = entries;
             this.transactionStartTick = transactionStartTick;
             this.captureTick = captureTick;
         }
 
         @Override
-        public Reader openStream() throws IOException {
-            return new EntriesReader(entries, transactionStartTick, captureTick);
+        public ChunkCopier getCopier(Writer writer) throws IOException {
+            return new EntriesChunkCopier(entries, writer, transactionStartTick, captureTick);
         }
     }
 
-    private static class EntriesReader extends Reader {
+    private static class EntriesChunkCopier implements ChunkCopier {
 
         private final Iterator<TraceEntryImpl> entries;
         private final long transactionStartTick;
         private final long captureTick;
-        private final EntriesCharArrayWriter writer;
         private final JsonGenerator jg;
 
-        private int writerIndex;
         private boolean closed;
 
-        private EntriesReader(List<TraceEntryImpl> entries, long transactionStartTick,
-                long captureTick)
-                throws IOException {
-            this.entries = entries.iterator();
+        private EntriesChunkCopier(Iterator<TraceEntryImpl> entries, Writer writer,
+                long transactionStartTick, long captureTick) throws IOException {
+            this.entries = entries;
             this.transactionStartTick = transactionStartTick;
             this.captureTick = captureTick;
-            writer = new EntriesCharArrayWriter();
             jg = jsonFactory.createGenerator(writer);
             jg.writeStartArray();
         }
-
-        @Override
-        public int read(char[] cbuf, int off, int len) throws IOException {
-            int writerRemaining = writer.size() - writerIndex;
-            if (writerRemaining > 0) {
-                int nChars = Math.min(len, writerRemaining);
-                writer.copyInto(cbuf, off, writerIndex, nChars);
-                writerIndex += nChars;
-                return nChars;
-            }
-            if (!entries.hasNext()) {
-                if (closed) {
-                    return -1;
-                }
-                jg.writeEndArray();
-                jg.close();
-                closed = true;
-                return read(cbuf, off, len);
-            }
-            // need to add another entry to the writer
-            writer.reset();
-            writerIndex = 0;
-            // note it is possible for writeEntry() to not write anything
-            writeEntry(entries.next());
-            // now go back and read the new data
-            return read(cbuf, off, len);
-        }
-
-        @Override
-        public void close() {}
 
         // timings for transactions that are still active are normalized to the capture tick in
         // order to *attempt* to present a picture of the transaction at that exact tick
         // (without using synchronization to block updates to the transaction while it is being
         // read)
-        private void writeEntry(TraceEntryImpl traceEntry) throws IOException {
+        @Override
+        public boolean copyNext() throws IOException {
+            if (closed) {
+                return false;
+            }
+            TraceEntryImpl traceEntry = entries.next();
             if (!Tickers.lessThanOrEqual(traceEntry.getStartTick(), captureTick)) {
                 // this entry started after the capture tick
-                return;
+                jg.writeEndArray();
+                jg.flush();
+                closed = true;
+                return true;
             }
             if (traceEntry.isLimitExceededMarker()) {
                 writeLimitExceededEntry();
@@ -157,6 +138,12 @@ public class EntriesCharSourceCreator {
             } else {
                 writeNormalEntry(traceEntry);
             }
+            if (!entries.hasNext()) {
+                jg.writeEndArray();
+                closed = true;
+            }
+            jg.flush();
+            return true;
         }
 
         private void writeLimitExceededEntry() throws IOException {
@@ -188,7 +175,8 @@ public class EntriesCharSourceCreator {
             MessageSupplier messageSupplier = traceEntry.getMessageSupplier();
             if (messageSupplier != null) {
                 jg.writeFieldName("message");
-                writeMessage((ReadableMessage) messageSupplier.get());
+                writeMessage((ReadableMessage) messageSupplier.get(),
+                        getRowCountSuffix(traceEntry));
             }
             ReadableErrorMessage errorMessage = traceEntry.getErrorMessage();
             if (errorMessage != null) {
@@ -203,9 +191,22 @@ public class EntriesCharSourceCreator {
             jg.writeEndObject();
         }
 
-        private void writeMessage(ReadableMessage message) throws IOException {
+        private String getRowCountSuffix(TraceEntryImpl traceEntry) {
+            if (!traceEntry.isQueryNavigationAttempted()) {
+                return "";
+            }
+            long rowCount = traceEntry.getRowCount();
+            if (rowCount == 1) {
+                return " => 1 row";
+            } else {
+                return " => " + rowCount + " rows";
+            }
+        }
+
+        private void writeMessage(ReadableMessage message, String messageSuffix)
+                throws IOException {
             jg.writeStartObject();
-            jg.writeStringField("text", message.getText());
+            jg.writeStringField("text", message.getText() + messageSuffix);
             Map<String, ? extends /*@Nullable*/Object> detail = message.getDetail();
             if (!detail.isEmpty()) {
                 jg.writeFieldName("detail");
@@ -223,14 +224,6 @@ public class EntriesCharSourceCreator {
                 writeThrowable(throwable, jg);
             }
             jg.writeEndObject();
-        }
-    }
-
-    // subclass is needed in order to access protected char buffer
-    private static class EntriesCharArrayWriter extends java.io.CharArrayWriter {
-
-        public void copyInto(char[] dest, int destPos, int srcPos, int length) {
-            System.arraycopy(buf, srcPos, dest, destPos, length);
         }
     }
 }

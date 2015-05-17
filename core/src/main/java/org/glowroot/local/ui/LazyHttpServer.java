@@ -131,6 +131,7 @@ class LazyHttpServer {
         // export service is not bound under /backend since the export url is visible to users
         // as the download url for the export file
         httpServices.put(Pattern.compile("^/export/trace/.*$"), traceExportHttpService);
+        httpServices.put(Pattern.compile("^/backend/trace/queries$"), traceDetailHttpService);
         httpServices.put(Pattern.compile("^/backend/trace/entries$"), traceDetailHttpService);
         httpServices.put(Pattern.compile("^/backend/trace/profile$"), traceDetailHttpService);
         httpServices.put(Pattern.compile("^/backend/jvm/glowroot-log$"), glowrootLogHttpService);

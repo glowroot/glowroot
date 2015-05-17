@@ -38,6 +38,13 @@ public abstract class AdvancedConfigBase {
         return 60;
     }
 
+    // used to limit memory requirement
+    // applied to individual traces, transaction aggregates and overall aggregates
+    @Value.Default
+    public int maxAggregateQueriesPerQueryType() {
+        return 1000;
+    }
+
     // used to limit memory requirement, also used to help limit trace capture size
     @Value.Default
     public int maxTraceEntriesPerTransaction() {

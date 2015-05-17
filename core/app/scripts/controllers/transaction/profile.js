@@ -18,11 +18,10 @@
 
 glowroot.controller('TransactionProfileCtrl', [
   '$scope',
-  '$location',
   '$http',
   'queryStrings',
   'httpErrors',
-  function ($scope, $location, $http, queryStrings, httpErrors) {
+  function ($scope, $http, queryStrings, httpErrors) {
 
     $scope.$parent.activeTabItem = 'profile';
 
@@ -60,15 +59,9 @@ glowroot.controller('TransactionProfileCtrl', [
           .success(function (data) {
             $scope.showSpinner--;
             $scope.showProfile = data.sampleCount;
-            $scope.chartNoData = !data.sampleCount;
-            $('#profileOuter').removeData('gtLoaded');
             if ($scope.showProfile) {
               $scope.sampleCount = data.sampleCount;
-              // parent scope can be null if user has moved on to another controller by the time http get returns
-              if ($scope.$parent) {
-                // update tab bar in case viewing live data and tab bar sample count is now out of sync
-                $scope.$parent.$broadcast('updateProfileTabCount', data.sampleCount);
-              }
+              $('#profileOuter').removeData('gtLoaded');
               HandlebarsRendering.profileToggle(undefined, '#profileOuter', data);
             }
           })

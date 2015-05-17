@@ -28,7 +28,7 @@ glowroot.factory('modals', [
         $selector.on('show.bs.modal', function () {
           $(this).css('display', 'block');
           var $dialog = $(this).find('.modal-dialog');
-          var offset = ($(window).height() - $dialog.height()) / 2;
+          var offset = Math.max(($(window).height() - $dialog.height()) / 2, 0);
           $dialog.css('margin-top', offset);
         });
       }
@@ -39,7 +39,7 @@ glowroot.factory('modals', [
       $selector.off('hide.bs.modal');
       $selector.on('hide.bs.modal', function () {
         // using $timeout as this may be reached inside angular digest or not
-        $timeout(function() {
+        $timeout(function () {
           var query = $selector.data('location-query');
           if (query) {
             $location.search(query, null);
@@ -47,6 +47,13 @@ glowroot.factory('modals', [
         });
         $('.navbar-fixed-top').css('padding-right', '');
         $('.navbar-fixed-bottom').css('padding-right', '');
+      });
+      $timeout(function () {
+        // need to focus on something inside the modal, otherwise keyboard events won't be captured,
+        // in particular, page up / page down won't scroll the modal and escape won't close it
+        $selector.find('.modal-body').attr('tabIndex', -1);
+        $selector.find('.modal-body').css('outline', 'none');
+        $selector.find('.modal-body').focus();
       });
     }
 

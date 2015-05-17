@@ -17,6 +17,8 @@ package org.glowroot.transaction.model;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.Nullable;
+
 import com.google.common.annotations.VisibleForTesting;
 import org.immutables.value.Value;
 
@@ -30,6 +32,22 @@ public abstract class TimerNameImplBase implements TimerName {
     @VisibleForTesting
     @Value.Parameter
     public abstract String name();
+
+    @Value.Default
+    public boolean extended() {
+        return false;
+    }
+
+    @Value.Derived
+    public @Nullable TimerNameImpl extendedTimer() {
+        if (extended()) {
+            return null;
+        }
+        return TimerNameImpl.builder()
+                .name(name())
+                .extended(true)
+                .build();
+    }
 
     @Value.Derived
     int specialHashCode() {

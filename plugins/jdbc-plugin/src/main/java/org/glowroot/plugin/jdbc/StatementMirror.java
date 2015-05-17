@@ -22,7 +22,7 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import org.glowroot.plugin.jdbc.message.JdbcMessageSupplier;
+import org.glowroot.api.QueryEntry;
 
 // used to capture and mirror the state of statements since the underlying {@link Statement} values
 // cannot be inspected after they have been set
@@ -34,12 +34,9 @@ class StatementMirror {
     // while that thread is adding batches into the statement and executing it
     private @Nullable List<String> batchedSql;
 
-    // the jdbcMessageSupplier is stored so that its numRows field can be incremented inside the
-    // advice for ResultSet.next()
-    //
     // ok for this field to be non-volatile since it is only temporary storage for a single thread
     // while that thread is adding batches into the statement and executing it
-    private @Nullable JdbcMessageSupplier lastJdbcMessageSupplier;
+    private @Nullable QueryEntry lastQuery;
 
     void addBatch(String sql) {
         // synchronization isn't an issue here as this method is called only by
@@ -58,22 +55,22 @@ class StatementMirror {
         }
     }
 
-    @Nullable
-    JdbcMessageSupplier getLastJdbcMessageSupplier() {
-        return lastJdbcMessageSupplier;
-    }
-
     void clearBatch() {
         if (batchedSql != null) {
             batchedSql.clear();
         }
     }
 
-    void setLastJdbcMessageSupplier(JdbcMessageSupplier lastJdbcMessageSupplier) {
-        this.lastJdbcMessageSupplier = lastJdbcMessageSupplier;
+    @Nullable
+    QueryEntry getLastQuery() {
+        return lastQuery;
     }
 
-    void clearLastJdbcMessageSupplier() {
-        lastJdbcMessageSupplier = null;
+    void setLastQuery(QueryEntry lastQuery) {
+        this.lastQuery = lastQuery;
+    }
+
+    void clearLastQuery() {
+        lastQuery = null;
     }
 }

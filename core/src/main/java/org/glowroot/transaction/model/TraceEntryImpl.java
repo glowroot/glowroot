@@ -21,21 +21,21 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
+import org.glowroot.api.QueryEntry;
 import org.glowroot.api.Timer;
-import org.glowroot.api.TimerName;
-import org.glowroot.api.TraceEntry;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.common.Tickers;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 // this supports updating by a single thread and reading by multiple threads
-public class TraceEntryImpl implements TraceEntry, Timer {
+public class TraceEntryImpl implements QueryEntry, Timer {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceEntryImpl.class);
     private static final Ticker ticker = Tickers.getTicker();
@@ -46,6 +46,7 @@ public class TraceEntryImpl implements TraceEntry, Timer {
     private @Nullable ErrorMessage errorMessage;
 
     private final long startTick;
+    // not volatile, so depends on memory barrier in Transaction for visibility
     private long revisedStartTick;
     // not volatile, so depends on memory barrier in Transaction for visibility
     private int selfNestingLevel;
@@ -64,17 +65,29 @@ public class TraceEntryImpl implements TraceEntry, Timer {
 
     // only used by transaction thread
     private long stackTraceThreshold;
+    // only used by transaction thread
+    private @MonotonicNonNull TimerImpl extendedTimer;
+
+    // queryData, currRow and maxRow are only used by query entries
+    private final @Nullable QueryData queryData;
+    // row numbers start at 1
+    private long currRow = -1;
+    private long maxRow;
 
     TraceEntryImpl(@Nullable TraceEntryImpl parentTraceEntry,
-            @Nullable MessageSupplier messageSupplier, long startTick, int nestingLevel,
-            @Nullable TimerImpl timer) {
+            @Nullable MessageSupplier messageSupplier, @Nullable QueryData queryData,
+            long startTick, int nestingLevel, @Nullable TimerImpl timer) {
         this.parentTraceEntry = parentTraceEntry;
         this.messageSupplier = messageSupplier;
+        this.queryData = queryData;
         this.startTick = startTick;
         this.nestingLevel = nestingLevel;
         this.timer = timer;
         revisedStartTick = startTick;
         selfNestingLevel = 1;
+        if (queryData != null) {
+            queryData.start(startTick);
+        }
     }
 
     @Override
@@ -120,7 +133,8 @@ public class TraceEntryImpl implements TraceEntry, Timer {
 
     @Override
     public void end() {
-        endInternal(ticker.read(), null);
+        long endTick = ticker.read();
+        endInternal(endTick, null);
     }
 
     @Override
@@ -158,30 +172,34 @@ public class TraceEntryImpl implements TraceEntry, Timer {
     }
 
     @Override
-    public Timer extend(TimerName altTimerName) {
+    public Timer extend() {
         // timer is only null for limitExceededMarker, limitExtendedMarker and trace entries added
         // using addEntry(), and none of these trace entries are returned from plugin api so
-        // no way for extend() to be called
+        // no way for extend() to be called when timer is null
         checkNotNull(timer);
         if (selfNestingLevel++ == 0) {
-            long duration = endTick - revisedStartTick;
-            revisedStartTick = ticker.read() - duration;
-            timer.extend(altTimerName, revisedStartTick);
-        } else {
-            timer.extend(altTimerName);
+            long priorDuration = endTick - revisedStartTick;
+            long currTick = ticker.read();
+            revisedStartTick = currTick - priorDuration;
+            extendedTimer = timer.extend(currTick);
+            if (queryData != null) {
+                queryData.extend(currTick);
+            }
         }
         return this;
     }
 
+    // this is called for stopping an extension
     @Override
     public void stop() {
-        // timer is only null for limitExceededMarker, limitExtendedMarker and trace entries added
-        // using addEntry(), and none of these trace entries are returned from plugin api so
-        // no way for stop() to be called
-        checkNotNull(timer);
+        // the timer interface for this class is only expose through return value of extend()
         if (--selfNestingLevel == 0) {
             endTick = ticker.read();
-            timer.end(endTick);
+            checkNotNull(extendedTimer);
+            extendedTimer.end(endTick);
+            if (queryData != null) {
+                queryData.end(endTick);
+            }
             if (stackTraceThreshold != 0 && endTick - revisedStartTick >= stackTraceThreshold) {
                 StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
                 // need to strip back a few stack calls:
@@ -190,13 +208,59 @@ public class TraceEntryImpl implements TraceEntry, Timer {
                 // skip i=2 which is the plugin advice
                 this.stackTrace = ImmutableList.copyOf(stackTrace).subList(3, stackTrace.length);
             }
-        } else {
-            timer.stop();
         }
+    }
+
+    // TODO deal with copy paste between here and DummyTraceEntryOrQuery
+    @Override
+    public void incrementCurrRow() {
+        if (currRow == -1) {
+            currRow = 1;
+            maxRow = 1;
+            if (queryData != null) {
+                // queryData can be null here if the aggregated query limit is exceeded
+                // (though typically query limit is larger than trace entry limit)
+                queryData.incrementRowCount(1);
+            }
+        } else if (currRow == maxRow) {
+            currRow++;
+            maxRow = currRow;
+            if (queryData != null) {
+                // queryData can be null here if the query limit is exceeded
+                // (though typically query limit is larger than trace entry limit)
+                queryData.incrementRowCount(1);
+            }
+        } else {
+            currRow++;
+        }
+    }
+
+    // TODO deal with copy paste between here and DummyTraceEntryOrQuery
+    @Override
+    public void setCurrRow(long row) {
+        if (row > maxRow) {
+            if (queryData != null) {
+                // queryData can be null here if the aggregated query limit is exceeded
+                // (though typically query limit is larger than trace entry limit)
+                queryData.incrementRowCount(row - maxRow);
+            }
+            maxRow = row;
+        }
+        currRow = row;
     }
 
     public void setStackTrace(ImmutableList<StackTraceElement> stackTrace) {
         this.stackTrace = stackTrace;
+    }
+
+    // row count -1 means no navigation has been attempted
+    // row count 0 means that navigation has been attempted but there were 0 rows
+    public boolean isQueryNavigationAttempted() {
+        return currRow != -1;
+    }
+
+    public long getRowCount() {
+        return maxRow;
     }
 
     @Nullable
@@ -229,6 +293,9 @@ public class TraceEntryImpl implements TraceEntry, Timer {
         checkNotNull(timer);
         Transaction transaction = timer.getTransaction();
         timer.end(endTick);
+        if (queryData != null) {
+            queryData.end(endTick);
+        }
         setErrorMessage(errorMessage);
         setEndTick(endTick);
         transaction.popEntry(this, endTick);
@@ -244,7 +311,7 @@ public class TraceEntryImpl implements TraceEntry, Timer {
 
     private static class LimitExceededTraceEntry extends TraceEntryImpl {
         private LimitExceededTraceEntry() {
-            super(null, null, 0, 0, null);
+            super(null, null, null, 0, 0, null);
         }
         @Override
         public boolean isLimitExceededMarker() {
@@ -254,7 +321,7 @@ public class TraceEntryImpl implements TraceEntry, Timer {
 
     private static class LimitExtendedTraceEntry extends TraceEntryImpl {
         private LimitExtendedTraceEntry() {
-            super(null, null, 0, 0, null);
+            super(null, null, null, 0, 0, null);
         }
         @Override
         public boolean isLimitExtendedMarker() {

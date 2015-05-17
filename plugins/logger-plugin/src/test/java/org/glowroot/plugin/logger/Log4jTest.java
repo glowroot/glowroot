@@ -403,8 +403,7 @@ public class Log4jTest {
 
     private static void assertNoLogTraceEntries() throws Exception {
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).isEmpty();
+        assertThat(trace.getEntryCount()).isZero();
     }
 
     public static class ShouldLog implements AppUnderTest, TraceMarker {

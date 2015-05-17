@@ -33,8 +33,10 @@ import com.google.common.io.CharSource;
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.AggregateCollector;
 import org.glowroot.collector.AggregateIntervalCollector;
+import org.glowroot.collector.QueryComponent.AggregateQueryData;
 import org.glowroot.collector.TransactionSummary;
 import org.glowroot.common.ScratchBuffer;
+import org.glowroot.config.ConfigService;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregateDao.MergedAggregate;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
@@ -48,13 +50,16 @@ class TransactionCommonService {
 
     private final AggregateDao aggregateDao;
     private final @Nullable AggregateCollector aggregateCollector;
+    private final ConfigService configService;
 
     private final long fixedRollupMillis;
 
     TransactionCommonService(AggregateDao aggregateDao,
-            @Nullable AggregateCollector aggregateCollector, long fixedRollupSeconds) {
+            @Nullable AggregateCollector aggregateCollector, ConfigService configService,
+            long fixedRollupSeconds) {
         this.aggregateDao = aggregateDao;
         this.aggregateCollector = aggregateCollector;
+        this.configService = configService;
         this.fixedRollupMillis = fixedRollupSeconds * 1000;
     }
 
@@ -95,33 +100,6 @@ class TransactionCommonService {
         }
         return mergeInLiveTransactionSummaries(revisedQuery, queryResult,
                 orderedIntervalCollectors);
-    }
-
-    long getProfileSampleCount(String transactionType, @Nullable String transactionName, long from,
-            long to) throws SQLException {
-        List<AggregateIntervalCollector> orderedIntervalCollectors =
-                getOrderedIntervalCollectorsInRange(from, to);
-        if (orderedIntervalCollectors.isEmpty()) {
-            return getProfileSampleCountFromDao(transactionType, transactionName, from, to);
-        }
-        long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
-        long profileSampleCount =
-                getProfileSampleCountFromDao(transactionType, transactionName, from, revisedTo);
-        for (AggregateIntervalCollector intervalCollector : orderedIntervalCollectors) {
-            profileSampleCount += intervalCollector.getLiveProfileSampleCount(transactionType,
-                    transactionName);
-        }
-        return profileSampleCount;
-    }
-
-    boolean shouldHaveProfiles(String transactionType, @Nullable String transactionName, long from,
-            long to) throws SQLException {
-        if (transactionName == null) {
-            return aggregateDao.shouldHaveOverallProfiles(transactionType, from, to);
-        } else {
-            return aggregateDao.shouldHaveTransactionProfiles(transactionType, transactionName,
-                    from, to);
-        }
     }
 
     boolean shouldHaveTraces(String transactionType, @Nullable String transactionName, long from,
@@ -173,10 +151,19 @@ class TransactionCommonService {
         return aggregates;
     }
 
+    Map<String, Map<String, AggregateQueryData>> getQueries(String transactionType,
+            @Nullable String transactionName, long from, long to) throws Exception {
+        List<CharSource> queriesContents =
+                getQueryCharSources(transactionType, transactionName, from, to);
+        return AggregateMerging.getMergedQueries(queriesContents,
+                configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
+    }
+
     ProfileNode getProfile(String transactionType, @Nullable String transactionName, long from,
             long to, double truncateLeafPercentage) throws Exception {
-        List<CharSource> profiles = getProfiles(transactionType, transactionName, from, to);
-        ProfileNode syntheticRootNode = AggregateMerging.getProfile(profiles);
+        List<CharSource> profileContents =
+                getProfileCharSources(transactionType, transactionName, from, to);
+        ProfileNode syntheticRootNode = AggregateMerging.getMergedProfile(profileContents);
         if (truncateLeafPercentage != 0) {
             int minSamples = (int) (syntheticRootNode.getSampleCount() * truncateLeafPercentage);
             // don't truncate any root nodes
@@ -193,16 +180,6 @@ class TransactionCommonService {
         return aggregateCollector.getOrderedIntervalCollectorsInRange(from, to);
     }
 
-    private long getProfileSampleCountFromDao(String transactionType,
-            @Nullable String transactionName, long from, long to) throws SQLException {
-        if (transactionName == null) {
-            return aggregateDao.readOverallProfileSampleCount(transactionType, from, to);
-        } else {
-            return aggregateDao.readTransactionProfileSampleCount(transactionType, transactionName,
-                    from, to);
-        }
-    }
-
     private List<Aggregate> getAggregatesFromDao(String transactionType,
             @Nullable String transactionName, long from, long to, int rollupLevel)
             throws SQLException {
@@ -214,28 +191,58 @@ class TransactionCommonService {
         }
     }
 
-    private List<CharSource> getProfiles(String transactionType, @Nullable String transactionName,
-            long from, long to) throws Exception {
+    private List<CharSource> getQueryCharSources(String transactionType,
+            @Nullable String transactionName, long from, long to) throws Exception {
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(from, to);
         if (orderedIntervalCollectors.isEmpty()) {
-            return getProfilesFromDao(transactionType, transactionName, from, to);
+            return getQueryCharSourcesFromDao(transactionType, transactionName, from, to);
         }
         long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
-        List<CharSource> profiles =
-                getProfilesFromDao(transactionType, transactionName, from, revisedTo);
-        profiles = Lists.newArrayList(profiles);
+        List<CharSource> queriesContents =
+                getQueryCharSourcesFromDao(transactionType, transactionName, from, revisedTo);
+        queriesContents = Lists.newArrayList(queriesContents);
         for (AggregateIntervalCollector intervalCollector : orderedIntervalCollectors) {
-            String profile =
-                    intervalCollector.getLiveProfileJson(transactionType, transactionName);
-            if (profile != null) {
-                profiles.add(CharSource.wrap(profile));
+            String queriesContent =
+                    intervalCollector.getLiveQueriesJson(transactionType, transactionName);
+            if (queriesContent != null) {
+                queriesContents.add(CharSource.wrap(queriesContent));
             }
         }
-        return profiles;
+        return queriesContents;
     }
 
-    private List<CharSource> getProfilesFromDao(String transactionType,
+    private List<CharSource> getQueryCharSourcesFromDao(String transactionType,
+            @Nullable String transactionName, long from, long to) throws SQLException {
+        if (transactionName == null) {
+            return aggregateDao.readOverallQueries(transactionType, from, to);
+        } else {
+            return aggregateDao.readTransactionQueries(transactionType, transactionName, from, to);
+        }
+    }
+
+    private List<CharSource> getProfileCharSources(String transactionType,
+            @Nullable String transactionName, long from, long to) throws Exception {
+        List<AggregateIntervalCollector> orderedIntervalCollectors =
+                getOrderedIntervalCollectorsInRange(from, to);
+        if (orderedIntervalCollectors.isEmpty()) {
+            return getProfileCharSourcesFromDao(transactionType, transactionName, from, to);
+        }
+        long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
+        List<CharSource> profileContents =
+                getProfileCharSourcesFromDao(transactionType, transactionName, from, revisedTo);
+        profileContents = Lists.newArrayList(profileContents);
+        for (AggregateIntervalCollector intervalCollector : orderedIntervalCollectors) {
+            String profileContent =
+                    intervalCollector.getLiveProfileJson(transactionType, transactionName);
+            if (profileContent != null) {
+                profileContents.add(CharSource.wrap(profileContent));
+            }
+        }
+        return profileContents;
+    }
+
+    private List<CharSource> getProfileCharSourcesFromDao(String transactionType,
             @Nullable String transactionName, long from, long to) throws SQLException {
         if (transactionName == null) {
             return aggregateDao.readOverallProfiles(transactionType, from, to);
@@ -255,10 +262,12 @@ class TransactionCommonService {
                     / (double) fixedRollupMillis) * fixedRollupMillis;
             if (rollupTime != currRollupTime && currMergedAggregate != null) {
                 rolledUpAggregates.add(currMergedAggregate.toAggregate(scratchBuffer));
-                currMergedAggregate = new MergedAggregate(0, transactionType, transactionName);
+                currMergedAggregate = new MergedAggregate(0, transactionType, transactionName,
+                        configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
             }
             if (currMergedAggregate == null) {
-                currMergedAggregate = new MergedAggregate(0, transactionType, transactionName);
+                currMergedAggregate = new MergedAggregate(0, transactionType, transactionName,
+                        configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
             }
             currRollupTime = rollupTime;
             // capture time is the largest of the ordered aggregate capture times
@@ -271,7 +280,6 @@ class TransactionCommonService {
             currMergedAggregate.addTotalWaitedMicros(nonRolledUpAggregate.totalWaitedMicros());
             currMergedAggregate.addTotalAllocatedKBytes(
                     nonRolledUpAggregate.totalAllocatedKBytes());
-            currMergedAggregate.addProfileSampleCount(nonRolledUpAggregate.profileSampleCount());
             currMergedAggregate.addTraceCount(nonRolledUpAggregate.traceCount());
             currMergedAggregate.addTimers(nonRolledUpAggregate.timers());
             currMergedAggregate.addHistogram(nonRolledUpAggregate.histogram());
@@ -373,6 +381,8 @@ class TransactionCommonService {
                 ProfileNode childNode = i.next();
                 if (childNode.getSampleCount() < minSamples) {
                     i.remove();
+                    // TODO capture sampleCount per timerName of ellipsed structure
+                    // and use this in UI
                     node.setEllipsed();
                 } else {
                     toBeVisited.add(childNode);

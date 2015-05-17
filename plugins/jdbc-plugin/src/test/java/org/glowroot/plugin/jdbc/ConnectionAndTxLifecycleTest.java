@@ -82,8 +82,7 @@ public class ConnectionAndTxLifecycleTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getRootTimer().getNestedTimerNames()).contains("jdbc get connection");
         assertThat(trace.getRootTimer().getNestedTimerNames()).contains("jdbc connection close");
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).isEmpty();
+        assertThat(trace.getEntryCount()).isZero();
     }
 
     @Test
@@ -113,8 +112,7 @@ public class ConnectionAndTxLifecycleTest {
         assertThat(trace.getRootTimer().getNestedTimerNames()).contains("jdbc get connection");
         assertThat(trace.getRootTimer().getNestedTimerNames()).doesNotContain(
                 "jdbc connection close");
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).isEmpty();
+        assertThat(trace.getEntryCount()).isZero();
     }
 
     @Test
@@ -145,8 +143,7 @@ public class ConnectionAndTxLifecycleTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getRootTimer().getNestedTimerNames()).contains("jdbc get connection");
         assertThat(trace.getRootTimer().getNestedTimerNames()).contains("jdbc connection close");
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).isEmpty();
+        assertThat(trace.getEntryCount()).isZero();
     }
 
     @Test

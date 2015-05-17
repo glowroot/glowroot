@@ -74,7 +74,8 @@ public class StorageModule {
         int cappedDatabaseSizeMb = configService.getStorageConfig().cappedDatabaseSizeMb();
         cappedDatabase = new CappedDatabase(new File(dataDir, "glowroot.capped.db"),
                 cappedDatabaseSizeMb * 1024);
-        aggregateDao = new AggregateDao(dataSource, cappedDatabase, FIXED_AGGREGATE_ROLLUP_SECONDS);
+        aggregateDao = new AggregateDao(dataSource, cappedDatabase,
+                configModule.getConfigService(), FIXED_AGGREGATE_ROLLUP_SECONDS);
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
         AlertingService alertingService = new AlertingService(configService, triggeredAlertDao,
                 aggregateDao, new MailService());

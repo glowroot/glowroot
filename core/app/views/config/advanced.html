@@ -41,6 +41,20 @@
         </div>
       </div>
       <div gt-form-group
+           gt-label="Max aggregate queries per query type"
+           gt-model="config.maxAggregateQueriesPerQueryType"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-required="loaded"
+           gt-width="7em">
+        <div class="help-block">
+          Maximum number of different queries that are aggregated per query type for a given transaction.
+          Also the maximum number of different queries that are aggregated per query type across transactions of a given
+          transaction name (for display on the Transaction Queries tab).
+          This is used to limit memory when there are lots of dynamically created queries.
+        </div>
+      </div>
+      <div gt-form-group
            gt-label="Max trace entries per transaction"
            gt-model="config.maxTraceEntriesPerTransaction"
            gt-number="true"
@@ -48,8 +62,8 @@
            gt-required="loaded"
            gt-width="7em">
         <div class="help-block">
-          Maximum number of trace entries collected for a given transaction. This is used to
-          limit the memory requirement of very long transactions that would capture
+          Maximum number of trace entries collected for a given transaction.
+          This is used to limit the memory of very long transactions that would capture
           potentially hundreds of thousands of trace entries (e.g. large batch or background
           operations).
           Also, the UI is not really optimized for viewing super large numbers of trace entries.
@@ -63,8 +77,8 @@
            gt-required="loaded"
            gt-width="7em">
         <div class="help-block">
-          Maximum number of stack trace samples collected for a given transaction. This is used to
-          limit the memory requirement of very long transactions that would capture
+          Maximum number of stack trace samples collected for a given transaction.
+          This is used to limit the memory of very long transactions that would capture
           potentially hundreds of thousands of stack traces (e.g. large batch or background
           operations).
         </div>

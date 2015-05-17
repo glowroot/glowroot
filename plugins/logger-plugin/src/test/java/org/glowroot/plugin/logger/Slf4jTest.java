@@ -230,8 +230,7 @@ public class Slf4jTest {
         container.executeAppUnderTest(ShouldLog.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).isEmpty();
+        assertThat(trace.getEntryCount()).isZero();
     }
 
     static boolean isShaded() {

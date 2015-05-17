@@ -24,6 +24,10 @@ glowroot.filter('gtMillis', function () {
   return HandlebarsRendering.formatMillis;
 });
 
+glowroot.filter('gtRowCount', function () {
+  return HandlebarsRendering.formatRowCount;
+});
+
 glowroot.filter('gtDuration', function () {
   return function (input) {
     if (input === undefined) {

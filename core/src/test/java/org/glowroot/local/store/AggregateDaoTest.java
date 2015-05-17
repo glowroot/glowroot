@@ -27,9 +27,13 @@ import org.junit.Test;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.TransactionSummary;
+import org.glowroot.config.AdvancedConfig;
+import org.glowroot.config.ConfigService;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class AggregateDaoTest {
 
@@ -49,7 +53,9 @@ public class AggregateDaoTest {
         }
         cappedFile = File.createTempFile("glowroot-test-", ".capped.db");
         cappedDatabase = new CappedDatabase(cappedFile, 1000000);
-        aggregateDao = new AggregateDao(dataSource, cappedDatabase, 15);
+        ConfigService configService = mock(ConfigService.class);
+        when(configService.getAdvancedConfig()).thenReturn(AdvancedConfig.builder().build());
+        aggregateDao = new AggregateDao(dataSource, cappedDatabase, configService, 15);
     }
 
     @After
@@ -98,7 +104,6 @@ public class AggregateDaoTest {
                 .totalMicros(1000000)
                 .errorCount(0)
                 .transactionCount(10)
-                .profileSampleCount(0)
                 .traceCount(0)
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
@@ -111,7 +116,6 @@ public class AggregateDaoTest {
                 .totalMicros(100000)
                 .errorCount(0)
                 .transactionCount(1)
-                .profileSampleCount(0)
                 .traceCount(0)
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
@@ -123,7 +127,6 @@ public class AggregateDaoTest {
                 .totalMicros(300000)
                 .errorCount(0)
                 .transactionCount(2)
-                .profileSampleCount(0)
                 .traceCount(0)
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
@@ -135,7 +138,6 @@ public class AggregateDaoTest {
                 .totalMicros(1400000)
                 .errorCount(0)
                 .transactionCount(7)
-                .profileSampleCount(0)
                 .traceCount(0)
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
@@ -149,7 +151,6 @@ public class AggregateDaoTest {
                 .totalMicros(1000000)
                 .errorCount(0)
                 .transactionCount(10)
-                .profileSampleCount(0)
                 .traceCount(0)
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
@@ -162,7 +163,6 @@ public class AggregateDaoTest {
                 .totalMicros(100000)
                 .errorCount(0)
                 .transactionCount(1)
-                .profileSampleCount(0)
                 .traceCount(0)
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
@@ -174,7 +174,6 @@ public class AggregateDaoTest {
                 .totalMicros(300000)
                 .errorCount(0)
                 .transactionCount(2)
-                .profileSampleCount(0)
                 .traceCount(0)
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
@@ -186,7 +185,6 @@ public class AggregateDaoTest {
                 .totalMicros(1400000)
                 .errorCount(0)
                 .transactionCount(7)
-                .profileSampleCount(0)
                 .traceCount(0)
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())

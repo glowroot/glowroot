@@ -50,7 +50,7 @@ public class TraceEntryComponentTest {
         TraceEntryComponent traceEntryComponent =
                 new TraceEntryComponent(messageSupplier1, timer1, 0, ticker);
         // when
-        traceEntryComponent.pushEntry(0, messageSupplier2, timer2);
+        traceEntryComponent.pushEntry(0, messageSupplier2, null, timer2);
         traceEntryComponent.popEntry(traceEntryComponent.getRootEntry(), 0);
         // then
         assertThat(traceEntryComponent.isCompleted()).isTrue();
@@ -67,7 +67,7 @@ public class TraceEntryComponentTest {
         TraceEntryComponent traceEntryComponent =
                 new TraceEntryComponent(messageSupplier1, timer1, 0, ticker);
         // when
-        traceEntryComponent.pushEntry(0, messageSupplier2, timer2);
+        traceEntryComponent.pushEntry(0, messageSupplier2, null, timer2);
         traceEntryComponent.popEntry(mock(TraceEntryImpl.class), 0);
         // then
         assertThat(traceEntryComponent.isCompleted()).isTrue();

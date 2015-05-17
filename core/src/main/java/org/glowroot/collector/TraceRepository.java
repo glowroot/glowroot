@@ -17,9 +17,10 @@ package org.glowroot.collector;
 
 import javax.annotation.Nullable;
 
-import com.google.common.io.CharSource;
+import org.glowroot.common.ChunkSource;
 
 public interface TraceRepository {
 
-    void store(Trace trace, CharSource entries, @Nullable CharSource profile) throws Exception;
+    void store(Trace trace, @Nullable ChunkSource queries, @Nullable ChunkSource entries,
+            @Nullable ChunkSource profile) throws Exception;
 }

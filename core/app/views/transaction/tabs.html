@@ -25,17 +25,25 @@
   <li ng-class="{active: activeTabItem === 'metrics'}">
     <a ng-href="transaction/metrics{{tabQueryString()}}"
        ng-click="clickTab('metrics', $event)"
-       ng-keydown="keydownTab('tab_overview', 'tab_profile', $event)"
+       ng-keydown="keydownTab('tab_overview', 'tab_queries', $event)"
        id="tab_metrics">
       Metrics
+    </a>
+  </li>
+  <li ng-class="{active: activeTabItem === 'queries'}">
+    <a ng-href="transaction/queries{{tabQueryString()}}"
+       ng-click="clickTab('queries', $event)"
+       ng-keydown="keydownTab('tab_metrics', 'tab_profile', $event)"
+       id="tab_queries">
+      Queries
     </a>
   </li>
   <li ng-class="{active: activeTabItem === 'profile'}">
     <a ng-href="transaction/profile{{tabQueryString()}}"
        ng-click="clickTab('profile', $event)"
-       ng-keydown="keydownTab('tab_metrics', 'tab_traces', $event)"
+       ng-keydown="keydownTab('tab_queries', 'tab_traces', $event)"
        id="tab_profile">
-      Profile ({{profileSampleCount()}})
+      Profile
     </a>
   </li>
   <li ng-class="{active: activeTabItem === 'traces'}">

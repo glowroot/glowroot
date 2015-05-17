@@ -18,7 +18,7 @@
           {{nanosToMillis duration}}{{#if active}}..{{/if}}
         </span>
       </div>
-      <div style="overflow: hidden;">
+      <div style="overflow: hidden; padding-left: 0.5em;">
         {{#if message}}
           {{#ifLongMessage message.text}}
             {{! surrounding div is needed as common parent for toggling unexpanded/expanded content }}
@@ -29,7 +29,15 @@
               <span class="gt-inline-block gt-expanded-content gt-break-word hide">{{message.text}}</span>
             </div>
           {{^}}
-            <div class="gt-content-padding">{{message.text}}</div>
+            {{#ifSqlMessage message.text}}
+              {{! surrounding div is needed as common parent for toggling unexpanded/expanded content }}
+              <div>
+                <div class="gt-inline-block gt-unexpanded-content">{{message.text}}</div>
+                <span class="gt-inline-block gt-expanded-content gt-break-word hide">{{message.text}}</span>
+              </div>
+            {{^}}
+              <div class="gt-content-padding">{{message.text}}</div>
+            {{/ifSqlMessage}}
           {{/ifLongMessage}}
           {{#if message.detail}}
             <div class="gt-content-detail">

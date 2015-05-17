@@ -283,6 +283,12 @@ module.exports = function (grunt) {
       }
     },
 
+    concat: {
+      options: {
+        separator: ';\n'
+      }
+    },
+
     uglify: {
       options: {
         // currently report is not displayed unless without grunt -v

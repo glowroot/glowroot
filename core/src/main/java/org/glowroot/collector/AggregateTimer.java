@@ -38,18 +38,20 @@ public class AggregateTimer {
 
     // only null for synthetic root timer
     private final @Nullable String name;
+    private final boolean extended;
     // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
     private long totalMicros;
     private long count;
     private final List<AggregateTimer> nestedTimers;
 
     public static AggregateTimer createSyntheticRootTimer() {
-        return new AggregateTimer(null, 0, 0, new ArrayList<AggregateTimer>());
+        return new AggregateTimer(null, false, 0, 0, new ArrayList<AggregateTimer>());
     }
 
-    private AggregateTimer(@Nullable String name, long totalMicros, long count,
+    private AggregateTimer(@Nullable String name, boolean extended, long totalMicros, long count,
             List<AggregateTimer> nestedTimers) {
         this.name = name;
+        this.extended = extended;
         this.totalMicros = totalMicros;
         this.count = count;
         this.nestedTimers = Lists.newArrayList(nestedTimers);
@@ -65,7 +67,8 @@ public class AggregateTimer {
                 // timer names are only null for synthetic root timer
                 String toBeMergedNestedTimerName = checkNotNull(toBeMergedNestedTimer.getName());
                 String nestedTimerName = checkNotNull(nestedTimer.getName());
-                if (toBeMergedNestedTimerName.equals(nestedTimerName)) {
+                if (toBeMergedNestedTimerName.equals(nestedTimerName)
+                        && toBeMergedNestedTimer.isExtended() == nestedTimer.isExtended()) {
                     foundMatchingNestedTimer = nestedTimer;
                     break;
                 }
@@ -82,6 +85,10 @@ public class AggregateTimer {
         return name;
     }
 
+    public boolean isExtended() {
+        return extended;
+    }
+
     public long getTotalMicros() {
         return totalMicros;
     }
@@ -96,18 +103,19 @@ public class AggregateTimer {
 
     void mergeAsChildTimer(TimerImpl timer) {
         String timerName = timer.getName();
+        boolean extended = timer.isExtended();
         AggregateTimer matchingAggregateTimer = null;
         for (AggregateTimer nestedTimer : nestedTimers) {
             // timer names are only null for synthetic root timer
             String nestedTimerName = checkNotNull(nestedTimer.getName());
-            if (timerName.equals(nestedTimerName)) {
+            if (timerName.equals(nestedTimerName) && extended == nestedTimer.isExtended()) {
                 matchingAggregateTimer = nestedTimer;
                 break;
             }
         }
         if (matchingAggregateTimer == null) {
-            matchingAggregateTimer =
-                    new AggregateTimer(timerName, 0, 0, new ArrayList<AggregateTimer>());
+            matchingAggregateTimer = new AggregateTimer(timerName, timer.isExtended(), 0, 0,
+                    new ArrayList<AggregateTimer>());
             nestedTimers.add(matchingAggregateTimer);
         }
         matchingAggregateTimer.totalMicros += NANOSECONDS.toMicros(timer.getTotal());
@@ -120,6 +128,7 @@ public class AggregateTimer {
     @JsonCreator
     static AggregateTimer readValue(
             @JsonProperty("name") @Nullable String name,
+            @JsonProperty("extended") @Nullable Boolean extended,
             @JsonProperty("totalMicros") @Nullable Long totalMicros,
             @JsonProperty("count") @Nullable Long count,
             @JsonProperty("nestedTimers") @Nullable List</*@Nullable*/AggregateTimer> uncheckedNestedTimers)
@@ -127,6 +136,10 @@ public class AggregateTimer {
         List<AggregateTimer> nestedTimers = orEmpty(uncheckedNestedTimers, "nestedTimers");
         checkRequiredProperty(totalMicros, "totalMicros");
         checkRequiredProperty(count, "count");
-        return new AggregateTimer(name, totalMicros, count, nestedTimers);
+        return new AggregateTimer(name, orFalse(extended), totalMicros, count, nestedTimers);
+    }
+
+    private static boolean orFalse(@Nullable Boolean value) {
+        return value != null && value;
     }
 }

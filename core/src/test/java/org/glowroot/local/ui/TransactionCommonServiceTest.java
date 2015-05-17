@@ -22,10 +22,14 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.collector.Aggregate;
+import org.glowroot.config.AdvancedConfig;
+import org.glowroot.config.ConfigService;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregateDaoTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class TransactionCommonServiceTest {
 
@@ -48,8 +52,10 @@ public class TransactionCommonServiceTest {
     @Test
     public void test() throws Exception {
         // given
+        ConfigService configService = mock(ConfigService.class);
+        when(configService.getAdvancedConfig()).thenReturn(AdvancedConfig.builder().build());
         TransactionCommonService transactionCommonService =
-                new TransactionCommonService(aggregateDao, null, 300);
+                new TransactionCommonService(aggregateDao, null, configService, 300);
         // when
         List<Aggregate> aggregates =
                 transactionCommonService.getAggregates("a type", null, 0, 3600001);

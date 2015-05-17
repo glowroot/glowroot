@@ -13,26 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.collector;
+package org.glowroot.api;
 
-import java.io.IOException;
+/**
+ * A {@link TraceEntry} that also captures query data for aggregation.
+ */
+public interface QueryEntry extends TraceEntry {
 
-import com.google.common.io.CharSource;
-import org.junit.Test;
+    /**
+     * Call after successfully getting next row.
+     */
+    void incrementCurrRow();
 
-import org.glowroot.transaction.model.Profile;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class ProfileCharSourceCreatorTest {
-
-    @Test
-    public void shouldReturnNullIfEmpty() throws IOException {
-        // given
-        Profile profile = new Profile(false);
-        // when
-        CharSource charSource = ProfileCharSourceCreator.createProfileCharSource(profile);
-        // then
-        assertThat(charSource).isNull();
-    }
+    /**
+     * Row numbers start at 1 (not 0).
+     * 
+     * @param row
+     */
+    void setCurrRow(long row);
 }

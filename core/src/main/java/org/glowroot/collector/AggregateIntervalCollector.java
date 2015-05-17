@@ -35,11 +35,14 @@ public class AggregateIntervalCollector {
 
     private final long endTime;
     private final Map<String, IntervalTypeCollector> typeCollectors = Maps.newConcurrentMap();
+    private final int maxAggregateQueriesPerQueryType;
     private final Clock clock;
 
-    AggregateIntervalCollector(long currentTime, long fixedAggregateIntervalMillis, Clock clock) {
+    AggregateIntervalCollector(long currentTime, long fixedAggregateIntervalMillis,
+            int maxAggregateQueriesPerQueryType, Clock clock) {
         endTime = (long) Math.ceil(currentTime / (double) fixedAggregateIntervalMillis)
                 * fixedAggregateIntervalMillis;
+        this.maxAggregateQueriesPerQueryType = maxAggregateQueriesPerQueryType;
         this.clock = clock;
     }
 
@@ -123,8 +126,7 @@ public class AggregateIntervalCollector {
 
     public @Nullable Aggregate getLiveAggregate(String transactionType,
             @Nullable String transactionName) throws IOException {
-        AggregateBuilder aggregateBuilder =
-                getAggregateBuilder(transactionType, transactionName);
+        AggregateBuilder aggregateBuilder = getAggregateBuilder(transactionType, transactionName);
         if (aggregateBuilder == null) {
             return null;
         }
@@ -136,8 +138,7 @@ public class AggregateIntervalCollector {
 
     public @Nullable ErrorPoint getLiveErrorPoint(String transactionType,
             @Nullable String transactionName) throws IOException {
-        AggregateBuilder aggregateBuilder =
-                getAggregateBuilder(transactionType, transactionName);
+        AggregateBuilder aggregateBuilder = getAggregateBuilder(transactionType, transactionName);
         if (aggregateBuilder == null) {
             return null;
         }
@@ -147,22 +148,20 @@ public class AggregateIntervalCollector {
         }
     }
 
-    public long getLiveProfileSampleCount(String transactionType,
-            @Nullable String transactionName) {
-        AggregateBuilder aggregateBuilder =
-                getAggregateBuilder(transactionType, transactionName);
+    public @Nullable String getLiveQueriesJson(String transactionType,
+            @Nullable String transactionName) throws IOException {
+        AggregateBuilder aggregateBuilder = getAggregateBuilder(transactionType, transactionName);
         if (aggregateBuilder == null) {
-            return 0;
+            return null;
         }
         synchronized (aggregateBuilder) {
-            return aggregateBuilder.getProfileSampleCount();
+            return aggregateBuilder.getQueriesJson();
         }
     }
 
     public @Nullable String getLiveProfileJson(String transactionType,
             @Nullable String transactionName) throws IOException {
-        AggregateBuilder aggregateBuilder =
-                getAggregateBuilder(transactionType, transactionName);
+        AggregateBuilder aggregateBuilder = getAggregateBuilder(transactionType, transactionName);
         if (aggregateBuilder == null) {
             return null;
         }
@@ -179,7 +178,8 @@ public class AggregateIntervalCollector {
         IntervalTypeCollector typeBuilder;
         typeBuilder = typeCollectors.get(transactionType);
         if (typeBuilder == null) {
-            typeBuilder = new IntervalTypeCollector(transactionType);
+            typeBuilder =
+                    new IntervalTypeCollector(transactionType, maxAggregateQueriesPerQueryType);
             typeCollectors.put(transactionType, typeBuilder);
         }
         return typeBuilder;
@@ -210,10 +210,13 @@ public class AggregateIntervalCollector {
         private final String transactionType;
         private final AggregateBuilder overallBuilder;
         private final Map<String, AggregateBuilder> transactionBuilders = Maps.newConcurrentMap();
+        private final int maxAggregateQueriesPerQueryType;
 
-        private IntervalTypeCollector(String transactionType) {
+        private IntervalTypeCollector(String transactionType, int maxAggregateQueriesPerQueryType) {
             this.transactionType = transactionType;
-            overallBuilder = new AggregateBuilder(transactionType, null);
+            this.maxAggregateQueriesPerQueryType = maxAggregateQueriesPerQueryType;
+            overallBuilder =
+                    new AggregateBuilder(transactionType, null, maxAggregateQueriesPerQueryType);
         }
 
         private void add(Transaction transaction) {
@@ -221,6 +224,7 @@ public class AggregateIntervalCollector {
             synchronized (overallBuilder) {
                 overallBuilder.add(transaction);
                 overallBuilder.addToTimers(transaction.getRootTimer());
+                overallBuilder.addToQueries(transaction.getQueries());
                 if (profile != null) {
                     overallBuilder.addToProfile(profile);
                 }
@@ -228,13 +232,14 @@ public class AggregateIntervalCollector {
             AggregateBuilder transactionBuilder =
                     transactionBuilders.get(transaction.getTransactionName());
             if (transactionBuilder == null) {
-                transactionBuilder =
-                        new AggregateBuilder(transactionType, transaction.getTransactionName());
+                transactionBuilder = new AggregateBuilder(transactionType,
+                        transaction.getTransactionName(), maxAggregateQueriesPerQueryType);
                 transactionBuilders.put(transaction.getTransactionName(), transactionBuilder);
             }
             synchronized (transactionBuilder) {
                 transactionBuilder.add(transaction);
                 transactionBuilder.addToTimers(transaction.getRootTimer());
+                transactionBuilder.addToQueries(transaction.getQueries());
                 if (profile != null) {
                     overallBuilder.addToProfile(profile);
                     transactionBuilder.addToProfile(profile);
