@@ -34,30 +34,30 @@
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>5.0.3</version>
+      <version>5.0.4</version>
     </dependency>
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
-      <version>5.0.3</version>
+      <version>5.0.4</version>
     </dependency>
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-tree</artifactId>
-      <version>5.0.3</version>
+      <version>5.0.4</version>
     </dependency>
     <dependency>
       <!-- org.objectweb.asm.util.CheckClassAdapter.verify() is used when woven byte code
         verification is enabled via -Dglowroot.weaving.verify=true -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-util</artifactId>
-      <version>5.0.3</version>
+      <version>5.0.4</version>
     </dependency>
     <dependency>
       <!-- this is an optional dependency of asm-util -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-analysis</artifactId>
-      <version>5.0.3</version>
+      <version>5.0.4</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
@@ -197,7 +197,7 @@
       <!-- this is included to test weaving against jdk 1.7 bytecode -->
       <groupId>io.undertow</groupId>
       <artifactId>undertow-core</artifactId>
-      <version>1.2.5.Final</version>
+      <version>1.2.6.Final</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
