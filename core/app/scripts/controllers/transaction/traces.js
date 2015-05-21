@@ -80,10 +80,10 @@ glowroot.controller('TracesCtrl', [
         query.transactionNameComparator = 'equals';
         query.transactionName = $scope.transactionName;
       }
-      // convert duration from seconds to nanoseconds
-      query.durationLow = Math.ceil(query.durationLow * 1000000000);
+      // convert duration from milliseconds to nanoseconds
+      query.durationLow = Math.ceil(query.durationLow * 1000000);
       if (query.durationHigh) {
-        query.durationHigh = Math.floor(query.durationHigh * 1000000000);
+        query.durationHigh = Math.floor(query.durationHigh * 1000000);
       }
       if (errorOnly) {
         query.errorOnly = true;
@@ -511,11 +511,11 @@ glowroot.controller('TracesCtrl', [
         yaxis: {
           ticks: 10,
           zoomRange: false,
-          borderGridLock: 0.001,
+          borderGridLock: 1,
           min: 0,
           // 10 second yaxis max just for initial empty chart rendering
           max: 10,
-          label: 'seconds'
+          label: 'milliseconds'
         },
         zoom: {
           interactive: true,

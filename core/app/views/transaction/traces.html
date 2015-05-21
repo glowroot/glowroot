@@ -109,7 +109,7 @@
 
     <div class="col-lg-8">
       <!-- input-group needs to be in a sub-div so it doesn't try to fill the entire width,
-           which would push the addon "seconds" label flush right -->
+           which would push the addon "milliseconds" label flush right -->
       <div class="input-group"
            style="width: {{filterDurationComparator === 'between' ? 30 : 25}}em;">
         <div gt-input-group-dropdown
@@ -120,7 +120,7 @@
         <input type="text"
                ng-model="filter.durationLow"
                ng-show="filterDurationComparator !== 'less'"
-               ng-pattern="/^(0|[1-9][0-9]*)?(\.[0-9]*)?$/"
+               ng-pattern="/^(0|[1-9][0-9]*)$/"
                class="form-control"
                id="filterDurationLow"
                name="filterDurationLow">
@@ -132,12 +132,12 @@
         <input type="text"
                ng-model="filter.durationHigh"
                ng-show="filterDurationComparator !== 'greater'"
-               ng-pattern="/^(0|[1-9][0-9]*)?(\.[0-9]*)?$/"
+               ng-pattern="/^(0|[1-9][0-9]*)$/"
                class="form-control"
                id="filterDurationHigh"
                name="filterDurationHigh">
         <span class="input-group-addon">
-          seconds
+          milliseconds
         </span>
       </div>
     </div>

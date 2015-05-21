@@ -52,6 +52,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @JsonService
 class TracePointJsonService {
 
+    private static final double NANOSECONDS_PER_MILLISECOND = 1000000.0;
+
     private static final JsonFactory jsonFactory = new JsonFactory();
 
     private final TraceDao traceDao;
@@ -331,7 +333,7 @@ class TracePointJsonService {
                 if (!point.error()) {
                     jg.writeStartArray();
                     jg.writeNumber(point.captureTime());
-                    jg.writeNumber(point.duration() / 1000000000.0);
+                    jg.writeNumber(point.duration() / NANOSECONDS_PER_MILLISECOND);
                     jg.writeString(point.id());
                     jg.writeEndArray();
                 }
@@ -342,7 +344,7 @@ class TracePointJsonService {
                 if (point.error()) {
                     jg.writeStartArray();
                     jg.writeNumber(point.captureTime());
-                    jg.writeNumber(point.duration() / 1000000000.0);
+                    jg.writeNumber(point.duration() / NANOSECONDS_PER_MILLISECOND);
                     jg.writeString(point.id());
                     jg.writeEndArray();
                 }
@@ -352,7 +354,8 @@ class TracePointJsonService {
             for (Transaction activeTrace : activeTraces) {
                 jg.writeStartArray();
                 jg.writeNumber(captureTime);
-                jg.writeNumber((captureTick - activeTrace.getStartTick()) / 1000000000.0);
+                jg.writeNumber(
+                        (captureTick - activeTrace.getStartTick()) / NANOSECONDS_PER_MILLISECOND);
                 jg.writeString(activeTrace.getId());
                 jg.writeEndArray();
             }
