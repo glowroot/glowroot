@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,28 +18,23 @@
 
 glowroot.factory('keyedColorPools', [
   function () {
-    var fixedPool = ['#edc240', '#afd8f8', '#cb4b4b', '#4da74d', '#9440ed'];
+    var fixedPool = ['#edc240', '#9dc2df', '#cb4b4b', '#4da74d', '#9440ed'];
     var dynamicPool = fixedPool.slice(0);
-    var variation = 0;
+    var variation = 1;
 
     function getColor(i) {
       if (i < dynamicPool.length) {
         return dynamicPool[i];
       }
-      // this color generation code is copied from jquery.flot.js
-      var c = $.color.parse(fixedPool[i % fixedPool.length] || '#666');
+      // this color generation code is modified from jquery.flot.js
+      var c = $.color.parse(fixedPool[i % fixedPool.length]);
       if (i % fixedPool.length === 0 && i) {
-        if (variation >= 0) {
-          if (variation < 0.5) {
-            variation = -variation - 0.2;
-          } else {
-            variation = 0;
-          }
-        } else {
-          variation = -variation;
+        variation -= 0.3;
+        if (variation < 0.5) {
+          variation += 1;
         }
       }
-      var color = c.scale('rgb', 1 + variation);
+      var color = c.scale('rgb', variation);
       dynamicPool.push(color);
       return color;
     }
