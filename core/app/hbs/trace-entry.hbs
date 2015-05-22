@@ -14,7 +14,7 @@
       </div>
       {{! +1 at the beginning is for the indent1 of the offset column }}
       <div style="margin-left: {{traceEntryIndent .}}em; float: left;">
-        <span class="gt-inline-block gt-indent1 gt-left-numeric-column" style="width: {{offsetColumnWidth}}em;">
+        <span class="gt-inline-block gt-left-numeric-column" style="width: {{durationColumnWidth}}em;">
           {{nanosToMillis duration}}{{#if active}}..{{/if}}
         </span>
       </div>

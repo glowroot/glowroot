@@ -445,28 +445,35 @@ HandlebarsRendering = (function () {
     traceEntryLineLength = Math.max(traceEntryLineLength, 80);
   }
 
-  function renderNext(traceEntries, start) {
+  function renderNext(traceEntries, start, durationColumnWidth) {
     // large numbers of trace entries (e.g. 20,000) render much faster when grouped into sub-divs
     var batchSize;
+    var i;
     if (start === 0) {
       // first batch size is smaller to make the records show up on screen right away
       batchSize = 100;
+      var maxDuration = 0;
+      for (i = 0; i < traceEntries.length; i++) {
+        maxDuration = Math.max(maxDuration, traceEntries[i].duration);
+      }
+      durationColumnWidth = formatMillis(maxDuration / 1000000).length / 2 + indent1;
     } else {
       // rest of batches are optimized for total throughput
       batchSize = 500;
     }
     var html = '<div id="block' + start + '">';
-    var i;
+    var maxOffset = traceEntries[traceEntries.length - 1].offset;
+    var offsetColumnWidth = formatMillis(maxOffset / 1000000).length / 2 + indent1;
     for (i = start; i < Math.min(start + batchSize, traceEntries.length); i++) {
-      var maxDurationMillis = formatMillis(traceEntries[0].duration / 1000000);
-      traceEntries[i].offsetColumnWidth = maxDurationMillis.length / 2 + indent1;
+      traceEntries[i].offsetColumnWidth = offsetColumnWidth;
+      traceEntries[i].durationColumnWidth = durationColumnWidth;
       html += JST['trace-entry'](traceEntries[i]);
     }
     html += '</div>';
     $('#sps').append(html);
     if (start + 100 < traceEntries.length) {
       setTimeout(function () {
-        renderNext(traceEntries, start + batchSize);
+        renderNext(traceEntries, start + batchSize, durationColumnWidth);
       }, 10);
     }
   }
