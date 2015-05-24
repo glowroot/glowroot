@@ -21,7 +21,6 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 
@@ -146,12 +145,16 @@ public class ServletAspect {
                             sessionUserAttributePath);
                 }
             }
+            TraceEntry traceEntry = pluginServices.startTransaction("Servlet", requestUri,
+                    messageSupplier, timerName);
             // Glowroot-Transaction-Name header is useful for automated tests which want to send a
             // more specific name for the transaction
             String transactionNameOverride = request.getHeader("Glowroot-Transaction-Name");
-            String transactionName = MoreObjects.firstNonNull(transactionNameOverride, requestUri);
-            TraceEntry traceEntry = pluginServices.startTransaction("Servlet", transactionName,
-                    messageSupplier, timerName);
+            if (transactionNameOverride != null) {
+                // using setTransactionName() instead of passing this into startTransaction() so
+                // that it will be the first override and other overrides won't replace it
+                pluginServices.setTransactionName(transactionNameOverride);
+            }
             if (user != null) {
                 pluginServices.setTransactionUser(user);
             }

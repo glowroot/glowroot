@@ -32,6 +32,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import org.glowroot.Containers;
+import org.glowroot.api.PluginServices;
 import org.glowroot.container.Container;
 import org.glowroot.container.trace.Trace;
 
@@ -209,8 +210,11 @@ public class RequestHeaderTest {
     public static class SetTransactionNameOverrideRequestHeaders extends TestServlet {
         @Override
         protected void before(HttpServletRequest request, HttpServletResponse response) {
-            ((MockHttpServletRequest) request).addHeader("Glowroot-Transaction-Name",
-                    "AbcXyz");
+            ((MockHttpServletRequest) request).addHeader("Glowroot-Transaction-Name", "AbcXyz");
+        }
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+            PluginServices.get("servlet").setTransactionName("do not accept");
         }
     }
 
