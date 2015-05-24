@@ -119,7 +119,7 @@ public class AggregateTimer {
             nestedTimers.add(matchingAggregateTimer);
         }
         matchingAggregateTimer.totalMicros += NANOSECONDS.toMicros(timer.getTotal());
-        matchingAggregateTimer.count = timer.getCount();
+        matchingAggregateTimer.count += timer.getCount();
         for (TimerImpl nestedTimer : timer.getNestedTimers()) {
             matchingAggregateTimer.mergeAsChildTimer(nestedTimer);
         }
