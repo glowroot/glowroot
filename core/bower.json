@@ -14,7 +14,7 @@
     "handlebars": "3.0.3",
     "jquery": "2.1.4",
     "moment": "2.10.3",
-    "sequeljs": "trask/sequeljs#61da26ea59c93bf7df6f517fa7a4aa4646d377ae",
+    "sequeljs": "trask/sequeljs#b9165eb1defa6d63ec457b853369cfdbe9a1e99d",
     "spinjs": "2.1.0",
     "stackvis": "trask/node-stackvis#1b4231badff79e31d29cf487993bbb23b586d9d2"
   }
