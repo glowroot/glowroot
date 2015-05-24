@@ -946,8 +946,8 @@ HandlebarsRendering = (function () {
     return number.toFixed(1);
   }
 
-  function formatRowCount(number) {
-    if (Math.abs(number) < 1) {
+  function formatCount(number) {
+    if (Math.abs(number) < 0.1) {
       return number.toPrecision(1);
     }
     return number.toFixed(1);
@@ -967,7 +967,7 @@ HandlebarsRendering = (function () {
     },
     formatBytes: formatBytes,
     formatMillis: formatMillis,
-    formatRowCount: formatRowCount,
+    formatCount: formatCount,
     profileToggle: profileToggle
   };
 })();

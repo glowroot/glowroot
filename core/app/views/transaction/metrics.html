@@ -115,7 +115,7 @@
           </div>
         </td>
         <td>{{flattenedTimer.totalMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}}</td>
-        <td>{{(flattenedTimer.count / mergedAggregate.transactionCount).toFixed(1)}}</td>
+        <td>{{flattenedTimer.count / mergedAggregate.transactionCount | gtCount}}</td>
         <td></td>
       </tr>
       </tbody>
@@ -148,7 +148,7 @@
           </div>
         </td>
         <td>{{treeTimer.totalMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}}</td>
-        <td>{{(treeTimer.count / mergedAggregate.transactionCount).toFixed(1)}}</td>
+        <td>{{treeTimer.count / mergedAggregate.transactionCount | gtCount}}</td>
         <td></td>
       </tr>
       </tbody>
