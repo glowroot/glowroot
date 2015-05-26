@@ -200,7 +200,8 @@ public class TraceEntryImpl implements QueryEntry, Timer {
             if (queryData != null) {
                 queryData.end(endTick);
             }
-            if (stackTraceThreshold != 0 && endTick - revisedStartTick >= stackTraceThreshold) {
+            if (stackTrace == null && stackTraceThreshold != 0
+                    && endTick - revisedStartTick >= stackTraceThreshold) {
                 StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
                 // need to strip back a few stack calls:
                 // skip i=0 which is "java.lang.Thread.getStackTrace()"
