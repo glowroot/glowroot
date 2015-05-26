@@ -98,6 +98,10 @@ class CappedDatabaseOutputStream extends OutputStream {
         return Math.max(lastResizeBaseIndex, currIndex - sizeBytes);
     }
 
+    long getCurrIndex() {
+        return currIndex;
+    }
+
     // this is ok to read outside of external synchronization around startBlock()/write()/endBlock()
     int getSizeKb() {
         return sizeKb;

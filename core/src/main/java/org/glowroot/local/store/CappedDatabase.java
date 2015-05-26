@@ -88,6 +88,14 @@ public class CappedDatabase {
     }
 
     CharSource read(long cappedId, String overwrittenResponse) {
+        if (cappedId >= out.getCurrIndex()) {
+            // this can happen when the glowroot folder is copied for analysis without shutting down
+            // the JVM and glowroot.capped.db is copied first, then new data is written to
+            // glowroot.capped.db and the new capped ids are written to glowroot.h2.db and then
+            // glowroot.h2.db is copied with capped ids that do not exist in the copied
+            // glowroot.capped.db
+            return CharSource.wrap(overwrittenResponse);
+        }
         return new CappedBlockCharSource(cappedId, overwrittenResponse);
     }
 
