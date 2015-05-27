@@ -19,6 +19,7 @@ import javax.annotation.Nullable;
 
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.BooleanProperty;
+import org.glowroot.api.QueryEntry;
 import org.glowroot.api.Timer;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.weaving.BindReceiver;
@@ -36,38 +37,37 @@ public class ResultSetAspect {
     private static final PluginServices pluginServices = PluginServices.get("cassandra");
 
     @Mixin({"com.datastax.driver.core.ResultSet", "com.datastax.driver.core.ResultSetFuture"})
-    public static class HasLastQueryMessageSupplierImpl implements HasLastQueryMessageSupplier {
+    public static class HasLastQueryMessageSupplierImpl implements HasLastQueryEntry {
         // the field and method names are verbose to avoid conflict since they will become fields
         // and methods in all classes that extend com.datastax.driver.core.ResultSet or
         // com.datastax.driver.core.ResultSetFuture
         //
         // does not need to be volatile, app/framework must provide visibility of ResultSets and
         // ResultSetFutures if used across threads and this can piggyback
-        private @Nullable QueryMessageSupplier glowrootLastQueryMessageSupplier;
+        private @Nullable QueryEntry glowrootLastQueryEntry;
         @Override
         @Nullable
-        public QueryMessageSupplier getGlowrootLastQueryMessageSupplier() {
-            return glowrootLastQueryMessageSupplier;
+        public QueryEntry getGlowrootLastQueryEntry() {
+            return glowrootLastQueryEntry;
         }
         @Override
-        public void setGlowrootLastQueryMessageSupplier(
-                @Nullable QueryMessageSupplier glowrootLastQueryMessageSupplier) {
-            this.glowrootLastQueryMessageSupplier = glowrootLastQueryMessageSupplier;
+        public void setGlowrootLastQueryEntry(
+                @Nullable QueryEntry glowrootLastQueryEntry) {
+            this.glowrootLastQueryEntry = glowrootLastQueryEntry;
         }
         @Override
-        public boolean hasGlowrootLastQueryMessageSupplier() {
-            return glowrootLastQueryMessageSupplier != null;
+        public boolean hasGlowrootLastQueryEntry() {
+            return glowrootLastQueryEntry != null;
         }
     }
 
     // the method names are verbose to avoid conflict since they will become methods in all classes
     // that extend com.datastax.driver.core.ResultSet
-    public interface HasLastQueryMessageSupplier {
+    public interface HasLastQueryEntry {
         @Nullable
-        QueryMessageSupplier getGlowrootLastQueryMessageSupplier();
-        void setGlowrootLastQueryMessageSupplier(
-                @Nullable QueryMessageSupplier lastQueryMessageSupplier);
-        boolean hasGlowrootLastQueryMessageSupplier();
+        QueryEntry getGlowrootLastQueryEntry();
+        void setGlowrootLastQueryEntry(@Nullable QueryEntry lastQueryEntry);
+        boolean hasGlowrootLastQueryEntry();
     }
 
     @Pointcut(className = "com.datastax.driver.core.ResultSet", methodName = "one",
@@ -77,8 +77,8 @@ public class ResultSetAspect {
         private static final BooleanProperty timerEnabled =
                 pluginServices.getEnabledProperty("captureResultSetNavigate");
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasLastQueryMessageSupplier resultSet) {
-            return resultSet.hasGlowrootLastQueryMessageSupplier();
+        public static boolean isEnabled(@BindReceiver HasLastQueryEntry resultSet) {
+            return resultSet.hasGlowrootLastQueryEntry();
         }
         @OnBefore
         public static @Nullable Timer onBefore() {
@@ -90,17 +90,16 @@ public class ResultSetAspect {
         }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable Object row,
-                @BindReceiver HasLastQueryMessageSupplier resultSet) {
-            QueryMessageSupplier lastQueryMessageSupplier = resultSet
-                    .getGlowrootLastQueryMessageSupplier();
-            if (lastQueryMessageSupplier == null) {
+                @BindReceiver HasLastQueryEntry resultSet) {
+            QueryEntry lastQueryEntry = resultSet.getGlowrootLastQueryEntry();
+            if (lastQueryEntry == null) {
                 // tracing must be disabled (e.g. exceeded trace entry limit)
                 return;
             }
             if (row != null) {
-                lastQueryMessageSupplier.incrementNumRows();
+                lastQueryEntry.incrementCurrRow();
             } else {
-                lastQueryMessageSupplier.setHasPerformedNavigation();
+                lastQueryEntry.setCurrRow(0);
             }
         }
         @OnAfter

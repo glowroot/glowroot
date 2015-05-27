@@ -18,6 +18,7 @@ package org.glowroot.plugin.cassandra;
 import javax.annotation.Nullable;
 
 import org.glowroot.api.PluginServices;
+import org.glowroot.api.QueryEntry;
 import org.glowroot.api.Timer;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.weaving.BindReceiver;
@@ -28,7 +29,7 @@ import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.plugin.cassandra.ResultSetAspect.HasLastQueryMessageSupplier;
+import org.glowroot.plugin.cassandra.ResultSetAspect.HasLastQueryEntry;
 
 public class ResultSetFutureAspect {
 
@@ -39,20 +40,19 @@ public class ResultSetFutureAspect {
     public static class GetAdvice {
         private static final TimerName timerName = pluginServices.getTimerName(GetAdvice.class);
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasLastQueryMessageSupplier resultSetFuture) {
-            return resultSetFuture.hasGlowrootLastQueryMessageSupplier();
+        public static boolean isEnabled(@BindReceiver HasLastQueryEntry resultSetFuture) {
+            return resultSetFuture.hasGlowrootLastQueryEntry();
         }
         @OnBefore
         public static Timer onBefore() {
             return pluginServices.startTimer(timerName);
         }
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable HasLastQueryMessageSupplier resultSet,
-                @BindReceiver HasLastQueryMessageSupplier resultSetFuture) {
-            QueryMessageSupplier lastQueryMessageSupplier =
-                    resultSetFuture.getGlowrootLastQueryMessageSupplier();
+        public static void onReturn(@BindReturn @Nullable HasLastQueryEntry resultSet,
+                @BindReceiver HasLastQueryEntry resultSetFuture) {
+            QueryEntry lastQueryEntry = resultSetFuture.getGlowrootLastQueryEntry();
             if (resultSet != null) {
-                resultSet.setGlowrootLastQueryMessageSupplier(lastQueryMessageSupplier);
+                resultSet.setGlowrootLastQueryEntry(lastQueryEntry);
             }
         }
         @OnAfter

@@ -22,11 +22,6 @@ class QueryMessageSupplier extends MessageSupplier {
 
     private final String query;
 
-    // intentionally not volatile for performance, but it does mean partial and active trace
-    // captures may see stale value (but partial and active trace captures use memory barrier in
-    // Transaction to ensure the values are at least visible as of the end of the last trace entry)
-    private int numRows = -1;
-
     QueryMessageSupplier(String query) {
         this.query = query;
     }
@@ -36,38 +31,6 @@ class QueryMessageSupplier extends MessageSupplier {
         StringBuilder sb = new StringBuilder();
         sb.append("cql execution: ");
         sb.append(query);
-        appendRowCount(sb);
         return Message.from(sb.toString());
-    }
-
-    public void setHasPerformedNavigation() {
-        if (numRows == -1) {
-            numRows = 0;
-        }
-    }
-
-    public void incrementNumRows() {
-        if (numRows == -1) {
-            numRows = 1;
-        } else {
-            numRows++;
-        }
-    }
-
-    public void updateNumRows(int currentRow) {
-        numRows = Math.max(numRows, currentRow);
-    }
-
-    void appendRowCount(StringBuilder sb) {
-        if (numRows == -1) {
-            return;
-        }
-        sb.append(" => ");
-        sb.append(numRows);
-        if (numRows == 1) {
-            sb.append(" row");
-        } else {
-            sb.append(" rows");
-        }
     }
 }

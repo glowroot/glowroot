@@ -33,6 +33,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
+import org.glowroot.container.trace.Query;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 
@@ -64,6 +65,12 @@ public class CassandraSyncTest {
     public void shouldExecuteStatement() throws Exception {
         container.executeAppUnderTest(ExecuteStatement.class);
         Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo("SELECT * FROM test.users");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows()).isEqualTo(10);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage().getText()).isEqualTo(
@@ -74,6 +81,12 @@ public class CassandraSyncTest {
     public void shouldIterateUsingOneAndAll() throws Exception {
         container.executeAppUnderTest(IterateUsingOneAndAll.class);
         Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo("SELECT * FROM test.users");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows()).isEqualTo(10);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage().getText()).isEqualTo(
@@ -84,16 +97,29 @@ public class CassandraSyncTest {
     public void shouldExecuteBoundStatement() throws Exception {
         container.executeAppUnderTest(ExecuteBoundStatement.class);
         Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo(
+                "INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows()).isEqualTo(0);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage().getText()).isEqualTo(
-                "cql execution: INSERT INTO test.users (id, fname, lname) VALUES (?, ?, ?)");
+                "cql execution: INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
     }
 
     @Test
     public void shouldExecuteBatchStatement() throws Exception {
         container.executeAppUnderTest(ExecuteBatchStatement.class);
         Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo("<batch cql>");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows()).isEqualTo(0);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage().getText()).isEqualTo("cql execution:"
@@ -161,7 +187,7 @@ public class CassandraSyncTest {
             // cql comment is to avoid "re-preparing already prepared query" warning message
             // from com.datastax.driver.core.Cluster
             PreparedStatement preparedStatement = session.prepare(
-                    "INSERT INTO test.users (id, fname, lname) VALUES (?, ?, ?)");
+                    "INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
             BoundStatement boundStatement = new BoundStatement(preparedStatement);
             boundStatement.bind(100, "f100", "l100");
             session.execute(boundStatement);

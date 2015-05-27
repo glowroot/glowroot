@@ -24,8 +24,8 @@ import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
+import org.glowroot.api.QueryEntry;
 import org.glowroot.api.TimerName;
-import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindParameter;
 import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindThrowable;
@@ -36,11 +36,13 @@ import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.api.weaving.Shim;
-import org.glowroot.plugin.cassandra.ResultSetAspect.HasLastQueryMessageSupplier;
+import org.glowroot.plugin.cassandra.ResultSetAspect.HasLastQueryEntry;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class SessionAspect {
+
+    private static final String QUERY_TYPE = "CQL";
 
     private static final PluginServices pluginServices = PluginServices.get("cassandra");
 
@@ -101,53 +103,53 @@ public class SessionAspect {
             return pluginServices.isEnabled();
         }
         @OnBefore
-        public static @Nullable TraceEntry onBefore(@BindParameter @Nullable Object arg) {
+        public static @Nullable QueryEntry onBefore(@BindParameter @Nullable Object arg) {
             if (arg == null) {
                 // seems nothing sensible to do here other than ignore
                 return null;
             }
+            String queryText;
             MessageSupplier messageSupplier;
             if (arg instanceof String) {
-                String query = (String) arg;
-                messageSupplier = new QueryMessageSupplier(query);
+                queryText = (String) arg;
+                messageSupplier = new QueryMessageSupplier(queryText);
             } else if (arg instanceof RegularStatement) {
-                String query = ((RegularStatement) arg).getQueryString();
-                messageSupplier = new QueryMessageSupplier(nullToEmpty(query));
+                queryText = nullToEmpty(((RegularStatement) arg).getQueryString());
+                messageSupplier = new QueryMessageSupplier(queryText);
             } else if (arg instanceof BoundStatement) {
                 PreparedStatement preparedStatement = ((BoundStatement) arg).preparedStatement();
-                String query = preparedStatement == null ? "" : preparedStatement.getQueryString();
-                messageSupplier = new QueryMessageSupplier(nullToEmpty(query));
+                queryText = preparedStatement == null ? "" :
+                        nullToEmpty(preparedStatement.getQueryString());
+                messageSupplier = new QueryMessageSupplier(queryText);
             } else if (arg instanceof BatchStatement) {
                 Collection<Statement> statements = ((BatchStatement) arg).getStatements();
                 if (statements == null) {
                     statements = new ArrayList<Statement>();
                 }
+                queryText = "<batch cql>";
                 messageSupplier = BatchQueryMessageSupplier.from(statements);
             } else {
                 return null;
             }
-            return pluginServices.startTraceEntry(messageSupplier, timerName);
+            return pluginServices.startQueryEntry(QUERY_TYPE, queryText, messageSupplier,
+                    timerName);
         }
         @OnReturn
         public static void onReturn(
-                @BindReturn @Nullable HasLastQueryMessageSupplier resultSetOrResultSetFuture,
-                @BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry != null) {
+                @BindReturn @Nullable HasLastQueryEntry resultSetOrResultSetFuture,
+                @BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
                 if (resultSetOrResultSetFuture != null) {
-                    MessageSupplier messageSupplier = traceEntry.getMessageSupplier();
-                    if (messageSupplier instanceof QueryMessageSupplier) {
-                        resultSetOrResultSetFuture.setGlowrootLastQueryMessageSupplier(
-                                (QueryMessageSupplier) messageSupplier);
-                    }
+                    resultSetOrResultSetFuture.setGlowrootLastQueryEntry(queryEntry);
                 }
-                traceEntry.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+                queryEntry.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
             }
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable TraceEntry traceEntry) {
-            if (traceEntry != null) {
-                traceEntry.endWithError(ErrorMessage.from(t));
+                @BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
+                queryEntry.endWithError(ErrorMessage.from(t));
             }
         }
         private static String nullToEmpty(@Nullable String string) {

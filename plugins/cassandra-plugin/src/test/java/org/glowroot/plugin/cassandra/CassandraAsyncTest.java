@@ -33,6 +33,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
+import org.glowroot.container.trace.Query;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 
@@ -64,6 +65,12 @@ public class CassandraAsyncTest {
     public void shouldAsyncExecuteStatement() throws Exception {
         container.executeAppUnderTest(ExecuteAsyncStatement.class);
         Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo("SELECT * FROM test.users");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows()).isEqualTo(10);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage().getText()).isEqualTo(
@@ -74,6 +81,12 @@ public class CassandraAsyncTest {
     public void shouldAsyncIterateUsingOneAndAll() throws Exception {
         container.executeAppUnderTest(AsyncIterateUsingOneAndAll.class);
         Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo("SELECT * FROM test.users");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows()).isEqualTo(10);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage().getText()).isEqualTo(
@@ -84,6 +97,13 @@ public class CassandraAsyncTest {
     public void shouldAsyncExecuteBoundStatement() throws Exception {
         container.executeAppUnderTest(AsyncExecuteBoundStatement.class);
         Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo(
+                "INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows()).isEqualTo(0);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage().getText()).isEqualTo(
@@ -94,6 +114,12 @@ public class CassandraAsyncTest {
     public void shouldAsyncExecuteBatchStatement() throws Exception {
         container.executeAppUnderTest(AsyncExecuteBatchStatement.class);
         Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo("<batch cql>");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows()).isEqualTo(0);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage().getText()).isEqualTo("cql execution:"
