@@ -17,9 +17,11 @@ package org.glowroot.local.store;
 
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 import java.io.Reader;
@@ -65,10 +67,10 @@ public class CappedDatabase {
                 return -1;
             }
             out.startBlock();
-            Writer compressedWriter =
-                    new OutputStreamWriter(new LZFOutputStream(out), Charsets.UTF_8);
+            Writer compressedWriter = new OutputStreamWriter(new LZFOutputStream(
+                    new NonClosingOutputStream(out)), Charsets.UTF_8);
             charSource.copyTo(compressedWriter);
-            compressedWriter.flush();
+            compressedWriter.close();
             return out.endBlock();
         }
     }
@@ -79,10 +81,10 @@ public class CappedDatabase {
                 return -1;
             }
             out.startBlock();
-            Writer compressedWriter =
-                    new OutputStreamWriter(new LZFOutputStream(out), Charsets.UTF_8);
+            Writer compressedWriter = new OutputStreamWriter(new LZFOutputStream(
+                    new NonClosingOutputStream(out)), Charsets.UTF_8);
             chunkSource.copyTo(compressedWriter);
-            compressedWriter.flush();
+            compressedWriter.close();
             return out.endBlock();
         }
     }
@@ -217,5 +219,15 @@ public class CappedDatabase {
                 logger.warn(e.getMessage(), e);
             }
         }
+    }
+
+    private static class NonClosingOutputStream extends FilterOutputStream {
+
+        public NonClosingOutputStream(OutputStream out) {
+            super(out);
+        }
+
+        @Override
+        public void close() {}
     }
 }
