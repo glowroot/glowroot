@@ -47,18 +47,16 @@ class StatementMirror {
         batchedSql.add(sql);
     }
 
-    ImmutableList<String> getBatchedSqlCopy() {
+    List<String> getBatchedSql() {
         if (batchedSql == null) {
             return ImmutableList.of();
         } else {
-            return ImmutableList.copyOf(batchedSql);
+            return batchedSql;
         }
     }
 
     void clearBatch() {
-        if (batchedSql != null) {
-            batchedSql.clear();
-        }
+        batchedSql = null;
     }
 
     @Nullable

@@ -72,17 +72,10 @@ public class QueryData implements Timer {
             // capture startTick before ticker.read() so curr is never < 0
             long theStartTick = startTick;
             long curr = ticker.read() - theStartTick;
-            if (theTotalTime == 0) {
-                jg.writeNumberField("totalTime", curr);
-                jg.writeNumberField("executionCount", 1);
-                jg.writeNumberField("totalRows", theTotalRows);
-                jg.writeBooleanField("active", true);
-            } else {
-                jg.writeNumberField("totalTime", theTotalTime + curr);
-                jg.writeNumberField("executionCount", executionCount + 1);
-                jg.writeNumberField("totalRows", theTotalRows);
-                jg.writeBooleanField("active", true);
-            }
+            jg.writeNumberField("totalTime", theTotalTime + curr);
+            jg.writeNumberField("executionCount", executionCount);
+            jg.writeNumberField("totalRows", theTotalRows);
+            jg.writeBooleanField("active", true);
         } else {
             jg.writeNumberField("totalTime", totalTime);
             jg.writeNumberField("executionCount", executionCount);
@@ -91,9 +84,10 @@ public class QueryData implements Timer {
         jg.writeEndObject();
     }
 
-    public void start(long startTick) {
+    public void start(long startTick, long batchSize) {
         if (selfNestingLevel++ == 0) {
             this.startTick = startTick;
+            executionCount += batchSize;
         }
     }
 
@@ -132,7 +126,6 @@ public class QueryData implements Timer {
     public void extend(long startTick) {
         if (selfNestingLevel++ == 0) {
             // restarting a previously stopped execution, so need to decrement count
-            executionCount--;
             this.startTick = startTick;
         }
     }
@@ -140,7 +133,6 @@ public class QueryData implements Timer {
     public void extend() {
         if (selfNestingLevel++ == 0) {
             // restarting a previously stopped execution, so need to decrement count
-            executionCount--;
             this.startTick = ticker.read();
         }
     }
@@ -151,6 +143,5 @@ public class QueryData implements Timer {
 
     private void endInternal(long endTick) {
         totalTime += endTick - startTick;
-        executionCount++;
     }
 }

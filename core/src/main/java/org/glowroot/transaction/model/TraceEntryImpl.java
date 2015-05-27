@@ -76,7 +76,7 @@ public class TraceEntryImpl implements QueryEntry, Timer {
 
     TraceEntryImpl(@Nullable TraceEntryImpl parentTraceEntry,
             @Nullable MessageSupplier messageSupplier, @Nullable QueryData queryData,
-            long startTick, int nestingLevel, @Nullable TimerImpl timer) {
+            long queryExecutionCount, long startTick, int nestingLevel, @Nullable TimerImpl timer) {
         this.parentTraceEntry = parentTraceEntry;
         this.messageSupplier = messageSupplier;
         this.queryData = queryData;
@@ -86,7 +86,7 @@ public class TraceEntryImpl implements QueryEntry, Timer {
         revisedStartTick = startTick;
         selfNestingLevel = 1;
         if (queryData != null) {
-            queryData.start(startTick);
+            queryData.start(startTick, queryExecutionCount);
         }
     }
 
@@ -312,7 +312,7 @@ public class TraceEntryImpl implements QueryEntry, Timer {
 
     private static class LimitExceededTraceEntry extends TraceEntryImpl {
         private LimitExceededTraceEntry() {
-            super(null, null, null, 0, 0, null);
+            super(null, null, null, 0, 0, 0, null);
         }
         @Override
         public boolean isLimitExceededMarker() {
@@ -322,7 +322,7 @@ public class TraceEntryImpl implements QueryEntry, Timer {
 
     private static class LimitExtendedTraceEntry extends TraceEntryImpl {
         private LimitExtendedTraceEntry() {
-            super(null, null, null, 0, 0, null);
+            super(null, null, null, 0, 0, 0, null);
         }
         @Override
         public boolean isLimitExtendedMarker() {

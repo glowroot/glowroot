@@ -40,6 +40,7 @@ import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.plugin.jdbc.PreparedStatementMirror.ByteArrayParameterValue;
 import org.glowroot.plugin.jdbc.PreparedStatementMirror.StreamingParameterValue;
 import org.glowroot.plugin.jdbc.message.BatchPreparedStatementMessageSupplier;
+import org.glowroot.plugin.jdbc.message.BatchPreparedStatementMessageSupplier2;
 import org.glowroot.plugin.jdbc.message.BatchStatementMessageSupplier;
 import org.glowroot.plugin.jdbc.message.JdbcMessageSupplier;
 import org.glowroot.plugin.jdbc.message.PreparedStatementMessageSupplier;
@@ -568,8 +569,14 @@ public class StatementAspect {
             }
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable QueryEntry queryEntry) {
+        public static void onReturn(@BindReturn int[] rowCounts,
+                @BindTraveler @Nullable QueryEntry queryEntry) {
             if (queryEntry != null) {
+                int totalRowCount = 0;
+                for (int rowCount : rowCounts) {
+                    totalRowCount += rowCount;
+                }
+                queryEntry.setCurrRow(totalRowCount);
                 queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
                         MILLISECONDS);
             }
@@ -586,15 +593,18 @@ public class StatementAspect {
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier;
                 String queryText = mirror.getSql();
+                int batchSize = mirror.getBatchSize();
                 if (captureBindParameters.value()) {
                     jdbcMessageSupplier = new BatchPreparedStatementMessageSupplier(queryText,
-                            mirror.getBatchedParametersCopy());
+                            mirror.getBatchedParameters());
                 } else {
-                    jdbcMessageSupplier = new StatementMessageSupplier(queryText);
+                    jdbcMessageSupplier = new BatchPreparedStatementMessageSupplier2(queryText,
+                            batchSize);
                 }
                 QueryEntry queryEntry = pluginServices.startQueryEntry(QUERY_TYPE, queryText,
-                        jdbcMessageSupplier, timerName);
+                        batchSize, jdbcMessageSupplier, timerName);
                 mirror.setLastQuery(queryEntry);
+                mirror.clearBatch();
                 return queryEntry;
             } else {
                 // clear lastJdbcQuery so that its numRows won't be updated if the
@@ -606,10 +616,11 @@ public class StatementAspect {
         private static @Nullable QueryEntry onBeforeStatement(StatementMirror mirror) {
             if (pluginServices.isEnabled()) {
                 JdbcMessageSupplier jdbcMessageSupplier =
-                        new BatchStatementMessageSupplier(mirror.getBatchedSqlCopy());
+                        new BatchStatementMessageSupplier(mirror.getBatchedSql());
                 QueryEntry queryEntry = pluginServices.startQueryEntry(QUERY_TYPE, "<batch sql>",
                         jdbcMessageSupplier, timerName);
                 mirror.setLastQuery(queryEntry);
+                mirror.clearBatch();
                 return queryEntry;
             } else {
                 // clear lastJdbcQuery so that its numRows won't be updated if the

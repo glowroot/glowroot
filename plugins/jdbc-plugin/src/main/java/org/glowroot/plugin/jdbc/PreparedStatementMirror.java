@@ -42,6 +42,7 @@ class PreparedStatementMirror extends StatementMirror {
 
     public PreparedStatementMirror(String sql) {
         this.sql = sql;
+        // TODO delay creation to optimize case when bind parameter capture is disabled
         parameters = new BindParameterList(PARAMETERS_INITIAL_CAPACITY);
     }
 
@@ -54,13 +55,11 @@ class PreparedStatementMirror extends StatementMirror {
         parametersCopied = true;
     }
 
-    public ImmutableList<BindParameterList> getBatchedParametersCopy() {
+    public Collection<BindParameterList> getBatchedParameters() {
         if (batchedParameters == null) {
             return ImmutableList.of();
         } else {
-            // batched parameters cannot be changed after calling addBatch(),
-            // so it is safe to not copy the inner list
-            return ImmutableList.copyOf(batchedParameters);
+            return batchedParameters;
         }
     }
 
@@ -71,6 +70,10 @@ class PreparedStatementMirror extends StatementMirror {
 
     public String getSql() {
         return sql;
+    }
+
+    int getBatchSize() {
+        return batchedParameters == null ? 0 : batchedParameters.size();
     }
 
     // remember parameterIndex starts at 1 not 0
@@ -104,9 +107,7 @@ class PreparedStatementMirror extends StatementMirror {
         } else {
             parameters.clear();
         }
-        if (batchedParameters != null) {
-            batchedParameters.clear();
-        }
+        batchedParameters = null;
     }
 
     static class ByteArrayParameterValue {

@@ -60,7 +60,7 @@ class TraceEntryComponent implements Iterable<TraceEntryImpl> {
             Ticker ticker) {
         this.startTick = startTick;
         this.ticker = ticker;
-        rootEntry = new TraceEntryImpl(null, messageSupplier, null, startTick, -1, timer);
+        rootEntry = new TraceEntryImpl(null, messageSupplier, null, 0, startTick, -1, timer);
         activeEntry = rootEntry;
         tailEntry = rootEntry;
     }
@@ -98,9 +98,9 @@ class TraceEntryComponent implements Iterable<TraceEntryImpl> {
     }
 
     TraceEntryImpl pushEntry(long startTick, MessageSupplier messageSupplier,
-            @Nullable QueryData queryData, TimerImpl timer) {
-        TraceEntryImpl entry =
-                createEntry(startTick, messageSupplier, queryData, null, timer, false);
+            @Nullable QueryData queryData, long queryExecutionCount, TimerImpl timer) {
+        TraceEntryImpl entry = createEntry(startTick, messageSupplier, queryData,
+                queryExecutionCount, null, timer, false);
         tailEntry.setNextTraceEntry(entry);
         tailEntry = entry;
         activeEntry = entry;
@@ -123,7 +123,7 @@ class TraceEntryComponent implements Iterable<TraceEntryImpl> {
             @Nullable MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage, boolean limitBypassed) {
         TraceEntryImpl entry =
-                createEntry(startTick, messageSupplier, null, errorMessage, null, limitBypassed);
+                createEntry(startTick, messageSupplier, null, 1, errorMessage, null, limitBypassed);
         tailEntry.setNextTraceEntry(entry);
         tailEntry = entry;
         entryCount++;
@@ -143,8 +143,8 @@ class TraceEntryComponent implements Iterable<TraceEntryImpl> {
     }
 
     private TraceEntryImpl createEntry(long startTick, @Nullable MessageSupplier messageSupplier,
-            @Nullable QueryData queryData, @Nullable ErrorMessage errorMessage,
-            @Nullable TimerImpl timer, boolean limitBypassed) {
+            @Nullable QueryData queryData, long queryExecutionCount,
+            @Nullable ErrorMessage errorMessage, @Nullable TimerImpl timer, boolean limitBypassed) {
         if (entryLimitExceeded && !limitBypassed) {
             // just in case the entryLimit property is changed in the middle of a trace this resets
             // the flag so that it can be triggered again (and possibly then a second limit marker)
@@ -166,7 +166,7 @@ class TraceEntryComponent implements Iterable<TraceEntryImpl> {
             nestingLevel = activeEntry.getNestingLevel() + 1;
         }
         TraceEntryImpl entry = new TraceEntryImpl(activeEntry, messageSupplier, queryData,
-                startTick, nestingLevel, timer);
+                queryExecutionCount, startTick, nestingLevel, timer);
         entry.setErrorMessage(errorMessage);
         return entry;
     }

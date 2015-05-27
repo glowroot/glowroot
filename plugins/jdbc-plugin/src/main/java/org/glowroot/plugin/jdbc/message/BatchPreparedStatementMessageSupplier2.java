@@ -15,33 +15,29 @@
  */
 package org.glowroot.plugin.jdbc.message;
 
-import java.util.List;
-
 import org.glowroot.api.Message;
 
-public class BatchStatementMessageSupplier extends JdbcMessageSupplier {
+public class BatchPreparedStatementMessageSupplier2 extends JdbcMessageSupplier {
 
-    private final List<String> batchedSqls;
+    private final String sql;
 
-    public BatchStatementMessageSupplier(List<String> batchedSqls) {
-        this.batchedSqls = batchedSqls;
+    private final int batchSize;
+
+    public BatchPreparedStatementMessageSupplier2(String sql, int batchSize) {
+        this.sql = sql;
+        this.batchSize = batchSize;
     }
 
     @Override
     public Message get() {
         StringBuilder sb = new StringBuilder();
         sb.append("jdbc execution: ");
-        if (batchedSqls.isEmpty()) {
-            sb.append("(empty batch)");
+        if (batchSize > 1) {
+            // print out number of batches to make it easy to identify
+            sb.append(batchSize);
+            sb.append(" x ");
         }
-        boolean first = true;
-        for (String batchedSql : batchedSqls) {
-            if (!first) {
-                sb.append(", ");
-            }
-            sb.append(batchedSql);
-            first = false;
-        }
+        sb.append(sql);
         return Message.from(sb.toString());
     }
 }

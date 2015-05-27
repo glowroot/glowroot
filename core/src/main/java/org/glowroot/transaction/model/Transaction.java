@@ -378,12 +378,14 @@ public class Transaction {
     }
 
     public TraceEntryImpl pushEntry(long startTick, MessageSupplier messageSupplier,
-            @Nullable String queryType, @Nullable String queryText, TimerImpl timer) {
+            @Nullable String queryType, @Nullable String queryText, long queryExecutionCount,
+            TimerImpl timer) {
         QueryData queryData = null;
         if (queryType != null && queryText != null) {
             queryData = getOrCreateQueryDataIfPossible(queryType, queryText);
         }
-        return traceEntryComponent.pushEntry(startTick, messageSupplier, queryData, timer);
+        return traceEntryComponent.pushEntry(startTick, messageSupplier, queryData,
+                queryExecutionCount, timer);
     }
 
     public @Nullable QueryData getOrCreateQueryDataIfPossible(String queryType, String queryText) {

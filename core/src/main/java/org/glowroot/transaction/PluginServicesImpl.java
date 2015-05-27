@@ -247,11 +247,17 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (currentTimer != null && currentTimer.getTimerName() == timerName) {
             return NopTraceEntry.INSTANCE;
         }
-        return startTraceEntryInternal(transaction, messageSupplier, null, null, timerName);
+        return startTraceEntryInternal(transaction, messageSupplier, null, null, 0, timerName);
     }
 
     @Override
     public QueryEntry startQueryEntry(String queryType, String queryText,
+            MessageSupplier messageSupplier, TimerName timerName) {
+        return startQueryEntry(queryType, queryText, 1, messageSupplier, timerName);
+    }
+
+    @Override
+    public QueryEntry startQueryEntry(String queryType, String queryText, long queryExecutionCount,
             MessageSupplier messageSupplier, TimerName timerName) {
         if (queryType == null) {
             logger.error("startQuery(): argument 'queryType' must be non-null");
@@ -278,7 +284,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             return NopQuery.INSTANCE;
         }
         return startTraceEntryInternal(transaction, messageSupplier, queryType, queryText,
-                timerName);
+                queryExecutionCount, timerName);
     }
 
     @Override
@@ -428,26 +434,27 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
             transactionRegistry.addTransaction(transaction);
             return transaction.getRootEntry();
         } else {
-            return startTraceEntryInternal(transaction, messageSupplier, null, null, timerName);
+            return startTraceEntryInternal(transaction, messageSupplier, null, null, 0, timerName);
         }
     }
 
     private QueryEntry startTraceEntryInternal(Transaction transaction,
             MessageSupplier messageSupplier, @Nullable String queryType,
-            @Nullable String queryText, TimerName timerName) {
+            @Nullable String queryText, long queryExecutionCount, TimerName timerName) {
         long startTick = ticker.read();
         if (transaction.getEntryCount() < maxTraceEntriesPerTransaction) {
             TimerImpl timer = startTimer(timerName, startTick, transaction);
-            return transaction.pushEntry(startTick, messageSupplier, queryType, queryText, timer);
+            return transaction.pushEntry(startTick, messageSupplier, queryType, queryText,
+                    queryExecutionCount, timer);
         }
         // split out to separate method so as not to affect inlining budget of common path
         return startDummyTraceEntry(transaction, timerName, messageSupplier, queryType, queryText,
-                startTick);
+                queryExecutionCount, startTick);
     }
 
     private QueryEntry startDummyTraceEntry(Transaction transaction, TimerName timerName,
             MessageSupplier messageSupplier, @Nullable String queryType,
-            @Nullable String queryText, long startTick) {
+            @Nullable String queryText, long startTick, long queryExecutionCount) {
         // the entry limit has been exceeded for this trace
         QueryData queryData = null;
         if (queryType != null && queryText != null) {
@@ -456,7 +463,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         transaction.addEntryLimitExceededMarkerIfNeeded();
         TimerImpl timer = startTimer(timerName, startTick, transaction);
         return new DummyTraceEntryOrQuery(timer, startTick, transaction, messageSupplier,
-                queryData);
+                queryData, queryExecutionCount);
     }
 
     private TimerImpl startTimer(TimerName timerName, long startTick, Transaction transaction) {
@@ -505,14 +512,15 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         private long maxRow;
 
         public DummyTraceEntryOrQuery(TimerImpl timer, long startTick, Transaction transaction,
-                MessageSupplier messageSupplier, @Nullable QueryData queryData) {
+                MessageSupplier messageSupplier, @Nullable QueryData queryData,
+                long queryExecutionCount) {
             this.timer = timer;
             this.startTick = startTick;
             this.transaction = transaction;
             this.messageSupplier = messageSupplier;
             this.queryData = queryData;
             if (queryData != null) {
-                queryData.start(startTick);
+                queryData.start(startTick, queryExecutionCount);
             }
         }
 

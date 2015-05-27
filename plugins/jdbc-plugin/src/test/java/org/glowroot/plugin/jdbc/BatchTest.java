@@ -32,6 +32,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
+import org.glowroot.container.trace.Query;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 
@@ -61,100 +62,172 @@ public class BatchTest {
     @Test
     public void testBatchPreparedStatement() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // when
         container.executeAppUnderTest(ExecuteBatchPreparedStatement.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo("insert into employee (name) values (?)");
+        assertThat(query.getExecutionCount()).isEqualTo(5);
+        assertThat(query.getTotalRows()).isEqualTo(5);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(2);
         assertThat(entries.get(0).getMessage().getText()).isEqualTo("jdbc execution: 3 x"
-                + " insert into employee (name) values (?) ['huckle'] ['sally'] ['sally']");
+                + " insert into employee (name) values (?) ['huckle'] ['sally'] ['sally']"
+                + " => 3 rows");
         assertThat(entries.get(1).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
-                + " insert into employee (name) values (?) ['lowly'] ['pig will']");
+                + " insert into employee (name) values (?) ['lowly'] ['pig will'] => 2 rows");
+    }
+
+    @Test
+    public void testBatchPreparedStatementWithoutCaptureBindParams() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", false);
+        // when
+        container.executeAppUnderTest(ExecuteBatchPreparedStatement.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo("insert into employee (name) values (?)");
+        assertThat(query.getExecutionCount()).isEqualTo(5);
+        assertThat(query.getTotalRows()).isEqualTo(5);
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(2);
+        assertThat(entries.get(0).getMessage().getText()).isEqualTo("jdbc execution: 3 x"
+                + " insert into employee (name) values (?) => 3 rows");
+        assertThat(entries.get(1).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
+                + " insert into employee (name) values (?) => 2 rows");
     }
 
     @Test
     public void testBatchPreparedStatementWithoutClear() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // when
         container.executeAppUnderTest(ExecuteBatchPreparedStatementWithoutClear.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo("insert into employee (name) values (?)");
+        assertThat(query.getExecutionCount()).isEqualTo(4);
+        assertThat(query.getTotalRows()).isEqualTo(4);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(2);
         assertThat(entries.get(0).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
-                + " insert into employee (name) values (?) ['huckle'] ['sally']");
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo("jdbc execution: 4 x"
-                + " insert into employee (name) values (?) ['huckle'] ['sally'] ['lowly']"
-                + " ['pig will']");
+                + " insert into employee (name) values (?) ['huckle'] ['sally'] => 2 rows");
+        assertThat(entries.get(1).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
+                + " insert into employee (name) values (?) ['lowly'] ['pig will'] => 2 rows");
+    }
+
+    @Test
+    public void testBatchPreparedStatementWithoutClearWithoutCaptureBindParams() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", false);
+        // when
+        container.executeAppUnderTest(ExecuteBatchPreparedStatementWithoutClear.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo("insert into employee (name) values (?)");
+        assertThat(query.getExecutionCount()).isEqualTo(4);
+        assertThat(query.getTotalRows()).isEqualTo(4);
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(2);
+        assertThat(entries.get(0).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
+                + " insert into employee (name) values (?) => 2 rows");
+        assertThat(entries.get(1).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
+                + " insert into employee (name) values (?) => 2 rows");
     }
 
     @Test
     public void testBatchStatement() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // when
         container.executeAppUnderTest(ExecuteBatchStatement.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo("<batch sql>");
+        assertThat(query.getExecutionCount()).isEqualTo(2);
+        assertThat(query.getTotalRows()).isEqualTo(4);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(2);
         assertThat(entries.get(0).getMessage().getText()).isEqualTo("jdbc execution:"
                 + " insert into employee (name) values ('huckle'),"
-                + " insert into employee (name) values ('sally')");
+                + " insert into employee (name) values ('sally') => 2 rows");
         assertThat(entries.get(1).getMessage().getText()).isEqualTo("jdbc execution:"
                 + " insert into employee (name) values ('lowly'),"
-                + " insert into employee (name) values ('pig will')");
+                + " insert into employee (name) values ('pig will') => 2 rows");
     }
 
     @Test
     public void testBatchStatementNull() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // when
         container.executeAppUnderTest(BatchStatementNull.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo("<batch sql>");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows()).isEqualTo(1);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage().getText())
-                .isEqualTo("jdbc execution: insert into employee (name) values ('1')");
+                .isEqualTo("jdbc execution: insert into employee (name) values ('1') => 1 row");
     }
 
     @Test
     public void testBatchStatementWithNoBatches() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // when
         container.executeAppUnderTest(ExecuteBatchStatementWithNoBatches.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo("<batch sql>");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.getTotalRows()).isEqualTo(0);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage().getText()).isEqualTo(
-                "jdbc execution: (empty batch)");
+                "jdbc execution: (empty batch) => 0 rows");
     }
 
     @Test
     public void testBatchStatementWithoutClear() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // when
         container.executeAppUnderTest(ExecuteBatchStatementWithoutClear.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo("<batch sql>");
+        assertThat(query.getExecutionCount()).isEqualTo(2);
+        assertThat(query.getTotalRows()).isEqualTo(4);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(2);
         assertThat(entries.get(0).getMessage().getText()).isEqualTo("jdbc execution:"
                 + " insert into employee (name) values ('huckle'),"
-                + " insert into employee (name) values ('sally')");
+                + " insert into employee (name) values ('sally') => 2 rows");
         assertThat(entries.get(1).getMessage().getText()).isEqualTo("jdbc execution:"
-                + " insert into employee (name) values ('huckle'),"
-                + " insert into employee (name) values ('sally'),"
                 + " insert into employee (name) values ('lowly'),"
-                + " insert into employee (name) values ('pig will')");
+                + " insert into employee (name) values ('pig will') => 2 rows");
     }
 
     public static class ExecuteBatchPreparedStatement implements AppUnderTest, TraceMarker {

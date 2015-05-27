@@ -201,6 +201,13 @@ public abstract class PluginServices {
             MessageSupplier messageSupplier, TimerName timerName);
 
     /**
+     * {@link QueryEntry} is a specialized type of {@link TraceEntry} that is aggregated by its
+     * query text.
+     */
+    public abstract QueryEntry startQueryEntry(String queryType, String queryText,
+            long queryExecutionCount, MessageSupplier messageSupplier, TimerName timerName);
+
+    /**
      * Starts a timer for the specified timer name. If a timer is already running for the specified
      * timer name, it will keep an internal counter of the number of starts, and it will only end
      * the timer after the corresponding number of ends.

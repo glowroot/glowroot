@@ -15,7 +15,7 @@
  */
 package org.glowroot.plugin.jdbc.message;
 
-import com.google.common.collect.ImmutableList;
+import java.util.Collection;
 
 import org.glowroot.api.Message;
 
@@ -23,10 +23,10 @@ public class BatchPreparedStatementMessageSupplier extends JdbcMessageSupplier {
 
     private final String sql;
 
-    private final ImmutableList<BindParameterList> batchedParameters;
+    private final Collection<BindParameterList> batchedParameters;
 
     public BatchPreparedStatementMessageSupplier(String sql,
-            ImmutableList<BindParameterList> batchedParameters) {
+            Collection<BindParameterList> batchedParameters) {
         this.sql = sql;
         this.batchedParameters = batchedParameters;
     }
@@ -35,9 +35,10 @@ public class BatchPreparedStatementMessageSupplier extends JdbcMessageSupplier {
     public Message get() {
         StringBuilder sb = new StringBuilder();
         sb.append("jdbc execution: ");
-        if (batchedParameters.size() > 1) {
+        int batchSize = batchedParameters.size();
+        if (batchSize > 1) {
             // print out number of batches to make it easy to identify
-            sb.append(Integer.toString(batchedParameters.size()));
+            sb.append(batchSize);
             sb.append(" x ");
         }
         sb.append(sql);
