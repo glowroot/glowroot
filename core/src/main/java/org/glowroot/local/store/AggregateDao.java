@@ -794,6 +794,8 @@ public class AggregateDao {
         private final AggregateTimer syntheticRootTimer = AggregateTimer.createSyntheticRootTimer();
         private final QueryComponent queryComponent;
         private final ProfileNode syntheticProfileNode = ProfileNode.createSyntheticRoot();
+        // do not use static ObjectMapper here, see comment for QueryComponent.mergedQueries()
+        private final ObjectMapper tempMapper = ObjectMappers.create();
 
         public MergedAggregate(long captureTime, String transactionType,
                 @Nullable String transactionName, int maxAggregateQueriesPerQueryType) {
@@ -875,7 +877,7 @@ public class AggregateDao {
         }
 
         private void addQueries(String queryContent) throws IOException {
-            queryComponent.mergeQueries(queryContent);
+            queryComponent.mergeQueries(queryContent, tempMapper);
         }
 
         private void addProfile(String profileContent) throws IOException {

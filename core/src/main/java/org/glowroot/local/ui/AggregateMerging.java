@@ -101,10 +101,12 @@ public class AggregateMerging {
             List<CharSource> queriesContents, int maxAggregateQueriesPerQueryType)
             throws IOException {
         QueryComponent queryComponent = new QueryComponent(maxAggregateQueriesPerQueryType, false);
+        // do not use static ObjectMapper here, see comment for QueryComponent.mergedQueries()
+        ObjectMapper tempMapper = ObjectMappers.create();
         for (CharSource queriesContent : queriesContents) {
             String queries = queriesContent.read();
             if (!queries.equals(AggregateDao.OVERWRITTEN)) {
-                queryComponent.mergeQueries(queries);
+                queryComponent.mergeQueries(queries, tempMapper);
             }
         }
         return queryComponent.getMergedQueries();

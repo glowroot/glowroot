@@ -35,8 +35,6 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class QueryComponent {
 
-    private static final ObjectMapper mapper = ObjectMappers.create();
-
     private final Map<String, Map<String, AggregateQueryData>> queries = Maps.newHashMap();
     private final int maxAggregateQueriesPerQueryType;
     private final boolean applyLimitWhileBuilding;
@@ -63,9 +61,11 @@ public class QueryComponent {
         return limitAppliedQueries;
     }
 
-    public void mergeQueries(String queriesContent) throws IOException {
+    // not using static ObjectMapper because ObjectMapper caches keys, and in this particular case
+    // the keys are (often very large) sql queries and have seen it retain 26mb worth of memory
+    public void mergeQueries(String queriesContent, ObjectMapper tempMapper) throws IOException {
         Map<String, Map<String, AggregateQueryData>> toBeMergedQueries =
-                ObjectMappers.readRequiredValue(mapper, queriesContent,
+                ObjectMappers.readRequiredValue(tempMapper, queriesContent,
                         new TypeReference<Map<String, Map<String, AggregateQueryData>>>() {});
         for (Entry<String, Map<String, AggregateQueryData>> entry : toBeMergedQueries.entrySet()) {
             String queryType = entry.getKey();
