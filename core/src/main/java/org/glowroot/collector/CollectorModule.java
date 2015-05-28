@@ -60,8 +60,7 @@ public class CollectorModule {
             // using fixed rate to keep gauge collections close to on the second mark
             long initialDelay = FIXED_GAUGE_INTERVAL_SECONDS
                     - (clock.currentTimeMillis() % FIXED_GAUGE_INTERVAL_SECONDS);
-            gaugeCollector.scheduleAtFixedRate(scheduledExecutor, initialDelay,
-                    FIXED_GAUGE_INTERVAL_SECONDS, SECONDS);
+            gaugeCollector.scheduleAtFixedRate(initialDelay, FIXED_GAUGE_INTERVAL_SECONDS, SECONDS);
             stackTraceCollector = StackTraceCollector.create(transactionRegistry, configService,
                     scheduledExecutor);
         }
@@ -92,6 +91,9 @@ public class CollectorModule {
     public void close() {
         if (aggregateCollector != null) {
             aggregateCollector.close();
+        }
+        if (gaugeCollector != null) {
+            gaugeCollector.close();
         }
         if (stackTraceCollector != null) {
             stackTraceCollector.close();

@@ -17,6 +17,10 @@ package org.glowroot.collector;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 import javax.management.AttributeNotFoundException;
@@ -29,6 +33,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +57,10 @@ class GaugeCollector extends ScheduledRunnable {
     private final Set<String> pendingLoggedMBeanGauges = Sets.newConcurrentHashSet();
     private final Set<String> loggedMBeanGauges = Sets.newConcurrentHashSet();
 
+    // gauges have their own dedicated scheduled executor service to make sure their collection is
+    // not hampered by other glowroot threads
+    private final ScheduledExecutorService scheduledExecutor;
+
     GaugeCollector(ConfigService configService, GaugePointRepository gaugePointRepository,
             LazyPlatformMBeanServer lazyPlatformMBeanServer, Clock clock, @Nullable Logger logger) {
         this.configService = configService;
@@ -64,6 +73,9 @@ class GaugeCollector extends ScheduledRunnable {
         } else {
             this.logger = logger;
         }
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
+                .setNameFormat("Glowroot-Gauge-Collector-%d").build();
+        scheduledExecutor = Executors.newScheduledThreadPool(1, threadFactory);
     }
 
     @Override
@@ -73,6 +85,14 @@ class GaugeCollector extends ScheduledRunnable {
             gaugePoints.addAll(runInternal(gaugeConfig));
         }
         gaugePointRepository.store(gaugePoints);
+    }
+
+    void scheduleAtFixedRate(long initialDelay, long period, TimeUnit unit) {
+        scheduleAtFixedRate(scheduledExecutor, initialDelay, period, unit);
+    }
+
+    void close() {
+        scheduledExecutor.shutdownNow();
     }
 
     @VisibleForTesting
