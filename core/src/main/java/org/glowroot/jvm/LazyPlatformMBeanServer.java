@@ -16,6 +16,7 @@
 package org.glowroot.jvm;
 
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -30,6 +31,8 @@ import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.glowroot.common.Reflections;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -79,11 +82,21 @@ public class LazyPlatformMBeanServer {
     private void ensureInit() throws InterruptedException {
         if (mbeanServer == null) {
             if (jbossModules) {
-                // if running under jboss-modules, wait it to set up JUL before calling
+                // if running under jboss-modules, wait for it to set up JUL before calling
                 // getPlatformMBeanServer()
                 waitForJBossModuleInitialization(Stopwatch.createUnstarted());
             }
             mbeanServer = ManagementFactory.getPlatformMBeanServer();
+            try {
+                Class<?> sunManagementFactoryHelperClass =
+                        Class.forName("sun.management.ManagementFactoryHelper");
+                Method registerInternalMBeansMethod =
+                        Reflections.getDeclaredMethod(sunManagementFactoryHelperClass,
+                                "registerInternalMBeans", MBeanServer.class);
+                registerInternalMBeansMethod.invoke(null, mbeanServer);
+            } catch (Exception e) {
+                logger.debug(e.getMessage(), e);
+            }
         }
     }
 
