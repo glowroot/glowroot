@@ -18,8 +18,9 @@ package org.glowroot.plugin.jdbc.message;
 import java.util.List;
 
 import org.glowroot.api.Message;
+import org.glowroot.api.MessageSupplier;
 
-public class BatchStatementMessageSupplier extends JdbcMessageSupplier {
+public class BatchStatementMessageSupplier extends MessageSupplier {
 
     private final List<String> batchedSqls;
 

@@ -18,8 +18,9 @@ package org.glowroot.plugin.jdbc.message;
 import javax.annotation.Nullable;
 
 import org.glowroot.api.Message;
+import org.glowroot.api.MessageSupplier;
 
-public class PreparedStatementMessageSupplier extends JdbcMessageSupplier {
+public class PreparedStatementMessageSupplier extends MessageSupplier {
 
     private final String sql;
 
@@ -39,7 +40,6 @@ public class PreparedStatementMessageSupplier extends JdbcMessageSupplier {
         if (parameters != null && !parameters.isEmpty()) {
             appendParameters(sb, parameters);
         }
-        appendRowCount(sb);
         return Message.from(sb.toString());
     }
 

@@ -20,6 +20,7 @@ import java.sql.PreparedStatement;
 import javax.annotation.Nullable;
 
 import org.glowroot.api.ErrorMessage;
+import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.BooleanProperty;
 import org.glowroot.api.QueryEntry;
@@ -42,7 +43,6 @@ import org.glowroot.plugin.jdbc.PreparedStatementMirror.StreamingParameterValue;
 import org.glowroot.plugin.jdbc.message.BatchPreparedStatementMessageSupplier;
 import org.glowroot.plugin.jdbc.message.BatchPreparedStatementMessageSupplier2;
 import org.glowroot.plugin.jdbc.message.BatchStatementMessageSupplier;
-import org.glowroot.plugin.jdbc.message.JdbcMessageSupplier;
 import org.glowroot.plugin.jdbc.message.PreparedStatementMessageSupplier;
 import org.glowroot.plugin.jdbc.message.StatementMessageSupplier;
 
@@ -318,9 +318,9 @@ public class StatementAspect {
                 return null;
             }
             if (pluginServices.isEnabled()) {
-                JdbcMessageSupplier jdbcMessageSupplier = new StatementMessageSupplier(sql);
-                QueryEntry query = pluginServices.startQueryEntry(QUERY_TYPE, sql,
-                        jdbcMessageSupplier, timerName);
+                MessageSupplier messageSupplier = new StatementMessageSupplier(sql);
+                QueryEntry query = pluginServices.startQueryEntry(QUERY_TYPE, sql, messageSupplier,
+                        timerName);
                 mirror.setLastQuery(query);
                 return query;
             } else {
@@ -435,16 +435,16 @@ public class StatementAspect {
                 return null;
             }
             if (pluginServices.isEnabled()) {
-                JdbcMessageSupplier jdbcMessageSupplier;
+                MessageSupplier messageSupplier;
                 String queryText = mirror.getSql();
                 if (captureBindParameters.value()) {
-                    jdbcMessageSupplier = new PreparedStatementMessageSupplier(queryText,
+                    messageSupplier = new PreparedStatementMessageSupplier(queryText,
                             mirror.getParametersCopy());
                 } else {
-                    jdbcMessageSupplier = new StatementMessageSupplier(queryText);
+                    messageSupplier = new StatementMessageSupplier(queryText);
                 }
                 QueryEntry queryEntry = pluginServices.startQueryEntry(QUERY_TYPE, queryText,
-                        jdbcMessageSupplier, timerName);
+                        messageSupplier, timerName);
                 mirror.setLastQuery(queryEntry);
                 return queryEntry;
             } else {
@@ -591,18 +591,18 @@ public class StatementAspect {
         private static @Nullable QueryEntry onBeforePreparedStatement(
                 PreparedStatementMirror mirror) {
             if (pluginServices.isEnabled()) {
-                JdbcMessageSupplier jdbcMessageSupplier;
+                MessageSupplier messageSupplier;
                 String queryText = mirror.getSql();
                 int batchSize = mirror.getBatchSize();
                 if (captureBindParameters.value()) {
-                    jdbcMessageSupplier = new BatchPreparedStatementMessageSupplier(queryText,
+                    messageSupplier = new BatchPreparedStatementMessageSupplier(queryText,
                             mirror.getBatchedParameters());
                 } else {
-                    jdbcMessageSupplier = new BatchPreparedStatementMessageSupplier2(queryText,
+                    messageSupplier = new BatchPreparedStatementMessageSupplier2(queryText,
                             batchSize);
                 }
                 QueryEntry queryEntry = pluginServices.startQueryEntry(QUERY_TYPE, queryText,
-                        batchSize, jdbcMessageSupplier, timerName);
+                        batchSize, messageSupplier, timerName);
                 mirror.setLastQuery(queryEntry);
                 mirror.clearBatch();
                 return queryEntry;
@@ -615,10 +615,10 @@ public class StatementAspect {
         }
         private static @Nullable QueryEntry onBeforeStatement(StatementMirror mirror) {
             if (pluginServices.isEnabled()) {
-                JdbcMessageSupplier jdbcMessageSupplier =
+                MessageSupplier messageSupplier =
                         new BatchStatementMessageSupplier(mirror.getBatchedSql());
                 QueryEntry queryEntry = pluginServices.startQueryEntry(QUERY_TYPE, "<batch sql>",
-                        jdbcMessageSupplier, timerName);
+                        messageSupplier, timerName);
                 mirror.setLastQuery(queryEntry);
                 mirror.clearBatch();
                 return queryEntry;

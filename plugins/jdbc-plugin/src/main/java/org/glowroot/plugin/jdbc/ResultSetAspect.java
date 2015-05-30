@@ -72,17 +72,17 @@ public class ResultSetAspect {
                 // bizarre concurrent mis-usage of ResultSet
                 return;
             }
-            QueryEntry lastQuery = mirror.getLastQuery();
-            if (lastQuery == null) {
+            QueryEntry lastQueryEntry = mirror.getLastQueryEntry();
+            if (lastQueryEntry == null) {
                 // tracing must be disabled (e.g. exceeded trace entry limit)
                 return;
             }
             if (currentRowValid) {
                 // ResultSet.getRow() is sometimes not super duper fast due to ResultSet
                 // wrapping and other checks, so this optimizes the common case
-                lastQuery.incrementCurrRow();
+                lastQueryEntry.incrementCurrRow();
             } else {
-                lastQuery.setCurrRow(0);
+                lastQueryEntry.setCurrRow(0);
             }
         }
         @OnAfter
@@ -123,12 +123,12 @@ public class ResultSetAspect {
                     // bizarre concurrent mis-usage of ResultSet
                     return;
                 }
-                QueryEntry lastQuery = mirror.getLastQuery();
-                if (lastQuery == null) {
+                QueryEntry lastQueryEntry = mirror.getLastQueryEntry();
+                if (lastQueryEntry == null) {
                     // tracing must be disabled (e.g. exceeded trace entry limit)
                     return;
                 }
-                lastQuery.setCurrRow(((ResultSet) resultSet).getRow());
+                lastQueryEntry.setCurrRow(((ResultSet) resultSet).getRow());
             } catch (SQLException e) {
                 logger.warn(e.getMessage(), e);
             }
@@ -192,11 +192,11 @@ public class ResultSetAspect {
             // bizarre concurrent mis-usage of ResultSet
             return pluginServices.startTimer(timerName);
         }
-        QueryEntry lastQuery = mirror.getLastQuery();
-        if (lastQuery == null) {
+        QueryEntry lastQueryEntry = mirror.getLastQueryEntry();
+        if (lastQueryEntry == null) {
             // tracing must be disabled (e.g. exceeded trace entry limit)
             return pluginServices.startTimer(timerName);
         }
-        return lastQuery.extend();
+        return lastQueryEntry.extend();
     }
 }

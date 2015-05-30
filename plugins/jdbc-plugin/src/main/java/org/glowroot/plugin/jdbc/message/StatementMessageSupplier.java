@@ -16,8 +16,9 @@
 package org.glowroot.plugin.jdbc.message;
 
 import org.glowroot.api.Message;
+import org.glowroot.api.MessageSupplier;
 
-public class StatementMessageSupplier extends JdbcMessageSupplier {
+public class StatementMessageSupplier extends MessageSupplier {
 
     private final String sql;
 
@@ -30,7 +31,6 @@ public class StatementMessageSupplier extends JdbcMessageSupplier {
         StringBuilder sb = new StringBuilder();
         sb.append("jdbc execution: ");
         sb.append(sql);
-        appendRowCount(sb);
         return Message.from(sb.toString());
     }
 }

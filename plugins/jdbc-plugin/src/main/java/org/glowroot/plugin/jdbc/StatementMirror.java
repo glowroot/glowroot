@@ -36,7 +36,7 @@ class StatementMirror {
 
     // ok for this field to be non-volatile since it is only temporary storage for a single thread
     // while that thread is adding batches into the statement and executing it
-    private @Nullable QueryEntry lastQuery;
+    private @Nullable QueryEntry lastQueryEntry;
 
     void addBatch(String sql) {
         // synchronization isn't an issue here as this method is called only by
@@ -60,15 +60,15 @@ class StatementMirror {
     }
 
     @Nullable
-    QueryEntry getLastQuery() {
-        return lastQuery;
+    QueryEntry getLastQueryEntry() {
+        return lastQueryEntry;
     }
 
-    void setLastQuery(QueryEntry lastQuery) {
-        this.lastQuery = lastQuery;
+    void setLastQuery(QueryEntry lastQueryEntry) {
+        this.lastQueryEntry = lastQueryEntry;
     }
 
     void clearLastQuery() {
-        lastQuery = null;
+        lastQueryEntry = null;
     }
 }

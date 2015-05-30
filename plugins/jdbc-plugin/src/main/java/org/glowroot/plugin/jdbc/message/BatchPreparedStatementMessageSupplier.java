@@ -18,8 +18,9 @@ package org.glowroot.plugin.jdbc.message;
 import java.util.Collection;
 
 import org.glowroot.api.Message;
+import org.glowroot.api.MessageSupplier;
 
-public class BatchPreparedStatementMessageSupplier extends JdbcMessageSupplier {
+public class BatchPreparedStatementMessageSupplier extends MessageSupplier {
 
     private final String sql;
 
@@ -45,7 +46,6 @@ public class BatchPreparedStatementMessageSupplier extends JdbcMessageSupplier {
         for (BindParameterList oneParameters : batchedParameters) {
             PreparedStatementMessageSupplier.appendParameters(sb, oneParameters);
         }
-        appendRowCount(sb);
         return Message.from(sb.toString());
     }
 }

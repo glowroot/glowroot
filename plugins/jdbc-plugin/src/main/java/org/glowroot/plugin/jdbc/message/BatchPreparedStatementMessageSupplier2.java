@@ -16,8 +16,9 @@
 package org.glowroot.plugin.jdbc.message;
 
 import org.glowroot.api.Message;
+import org.glowroot.api.MessageSupplier;
 
-public class BatchPreparedStatementMessageSupplier2 extends JdbcMessageSupplier {
+public class BatchPreparedStatementMessageSupplier2 extends MessageSupplier {
 
     private final String sql;
 
