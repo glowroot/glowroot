@@ -28,11 +28,12 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.CharSource;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.AggregateCollector;
 import org.glowroot.collector.AggregateIntervalCollector;
+import org.glowroot.collector.ProfileAggregate;
+import org.glowroot.collector.QueryAggregate;
 import org.glowroot.collector.QueryComponent.AggregateQueryData;
 import org.glowroot.collector.TransactionSummary;
 import org.glowroot.common.ScratchBuffer;
@@ -153,17 +154,17 @@ class TransactionCommonService {
 
     Map<String, Map<String, AggregateQueryData>> getQueries(String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
-        List<CharSource> queriesContents =
-                getQueryCharSources(transactionType, transactionName, from, to);
-        return AggregateMerging.getMergedQueries(queriesContents,
+        List<QueryAggregate> queryAggregates =
+                getQueryAggregates(transactionType, transactionName, from, to);
+        return AggregateMerging.getMergedQueries(queryAggregates,
                 configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
     }
 
     ProfileNode getProfile(String transactionType, @Nullable String transactionName, long from,
             long to, double truncateLeafPercentage) throws Exception {
-        List<CharSource> profileContents =
-                getProfileCharSources(transactionType, transactionName, from, to);
-        ProfileNode syntheticRootNode = AggregateMerging.getMergedProfile(profileContents);
+        List<ProfileAggregate> profileAggregate =
+                getProfileAggregates(transactionType, transactionName, from, to);
+        ProfileNode syntheticRootNode = AggregateMerging.getMergedProfile(profileAggregate);
         if (truncateLeafPercentage != 0) {
             int minSamples = (int) (syntheticRootNode.getSampleCount() * truncateLeafPercentage);
             // don't truncate any root nodes
@@ -191,63 +192,93 @@ class TransactionCommonService {
         }
     }
 
-    private List<CharSource> getQueryCharSources(String transactionType,
+    // this method may return some rolled up query aggregates and some non-rolled up
+    // they are all distinct though
+    // this is ok since the results of this method are currently just aggregated into single
+    // result as opposed to charted over time period
+    private List<QueryAggregate> getQueryAggregates(String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
+        int rollupLevel = getRollupLevel(from, to);
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(from, to);
-        if (orderedIntervalCollectors.isEmpty()) {
-            return getQueryCharSourcesFromDao(transactionType, transactionName, from, to);
-        }
         long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
-        List<CharSource> queriesContents =
-                getQueryCharSourcesFromDao(transactionType, transactionName, from, revisedTo);
-        queriesContents = Lists.newArrayList(queriesContents);
-        for (AggregateIntervalCollector intervalCollector : orderedIntervalCollectors) {
-            String queriesContent =
-                    intervalCollector.getLiveQueriesJson(transactionType, transactionName);
-            if (queriesContent != null) {
-                queriesContents.add(CharSource.wrap(queriesContent));
-            }
+        List<QueryAggregate> queryAggregates = getQueryAggregatesFromDao(transactionType,
+                transactionName, from, revisedTo, rollupLevel);
+        if (rollupLevel == 0) {
+            queryAggregates = Lists.newArrayList(queryAggregates);
+            queryAggregates.addAll(getLiveQueryAggregates(transactionType, transactionName,
+                    orderedIntervalCollectors));
+            return queryAggregates;
         }
-        return queriesContents;
+        long revisedFrom = revisedTo - AggregateDao.ROLLUP_THRESHOLD_MILLIS;
+        if (!queryAggregates.isEmpty()) {
+            long lastRolledUpTime = queryAggregates.get(queryAggregates.size() - 1).captureTime();
+            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
+        }
+        List<QueryAggregate> orderedNonRolledUpQueryAggregates = Lists.newArrayList();
+        orderedNonRolledUpQueryAggregates.addAll(getQueryAggregatesFromDao(transactionType,
+                transactionName, revisedFrom, revisedTo, 0));
+        orderedNonRolledUpQueryAggregates.addAll(getLiveQueryAggregates(transactionType,
+                transactionName, orderedIntervalCollectors));
+        queryAggregates = Lists.newArrayList(queryAggregates);
+        queryAggregates.addAll(orderedNonRolledUpQueryAggregates);
+        return queryAggregates;
     }
 
-    private List<CharSource> getQueryCharSourcesFromDao(String transactionType,
-            @Nullable String transactionName, long from, long to) throws SQLException {
+    private List<QueryAggregate> getQueryAggregatesFromDao(String transactionType,
+            @Nullable String transactionName, long from, long to, int rollupLevel)
+            throws SQLException {
         if (transactionName == null) {
-            return aggregateDao.readOverallQueries(transactionType, from, to);
+            return aggregateDao.readOverallQueryAggregates(transactionType, from, to, rollupLevel);
         } else {
-            return aggregateDao.readTransactionQueries(transactionType, transactionName, from, to);
+            return aggregateDao.readTransactionQueryAggregates(transactionType, transactionName,
+                    from, to, rollupLevel);
         }
     }
 
-    private List<CharSource> getProfileCharSources(String transactionType,
+    // this method may return some rolled up profile aggregates and some non-rolled up
+    // they are all distinct though
+    // this is ok since the results of this method are currently just aggregated into single
+    // result as opposed to charted over time period
+    private List<ProfileAggregate> getProfileAggregates(String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
+        int rollupLevel = getRollupLevel(from, to);
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(from, to);
-        if (orderedIntervalCollectors.isEmpty()) {
-            return getProfileCharSourcesFromDao(transactionType, transactionName, from, to);
-        }
         long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
-        List<CharSource> profileContents =
-                getProfileCharSourcesFromDao(transactionType, transactionName, from, revisedTo);
-        profileContents = Lists.newArrayList(profileContents);
-        for (AggregateIntervalCollector intervalCollector : orderedIntervalCollectors) {
-            String profileContent =
-                    intervalCollector.getLiveProfileJson(transactionType, transactionName);
-            if (profileContent != null) {
-                profileContents.add(CharSource.wrap(profileContent));
-            }
+        List<ProfileAggregate> profileAggregates = getProfileAggregatesFromDao(transactionType,
+                transactionName, from, revisedTo, rollupLevel);
+        if (rollupLevel == 0) {
+            profileAggregates = Lists.newArrayList(profileAggregates);
+            profileAggregates.addAll(getLiveProfileAggregates(transactionType, transactionName,
+                    orderedIntervalCollectors));
+            return profileAggregates;
         }
-        return profileContents;
+        long revisedFrom = revisedTo - AggregateDao.ROLLUP_THRESHOLD_MILLIS;
+        if (!profileAggregates.isEmpty()) {
+            long lastRolledUpTime = profileAggregates.get(profileAggregates.size() - 1)
+                    .captureTime();
+            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
+        }
+        List<ProfileAggregate> orderedNonRolledUpProfileAggregates = Lists.newArrayList();
+        orderedNonRolledUpProfileAggregates.addAll(getProfileAggregatesFromDao(transactionType,
+                transactionName, revisedFrom, revisedTo, 0));
+        orderedNonRolledUpProfileAggregates.addAll(getLiveProfileAggregates(transactionType,
+                transactionName, orderedIntervalCollectors));
+        profileAggregates = Lists.newArrayList(profileAggregates);
+        profileAggregates.addAll(orderedNonRolledUpProfileAggregates);
+        return profileAggregates;
     }
 
-    private List<CharSource> getProfileCharSourcesFromDao(String transactionType,
-            @Nullable String transactionName, long from, long to) throws SQLException {
+    private List<ProfileAggregate> getProfileAggregatesFromDao(String transactionType,
+            @Nullable String transactionName, long from, long to, int rollupLevel)
+            throws SQLException {
         if (transactionName == null) {
-            return aggregateDao.readOverallProfiles(transactionType, from, to);
+            return aggregateDao.readOverallProfileAggregates(transactionType, from, to,
+                    rollupLevel);
         } else {
-            return aggregateDao.readTransactionProfiles(transactionType, transactionName, from, to);
+            return aggregateDao.readTransactionProfileAggregates(transactionType, transactionName,
+                    from, to, rollupLevel);
         }
     }
 
@@ -360,6 +391,34 @@ class TransactionCommonService {
             }
         }
         return aggregates;
+    }
+
+    private static List<QueryAggregate> getLiveQueryAggregates(String transactionType,
+            @Nullable String transactionName, List<AggregateIntervalCollector> intervalCollectors)
+            throws IOException {
+        List<QueryAggregate> queryAggregates = Lists.newArrayList();
+        for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
+            QueryAggregate liveQueryAggregate =
+                    intervalCollector.getLiveQueryAggregate(transactionType, transactionName);
+            if (liveQueryAggregate != null) {
+                queryAggregates.add(liveQueryAggregate);
+            }
+        }
+        return queryAggregates;
+    }
+
+    private static List<ProfileAggregate> getLiveProfileAggregates(String transactionType,
+            @Nullable String transactionName, List<AggregateIntervalCollector> intervalCollectors)
+            throws IOException {
+        List<ProfileAggregate> profileAggregates = Lists.newArrayList();
+        for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
+            ProfileAggregate liveProfileAggregate =
+                    intervalCollector.getLiveProfileAggregate(transactionType, transactionName);
+            if (liveProfileAggregate != null) {
+                profileAggregates.add(liveProfileAggregate);
+            }
+        }
+        return profileAggregates;
     }
 
     private static TransactionSummary combineTransactionSummaries(@Nullable String transactionName,

@@ -41,6 +41,8 @@ import org.glowroot.collector.AggregateTimer;
 import org.glowroot.collector.ErrorPoint;
 import org.glowroot.collector.ErrorSummary;
 import org.glowroot.collector.LazyHistogram;
+import org.glowroot.collector.ProfileAggregate;
+import org.glowroot.collector.QueryAggregate;
 import org.glowroot.collector.QueryComponent;
 import org.glowroot.collector.QueryComponent.AggregateQueryData;
 import org.glowroot.collector.TransactionSummary;
@@ -254,31 +256,49 @@ public class AggregateDao {
     }
 
     // captureTimeFrom is non-inclusive
-    public ImmutableList<CharSource> readOverallQueries(String transactionType,
-            long captureTimeFrom, long captureTimeTo) throws SQLException {
-        return readOverallCappedDatabaseRows("queries_capped_id", transactionType, captureTimeFrom,
-                captureTimeTo);
+    public ImmutableList<QueryAggregate> readOverallQueryAggregates(String transactionType,
+            long captureTimeFrom, long captureTimeTo, int rollupLevel) throws SQLException {
+        String rollupSuffix = getRollupSuffix(rollupLevel);
+        return dataSource.query("select capture_time, queries_capped_id from overall_aggregate"
+                + rollupSuffix + " where transaction_type = ? and capture_time > ?"
+                + " and capture_time <= ? and queries_capped_id >= ?",
+                new QueryAggregateRowMapper(), transactionType, captureTimeFrom, captureTimeTo,
+                cappedDatabase.getSmallestNonExpiredId());
     }
 
     // captureTimeFrom is non-inclusive
-    public ImmutableList<CharSource> readTransactionQueries(String transactionType,
-            String transactionName, long captureTimeFrom, long captureTimeTo) throws SQLException {
-        return readTransactionCappedDatabaseRows("queries_capped_id", transactionType,
-                transactionName, captureTimeFrom, captureTimeTo);
+    public ImmutableList<QueryAggregate> readTransactionQueryAggregates(String transactionType,
+            String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
+            throws SQLException {
+        String rollupSuffix = getRollupSuffix(rollupLevel);
+        return dataSource.query("select capture_time, queries_capped_id from transaction_aggregate"
+                + rollupSuffix + " where transaction_type = ? and transaction_name = ?"
+                + " and capture_time > ? and capture_time <= ? and queries_capped_id >= ?",
+                new QueryAggregateRowMapper(), transactionType, transactionName, captureTimeFrom,
+                captureTimeTo, cappedDatabase.getSmallestNonExpiredId());
     }
 
     // captureTimeFrom is non-inclusive
-    public ImmutableList<CharSource> readOverallProfiles(String transactionType,
-            long captureTimeFrom, long captureTimeTo) throws SQLException {
-        return readOverallCappedDatabaseRows("profile_capped_id", transactionType,
-                captureTimeFrom, captureTimeTo);
+    public ImmutableList<ProfileAggregate> readOverallProfileAggregates(String transactionType,
+            long captureTimeFrom, long captureTimeTo, int rollupLevel) throws SQLException {
+        String rollupSuffix = getRollupSuffix(rollupLevel);
+        return dataSource.query("select capture_time, profile_capped_id from overall_aggregate"
+                + rollupSuffix + " where transaction_type = ? and capture_time > ?"
+                + " and capture_time <= ? and profile_capped_id >= ?",
+                new ProfileAggregateRowMapper(), transactionType, captureTimeFrom, captureTimeTo,
+                cappedDatabase.getSmallestNonExpiredId());
     }
 
     // captureTimeFrom is non-inclusive
-    public ImmutableList<CharSource> readTransactionProfiles(String transactionType,
-            String transactionName, long captureTimeFrom, long captureTimeTo) throws SQLException {
-        return readTransactionCappedDatabaseRows("profile_capped_id", transactionType,
-                transactionName, captureTimeFrom, captureTimeTo);
+    public ImmutableList<ProfileAggregate> readTransactionProfileAggregates(String transactionType,
+            String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
+            throws SQLException {
+        String rollupSuffix = getRollupSuffix(rollupLevel);
+        return dataSource.query("select capture_time, profile_capped_id from transaction_aggregate"
+                + rollupSuffix + " where transaction_type = ? and transaction_name = ?"
+                + " and capture_time > ? and capture_time <= ? and profile_capped_id >= ?",
+                new ProfileAggregateRowMapper(), transactionType, transactionName, captureTimeFrom,
+                captureTimeTo, cappedDatabase.getSmallestNonExpiredId());
     }
 
     public ImmutableList<ErrorPoint> readOverallErrorPoints(String transactionType,
@@ -397,26 +417,6 @@ public class AggregateDao {
                 + " profile_capped_id, histogram, timers)"
                 + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 new TransactionBatchAdder(transactionAggregates));
-    }
-
-    // captureTimeFrom is non-inclusive
-    private ImmutableList<CharSource> readOverallCappedDatabaseRows(@Untainted String columnName,
-            String transactionType, long captureTimeFrom, long captureTimeTo) throws SQLException {
-        return dataSource.query("select " + columnName + " from overall_aggregate"
-                + " where transaction_type = ? and capture_time > ? and capture_time <= ? and "
-                + columnName + " >= ?", new CappedDatabaseRowMapper(), transactionType,
-                captureTimeFrom, captureTimeTo, cappedDatabase.getSmallestNonExpiredId());
-    }
-
-    // captureTimeFrom is non-inclusive
-    private ImmutableList<CharSource> readTransactionCappedDatabaseRows(
-            @Untainted String columnName, String transactionType, String transactionName,
-            long captureTimeFrom, long captureTimeTo) throws SQLException {
-        return dataSource.query("select " + columnName + " from transaction_aggregate"
-                + " where transaction_type = ? and transaction_name = ? and capture_time > ?"
-                + " and capture_time <= ? and " + columnName + " >= ?",
-                new CappedDatabaseRowMapper(), transactionType, transactionName, captureTimeFrom,
-                captureTimeTo, cappedDatabase.getSmallestNonExpiredId());
     }
 
     private boolean shouldHaveOverallSomething(@Untainted String countColumnName,
@@ -655,10 +655,21 @@ public class AggregateDao {
         }
     }
 
-    private class CappedDatabaseRowMapper implements RowMapper<CharSource> {
+    private class QueryAggregateRowMapper implements RowMapper<QueryAggregate> {
         @Override
-        public CharSource mapRow(ResultSet resultSet) throws SQLException {
-            return cappedDatabase.read(resultSet.getLong(1), OVERWRITTEN);
+        public QueryAggregate mapRow(ResultSet resultSet) throws SQLException {
+            long captureTime = resultSet.getLong(1);
+            CharSource queries = cappedDatabase.read(resultSet.getLong(2), OVERWRITTEN);
+            return QueryAggregate.of(captureTime, queries);
+        }
+    }
+
+    private class ProfileAggregateRowMapper implements RowMapper<ProfileAggregate> {
+        @Override
+        public ProfileAggregate mapRow(ResultSet resultSet) throws SQLException {
+            long captureTime = resultSet.getLong(1);
+            CharSource profile = cappedDatabase.read(resultSet.getLong(2), OVERWRITTEN);
+            return ProfileAggregate.of(captureTime, profile);
         }
     }
 

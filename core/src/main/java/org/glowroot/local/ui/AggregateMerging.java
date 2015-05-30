@@ -26,12 +26,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.common.io.CharSource;
 import org.immutables.value.Value;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.AggregateTimer;
 import org.glowroot.collector.LazyHistogram;
+import org.glowroot.collector.ProfileAggregate;
+import org.glowroot.collector.QueryAggregate;
 import org.glowroot.collector.QueryComponent;
 import org.glowroot.collector.QueryComponent.AggregateQueryData;
 import org.glowroot.common.ObjectMappers;
@@ -98,13 +99,13 @@ public class AggregateMerging {
     }
 
     public static Map<String, Map<String, AggregateQueryData>> getMergedQueries(
-            List<CharSource> queriesContents, int maxAggregateQueriesPerQueryType)
+            List<QueryAggregate> queryAggregates, int maxAggregateQueriesPerQueryType)
             throws IOException {
         QueryComponent queryComponent = new QueryComponent(maxAggregateQueriesPerQueryType, false);
         // do not use static ObjectMapper here, see comment for QueryComponent.mergedQueries()
         ObjectMapper tempMapper = ObjectMappers.create();
-        for (CharSource queriesContent : queriesContents) {
-            String queries = queriesContent.read();
+        for (QueryAggregate queryAggregate : queryAggregates) {
+            String queries = queryAggregate.queries().read();
             if (!queries.equals(AggregateDao.OVERWRITTEN)) {
                 queryComponent.mergeQueries(queries, tempMapper);
             }
@@ -112,11 +113,11 @@ public class AggregateMerging {
         return queryComponent.getMergedQueries();
     }
 
-    public static ProfileNode getMergedProfile(List<CharSource> profileContents)
+    public static ProfileNode getMergedProfile(List<ProfileAggregate> profileAggregates)
             throws IOException {
         ProfileNode syntheticRootNode = ProfileNode.createSyntheticRoot();
-        for (CharSource profileContent : profileContents) {
-            String profile = profileContent.read();
+        for (ProfileAggregate profileAggregate : profileAggregates) {
+            String profile = profileAggregate.profile().read();
             if (!profile.equals(AggregateDao.OVERWRITTEN)) {
                 ProfileNode toBeMergedRootNode =
                         ObjectMappers.readRequiredValue(mapper, profile, ProfileNode.class);

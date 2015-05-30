@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.io.CharSource;
 
 import org.glowroot.common.Clock;
 import org.glowroot.common.ScratchBuffer;
@@ -148,26 +149,36 @@ public class AggregateIntervalCollector {
         }
     }
 
-    public @Nullable String getLiveQueriesJson(String transactionType,
+    public @Nullable QueryAggregate getLiveQueryAggregate(String transactionType,
             @Nullable String transactionName) throws IOException {
         AggregateBuilder aggregateBuilder = getAggregateBuilder(transactionType, transactionName);
         if (aggregateBuilder == null) {
             return null;
         }
+        String queriesJson;
         synchronized (aggregateBuilder) {
-            return aggregateBuilder.getQueriesJson();
+            queriesJson = aggregateBuilder.getQueriesJson();
         }
+        if (queriesJson == null) {
+            return null;
+        }
+        return QueryAggregate.of(endTime, CharSource.wrap(queriesJson));
     }
 
-    public @Nullable String getLiveProfileJson(String transactionType,
+    public @Nullable ProfileAggregate getLiveProfileAggregate(String transactionType,
             @Nullable String transactionName) throws IOException {
         AggregateBuilder aggregateBuilder = getAggregateBuilder(transactionType, transactionName);
         if (aggregateBuilder == null) {
             return null;
         }
+        String profileJson;
         synchronized (aggregateBuilder) {
-            return aggregateBuilder.getProfileJson();
+            profileJson = aggregateBuilder.getProfileJson();
         }
+        if (profileJson == null) {
+            return null;
+        }
+        return ProfileAggregate.of(endTime, CharSource.wrap(profileJson));
     }
 
     void clear() {
