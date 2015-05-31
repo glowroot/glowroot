@@ -99,17 +99,10 @@ public class TraceCreator {
         if (gcInfos != null) {
             builder.gcInfos(mapper.writeValueAsString(gcInfos));
         }
-        int queryCount = transaction.getEntryCount();
         int entryCount = transaction.getEntryCount();
         int profileSampleCount = transaction.getProfileSampleCount();
-        builder.queryCount(queryCount);
         builder.entryCount(entryCount);
         builder.profileSampleCount(profileSampleCount);
-        if (queryCount == 0) {
-            builder.queriesExistence(Existence.NO);
-        } else {
-            builder.queriesExistence(Existence.YES);
-        }
         if (entryCount == 0) {
             builder.entriesExistence(Existence.NO);
         } else {

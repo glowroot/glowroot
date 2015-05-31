@@ -32,7 +32,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.trace.Query;
+import org.glowroot.container.aggregate.Query;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 
@@ -66,7 +66,7 @@ public class BatchTest {
         container.executeAppUnderTest(ExecuteBatchPreparedStatement.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.getQueryText()).isEqualTo("insert into employee (name) values (?)");
@@ -89,7 +89,7 @@ public class BatchTest {
         container.executeAppUnderTest(ExecuteBatchPreparedStatement.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.getQueryText()).isEqualTo("insert into employee (name) values (?)");
@@ -110,7 +110,7 @@ public class BatchTest {
         container.executeAppUnderTest(ExecuteBatchPreparedStatementWithoutClear.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.getQueryText()).isEqualTo("insert into employee (name) values (?)");
@@ -132,7 +132,7 @@ public class BatchTest {
         container.executeAppUnderTest(ExecuteBatchPreparedStatementWithoutClear.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.getQueryText()).isEqualTo("insert into employee (name) values (?)");
@@ -153,7 +153,7 @@ public class BatchTest {
         container.executeAppUnderTest(ExecuteBatchStatement.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.getQueryText()).isEqualTo("<batch sql>");
@@ -176,7 +176,7 @@ public class BatchTest {
         container.executeAppUnderTest(BatchStatementNull.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.getQueryText()).isEqualTo("<batch sql>");
@@ -195,7 +195,7 @@ public class BatchTest {
         container.executeAppUnderTest(ExecuteBatchStatementWithNoBatches.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.getQueryText()).isEqualTo("<batch sql>");
@@ -214,7 +214,7 @@ public class BatchTest {
         container.executeAppUnderTest(ExecuteBatchStatementWithoutClear.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.getQueryText()).isEqualTo("<batch sql>");

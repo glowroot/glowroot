@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.glowroot.container;
 
+import org.glowroot.container.admin.AdminService;
+import org.glowroot.container.aggregate.AggregateService;
 import org.glowroot.container.config.ConfigService;
 import org.glowroot.container.trace.TraceService;
 
@@ -29,6 +31,10 @@ public interface Container {
     void interruptAppUnderTest() throws Exception;
 
     TraceService getTraceService();
+
+    AggregateService getAggregateService();
+
+    AdminService getAdminService();
 
     int getUiPort() throws Exception;
 

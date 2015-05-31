@@ -85,9 +85,6 @@ class TraceDetailHttpService implements HttpService {
 
     private @Nullable ChunkSource getDetailChunkSource(String traceComponent, String traceId)
             throws Exception {
-        if (traceComponent.equals("queries")) {
-            return traceCommonService.getQueries(traceId);
-        }
         if (traceComponent.equals("entries")) {
             return traceCommonService.getEntries(traceId);
         }

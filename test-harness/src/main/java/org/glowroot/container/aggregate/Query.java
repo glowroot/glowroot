@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.container.trace;
+package org.glowroot.container.aggregate;
 
 import javax.annotation.Nullable;
 
@@ -28,16 +28,16 @@ public class Query {
 
     private final String queryType;
     private final String queryText;
-    private final long totalTime;
+    private final long totalMicros;
     private final long executionCount;
     private final long totalRows;
     private final boolean active;
 
-    private Query(String queryType, String queryText, long totalTime, long executionCount,
+    private Query(String queryType, String queryText, long totalMicros, long executionCount,
             long totalRows, boolean active) {
         this.queryType = queryType;
         this.queryText = queryText;
-        this.totalTime = totalTime;
+        this.totalMicros = totalMicros;
         this.executionCount = executionCount;
         this.totalRows = totalRows;
         this.active = active;
@@ -51,8 +51,8 @@ public class Query {
         return queryText;
     }
 
-    public long getTotalTime() {
-        return totalTime;
+    public long getTotalMicros() {
+        return totalMicros;
     }
 
     public long getExecutionCount() {
@@ -72,7 +72,7 @@ public class Query {
         return MoreObjects.toStringHelper(this)
                 .add("queryType", queryType)
                 .add("queryText", queryText)
-                .add("totalTime", totalTime)
+                .add("totalMicros", totalMicros)
                 .add("executionCount", executionCount)
                 .add("totalRows", totalRows)
                 .add("active", active)
@@ -83,17 +83,17 @@ public class Query {
     static Query readValue(
             @JsonProperty("queryType") @Nullable String queryType,
             @JsonProperty("queryText") @Nullable String queryText,
-            @JsonProperty("totalTime") @Nullable Long totalTime,
+            @JsonProperty("totalMicros") @Nullable Long totalMicros,
             @JsonProperty("executionCount") @Nullable Long executionCount,
             @JsonProperty("totalRows") @Nullable Long totalRows,
             @JsonProperty("active") @Nullable Boolean active)
             throws JsonMappingException {
         checkRequiredProperty(queryType, "queryType");
         checkRequiredProperty(queryText, "queryText");
-        checkRequiredProperty(totalTime, "totalTime");
+        checkRequiredProperty(totalMicros, "totalMicros");
         checkRequiredProperty(executionCount, "executionCount");
         checkRequiredProperty(totalRows, "totalRows");
-        return new Query(queryType, queryText, totalTime, executionCount, totalRows,
+        return new Query(queryType, queryText, totalMicros, executionCount, totalRows,
                 orFalse(active));
     }
 

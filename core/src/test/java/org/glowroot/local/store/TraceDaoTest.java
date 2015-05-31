@@ -54,7 +54,7 @@ public class TraceDaoTest {
     public void shouldReadTrace() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(trace, null, null, null);
+        traceDao.store(trace, null, null);
         TracePointQuery query = TracePointQuery.builder()
                 .from(0)
                 .to(100)
@@ -83,7 +83,7 @@ public class TraceDaoTest {
     public void shouldReadTraceWithDurationQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(trace, null, null, null);
+        traceDao.store(trace, null, null);
         TracePointQuery query = TracePointQuery.builder()
                 .from(0)
                 .to(100)
@@ -103,7 +103,7 @@ public class TraceDaoTest {
     public void shouldNotReadTraceWithHighDurationQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(trace, null, null, null);
+        traceDao.store(trace, null, null);
         TracePointQuery query = TracePointQuery.builder()
                 .from(0)
                 .to(0)
@@ -123,7 +123,7 @@ public class TraceDaoTest {
     public void shouldNotReadTraceWithLowDurationQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(trace, null, null, null);
+        traceDao.store(trace, null, null);
         TracePointQuery query = TracePointQuery.builder()
                 .from(0)
                 .to(0)
@@ -143,7 +143,7 @@ public class TraceDaoTest {
     public void shouldReadTraceWithCustomAttributeQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(trace, null, null, null);
+        traceDao.store(trace, null, null);
         TracePointQuery query = TracePointQuery.builder()
                 .from(0)
                 .to(100)
@@ -166,7 +166,7 @@ public class TraceDaoTest {
     public void shouldReadTraceWithCustomAttributeQualifier2() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(trace, null, null, null);
+        traceDao.store(trace, null, null);
         TracePointQuery query = TracePointQuery.builder()
                 .from(0)
                 .to(100)
@@ -189,7 +189,7 @@ public class TraceDaoTest {
     public void shouldReadTraceWithCustomAttributeQualifier3() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(trace, null, null, null);
+        traceDao.store(trace, null, null);
         TracePointQuery query = TracePointQuery.builder()
                 .from(0)
                 .to(100)
@@ -212,7 +212,7 @@ public class TraceDaoTest {
     public void shouldNotReadTraceWithNonMatchingCustomAttributeQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(trace, null, null, null);
+        traceDao.store(trace, null, null);
         TracePointQuery query = TracePointQuery.builder()
                 .from(0)
                 .to(100)
@@ -235,7 +235,7 @@ public class TraceDaoTest {
     public void shouldNotReadTraceWithNonMatchingCustomAttributeQualifier2() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(trace, null, null, null);
+        traceDao.store(trace, null, null);
         TracePointQuery query = TracePointQuery.builder()
                 .from(0)
                 .to(100)
@@ -258,7 +258,7 @@ public class TraceDaoTest {
     public void shouldDeletedTrace() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.store(trace, null, null, null);
+        traceDao.store(trace, null, null);
         // when
         traceDao.deleteBefore(100);
         // then

@@ -35,8 +35,8 @@ import org.glowroot.container.AppUnderTestServices;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceEntryMarker;
 import org.glowroot.container.TraceMarker;
+import org.glowroot.container.aggregate.Query;
 import org.glowroot.container.config.PluginConfig;
-import org.glowroot.container.trace.Query;
 import org.glowroot.container.trace.Timer;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
@@ -72,7 +72,7 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteCallableStatement.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.getQueryText()).isEqualTo(
@@ -202,7 +202,7 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteStatementDisableReEnableMidIterating.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.getQueryText()).isEqualTo("select * from employee where name like ?");
@@ -221,7 +221,7 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.getQueryText()).isEqualTo("select * from employee");

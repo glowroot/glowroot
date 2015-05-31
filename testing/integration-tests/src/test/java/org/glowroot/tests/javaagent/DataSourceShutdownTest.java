@@ -56,7 +56,7 @@ public class DataSourceShutdownTest {
         Stopwatch stopwatch = Stopwatch.createStarted();
         boolean startedWritingToDb = false;
         while (stopwatch.elapsed(SECONDS) < 5) {
-            if (container.getTraceService().getNumTraces() > 0) {
+            if (container.getAdminService().getNumTraces() > 0) {
                 startedWritingToDb = true;
                 break;
             }

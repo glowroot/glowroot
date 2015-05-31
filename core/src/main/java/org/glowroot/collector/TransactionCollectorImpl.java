@@ -189,12 +189,10 @@ public class TransactionCollectorImpl implements TransactionCollector {
         } else {
             captureTick = ticker.read();
         }
-        ChunkSource queries =
-                QueriesChunkSourceCreator.createQueriesChunkSource(transaction.getQueries());
         ChunkSource entries = EntriesChunkSourceCreator.createEntriesChunkSource(
                 transaction.getEntries(), transaction.getStartTick(), captureTick);
         ChunkSource profile =
                 ProfileChunkSourceCreator.createProfileChunkSource(transaction.getProfile());
-        traceRepository.store(trace, queries, entries, profile);
+        traceRepository.store(trace, entries, profile);
     }
 }

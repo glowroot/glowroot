@@ -44,17 +44,6 @@ public class TraceService {
         this.httpClient = httpClient;
     }
 
-    public int getNumPendingCompleteTransactions() throws Exception {
-        String numPendingCompleteTransactions =
-                httpClient.get("/backend/admin/num-pending-complete-transactions");
-        return Integer.parseInt(numPendingCompleteTransactions);
-    }
-
-    public long getNumTraces() throws Exception {
-        String numTraces = httpClient.get("/backend/admin/num-traces");
-        return Long.parseLong(numTraces);
-    }
-
     public InputStream getTraceExport(String traceId) throws Exception {
         return httpClient.getAsStream("/export/trace/" + traceId);
     }
@@ -165,11 +154,6 @@ public class TraceService {
         return traces;
     }
 
-    public List<Query> getQueries(String traceId) throws Exception {
-        String content = httpClient.get("/backend/trace/queries?trace-id=" + traceId);
-        return mapper.readValue(content, new TypeReference<List<Query>>() {});
-    }
-
     public List<TraceEntry> getEntries(String traceId) throws Exception {
         String content = httpClient.get("/backend/trace/entries?trace-id=" + traceId);
         return mapper.readValue(content, new TypeReference<List<TraceEntry>>() {});
@@ -178,10 +162,6 @@ public class TraceService {
     public ProfileNode getProfile(String traceId) throws Exception {
         String content = httpClient.get("/backend/trace/profile?trace-id=" + traceId);
         return mapper.readValue(content, ProfileNode.class);
-    }
-
-    public void deleteAll() throws Exception {
-        httpClient.post("/backend/admin/delete-all-data", "");
     }
 
     public void assertNoActiveTransactions() throws Exception {

@@ -33,7 +33,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.trace.Query;
+import org.glowroot.container.aggregate.Query;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 
@@ -65,7 +65,7 @@ public class CassandraSyncTest {
     public void shouldExecuteStatement() throws Exception {
         container.executeAppUnderTest(ExecuteStatement.class);
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.getQueryText()).isEqualTo("SELECT * FROM test.users");
@@ -81,7 +81,7 @@ public class CassandraSyncTest {
     public void shouldIterateUsingOneAndAll() throws Exception {
         container.executeAppUnderTest(IterateUsingOneAndAll.class);
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.getQueryText()).isEqualTo("SELECT * FROM test.users");
@@ -97,7 +97,7 @@ public class CassandraSyncTest {
     public void shouldExecuteBoundStatement() throws Exception {
         container.executeAppUnderTest(ExecuteBoundStatement.class);
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.getQueryText()).isEqualTo(
@@ -114,7 +114,7 @@ public class CassandraSyncTest {
     public void shouldExecuteBatchStatement() throws Exception {
         container.executeAppUnderTest(ExecuteBatchStatement.class);
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.getQueryText()).isEqualTo("<batch cql>");

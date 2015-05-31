@@ -55,10 +55,8 @@ public class Trace {
     private final @Nullable Long threadWaitedTime;
     private final @Nullable Long threadAllocatedBytes;
     private final ImmutableList<TraceGcInfo> gcInfos;
-    private final long queryCount;
     private final long entryCount;
     private final long profileSampleCount;
-    private final Existence queriesExistence;
     private final Existence entriesExistence;
     private final Existence profileExistence;
 
@@ -69,9 +67,8 @@ public class Trace {
             Map<String, /*@Nullable*/Object> customDetail, @Nullable String errorMessage,
             @Nullable ThrowableInfo errorThrowable, Timer rootTimer, @Nullable Long threadCpuTime,
             @Nullable Long threadBlockedTime, @Nullable Long threadWaitedTime,
-            @Nullable Long threadAllocatedBytes, List<TraceGcInfo> gcInfos, long queryCount,
-            long entryCount, long profileSampleCount, Existence queriesExistence,
-            Existence entriesExistence, Existence profileExistence) {
+            @Nullable Long threadAllocatedBytes, List<TraceGcInfo> gcInfos, long entryCount,
+            long profileSampleCount, Existence entriesExistence, Existence profileExistence) {
         this.id = id;
         this.active = active;
         this.partial = partial;
@@ -93,10 +90,8 @@ public class Trace {
         this.threadWaitedTime = threadWaitedTime;
         this.threadAllocatedBytes = threadAllocatedBytes;
         this.gcInfos = ImmutableList.copyOf(gcInfos);
-        this.queryCount = queryCount;
         this.entryCount = entryCount;
         this.profileSampleCount = profileSampleCount;
-        this.queriesExistence = queriesExistence;
         this.entriesExistence = entriesExistence;
         this.profileExistence = profileExistence;
     }
@@ -185,20 +180,12 @@ public class Trace {
         return gcInfos;
     }
 
-    public long getQueryCount() {
-        return queryCount;
-    }
-
     public long getEntryCount() {
         return entryCount;
     }
 
     public long getProfileSampleCount() {
         return profileSampleCount;
-    }
-
-    public Existence getQueriesExistence() {
-        return queriesExistence;
     }
 
     public Existence getEntriesExistence() {
@@ -233,10 +220,8 @@ public class Trace {
                 .add("threadWaitedTime", threadWaitedTime)
                 .add("threadAllocatedBytes", threadAllocatedBytes)
                 .add("gcInfos", gcInfos)
-                .add("queryCount", queryCount)
                 .add("entryCount", entryCount)
                 .add("profileSampleCount", profileSampleCount)
-                .add("queriesExistence", queriesExistence)
                 .add("entriesExistence", entriesExistence)
                 .add("profileExistence", profileExistence)
                 .toString();
@@ -265,10 +250,8 @@ public class Trace {
             @JsonProperty("threadWaitedTime") @Nullable Long threadWaitedTime,
             @JsonProperty("threadAllocatedBytes") @Nullable Long threadAllocatedBytes,
             @JsonProperty("gcInfos") @Nullable List</*@Nullable*/TraceGcInfo> gcInfosUnchecked,
-            @JsonProperty("queryCount") @Nullable Long queryCount,
             @JsonProperty("entryCount") @Nullable Long entryCount,
             @JsonProperty("profileSampleCount") @Nullable Long profileSampleCount,
-            @JsonProperty("queriesExistence") @Nullable Existence queriesExistence,
             @JsonProperty("entriesExistence") @Nullable Existence entriesExistence,
             @JsonProperty("profileExistence") @Nullable Existence profileExistence)
             throws JsonMappingException {
@@ -284,10 +267,8 @@ public class Trace {
         checkRequiredProperty(transactionName, "transactionName");
         checkRequiredProperty(headline, "headline");
         checkRequiredProperty(rootTimer, "timers");
-        checkRequiredProperty(queryCount, "queryCount");
         checkRequiredProperty(entryCount, "entryCount");
         checkRequiredProperty(profileSampleCount, "profileSampleCount");
-        checkRequiredProperty(queriesExistence, "queriesExistence");
         checkRequiredProperty(entriesExistence, "entriesExistence");
         checkRequiredProperty(profileExistence, "profileExistence");
         ImmutableSetMultimap.Builder<String, String> theCustomAttributes =
@@ -307,9 +288,8 @@ public class Trace {
         return new Trace(id, active, partial, error, startTime, captureTime, duration,
                 transactionType, transactionName, headline, user, theCustomAttributes.build(),
                 nullToEmpty(customDetail), errorMessage, errorThrowable, rootTimer, threadCpuTime,
-                threadBlockedTime, threadWaitedTime, threadAllocatedBytes, gcInfos, queryCount,
-                entryCount, profileSampleCount, queriesExistence, entriesExistence,
-                profileExistence);
+                threadBlockedTime, threadWaitedTime, threadAllocatedBytes, gcInfos, entryCount,
+                profileSampleCount, entriesExistence, profileExistence);
     }
 
     public enum Existence {

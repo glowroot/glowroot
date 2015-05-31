@@ -35,7 +35,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.trace.Query;
+import org.glowroot.container.aggregate.Query;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 
@@ -69,7 +69,7 @@ public class PreparedStatementTest {
         container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
@@ -89,7 +89,7 @@ public class PreparedStatementTest {
         container.executeAppUnderTest(ExecutePreparedStatementQueryAndIterateOverResults.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
@@ -109,7 +109,7 @@ public class PreparedStatementTest {
         container.executeAppUnderTest(ExecutePreparedStatementUpdate.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
@@ -129,7 +129,7 @@ public class PreparedStatementTest {
         container.executeAppUnderTest(ExecutePreparedStatementLargeParamSetFirst.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
@@ -149,7 +149,6 @@ public class PreparedStatementTest {
         container.executeAppUnderTest(PreparedStatementNullSql.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getQueryCount()).isZero();
         assertThat(trace.getEntryCount()).isZero();
     }
 
@@ -160,7 +159,7 @@ public class PreparedStatementTest {
         container.executeAppUnderTest(ExecutePreparedStatementThrowing.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
@@ -183,7 +182,7 @@ public class PreparedStatementTest {
                 ExecutePreparedStatementWithTonsOfBindParametersAndIterateOverResults.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
@@ -214,7 +213,7 @@ public class PreparedStatementTest {
         container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
@@ -235,7 +234,7 @@ public class PreparedStatementTest {
         container.executeAppUnderTest(ExecutePreparedStatementWithSetNull.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
@@ -256,7 +255,7 @@ public class PreparedStatementTest {
         container.executeAppUnderTest(ExecutePreparedStatementWithBinary.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(2);
         Query query1 = queries.get(0);
         assertThat(query1.isActive()).isFalse();
@@ -286,7 +285,7 @@ public class PreparedStatementTest {
         container.executeAppUnderTest(ExecutePreparedStatementWithBinaryStream.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
@@ -308,7 +307,7 @@ public class PreparedStatementTest {
         container.executeAppUnderTest(ExecutePreparedStatementWithCharacterStream.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
@@ -330,7 +329,7 @@ public class PreparedStatementTest {
         container.executeAppUnderTest(ExecutePreparedStatementWithClear.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
@@ -350,7 +349,7 @@ public class PreparedStatementTest {
         container.executeAppUnderTest(ExecutePreparedStatementThatHasInternalGlowrootToken.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        List<Query> queries = container.getTraceService().getQueries(trace.getId());
+        List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();

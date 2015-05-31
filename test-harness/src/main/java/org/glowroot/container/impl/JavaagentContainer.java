@@ -51,6 +51,8 @@ import org.glowroot.common.MessageCount;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
+import org.glowroot.container.admin.AdminService;
+import org.glowroot.container.aggregate.AggregateService;
 import org.glowroot.container.common.HttpClient;
 import org.glowroot.container.config.ConfigService;
 import org.glowroot.container.config.ConfigService.GetUiPortCommand;
@@ -75,6 +77,8 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
     private final HttpClient httpClient;
     private final ConfigService configService;
     private final TraceService traceService;
+    private final AggregateService aggregateService;
+    private final AdminService adminService;
     private final Thread shutdownHook;
 
     public static JavaagentContainer create() throws Exception {
@@ -146,6 +150,8 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
             }
         });
         traceService = new TraceService(httpClient);
+        aggregateService = new AggregateService(httpClient);
+        adminService = new AdminService(httpClient);
         shutdownHook = new ShutdownHookThread(socketCommander);
         this.socketCommander = socketCommander;
         // unfortunately, ctrl-c during maven test will kill the maven process, but won't kill the
@@ -173,7 +179,7 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
                 appUnderTestClass.getName());
         // wait for all traces to be stored
         Stopwatch stopwatch = Stopwatch.createStarted();
-        while (traceService.getNumPendingCompleteTransactions() > 0
+        while (adminService.getNumPendingCompleteTransactions() > 0
                 && stopwatch.elapsed(SECONDS) < 5) {
             Thread.sleep(10);
         }
@@ -190,6 +196,16 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
     }
 
     @Override
+    public AggregateService getAggregateService() {
+        return aggregateService;
+    }
+
+    @Override
+    public AdminService getAdminService() {
+        return adminService;
+    }
+
+    @Override
     public int getUiPort() throws Exception {
         return getUiPort(socketCommander);
     }
@@ -197,7 +213,7 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
     @Override
     public void checkAndReset() throws Exception {
         traceService.assertNoActiveTransactions();
-        traceService.deleteAll();
+        adminService.deleteAllData();
         checkAndResetConfigOnly();
     }
 

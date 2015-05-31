@@ -27,11 +27,11 @@ import com.google.common.collect.Iterables;
 import com.google.common.io.CharSource;
 import org.immutables.value.Value;
 
+import org.glowroot.collector.EntriesChunkSourceCreator;
 import org.glowroot.collector.ProfileChunkSourceCreator;
 import org.glowroot.collector.QueriesChunkSourceCreator;
 import org.glowroot.collector.Trace;
 import org.glowroot.collector.TraceCreator;
-import org.glowroot.collector.EntriesChunkSourceCreator;
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.ChunkSource;
 import org.glowroot.common.Clock;
@@ -70,21 +70,6 @@ class TraceCommonService {
             }
         }
         return traceDao.readTrace(traceId);
-    }
-
-    // overwritten entries will return {"overwritten":true}
-    // expired (not found) trace will return {"expired":true}
-    @Nullable
-    ChunkSource getQueries(String traceId) throws Exception {
-        // check active traces first, then pending traces, and finally stored traces
-        // to make sure that the trace is not missed if it is in transition between these states
-        for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
-                transactionCollectorImpl.getPendingTransactions())) {
-            if (transaction.getId().equals(traceId)) {
-                return createQueries(transaction);
-            }
-        }
-        return toNullableChunkSource(traceDao.readQueries(traceId));
     }
 
     // overwritten entries will return {"overwritten":true}
@@ -141,7 +126,6 @@ class TraceCommonService {
         return TraceExport.builder()
                 .trace(trace)
                 .traceJson(mapper.writeValueAsString(trace))
-                .queries(toNullableChunkSource(traceDao.readQueries(traceId)))
                 .entries(toNullableChunkSource(traceDao.readEntries(traceId)))
                 .profile(toNullableChunkSource(traceDao.readProfile(traceId)))
                 .build();

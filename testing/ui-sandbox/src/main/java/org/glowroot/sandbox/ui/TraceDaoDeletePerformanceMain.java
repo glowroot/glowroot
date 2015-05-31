@@ -37,17 +37,17 @@ public class TraceDaoDeletePerformanceMain {
     public static void main(String... args) throws Exception {
         Container container = Containers.createWithFileDb(new File("target"));
         container.executeAppUnderTest(GenerateTraces.class);
-        int pendingWrites = container.getTraceService().getNumPendingCompleteTransactions();
+        int pendingWrites = container.getAdminService().getNumPendingCompleteTransactions();
         while (pendingWrites > 0) {
             logger.info("pending trace writes: {}", pendingWrites);
             Thread.sleep(1000);
-            pendingWrites = container.getTraceService().getNumPendingCompleteTransactions();
+            pendingWrites = container.getAdminService().getNumPendingCompleteTransactions();
         }
         File dbFile = new File("target/glowroot.h2.db");
         long dbSize = dbFile.length();
         logger.info("glowroot.h2.db: {} bytes", dbSize);
         Stopwatch stopwatch = Stopwatch.createStarted();
-        container.getTraceService().deleteAll();
+        container.getAdminService().deleteAllData();
         logger.info("all traces deleted in: {} millis", stopwatch.elapsed(MILLISECONDS));
         logger.info("glowroot.h2.db: {} bytes", dbFile.length());
         container.close();
