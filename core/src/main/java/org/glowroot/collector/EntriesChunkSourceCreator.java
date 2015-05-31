@@ -121,13 +121,13 @@ public class EntriesChunkSourceCreator {
         @Override
         public boolean copyNext() throws IOException {
             if (closed) {
+                jg.flush();
                 return false;
             }
             TraceEntryImpl traceEntry = entries.next();
             if (!Tickers.lessThanOrEqual(traceEntry.getStartTick(), captureTick)) {
                 // this entry started after the capture tick
                 jg.writeEndArray();
-                jg.flush();
                 closed = true;
                 return true;
             }
@@ -142,7 +142,6 @@ public class EntriesChunkSourceCreator {
                 jg.writeEndArray();
                 closed = true;
             }
-            jg.flush();
             return true;
         }
 

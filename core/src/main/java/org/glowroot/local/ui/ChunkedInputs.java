@@ -81,7 +81,6 @@ class ChunkedInputs {
     private static class ChunkSourceChunkedInput extends BaseChunkedInput {
 
         private final ByteBuf byteBuf;
-        private final ByteBufOutputStream bbos;
         private final Writer writer;
         private final ChunkCopier chunkCopier;
 
@@ -89,8 +88,7 @@ class ChunkedInputs {
 
         private ChunkSourceChunkedInput(ChunkSource chunkSource) throws IOException {
             byteBuf = Unpooled.buffer();
-            bbos = new ByteBufOutputStream(byteBuf);
-            writer = new OutputStreamWriter(bbos, Charsets.UTF_8);
+            writer = new OutputStreamWriter(new ByteBufOutputStream(byteBuf), Charsets.UTF_8);
             chunkCopier = chunkSource.getCopier(writer);
         }
 
@@ -106,6 +104,11 @@ class ChunkedInputs {
             if (chunkCopier.copyNext()) {
                 // flush to byteBuf
                 writer.flush();
+                while (byteBuf.writerIndex() == 0) {
+                    chunkCopier.copyNext();
+                    // flush to byteBuf
+                    writer.flush();
+                }
                 // increment retain count since still using byteBuf
                 byteBuf.retain();
                 return byteBuf;
