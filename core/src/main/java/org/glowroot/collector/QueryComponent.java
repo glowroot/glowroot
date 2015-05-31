@@ -22,20 +22,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.annotation.Nullable;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Longs;
 
 import org.glowroot.common.ObjectMappers;
+import org.glowroot.markers.UsedByJsonBinding;
 import org.glowroot.transaction.model.QueryData;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.glowroot.common.ObjectMappers.checkRequiredProperty;
 
 public class QueryComponent {
 
-    private final Map<String, Map<String, AggregateQueryData>> queries = Maps.newHashMap();
+    private static final ObjectMapper mapper = ObjectMappers.create();
+
+    private final Map<String, Map<String, AggregateQuery>> queries = Maps.newHashMap();
     private final int maxAggregateQueriesPerQueryType;
     private final boolean applyLimitWhileBuilding;
 
@@ -44,47 +53,42 @@ public class QueryComponent {
         this.applyLimitWhileBuilding = applyLimitWhileBuilding;
     }
 
-    public Map<String, Map<String, AggregateQueryData>> getMergedQueries() {
-        if (applyLimitWhileBuilding) {
-            return queries;
-        }
-        Map<String, Map<String, AggregateQueryData>> limitAppliedQueries = Maps.newHashMap();
-        for (Entry<String, Map<String, AggregateQueryData>> entry : queries.entrySet()) {
-            String queryType = entry.getKey();
-            Map<String, AggregateQueryData> queriesForQueryType = entry.getValue();
-            if (queriesForQueryType.size() <= maxAggregateQueriesPerQueryType) {
-                limitAppliedQueries.put(queryType, queriesForQueryType);
-            } else {
-                limitAppliedQueries.put(queryType, truncate(queriesForQueryType));
+    public Map<String, List<AggregateQuery>> getOrderedAndTruncatedQueries() {
+        Map<String, List<AggregateQuery>> mergedQueries = Maps.newHashMap();
+        for (Entry<String, Map<String, AggregateQuery>> entry : queries.entrySet()) {
+            List<AggregateQuery> aggregateQueries = Lists.newArrayList(entry.getValue().values());
+            order(aggregateQueries);
+            if (!applyLimitWhileBuilding
+                    && aggregateQueries.size() > maxAggregateQueriesPerQueryType) {
+                aggregateQueries = aggregateQueries.subList(0, maxAggregateQueriesPerQueryType);
             }
+            mergedQueries.put(entry.getKey(), aggregateQueries);
         }
-        return limitAppliedQueries;
+        return mergedQueries;
     }
 
     // not using static ObjectMapper because ObjectMapper caches keys, and in this particular case
     // the keys are (often very large) sql queries and have seen it retain 26mb worth of memory
-    public void mergeQueries(String queriesContent, ObjectMapper tempMapper) throws IOException {
-        Map<String, Map<String, AggregateQueryData>> toBeMergedQueries =
-                ObjectMappers.readRequiredValue(tempMapper, queriesContent,
-                        new TypeReference<Map<String, Map<String, AggregateQueryData>>>() {});
-        for (Entry<String, Map<String, AggregateQueryData>> entry : toBeMergedQueries.entrySet()) {
+    public void mergeQueries(String queriesContent) throws IOException {
+        Map<String, List<AggregateQuery>> toBeMergedQueries =
+                ObjectMappers.readRequiredValue(mapper, queriesContent,
+                        new TypeReference<Map<String, List<AggregateQuery>>>() {});
+        for (Entry<String, List<AggregateQuery>> entry : toBeMergedQueries.entrySet()) {
             String queryType = entry.getKey();
-            Map<String, AggregateQueryData> queriesForQueryType = queries.get(queryType);
+            Map<String, AggregateQuery> queriesForQueryType = queries.get(queryType);
             if (queriesForQueryType == null) {
                 queriesForQueryType = Maps.newHashMap();
                 queries.put(queryType, queriesForQueryType);
             }
-            for (Entry<String, AggregateQueryData> query : entry.getValue().entrySet()) {
-                AggregateQueryData queryData = query.getValue();
-                mergeQueryData(query.getKey(), queryData.getTotalMicros(),
-                        queryData.getExecutionCount(), queryData.getTotalRows(),
-                        queriesForQueryType);
+            for (AggregateQuery query : entry.getValue()) {
+                mergeQuery(query.getQueryText(), query.getTotalMicros(),
+                        query.getExecutionCount(), query.getTotalRows(), queriesForQueryType);
             }
         }
     }
 
     void mergeQueries(String queryType, Map<String, QueryData> toBeMergedQueries) {
-        Map<String, AggregateQueryData> queriesForQueryType = queries.get(queryType);
+        Map<String, AggregateQuery> queriesForQueryType = queries.get(queryType);
         if (queriesForQueryType == null) {
             queriesForQueryType = Maps.newHashMap();
             queries.put(queryType, queriesForQueryType);
@@ -92,54 +96,54 @@ public class QueryComponent {
         for (Entry<String, QueryData> toBeMergedQuery : toBeMergedQueries.entrySet()) {
             String queryText = toBeMergedQuery.getKey();
             QueryData queryData = toBeMergedQuery.getValue();
-            mergeQueryData(queryText, NANOSECONDS.toMicros(queryData.getTotalTime()),
+            mergeQuery(queryText, NANOSECONDS.toMicros(queryData.getTotalTime()),
                     queryData.getExecutionCount(), queryData.getTotalRows(),
                     queriesForQueryType);
         }
     }
 
-    private void mergeQueryData(String queryText, long totalMicros, long executionCount,
-            long totalRows, Map<String, AggregateQueryData> queriesForQueryType) {
-        AggregateQueryData aggregateQueryData = queriesForQueryType.get(queryText);
-        if (aggregateQueryData == null) {
+    private void mergeQuery(String queryText, long totalMicros, long executionCount,
+            long totalRows, Map<String, AggregateQuery> queriesForQueryType) {
+        AggregateQuery aggregateQuery = queriesForQueryType.get(queryText);
+        if (aggregateQuery == null) {
             if (applyLimitWhileBuilding
                     && queriesForQueryType.size() >= maxAggregateQueriesPerQueryType) {
                 return;
             }
-            aggregateQueryData = new AggregateQueryData();
-            queriesForQueryType.put(queryText, aggregateQueryData);
+            aggregateQuery = new AggregateQuery(queryText);
+            queriesForQueryType.put(queryText, aggregateQuery);
         }
-        aggregateQueryData.totalMicros += totalMicros;
-        aggregateQueryData.executionCount += executionCount;
-        aggregateQueryData.totalRows += totalRows;
+        aggregateQuery.totalMicros += totalMicros;
+        aggregateQuery.executionCount += executionCount;
+        aggregateQuery.totalRows += totalRows;
     }
 
-    private Map<String, AggregateQueryData> truncate(
-            Map<String, AggregateQueryData> queriesForQueryType) {
-        List<Entry<String, AggregateQueryData>> list =
-                Lists.newArrayList(queriesForQueryType.entrySet());
+    private void order(List<AggregateQuery> aggregateQueries) {
         // reverse sort by total micros
-        Collections.sort(list, new Comparator<Entry<String, AggregateQueryData>>() {
+        Collections.sort(aggregateQueries, new Comparator<AggregateQuery>() {
             @Override
-            public int compare(Entry<String, AggregateQueryData> entry1,
-                    Entry<String, AggregateQueryData> entry2) {
-                return Longs.compare(entry2.getValue().getTotalMicros(),
-                        entry1.getValue().getTotalMicros());
+            public int compare(AggregateQuery aggregateQuery1, AggregateQuery aggregateQuery2) {
+                return Longs.compare(aggregateQuery2.getTotalMicros(),
+                        aggregateQuery1.getTotalMicros());
             }
         });
-        Map<String, AggregateQueryData> truncatedMap = Maps.newHashMap();
-        for (int i = 0; i < maxAggregateQueriesPerQueryType; i++) {
-            Entry<String, AggregateQueryData> entry = list.get(i);
-            truncatedMap.put(entry.getKey(), entry.getValue());
-        }
-        return truncatedMap;
     }
 
-    public static class AggregateQueryData {
+    @UsedByJsonBinding
+    public static class AggregateQuery {
 
+        private final String queryText;
         private long totalMicros;
         private long executionCount;
         private long totalRows;
+
+        private AggregateQuery(String queryText) {
+            this.queryText = queryText;
+        }
+
+        public String getQueryText() {
+            return queryText;
+        }
 
         public long getTotalMicros() {
             return totalMicros;
@@ -151,6 +155,23 @@ public class QueryComponent {
 
         public long getTotalRows() {
             return totalRows;
+        }
+
+        @JsonCreator
+        static AggregateQuery readValue(
+                @JsonProperty("queryText") @Nullable String queryText,
+                @JsonProperty("totalMicros") @Nullable Long totalMicros,
+                @JsonProperty("executionCount") @Nullable Long executionCount,
+                @JsonProperty("totalRows") @Nullable Long totalRows) throws JsonMappingException {
+            checkRequiredProperty(queryText, "queryText");
+            checkRequiredProperty(totalMicros, "totalMicros");
+            checkRequiredProperty(executionCount, "executionCount");
+            checkRequiredProperty(totalRows, "totalRows");
+            AggregateQuery aggregateQuery = new AggregateQuery(queryText);
+            aggregateQuery.totalMicros = totalMicros;
+            aggregateQuery.executionCount = executionCount;
+            aggregateQuery.totalRows = totalRows;
+            return aggregateQuery;
         }
     }
 }

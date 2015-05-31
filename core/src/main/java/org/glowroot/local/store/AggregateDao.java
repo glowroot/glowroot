@@ -44,7 +44,7 @@ import org.glowroot.collector.LazyHistogram;
 import org.glowroot.collector.ProfileAggregate;
 import org.glowroot.collector.QueryAggregate;
 import org.glowroot.collector.QueryComponent;
-import org.glowroot.collector.QueryComponent.AggregateQueryData;
+import org.glowroot.collector.QueryComponent.AggregateQuery;
 import org.glowroot.collector.TransactionSummary;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.common.ScratchBuffer;
@@ -805,8 +805,6 @@ public class AggregateDao {
         private final AggregateTimer syntheticRootTimer = AggregateTimer.createSyntheticRootTimer();
         private final QueryComponent queryComponent;
         private final ProfileNode syntheticProfileNode = ProfileNode.createSyntheticRoot();
-        // do not use static ObjectMapper here, see comment for QueryComponent.mergedQueries()
-        private final ObjectMapper tempMapper = ObjectMappers.create();
 
         public MergedAggregate(long captureTime, String transactionType,
                 @Nullable String transactionName, int maxAggregateQueriesPerQueryType) {
@@ -888,7 +886,7 @@ public class AggregateDao {
         }
 
         private void addQueries(String queryContent) throws IOException {
-            queryComponent.mergeQueries(queryContent, tempMapper);
+            queryComponent.mergeQueries(queryContent);
         }
 
         private void addProfile(String profileContent) throws IOException {
@@ -898,8 +896,8 @@ public class AggregateDao {
         }
 
         private @Nullable String getQueriesJson() throws IOException {
-            Map<String, Map<String, AggregateQueryData>> queries = queryComponent
-                    .getMergedQueries();
+            Map<String, List<AggregateQuery>> queries =
+                    queryComponent.getOrderedAndTruncatedQueries();
             if (queries.isEmpty()) {
                 return null;
             }

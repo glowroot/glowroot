@@ -34,7 +34,7 @@ import org.glowroot.collector.LazyHistogram;
 import org.glowroot.collector.ProfileAggregate;
 import org.glowroot.collector.QueryAggregate;
 import org.glowroot.collector.QueryComponent;
-import org.glowroot.collector.QueryComponent.AggregateQueryData;
+import org.glowroot.collector.QueryComponent.AggregateQuery;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.transaction.model.ProfileNode;
@@ -98,19 +98,17 @@ public class AggregateMerging {
                 .build();
     }
 
-    public static Map<String, Map<String, AggregateQueryData>> getMergedQueries(
+    public static Map<String, List<AggregateQuery>> getOrderedAndTruncatedQueries(
             List<QueryAggregate> queryAggregates, int maxAggregateQueriesPerQueryType)
             throws IOException {
         QueryComponent queryComponent = new QueryComponent(maxAggregateQueriesPerQueryType, false);
-        // do not use static ObjectMapper here, see comment for QueryComponent.mergedQueries()
-        ObjectMapper tempMapper = ObjectMappers.create();
         for (QueryAggregate queryAggregate : queryAggregates) {
             String queries = queryAggregate.queries().read();
             if (!queries.equals(AggregateDao.OVERWRITTEN)) {
-                queryComponent.mergeQueries(queries, tempMapper);
+                queryComponent.mergeQueries(queries);
             }
         }
-        return queryComponent.getMergedQueries();
+        return queryComponent.getOrderedAndTruncatedQueries();
     }
 
     public static ProfileNode getMergedProfile(List<ProfileAggregate> profileAggregates)

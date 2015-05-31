@@ -17,6 +17,7 @@ package org.glowroot.collector;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -24,7 +25,7 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.glowroot.collector.QueryComponent.AggregateQueryData;
+import org.glowroot.collector.QueryComponent.AggregateQuery;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.common.ScratchBuffer;
 import org.glowroot.transaction.model.Profile;
@@ -152,7 +153,7 @@ class AggregateBuilder {
 
     @Nullable
     String getQueriesJson() throws IOException {
-        Map<String, Map<String, AggregateQueryData>> queries = queryComponent.getMergedQueries();
+        Map<String, List<AggregateQuery>> queries = queryComponent.getOrderedAndTruncatedQueries();
         if (queries.isEmpty()) {
             return null;
         }

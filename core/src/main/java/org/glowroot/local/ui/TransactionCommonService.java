@@ -34,7 +34,7 @@ import org.glowroot.collector.AggregateCollector;
 import org.glowroot.collector.AggregateIntervalCollector;
 import org.glowroot.collector.ProfileAggregate;
 import org.glowroot.collector.QueryAggregate;
-import org.glowroot.collector.QueryComponent.AggregateQueryData;
+import org.glowroot.collector.QueryComponent.AggregateQuery;
 import org.glowroot.collector.TransactionSummary;
 import org.glowroot.common.ScratchBuffer;
 import org.glowroot.config.ConfigService;
@@ -152,11 +152,11 @@ class TransactionCommonService {
         return aggregates;
     }
 
-    Map<String, Map<String, AggregateQueryData>> getQueries(String transactionType,
+    Map<String, List<AggregateQuery>> getQueries(String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
         List<QueryAggregate> queryAggregates =
                 getQueryAggregates(transactionType, transactionName, from, to);
-        return AggregateMerging.getMergedQueries(queryAggregates,
+        return AggregateMerging.getOrderedAndTruncatedQueries(queryAggregates,
                 configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
     }
 

@@ -42,7 +42,7 @@ import org.immutables.value.Value;
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.AggregateTimer;
 import org.glowroot.collector.LazyHistogram;
-import org.glowroot.collector.QueryComponent.AggregateQueryData;
+import org.glowroot.collector.QueryComponent.AggregateQuery;
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.collector.TransactionSummary;
 import org.glowroot.common.Clock;
@@ -158,19 +158,18 @@ class TransactionJsonService {
     String getQueries(String queryString) throws Exception {
         TransactionDataRequest request =
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
-        Map<String, Map<String, AggregateQueryData>> queries = transactionCommonService.getQueries(
+        Map<String, List<AggregateQuery>> queries = transactionCommonService.getQueries(
                 request.transactionType(), request.transactionName(), request.from(), request.to());
         List<Query> queryList = Lists.newArrayList();
-        for (Entry<String, Map<String, AggregateQueryData>> entry : queries.entrySet()) {
-            Map<String, AggregateQueryData> queriesByQueryType = entry.getValue();
-            for (Entry<String, AggregateQueryData> query : queriesByQueryType.entrySet()) {
-                AggregateQueryData data = query.getValue();
+        for (Entry<String, List<AggregateQuery>> entry : queries.entrySet()) {
+            List<AggregateQuery> queriesForQueryType = entry.getValue();
+            for (AggregateQuery aggregateQuery : queriesForQueryType) {
                 queryList.add(Query.builder()
                         .queryType(entry.getKey())
-                        .queryText(query.getKey())
-                        .totalMicros(data.getTotalMicros())
-                        .executionCount(data.getExecutionCount())
-                        .totalRows(data.getTotalRows())
+                        .queryText(aggregateQuery.getQueryText())
+                        .totalMicros(aggregateQuery.getTotalMicros())
+                        .executionCount(aggregateQuery.getExecutionCount())
+                        .totalRows(aggregateQuery.getTotalRows())
                         .build());
             }
         }
