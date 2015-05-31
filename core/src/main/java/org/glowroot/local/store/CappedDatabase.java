@@ -17,7 +17,6 @@ package org.glowroot.local.store;
 
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -221,13 +220,32 @@ public class CappedDatabase {
         }
     }
 
-    private static class NonClosingOutputStream extends FilterOutputStream {
+    private static class NonClosingOutputStream extends OutputStream {
 
-        public NonClosingOutputStream(OutputStream out) {
-            super(out);
+        private final OutputStream out;
+
+        private NonClosingOutputStream(OutputStream out) {
+            this.out = out;
         }
 
         @Override
-        public void close() {}
+        public void write(int b) throws IOException {
+            out.write(b);
+        }
+
+        @Override
+        public void write(byte[] b) throws IOException {
+            out.write(b);
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            out.write(b, off, len);
+        }
+
+        @Override
+        public void flush() throws IOException {
+            out.flush();
+        }
     }
 }
