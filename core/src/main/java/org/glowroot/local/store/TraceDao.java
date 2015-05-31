@@ -121,11 +121,11 @@ public class TraceDao implements TraceRepository {
             @Nullable ChunkSource profile) throws Exception {
         Long entriesId = null;
         if (entries != null) {
-            entriesId = cappedDatabase.write(entries);
+            entriesId = cappedDatabase.write(entries, CappedDatabaseStats.TRACE_ENTRIES);
         }
         Long profileId = null;
         if (profile != null) {
-            profileId = cappedDatabase.write(profile);
+            profileId = cappedDatabase.write(profile, CappedDatabaseStats.TRACE_PROFILES);
         }
         dataSource.update("merge into trace (id, partial, error, start_time, capture_time,"
                 + " duration, transaction_type, transaction_name, headline, user,"

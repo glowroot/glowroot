@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.Set;
 
 import javax.annotation.Nullable;
+import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -33,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Reflections;
+import org.glowroot.markers.OnlyUsedByTests;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -76,6 +78,31 @@ public class LazyPlatformMBeanServer {
     public Object getAttribute(ObjectName name, String attribute) throws Exception {
         ensureInit();
         return mbeanServer.getAttribute(name, attribute);
+    }
+
+    public void lazyRegisterMBean(final Object object, final ObjectName name) throws Exception {
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    ensureInit();
+                    mbeanServer.registerMBean(object, name);
+                } catch (InstanceAlreadyExistsException e) {
+                    // ignore
+                } catch (Throwable t) {
+                    logger.error(t.getMessage(), t);
+                }
+            }
+        });
+        thread.setDaemon(true);
+        thread.setName("Glowroot-Lazy-MBean-Registration-Thread");
+        thread.start();
+    }
+
+    @OnlyUsedByTests
+    public void unregisterMBean(ObjectName name) throws Exception {
+        ensureInit();
+        mbeanServer.unregisterMBean(name);
     }
 
     @EnsuresNonNull("mbeanServer")

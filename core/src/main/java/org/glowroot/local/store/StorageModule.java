@@ -20,6 +20,10 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Nullable;
+import javax.management.InstanceNotFoundException;
+import javax.management.ObjectName;
+
+import com.google.common.base.Ticker;
 
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.collector.AggregateRepository;
@@ -27,6 +31,7 @@ import org.glowroot.collector.TraceRepository;
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
+import org.glowroot.jvm.LazyPlatformMBeanServer;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.weaving.PreInitializeStorageShutdownClasses;
 
@@ -48,10 +53,12 @@ public class StorageModule {
     private final TraceDao traceDao;
     private final GaugePointDao gaugePointDao;
     private final @Nullable ReaperRunnable reaperRunnable;
+    private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
 
-    public StorageModule(File dataDir, Map<String, String> properties, Clock clock,
+    public StorageModule(File dataDir, Map<String, String> properties, Clock clock, Ticker ticker,
             ConfigModule configModule, ScheduledExecutorService scheduledExecutor,
-            boolean viewerModeEnabled) throws Exception {
+            LazyPlatformMBeanServer lazyPlatformMBeanServer, boolean viewerModeEnabled)
+            throws Exception {
         // mem db is only used for testing (by glowroot-test-container)
         String h2MemDb = properties.get("internal.h2.memdb");
         final DataSource dataSource;
@@ -73,7 +80,10 @@ public class StorageModule {
         this.dataSource = dataSource;
         int cappedDatabaseSizeMb = configService.getStorageConfig().cappedDatabaseSizeMb();
         cappedDatabase = new CappedDatabase(new File(dataDir, "glowroot.capped.db"),
-                cappedDatabaseSizeMb * 1024);
+                cappedDatabaseSizeMb * 1024, ticker);
+        this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
+        lazyPlatformMBeanServer.lazyRegisterMBean(new CappedDatabaseStats(cappedDatabase),
+                new ObjectName("org.glowroot:type=CappedDatabaseStats"));
         aggregateDao = new AggregateDao(dataSource, cappedDatabase,
                 configModule.getConfigService(), FIXED_AGGREGATE_ROLLUP_SECONDS);
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
@@ -132,6 +142,12 @@ public class StorageModule {
 
     @OnlyUsedByTests
     public void close() throws Exception {
+        try {
+            lazyPlatformMBeanServer.unregisterMBean(
+                    new ObjectName("org.glowroot:type=CappedDatabaseStats"));
+        } catch (InstanceNotFoundException e) {
+            // ignore
+        }
         if (reaperRunnable != null) {
             reaperRunnable.cancel();
         }

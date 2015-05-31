@@ -24,6 +24,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.glowroot.common.Tickers;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class CappedDatabaseResizeTest {
@@ -34,7 +36,7 @@ public class CappedDatabaseResizeTest {
     @Before
     public void onBefore() throws IOException {
         tempFile = File.createTempFile("glowroot-test-", ".capped.db");
-        cappedDatabase = new CappedDatabase(tempFile, 2);
+        cappedDatabase = new CappedDatabase(tempFile, 2, Tickers.getTicker());
     }
 
     @After
@@ -78,10 +80,10 @@ public class CappedDatabaseResizeTest {
         // when
         // because of compression, use somewhat random text and loop until wrap occurs
         String text = createRandomText();
-        cappedDatabase.write(CharSource.wrap(text));
-        cappedDatabase.write(CharSource.wrap(text));
-        cappedDatabase.write(CharSource.wrap(text));
-        long cappedId = cappedDatabase.write(CharSource.wrap(text));
+        cappedDatabase.write(CharSource.wrap(text), "test");
+        cappedDatabase.write(CharSource.wrap(text), "test");
+        cappedDatabase.write(CharSource.wrap(text), "test");
+        long cappedId = cappedDatabase.write(CharSource.wrap(text), "test");
         cappedDatabase.resize(newSizeKb);
         // then
         String text2 = cappedDatabase.read(cappedId, "").read();
@@ -89,7 +91,7 @@ public class CappedDatabaseResizeTest {
 
         // also test close and re-open
         cappedDatabase.close();
-        cappedDatabase = new CappedDatabase(tempFile, 2);
+        cappedDatabase = new CappedDatabase(tempFile, 2, Tickers.getTicker());
         text2 = cappedDatabase.read(cappedId, "").read();
         assertThat(text2).isEqualTo(text);
     }
@@ -100,17 +102,17 @@ public class CappedDatabaseResizeTest {
         cappedDatabase.resize(newSizeKb);
         // because of compression, use somewhat random text and loop until wrap occurs
         String text = createRandomText();
-        cappedDatabase.write(CharSource.wrap(text));
-        cappedDatabase.write(CharSource.wrap(text));
-        cappedDatabase.write(CharSource.wrap(text));
-        long cappedId = cappedDatabase.write(CharSource.wrap(text));
+        cappedDatabase.write(CharSource.wrap(text), "test");
+        cappedDatabase.write(CharSource.wrap(text), "test");
+        cappedDatabase.write(CharSource.wrap(text), "test");
+        long cappedId = cappedDatabase.write(CharSource.wrap(text), "test");
         // then
         String text2 = cappedDatabase.read(cappedId, "").read();
         assertThat(text2).isEqualTo(text);
 
         // also test close and re-open
         cappedDatabase.close();
-        cappedDatabase = new CappedDatabase(tempFile, 2);
+        cappedDatabase = new CappedDatabase(tempFile, 2, Tickers.getTicker());
         text2 = cappedDatabase.read(cappedId, "").read();
         assertThat(text2).isEqualTo(text);
     }

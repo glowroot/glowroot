@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.Trace;
 import org.glowroot.common.ChunkSource;
+import org.glowroot.common.Tickers;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -34,7 +35,8 @@ public class TraceDaoPerformanceMain {
 
     public static void main(String... args) throws Exception {
         DataSource dataSource = new DataSource();
-        CappedDatabase cappedDatabase = new CappedDatabase(new File("glowroot.capped.db"), 1000000);
+        CappedDatabase cappedDatabase =
+                new CappedDatabase(new File("glowroot.capped.db"), 1000000, Tickers.getTicker());
         TraceDao traceDao = new TraceDao(dataSource, cappedDatabase);
 
         Stopwatch stopwatch = Stopwatch.createStarted();

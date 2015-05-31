@@ -22,6 +22,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.collector.Trace;
+import org.glowroot.common.Tickers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,7 +40,7 @@ public class TraceDaoTest {
             dataSource.execute("drop table trace");
         }
         cappedFile = File.createTempFile("glowroot-test-", ".capped.db");
-        cappedDatabase = new CappedDatabase(cappedFile, 1000000);
+        cappedDatabase = new CappedDatabase(cappedFile, 1000000, Tickers.getTicker());
         traceDao = new TraceDao(dataSource, cappedDatabase);
     }
 

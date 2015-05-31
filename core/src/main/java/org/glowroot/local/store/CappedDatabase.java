@@ -17,6 +17,7 @@ package org.glowroot.local.store;
 
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -25,11 +26,15 @@ import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 import java.io.Reader;
 import java.io.Writer;
+import java.util.Map;
 
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Ticker;
+import com.google.common.collect.Maps;
 import com.google.common.io.CharSource;
+import com.google.common.io.CountingOutputStream;
 import com.google.common.primitives.Longs;
 import com.ning.compress.lzf.LZFInputStream;
 import com.ning.compress.lzf.LZFOutputStream;
@@ -37,7 +42,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ChunkSource;
+import org.glowroot.local.store.CappedDatabaseStatsMXBean.Stats;
 import org.glowroot.markers.OnlyUsedByTests;
+
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class CappedDatabase {
 
@@ -52,38 +60,68 @@ public class CappedDatabase {
     private RandomAccessFile inFile;
     private volatile boolean closing = false;
 
-    CappedDatabase(File file, int requestedSizeKb) throws IOException {
+    private final Ticker ticker;
+    private final Map<String, Stats> statsByType = Maps.newHashMap();
+
+    CappedDatabase(File file, int requestedSizeKb, Ticker ticker) throws IOException {
         this.file = file;
+        this.ticker = ticker;
         out = new CappedDatabaseOutputStream(file, requestedSizeKb);
         inFile = new RandomAccessFile(file, "r");
         shutdownHookThread = new ShutdownHookThread();
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
     }
 
-    long write(CharSource charSource) throws IOException {
-        synchronized (lock) {
-            if (closing) {
-                return -1;
+    long write(final CharSource charSource, String type) throws IOException {
+        return write(type, new Copier() {
+            @Override
+            public void copyTo(Writer writer) throws IOException {
+                charSource.copyTo(writer);
             }
-            out.startBlock();
-            Writer compressedWriter = new OutputStreamWriter(new LZFOutputStream(
-                    new NonClosingOutputStream(out)), Charsets.UTF_8);
-            charSource.copyTo(compressedWriter);
-            compressedWriter.close();
-            return out.endBlock();
-        }
+        });
     }
 
-    long write(ChunkSource chunkSource) throws IOException {
+    long write(final ChunkSource charSource, String type) throws IOException {
+        return write(type, new Copier() {
+            @Override
+            public void copyTo(Writer writer) throws IOException {
+                charSource.copyTo(writer);
+            }
+        });
+    }
+
+    Stats getStats(String type) {
+        Stats stats = statsByType.get(type);
+        if (stats == null) {
+            return new Stats();
+        }
+        return stats;
+    }
+
+    private long write(String type, Copier copier) throws IOException {
         synchronized (lock) {
             if (closing) {
                 return -1;
             }
+            long startTick = ticker.read();
             out.startBlock();
-            Writer compressedWriter = new OutputStreamWriter(new LZFOutputStream(
-                    new NonClosingOutputStream(out)), Charsets.UTF_8);
-            chunkSource.copyTo(compressedWriter);
+            NonClosingCountingOutputStream countingStreamAfterCompression =
+                    new NonClosingCountingOutputStream(out);
+            CountingOutputStream countingStreamBeforeCompression =
+                    new CountingOutputStream(new LZFOutputStream(countingStreamAfterCompression));
+            Writer compressedWriter =
+                    new OutputStreamWriter(countingStreamBeforeCompression, Charsets.UTF_8);
+            copier.copyTo(compressedWriter);
             compressedWriter.close();
+            long endTick = ticker.read();
+            Stats stats = statsByType.get(type);
+            if (stats == null) {
+                stats = new Stats();
+                statsByType.put(type, stats);
+            }
+            stats.record(countingStreamBeforeCompression.getCount(),
+                    countingStreamAfterCompression.getCount(),
+                    NANOSECONDS.toMicros(endTick - startTick));
             return out.endBlock();
         }
     }
@@ -220,32 +258,35 @@ public class CappedDatabase {
         }
     }
 
-    private static class NonClosingOutputStream extends OutputStream {
+    private interface Copier {
+        public void copyTo(Writer writer) throws IOException;
+    }
 
-        private final OutputStream out;
+    private static class NonClosingCountingOutputStream extends FilterOutputStream {
 
-        private NonClosingOutputStream(OutputStream out) {
-            this.out = out;
-        }
+        private long count;
 
-        @Override
-        public void write(int b) throws IOException {
-            out.write(b);
-        }
-
-        @Override
-        public void write(byte[] b) throws IOException {
-            out.write(b);
+        private NonClosingCountingOutputStream(OutputStream out) {
+            super(out);
         }
 
         @Override
         public void write(byte[] b, int off, int len) throws IOException {
             out.write(b, off, len);
+            count += len;
         }
 
         @Override
-        public void flush() throws IOException {
-            out.flush();
+        public void write(int b) throws IOException {
+            out.write(b);
+            count++;
+        }
+
+        @Override
+        public void close() {}
+
+        private long getCount() {
+            return count;
         }
     }
 }

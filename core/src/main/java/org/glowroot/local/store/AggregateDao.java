@@ -441,12 +441,14 @@ public class AggregateDao {
         Long queriesCappedId = null;
         String queries = overallAggregate.queries();
         if (queries != null) {
-            queriesCappedId = cappedDatabase.write(CharSource.wrap(queries));
+            queriesCappedId = cappedDatabase.write(CharSource.wrap(queries),
+                    CappedDatabaseStats.AGGREGATE_QUERIES);
         }
         Long profileCappedId = null;
         String profile = overallAggregate.profile();
         if (profile != null) {
-            profileCappedId = cappedDatabase.write(CharSource.wrap(profile));
+            profileCappedId = cappedDatabase.write(CharSource.wrap(profile),
+                    CappedDatabaseStats.AGGREGATE_PROFILES);
         }
         int i = startIndex;
         preparedStatement.setLong(i++, overallAggregate.captureTime());

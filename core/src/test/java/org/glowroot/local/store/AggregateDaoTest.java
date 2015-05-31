@@ -27,6 +27,7 @@ import org.junit.Test;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.TransactionSummary;
+import org.glowroot.common.Tickers;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
@@ -52,7 +53,7 @@ public class AggregateDaoTest {
             dataSource.execute("drop table transaction_point");
         }
         cappedFile = File.createTempFile("glowroot-test-", ".capped.db");
-        cappedDatabase = new CappedDatabase(cappedFile, 1000000);
+        cappedDatabase = new CappedDatabase(cappedFile, 1000000, Tickers.getTicker());
         ConfigService configService = mock(ConfigService.class);
         when(configService.getAdvancedConfig()).thenReturn(AdvancedConfig.builder().build());
         aggregateDao = new AggregateDao(dataSource, cappedDatabase, configService, 15);
