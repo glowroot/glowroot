@@ -16,6 +16,7 @@
 package org.glowroot.local.ui;
 
 import java.io.IOException;
+import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Locale;
@@ -29,6 +30,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
@@ -43,6 +47,7 @@ import org.glowroot.config.ConfigService;
 import org.glowroot.config.InstrumentationConfig;
 import org.glowroot.transaction.AdviceCache;
 import org.glowroot.transaction.TransactionModule;
+import org.glowroot.weaving.AnalyzedWorld;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
@@ -51,20 +56,36 @@ import static org.objectweb.asm.Opcodes.ACC_SYNCHRONIZED;
 @JsonService
 class InstrumentationJsonService {
 
+    private static final String DUMMY_KEY = "KEY";
+
     private static final ObjectMapper mapper = ObjectMappers.create();
     private static final Splitter splitter = Splitter.on(' ').omitEmptyStrings();
 
     private final ConfigService configService;
     private final AdviceCache adviceCache;
     private final TransactionModule transactionModule;
-    private final ClasspathCache classpathCache;
+    private final AnalyzedWorld analyzedWorld;
+    private final @Nullable Instrumentation instrumentation;
+
+    // hopefully can simplify someday https://github.com/google/guava/issues/872
+    private final LoadingCache<String, ClasspathCache> classpathCache = CacheBuilder.newBuilder()
+            .softValues()
+            .maximumSize(1)
+            .build(new CacheLoader<String, ClasspathCache>() {
+                @Override
+                public ClasspathCache load(String key) throws Exception {
+                    return new ClasspathCache(analyzedWorld, instrumentation);
+                }
+            });
 
     InstrumentationJsonService(ConfigService configService, AdviceCache adviceCache,
-            ClasspathCache classpathCache, TransactionModule transactionModule) {
+            TransactionModule transactionModule, AnalyzedWorld analyzedWorld,
+            @Nullable Instrumentation instrumentation) {
         this.configService = configService;
         this.adviceCache = adviceCache;
-        this.classpathCache = classpathCache;
         this.transactionModule = transactionModule;
+        this.analyzedWorld = analyzedWorld;
+        this.instrumentation = instrumentation;
     }
 
     @GET("/backend/config/instrumentation")
@@ -106,7 +127,7 @@ class InstrumentationJsonService {
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
-                classpathCache.updateCache();
+                getClasspathCache().updateCache();
             }
         });
         thread.setDaemon(true);
@@ -117,7 +138,7 @@ class InstrumentationJsonService {
     @GET("/backend/config/matching-class-names")
     String getMatchingClassNames(String queryString) throws Exception {
         ClassNamesRequest request = QueryStrings.decode(queryString, ClassNamesRequest.class);
-        List<String> matchingClassNames = classpathCache.getMatchingClassNames(
+        List<String> matchingClassNames = getClasspathCache().getMatchingClassNames(
                 request.partialClassName(), request.limit());
         return mapper.writeValueAsString(matchingClassNames);
     }
@@ -172,12 +193,16 @@ class InstrumentationJsonService {
         configService.deleteInstrumentationConfig(version);
     }
 
+    private ClasspathCache getClasspathCache() {
+        return classpathCache.getUnchecked(DUMMY_KEY);
+    }
+
     // returns the first <limit> matching method names, ordered alphabetically (case-insensitive)
     private ImmutableList<String> getMatchingMethodNames(String className,
             String partialMethodName, int limit) {
         String partialMethodNameUpper = partialMethodName.toUpperCase(Locale.ENGLISH);
         Set<String> methodNames = Sets.newHashSet();
-        for (UiAnalyzedMethod analyzedMethod : classpathCache.getAnalyzedMethods(className)) {
+        for (UiAnalyzedMethod analyzedMethod : getClasspathCache().getAnalyzedMethods(className)) {
             String methodName = analyzedMethod.name();
             if (methodName.equals("<init>") || methodName.equals("<clinit>")) {
                 // static initializers are not supported by weaver
@@ -224,7 +249,7 @@ class InstrumentationJsonService {
     private List<UiAnalyzedMethod> getAnalyzedMethods(String className, String methodName) {
         // use set to remove duplicate methods (e.g. same class loaded by multiple class loaders)
         Set<UiAnalyzedMethod> analyzedMethods = Sets.newHashSet();
-        for (UiAnalyzedMethod analyzedMethod : classpathCache.getAnalyzedMethods(className)) {
+        for (UiAnalyzedMethod analyzedMethod : getClasspathCache().getAnalyzedMethods(className)) {
             if (analyzedMethod.name().equals(methodName)) {
                 analyzedMethods.add(analyzedMethod);
             }

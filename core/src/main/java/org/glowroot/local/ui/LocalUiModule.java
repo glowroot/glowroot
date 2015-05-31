@@ -113,10 +113,9 @@ public class LocalUiModule {
         ConfigJsonService configJsonService = new ConfigJsonService(configService,
                 cappedDatabase, configModule.getPluginDescriptors(), httpSessionManager,
                 transactionModule, new MailService());
-        ClasspathCache classpathCache = new ClasspathCache(analyzedWorld, instrumentation);
         InstrumentationJsonService instrumentationJsonService = new InstrumentationJsonService(
-                configService, transactionModule.getAdviceCache(), classpathCache,
-                transactionModule);
+                configService, transactionModule.getAdviceCache(), transactionModule,
+                analyzedWorld, instrumentation);
         GaugeJsonService gaugeJsonService =
                 new GaugeJsonService(configService, jvmModule.getLazyPlatformMBeanServer());
         AlertJsonService alertJsonService = new AlertJsonService(configService);
