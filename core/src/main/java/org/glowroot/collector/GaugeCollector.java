@@ -51,6 +51,7 @@ class GaugeCollector extends ScheduledRunnable {
     private final ConfigService configService;
     private final GaugePointRepository gaugePointRepository;
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
+    private final ScheduledExecutorService scheduledExecutor;
     private final Clock clock;
     private final long startTimeMillis;
 
@@ -59,13 +60,15 @@ class GaugeCollector extends ScheduledRunnable {
 
     // gauges have their own dedicated scheduled executor service to make sure their collection is
     // not hampered by other glowroot threads
-    private final ScheduledExecutorService scheduledExecutor;
+    private final ScheduledExecutorService dedicatedScheduledExecutor;
 
     GaugeCollector(ConfigService configService, GaugePointRepository gaugePointRepository,
-            LazyPlatformMBeanServer lazyPlatformMBeanServer, Clock clock, @Nullable Logger logger) {
+            LazyPlatformMBeanServer lazyPlatformMBeanServer,
+            ScheduledExecutorService scheduledExecutor, Clock clock, @Nullable Logger logger) {
         this.configService = configService;
         this.gaugePointRepository = gaugePointRepository;
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
+        this.scheduledExecutor = scheduledExecutor;
         this.clock = clock;
         startTimeMillis = clock.currentTimeMillis();
         if (logger == null) {
@@ -73,26 +76,38 @@ class GaugeCollector extends ScheduledRunnable {
         } else {
             this.logger = logger;
         }
-        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
-                .setNameFormat("Glowroot-Gauge-Collector-%d").build();
-        scheduledExecutor = Executors.newScheduledThreadPool(1, threadFactory);
+        ThreadFactory threadFactory = new ThreadFactoryBuilder()
+                .setDaemon(true)
+                .setNameFormat("Glowroot-Gauge-Collector-%d")
+                .build();
+        dedicatedScheduledExecutor = Executors.newScheduledThreadPool(1, threadFactory);
     }
 
     @Override
     protected void runInternal() throws Exception {
-        List<GaugePoint> gaugePoints = Lists.newArrayList();
+        final List<GaugePoint> gaugePoints = Lists.newArrayList();
         for (GaugeConfig gaugeConfig : configService.getGaugeConfigs()) {
             gaugePoints.addAll(runInternal(gaugeConfig));
         }
-        gaugePointRepository.store(gaugePoints);
+        scheduledExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    gaugePointRepository.store(gaugePoints);
+                } catch (Throwable t) {
+                    // log and terminate successfully
+                    logger.error(t.getMessage(), t);
+                }
+            }
+        });
     }
 
     void scheduleAtFixedRate(long initialDelay, long period, TimeUnit unit) {
-        scheduleAtFixedRate(scheduledExecutor, initialDelay, period, unit);
+        scheduleAtFixedRate(dedicatedScheduledExecutor, initialDelay, period, unit);
     }
 
     void close() {
-        scheduledExecutor.shutdownNow();
+        dedicatedScheduledExecutor.shutdownNow();
     }
 
     @VisibleForTesting

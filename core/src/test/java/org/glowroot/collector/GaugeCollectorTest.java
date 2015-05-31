@@ -16,6 +16,7 @@
 package org.glowroot.collector;
 
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
@@ -63,7 +64,7 @@ public class GaugeCollectorTest {
         clock = mock(Clock.class);
         logger = mock(Logger.class);
         gaugeCollector = new GaugeCollector(configService, gaugePointRepository,
-                lazyPlatformMBeanServer, clock, logger);
+                lazyPlatformMBeanServer, mock(ScheduledExecutorService.class), clock, logger);
     }
 
     @After

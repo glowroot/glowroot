@@ -56,7 +56,7 @@ public class CollectorModule {
             aggregateCollector = new AggregateCollector(scheduledExecutor, aggregateRepository,
                     configModule.getConfigService(), FIXED_AGGREGATE_INTERVAL_SECONDS, clock);
             gaugeCollector = new GaugeCollector(configService, gaugePointRepository,
-                    jvmModule.getLazyPlatformMBeanServer(), clock, null);
+                    jvmModule.getLazyPlatformMBeanServer(), scheduledExecutor, clock, null);
             // using fixed rate to keep gauge collections close to on the second mark
             long initialDelay = FIXED_GAUGE_INTERVAL_SECONDS
                     - (clock.currentTimeMillis() % FIXED_GAUGE_INTERVAL_SECONDS);
