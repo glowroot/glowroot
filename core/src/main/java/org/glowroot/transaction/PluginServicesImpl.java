@@ -454,7 +454,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     private QueryEntry startDummyTraceEntry(Transaction transaction, TimerName timerName,
             MessageSupplier messageSupplier, @Nullable String queryType,
-            @Nullable String queryText, long startTick, long queryExecutionCount) {
+            @Nullable String queryText, long queryExecutionCount, long startTick) {
         // the entry limit has been exceeded for this trace
         QueryData queryData = null;
         if (queryType != null && queryText != null) {

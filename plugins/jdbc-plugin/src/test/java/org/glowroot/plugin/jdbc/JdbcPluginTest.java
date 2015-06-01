@@ -281,6 +281,29 @@ public class JdbcPluginTest {
         assertThat(trace.getEntryCount()).isZero();
     }
 
+    @Test
+    public void testLotsOfStatements() throws Exception {
+        // given
+        // when
+        container.executeAppUnderTest(ExecuteLotsOfStatementAndIterateOverResults.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        Timer jdbcExecuteTimer = null;
+        for (Timer nestedTimer : trace.getRootTimer().getNestedTimers()) {
+            if (nestedTimer.getName().equals("jdbc execute")) {
+                jdbcExecuteTimer = nestedTimer;
+                break;
+            }
+        }
+        assertThat(jdbcExecuteTimer).isNotNull();
+        List<Query> queries = container.getAggregateService().getQueries();
+        assertThat(queries).hasSize(1);
+        Query query = queries.get(0);
+        assertThat(query.getQueryText()).isEqualTo("select * from employee");
+        assertThat(query.getExecutionCount()).isEqualTo(4000);
+        assertThat(query.getTotalRows()).isEqualTo(12000);
+    }
+
     private boolean findExtendedTimerName(Timer timer, String timerName) {
         if (timer.getName().equals(timerName) && timer.isExtended()) {
             return true;
@@ -312,6 +335,35 @@ public class JdbcPluginTest {
                 ResultSet rs = statement.getResultSet();
                 while (rs.next()) {
                     rs.getString(1);
+                }
+            } finally {
+                statement.close();
+            }
+        }
+    }
+
+    public static class ExecuteLotsOfStatementAndIterateOverResults implements AppUnderTest,
+            TraceMarker {
+        private Connection connection;
+        @Override
+        public void executeApp() throws Exception {
+            connection = Connections.createConnection();
+            try {
+                traceMarker();
+            } finally {
+                Connections.closeConnection(connection);
+            }
+        }
+        @Override
+        public void traceMarker() throws Exception {
+            Statement statement = connection.createStatement();
+            try {
+                for (int i = 0; i < 4000; i++) {
+                    statement.execute("select * from employee");
+                    ResultSet rs = statement.getResultSet();
+                    while (rs.next()) {
+                        rs.getString(1);
+                    }
                 }
             } finally {
                 statement.close();
