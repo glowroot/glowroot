@@ -15,6 +15,7 @@
  */
 package org.glowroot.collector;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -25,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
+import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
@@ -38,11 +40,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Clock;
+import org.glowroot.common.Reflections;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GaugeConfig;
 import org.glowroot.config.MBeanAttribute;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
+import org.glowroot.jvm.LazyPlatformMBeanServer.MBeanServerCallback;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 class GaugeCollector extends ScheduledRunnable {
 
@@ -81,6 +87,22 @@ class GaugeCollector extends ScheduledRunnable {
                 .setNameFormat("Glowroot-Gauge-Collector-%d")
                 .build();
         dedicatedScheduledExecutor = Executors.newScheduledThreadPool(1, threadFactory);
+        lazyPlatformMBeanServer.possiblyDelayedCall(new MBeanServerCallback() {
+            @Override
+            public void call(MBeanServer mbeanServer) {
+                try {
+                    Class<?> sunManagementFactoryHelperClass =
+                            Class.forName("sun.management.ManagementFactoryHelper");
+                    Method registerInternalMBeansMethod =
+                            Reflections.getDeclaredMethod(sunManagementFactoryHelperClass,
+                                    "registerInternalMBeans", MBeanServer.class);
+                    registerInternalMBeansMethod.invoke(null, mbeanServer);
+                } catch (Exception e) {
+                    // checkNotNull is just to satisfy checker framework
+                    checkNotNull(GaugeCollector.this.logger).debug(e.getMessage(), e);
+                }
+            }
+        });
     }
 
     @Override

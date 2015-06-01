@@ -16,11 +16,9 @@
 package org.glowroot.jvm;
 
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.Method;
 import java.util.Set;
 
 import javax.annotation.Nullable;
-import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -33,7 +31,6 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.Reflections;
 import org.glowroot.markers.OnlyUsedByTests;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -80,23 +77,33 @@ public class LazyPlatformMBeanServer {
         return mbeanServer.getAttribute(name, attribute);
     }
 
-    public void lazyRegisterMBean(final Object object, final ObjectName name) throws Exception {
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    ensureInit();
-                    mbeanServer.registerMBean(object, name);
-                } catch (InstanceAlreadyExistsException e) {
-                    // ignore
-                } catch (Throwable t) {
-                    logger.error(t.getMessage(), t);
+    public void possiblyDelayedCall(final MBeanServerCallback callback) {
+        if (needsDelayedInit()) {
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        ensureInit();
+                        callback.call(mbeanServer);
+                    } catch (Throwable t) {
+                        logger.error(t.getMessage(), t);
+                    }
                 }
-            }
-        });
-        thread.setDaemon(true);
-        thread.setName("Glowroot-Lazy-MBean-Registration-Thread");
-        thread.start();
+            });
+            thread.setDaemon(true);
+            thread.setName("Glowroot-Delayed-MBean-Server-Call");
+            thread.start();
+            return;
+        }
+        if (mbeanServer == null) {
+            mbeanServer = ManagementFactory.getPlatformMBeanServer();
+        }
+        try {
+            callback.call(mbeanServer);
+        } catch (Throwable t) {
+            logger.error(t.getMessage(), t);
+        }
+        return;
     }
 
     @OnlyUsedByTests
@@ -107,24 +114,18 @@ public class LazyPlatformMBeanServer {
 
     @EnsuresNonNull("mbeanServer")
     private void ensureInit() throws InterruptedException {
-        if (mbeanServer == null) {
-            if (jbossModules) {
-                // if running under jboss-modules, wait for it to set up JUL before calling
-                // getPlatformMBeanServer()
-                waitForJBossModuleInitialization(Stopwatch.createUnstarted());
-            }
-            mbeanServer = ManagementFactory.getPlatformMBeanServer();
-            try {
-                Class<?> sunManagementFactoryHelperClass =
-                        Class.forName("sun.management.ManagementFactoryHelper");
-                Method registerInternalMBeansMethod =
-                        Reflections.getDeclaredMethod(sunManagementFactoryHelperClass,
-                                "registerInternalMBeans", MBeanServer.class);
-                registerInternalMBeansMethod.invoke(null, mbeanServer);
-            } catch (Exception e) {
-                logger.debug(e.getMessage(), e);
-            }
+        if (needsDelayedInit()) {
+            // if running under jboss-modules, wait for it to set up JUL before calling
+            // getPlatformMBeanServer()
+            waitForJBossModuleInitialization(Stopwatch.createUnstarted());
         }
+        if (mbeanServer == null) {
+            mbeanServer = ManagementFactory.getPlatformMBeanServer();
+        }
+    }
+
+    private boolean needsDelayedInit() {
+        return mbeanServer == null && jbossModules;
     }
 
     @VisibleForTesting
@@ -139,5 +140,9 @@ public class LazyPlatformMBeanServer {
         // something has gone wrong
         logger.error("this jvm appears to be running jboss-modules, but it did not set up"
                 + " java.util.logging.manager");
+    }
+
+    public interface MBeanServerCallback {
+        void call(MBeanServer mbeanServer) throws Exception;
     }
 }

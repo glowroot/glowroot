@@ -20,10 +20,14 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Nullable;
+import javax.management.InstanceAlreadyExistsException;
 import javax.management.InstanceNotFoundException;
+import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import com.google.common.base.Ticker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.collector.AggregateRepository;
@@ -32,9 +36,11 @@ import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
+import org.glowroot.jvm.LazyPlatformMBeanServer.MBeanServerCallback;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.weaving.PreInitializeStorageShutdownClasses;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class StorageModule {
@@ -45,6 +51,8 @@ public class StorageModule {
             Long.getLong("glowroot.internal.gaugeRollup1", 60);
     private static final long FIXED_AGGREGATE_ROLLUP_SECONDS =
             Long.getLong("glowroot.internal.aggregateRollup1", 300);
+
+    private static final Logger logger = LoggerFactory.getLogger(StorageModule.class);
 
     private final DataSource dataSource;
     private final CappedDatabase cappedDatabase;
@@ -82,8 +90,20 @@ public class StorageModule {
         cappedDatabase = new CappedDatabase(new File(dataDir, "glowroot.capped.db"),
                 cappedDatabaseSizeMb * 1024, ticker);
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
-        lazyPlatformMBeanServer.lazyRegisterMBean(new CappedDatabaseStats(cappedDatabase),
-                new ObjectName("org.glowroot:type=CappedDatabaseStats"));
+        lazyPlatformMBeanServer.possiblyDelayedCall(new MBeanServerCallback() {
+            @Override
+            public void call(MBeanServer mbeanServer) throws Exception {
+                try {
+                    // checkNotNull is just to satisfy checker framework
+                    mbeanServer.registerMBean(
+                            new CappedDatabaseStats(checkNotNull(cappedDatabase)),
+                            new ObjectName("org.glowroot:type=CappedDatabaseStats"));
+                } catch (InstanceAlreadyExistsException e) {
+                    // log exception at debug level
+                    logger.debug(e.getMessage(), e);
+                }
+            }
+        });
         aggregateDao = new AggregateDao(dataSource, cappedDatabase,
                 configModule.getConfigService(), FIXED_AGGREGATE_ROLLUP_SECONDS);
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
@@ -103,7 +123,6 @@ public class StorageModule {
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         }
     }
-
     public AggregateRepository getAggregateRepository() {
         return aggregateRepositoryImpl;
     }
@@ -146,7 +165,8 @@ public class StorageModule {
             lazyPlatformMBeanServer.unregisterMBean(
                     new ObjectName("org.glowroot:type=CappedDatabaseStats"));
         } catch (InstanceNotFoundException e) {
-            // ignore
+            // log exception at debug level
+            logger.debug(e.getMessage(), e);
         }
         if (reaperRunnable != null) {
             reaperRunnable.cancel();
