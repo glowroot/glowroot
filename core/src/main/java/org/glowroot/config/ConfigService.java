@@ -526,8 +526,10 @@ public class ConfigService {
             Set<String> transactionTypes, @Nullable PluginConfig pluginConfig) {
         for (InstrumentationConfig config : configs) {
             String transactionType = config.transactionType();
-            if (!transactionType.isEmpty() && pluginConfig != null
-                    && isEnabled(config, pluginConfig)) {
+            if (transactionType.isEmpty()) {
+                continue;
+            }
+            if (pluginConfig == null || isEnabled(config, pluginConfig)) {
                 transactionTypes.add(transactionType);
             }
         }
