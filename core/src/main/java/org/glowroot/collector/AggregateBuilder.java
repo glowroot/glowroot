@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.glowroot.collector.QueryComponent.AggregateQuery;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.common.ScratchBuffer;
+import org.glowroot.config.AdvancedConfigBase;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.ProfileNode;
 import org.glowroot.transaction.model.QueryData;
@@ -62,7 +63,11 @@ class AggregateBuilder {
             int maxAggregateQueriesPerQueryType) {
         this.transactionType = transactionType;
         this.transactionName = transactionName;
-        queryComponent = new QueryComponent(maxAggregateQueriesPerQueryType, true);
+        int hardLimitMultiplierWhileBuilding = transactionName == null
+                ? AdvancedConfigBase.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER
+                : AdvancedConfigBase.TRANSACTION_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER;
+        queryComponent = new QueryComponent(maxAggregateQueriesPerQueryType,
+                hardLimitMultiplierWhileBuilding);
     }
 
     void add(Transaction transaction) {

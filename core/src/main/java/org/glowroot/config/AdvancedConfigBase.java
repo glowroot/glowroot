@@ -23,6 +23,9 @@ import org.immutables.value.Value;
 @JsonSerialize
 public abstract class AdvancedConfigBase {
 
+    public static final int OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER = 10;
+    public static final int TRANSACTION_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER = 2;
+
     @Value.Default
     public boolean timerWrapperMethods() {
         return false;
@@ -42,7 +45,7 @@ public abstract class AdvancedConfigBase {
     // applied to individual traces, transaction aggregates and overall aggregates
     @Value.Default
     public int maxAggregateQueriesPerQueryType() {
-        return 1000;
+        return 500;
     }
 
     // used to limit memory requirement, also used to help limit trace capture size

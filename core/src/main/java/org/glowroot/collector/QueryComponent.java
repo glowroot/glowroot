@@ -45,12 +45,12 @@ public class QueryComponent {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final Map<String, Map<String, AggregateQuery>> queries = Maps.newHashMap();
-    private final int maxAggregateQueriesPerQueryType;
-    private final boolean applyLimitWhileBuilding;
+    private final int hardLimitMultiplierWhileBuilding;
+    private final int maxMultiplierWhileBuilding;
 
-    public QueryComponent(int maxAggregateQueriesPerQueryType, boolean applyLimitWhileBuilding) {
-        this.maxAggregateQueriesPerQueryType = maxAggregateQueriesPerQueryType;
-        this.applyLimitWhileBuilding = applyLimitWhileBuilding;
+    public QueryComponent(int hardLimitMultiplierWhileBuilding, int maxMultiplierWhileBuilding) {
+        this.hardLimitMultiplierWhileBuilding = hardLimitMultiplierWhileBuilding;
+        this.maxMultiplierWhileBuilding = maxMultiplierWhileBuilding;
     }
 
     public Map<String, List<AggregateQuery>> getOrderedAndTruncatedQueries() {
@@ -58,9 +58,8 @@ public class QueryComponent {
         for (Entry<String, Map<String, AggregateQuery>> entry : queries.entrySet()) {
             List<AggregateQuery> aggregateQueries = Lists.newArrayList(entry.getValue().values());
             order(aggregateQueries);
-            if (!applyLimitWhileBuilding
-                    && aggregateQueries.size() > maxAggregateQueriesPerQueryType) {
-                aggregateQueries = aggregateQueries.subList(0, maxAggregateQueriesPerQueryType);
+            if (aggregateQueries.size() > hardLimitMultiplierWhileBuilding) {
+                aggregateQueries = aggregateQueries.subList(0, hardLimitMultiplierWhileBuilding);
             }
             mergedQueries.put(entry.getKey(), aggregateQueries);
         }
@@ -106,8 +105,9 @@ public class QueryComponent {
             long totalRows, Map<String, AggregateQuery> queriesForQueryType) {
         AggregateQuery aggregateQuery = queriesForQueryType.get(queryText);
         if (aggregateQuery == null) {
-            if (applyLimitWhileBuilding
-                    && queriesForQueryType.size() >= maxAggregateQueriesPerQueryType) {
+            if (maxMultiplierWhileBuilding != 0
+                    && queriesForQueryType.size() >= hardLimitMultiplierWhileBuilding
+                            * maxMultiplierWhileBuilding) {
                 return;
             }
             aggregateQuery = new AggregateQuery(queryText);

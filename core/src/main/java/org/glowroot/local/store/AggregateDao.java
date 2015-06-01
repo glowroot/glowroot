@@ -813,8 +813,7 @@ public class AggregateDao {
             this.captureTime = captureTime;
             this.transactionType = transactionType;
             this.transactionName = transactionName;
-            // MAX_VALUE because when merging apply limit at the end
-            queryComponent = new QueryComponent(maxAggregateQueriesPerQueryType, true);
+            queryComponent = new QueryComponent(maxAggregateQueriesPerQueryType, 0);
         }
 
         public void setCaptureTime(long captureTime) {

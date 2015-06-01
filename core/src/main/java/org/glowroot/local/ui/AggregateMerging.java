@@ -101,7 +101,7 @@ public class AggregateMerging {
     public static Map<String, List<AggregateQuery>> getOrderedAndTruncatedQueries(
             List<QueryAggregate> queryAggregates, int maxAggregateQueriesPerQueryType)
             throws IOException {
-        QueryComponent queryComponent = new QueryComponent(maxAggregateQueriesPerQueryType, false);
+        QueryComponent queryComponent = new QueryComponent(maxAggregateQueriesPerQueryType, 0);
         for (QueryAggregate queryAggregate : queryAggregates) {
             String queries = queryAggregate.queries().read();
             if (!queries.equals(AggregateDao.OVERWRITTEN)) {

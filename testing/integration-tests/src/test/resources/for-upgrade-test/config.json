@@ -37,6 +37,7 @@
     "timerWrapperMethods": false,
     "weavingTimer": false,
     "immediatePartialStoreThresholdSeconds": 60,
+    "maxAggregateQueriesPerQueryType": 500,
     "maxTraceEntriesPerTransaction": 2000,
     "maxStackTraceSamplesPerTransaction": 10000,
     "captureThreadInfo": true,

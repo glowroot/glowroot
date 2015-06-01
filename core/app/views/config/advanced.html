@@ -48,10 +48,13 @@
            gt-required="loaded"
            gt-width="7em">
         <div class="help-block">
-          Maximum number of different queries that are aggregated per query type for a given transaction.
-          Also the maximum number of different queries that are aggregated per query type across transactions of a given
-          transaction name (for display on the Transaction Queries tab).
-          This is used to limit memory when there are lots of dynamically created queries.
+          The maximum number of different aggregated queries that are stored per query type across transactions of a
+          given transaction name (for display on the Transaction Queries tab).
+          This is used to limit storage and memory when there are lots of dynamically created queries.
+          More than this number of aggregated queries are stored in memory and then this number of the top queries by
+          time are stored.
+          Specifically, up to 10 times this number are stored in memory for overall aggregates and 2 times this number
+          are stored in memory for aggregates by transaction name.
         </div>
       </div>
       <div gt-form-group

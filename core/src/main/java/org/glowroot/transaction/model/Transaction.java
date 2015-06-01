@@ -40,6 +40,7 @@ import org.glowroot.api.TimerName;
 import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.common.ScheduledRunnable;
+import org.glowroot.config.AdvancedConfigBase;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -395,7 +396,8 @@ public class Transaction {
             queries.put(queryType, queriesForQueryType);
         }
         QueryData queryData = queriesForQueryType.get(queryText);
-        if (queryData == null && queriesForQueryType.size() < maxAggregateQueriesPerQueryType) {
+        if (queryData == null && queriesForQueryType.size() < maxAggregateQueriesPerQueryType
+                * AdvancedConfigBase.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER) {
             queryData = new QueryData();
             queriesForQueryType.put(queryText, queryData);
         }
