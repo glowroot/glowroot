@@ -231,11 +231,13 @@ public class GlowrootModule {
 
     @OnlyUsedByTests
     public void close() throws Exception {
-        scheduledExecutor.shutdownNow();
         uiModule.close();
         collectorModule.close();
         transactionModule.close();
         storageModule.close();
+        // close scheduled executor last to prevent exceptions due to above modules attempting to
+        // use a shutdown executor
+        scheduledExecutor.shutdownNow();
         // finally, close logger
         if (shouldOverrideLogging()) {
             ((LoggerContext) LoggerFactory.getILoggerFactory()).reset();
