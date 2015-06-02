@@ -208,7 +208,7 @@ glowroot.controller('TracesCtrl', [
           from: plot.getAxes().xaxis.options.min,
           to: plot.getAxes().xaxis.options.max
         };
-        charts.updateRange($scope, range.from, range.to, false, zoomingOut);
+        charts.updateRange($scope, range.from, range.to, zoomingOut);
         postUpdateRange(range);
         if (zoomingOut) {
           // scroll zooming out, reset duration limits
@@ -240,7 +240,7 @@ glowroot.controller('TracesCtrl', [
           from: ranges.xaxis.from,
           to: ranges.xaxis.to
         };
-        charts.updateRange($scope, range.from, range.to, true);
+        charts.updateRange($scope, range.from, range.to, false, true, true);
         postUpdateRange(range);
         updateFilter(range.from, range.to, ranges.yaxis.from, ranges.yaxis.to);
         if ($scope.chartLimitExceeded) {
@@ -270,7 +270,7 @@ glowroot.controller('TracesCtrl', [
         from: currMin - currRange / 2,
         to: currMax + currRange / 2
       };
-      charts.updateRange($scope, range.from, range.to, false, true);
+      charts.updateRange($scope, range.from, range.to, true);
       postUpdateRange(range);
       if ($scope.traceChartFrom && $scope.traceChartTo) {
         // use updated $scope.chartFrom/To as bounds for from/to:

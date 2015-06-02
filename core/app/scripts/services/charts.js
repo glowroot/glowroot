@@ -49,7 +49,7 @@ glowroot.factory('charts', [
         $scope.$apply(function () {
           var from = plot.getAxes().xaxis.options.min;
           var to = plot.getAxes().xaxis.options.max;
-          updateRange($scope, from, to, false, zoomingOut);
+          updateRange($scope, from, to, zoomingOut);
         });
       });
 
@@ -58,7 +58,7 @@ glowroot.factory('charts', [
           chartState.plot.clearSelection();
           var from = ranges.xaxis.from;
           var to = ranges.xaxis.to;
-          updateRange($scope, from, to, true);
+          updateRange($scope, from, to, false, true);
         });
       });
 
@@ -66,7 +66,7 @@ glowroot.factory('charts', [
         var currMin = $scope.chartFrom;
         var currMax = $scope.chartTo;
         var currRange = currMax - currMin;
-        updateRange($scope, currMin - currRange / 2, currMax + currRange / 2, false, true);
+        updateRange($scope, currMin - currRange / 2, currMax + currRange / 2, true);
       };
 
       $scope.refresh = function () {
@@ -75,7 +75,7 @@ glowroot.factory('charts', [
       };
     }
 
-    function updateRange($scope, from, to, selection, zoomingOut) {
+    function updateRange($scope, from, to, zoomingOut, selection, selectionNearestLarger) {
       // force chart refresh even if chartFrom/chartTo don't change (e.g. trying to zoom in beyond single interval)
       $scope.$parent.chartRefresh++;
 
@@ -88,7 +88,7 @@ glowroot.factory('charts', [
       var dataPointIntervalMillis = getDataPointIntervalMillis(from, to);
       var revisedFrom;
       var revisedTo;
-      if (zoomingOut || selection) {
+      if (zoomingOut || selectionNearestLarger) {
         revisedFrom = Math.floor(from / dataPointIntervalMillis) * dataPointIntervalMillis;
         revisedTo = Math.ceil(to / dataPointIntervalMillis) * dataPointIntervalMillis;
         var revisedDataPointIntervalMillis = getDataPointIntervalMillis(revisedFrom, revisedTo);
