@@ -199,14 +199,14 @@ public class TraceDao implements TraceRepository {
     }
 
     public ImmutableList<TraceErrorPoint> readErrorPoints(ErrorMessageQuery query,
-            long resolutionMillis) throws SQLException {
+            long resolutionMillis, long liveCaptureTime) throws SQLException {
         // need ".0" to force double result
         String captureTimeSql = castUntainted(
                 "ceil(capture_time / " + resolutionMillis + ".0) * " + resolutionMillis);
         ParameterizedSql parameterizedSql = buildErrorMessageQuery(query,
                 "select " + captureTimeSql + ", count(*) from trace",
                 "group by " + captureTimeSql + " order by " + captureTimeSql);
-        return dataSource.query(parameterizedSql.sql(), new ErrorPointRowMapper(),
+        return dataSource.query(parameterizedSql.sql(), new ErrorPointRowMapper(liveCaptureTime),
                 parameterizedSql.argsAsArray());
     }
 
@@ -373,9 +373,13 @@ public class TraceDao implements TraceRepository {
     }
 
     private static class ErrorPointRowMapper implements RowMapper<TraceErrorPoint> {
+        private final long liveCaptureTime;
+        private ErrorPointRowMapper(long liveCaptureTime) {
+            this.liveCaptureTime = liveCaptureTime;
+        }
         @Override
         public TraceErrorPoint mapRow(ResultSet resultSet) throws SQLException {
-            long captureTime = resultSet.getLong(1);
+            long captureTime = Math.min(resultSet.getLong(1), liveCaptureTime);
             long errorCount = resultSet.getLong(2);
             return TraceErrorPoint.of(captureTime, errorCount);
         }

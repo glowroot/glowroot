@@ -124,7 +124,7 @@ class TransactionCommonService {
     }
 
     List<Aggregate> getAggregates(String transactionType, @Nullable String transactionName,
-            long from, long to) throws Exception {
+            long from, long to, long liveCaptureTime) throws Exception {
         int rollupLevel = getRollupLevel(from, to);
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(from, to);
@@ -134,21 +134,22 @@ class TransactionCommonService {
         if (rollupLevel == 0) {
             aggregates = Lists.newArrayList(aggregates);
             aggregates.addAll(getLiveAggregates(transactionType, transactionName,
-                    orderedIntervalCollectors));
+                    orderedIntervalCollectors, liveCaptureTime));
             return aggregates;
         }
-        long revisedFrom = revisedTo - AggregateDao.ROLLUP_THRESHOLD_MILLIS;
+        long nonRolledUpFrom = from;
         if (!aggregates.isEmpty()) {
             long lastRolledUpTime = aggregates.get(aggregates.size() - 1).captureTime();
-            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
+            nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<Aggregate> orderedNonRolledUpAggregates = Lists.newArrayList();
         orderedNonRolledUpAggregates.addAll(getAggregatesFromDao(transactionType, transactionName,
-                revisedFrom, revisedTo, 0));
+                nonRolledUpFrom, revisedTo, 0));
         orderedNonRolledUpAggregates.addAll(getLiveAggregates(transactionType, transactionName,
-                orderedIntervalCollectors));
+                orderedIntervalCollectors, liveCaptureTime));
         aggregates = Lists.newArrayList(aggregates);
-        aggregates.addAll(rollUp(transactionType, transactionName, orderedNonRolledUpAggregates));
+        aggregates.addAll(rollUp(transactionType, transactionName, orderedNonRolledUpAggregates,
+                liveCaptureTime));
         return aggregates;
     }
 
@@ -210,14 +211,14 @@ class TransactionCommonService {
                     orderedIntervalCollectors));
             return queryAggregates;
         }
-        long revisedFrom = revisedTo - AggregateDao.ROLLUP_THRESHOLD_MILLIS;
+        long nonRolledUpFrom = from;
         if (!queryAggregates.isEmpty()) {
             long lastRolledUpTime = queryAggregates.get(queryAggregates.size() - 1).captureTime();
-            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
+            nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<QueryAggregate> orderedNonRolledUpQueryAggregates = Lists.newArrayList();
         orderedNonRolledUpQueryAggregates.addAll(getQueryAggregatesFromDao(transactionType,
-                transactionName, revisedFrom, revisedTo, 0));
+                transactionName, nonRolledUpFrom, revisedTo, 0));
         orderedNonRolledUpQueryAggregates.addAll(getLiveQueryAggregates(transactionType,
                 transactionName, orderedIntervalCollectors));
         queryAggregates = Lists.newArrayList(queryAggregates);
@@ -254,15 +255,15 @@ class TransactionCommonService {
                     orderedIntervalCollectors));
             return profileAggregates;
         }
-        long revisedFrom = revisedTo - AggregateDao.ROLLUP_THRESHOLD_MILLIS;
+        long nonRolledUpFrom = from;
         if (!profileAggregates.isEmpty()) {
-            long lastRolledUpTime = profileAggregates.get(profileAggregates.size() - 1)
-                    .captureTime();
-            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
+            long lastRolledUpTime =
+                    profileAggregates.get(profileAggregates.size() - 1).captureTime();
+            nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<ProfileAggregate> orderedNonRolledUpProfileAggregates = Lists.newArrayList();
         orderedNonRolledUpProfileAggregates.addAll(getProfileAggregatesFromDao(transactionType,
-                transactionName, revisedFrom, revisedTo, 0));
+                transactionName, nonRolledUpFrom, revisedTo, 0));
         orderedNonRolledUpProfileAggregates.addAll(getLiveProfileAggregates(transactionType,
                 transactionName, orderedIntervalCollectors));
         profileAggregates = Lists.newArrayList(profileAggregates);
@@ -283,7 +284,7 @@ class TransactionCommonService {
     }
 
     private List<Aggregate> rollUp(String transactionType, @Nullable String transactionName,
-            List<Aggregate> orderedNonRolledUpAggregates) throws Exception {
+            List<Aggregate> orderedNonRolledUpAggregates, long liveCaptureTime) throws Exception {
         List<Aggregate> rolledUpAggregates = Lists.newArrayList();
         ScratchBuffer scratchBuffer = new ScratchBuffer();
         MergedAggregate currMergedAggregate = null;
@@ -293,16 +294,16 @@ class TransactionCommonService {
                     / (double) fixedRollupMillis) * fixedRollupMillis;
             if (rollupTime != currRollupTime && currMergedAggregate != null) {
                 rolledUpAggregates.add(currMergedAggregate.toAggregate(scratchBuffer));
-                currMergedAggregate = new MergedAggregate(0, transactionType, transactionName,
-                        configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
+                currMergedAggregate = new MergedAggregate(Math.min(rollupTime, liveCaptureTime),
+                        transactionType, transactionName, configService.getAdvancedConfig()
+                                .maxAggregateQueriesPerQueryType());
             }
             if (currMergedAggregate == null) {
-                currMergedAggregate = new MergedAggregate(0, transactionType, transactionName,
-                        configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
+                currMergedAggregate = new MergedAggregate(Math.min(rollupTime, liveCaptureTime),
+                        transactionType, transactionName, configService.getAdvancedConfig()
+                                .maxAggregateQueriesPerQueryType());
             }
             currRollupTime = rollupTime;
-            // capture time is the largest of the ordered aggregate capture times
-            currMergedAggregate.setCaptureTime(nonRolledUpAggregate.captureTime());
             currMergedAggregate.addTotalMicros(nonRolledUpAggregate.totalMicros());
             currMergedAggregate.addErrorCount(nonRolledUpAggregate.errorCount());
             currMergedAggregate.addTransactionCount(nonRolledUpAggregate.transactionCount());
@@ -379,12 +380,12 @@ class TransactionCommonService {
     }
 
     private static List<Aggregate> getLiveAggregates(String transactionType,
-            @Nullable String transactionName, List<AggregateIntervalCollector> intervalCollectors)
-            throws IOException {
+            @Nullable String transactionName, List<AggregateIntervalCollector> intervalCollectors,
+            long liveCaptureTime) throws IOException {
         List<Aggregate> aggregates = Lists.newArrayList();
         for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
-            Aggregate liveAggregate =
-                    intervalCollector.getLiveAggregate(transactionType, transactionName);
+            Aggregate liveAggregate = intervalCollector.getLiveAggregate(transactionType,
+                    transactionName, liveCaptureTime);
             if (liveAggregate != null) {
                 aggregates.add(liveAggregate);
             }

@@ -248,7 +248,8 @@ public class AggregateDao {
                 + " transaction_count, total_cpu_micros, total_blocked_micros,"
                 + " total_waited_micros, total_allocated_kbytes, histogram, timers"
                 + " from transaction_aggregate" + rollupSuffix + " where transaction_type = ?"
-                + " and transaction_name = ? and capture_time >= ? and capture_time <= ?",
+                + " and transaction_name = ? and capture_time >= ? and capture_time <= ?"
+                + " order by capture_time",
                 new AggregateRowMapper(transactionType, transactionName), transactionType,
                 transactionName, captureTimeFrom, captureTimeTo);
     }

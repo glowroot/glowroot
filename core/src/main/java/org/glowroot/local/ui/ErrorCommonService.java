@@ -90,7 +90,7 @@ class ErrorCommonService {
     }
 
     List<ErrorPoint> readErrorPoints(String transactionType, @Nullable String transactionName,
-            long from, long to) throws Exception {
+            long from, long to, long liveCaptureTime) throws Exception {
         int rollupLevel = getRollupLevel(from, to);
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(from, to);
@@ -100,21 +100,21 @@ class ErrorCommonService {
         if (rollupLevel == 0) {
             errorPoints = Lists.newArrayList(errorPoints);
             errorPoints.addAll(getLiveErrorPoints(transactionType, transactionName,
-                    orderedIntervalCollectors));
+                    orderedIntervalCollectors, liveCaptureTime));
             return errorPoints;
         }
-        long revisedFrom = revisedTo - AggregateDao.ROLLUP_THRESHOLD_MILLIS;
+        long nonRolledUpFrom = from;
         if (!errorPoints.isEmpty()) {
             long lastRolledUpTime = errorPoints.get(errorPoints.size() - 1).captureTime();
-            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
+            nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<ErrorPoint> orderedNonRolledUpErrorPoints = Lists.newArrayList();
         orderedNonRolledUpErrorPoints.addAll(readErrorPointsFromDao(transactionType,
-                transactionName, revisedFrom, revisedTo, 0));
+                transactionName, nonRolledUpFrom, revisedTo, 0));
         orderedNonRolledUpErrorPoints.addAll(getLiveErrorPoints(transactionType, transactionName,
-                orderedIntervalCollectors));
+                orderedIntervalCollectors, liveCaptureTime));
         errorPoints = Lists.newArrayList(errorPoints);
-        errorPoints.addAll(rollUp(orderedNonRolledUpErrorPoints));
+        errorPoints.addAll(rollUp(orderedNonRolledUpErrorPoints, liveCaptureTime));
         return errorPoints;
     }
 
@@ -126,29 +126,28 @@ class ErrorCommonService {
         return aggregateCollector.getOrderedIntervalCollectorsInRange(from, to);
     }
 
-    private List<ErrorPoint> rollUp(List<ErrorPoint> orderedNonRolledUpErrorPoints) {
+    private List<ErrorPoint> rollUp(List<ErrorPoint> orderedNonRolledUpErrorPoints,
+            long liveCaptureTime) {
         List<ErrorPoint> rolledUpErrorPoints = Lists.newArrayList();
         long currRollupTime = Long.MIN_VALUE;
-        long currCaptureTime = Long.MIN_VALUE;
         long currErrorCount = 0;
         long currTransactionCount = 0;
         for (ErrorPoint errorPoint : orderedNonRolledUpErrorPoints) {
             long rollupTime = (long) Math.ceil(errorPoint.captureTime()
                     / (double) fixedRollupMillis) * fixedRollupMillis;
             if (rollupTime != currRollupTime && currTransactionCount != 0) {
-                rolledUpErrorPoints.add(
-                        ErrorPoint.of(currCaptureTime, currErrorCount, currTransactionCount));
+                rolledUpErrorPoints.add(ErrorPoint.of(Math.min(currRollupTime, liveCaptureTime),
+                        currErrorCount, currTransactionCount));
                 currErrorCount = 0;
                 currTransactionCount = 0;
             }
             currRollupTime = rollupTime;
-            currCaptureTime = errorPoint.captureTime();
             currErrorCount += errorPoint.errorCount();
             currTransactionCount += errorPoint.transactionCount();
         }
         if (currTransactionCount != 0) {
-            rolledUpErrorPoints.add(
-                    ErrorPoint.of(currCaptureTime, currErrorCount, currTransactionCount));
+            rolledUpErrorPoints.add(ErrorPoint.of(Math.min(currRollupTime, liveCaptureTime),
+                    currErrorCount, currTransactionCount));
         }
         return rolledUpErrorPoints;
     }
@@ -184,12 +183,12 @@ class ErrorCommonService {
     }
 
     private static List<ErrorPoint> getLiveErrorPoints(String transactionType,
-            @Nullable String transactionName, List<AggregateIntervalCollector> intervalCollectors)
-            throws IOException {
+            @Nullable String transactionName, List<AggregateIntervalCollector> intervalCollectors,
+            long liveCaptureTime) throws IOException {
         List<ErrorPoint> errorPoints = Lists.newArrayList();
         for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
-            ErrorPoint liveErrorPoint =
-                    intervalCollector.getLiveErrorPoint(transactionType, transactionName);
+            ErrorPoint liveErrorPoint = intervalCollector.getLiveErrorPoint(transactionType,
+                    transactionName, liveCaptureTime);
             if (liveErrorPoint != null) {
                 errorPoints.add(liveErrorPoint);
             }

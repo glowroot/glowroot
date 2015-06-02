@@ -27,7 +27,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharSource;
 
-import org.glowroot.common.Clock;
 import org.glowroot.common.ScratchBuffer;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.Transaction;
@@ -37,14 +36,12 @@ public class AggregateIntervalCollector {
     private final long endTime;
     private final Map<String, IntervalTypeCollector> typeCollectors = Maps.newConcurrentMap();
     private final int maxAggregateQueriesPerQueryType;
-    private final Clock clock;
 
     AggregateIntervalCollector(long currentTime, long fixedAggregateIntervalMillis,
-            int maxAggregateQueriesPerQueryType, Clock clock) {
+            int maxAggregateQueriesPerQueryType) {
         endTime = (long) Math.ceil(currentTime / (double) fixedAggregateIntervalMillis)
                 * fixedAggregateIntervalMillis;
         this.maxAggregateQueriesPerQueryType = maxAggregateQueriesPerQueryType;
-        this.clock = clock;
     }
 
     public long getEndTime() {
@@ -126,25 +123,25 @@ public class AggregateIntervalCollector {
     }
 
     public @Nullable Aggregate getLiveAggregate(String transactionType,
-            @Nullable String transactionName) throws IOException {
+            @Nullable String transactionName, long liveCaptureTime) throws IOException {
         AggregateBuilder aggregateBuilder = getAggregateBuilder(transactionType, transactionName);
         if (aggregateBuilder == null) {
             return null;
         }
         synchronized (aggregateBuilder) {
-            long capturedAt = Math.min(clock.currentTimeMillis(), endTime);
+            long capturedAt = Math.min(liveCaptureTime, endTime);
             return aggregateBuilder.build(capturedAt, new ScratchBuffer());
         }
     }
 
     public @Nullable ErrorPoint getLiveErrorPoint(String transactionType,
-            @Nullable String transactionName) throws IOException {
+            @Nullable String transactionName, long liveCaptureTime) throws IOException {
         AggregateBuilder aggregateBuilder = getAggregateBuilder(transactionType, transactionName);
         if (aggregateBuilder == null) {
             return null;
         }
         synchronized (aggregateBuilder) {
-            long capturedAt = Math.min(clock.currentTimeMillis(), endTime);
+            long capturedAt = Math.min(liveCaptureTime, endTime);
             return aggregateBuilder.buildErrorPoint(capturedAt);
         }
     }

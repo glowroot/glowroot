@@ -82,9 +82,13 @@ class ErrorJsonService {
                 .addAllExcludes(request.exclude())
                 .limit(request.errorMessageLimit())
                 .build();
+        // need live capture time to match up between unfilteredErrorPoints and traceErrorPoints
+        // so that transactionCountMap.get(traceErrorPoint.captureTime()) will work
+        long liveCaptureTime = clock.currentTimeMillis();
         QueryResult<ErrorMessageCount> queryResult = traceDao.readErrorMessageCounts(query);
         List<ErrorPoint> unfilteredErrorPoints = errorCommonService.readErrorPoints(
-                query.transactionType(), query.transactionName(), query.from(), query.to());
+                query.transactionType(), query.transactionName(), query.from(), query.to(),
+                liveCaptureTime);
         DataSeries dataSeries = new DataSeries(null);
         Map<Long, Long[]> dataSeriesExtra = Maps.newHashMap();
         if (query.includes().isEmpty() && query.excludes().isEmpty()) {
@@ -95,8 +99,8 @@ class ErrorJsonService {
                 transactionCountMap.put(unfilteredErrorPoint.captureTime(),
                         unfilteredErrorPoint.transactionCount());
             }
-            ImmutableList<TraceErrorPoint> traceErrorPoints =
-                    traceDao.readErrorPoints(query, getDataPointIntervalMillis(query));
+            ImmutableList<TraceErrorPoint> traceErrorPoints = traceDao.readErrorPoints(query,
+                    getDataPointIntervalMillis(query), liveCaptureTime);
             List<ErrorPoint> errorPoints = Lists.newArrayList();
             for (TraceErrorPoint traceErrorPoint : traceErrorPoints) {
                 Long transactionCount = transactionCountMap.get(traceErrorPoint.captureTime());
@@ -120,7 +124,6 @@ class ErrorJsonService {
         jg.close();
         return sb.toString();
     }
-
     @GET("/backend/error/summaries")
     String getSummaries(String queryString) throws Exception {
         ErrorSummaryRequest request = QueryStrings.decode(queryString, ErrorSummaryRequest.class);
@@ -182,8 +185,7 @@ class ErrorJsonService {
             if (lastErrorPoint == null) {
                 // first aggregate
                 dataSeriesHelper.addInitialUpslopeIfNeeded(request.from(),
-                        errorPoint.captureTime(),
-                        dataSeries);
+                        errorPoint.captureTime(), dataSeries);
             } else {
                 dataSeriesHelper.addGapIfNeeded(lastErrorPoint.captureTime(),
                         errorPoint.captureTime(), dataSeries);

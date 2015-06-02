@@ -90,8 +90,10 @@ class TransactionJsonService {
         TransactionDataRequest request =
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
 
+        long liveCaptureTime = clock.currentTimeMillis();
         List<Aggregate> aggregates = transactionCommonService.getAggregates(
-                request.transactionType(), request.transactionName(), request.from(), request.to());
+                request.transactionType(), request.transactionName(), request.from(), request.to(),
+                liveCaptureTime);
         List<DataSeries> dataSeriesList = getDataSeriesForOverviewChart(request, aggregates);
         Map<Long, Long> transactionCounts = getTransactionCounts(aggregates);
         if (!aggregates.isEmpty() && aggregates.get(0).captureTime() == request.from()) {
@@ -126,8 +128,10 @@ class TransactionJsonService {
         TransactionDataRequest request =
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
 
+        long liveCaptureTime = clock.currentTimeMillis();
         List<Aggregate> aggregates = transactionCommonService.getAggregates(
-                request.transactionType(), request.transactionName(), request.from(), request.to());
+                request.transactionType(), request.transactionName(), request.from(), request.to(),
+                liveCaptureTime);
         List<DataSeries> dataSeriesList = getDataSeriesForMetricsChart(request, aggregates);
         Map<Long, Long> transactionCounts = getTransactionCounts(aggregates);
         if (!aggregates.isEmpty() && aggregates.get(0).captureTime() == request.from()) {

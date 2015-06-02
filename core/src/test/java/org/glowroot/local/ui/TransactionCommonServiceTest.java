@@ -55,10 +55,10 @@ public class TransactionCommonServiceTest {
         ConfigService configService = mock(ConfigService.class);
         when(configService.getAdvancedConfig()).thenReturn(AdvancedConfig.builder().build());
         TransactionCommonService transactionCommonService =
-                new TransactionCommonService(aggregateDao, null, configService, 300);
+                new TransactionCommonService(aggregateDao, null, configService, 15);
         // when
         List<Aggregate> aggregates =
-                transactionCommonService.getAggregates("a type", null, 0, 3600001);
+                transactionCommonService.getAggregates("a type", null, 0, 3600001, Long.MAX_VALUE);
         // then
         assertThat(aggregates).hasSize(2);
         Aggregate aggregate1 = aggregates.get(0);
@@ -66,6 +66,6 @@ public class TransactionCommonServiceTest {
         assertThat(aggregate1.transactionType()).isEqualTo("a type");
         assertThat(aggregate1.captureTime()).isEqualTo(15000);
         assertThat(aggregate2.transactionType()).isEqualTo("a type");
-        assertThat(aggregate2.captureTime()).isEqualTo(20000);
+        assertThat(aggregate2.captureTime()).isEqualTo(30000);
     }
 }
