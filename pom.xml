@@ -275,7 +275,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>2.10.2</version>
+          <version>2.10.3</version>
         </plugin>
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
@@ -303,6 +303,8 @@
           <version>2.6</version>
         </plugin>
         <plugin>
+          <!-- TODO upgrade to 0.7.5.201505241946 (or later) after sonar issue is fixed
+               http://jira.sonarsource.com/browse/SONARJAVA-1091 -->
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
           <version>0.7.4.201502262128</version>
@@ -406,13 +408,13 @@
       <properties>
         <checker.qual.group.id>org.checkerframework</checker.qual.group.id>
         <checker.qual.artifact.id>checker-qual</checker.qual.artifact.id>
-        <checker.qual.version>1.9.1</checker.qual.version>
+        <checker.qual.version>1.9.2</checker.qual.version>
       </properties>
       <dependencies>
         <dependency>
           <groupId>org.checkerframework</groupId>
           <artifactId>checker</artifactId>
-          <version>1.9.1</version>
+          <version>1.9.2</version>
           <optional>true</optional>
         </dependency>
         <dependency>

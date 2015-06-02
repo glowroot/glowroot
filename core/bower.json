@@ -3,9 +3,9 @@
   "dependencies": {
     "angular": "1.3.15",
     "angular-ui-bootstrap": "0.13.0",
-    "angular-ui-router": "0.2.14",
+    "angular-ui-router": "0.2.15",
     "bootstrap": "3.3.4",
-    "bootstrap-select": "ea1350c6303d8d3979c040f61adbed3bc65ae3b0",
+    "bootstrap-select": "1.7.2",
     "d3": "2.10.3",
     "eonasdan-bootstrap-datetimepicker": "4.7.14",
     "flot": "trask/flot#a1017f8b7807ffe2b94a5c54bea2b32cd5f5987b",
@@ -15,7 +15,7 @@
     "jquery": "2.1.4",
     "moment": "2.10.3",
     "sequeljs": "trask/sequeljs#b9165eb1defa6d63ec457b853369cfdbe9a1e99d",
-    "spinjs": "2.1.0",
+    "spinjs": "2.3.0",
     "stackvis": "trask/node-stackvis#1b4231badff79e31d29cf487993bbb23b586d9d2"
   }
 }
