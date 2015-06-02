@@ -103,22 +103,22 @@ class TransactionCommonService {
                 orderedIntervalCollectors);
     }
 
-    boolean shouldHaveTraces(String transactionType, @Nullable String transactionName, long from,
+    boolean shouldHaveQueries(String transactionType, @Nullable String transactionName, long from,
             long to) throws SQLException {
         if (transactionName == null) {
-            return aggregateDao.shouldHaveOverallTraces(transactionType, from, to);
+            return aggregateDao.shouldHaveOverallQueries(transactionType, from, to);
         } else {
-            return aggregateDao.shouldHaveTransactionTraces(transactionType, transactionName, from,
-                    to);
+            return aggregateDao.shouldHaveTransactionQueries(transactionType, transactionName,
+                    from, to);
         }
     }
 
-    boolean shouldHaveErrorTraces(String transactionType, @Nullable String transactionName,
-            long from, long to) throws SQLException {
+    boolean shouldHaveProfile(String transactionType, @Nullable String transactionName, long from,
+            long to) throws SQLException {
         if (transactionName == null) {
-            return aggregateDao.shouldHaveOverallErrorTraces(transactionType, from, to);
+            return aggregateDao.shouldHaveOverallProfile(transactionType, from, to);
         } else {
-            return aggregateDao.shouldHaveTransactionErrorTraces(transactionType, transactionName,
+            return aggregateDao.shouldHaveTransactionProfile(transactionType, transactionName,
                     from, to);
         }
     }
@@ -311,7 +311,6 @@ class TransactionCommonService {
             currMergedAggregate.addTotalWaitedMicros(nonRolledUpAggregate.totalWaitedMicros());
             currMergedAggregate.addTotalAllocatedKBytes(
                     nonRolledUpAggregate.totalAllocatedKBytes());
-            currMergedAggregate.addTraceCount(nonRolledUpAggregate.traceCount());
             currMergedAggregate.addTimers(nonRolledUpAggregate.timers());
             currMergedAggregate.addHistogram(nonRolledUpAggregate.histogram());
         }

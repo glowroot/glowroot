@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.instrument.Instrumentation;
 import java.nio.channels.FileLock;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -35,6 +36,7 @@ import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -293,6 +295,16 @@ public class GlowrootModule {
         @VisibleForTesting
         void setInstance(TransactionCollector instance) {
             this.instance = instance;
+        }
+
+        @Override
+        public Collection<Transaction> getPendingTransactions() {
+            return ImmutableList.of();
+        }
+
+        @Override
+        public boolean shouldStore(Transaction transaction) {
+            return false;
         }
     }
 }

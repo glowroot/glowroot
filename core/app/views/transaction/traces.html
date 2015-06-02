@@ -73,12 +73,17 @@
        style="display: table;">
     <div style="display: table-cell; text-align: center; vertical-align: middle;">
       <div class="gt-chart-no-data"
-           ng-hide="tabBarData.tracesExpired">
+           ng-hide="showExpiredMessage">
         No data
       </div>
       <div class="gt-chart-no-data"
-           ng-show="tabBarData.tracesExpired">
-        *There were traces but they have expired, see <a href="config/storage">storage configuration</a>
+           ng-show="showExpiredMessage">
+        *There were traces but they have expired, see
+        <!-- pointer-events: auto is to override pointer-events: none from gt-chart-panel -->
+        <a href="config/storage#capped-database-size"
+           style="pointer-events: auto;">
+          Configuration &gt; Storage &gt; Capped database size
+        </a>
       </div>
     </div>
   </div>

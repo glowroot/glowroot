@@ -37,17 +37,19 @@ import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 
 import org.glowroot.api.internal.ReadableErrorMessage;
-import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
+import org.glowroot.config.ConfigService;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.StringComparator;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.store.TracePoint;
 import org.glowroot.local.store.TracePointQuery;
+import org.glowroot.transaction.TransactionCollector;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.transaction.model.Transaction;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.HOURS;
 
 @JsonService
 class TracePointJsonService {
@@ -58,15 +60,18 @@ class TracePointJsonService {
 
     private final TraceDao traceDao;
     private final TransactionRegistry transactionRegistry;
-    private final TransactionCollectorImpl transactionCollector;
+    private final TransactionCollector transactionCollector;
+    private final ConfigService configService;
     private final Ticker ticker;
     private final Clock clock;
 
     TracePointJsonService(TraceDao traceDao, TransactionRegistry transactionRegistry,
-            TransactionCollectorImpl transactionCollector, Ticker ticker, Clock clock) {
+            TransactionCollector transactionCollector, ConfigService configService, Ticker ticker,
+            Clock clock) {
         this.traceDao = traceDao;
         this.transactionRegistry = transactionRegistry;
         this.transactionCollector = transactionCollector;
+        this.configService = configService;
         this.ticker = ticker;
         this.clock = clock;
     }
@@ -102,8 +107,10 @@ class TracePointJsonService {
             QueryResult<TracePoint> queryResult = getStoredAndPendingPoints(captureActiveTraces);
             List<TracePoint> points = queryResult.records();
             removeDuplicatesBetweenActiveTracesAndPoints(activeTraces, points);
+            boolean expired = points.isEmpty() && query.to() < clock.currentTimeMillis()
+                    - HOURS.toMillis(configService.getStorageConfig().traceExpirationHours());
             return writeResponse(points, activeTraces, captureTime, captureTick,
-                    queryResult.moreAvailable());
+                    queryResult.moreAvailable(), expired);
         }
 
         private boolean shouldCaptureActiveTraces() {
@@ -323,8 +330,8 @@ class TracePointJsonService {
         }
 
         private String writeResponse(List<TracePoint> points, List<Transaction> activeTraces,
-                long captureTime, long captureTick, boolean limitExceeded) throws IOException,
-                SQLException {
+                long captureTime, long captureTick, boolean limitExceeded, boolean expired)
+                throws IOException, SQLException {
             StringBuilder sb = new StringBuilder();
             JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
             jg.writeStartObject();
@@ -362,6 +369,9 @@ class TracePointJsonService {
             jg.writeEndArray();
             if (limitExceeded) {
                 jg.writeBooleanField("limitExceeded", true);
+            }
+            if (expired) {
+                jg.writeBooleanField("expired", true);
             }
             jg.writeEndObject();
             jg.close();

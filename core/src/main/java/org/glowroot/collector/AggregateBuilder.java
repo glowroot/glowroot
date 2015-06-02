@@ -52,7 +52,6 @@ class AggregateBuilder {
     private @Nullable Long totalBlockedTime;
     private @Nullable Long totalWaitedTime;
     private @Nullable Long totalAllocatedBytes;
-    private long traceCount;
     // histogram uses microseconds to reduce (or at least simplify) bucket allocations
     private final LazyHistogram lazyHistogram = new LazyHistogram();
     private final AggregateTimer syntheticRootTimer = AggregateTimer.createSyntheticRootTimer();
@@ -75,9 +74,6 @@ class AggregateBuilder {
         totalMicros += durationMicros;
         if (transaction.getErrorMessage() != null) {
             errorCount++;
-        }
-        if (transaction.willBeStored()) {
-            traceCount++;
         }
         transactionCount++;
         ThreadInfoData threadInfo = transaction.getThreadInfo();
@@ -120,7 +116,6 @@ class AggregateBuilder {
                 .totalBlockedMicros(nullAwareNanosToMicros(totalBlockedTime))
                 .totalWaitedMicros(nullAwareNanosToMicros(totalWaitedTime))
                 .totalAllocatedKBytes(nullAwareBytesToKBytes(totalAllocatedBytes))
-                .traceCount(traceCount)
                 .histogram(histogram)
                 .timers(mapper.writeValueAsString(syntheticRootTimer))
                 .queries(getQueriesJson())

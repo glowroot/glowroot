@@ -46,7 +46,7 @@ public class StorageConfigPage {
     }
 
     public WebElement getCappedDatabaseSizeTextField() {
-        return withWait(xpath("//div[@gt-label='Profiles/trace entries capped db']//input"));
+        return withWait(xpath("//div[@gt-label='Capped database size']//input"));
     }
 
     public void clickSaveButton() {

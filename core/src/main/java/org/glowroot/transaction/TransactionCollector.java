@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.glowroot.transaction;
 
+import java.util.Collection;
+
 import org.glowroot.transaction.model.Transaction;
 
 public interface TransactionCollector {
@@ -22,4 +24,10 @@ public interface TransactionCollector {
     void onCompletedTransaction(Transaction transaction);
 
     void storePartialTrace(Transaction transaction);
+
+    // this is only used by the user interface
+    Collection<Transaction> getPendingTransactions();
+
+    // this is only used by the user interface
+    boolean shouldStore(Transaction transaction);
 }

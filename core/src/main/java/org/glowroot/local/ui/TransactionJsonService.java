@@ -43,7 +43,6 @@ import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.AggregateTimer;
 import org.glowroot.collector.LazyHistogram;
 import org.glowroot.collector.QueryComponent.AggregateQuery;
-import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.collector.TransactionSummary;
 import org.glowroot.common.Clock;
 import org.glowroot.common.ObjectMappers;
@@ -52,6 +51,7 @@ import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.store.TransactionSummaryQuery;
+import org.glowroot.transaction.TransactionCollector;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.transaction.model.ProfileNode;
 import org.glowroot.transaction.model.Transaction;
@@ -67,14 +67,14 @@ class TransactionJsonService {
     private final TransactionCommonService transactionCommonService;
     private final TraceDao traceDao;
     private final TransactionRegistry transactionRegistry;
-    private final TransactionCollectorImpl transactionCollector;
+    private final TransactionCollector transactionCollector;
     private final Clock clock;
 
     private final long fixedAggregateIntervalMillis;
     private final long fixedAggregateRollupMillis;
 
     TransactionJsonService(TransactionCommonService transactionCommonService, TraceDao traceDao,
-            TransactionRegistry transactionRegistry, TransactionCollectorImpl transactionCollector,
+            TransactionRegistry transactionRegistry, TransactionCollector transactionCollector,
             Clock clock, long fixedAggregateIntervalSeconds, long fixedAggregateRollupSeconds) {
         this.transactionCommonService = transactionCommonService;
         this.traceDao = traceDao;
@@ -182,6 +182,11 @@ class TransactionJsonService {
                 return Longs.compare(right.totalMicros(), left.totalMicros());
             }
         });
+        if (queryList.isEmpty()
+                && transactionCommonService.shouldHaveQueries(request.transactionType(),
+                        request.transactionName(), request.from(), request.to())) {
+            return "{\"expired\":true}";
+        }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeObject(queryList);
@@ -196,6 +201,11 @@ class TransactionJsonService {
         ProfileNode profile = transactionCommonService.getProfile(request.transactionType(),
                 request.transactionName(), request.from(), request.to(),
                 request.truncateLeafPercentage());
+        if (profile.getSampleCount() == 0
+                && transactionCommonService.shouldHaveProfile(request.transactionType(),
+                        request.transactionName(), request.from(), request.to())) {
+            return "{\"expired\":true}";
+        }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeObject(profile);
@@ -259,17 +269,10 @@ class TransactionJsonService {
                 }
             }
         }
-        boolean tracesExpired = false;
-        if (traceCount == 0) {
-            tracesExpired = transactionCommonService.shouldHaveTraces(request.transactionType(),
-                    transactionName, request.from(), request.to());
-        }
-
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeNumberField("traceCount", traceCount);
-        jg.writeBooleanField("tracesExpired", tracesExpired);
         jg.writeEndObject();
         jg.close();
         return sb.toString();

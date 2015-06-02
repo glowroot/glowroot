@@ -35,7 +35,6 @@ public abstract class AggregateBase {
     public abstract @Nullable Long totalWaitedMicros();
     // aggregation uses kbytes to avoid (unlikely) rollover
     public abstract @Nullable Long totalAllocatedKBytes();
-    public abstract long traceCount();
     public abstract byte[] histogram();
     // timers json is always from "synthetic root"
     @JsonRawValue

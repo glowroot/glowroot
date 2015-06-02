@@ -144,7 +144,6 @@ public class AlertingServiceTest {
                 .totalMicros(1000)
                 .errorCount(0)
                 .transactionCount(1)
-                .traceCount(0)
                 .timers("")
                 .histogram(histogram)
                 .build();

@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.Strings;
@@ -53,7 +52,7 @@ public class TransactionCollectorImpl implements TransactionCollector {
     private final ExecutorService executorService;
     private final ConfigService configService;
     private final TraceRepository traceRepository;
-    private final @Nullable AggregateCollector aggregateCollector;
+    private final AggregateCollector aggregateCollector;
     private final Clock clock;
     private final Ticker ticker;
     private final Set<Transaction> pendingTransactions = Sets.newCopyOnWriteArraySet();
@@ -63,8 +62,8 @@ public class TransactionCollectorImpl implements TransactionCollector {
     private int countSinceLastWarning;
 
     TransactionCollectorImpl(ExecutorService executorService, ConfigService configService,
-            TraceRepository traceRepository, @Nullable AggregateCollector aggregateCollector,
-            Clock clock, Ticker ticker) {
+            TraceRepository traceRepository, AggregateCollector aggregateCollector, Clock clock,
+            Ticker ticker) {
         this.executorService = executorService;
         this.configService = configService;
         this.traceRepository = traceRepository;
@@ -73,6 +72,7 @@ public class TransactionCollectorImpl implements TransactionCollector {
         this.ticker = ticker;
     }
 
+    @Override
     public boolean shouldStore(Transaction transaction) {
         if (transaction.isPartiallyStored() || transaction.getErrorMessage() != null) {
             return true;
@@ -95,60 +95,49 @@ public class TransactionCollectorImpl implements TransactionCollector {
         return transaction.getDuration() >= MILLISECONDS.toNanos(traceStoreThresholdMillis);
     }
 
+    @Override
     public Collection<Transaction> getPendingTransactions() {
         return pendingTransactions;
     }
 
     @Override
     public void onCompletedTransaction(final Transaction transaction) {
+
+        transaction.onCompleteCaptureThreadInfo();
         // capture time is calculated by the aggregator because it depends on monotonically
         // increasing capture times so it can flush aggregates without concern for new data
         // arriving with a prior capture time
-        //
-        // this is a reasonable place to get the capture time since this code is still being
-        // executed by the transaction thread
-        boolean store = shouldStore(transaction);
-        final long captureTime;
-        if (aggregateCollector == null) {
-            captureTime = clock.currentTimeMillis();
-        } else {
-            if (store) {
-                transaction.setWillBeStored();
-            }
-            transaction.onCompleteCaptureThreadInfo();
-            captureTime = aggregateCollector.add(transaction);
+        long captureTime = aggregateCollector.add(transaction);
+        if (!shouldStore(transaction)) {
+            return;
         }
-        if (store) {
-            if (aggregateCollector == null) {
-                // wasn't captured above but is needed
-                transaction.onCompleteCaptureThreadInfo();
-            }
-            transaction.onCompleteCaptureGcInfo();
-            transaction.onComplete(captureTime);
-            if (pendingTransactions.size() < PENDING_LIMIT) {
-                pendingTransactions.add(transaction);
-            } else {
-                logPendingLimitWarning();
-                store = false;
-            }
-            Runnable command = new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Trace trace = TraceCreator.createCompletedTrace(transaction);
-                        store(trace, transaction);
-                    } catch (Throwable t) {
-                        logger.error(t.getMessage(), t);
-                    } finally {
-                        pendingTransactions.remove(transaction);
-                    }
+        if (pendingTransactions.size() >= PENDING_LIMIT) {
+            logPendingLimitWarning();
+            return;
+        }
+        pendingTransactions.add(transaction);
+
+        // these onComplete.. methods need to be called inside the transaction thread
+        transaction.onCompleteCaptureGcInfo();
+        transaction.onComplete(captureTime);
+
+        Runnable command = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Trace trace = TraceCreator.createCompletedTrace(transaction);
+                    store(trace, transaction);
+                } catch (Throwable t) {
+                    logger.error(t.getMessage(), t);
+                } finally {
+                    pendingTransactions.remove(transaction);
                 }
-            };
-            if (useSynchronousStore) {
-                command.run();
-            } else {
-                executorService.execute(command);
             }
+        };
+        if (useSynchronousStore) {
+            command.run();
+        } else {
+            executorService.execute(command);
         }
     }
 

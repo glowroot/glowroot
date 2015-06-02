@@ -176,6 +176,12 @@ glowroot.controller('TransactionQueriesCtrl', [
       $http.get('backend/transaction/queries' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.showSpinner--;
+            if (data.expired) {
+              $scope.showExpiredMessage = true;
+              $scope.showQueries = false;
+              $scope.queries = [];
+              return;
+            }
             $scope.showQueries = data.length;
             $scope.queries = data;
             angular.forEach($scope.queries, function (query) {

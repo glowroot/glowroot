@@ -15,18 +15,22 @@
  */
 package org.glowroot.collector;
 
+import java.util.Collection;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Nullable;
 
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
 
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.jvm.JvmModule;
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.transaction.TransactionCollector;
 import org.glowroot.transaction.TransactionRegistry;
+import org.glowroot.transaction.model.Transaction;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -37,7 +41,7 @@ public class CollectorModule {
     private static final long FIXED_GAUGE_INTERVAL_SECONDS =
             Long.getLong("glowroot.internal.gaugeInterval", 5);
 
-    private final TransactionCollectorImpl transactionCollector;
+    private final TransactionCollector transactionCollector;
     private final @Nullable AggregateCollector aggregateCollector;
     private final @Nullable GaugeCollector gaugeCollector;
     private final @Nullable StackTraceCollector stackTraceCollector;
@@ -49,9 +53,13 @@ public class CollectorModule {
             boolean viewerModeEnabled) {
         ConfigService configService = configModule.getConfigService();
         if (viewerModeEnabled) {
+            // ideally there should be no need for CollectorModule or TransactionModule in viewer
+            // mode but viewer mode doesn't seem important enough (at this point) at least to
+            // optimize the code paths and eliminate these (harmless) modules
             aggregateCollector = null;
             gaugeCollector = null;
             stackTraceCollector = null;
+            transactionCollector = new NopTransactionCollector();
         } else {
             aggregateCollector = new AggregateCollector(scheduledExecutor, aggregateRepository,
                     configModule.getConfigService(), FIXED_AGGREGATE_INTERVAL_SECONDS, clock);
@@ -63,15 +71,12 @@ public class CollectorModule {
             gaugeCollector.scheduleAtFixedRate(initialDelay, FIXED_GAUGE_INTERVAL_SECONDS, SECONDS);
             stackTraceCollector = StackTraceCollector.create(transactionRegistry, configService,
                     scheduledExecutor);
+            transactionCollector = new TransactionCollectorImpl(scheduledExecutor, configService,
+                    traceRepository, aggregateCollector, clock, ticker);
         }
-        // ideally there should be no need for CollectorModule or TransactionModule in viewer mode
-        // but viewer mode doesn't seem important enough (at this point) at least to optimize the
-        // code paths and eliminate these (harmless) modules
-        transactionCollector = new TransactionCollectorImpl(scheduledExecutor, configService,
-                traceRepository, aggregateCollector, clock, ticker);
     }
 
-    public TransactionCollectorImpl getTransactionCollector() {
+    public TransactionCollector getTransactionCollector() {
         return transactionCollector;
     }
 
@@ -97,6 +102,25 @@ public class CollectorModule {
         }
         if (stackTraceCollector != null) {
             stackTraceCollector.close();
+        }
+    }
+
+    private static class NopTransactionCollector implements TransactionCollector {
+
+        @Override
+        public void onCompletedTransaction(Transaction transaction) {}
+
+        @Override
+        public void storePartialTrace(Transaction transaction) {}
+
+        @Override
+        public Collection<Transaction> getPendingTransactions() {
+            return ImmutableList.of();
+        }
+
+        @Override
+        public boolean shouldStore(Transaction transaction) {
+            return false;
         }
     }
 }

@@ -29,7 +29,6 @@ import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
 import org.glowroot.collector.AggregateCollector;
-import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.InstrumentationConfig;
 import org.glowroot.local.store.AggregateDao;
@@ -38,6 +37,7 @@ import org.glowroot.local.store.GaugePointDao;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.transaction.AdviceCache;
+import org.glowroot.transaction.TransactionCollector;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.weaving.AnalyzedWorld;
 
@@ -55,7 +55,7 @@ class AdminJsonService {
     private final AdviceCache adviceCache;
     private final AnalyzedWorld analyzedWorld;
     private final @Nullable Instrumentation instrumentation;
-    private final TransactionCollectorImpl transactionCollector;
+    private final TransactionCollector transactionCollector;
     private final DataSource dataSource;
     private final TransactionRegistry transactionRegistry;
 
@@ -63,7 +63,7 @@ class AdminJsonService {
             @Nullable AggregateCollector aggregateCollector, ConfigService configService,
             AdviceCache adviceCache, AnalyzedWorld analyzedWorld,
             @Nullable Instrumentation instrumentation,
-            TransactionCollectorImpl transactionCollector, DataSource dataSource,
+            TransactionCollector transactionCollector, DataSource dataSource,
             TransactionRegistry transactionRegistry) {
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;

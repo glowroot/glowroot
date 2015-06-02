@@ -27,7 +27,6 @@ import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 
 import org.glowroot.collector.CollectorModule;
-import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
 import org.glowroot.common.JavaVersion;
 import org.glowroot.config.ConfigModule;
@@ -41,6 +40,7 @@ import org.glowroot.local.store.MailService;
 import org.glowroot.local.store.StorageModule;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.transaction.TransactionCollector;
 import org.glowroot.transaction.TransactionModule;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.weaving.AnalyzedWorld;
@@ -64,7 +64,7 @@ public class LocalUiModule {
         GaugePointDao gaugePointDao = storageModule.getGaugePointDao();
         DataSource dataSource = storageModule.getDataSource();
         CappedDatabase cappedDatabase = storageModule.getCappedDatabase();
-        TransactionCollectorImpl transactionCollector = collectorModule.getTransactionCollector();
+        TransactionCollector transactionCollector = collectorModule.getTransactionCollector();
         AnalyzedWorld analyzedWorld = transactionModule.getAnalyzedWorld();
 
         TransactionRegistry transactionRegistry = transactionModule.getTransactionRegistry();
@@ -91,7 +91,7 @@ public class LocalUiModule {
                 clock, collectorModule.getFixedAggregateIntervalSeconds(),
                 storageModule.getFixedAggregateRollupSeconds());
         TracePointJsonService tracePointJsonService = new TracePointJsonService(traceDao,
-                transactionRegistry, transactionCollector, ticker, clock);
+                transactionRegistry, transactionCollector, configService, ticker, clock);
         TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);
         TraceDetailHttpService traceDetailHttpService =
                 new TraceDetailHttpService(traceCommonService);
@@ -101,9 +101,8 @@ public class LocalUiModule {
         ErrorCommonService errorCommonService = new ErrorCommonService(
                 aggregateDao, collectorModule.getAggregateCollector(),
                 storageModule.getFixedAggregateRollupSeconds());
-        ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService,
-                transactionCommonService, traceDao, clock,
-                collectorModule.getFixedAggregateIntervalSeconds(),
+        ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService, traceDao,
+                clock, collectorModule.getFixedAggregateIntervalSeconds(),
                 storageModule.getFixedAggregateRollupSeconds());
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
                 gaugePointDao, configService, jvmModule.getThreadAllocatedBytes(),

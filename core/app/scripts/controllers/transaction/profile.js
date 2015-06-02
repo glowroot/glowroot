@@ -58,6 +58,11 @@ glowroot.controller('TransactionProfileCtrl', [
       $http.get('backend/transaction/profile' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.showSpinner--;
+            if (data.expired) {
+              $scope.showExpiredMessage = true;
+              $scope.showProfile = false;
+              return;
+            }
             $scope.showProfile = data.sampleCount;
             if ($scope.showProfile) {
               $scope.sampleCount = data.sampleCount;

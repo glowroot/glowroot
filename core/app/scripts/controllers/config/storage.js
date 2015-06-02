@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular */
+/* global glowroot, angular, $ */
 
 glowroot.controller('ConfigStorageCtrl', [
   '$scope',
   '$http',
+  '$location',
+  '$timeout',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, confirmIfHasChanges, httpErrors) {
+  function ($scope, $http, $location, $timeout, confirmIfHasChanges, httpErrors) {
     // initialize page binding object
     $scope.page = {};
 
@@ -86,5 +88,20 @@ glowroot.controller('ConfigStorageCtrl', [
     $http.get('backend/config/storage')
         .success(onNewData)
         .error(httpErrors.handler($scope));
+
+    // not using gt-form-autofocus-on-first-input in order to handle special case #capped-database-size url
+    var selector = 'input:not(.gt-autofocus-ignore)';
+    if ($location.hash() === 'capped-database-size') {
+      selector = '.gt-capped-database-size input';
+    }
+    var $form = $('.form-horizontal');
+    var unregisterWatch = $scope.$watch(function () {
+      return $form.find(selector).length && $form.find('input').first().is(':visible');
+    }, function (newValue) {
+      if (newValue) {
+        $form.find(selector).first().focus();
+        unregisterWatch();
+      }
+    });
   }
 ]);

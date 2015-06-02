@@ -118,7 +118,7 @@ glowroot.controller('TracesCtrl', [
             }
             var traceCount = data.normalPoints.length + data.errorPoints.length + data.activePoints.length;
             $scope.chartNoData = traceCount === 0;
-            $scope.tracesExpired = data.tracesExpired;
+            $scope.showExpiredMessage = data.expired;
             $scope.chartLimitExceeded = data.limitExceeded;
             $scope.chartLimit = limit;
             // user clicked on Refresh button, need to reset axes

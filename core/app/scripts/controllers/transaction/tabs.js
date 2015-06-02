@@ -47,9 +47,6 @@ glowroot.controller('TransactionTabCtrl', [
       if (!$scope.tabBarData) {
         return '...';
       }
-      if ($scope.tabBarData.tracesExpired) {
-        return '*';
-      }
       if ($scope.activeTraceTabCount !== undefined) {
         return $scope.activeTraceTabCount;
       }
@@ -111,8 +108,7 @@ glowroot.controller('TransactionTabCtrl', [
               return;
             }
             delete $scope.activeTraceTabCount;
-            // set in parent scope so profiles tab and traces tab can access profileExpired and tracesExpired
-            $scope.$parent.tabBarData = data;
+            $scope.tabBarData = data;
           })
           .error(httpErrors.handler($scope));
     }

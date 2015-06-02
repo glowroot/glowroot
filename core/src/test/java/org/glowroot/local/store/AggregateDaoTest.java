@@ -105,7 +105,6 @@ public class AggregateDaoTest {
                 .totalMicros(1000000)
                 .errorCount(0)
                 .transactionCount(10)
-                .traceCount(0)
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build();
@@ -117,7 +116,6 @@ public class AggregateDaoTest {
                 .totalMicros(100000)
                 .errorCount(0)
                 .transactionCount(1)
-                .traceCount(0)
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build());
@@ -128,7 +126,6 @@ public class AggregateDaoTest {
                 .totalMicros(300000)
                 .errorCount(0)
                 .transactionCount(2)
-                .traceCount(0)
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build());
@@ -139,7 +136,6 @@ public class AggregateDaoTest {
                 .totalMicros(1400000)
                 .errorCount(0)
                 .transactionCount(7)
-                .traceCount(0)
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build());
@@ -152,7 +148,6 @@ public class AggregateDaoTest {
                 .totalMicros(1000000)
                 .errorCount(0)
                 .transactionCount(10)
-                .traceCount(0)
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build();
@@ -164,7 +159,6 @@ public class AggregateDaoTest {
                 .totalMicros(100000)
                 .errorCount(0)
                 .transactionCount(1)
-                .traceCount(0)
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build());
@@ -175,7 +169,6 @@ public class AggregateDaoTest {
                 .totalMicros(300000)
                 .errorCount(0)
                 .transactionCount(2)
-                .traceCount(0)
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build());
@@ -186,7 +179,6 @@ public class AggregateDaoTest {
                 .totalMicros(1400000)
                 .errorCount(0)
                 .transactionCount(7)
-                .traceCount(0)
                 .timers(getFakeTimers())
                 .histogram(getFakeHistogram())
                 .build());

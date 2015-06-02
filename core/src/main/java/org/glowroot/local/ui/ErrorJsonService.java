@@ -54,18 +54,15 @@ class ErrorJsonService {
     }
 
     private final ErrorCommonService errorCommonService;
-    private final TransactionCommonService transactionCommonService;
     private final TraceDao traceDao;
     private final Clock clock;
 
     private final long fixedAggregateIntervalMillis;
     private final long fixedAggregateRollupMillis;
 
-    ErrorJsonService(ErrorCommonService errorCommonService,
-            TransactionCommonService transactionCommonService, TraceDao traceDao, Clock clock,
+    ErrorJsonService(ErrorCommonService errorCommonService, TraceDao traceDao, Clock clock,
             long fixedAggregateIntervalSeconds, long fixedAggregateRollupSeconds) {
         this.errorCommonService = errorCommonService;
-        this.transactionCommonService = transactionCommonService;
         this.traceDao = traceDao;
         this.clock = clock;
         fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
@@ -167,17 +164,10 @@ class ErrorJsonService {
             traceCount = traceDao.readTransactionErrorCount(request.transactionType(),
                     transactionName, request.from(), request.to());
         }
-        boolean tracesExpired = false;
-        if (traceCount == 0) {
-            tracesExpired = transactionCommonService.shouldHaveErrorTraces(
-                    request.transactionType(), transactionName, request.from(), request.to());
-        }
-
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeNumberField("traceCount", traceCount);
-        jg.writeBooleanField("tracesExpired", tracesExpired);
         jg.writeEndObject();
         jg.close();
         return sb.toString();

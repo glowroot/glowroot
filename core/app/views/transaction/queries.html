@@ -33,12 +33,13 @@
        style="display: table; width: 100%; height: 100%; margin-top: 50px;">
     <div style="display: table-cell; text-align: center; vertical-align: middle;">
       <div class="gt-chart-no-data"
-           ng-hide="tabBarData.queriesExpired">
+           ng-hide="showExpiredMessage">
         No data for this time period
       </div>
       <div class="gt-chart-no-data"
-           ng-show="tabBarData.queriesExpired">
-        *There was query data but it has expired, see <a href="config/storage">storage configuration</a>
+           ng-show="showExpiredMessage">
+        *There was query data but it has expired,
+        see <a href="config/storage#capped-database-size">Configuration &gt; Storage &gt; Capped database size</a>
       </div>
     </div>
   </div>

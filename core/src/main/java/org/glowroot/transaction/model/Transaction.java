@@ -113,7 +113,6 @@ public class Transaction {
     private volatile @MonotonicNonNull ScheduledRunnable immedateTraceStoreRunnable;
 
     private volatile boolean partiallyStored;
-    private volatile boolean willBeStored;
 
     private long captureTime;
 
@@ -292,10 +291,6 @@ public class Transaction {
         return partiallyStored;
     }
 
-    public boolean willBeStored() {
-        return willBeStored;
-    }
-
     public long getThreadId() {
         return threadId;
     }
@@ -372,10 +367,6 @@ public class Transaction {
 
     public void setPartiallyStored() {
         partiallyStored = true;
-    }
-
-    public void setWillBeStored() {
-        willBeStored = true;
     }
 
     public TraceEntryImpl pushEntry(long startTick, MessageSupplier messageSupplier,

@@ -32,11 +32,11 @@ import org.glowroot.collector.ProfileChunkSourceCreator;
 import org.glowroot.collector.QueriesChunkSourceCreator;
 import org.glowroot.collector.Trace;
 import org.glowroot.collector.TraceCreator;
-import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.ChunkSource;
 import org.glowroot.common.Clock;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.TraceDao;
+import org.glowroot.transaction.TransactionCollector;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.transaction.model.Transaction;
 
@@ -46,15 +46,15 @@ class TraceCommonService {
 
     private final TraceDao traceDao;
     private final TransactionRegistry transactionRegistry;
-    private final TransactionCollectorImpl transactionCollectorImpl;
+    private final TransactionCollector transactionCollector;
     private final Clock clock;
     private final Ticker ticker;
 
     TraceCommonService(TraceDao traceDao, TransactionRegistry transactionRegistry,
-            TransactionCollectorImpl transactionCollectorImpl, Clock clock, Ticker ticker) {
+            TransactionCollector transactionCollectorImpl, Clock clock, Ticker ticker) {
         this.traceDao = traceDao;
         this.transactionRegistry = transactionRegistry;
-        this.transactionCollectorImpl = transactionCollectorImpl;
+        this.transactionCollector = transactionCollectorImpl;
         this.clock = clock;
         this.ticker = ticker;
     }
@@ -64,7 +64,7 @@ class TraceCommonService {
         // check active traces first, then pending traces, and finally stored traces
         // to make sure that the trace is not missed if it is in transition between these states
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
-                transactionCollectorImpl.getPendingTransactions())) {
+                transactionCollector.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
                 return createTrace(transaction);
             }
@@ -79,7 +79,7 @@ class TraceCommonService {
         // check active traces first, then pending traces, and finally stored traces
         // to make sure that the trace is not missed if it is in transition between these states
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
-                transactionCollectorImpl.getPendingTransactions())) {
+                transactionCollector.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
                 return createEntries(transaction);
             }
@@ -94,7 +94,7 @@ class TraceCommonService {
         // check active traces first, then pending traces, and finally stored traces
         // to make sure that the trace is not missed if it is in transition between these states
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
-                transactionCollectorImpl.getPendingTransactions())) {
+                transactionCollector.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
                 return createProfile(transaction);
             }
@@ -107,7 +107,7 @@ class TraceCommonService {
         // check active traces first, then pending traces, and finally stored traces
         // to make sure that the trace is not missed if it is in transition between these states
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
-                transactionCollectorImpl.getPendingTransactions())) {
+                transactionCollector.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
                 Trace trace = createTrace(transaction);
                 return TraceExport.builder()

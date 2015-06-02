@@ -30,6 +30,8 @@ import org.junit.Test;
 
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
+import org.glowroot.config.ConfigService;
+import org.glowroot.config.StorageConfig;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.store.TracePoint;
@@ -149,7 +151,8 @@ public class TracePointJsonServiceTest {
         TracePointJsonService tracePointJsonService = buildTracePointJsonService(
                 activeTransactions, pendingTransactions, points);
         // when
-        String content = tracePointJsonService.getPoints("from=0&to=0&duration-low=0&limit=100");
+        String content = tracePointJsonService.getPoints("from=0&to=" + Long.MAX_VALUE
+                + "&duration-low=0&limit=100");
         // then
         TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
         assertThat(response.activePoints().size()).isEqualTo(100);
@@ -183,6 +186,7 @@ public class TracePointJsonServiceTest {
         TraceDao traceDao = mock(TraceDao.class);
         TransactionRegistry transactionRegistry = mock(TransactionRegistry.class);
         TransactionCollectorImpl transactionCollector = mock(TransactionCollectorImpl.class);
+        ConfigService configService = mock(ConfigService.class);
         Ticker ticker = mock(Ticker.class);
         Clock clock = mock(Clock.class);
 
@@ -191,11 +195,12 @@ public class TracePointJsonServiceTest {
         // for now, assume all active traces will be stored
         when(transactionCollector.shouldStore(any(Transaction.class))).thenReturn(true);
         when(transactionCollector.getPendingTransactions()).thenReturn(pendingTransactions);
+        when(configService.getStorageConfig()).thenReturn(StorageConfig.builder().build());
         when(ticker.read()).thenReturn(currentTick);
         when(clock.currentTimeMillis()).thenReturn(currentTimeMillis);
 
         return new TracePointJsonService(traceDao, transactionRegistry, transactionCollector,
-                ticker, clock);
+                configService, ticker, clock);
     }
 
     private static Transaction mockActiveTransaction(String id, long durationMillis) {
