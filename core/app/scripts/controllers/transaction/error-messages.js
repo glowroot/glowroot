@@ -122,6 +122,7 @@ glowroot.controller('ErrorMessagesCtrl', [
     };
 
     $scope.refreshButtonClick = function () {
+      $scope.$parent.chartRefresh++;
       $location.search('filter', $scope.errorFilter);
     };
 
