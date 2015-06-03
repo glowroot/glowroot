@@ -94,64 +94,52 @@
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
+        <artifactId>maven-shade-plugin</artifactId>
         <configuration>
-          <properties>
-            <property>
-              <!-- this is just a test performance optimization -->
-              <name>listener</name>
-              <value>org.glowroot.container.SharedContainerRunListener</value>
-            </property>
-          </properties>
+          <dependencyReducedPomLocation>
+            ${project.build.directory}/dependency-reduced-pom.xml
+          </dependencyReducedPomLocation>
+          <createSourcesJar>true</createSourcesJar>
+          <shadeSourcesContent>true</shadeSourcesContent>
         </configuration>
+        <executions>
+          <execution>
+            <id>default</id>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <artifactSet>
+                <includes>
+                  <include>org.glowroot.plugins:jdbc-plugin</include>
+                </includes>
+              </artifactSet>
+              <relocations>
+                <relocation>
+                  <pattern>com.google.common</pattern>
+                  <shadedPattern>org.glowroot.shaded.google.common</shadedPattern>
+                </relocation>
+              </relocations>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <properties>
+              <property>
+                <!-- this is just a test performance optimization -->
+                <name>listener</name>
+                <value>org.glowroot.container.SharedContainerRunListener</value>
+              </property>
+            </properties>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
-
-  <profiles>
-    <profile>
-      <id>active-by-default-shade</id>
-      <activation>
-        <property>
-          <name>glowroot.shading.skip</name>
-          <value>!true</value>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-shade-plugin</artifactId>
-            <configuration>
-              <dependencyReducedPomLocation>
-                ${project.build.directory}/dependency-reduced-pom.xml
-              </dependencyReducedPomLocation>
-              <createSourcesJar>true</createSourcesJar>
-              <shadeSourcesContent>true</shadeSourcesContent>
-            </configuration>
-            <executions>
-              <execution>
-                <id>default</id>
-                <goals>
-                  <goal>shade</goal>
-                </goals>
-                <configuration>
-                  <artifactSet>
-                    <includes>
-                      <include>org.glowroot.plugins:jdbc-plugin</include>
-                    </includes>
-                  </artifactSet>
-                  <relocations>
-                    <relocation>
-                      <pattern>com.google.common</pattern>
-                      <shadedPattern>org.glowroot.shaded.google.common</shadedPattern>
-                    </relocation>
-                  </relocations>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

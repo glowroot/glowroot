@@ -25,7 +25,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
@@ -308,25 +307,10 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
             File javaagentJarFile = null;
             for (String path : Splitter.on(File.pathSeparatorChar).split(classpath)) {
                 File file = new File(path);
-                if (file.getName().matches("glowroot-core-[0-9.]+(-SNAPSHOT)?.jar")) {
+                if (file.getName().matches("glowroot-test-harness-[0-9.]+(-SNAPSHOT)?.jar")) {
                     javaagentJarFile = file;
                 } else {
                     paths.add(path);
-                }
-            }
-            if (javaagentJarFile != null) {
-                File relocatedJavaagentJarFile = new File(dataDir, javaagentJarFile.getName());
-                Files.copy(javaagentJarFile, relocatedJavaagentJarFile);
-                javaagentJarFile = relocatedJavaagentJarFile;
-                File pluginsDir = new File(dataDir, "plugins");
-                pluginsDir.mkdir();
-                for (Iterator<String> i = paths.iterator(); i.hasNext();) {
-                    File file = new File(i.next());
-                    if (file.getName().matches(
-                            "(jdbc|servlet|logger)-plugin-[0-9.]+(-SNAPSHOT)?.jar")) {
-                        Files.copy(file, new File(pluginsDir, file.getName()));
-                        i.remove();
-                    }
                 }
             }
             command.add("-Xbootclasspath/a:" + Joiner.on(File.pathSeparatorChar).join(paths));

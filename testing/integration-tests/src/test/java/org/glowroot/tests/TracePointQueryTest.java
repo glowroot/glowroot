@@ -31,7 +31,7 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceQuery;
-import org.glowroot.local.store.StringComparator;
+import org.glowroot.container.trace.TraceQueryBase.StringComparator;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;

@@ -42,12 +42,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-core</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>com.ning</groupId>
       <artifactId>async-http-client</artifactId>
       <scope>test</scope>
@@ -60,6 +54,7 @@
     <dependency>
       <groupId>org.easytesting</groupId>
       <artifactId>fest-reflect</artifactId>
+      <version>1.4.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -71,39 +66,22 @@
   </dependencies>
 
   <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <properties>
-            <property>
-              <!-- this is just a test performance optimization -->
-              <name>listener</name>
-              <value>org.glowroot.container.SharedContainerRunListener</value>
-            </property>
-          </properties>
-        </configuration>
-      </plugin>
-      <plugin>
-        <!-- maven-failsafe-plugin is used to execute JarFileShadingIT since it needs to run after
-          the packaging phase so that glowroot.jar will be available -->
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <properties>
+              <property>
+                <!-- this is just a test performance optimization -->
+                <name>listener</name>
+                <value>org.glowroot.container.SharedContainerRunListener</value>
+              </property>
+            </properties>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
   <profiles>
@@ -115,16 +93,18 @@
         </property>
       </activation>
       <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <excludes>
-                <exclude>**/ExportTest.java</exclude>
-              </excludes>
-            </configuration>
-          </plugin>
-        </plugins>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <configuration>
+                <excludes>
+                  <exclude>**/ExportTest.java</exclude>
+                </excludes>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
       </build>
     </profile>
   </profiles>

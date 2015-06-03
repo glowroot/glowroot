@@ -19,10 +19,9 @@ import javax.annotation.Nullable;
 
 import org.immutables.value.Value;
 
-import org.glowroot.local.store.StringComparator;
-
 @Value.Immutable
 public abstract class TraceQueryBase {
+
     @Value.Default
     public long from() {
         return 0;
@@ -57,5 +56,13 @@ public abstract class TraceQueryBase {
     @Value.Default
     public int limit() {
         return 0;
+    }
+
+    public enum StringComparator {
+        BEGINS,
+        EQUALS,
+        ENDS,
+        CONTAINS,
+        NOT_CONTAINS
     }
 }

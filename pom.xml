@@ -3,12 +3,6 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>org.sonatype.oss</groupId>
-    <artifactId>oss-parent</artifactId>
-    <version>9</version>
-  </parent>
-
   <groupId>org.glowroot</groupId>
   <artifactId>glowroot-parent</artifactId>
   <version>0.8-SNAPSHOT</version>
@@ -29,6 +23,12 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
+  <developers>
+    <developer>
+      <name>Trask Stalnaker</name>
+      <email>trask.stalnaker@gmail.com</email>
+    </developer>
+  </developers>
 
   <prerequisites>
     <maven>3.1.0</maven>
@@ -143,11 +143,6 @@
         <version>1.10.19</version>
       </dependency>
       <dependency>
-        <groupId>org.easytesting</groupId>
-        <artifactId>fest-reflect</artifactId>
-        <version>1.4.1</version>
-      </dependency>
-      <dependency>
         <groupId>com.ning</groupId>
         <artifactId>async-http-client</artifactId>
         <!-- async-http-client 1.9.0 requires JDK 7+ -->
@@ -166,20 +161,15 @@
     </dependencies>
   </dependencyManagement>
 
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>
+
   <build>
     <plugins>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestEntries>
-              <Implementation-Title>${project.name}</Implementation-Title>
-              <Implementation-Version>${project.version}</Implementation-Version>
-              <Build-Commit>${glowroot.build.commit}</Build-Commit>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
       <plugin>
         <artifactId>maven-enforcer-plugin</artifactId>
         <executions>
@@ -190,7 +180,8 @@
             <configuration>
               <rules>
                 <requireJavaVersion>
-                  <version>[1.6,)</version>
+                  <!-- immutables annotations processors require java 7 -->
+                  <version>[1.7,)</version>
                 </requireJavaVersion>
                 <requireMavenVersion>
                   <version>[3.0,)</version>
@@ -206,7 +197,6 @@
         <artifactId>maven-source-plugin</artifactId>
         <executions>
           <execution>
-            <id>attach-sources</id>
             <goals>
               <goal>jar-no-fork</goal>
             </goals>
@@ -235,6 +225,16 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <version>1.6.5</version>
+        <extensions>true</extensions>
+        <configuration>
+          <serverId>ossrh</serverId>
+          <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+        </configuration>
+      </plugin>
     </plugins>
     <pluginManagement>
       <plugins>
@@ -253,9 +253,6 @@
         <plugin>
           <artifactId>maven-deploy-plugin</artifactId>
           <version>2.8.2</version>
-          <configuration>
-            <deployAtEnd>true</deployAtEnd>
-          </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-enforcer-plugin</artifactId>
@@ -272,6 +269,15 @@
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
           <version>2.6</version>
+          <configuration>
+            <archive>
+              <manifestEntries>
+                <Implementation-Title>${project.name}</Implementation-Title>
+                <Implementation-Version>${project.version}</Implementation-Version>
+                <Build-Commit>${glowroot.build.commit}</Build-Commit>
+              </manifestEntries>
+            </archive>
+          </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
@@ -304,7 +310,7 @@
         </plugin>
         <plugin>
           <!-- TODO upgrade to 0.7.5.201505241946 (or later) after sonar issue is fixed
-               http://jira.sonarsource.com/browse/SONARJAVA-1091 -->
+            http://jira.sonarsource.com/browse/SONARJAVA-1091 -->
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
           <version>0.7.4.201502262128</version>
@@ -372,14 +378,35 @@
                 </goals>
                 <configuration>
                   <resourceBundles>
-                    <!-- need to use explicit version below instead of ${project.version} since when
-                      plugins inherit this pom, ${project.version} is replaced by the plugin's
-                      version -->
                     <resourceBundle>
-                      org.glowroot.misc:glowroot-license-resource-bundle:0.8-SNAPSHOT
+                      org.glowroot.misc:glowroot-license-resource-bundle:${project.version}
                     </resourceBundle>
                   </resourceBundles>
                 </configuration>
+              </execution>
+            </executions>
+            <dependencies>
+              <dependency>
+                <groupId>org.glowroot.misc</groupId>
+                <artifactId>glowroot-license-resource-bundle</artifactId>
+                <version>${project.version}</version>
+              </dependency>
+            </dependencies>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>javadoc</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
               </execution>
             </executions>
           </plugin>
@@ -390,6 +417,18 @@
       <id>release</id>
       <build>
         <plugins>
+          <plugin>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>1.6</version>
+            <executions>
+              <execution>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <artifactId>maven-enforcer-plugin</artifactId>
             <configuration>

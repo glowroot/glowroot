@@ -71,52 +71,57 @@
     </dependency>
   </dependencies>
 
-  <profiles>
-    <profile>
-      <id>active-by-default-shade</id>
-      <activation>
-        <property>
-          <name>glowroot.shading.skip</name>
-          <value>!true</value>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-shade-plugin</artifactId>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <configuration>
+          <dependencyReducedPomLocation>
+            ${project.build.directory}/dependency-reduced-pom.xml
+          </dependencyReducedPomLocation>
+          <createSourcesJar>true</createSourcesJar>
+          <shadeSourcesContent>true</shadeSourcesContent>
+        </configuration>
+        <executions>
+          <execution>
+            <id>default</id>
+            <goals>
+              <goal>shade</goal>
+            </goals>
             <configuration>
-              <dependencyReducedPomLocation>
-                ${project.build.directory}/dependency-reduced-pom.xml
-              </dependencyReducedPomLocation>
-              <createSourcesJar>true</createSourcesJar>
-              <shadeSourcesContent>true</shadeSourcesContent>
+              <artifactSet>
+                <includes>
+                  <include>org.glowroot.plugins:logger-plugin</include>
+                </includes>
+              </artifactSet>
+              <relocations>
+                <relocation>
+                  <!-- don't shade org.slf4j since that will shade @Pointcut typeName fields
+                    causing the weaving to be applied to shaded slf4j instead of unshaded -->
+                  <pattern>org.slf4j.helpers</pattern>
+                  <shadedPattern>org.glowroot.shaded.slf4j.helpers</shadedPattern>
+                </relocation>
+              </relocations>
             </configuration>
-            <executions>
-              <execution>
-                <id>default</id>
-                <goals>
-                  <goal>shade</goal>
-                </goals>
-                <configuration>
-                  <artifactSet>
-                    <includes>
-                      <include>org.glowroot.plugins:logger-plugin</include>
-                    </includes>
-                  </artifactSet>
-                  <relocations>
-                    <relocation>
-                      <!-- don't shade org.slf4j since that will shade @Pointcut typeName fields
-                        causing the weaving to be applied to shaded slf4j instead of unshaded -->
-                      <pattern>org.slf4j.helpers</pattern>
-                      <shadedPattern>org.glowroot.shaded.slf4j.helpers</shadedPattern>
-                    </relocation>
-                  </relocations>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <properties>
+              <property>
+                <!-- this is just a test performance optimization -->
+                <name>listener</name>
+                <value>org.glowroot.container.SharedContainerRunListener</value>
+              </property>
+            </properties>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 </project>

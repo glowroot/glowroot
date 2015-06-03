@@ -20,9 +20,9 @@ import java.net.ServerSocket;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
 
-import org.glowroot.common.SpyingLogbackFilter;
 import org.glowroot.container.Container;
 import org.glowroot.container.impl.LocalContainer;
+import org.glowroot.container.impl.SpyingLogbackFilter;
 
 public class HttpServerBindingTest {
 

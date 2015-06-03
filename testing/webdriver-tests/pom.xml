@@ -73,7 +73,7 @@
     </dependency>
     <dependency>
       <!-- pinning version since selenium-api uses org.json:json:20080701
-           and sauce_junit uses org.json:json:20090211 -->
+        and sauce_junit uses org.json:json:20090211 -->
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
       <version>20090211</version>
@@ -136,34 +136,23 @@
     </dependency>
   </dependencies>
 
-  <repositories>
-    <repository>
-      <id>saucelabs-repository</id>
-      <url>https://repository-saucelabs.forge.cloudbees.com/release</url>
-    </repository>
-  </repositories>
-
   <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <properties>
-            <property>
-              <!-- this is just a test performance optimization -->
-              <name>listener</name>
-              <value>org.glowroot.container.SharedContainerRunListener,org.glowroot.tests.webdriver.SharedSetupRunListener</value>
-            </property>
-          </properties>
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <properties>
+              <property>
+                <!-- this is just a test performance optimization -->
+                <name>listener</name>
+                <value>org.glowroot.container.SharedContainerRunListener,org.glowroot.tests.webdriver.SharedSetupRunListener</value>
+              </property>
+            </properties>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
   <profiles>
@@ -175,17 +164,19 @@
         </property>
       </activation>
       <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <!-- webdriver tests cannot be run if the ui has not been built,
-                can't just use <skipTests>${glowroot.ui.skip}</skipTests> since that prevents
-                "mvn -DskipTests=true" from working -->
-              <skipTests>true</skipTests>
-            </configuration>
-          </plugin>
-        </plugins>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <configuration>
+                <!-- webdriver tests cannot be run if the ui has not been built,
+                  can't just use <skipTests>${glowroot.ui.skip}</skipTests> since that prevents
+                  "mvn -DskipTests=true" from working -->
+                <skipTests>true</skipTests>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
       </build>
     </profile>
   </profiles>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
-import org.glowroot.markers.UsedByReflection;
 
 public class ExpensiveCall {
 
@@ -116,7 +114,6 @@ public class ExpensiveCall {
         expensive();
     }
 
-    @UsedByReflection
     public String getTraceEntryMessage() {
         return getTraceEntryMessage(random.nextInt(5) > 0);
     }

@@ -7,7 +7,7 @@ case "$1" in
 
        "test") # shading is done during the package phase, so 'mvn test' is used to run tests
                # against unshaded glowroot-core and 'mvn package' is used to run tests against
-               # shaded glowroot-core (no need to use glowroot.shading.skip)
+               # shaded glowroot-core
                if [[ "$GLOWROOT_UNSHADED" == "true" ]]
                then
                  mvn clean test -Dglowroot.test.harness=$GLOWROOT_HARNESS \
@@ -36,32 +36,29 @@ case "$1" in
                fi
                ;;
 
-     "deploy") # using local test harness here since it is faster, and complete coverage with both
-               # harnesses is done elsewhere in the build
-               if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" ]]
+     "deploy") # using the default test harness (local) since it is faster, and complete coverage
+               # with both harnesses is done elsewhere in the build
+               #
+               # using glowroot.ui.skip so deployed test-harness artifact will not include any third
+               # party javascript libraries
+               mvn clean install -Dglowroot.ui.skip=true \
+                                 -DargLine=$surefire_jvm_args \
+                                 -B
+               # only deploy snapshot versions (release versions need pgp signature)
+               version=`mvn help:evaluate -Dexpression=project.version | grep -v '\['`
+               if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" && "$version" == *-SNAPSHOT ]]
                then
-                 # deploy unshaded artifacts to maven repository (with no embedded third party
-                 # libraries, including no third party javascript libraries)
-                 mvn clean deploy -DdeployAtEnd=true \
-                                  -Dglowroot.shading.skip=true \
+                 # deploy only parent, plugin-api and test-harness artifacts to maven repository
+                 mvn clean deploy -pl .,plugin-api,test-harness \
+                                  -Pjavadoc \
                                   -Dglowroot.ui.skip=true \
-                                  -Dglowroot.test.harness=local \
                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
-                                  --settings misc/travis-build/settings.xml \
                                   -DargLine=$surefire_jvm_args \
+                                  --settings misc/travis-build/settings.xml \
                                   -B
-               else
-                 # simulate the deploy step from above
-                 mvn clean install -DinstallAtEnd=true \
-                                   -Dglowroot.shading.skip=true \
-                                   -Dglowroot.test.harness=local \
-                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
-                                   -DargLine=$surefire_jvm_args \
-                                   -B
                fi
                # build shaded distribution zip which will be uploaded to s3 in travis-ci deploy step
-               mvn clean install -Dglowroot.test.harness=local \
-                                 -Dglowroot.build.commit=$TRAVIS_COMMIT \
+               mvn clean install -Dglowroot.build.commit=$TRAVIS_COMMIT \
                                  -DargLine=$surefire_jvm_args \
                                  -B
                ;;
@@ -74,24 +71,25 @@ case "$1" in
                  #
                  # jacoco destFile needs absolute path, otherwise it is relative to each submodule
                  #
-                 # code coverage for @Pointcut classes are only captured when run with javaagent harness
-                 # since in that case jacoco javaagent goes first (see JavaagentMain) and uses the
-                 # original bytecode to construct the class ids, whereas when run with local harness
-                 # jacoco javaagent uses the bytecode that is woven by IsolatedWeavingClassLoader to
-                 # construct the class ids
-                 mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install \
-                                 -Dglowroot.shading.skip=true \
+                 # code coverage for @Pointcut classes are only captured when run with javaagent
+                 # harness since in that case jacoco javaagent goes first (see JavaagentMain) and
+                 # uses the original bytecode to construct the class ids, whereas when run with
+                 # local harness jacoco javaagent uses the bytecode that is woven by
+                 # IsolatedWeavingClassLoader to construct the class ids
+                 #
+                 # shading is done during the package phase, so 'mvn test' is used to run tests
+                 # against unshaded glowroot-core and 'mvn package' is used to run tests against
+                 # shaded glowroot-core
+                 mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent test \
                                  -Dglowroot.test.harness=javaagent \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
                                  -Djacoco.propertyName=jacocoArgLine \
                                  -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                  -B
-                 # also running integration-tests with local test harness to capture a couple methods
-                 # exercised only by the local test harness
-                 mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install \
+                 # also running integration-tests with (default) local test harness to capture a
+                 # couple methods exercised only by the local test harness
+                 mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent test \
                                  -pl testing/integration-tests \
-                                 -Dglowroot.shading.skip=true \
-                                 -Dglowroot.test.harness=local \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
                                  -Djacoco.propertyName=jacocoArgLine \
                                  -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
@@ -99,7 +97,7 @@ case "$1" in
                  # also running logger-plugin tests with shading and javaagent in order to get
                  # code coverage for Slf4jTest and Slf4jMarkerTest
                  # (see comments in those classes for more detail)
-                 mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install \
+                 mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent package \
                                  -pl plugin-api,core,plugins/logger-plugin \
                                  -Dglowroot.test.harness=javaagent \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \

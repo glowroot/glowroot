@@ -41,6 +41,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.Splitter;
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
@@ -161,6 +162,7 @@ class ClasspathCache {
         for (ClassLoader loader : getKnownClassLoaders()) {
             updateCache(loader, newClassNameLocations);
         }
+        updateCacheWithClasspathClasses(newClassNameLocations);
         updateCacheWithBootstrapClasses(newClassNameLocations);
         if (!newClassNameLocations.isEmpty()) {
             Multimap<String, File> newMap =
@@ -180,6 +182,20 @@ class ClasspathCache {
                     ImmutableList.copyOf(Iterables.limit(matchingClassNames, numToAdd)));
         }
         return ImmutableList.copyOf(fullMatchingClassNames);
+    }
+
+    private void updateCacheWithClasspathClasses(Multimap<String, File> newClassNameLocations) {
+        String javaClassPath = StandardSystemProperty.JAVA_CLASS_PATH.value();
+        if (javaClassPath == null) {
+            return;
+        }
+        for (String path : Splitter.on(File.pathSeparatorChar).split(javaClassPath)) {
+            File file = new File(path);
+            if (!classpathLocations.contains(file)) {
+                loadClassNames(file, newClassNameLocations);
+                classpathLocations.add(file);
+            }
+        }
     }
 
     private void updateCacheWithBootstrapClasses(Multimap<String, File> newClassNameLocations) {

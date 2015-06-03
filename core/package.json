@@ -1,11 +1,4 @@
 {
-  "name": "glowroot",
-  "version": "0.5.0",
-  "description": "Glowroot",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/glowroot/glowroot.git"
-  },
   "devDependencies": {
     "bower": "1.4.1",
     "grunt": "0.4.5",

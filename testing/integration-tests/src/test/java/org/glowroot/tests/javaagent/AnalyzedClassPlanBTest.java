@@ -28,12 +28,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
-import org.glowroot.common.ClassNames;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.config.InstrumentationConfig;
 import org.glowroot.container.config.InstrumentationConfig.CaptureKind;
-import org.glowroot.weaving.AnalyzedWorld;
 
 public class AnalyzedClassPlanBTest {
 
@@ -71,7 +69,7 @@ public class AnalyzedClassPlanBTest {
     @Test
     public void shouldLogWarningInAnalyzedWorldPlanB() throws Exception {
         // given
-        container.addExpectedLogMessage(AnalyzedWorld.class.getName(),
+        container.addExpectedLogMessage("org.glowroot.weaving.AnalyzedWorld",
                 Y.class.getName() + " was not woven with requested advice");
         // when
         container.executeAppUnderTest(ShouldLogWarningInAnalyzedWorldPlanB.class);
@@ -119,8 +117,8 @@ public class AnalyzedClassPlanBTest {
             }
         }
         protected Class<?> load(String name) throws IOException {
-            byte[] bytes = Resources.toByteArray(Resources.getResource(
-                    ClassNames.toInternalName(name) + ".class"));
+            byte[] bytes =
+                    Resources.toByteArray(Resources.getResource(name.replace('.', '/') + ".class"));
             return super.defineClass(name, bytes, 0, bytes.length);
         }
         @Override

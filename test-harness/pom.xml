@@ -20,12 +20,11 @@
       <artifactId>glowroot-core</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-plugin-api</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
-    </dependency>
+    <!-- do not include glowroot-plugin-api since want to either get it transitively from
+      glowroot-core or get it as part of shaded glowroot-core (note: including it with provided
+      scope here will override the glowroot-plugin-api that is included via
+      promoteTransitiveDependencies when glowroot-core itself is not shaded, and then
+      glowroot-plugin-api won't be passed along to dependents, e.g. glowroot-webdriver-tests) -->
     <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>value</artifactId>
@@ -73,10 +72,6 @@
       <artifactId>logback-classic</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.easytesting</groupId>
-      <artifactId>fest-reflect</artifactId>
-    </dependency>
-    <dependency>
       <!-- using org.junit.runner.notification.RunListener -->
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -85,10 +80,69 @@
       <groupId>${checker.qual.group.id}</groupId>
       <artifactId>${checker.qual.artifact.id}</artifactId>
       <version>${checker.qual.version}</version>
+      <!-- don't need this dependency at runtime since only annotations -->
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
+      <!-- don't need this dependency at runtime since only annotations -->
+      <optional>true</optional>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <!-- shading of core inside test-harness is primarily done so core doesn't need to be
+          deployed to maven central for plugin authors to use test-harness, this hopefully makes
+          it more clear that only test code should depend on core (through test-harness),
+          while plugin code should only depend on plugin-api -->
+        <artifactId>maven-shade-plugin</artifactId>
+        <configuration>
+          <dependencyReducedPomLocation>
+            ${project.build.directory}/dependency-reduced-pom.xml
+          </dependencyReducedPomLocation>
+          <createSourcesJar>true</createSourcesJar>
+          <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+          <artifactSet>
+            <includes>
+              <include>org.glowroot:glowroot-core</include>
+            </includes>
+          </artifactSet>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <configuration>
+            <excludePackageNames>org.glowroot.container.impl</excludePackageNames>
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-jar-plugin</artifactId>
+          <configuration>
+            <archive>
+              <manifestEntries>
+                <Build-Time>${maven.build.timestamp}</Build-Time>
+                <Main-Class>org.glowroot.Viewer</Main-Class>
+                <Premain-Class>org.glowroot.Agent</Premain-Class>
+                <Can-Redefine-Classes>true</Can-Redefine-Classes>
+                <Can-Retransform-Classes>true</Can-Retransform-Classes>
+              </manifestEntries>
+            </archive>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 </project>

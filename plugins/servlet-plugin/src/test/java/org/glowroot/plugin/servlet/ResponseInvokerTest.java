@@ -18,7 +18,7 @@ package org.glowroot.plugin.servlet;
 import org.junit.After;
 import org.junit.Test;
 
-import org.glowroot.common.SpyingLogbackFilter;
+import org.glowroot.container.impl.SpyingLogbackFilter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

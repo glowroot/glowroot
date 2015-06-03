@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.tests;
+package org.glowroot;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,11 +22,11 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.Lists;
 import org.junit.Assume;
 import org.junit.Test;
-
-import org.glowroot.container.ClassPath;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,7 +34,8 @@ public class JarFileShadingIT {
 
     @Test
     public void shouldCheckThatJarIsWellShaded() throws IOException {
-        Assume.assumeTrue(isShaded());
+        File glowrootCoreJarFile = getGlowrootCoreJarFile();
+        Assume.assumeNotNull(glowrootCoreJarFile);
         List<String> acceptableEntries = Lists.newArrayList();
         acceptableEntries.add("glowroot\\..*");
         acceptableEntries.add("org/");
@@ -47,7 +48,6 @@ public class JarFileShadingIT {
         acceptableEntries.add("META-INF/MANIFEST\\.MF");
         acceptableEntries.add("META-INF/LICENSE");
         acceptableEntries.add("META-INF/NOTICE");
-        File glowrootCoreJarFile = ClassPath.getGlowrootCoreJarFile();
         JarFile jarFile = new JarFile(glowrootCoreJarFile);
         List<String> unacceptableEntries = Lists.newArrayList();
         for (Enumeration<JarEntry> e = jarFile.entries(); e.hasMoreElements();) {
@@ -68,12 +68,12 @@ public class JarFileShadingIT {
         return false;
     }
 
-    private static boolean isShaded() {
-        try {
-            Class.forName("org.glowroot.shaded.slf4j.Logger");
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
+    private static @Nullable File getGlowrootCoreJarFile() {
+        for (File file : new File(".").listFiles()) {
+            if (file.getName().matches("glowroot-core-[0-9.]+(-SNAPSHOT)?.jar")) {
+                return file;
+            }
         }
+        return null;
     }
 }

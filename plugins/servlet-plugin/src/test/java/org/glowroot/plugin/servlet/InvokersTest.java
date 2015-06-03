@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.glowroot.common.SpyingLogbackFilter;
+import org.glowroot.container.impl.SpyingLogbackFilter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

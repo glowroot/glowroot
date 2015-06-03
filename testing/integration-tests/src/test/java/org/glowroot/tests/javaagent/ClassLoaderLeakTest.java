@@ -26,7 +26,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.common.ClassNames;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.impl.JavaagentContainer;
@@ -83,7 +82,7 @@ public class ClassLoaderLeakTest {
 
     private static class TempClassLoader extends ClassLoader {
         protected Class<?> defineTempClass() throws IOException {
-            String resourceName = ClassNames.toInternalName(TempClass.class.getName()) + ".class";
+            String resourceName = TempClass.class.getName().replace('.', '/') + ".class";
             byte[] bytes = Resources.toByteArray(Resources.getResource(resourceName));
             return defineClass(TempClass.class.getName(), bytes, 0, bytes.length, null);
         }

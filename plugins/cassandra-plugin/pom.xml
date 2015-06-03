@@ -87,6 +87,18 @@
             <target>1.7</target>
           </configuration>
         </plugin>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <properties>
+              <property>
+                <!-- this is just a test performance optimization -->
+                <name>listener</name>
+                <value>org.glowroot.container.SharedContainerRunListener</value>
+              </property>
+            </properties>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
