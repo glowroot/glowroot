@@ -94,7 +94,7 @@
               <property>
                 <!-- this is just a test performance optimization -->
                 <name>listener</name>
-                <value>org.glowroot.container.SharedContainerRunListener</value>
+                <value>org.glowroot.container.SharedContainerRunListener,org.glowroot.plugin.cassandra.SharedSetupRunListener</value>
               </property>
             </properties>
           </configuration>

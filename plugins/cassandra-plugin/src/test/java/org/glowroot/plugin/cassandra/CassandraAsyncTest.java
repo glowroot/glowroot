@@ -29,7 +29,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
@@ -45,15 +44,12 @@ public class CassandraAsyncTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        CassandraWrapper.start();
-        container = Containers.getSharedContainer();
-        TempWorkaround.applyWorkaround(container);
+        container = SharedSetupRunListener.getContainer();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        container.close();
-        CassandraWrapper.stop();
+        SharedSetupRunListener.close(container);
     }
 
     @After
