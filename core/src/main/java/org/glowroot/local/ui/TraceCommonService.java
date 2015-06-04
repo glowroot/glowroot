@@ -20,7 +20,6 @@ import java.sql.SQLException;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Iterables;
@@ -29,7 +28,6 @@ import org.immutables.value.Value;
 
 import org.glowroot.collector.EntriesChunkSourceCreator;
 import org.glowroot.collector.ProfileChunkSourceCreator;
-import org.glowroot.collector.QueriesChunkSourceCreator;
 import org.glowroot.collector.Trace;
 import org.glowroot.collector.TraceCreator;
 import org.glowroot.common.ChunkSource;
@@ -113,7 +111,6 @@ class TraceCommonService {
                 return TraceExport.builder()
                         .trace(trace)
                         .traceJson(mapper.writeValueAsString(trace))
-                        .queries(createQueries(transaction))
                         .entries(createEntries(transaction))
                         .profile(createProfile(transaction))
                         .build();
@@ -140,10 +137,6 @@ class TraceCommonService {
         }
     }
 
-    private @Nullable ChunkSource createQueries(Transaction active) throws JsonProcessingException {
-        return QueriesChunkSourceCreator.createQueriesChunkSource(active.getQueries());
-    }
-
     private @Nullable ChunkSource createEntries(Transaction active) {
         return EntriesChunkSourceCreator.createEntriesChunkSource(active.getEntries(),
                 active.getStartTick(), ticker.read());
@@ -165,7 +158,6 @@ class TraceCommonService {
 
         abstract Trace trace();
         abstract String traceJson();
-        abstract @Nullable ChunkSource queries();
         abstract @Nullable ChunkSource entries();
         abstract @Nullable ChunkSource profile();
     }
