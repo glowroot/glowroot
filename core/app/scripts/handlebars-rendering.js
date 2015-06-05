@@ -784,9 +784,9 @@ HandlebarsRendering = (function () {
     if (filterText) {
       filter(filterText);
     }
-    if ($.isEmptyObject(mergedCounts)) {
-      $profileTextFilter.removeClass('hide');
-    } else {
+    var $profileFilter = $selector.find('.gt-profile-filter');
+    var $switchFilterButton = $profileFilter.parent().find(':button');
+    if (!$.isEmptyObject(mergedCounts)) {
       // build tree
       var tree = {name: '', childNodes: {}};
       $.each(rootNode.timerCounts, function (timer) {
@@ -839,8 +839,6 @@ HandlebarsRendering = (function () {
         rootNode.timerCounts[tree.name] = sampleCount;
       }
       // build filter dropdown
-      var $profileFilter = $selector.find('.gt-profile-filter');
-      $profileFilter.removeClass('hide');
       $.each(orderedNodes, function (i, node) {
         var name = node.name || '<multiple root nodes>';
         $profileFilter.append($('<option />').val(node.name)
@@ -851,22 +849,29 @@ HandlebarsRendering = (function () {
         var html = generateHtml($(this).val());
         $selector.find('.gt-profile').html(html);
       });
-      var $switchFilterButton = $profileFilter.parent().find(':button');
-      $switchFilterButton.removeClass('hide');
-      $switchFilterButton.click(function () {
+      // remove previous click handler, e.g. when range filter is changed
+      $switchFilterButton.off('click').click(function () {
         $profileTextFilter.toggleClass('hide');
         $profileFilter.toggleClass('hide');
         if ($profileFilter.is(':visible')) {
+          $selector.data('gtTextFilterOverride', false);
           $profileTextFilter.val('');
           filter('');
           $switchFilterButton.text('Switch to text filter');
         } else {
+          $selector.data('gtTextFilterOverride', true);
           $profileFilter.find('option:first-child').attr('selected', 'selected');
           var html = generateHtml();
           $selector.find('.gt-profile').html(html);
           $switchFilterButton.text('Switch to dropdown filter');
         }
       });
+    }
+    if ($.isEmptyObject(mergedCounts) || $selector.data('gtTextFilterOverride')) {
+      $profileTextFilter.removeClass('hide');
+    } else {
+      $profileFilter.removeClass('hide');
+      $switchFilterButton.removeClass('hide');
     }
   }
 
