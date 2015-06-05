@@ -28,6 +28,13 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <!-- this is only to prevent annoying eclipse IDE error underlining in UiSandboxMain
+        (even though it runs fine without this) -->
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>

@@ -32,8 +32,8 @@ import org.glowroot.container.trace.TracePointResponse.RawPoint;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-//even though this is thread safe, it is not useful for running tests in parallel since
-//getLastTrace() and others are not scoped to a particular test
+// even though this is thread safe, it is not useful for running tests in parallel since
+// getLastTrace() and others are not scoped to a particular test
 public class TraceService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
