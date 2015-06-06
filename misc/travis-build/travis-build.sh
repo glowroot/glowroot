@@ -1,7 +1,9 @@
 #!/bin/bash -e
 
 # java.security.egd is needed for low-entropy docker containers
-surefire_jvm_args="-Xmx512m -Djava.security.egd=file:/dev/urandom"
+# /dev/./urandom (as opposed to simply /dev/urandom) is needed prior to Java 8
+# (see https://docs.oracle.com/javase/8/docs/technotes/guides/security/enhancements-8.html)
+surefire_jvm_args="-Xmx512m -Djava.security.egd=file:/dev/./urandom"
 
 case "$1" in
 
@@ -11,27 +13,27 @@ case "$1" in
                if [[ "$GLOWROOT_UNSHADED" == "true" ]]
                then
                  mvn clean test -Dglowroot.test.harness=$GLOWROOT_HARNESS \
-                                -DargLine=$surefire_jvm_args \
+                                -DargLine="$surefire_jvm_args" \
                                 -B
                else
                  # using install instead of package for subsequent jdbc-plugin tests
                  mvn clean install -Dglowroot.test.harness=$GLOWROOT_HARNESS \
-                                   -DargLine=$surefire_jvm_args \
+                                   -DargLine="$surefire_jvm_args" \
                                    -B
                  mvn clean test -pl plugins/jdbc-plugin \
                                 -Dglowroot.test.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=H2 \
-                                -DargLine=$surefire_jvm_args \
+                                -DargLine="$surefire_jvm_args" \
                                 -B
                  mvn clean test -pl plugins/jdbc-plugin \
                                 -Dglowroot.test.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=COMMONS_DBCP_WRAPPED \
-                                -DargLine=$surefire_jvm_args \
+                                -DargLine="$surefire_jvm_args" \
                                 -B
                  mvn clean test -pl plugins/jdbc-plugin \
                                 -Dglowroot.test.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=TOMCAT_JDBC_POOL_WRAPPED \
-                                -DargLine=$surefire_jvm_args \
+                                -DargLine="$surefire_jvm_args" \
                                 -B
                fi
                ;;
@@ -42,7 +44,7 @@ case "$1" in
                # using glowroot.ui.skip so deployed test-harness artifact will not include any third
                # party javascript libraries
                mvn clean install -Dglowroot.ui.skip=true \
-                                 -DargLine=$surefire_jvm_args \
+                                 -DargLine="$surefire_jvm_args" \
                                  -B
                # only deploy snapshot versions (release versions need pgp signature)
                version=`mvn help:evaluate -Dexpression=project.version | grep -v '\['`
@@ -53,13 +55,13 @@ case "$1" in
                                   -Pjavadoc \
                                   -Dglowroot.ui.skip=true \
                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
-                                  -DargLine=$surefire_jvm_args \
+                                  -DargLine="$surefire_jvm_args" \
                                   --settings misc/travis-build/settings.xml \
                                   -B
                fi
                # build shaded distribution zip which will be uploaded to s3 in travis-ci deploy step
                mvn clean install -Dglowroot.build.commit=$TRAVIS_COMMIT \
-                                 -DargLine=$surefire_jvm_args \
+                                 -DargLine="$surefire_jvm_args" \
                                  -B
                ;;
 
@@ -113,7 +115,7 @@ case "$1" in
                                  -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \
                                  -Dsonar.host.url=$SONAR_HOST_URL \
                                  -Dsonar.jacoco.reportPath=$PWD/jacoco-combined.exec \
-                                 -DargLine=$surefire_jvm_args \
+                                 -DargLine="$surefire_jvm_args" \
                                  -B
                else
                  echo skipping, sonar analysis only runs against master repository and master branch
@@ -152,7 +154,7 @@ case "$1" in
                                  -Dchecker.install.dir=$HOME/checker-framework \
                                  -Dchecker.stubs.dir=$PWD/misc/checker-stubs \
                                  -Dglowroot.ui.skip=true \
-                                 -DargLine=$surefire_jvm_args \
+                                 -DargLine="$surefire_jvm_args" \
                                  -B \
                                  | sed 's/\[ERROR\] .*[\/]\([^\/.]*\.java\):\[\([0-9]*\),\([0-9]*\)\]/[ERROR] (\1:\2) [column \3]/'
                # preserve exit status from mvn (needed because of pipe to sed)
@@ -175,7 +177,7 @@ case "$1" in
                                 -Dsaucelabs.device.orientation=$SAUCELABS_DEVICE_ORIENTATION \
                                 -Dsaucelabs.device.app=$SAUCELABS_DEVICE_APP \
                                 -Dsaucelabs.tunnel.identifier=$TRAVIS_JOB_NUMBER \
-                                -DargLine=$surefire_jvm_args \
+                                -DargLine="$surefire_jvm_args" \
                                 -B
                else
                  echo skipping, saucelabs only runs against master repository and master branch

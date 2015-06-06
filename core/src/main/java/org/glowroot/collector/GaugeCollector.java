@@ -19,6 +19,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -111,17 +112,26 @@ class GaugeCollector extends ScheduledRunnable {
         for (GaugeConfig gaugeConfig : configService.getGaugeConfigs()) {
             gaugePoints.addAll(runInternal(gaugeConfig));
         }
-        scheduledExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    gaugePointRepository.store(gaugePoints);
-                } catch (Throwable t) {
-                    // log and terminate successfully
-                    logger.error(t.getMessage(), t);
+        try {
+            scheduledExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        gaugePointRepository.store(gaugePoints);
+                    } catch (Throwable t) {
+                        // log and terminate successfully
+                        logger.error(t.getMessage(), t);
+                    }
                 }
+            });
+        } catch (RejectedExecutionException e) {
+            if (scheduledExecutor.isShutdown()) {
+                // ignore possible exception during shutdown
+                logger.debug(e.getMessage(), e);
+                return;
             }
-        });
+            throw e;
+        }
     }
 
     void scheduleAtFixedRate(long initialDelay, long period, TimeUnit unit) {

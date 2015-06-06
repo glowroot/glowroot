@@ -82,19 +82,18 @@ public class MaxEntriesLimitTest {
         // test harness needs to kick off test, so may need to wait a little
         Stopwatch stopwatch = Stopwatch.createStarted();
         Trace trace = null;
-        List<TraceEntry> entries = null;
         while (stopwatch.elapsed(SECONDS) < 2) {
             trace = container.getTraceService().getActiveTrace(0, MILLISECONDS);
             if (trace == null) {
                 continue;
             }
-            entries = container.getTraceService().getEntries(trace.getId());
-            if (entries.size() == 101) {
+            if (trace.getEntryCount() == 101) {
                 break;
             }
             // otherwise continue
         }
         assertThat(trace).isNotNull();
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(101);
         assertThat(entries.get(100).isLimitExceededMarker()).isTrue();
 
@@ -108,14 +107,14 @@ public class MaxEntriesLimitTest {
             if (trace == null) {
                 continue;
             }
-            entries = container.getTraceService().getEntries(trace.getId());
-            if (entries.size() == 201) {
+            if (trace.getEntryCount() == 201) {
                 break;
             }
             // otherwise continue
         }
         container.interruptAppUnderTest();
         assertThat(trace).isNotNull();
+        entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(201);
         assertThat(entries.get(100).isLimitExceededMarker()).isTrue();
         assertThat(entries.get(101).isLimitExtendedMarker()).isTrue();
