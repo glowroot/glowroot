@@ -110,7 +110,7 @@ class LayoutService {
         jg.writeBooleanField("needsAuthentication", true);
         jg.writeBooleanField("readOnlyPasswordEnabled",
                 userInterfaceConfig.readOnlyPasswordEnabled());
-        jg.writeStringField("footerMessage", "version " + version);
+        jg.writeStringField("footerMessage", "Glowroot version " + version);
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -144,7 +144,7 @@ class LayoutService {
         UserInterfaceConfig userInterfaceConfig = configService.getUserInterfaceConfig();
         return Layout.builder()
                 .jvmHeapDump(heapDumps != null)
-                .footerMessage("version " + version)
+                .footerMessage("Glowroot version " + version)
                 .adminPasswordEnabled(userInterfaceConfig.adminPasswordEnabled())
                 .readOnlyPasswordEnabled(userInterfaceConfig.readOnlyPasswordEnabled())
                 .anonymousAccess(userInterfaceConfig.anonymousAccess())

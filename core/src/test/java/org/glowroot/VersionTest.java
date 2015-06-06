@@ -73,7 +73,7 @@ public class VersionTest {
         // when
         String version = Version.getVersion(manifest);
         // then
-        assertThat(version).isEqualTo("0.1.2-SNAPSHOT, commit 0123456789, built at xyz");
+        assertThat(version).isEqualTo("0.1.2-SNAPSHOT, commit 0123456789, built xyz");
     }
 
     @Test
@@ -88,7 +88,7 @@ public class VersionTest {
         // when
         String version = Version.getVersion(manifest);
         // then
-        assertThat(version).isEqualTo("0.1.2-SNAPSHOT, built at xyz");
+        assertThat(version).isEqualTo("0.1.2-SNAPSHOT, built xyz");
     }
 
     @Test

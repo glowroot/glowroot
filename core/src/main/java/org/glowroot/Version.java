@@ -62,7 +62,12 @@ class Version {
         if (version.endsWith("-SNAPSHOT")) {
             return getSnapshotVersion(version, mainAttributes);
         }
-        return version;
+        String timestamp = mainAttributes.getValue("Build-Time");
+        if (timestamp == null) {
+            logger.warn("could not find Build-Time attribute in META-INF/MANIFEST.MF file");
+            return version;
+        }
+        return version + ", built " + timestamp;
     }
 
     private static String getSnapshotVersion(String version, Attributes mainAttributes) {
@@ -77,13 +82,13 @@ class Version {
                         + " should be a 40 character git commit hash");
             }
         }
-        String snapshotTimestamp = mainAttributes.getValue("Build-Time");
-        if (snapshotTimestamp == null) {
+        String timestamp = mainAttributes.getValue("Build-Time");
+        if (timestamp == null) {
             logger.warn("could not find Build-Time attribute in META-INF/MANIFEST.MF file");
             return snapshotVersion.toString();
         }
-        snapshotVersion.append(", built at ");
-        snapshotVersion.append(snapshotTimestamp);
+        snapshotVersion.append(", built ");
+        snapshotVersion.append(timestamp);
         return snapshotVersion.toString();
     }
 }
