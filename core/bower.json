@@ -8,14 +8,14 @@
     "bootstrap-select": "1.7.2",
     "d3": "2.10.3",
     "eonasdan-bootstrap-datetimepicker": "4.7.14",
-    "flot": "trask/flot#a1017f8b7807ffe2b94a5c54bea2b32cd5f5987b",
+    "flot": "trask/flot#glowroot-0.8",
     "flot.tooltip": "0.8.5",
     "fontawesome": "4.3.0",
     "handlebars": "3.0.3",
     "jquery": "2.1.4",
     "moment": "2.10.3",
-    "sequeljs": "trask/sequeljs#b9165eb1defa6d63ec457b853369cfdbe9a1e99d",
+    "sequeljs": "trask/sequeljs#glowroot-0.8",
     "spinjs": "2.3.0",
-    "stackvis": "trask/node-stackvis#1b4231badff79e31d29cf487993bbb23b586d9d2"
+    "stackvis": "trask/node-stackvis#glowroot-0.8"
   }
 }
