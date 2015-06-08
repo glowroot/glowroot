@@ -5,6 +5,7 @@
   <formats>
     <format>zip</format>
   </formats>
+  <baseDirectory>glowroot</baseDirectory>
   <dependencySets>
     <dependencySet>
       <includes>

@@ -59,14 +59,14 @@
   </dependencies>
 
   <build>
-    <finalName>glowroot</finalName>
+    <finalName>glowroot-${project.version}</finalName>
     <plugins>
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <version>2.5.4</version>
         <configuration>
           <descriptors>
-            <descriptor>${basedir}/dist.xml</descriptor>
+            <descriptor>dist.xml</descriptor>
           </descriptors>
         </configuration>
         <executions>
