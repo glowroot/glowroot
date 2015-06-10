@@ -269,7 +269,7 @@ HandlebarsRendering = (function () {
       html += throwable.display + '</strong><br>';
       var i;
       for (i = 0; i < throwable.stackTrace.length; i++) {
-        html += '<div class="stack-trace-element">at ' + throwable.stackTrace[i] + '</div>';
+        html += '<div class="stack-trace-element">at ' + escapeHtml(throwable.stackTrace[i]) + '</div>';
       }
       if (throwable.framesInCommon) {
         html += '... ' + throwable.framesInCommon + ' more<br>';
@@ -286,7 +286,7 @@ HandlebarsRendering = (function () {
     var html = '';
     var i;
     for (i = 0; i < stackTrace.length; i++) {
-      html += stackTrace[i] + '<br>';
+      html += escapeHtml(stackTrace[i]) + '<br>';
     }
     return html;
   });
@@ -538,6 +538,10 @@ HandlebarsRendering = (function () {
     basicToggle(parent);
   }
 
+  function escapeHtml(html) {
+    return html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
   function buildMergedStackTree(rootNode, selector) {
 
     // root node is always synthetic root node
@@ -546,10 +550,6 @@ HandlebarsRendering = (function () {
       rootNode = rootNode.childNodes[0];
     } else {
       rootNode.stackTraceElement = MULTIPLE_ROOT_NODES;
-    }
-
-    function escapeHtml(html) {
-      return html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
     function initNodeIds() {
