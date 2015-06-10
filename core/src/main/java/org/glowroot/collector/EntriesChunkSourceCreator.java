@@ -83,8 +83,8 @@ public class EntriesChunkSourceCreator {
         private final long transactionStartTick;
         private final long captureTick;
 
-        private EntriesChunkSource(Iterator<TraceEntryImpl> entries,
-                long transactionStartTick, long captureTick) {
+        private EntriesChunkSource(Iterator<TraceEntryImpl> entries, long transactionStartTick,
+                long captureTick) {
             this.entries = entries;
             this.transactionStartTick = transactionStartTick;
             this.captureTick = captureTick;
@@ -121,13 +121,13 @@ public class EntriesChunkSourceCreator {
         @Override
         public boolean copyNext() throws IOException {
             if (closed) {
-                jg.flush();
                 return false;
             }
             TraceEntryImpl traceEntry = entries.next();
             if (!Tickers.lessThanOrEqual(traceEntry.getStartTick(), captureTick)) {
                 // this entry started after the capture tick
                 jg.writeEndArray();
+                jg.flush();
                 closed = true;
                 return true;
             }
@@ -140,6 +140,7 @@ public class EntriesChunkSourceCreator {
             }
             if (!entries.hasNext()) {
                 jg.writeEndArray();
+                jg.flush();
                 closed = true;
             }
             return true;
