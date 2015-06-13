@@ -190,9 +190,9 @@ HandlebarsRendering = (function () {
   function messageDetailHtml(detail, bold) {
     function maybeBoldPropName(propName) {
       if (bold) {
-        return '<span class="gt-bold">' + propName + ':</span> ';
+        return '<span class="gt-bold">' + propName + ':</span>';
       } else {
-        return propName + ': ';
+        return propName + ':';
       }
     }
 
@@ -201,13 +201,16 @@ HandlebarsRendering = (function () {
       if ($.isArray(propVal)) {
         // array values are supported to simulate multimaps, e.g. for http request parameters and http headers, both
         // of which can have multiple values for the same key
-        $.each(propVal, function (i, propVal) {
-          ret += '<div class="gt-break-word gt-second-line-indent">' + maybeBoldPropName(propName) + propVal + '</div>';
+        $.each(propVal, function (i, propv) {
+          var subdetail = {};
+          subdetail[propName] = propv;
+          ret += messageDetailHtml(subdetail, bold);
         });
       } else if (typeof propVal === 'object' && propVal !== null) {
         ret += maybeBoldPropName(propName) + '<br><div class="gt-indent1">' + messageDetailHtml(propVal) + '</div>';
       } else {
-        ret += '<div class="gt-break-word gt-second-line-indent">' + maybeBoldPropName(propName) + propVal + '</div>';
+        ret += '<div style="float: left;">' + maybeBoldPropName(propName) + '&nbsp;</div>'
+            + '<div class="gt-trace-attr-value">' + propVal + '</div>';
       }
     });
     return ret;
@@ -266,7 +269,8 @@ HandlebarsRendering = (function () {
   Handlebars.registerHelper('exceptionHtml', function (throwable) {
     var html = '<strong>';
     while (throwable) {
-      html += throwable.display + '</strong><br>';
+      html += '<span class="gt-break-word gt-preserve-newlines">' + escapeHtml(throwable.display)
+          + '</span></strong><br>';
       var i;
       for (i = 0; i < throwable.stackTrace.length; i++) {
         html += '<div class="stack-trace-element">at ' + escapeHtml(throwable.stackTrace[i]) + '</div>';
@@ -538,8 +542,8 @@ HandlebarsRendering = (function () {
     basicToggle(parent);
   }
 
-  function escapeHtml(html) {
-    return html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  function escapeHtml(text) {
+    return Handlebars.Utils.escapeExpression(text);
   }
 
   function buildMergedStackTree(rootNode, selector) {

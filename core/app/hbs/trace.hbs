@@ -27,19 +27,13 @@
     </button>
   {{/if}}
 </div>
-<div class="gt-break-word gt-second-line-indent">
-  <span class="gt-bold">Transaction type:</span>
-  {{transactionType}}
-</div>
-<div class="gt-break-word gt-second-line-indent">
-  <span class="gt-bold">Transaction name:</span>
-  {{transactionName}}
-</div>
+<div class="gt-trace-attr-name">Transaction type:&nbsp;</div>
+<div class="gt-trace-attr-value">{{transactionType}}</div>
+<div class="gt-trace-attr-name">Transaction name:&nbsp;</div>
+<div class="gt-trace-attr-value">{{transactionName}}</div>
 {{#if error}}
-  <div class="gt-break-word gt-second-line-indent">
-    <span class="gt-bold">Error:</span>
-    {{errorMessage}}
-  </div>
+  <div class="gt-trace-attr-name">Error:&nbsp;</div>
+  <div class="gt-trace-attr-value">{{errorMessage}}</div>
   {{#if errorThrowable}}
     <div class="gt-trace-exception-indent">
       <span class="gt-inline-block gt-unexpanded-content gt-link-color">exception</span>
@@ -51,24 +45,20 @@
   {{/if}}
 {{/if}}
 <div>
-  <span class="gt-bold">Start:</span>
-  {{date startTime}}
+  <div class="gt-trace-attr-name">Start:&nbsp;</div>
+  <div class="gt-trace-attr-value">{{date startTime}}</div>
 </div>
 <div>
-  <span class="gt-bold">Duration:</span>
-  {{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds
+  <div class="gt-trace-attr-name">Duration:&nbsp;</div>
+  <div class="gt-trace-attr-value">{{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds</div>
 </div>
 {{#if user}}
-  <div class="gt-break-word gt-second-line-indent">
-    <span class="gt-bold">User:</span>
-    {{user}}
-  </div>
+  <div class="gt-trace-attr-name">User:&nbsp;</div>
+  <div class="gt-trace-attr-value">{{user}}</div>
 {{/if}}
 {{#eachKeyValuePair customAttributes}}
-  <div class="gt-break-word gt-second-line-indent">
-    <span class="gt-bold">{{key}}:</span>
-    {{value}}
-  </div>
+  <div class="gt-trace-attr-name">{{key}}:&nbsp;</div>
+  <div class="gt-trace-attr-value">{{value}}</div>
 {{/eachKeyValuePair}}
 {{{customDetailHtml customDetail}}}
 <div class="gt-bold">

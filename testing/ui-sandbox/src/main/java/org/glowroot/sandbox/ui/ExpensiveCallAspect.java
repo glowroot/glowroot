@@ -343,13 +343,13 @@ public class ExpensiveCallAspect {
             if (value < 0.5) {
                 pluginServices.addTraceEntry(ErrorMessage.from(
                         new IllegalStateException("Exception in execute" + num
-                                + ", with no trace entry text and no custom error message",
+                                + "\nwith no trace entry text and no custom error message",
                                 getRandomCause())));
             } else {
                 pluginServices.addTraceEntry(ErrorMessage.from(
-                        "randomized error with no trace entry text",
+                        "randomized error\nwith no trace entry text",
                         new IllegalStateException("Exception in execute" + num
-                                + ", with no trace entry text", getRandomCause())));
+                                + "\nwith no trace entry text", getRandomCause())));
             }
             return;
         }
@@ -358,7 +358,7 @@ public class ExpensiveCallAspect {
         } else if (value < 0.96) {
             traceEntry.endWithError(ErrorMessage.from(
                     new IllegalStateException("Exception in execute" + num
-                            + ", with no custom error message", getRandomCause())));
+                            + "\nwith no custom error message", getRandomCause())));
         } else {
             traceEntry.endWithError(ErrorMessage.from("randomized error",
                     new IllegalStateException("Exception in execute" + num, getRandomCause())));
@@ -370,10 +370,10 @@ public class ExpensiveCallAspect {
         return new MessageSupplier() {
             @Override
             public Message get() {
-                Map<String, ?> detail = ImmutableMap.of("attr1", "value1", "attr2", "value2",
-                        "attr3", ImmutableMap.of("attr31",
+                Map<String, ?> detail = ImmutableMap.of("attr1", "value1\nwith newline", "attr2",
+                        "value2", "attr3", ImmutableMap.of("attr31",
                                 ImmutableMap.of("attr311", ImmutableList.of("v311aa", "v311bb")),
-                                "attr32", "value32", "attr33", "value33"));
+                                "attr32", "value32\nwith newline", "attr33", "value33"));
                 String traceEntryMessage = expensiveCallInvoker.getTraceEntryMessage(expensiveCall);
                 return Message.withDetail(traceEntryMessage, detail);
             }

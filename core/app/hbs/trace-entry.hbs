@@ -26,7 +26,11 @@
               <div class="gt-inline-block gt-unexpanded-content">{{firstPart message.text}}
                 <span class="gt-link-color"><strong>...</strong></span> {{lastPart message.text}}
               </div>
-              <span class="gt-inline-block gt-expanded-content gt-break-word hide">{{message.text}}</span>
+              <!-- only convert newlines to <br>s for long messages -->
+              <span class="gt-inline-block gt-expanded-content gt-break-word gt-preserve-newlines hide"><!--
+                lack of space here is significant because of gt-preserve-newlines
+             -->{{message.text}}<!--
+           --></span>
             </div>
           {{^}}
             {{#ifSqlMessage message.text}}
@@ -49,7 +53,12 @@
         {{#if error}}
           <div class="{{{errorIndentClass message}}}">
             <div>
-              <strong><span class="gt-inline-block gt-content-padding">{{error.message}}</span></strong>
+              <strong>
+                <span class="gt-inline-block gt-content-padding gt-break-word gt-preserve-newlines"><!--
+                 lack of space here is significant because of gt-preserve-newlines
+              -->{{error.message}}<!--
+             --></span>
+              </strong>
             </div>
             {{#if error.throwable}}
               <div class="{{{exceptionIndentClass message}}}">
