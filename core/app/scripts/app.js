@@ -178,6 +178,16 @@ glowroot.run([
         window.ga('send', 'pageview', {page: $location.path()});
       }
     });
+
+    // tolerant of missing whole (.2) and missing decimal (2.)
+    var percentileRegexp = '(([1-9][0-9]?)?(\\.[0-9]*)?|100(\\.0*)?)';
+    $rootScope.pattern = {
+      percentile: new RegExp('^' + percentileRegexp + '$'),
+      percentileList: new RegExp('^(' + percentileRegexp + ' *, *)*' + percentileRegexp + '$'),
+      integer: /^(0|[1-9][0-9]*)$/,
+      // tolerant of missing whole (.2) and missing decimal (2.)
+      double: /^(0|[1-9][0-9]*)?(\.[0-9]*)?$/
+    };
   }
 ]);
 

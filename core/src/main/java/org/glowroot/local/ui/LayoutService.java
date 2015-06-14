@@ -122,18 +122,18 @@ class LayoutService {
             long fixedGaugeIntervalSeconds, long fixedGaugeRollupSeconds) {
         // use linked hash set to maintain ordering in case there is no default transaction type
         List<String> transactionTypes = Lists.newArrayList(configService.getAllTransactionTypes());
-        String defaultTransactionType = configService.getDefaultTransactionType();
+        String defaultDisplayedTransactionType = configService.getDefaultDisplayedTransactionType();
         List<String> orderedTransactionTypes = Lists.newArrayList();
         if (transactionTypes.isEmpty()) {
-            defaultTransactionType = "NO TRANSACTION TYPES DEFINED";
+            defaultDisplayedTransactionType = "NO TRANSACTION TYPES DEFINED";
         } else {
-            if (!transactionTypes.contains(defaultTransactionType)) {
-                defaultTransactionType = transactionTypes.iterator().next();
+            if (!transactionTypes.contains(defaultDisplayedTransactionType)) {
+                defaultDisplayedTransactionType = transactionTypes.iterator().next();
             }
-            transactionTypes.remove(defaultTransactionType);
+            transactionTypes.remove(defaultDisplayedTransactionType);
         }
         // add default transaction type first
-        orderedTransactionTypes.add(defaultTransactionType);
+        orderedTransactionTypes.add(defaultDisplayedTransactionType);
         // add the rest alphabetical
         orderedTransactionTypes.addAll(
                 Ordering.from(String.CASE_INSENSITIVE_ORDER).sortedCopy(transactionTypes));
@@ -149,7 +149,8 @@ class LayoutService {
                 .readOnlyPasswordEnabled(userInterfaceConfig.readOnlyPasswordEnabled())
                 .anonymousAccess(userInterfaceConfig.anonymousAccess())
                 .addAllTransactionTypes(orderedTransactionTypes)
-                .defaultTransactionType(defaultTransactionType)
+                .defaultTransactionType(defaultDisplayedTransactionType)
+                .defaultPercentiles(configService.getGeneralConfig().defaultDisplayedPercentiles())
                 .addAllTransactionCustomAttributes(transactionCustomAttributes)
                 .fixedAggregateIntervalSeconds(fixedAggregateIntervalSeconds)
                 .fixedAggregateRollupSeconds(fixedAggregateRollupSeconds)

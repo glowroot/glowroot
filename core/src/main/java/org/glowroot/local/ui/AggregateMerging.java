@@ -22,10 +22,11 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
 import org.glowroot.collector.Aggregate;
@@ -37,6 +38,7 @@ import org.glowroot.collector.QueryComponent;
 import org.glowroot.collector.QueryComponent.AggregateQuery;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.AggregateDao;
+import org.glowroot.local.store.AlertingService;
 import org.glowroot.transaction.model.ProfileNode;
 
 public class AggregateMerging {
@@ -61,8 +63,8 @@ public class AggregateMerging {
         return timerMergedAggregate.build();
     }
 
-    public static HistogramMergedAggregate getHistogramMergedAggregate(List<Aggregate> aggregates)
-            throws Exception {
+    public static OverviewMergedAggregate getOverviewMergedAggregate(List<Aggregate> aggregates,
+            List<Double> percentiles) throws Exception {
         long transactionCount = 0;
         long totalMicros = 0;
         LazyHistogram histogram = new LazyHistogram();
@@ -71,10 +73,17 @@ public class AggregateMerging {
             totalMicros += aggregate.totalMicros();
             histogram.decodeFromByteBuffer(ByteBuffer.wrap(aggregate.histogram()));
         }
-        return HistogramMergedAggregate.builder()
-                .histogram(histogram)
+
+        List<PercentileValue> percentileValues = Lists.newArrayList();
+        for (double percentile : percentiles) {
+            percentileValues.add(PercentileValue.of(
+                    AlertingService.getPercentileWithSuffix(percentile) + " percentile",
+                    histogram.getValueAtPercentile(percentile)));
+        }
+        return OverviewMergedAggregate.builder()
                 .totalMicros(totalMicros)
                 .transactionCount(transactionCount)
+                .percentileValues(percentileValues)
                 .build();
     }
 
@@ -145,27 +154,20 @@ public class AggregateMerging {
 
     @Value.Immutable
     @JsonSerialize
-    public static abstract class HistogramMergedAggregateBase {
+    public static abstract class OverviewMergedAggregateBase {
 
-        @JsonIgnore
-        public abstract LazyHistogram histogram();
         public abstract long totalMicros();
         public abstract long transactionCount();
+        public abstract ImmutableList<PercentileValue> percentileValues();
+    }
 
-        @Value.Derived
-        public long percentile1() {
-            return histogram().getValueAtPercentile(50);
-        }
-
-        @Value.Derived
-        public long percentile2() {
-            return histogram().getValueAtPercentile(95);
-        }
-
-        @Value.Derived
-        public long percentile3() {
-            return histogram().getValueAtPercentile(99);
-        }
+    @Value.Immutable
+    @JsonSerialize
+    public static abstract class PercentileValueBase {
+        @Value.Parameter
+        public abstract String dataSeriesName();
+        @Value.Parameter
+        public abstract long value();
     }
 
     @Value.Immutable

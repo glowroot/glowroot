@@ -17,6 +17,7 @@ package org.glowroot.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -49,8 +50,13 @@ public abstract class GeneralConfigBase {
     }
 
     @Value.Default
-    public String defaultTransactionType() {
+    public String defaultDisplayedTransactionType() {
         return "";
+    }
+
+    @Value.Default
+    public ImmutableList<Double> defaultDisplayedPercentiles() {
+        return ImmutableList.of(50.0, 95.0, 99.0);
     }
 
     @Value.Derived

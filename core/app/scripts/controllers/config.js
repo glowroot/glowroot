@@ -24,17 +24,17 @@ glowroot.controller('ConfigCtrl', [
     document.title = 'Configuration \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'config';
 
-    $scope.pattern = {
-      // tolerant of missing whole (.2) and missing decimal (2.)
-      percentage: /^(0|[1-9][0-9]?|100)?(\.[0-9]*)?$/,
-      // tolerant of commas
-      integer: /^(0|[1-9][0-9]*)$/,
-      // missing whole (.2) and missing decimal (2.)
-      double: /^(0|[1-9][0-9]*)?(\.[0-9]*)?$/
-    };
-
     $scope.percentileSuffix = function (percentile) {
       var text = String(percentile);
+      if (text.equals('11') || /\.11$/.test(text)) {
+        return 'th';
+      }
+      if (text.equals('12') || /\.12$/.test(text)) {
+        return 'th';
+      }
+      if (text.equals('13') || /\.13$/.test(text)) {
+        return 'th';
+      }
       var lastChar = text.charAt(text.length - 1);
       if (lastChar === '1') {
         return 'st';

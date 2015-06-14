@@ -33,6 +33,7 @@ abstract class LayoutBase {
     abstract AnonymousAccess anonymousAccess();
     abstract ImmutableList<String> transactionTypes();
     abstract String defaultTransactionType();
+    abstract ImmutableList<Double> defaultPercentiles();
     abstract ImmutableList<String> transactionCustomAttributes();
     abstract long fixedAggregateIntervalSeconds();
     abstract long fixedAggregateRollupSeconds();

@@ -146,7 +146,7 @@ public class WebDriverSetup {
 
     private void setDefaultTransactionType() throws Exception {
         GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        generalConfig.setDefaultTransactionType("Servlet");
+        generalConfig.setDefaultDisplayedTransactionType("Servlet");
         container.getConfigService().updateGeneralConfig(generalConfig);
     }
 

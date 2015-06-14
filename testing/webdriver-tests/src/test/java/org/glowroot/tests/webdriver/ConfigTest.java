@@ -45,6 +45,8 @@ public class ConfigTest extends WebDriverTest {
         page.getStoreThresholdTextField().sendKeys("2345");
         page.getProfilingIntervalTextField().clear();
         page.getProfilingIntervalTextField().sendKeys("3456");
+        page.getDefaultDisplayedPercentilesTextField().clear();
+        page.getDefaultDisplayedPercentilesTextField().sendKeys("3,4,5,6");
         page.clickSaveButton();
 
         // then
@@ -55,6 +57,8 @@ public class ConfigTest extends WebDriverTest {
         assertThat(page.getEnabledSwitchOff().getAttribute("class").split(" ")).contains("active");
         assertThat(page.getStoreThresholdTextField().getAttribute("value")).isEqualTo("2345");
         assertThat(page.getProfilingIntervalTextField().getAttribute("value")).isEqualTo("3456");
+        assertThat(page.getDefaultDisplayedPercentilesTextField().getAttribute("value"))
+                .isEqualTo("3, 4, 5, 6");
     }
 
     @Test

@@ -15,6 +15,8 @@
  */
 package org.glowroot.container.config;
 
+import java.util.List;
+
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -22,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
+import com.google.common.collect.Lists;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
@@ -30,7 +33,8 @@ public class GeneralConfig {
     private boolean enabled;
     private int traceStoreThresholdMillis;
     private int profilingIntervalMillis;
-    private String defaultTransactionType = "";
+    private String defaultDisplayedTransactionType = "";
+    private List<Double> defaultDisplayedPercentiles = Lists.newArrayList();
 
     private final String version;
 
@@ -62,12 +66,20 @@ public class GeneralConfig {
         this.profilingIntervalMillis = profilingIntervalMillis;
     }
 
-    public String getDefaultTransactionType() {
-        return defaultTransactionType;
+    public String getDefaultDisplayedTransactionType() {
+        return defaultDisplayedTransactionType;
     }
 
-    public void setDefaultTransactionType(String defaultTransactionType) {
-        this.defaultTransactionType = defaultTransactionType;
+    public void setDefaultDisplayedTransactionType(String defaultDisplayedTransactionType) {
+        this.defaultDisplayedTransactionType = defaultDisplayedTransactionType;
+    }
+
+    public List<Double> getDefaultDisplayedPercentiles() {
+        return defaultDisplayedPercentiles;
+    }
+
+    public void setDefaultDisplayedPercentiles(List<Double> defaultDisplayedPercentiles) {
+        this.defaultDisplayedPercentiles = defaultDisplayedPercentiles;
     }
 
     public String getVersion() {
@@ -84,7 +96,9 @@ public class GeneralConfig {
             return Objects.equal(enabled, that.enabled)
                     && Objects.equal(traceStoreThresholdMillis, that.traceStoreThresholdMillis)
                     && Objects.equal(profilingIntervalMillis, that.profilingIntervalMillis)
-                    && Objects.equal(defaultTransactionType, that.defaultTransactionType);
+                    && Objects.equal(defaultDisplayedTransactionType,
+                            that.defaultDisplayedTransactionType)
+                    && Objects.equal(defaultDisplayedPercentiles, that.defaultDisplayedPercentiles);
         }
         return false;
     }
@@ -95,7 +109,7 @@ public class GeneralConfig {
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(enabled, traceStoreThresholdMillis, profilingIntervalMillis,
-                defaultTransactionType);
+                defaultDisplayedTransactionType, defaultDisplayedPercentiles);
     }
 
     @Override
@@ -104,7 +118,8 @@ public class GeneralConfig {
                 .add("enabled", enabled)
                 .add("traceStoreThresholdMillis", traceStoreThresholdMillis)
                 .add("profilingIntervalMillis", profilingIntervalMillis)
-                .add("defaultTransactionType", defaultTransactionType)
+                .add("defaultDisplayedTransactionType", defaultDisplayedTransactionType)
+                .add("defaultDisplayedPercentiles", defaultDisplayedPercentiles)
                 .add("version", version)
                 .toString();
     }
@@ -114,18 +129,21 @@ public class GeneralConfig {
             @JsonProperty("enabled") @Nullable Boolean enabled,
             @JsonProperty("traceStoreThresholdMillis") @Nullable Integer traceStoreThresholdMillis,
             @JsonProperty("profilingIntervalMillis") @Nullable Integer profilingIntervalMillis,
-            @JsonProperty("defaultTransactionType") @Nullable String defaultTransactionType,
+            @JsonProperty("defaultDisplayedTransactionType") @Nullable String defaultDisplayedTransactionType,
+            @JsonProperty("defaultDisplayedPercentiles") @Nullable List<Double> defaultDisplayedPercentiles,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(enabled, "enabled");
         checkRequiredProperty(traceStoreThresholdMillis, "traceStoreThresholdMillis");
         checkRequiredProperty(profilingIntervalMillis, "profilingIntervalMillis");
-        checkRequiredProperty(defaultTransactionType, "defaultTransactionType");
+        checkRequiredProperty(defaultDisplayedTransactionType, "defaultDisplayedTransactionType");
+        checkRequiredProperty(defaultDisplayedPercentiles, "defaultDisplayedPercentiles");
         checkRequiredProperty(version, "version");
         GeneralConfig config = new GeneralConfig(version);
         config.setEnabled(enabled);
         config.setTraceStoreThresholdMillis(traceStoreThresholdMillis);
         config.setProfilingIntervalMillis(profilingIntervalMillis);
-        config.setDefaultTransactionType(defaultTransactionType);
+        config.setDefaultDisplayedTransactionType(defaultDisplayedTransactionType);
+        config.setDefaultDisplayedPercentiles(defaultDisplayedPercentiles);
         return config;
     }
 }

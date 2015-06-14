@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-/* global glowroot, $ */
+/* global glowroot, angular, $ */
 
 glowroot.controller('TransactionOverviewCtrl', [
   '$scope',
   '$location',
   '$http',
   '$filter',
+  '$timeout',
   'charts',
-  function ($scope, $location, $http, $filter, charts) {
+  'modals',
+  function ($scope, $location, $http, $filter, $timeout, charts, modals) {
 
     $scope.$parent.activeTabItem = 'overview';
 
@@ -33,6 +35,53 @@ glowroot.controller('TransactionOverviewCtrl', [
         charts.refreshData('backend/transaction/overview', chartState, $scope, onRefreshData);
       }
     });
+
+    $scope.openCustomPercentilesModal = function () {
+      $scope.customPercentiles = $scope.percentiles.join(', ');
+      modals.display('#customPercentilesModal', true);
+      $timeout(function () {
+        $('#customPercentiles').focus();
+      });
+    };
+
+    $scope.applyCustomPercentiles = function () {
+      var percentiles = [];
+      angular.forEach($scope.customPercentiles.split(','), function (percentile) {
+        percentile = percentile.trim();
+        if (percentile.length) {
+          percentiles.push(Number(percentile));
+        }
+      });
+      $scope.percentiles = sortNumbers(percentiles);
+      if (angular.equals($scope.percentiles, $scope.layout.defaultPercentiles)) {
+        $location.search('percentile', null);
+      } else {
+        $location.search('percentile', $scope.percentiles);
+      }
+      $('#customPercentilesModal').modal('hide');
+      $scope.$parent.chartRefresh++;
+    };
+
+    function onLocationChangeSuccess() {
+      if ($location.search().percentile) {
+        var percentiles = [];
+        angular.forEach($location.search().percentile, function (percentile) {
+          percentiles.push(Number(percentile));
+        });
+        $scope.percentiles = sortNumbers(percentiles);
+      } else {
+        $scope.percentiles = $location.search().percentile || $scope.layout.defaultPercentiles;
+      }
+    }
+
+    function sortNumbers(arr) {
+      return arr.sort(function (a, b) {
+        return a - b;
+      });
+    }
+
+    $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
+    onLocationChangeSuccess();
 
     function onRefreshData(data, query) {
       $scope.transactionCounts = data.transactionCounts;

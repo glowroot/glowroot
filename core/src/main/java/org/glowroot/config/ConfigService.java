@@ -442,12 +442,13 @@ public class ConfigService {
         notifyConfigListeners();
     }
 
-    public String getDefaultTransactionType() {
-        String defaultTransactionType = config.generalConfig().defaultTransactionType();
-        if (!defaultTransactionType.isEmpty()) {
-            return defaultTransactionType;
+    public String getDefaultDisplayedTransactionType() {
+        String defaultDisplayedTransactionType =
+                config.generalConfig().defaultDisplayedTransactionType();
+        if (!defaultDisplayedTransactionType.isEmpty()) {
+            return defaultDisplayedTransactionType;
         }
-        return configFile.getDefaultTransactionType(config.instrumentationConfigs());
+        return configFile.getDefaultDisplayedTransactionType(config.instrumentationConfigs());
     }
 
     public ImmutableList<String> getAllTransactionTypes() {

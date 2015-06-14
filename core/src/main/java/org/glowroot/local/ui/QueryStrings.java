@@ -16,6 +16,8 @@
 package org.glowroot.local.ui;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -27,6 +29,7 @@ import com.google.common.base.CaseFormat;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.netty.handler.codec.http.QueryStringDecoder;
 
@@ -60,13 +63,23 @@ class QueryStrings {
             key = key.replace("Mbean", "MBean");
             Method setter = setters.get(key);
             checkNotNull(setter, "Unexpected attribute: %s", key);
-            Class<?> valueClass = setter.getParameterTypes()[0];
+            Type valueType = setter.getGenericParameterTypes()[0];
             Object value;
-            if (valueClass == Iterable.class) {
-                // only lists of type string supported
-                value = entry.getValue();
+            if (valueType instanceof ParameterizedType) {
+                // only generic iterable supported
+                valueType = ((ParameterizedType) valueType).getActualTypeArguments()[0];
+                List<Object> parsedValues = Lists.newArrayList();
+                for (String stringValue : entry.getValue()) {
+                    Object parsedValue = parseString(stringValue, (Class<?>) valueType);
+                    // ignore empty query param values, e.g. the empty percentile value in
+                    // percentile=&percentile=95&percentile=99
+                    if (parsedValue != null) {
+                        parsedValues.add(parsedValue);
+                    }
+                }
+                value = parsedValues;
             } else {
-                value = parseString(entry.getValue().get(0), valueClass);
+                value = parseString(entry.getValue().get(0), (Class<?>) valueType);
             }
             Reflections.invoke(setter, builder, value);
         }

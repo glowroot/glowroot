@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
@@ -48,6 +49,7 @@ import org.glowroot.common.Clock;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
+import org.glowroot.local.store.AlertingService;
 import org.glowroot.local.store.QueryResult;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.store.TransactionSummaryQuery;
@@ -94,22 +96,23 @@ class TransactionJsonService {
         List<Aggregate> aggregates = transactionCommonService.getAggregates(
                 request.transactionType(), request.transactionName(), request.from(), request.to(),
                 liveCaptureTime);
-        List<DataSeries> dataSeriesList = getDataSeriesForOverviewChart(request, aggregates);
+        List<DataSeries> dataSeriesList =
+                getDataSeriesForOverviewChart(request, aggregates, request.percentiles());
         Map<Long, Long> transactionCounts = getTransactionCounts(aggregates);
         if (!aggregates.isEmpty() && aggregates.get(0).captureTime() == request.from()) {
             // the left most aggregate is not really in the requested interval since it is for
             // prior capture times
             aggregates = aggregates.subList(1, aggregates.size());
         }
-        HistogramMergedAggregate histogramMergedAggregate =
-                AggregateMerging.getHistogramMergedAggregate(aggregates);
+        OverviewMergedAggregate mergedAggregate =
+                AggregateMerging.getOverviewMergedAggregate(aggregates, request.percentiles());
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
         jg.writeObjectField("dataSeries", dataSeriesList);
         jg.writeObjectField("transactionCounts", transactionCounts);
-        jg.writeObjectField("mergedAggregate", histogramMergedAggregate);
+        jg.writeObjectField("mergedAggregate", mergedAggregate);
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -311,19 +314,17 @@ class TransactionJsonService {
     }
 
     private List<DataSeries> getDataSeriesForOverviewChart(TransactionDataRequest request,
-            List<Aggregate> aggregates) throws Exception {
+            List<Aggregate> aggregates, List<Double> percentiles) throws Exception {
         if (aggregates.isEmpty()) {
             return Lists.newArrayList();
         }
         DataSeriesHelper dataSeriesHelper =
                 new DataSeriesHelper(clock, getDataPointIntervalMillis(request));
         List<DataSeries> dataSeriesList = Lists.newArrayList();
-        DataSeries dataSeries1 = new DataSeries("50th percentile");
-        DataSeries dataSeries2 = new DataSeries("95th percentile");
-        DataSeries dataSeries3 = new DataSeries("99th percentile");
-        dataSeriesList.add(dataSeries1);
-        dataSeriesList.add(dataSeries2);
-        dataSeriesList.add(dataSeries3);
+        for (double percentile : percentiles) {
+            dataSeriesList.add(new DataSeries(AlertingService.getPercentileWithSuffix(percentile)
+                    + " percentile"));
+        }
         Aggregate lastAggregate = null;
         for (Aggregate aggregate : aggregates) {
             if (lastAggregate == null) {
@@ -337,12 +338,12 @@ class TransactionJsonService {
             lastAggregate = aggregate;
             LazyHistogram histogram = new LazyHistogram();
             histogram.decodeFromByteBuffer(ByteBuffer.wrap(aggregate.histogram()));
-            dataSeries1.add(aggregate.captureTime(),
-                    histogram.getValueAtPercentile(50) / MICROSECONDS_PER_MILLISECOND);
-            dataSeries2.add(aggregate.captureTime(),
-                    histogram.getValueAtPercentile(95) / MICROSECONDS_PER_MILLISECOND);
-            dataSeries3.add(aggregate.captureTime(),
-                    histogram.getValueAtPercentile(99) / MICROSECONDS_PER_MILLISECOND);
+            for (int i = 0; i < percentiles.size(); i++) {
+                DataSeries dataSeries = dataSeriesList.get(i);
+                double percentile = percentiles.get(i);
+                dataSeries.add(aggregate.captureTime(),
+                        histogram.getValueAtPercentile(percentile) / MICROSECONDS_PER_MILLISECOND);
+            }
         }
         if (lastAggregate != null) {
             dataSeriesHelper.addFinalDownslopeIfNeeded(request.to(), dataSeriesList, null,
@@ -580,6 +581,7 @@ class TransactionJsonService {
         abstract long to();
         abstract String transactionType();
         abstract @Nullable String transactionName();
+        abstract ImmutableList<Double> percentiles();
     }
 
     @Value.Immutable

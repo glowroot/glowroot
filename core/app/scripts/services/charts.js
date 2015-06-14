@@ -228,6 +228,10 @@ glowroot.factory('charts', [
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName
       };
+      // TODO remove overview tab specific code from here
+      if ($scope.percentiles) {
+        query.percentiles = $scope.percentiles;
+      }
       $scope.showChartSpinner++;
       $http.get(url + queryStrings.encodeObject(query))
           .success(function (data) {

@@ -82,6 +82,15 @@
         </div>
         <div class="legendLabel gt-inline-block">{{seriesLabel.text}}</div>
       </div>
+      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
+      <a role="button"
+         class="gt-chart-button"
+         href="#"
+         ng-click="openCustomPercentilesModal()"
+         style="padding-left: 3px; vertical-align: -6px; font-size: 20px;">
+        <i title="Change currently displayed percentiles"
+           class="fa fa-ellipsis-h"></i>&nbsp;<!-- lack of space here is significant
+ --></a>
     </div>
   </div>
   <div ng-show="mergedAggregate.transactionCount"
@@ -100,17 +109,55 @@
     </span>
       in this period)
     </div>
-    <div>
-      <label>50th percentile:</label>
-      {{mergedAggregate.percentile1 / 1000 | gtMillis}} ms
+    <div ng-repeat="percentileValue in mergedAggregate.percentileValues">
+      <label>{{percentileValue.dataSeriesName}}:</label>
+      {{percentileValue.value / 1000 | gtMillis}} ms
     </div>
-    <div>
-      <label>95th percentile:</label>
-      {{mergedAggregate.percentile2 / 1000 | gtMillis}} ms
-    </div>
-    <div>
-      <label>99th percentile:</label>
-      {{mergedAggregate.percentile3 / 1000 | gtMillis}} ms
+  </div>
+</div>
+<div class="modal" id="customPercentilesModal" tabindex="-1">
+  <div class="modal-dialog"
+       style="width: 500px;">
+    <div class="modal-content">
+      <div ng-form
+           gt-form-with-primary-button>
+        <div class="modal-header">
+          <button type="button"
+                  class="close"
+                  data-dismiss="modal">
+            &times;
+          </button>
+          <h4 class="modal-title">Currently displayed percentiles</h4>
+        </div>
+        <div class="modal-body">
+          <div ng-form="customPercentilesForm"
+               class="form-group"
+               ng-class="{'has-error': customPercentilesForm.customPercentiles.$invalid}">
+            <label class="control-label" for="customPercentiles">
+              Comma-separated percentiles
+            </label>
+
+            <input class="form-control"
+                   ng-model="customPercentiles"
+                   ng-pattern="pattern.percentileList"
+                   name="customPercentiles"
+                   id="customPercentiles"
+                   style="width: 20em;">
+
+            <div class="help-block">
+              Custom list of percentiles to display.
+              <a href="http://hdrhistogram.github.io/HdrHistogram/">HdrHistogram</a> is used to bucket and store the
+              full range of values so that any percentile value can be reported with at most 1% error,
+              e.g. if the 99.9<sup>th</sup> percentile is reported as 1400 milliseconds, then that would be at most
+              14 milliseconds from the true 99.9<sup>th</sup> percentile value.
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" ng-click="applyCustomPercentiles()">Apply</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>

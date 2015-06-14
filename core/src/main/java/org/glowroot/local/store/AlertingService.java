@@ -31,7 +31,6 @@ import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -190,8 +189,7 @@ public class AlertingService {
         }
     }
 
-    @VisibleForTesting
-    static String getPercentileWithSuffix(double percentile) {
+    public static String getPercentileWithSuffix(double percentile) {
         String percentileText = new DecimalFormat("0.#########").format(percentile);
         return percentileText + getPercentileSuffix(percentileText);
     }

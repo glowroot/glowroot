@@ -319,7 +319,7 @@ glowroot.config([
     $stateProvider.state('config.general', {
       url: '/general',
       templateUrl: 'views/config/general.html',
-      controller: 'ConfigCommonCtrl',
+      controller: 'ConfigGeneralCtrl',
       resolve: {
         backendUrl: function () {
           return 'backend/config/general';

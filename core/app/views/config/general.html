@@ -58,23 +58,37 @@
       </div>
       <div class="form-group">
         <label class="col-lg-3 control-label"
-               for="defaultTransactionType">
-          Default transaction type
+               for="defaultDisplayedTransactionType">
+          Default displayed transaction type
         </label>
         <div class="col-lg-9">
-          <select ng-model="config.defaultTransactionType"
+          <select ng-model="config.defaultDisplayedTransactionType"
                   class="form-control"
-                  id="defaultTransactionType"
+                  id="defaultDisplayedTransactionType"
                   style="width: auto;">
             <option ng-repeat="transactionType in layout.transactionTypes"
                     value="{{transactionType}}"
-                    ng-selected="transactionType === config.defaultTransactionType">
+                    ng-selected="transactionType === config.defaultDisplayedTransactionType">
               {{transactionType}}
             </option>
           </select>
           <div class="help-block">
             The default transaction type displayed on the transactions and errors page.
           </div>
+        </div>
+      </div>
+      <div gt-form-group
+           gt-label="Default displayed percentiles"
+           gt-model="page.defaultDisplayedPercentiles"
+           gt-pattern="pattern.percentileList"
+           gt-required="loaded"
+           gt-width="20em">
+        <div class="help-block">
+          The default percentiles displayed on the transaction overview tab.
+          <a href="http://hdrhistogram.github.io/HdrHistogram/">HdrHistogram</a> is used to bucket and store the
+          full range of values so that any percentile value can be reported with at most 1% error,
+          e.g. if the 99.9<sup>th</sup> percentile is reported as 1400 milliseconds, then that would be at most
+          14 milliseconds from the true 99.9<sup>th</sup> percentile value.
         </div>
       </div>
       <div class="form-group gt-form-buttons">

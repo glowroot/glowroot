@@ -340,7 +340,13 @@ public class ConfigTest {
         config.setEnabled(!config.isEnabled());
         config.setTraceStoreThresholdMillis(config.getTraceStoreThresholdMillis() + 1);
         config.setProfilingIntervalMillis(config.getProfilingIntervalMillis() + 1);
-        config.setDefaultTransactionType(config.getDefaultTransactionType() + "a");
+        config.setDefaultDisplayedTransactionType(
+                config.getDefaultDisplayedTransactionType() + "a");
+        List<Double> percentiles = Lists.newArrayList();
+        for (double percentile : config.getDefaultDisplayedPercentiles()) {
+            percentiles.add(percentile / 2);
+        }
+        config.setDefaultDisplayedPercentiles(percentiles);
     }
 
     private static void updateAllFields(UserInterfaceConfig config) {

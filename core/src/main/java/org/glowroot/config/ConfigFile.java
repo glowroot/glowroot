@@ -68,9 +68,9 @@ class ConfigFile {
     private Config readValue(String content) throws IOException {
         Config config = mapper.readValue(content, Config.class);
         GeneralConfig generalConfig = config.generalConfig();
-        if (generalConfig.defaultTransactionType().isEmpty()) {
-            generalConfig = generalConfig.withDefaultTransactionType(
-                    getDefaultTransactionType(config.instrumentationConfigs()));
+        if (generalConfig.defaultDisplayedTransactionType().isEmpty()) {
+            generalConfig = generalConfig.withDefaultDisplayedTransactionType(
+                    getDefaultDisplayedTransactionType(config.instrumentationConfigs()));
             config = config.withGeneralConfig(generalConfig);
         }
         if (!mapper.readTree(content).has("gauges")) {
@@ -117,6 +117,9 @@ class ConfigFile {
         Config config;
         String warningMessage = null;
         try {
+            // handling upgrade from 0.8 to 0.8.1
+            content = content.replace("\"defaultTransactionType\"",
+                    "\"defaultDisplayedTransactionType\"");
             config = readValue(content);
         } catch (Exception e) {
             // immutables json processing wraps IOExceptions inside RuntimeExceptions so can't rely
@@ -144,7 +147,7 @@ class ConfigFile {
         return config;
     }
 
-    String getDefaultTransactionType(List<InstrumentationConfig> configs) {
+    String getDefaultDisplayedTransactionType(List<InstrumentationConfig> configs) {
         for (PluginDescriptor descriptor : pluginDescriptors) {
             if (!descriptor.transactionTypes().isEmpty()) {
                 return descriptor.transactionTypes().get(0);

@@ -60,7 +60,7 @@ public class UiSandboxMain {
             GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
             generalConfig.setEnabled(true);
             generalConfig.setProfilingIntervalMillis(100);
-            generalConfig.setDefaultTransactionType("Sandbox");
+            generalConfig.setDefaultDisplayedTransactionType("Sandbox");
             container.getConfigService().updateGeneralConfig(generalConfig);
             if (rollOverQuickly) {
                 StorageConfig storageConfig = container.getConfigService().getStorageConfig();

@@ -132,7 +132,39 @@ glowroot.controller('TransactionHeaderCtrl', [
     ];
 
     $scope.openCustomRange = function () {
-      $location.search('custom-range-modal', true);
+      modals.display('#customDateRangeModal', true);
+
+      var icons = {
+        time: 'fa fa-clock-o',
+        date: 'fa fa-calendar',
+        up: 'fa fa-chevron-up',
+        down: 'fa fa-chevron-down',
+        previous: 'fa fa-chevron-left gt-datepicker-arrows',
+        next: 'fa fa-chevron-right gt-datepicker-arrows'
+      };
+      var from = $scope.chartFrom;
+      var to = $scope.chartTo;
+      $('#customDateRangeFromDate').datetimepicker({
+        icons: icons,
+        format: 'L'
+      });
+      $('#customDateRangeFromTime').datetimepicker({
+        icons: icons,
+        format: 'LT'
+      });
+      $('#customDateRangeToDate').datetimepicker({
+        icons: icons,
+        format: 'L'
+      });
+      $('#customDateRangeToTime').datetimepicker({
+        icons: icons,
+        format: 'LT'
+      });
+      $('#customDateRangeFromDate').data('DateTimePicker').date(moment(from).startOf('day'));
+      $('#customDateRangeFromTime').data('DateTimePicker').date(moment(from));
+      $('#customDateRangeToDate').data('DateTimePicker').date(moment(to).startOf('day'));
+      $('#customDateRangeToTime').data('DateTimePicker').date(moment(to));
+      // don't focus on first input as that makes esc not work, plus likely to use date picker anyways
     };
 
     $scope.applyCustomDateRange = function () {
@@ -151,49 +183,5 @@ glowroot.controller('TransactionHeaderCtrl', [
       $scope.$parent.chartRefresh++;
       $('#customDateRangeModal').modal('hide');
     };
-
-    function onLocationChangeSuccess() {
-      if ($location.search()['custom-range-modal']) {
-        $('#customDateRangeModal').data('location-query', 'custom-range-modal');
-        modals.display('#customDateRangeModal', true);
-
-        var icons = {
-          time: 'fa fa-clock-o',
-          date: 'fa fa-calendar',
-          up: 'fa fa-chevron-up',
-          down: 'fa fa-chevron-down',
-          previous: 'fa fa-chevron-left gt-datepicker-arrows',
-          next: 'fa fa-chevron-right gt-datepicker-arrows'
-        };
-        var from = $scope.chartFrom;
-        var to = $scope.chartTo;
-        $('#customDateRangeFromDate').datetimepicker({
-          icons: icons,
-          format: 'L'
-        });
-        $('#customDateRangeFromTime').datetimepicker({
-          icons: icons,
-          format: 'LT'
-        });
-        $('#customDateRangeToDate').datetimepicker({
-          icons: icons,
-          format: 'L'
-        });
-        $('#customDateRangeToTime').datetimepicker({
-          icons: icons,
-          format: 'LT'
-        });
-        $('#customDateRangeFromDate').data('DateTimePicker').date(moment(from).startOf('day'));
-        $('#customDateRangeFromTime').data('DateTimePicker').date(moment(from));
-        $('#customDateRangeToDate').data('DateTimePicker').date(moment(to).startOf('day'));
-        $('#customDateRangeToTime').data('DateTimePicker').date(moment(to));
-        // don't focus on first input as that makes esc not work, plus likely to use date picker anyways
-      } else {
-        $('#customDateRangeModal').modal('hide');
-      }
-    }
-
-    $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
-    onLocationChangeSuccess();
   }
 ]);

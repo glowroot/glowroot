@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
@@ -493,7 +494,8 @@ class ConfigJsonService {
         abstract boolean enabled();
         abstract int traceStoreThresholdMillis();
         abstract int profilingIntervalMillis();
-        abstract String defaultTransactionType();
+        abstract String defaultDisplayedTransactionType();
+        abstract ImmutableList<Double> defaultDisplayedPercentiles();
         abstract String version();
 
         GeneralConfig toConfig() {
@@ -501,16 +503,18 @@ class ConfigJsonService {
                     .enabled(enabled())
                     .traceStoreThresholdMillis(traceStoreThresholdMillis())
                     .profilingIntervalMillis(profilingIntervalMillis())
-                    .defaultTransactionType(defaultTransactionType())
+                    .defaultDisplayedTransactionType(defaultDisplayedTransactionType())
+                    .defaultDisplayedPercentiles(
+                            Ordering.natural().immutableSortedCopy(defaultDisplayedPercentiles()))
                     .build();
         }
-
         private static GeneralConfigDto fromConfig(GeneralConfig config) {
             return GeneralConfigDto.builder()
                     .enabled(config.enabled())
                     .traceStoreThresholdMillis(config.traceStoreThresholdMillis())
                     .profilingIntervalMillis(config.profilingIntervalMillis())
-                    .defaultTransactionType(config.defaultTransactionType())
+                    .defaultDisplayedTransactionType(config.defaultDisplayedTransactionType())
+                    .defaultDisplayedPercentiles(config.defaultDisplayedPercentiles())
                     .version(config.version())
                     .build();
         }
