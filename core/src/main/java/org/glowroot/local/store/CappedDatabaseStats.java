@@ -15,7 +15,6 @@
  */
 package org.glowroot.local.store;
 
-
 public class CappedDatabaseStats implements CappedDatabaseStatsMXBean {
 
     static final String AGGREGATE_QUERIES = "aggregate queries";

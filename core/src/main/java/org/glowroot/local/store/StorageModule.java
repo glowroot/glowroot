@@ -21,7 +21,6 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import javax.annotation.Nullable;
 import javax.management.InstanceAlreadyExistsException;
-import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
@@ -63,6 +62,9 @@ public class StorageModule {
     private final @Nullable ReaperRunnable reaperRunnable;
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
 
+    @OnlyUsedByTests
+    private volatile boolean unregisterMBeans;
+
     public StorageModule(File dataDir, Map<String, String> properties, Clock clock, Ticker ticker,
             ConfigModule configModule, ScheduledExecutorService scheduledExecutor,
             LazyPlatformMBeanServer lazyPlatformMBeanServer, boolean viewerModeEnabled)
@@ -94,11 +96,16 @@ public class StorageModule {
             @Override
             public void call(MBeanServer mbeanServer) throws Exception {
                 try {
-                    // checkNotNull is just to satisfy checker framework
-                    mbeanServer.registerMBean(
-                            new CappedDatabaseStats(checkNotNull(cappedDatabase)),
+                    checkNotNull(cappedDatabase);
+                    mbeanServer.registerMBean(new CappedDatabaseStats(cappedDatabase),
                             new ObjectName("org.glowroot:type=CappedDatabaseStats"));
+                    mbeanServer.registerMBean(new H2DatabaseStats(dataSource),
+                            new ObjectName("org.glowroot:type=H2DatabaseStats"));
+                    unregisterMBeans = true;
                 } catch (InstanceAlreadyExistsException e) {
+                    // this happens during unit tests when a non-shared local container is used
+                    // (so that then there are two local containers in the same jvm)
+                    //
                     // log exception at debug level
                     logger.debug(e.getMessage(), e);
                 }
@@ -161,12 +168,11 @@ public class StorageModule {
 
     @OnlyUsedByTests
     public void close() throws Exception {
-        try {
+        if (unregisterMBeans) {
             lazyPlatformMBeanServer.unregisterMBean(
                     new ObjectName("org.glowroot:type=CappedDatabaseStats"));
-        } catch (InstanceNotFoundException e) {
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
+            lazyPlatformMBeanServer.unregisterMBean(
+                    new ObjectName("org.glowroot:type=H2DatabaseStats"));
         }
         if (reaperRunnable != null) {
             reaperRunnable.cancel();

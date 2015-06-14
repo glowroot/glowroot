@@ -285,6 +285,10 @@ public class DataSource {
         }
     }
 
+    long getDbFileSize() {
+        return dbFile == null ? 0 : dbFile.length();
+    }
+
     @OnlyUsedByTests
     void close() throws SQLException {
         synchronized (lock) {
