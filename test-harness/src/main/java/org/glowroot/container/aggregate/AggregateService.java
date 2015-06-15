@@ -19,9 +19,12 @@ import java.util.List;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Stopwatch;
 
 import org.glowroot.container.common.HttpClient;
 import org.glowroot.container.common.ObjectMappers;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class AggregateService {
 
@@ -34,6 +37,17 @@ public class AggregateService {
     }
 
     public List<Query> getQueries() throws Exception {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (stopwatch.elapsed(SECONDS) < 5) {
+            List<Query> queries = getQueriesInternal();
+            if (!queries.isEmpty()) {
+                return queries;
+            }
+        }
+        throw new AssertionError("No queries found");
+    }
+
+    private List<Query> getQueriesInternal() throws Exception {
         String content = httpClient.get("/backend/transaction/queries?from=0&to=" + Long.MAX_VALUE
                 + "&transaction-type=Test+harness");
         return mapper.readValue(content, new TypeReference<List<Query>>() {});
