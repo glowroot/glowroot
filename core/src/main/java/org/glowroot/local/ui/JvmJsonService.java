@@ -23,7 +23,8 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
@@ -54,6 +55,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +72,9 @@ import org.glowroot.jvm.OptionalService;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.local.store.GaugePointDao;
 import org.glowroot.markers.UsedByJsonBinding;
+import org.glowroot.transaction.TransactionCollector;
+import org.glowroot.transaction.TransactionRegistry;
+import org.glowroot.transaction.model.Transaction;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -79,7 +84,7 @@ class JvmJsonService {
     private static final Logger logger = LoggerFactory.getLogger(JvmJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final Ordering<ThreadInfo> threadInfoOrdering =
+    private static final Ordering<ThreadInfo> unmatchedThreadInfoOrdering =
             new Ordering<ThreadInfo>() {
                 @Override
                 public int compare(@Nullable ThreadInfo left, @Nullable ThreadInfo right) {
@@ -102,6 +107,8 @@ class JvmJsonService {
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
     private final GaugePointDao gaugePointDao;
     private final ConfigService configService;
+    private final TransactionRegistry transactionRegistry;
+    private final TransactionCollector transactionCollector;
 
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
     private final OptionalService<HeapDumps> heapDumps;
@@ -111,13 +118,16 @@ class JvmJsonService {
     private final long fixedGaugeRollupMillis;
 
     JvmJsonService(LazyPlatformMBeanServer lazyPlatformMBeanServer, GaugePointDao gaugePointDao,
-            ConfigService configService,
+            ConfigService configService, TransactionRegistry transactionRegistry,
+            TransactionCollector transactionCollector,
             OptionalService<ThreadAllocatedBytes> threadAllocatedBytes,
             OptionalService<HeapDumps> heapDumps, @Nullable String processId,
             long fixedGaugeIntervalSeconds, long fixedGaugeRollupSeconds) {
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
         this.gaugePointDao = gaugePointDao;
         this.configService = configService;
+        this.transactionRegistry = transactionRegistry;
+        this.transactionCollector = transactionCollector;
         this.threadAllocatedBytes = threadAllocatedBytes;
         this.heapDumps = heapDumps;
         this.processId = processId;
@@ -209,35 +219,65 @@ class JvmJsonService {
     @GET("/backend/jvm/thread-dump")
     String getThreadDump() throws IOException {
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+        Map<Long, Transaction> transactionsBefore = Maps.newHashMap();
+        for (Transaction transaction : transactionRegistry.getTransactions()) {
+            transactionsBefore.put(transaction.getThreadId(), transaction);
+        }
         ThreadInfo[] threadInfos =
                 threadBean.getThreadInfo(threadBean.getAllThreadIds(), Integer.MAX_VALUE);
-        List<ThreadInfo> sortedThreadInfos =
-                threadInfoOrdering.immutableSortedCopy(Arrays.asList(threadInfos));
+        final Map<Long, Transaction> matchedTransactions = Maps.newHashMap();
+        for (Transaction transaction : transactionRegistry.getTransactions()) {
+            if (transactionsBefore.get(transaction.getThreadId()) == transaction) {
+                matchedTransactions.put(transaction.getThreadId(), transaction);
+            }
+        }
+        long currentThreadId = Thread.currentThread().getId();
+        ThreadInfo currentThreadInfo = null;
+        List<ThreadInfo> matchedThreadInfos = Lists.newArrayList();
+        List<ThreadInfo> unmatchedThreadInfos = Lists.newArrayList();
+        for (ThreadInfo threadInfo : threadInfos) {
+            long threadId = threadInfo.getThreadId();
+            if (threadId == currentThreadId) {
+                currentThreadInfo = threadInfo;
+            } else if (matchedTransactions.containsKey(threadId)) {
+                matchedThreadInfos.add(threadInfo);
+            } else {
+                unmatchedThreadInfos.add(threadInfo);
+            }
+        }
+        // sort descending by duration
+        Collections.sort(matchedThreadInfos, new Comparator<ThreadInfo>() {
+            @Override
+            public int compare(ThreadInfo left, ThreadInfo right) {
+                Transaction leftTransaction = matchedTransactions.get(left.getThreadId());
+                Transaction rightTransaction = matchedTransactions.get(right.getThreadId());
+                return Longs.compare(rightTransaction.getDuration(), leftTransaction.getDuration());
+            }
+        });
+        // sort descending by stack trace length
+        Collections.sort(unmatchedThreadInfos, unmatchedThreadInfoOrdering);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartArray();
-        long currentThreadId = Thread.currentThread().getId();
-        for (ThreadInfo threadInfo : sortedThreadInfos) {
-            jg.writeStartObject();
-            jg.writeStringField("name", threadInfo.getThreadName());
-            jg.writeStringField("state", threadInfo.getThreadState().name());
-            jg.writeStringField("lockName", threadInfo.getLockName());
-            jg.writeArrayFieldStart("stackTrace");
-            boolean trimCurrentThreadStack = threadInfo.getThreadId() == currentThreadId;
-            for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
-                if (trimCurrentThreadStack && !stackTraceElement.getClassName().equals(
-                        JvmJsonService.class.getName())) {
-                    // just cleaning current thread's stack trace a bit to make it more obvious
-                    // that it is just the current thread
-                    continue;
-                }
-                trimCurrentThreadStack = false;
-                jg.writeString(stackTraceElement.toString());
-            }
-            jg.writeEndArray();
-            jg.writeEndObject();
+        jg.writeStartObject();
+        jg.writeArrayFieldStart("matchedThreads");
+        for (ThreadInfo threadInfo : matchedThreadInfos) {
+            Transaction matchedTransaction = matchedTransactions.get(threadInfo.getThreadId());
+            writeThreadInfo(threadInfo, matchedTransaction, jg);
         }
         jg.writeEndArray();
+        jg.writeArrayFieldStart("unmatchedThreads");
+        for (ThreadInfo threadInfo : unmatchedThreadInfos) {
+            writeThreadInfo(threadInfo, null, jg);
+        }
+        jg.writeEndArray();
+        if (currentThreadInfo != null) {
+            jg.writeFieldName("currentThread");
+            Transaction matchedTransaction =
+                    matchedTransactions.get(currentThreadInfo.getThreadId());
+            writeThreadInfo(currentThreadInfo, matchedTransaction, jg);
+        }
+        jg.writeEndObject();
+
         jg.close();
         return sb.toString();
     }
@@ -395,6 +435,28 @@ class JvmJsonService {
         return sb.toString();
     }
 
+    private void writeThreadInfo(ThreadInfo threadInfo,
+            @Nullable Transaction matchedTransaction, JsonGenerator jg) throws IOException {
+        jg.writeStartObject();
+        if (matchedTransaction != null) {
+            jg.writeStringField("transactionType", matchedTransaction.getTransactionType());
+            jg.writeStringField("transactionName", matchedTransaction.getTransactionName());
+            jg.writeNumberField("transactionDuration", matchedTransaction.getDuration());
+            if (transactionCollector.shouldStore(matchedTransaction)) {
+                jg.writeStringField("traceId", matchedTransaction.getId());
+            }
+        }
+        jg.writeStringField("name", threadInfo.getThreadName());
+        jg.writeStringField("state", threadInfo.getThreadState().name());
+        jg.writeStringField("lockName", threadInfo.getLockName());
+        jg.writeArrayFieldStart("stackTrace");
+        for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
+            jg.writeString(stackTraceElement.toString());
+        }
+        jg.writeEndArray();
+        jg.writeEndObject();
+    }
+
     private static List<Number /*@Nullable*/[]> convertToDataSeriesWithGaps(
             ImmutableList<GaugePoint> gaugePoints, double gapMillis) {
         List<Number /*@Nullable*/[]> points = Lists.newArrayList();
@@ -436,7 +498,7 @@ class JvmJsonService {
         return Availability.of(true, "");
     }
 
-    private @Nullable static String getHeapDumpPathFromCommandLine() {
+    private static @Nullable String getHeapDumpPathFromCommandLine() {
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
         for (String arg : runtimeMXBean.getInputArguments()) {
             if (arg.startsWith("-XX:HeapDumpPath=")) {
@@ -468,7 +530,7 @@ class JvmJsonService {
         return sortedAttributeMap;
     }
 
-    private Throwable getRootCause(Throwable t) {
+    private static Throwable getRootCause(Throwable t) {
         Throwable cause = t.getCause();
         if (cause == null) {
             return t;
@@ -480,7 +542,7 @@ class JvmJsonService {
     // see list of allowed attribute value types:
     // http://docs.oracle.com/javase/7/docs/api/javax/management/openmbean/OpenType.html
     // #ALLOWED_CLASSNAMES_LIST
-    private @Nullable Object getMBeanAttributeValue(@Nullable Object value) {
+    private static @Nullable Object getMBeanAttributeValue(@Nullable Object value) {
         if (value == null) {
             return null;
         } else if (value instanceof CompositeData) {
@@ -496,7 +558,7 @@ class JvmJsonService {
         }
     }
 
-    private Object getCompositeDataValue(CompositeData compositeData) {
+    private static Object getCompositeDataValue(CompositeData compositeData) {
         // linked hash map used to preserve attribute ordering
         Map<String, /*@Nullable*/Object> valueMap = Maps.newLinkedHashMap();
         for (String key : compositeData.getCompositeType().keySet()) {
@@ -505,7 +567,7 @@ class JvmJsonService {
         return valueMap;
     }
 
-    private Object getTabularDataValue(TabularData tabularData) {
+    private static Object getTabularDataValue(TabularData tabularData) {
         // linked hash map used to preserve row ordering
         Map<String, Map<String, /*@Nullable*/Object>> rowMap = Maps.newLinkedHashMap();
         Set<String> attributeNames = tabularData.getTabularType().getRowType().keySet();
@@ -528,7 +590,7 @@ class JvmJsonService {
         return rowMap;
     }
 
-    private Object getArrayValue(Object value) {
+    private static Object getArrayValue(Object value) {
         int length = Array.getLength(value);
         List</*@Nullable*/Object> valueList = Lists.newArrayListWithCapacity(length);
         for (int i = 0; i < length; i++) {
@@ -673,5 +735,11 @@ class JvmJsonService {
     @JsonSerialize
     abstract static class RequestWithDirectoryBase {
         abstract String directory();
+    }
+
+    @Value.Immutable
+    @JsonSerialize
+    abstract static class ThreadDumpItemBase {
+        abstract String objectName();
     }
 }

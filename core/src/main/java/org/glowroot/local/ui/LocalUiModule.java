@@ -105,9 +105,9 @@ public class LocalUiModule {
                 clock, collectorModule.getFixedAggregateIntervalSeconds(),
                 storageModule.getFixedAggregateRollupSeconds());
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
-                gaugePointDao, configService, jvmModule.getThreadAllocatedBytes(),
-                jvmModule.getHeapDumps(), jvmModule.getProcessId(),
-                collectorModule.getFixedGaugeIntervalSeconds(),
+                gaugePointDao, configService, transactionRegistry, transactionCollector,
+                jvmModule.getThreadAllocatedBytes(), jvmModule.getHeapDumps(),
+                jvmModule.getProcessId(), collectorModule.getFixedGaugeIntervalSeconds(),
                 storageModule.getFixedGaugeRollupSeconds());
         ConfigJsonService configJsonService = new ConfigJsonService(configService,
                 cappedDatabase, configModule.getPluginDescriptors(), httpSessionManager,

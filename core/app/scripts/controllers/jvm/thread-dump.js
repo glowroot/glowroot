@@ -19,9 +19,11 @@
 glowroot.controller('JvmThreadDumpCtrl', [
   '$scope',
   '$http',
+  '$location',
   '$q',
+  'traceModal',
   'httpErrors',
-  function ($scope, $http, $q, httpErrors) {
+  function ($scope, $http, $location, $q, traceModal, httpErrors) {
 
     var threadDumpHtml;
 
@@ -43,8 +45,25 @@ glowroot.controller('JvmThreadDumpCtrl', [
 
     $scope.exportAsText = function () {
       var textWindow = window.open();
-      $(textWindow.document.body).html(threadDumpHtml.replace(/\n/g, '<br>').replace(/ /g, '&nbsp;'));
+      var exportHtml = threadDumpHtml
+          .replace(/ <a [^>]*>view trace<\/a>/g, '')
+          .replace(/\n/g, '<br>')
+          .replace(/ /g, '&nbsp;');
+      $(textWindow.document.body).html(exportHtml);
     };
+
+    function onLocationChangeSuccess() {
+      var modalTraceId = $location.search()['modal-trace-id'];
+      if (modalTraceId) {
+        $('#traceModal').data('location-query', 'modal-trace-id');
+        traceModal.displayModal(modalTraceId);
+      } else {
+        $('#traceModal').modal('hide');
+      }
+    }
+
+    $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
+    onLocationChangeSuccess();
 
     $scope.refresh = function (deferred) {
       $http.get('backend/jvm/thread-dump')
