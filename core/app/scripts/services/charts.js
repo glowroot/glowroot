@@ -133,25 +133,30 @@ glowroot.factory('charts', [
       }
     }
 
-    function roundUpLast(last, morePrecise) {
+    function roundUpLast(last, selection) {
       var hour = 60 * 60 * 1000;
       var day = 24 * hour;
       if (last > day) {
-        if (morePrecise) {
-          // round up to nearest hour
-          return Math.ceil(last / hour) * hour;
+        if (selection) {
+          // round down to nearest hour
+          return Math.floor(last / hour) * hour;
         } else {
           // round up to nearest day
           return Math.ceil(last / day) * day;
         }
       }
-      if (last > hour && !morePrecise) {
+      if (last > hour && !selection) {
         // round up to nearest hour
         return Math.ceil(last / hour) * hour;
       }
-      // round up to nearest minute
       var minute = 60 * 1000;
-      return Math.ceil(last / minute) * minute;
+      if (selection) {
+        // round down to nearest minute
+        return Math.floor(last / minute) * minute;
+      } else {
+        // round up to nearest minute
+        return Math.ceil(last / minute) * minute;
+      }
     }
 
     function getDataPointIntervalMillis(from, to) {
