@@ -104,6 +104,21 @@ class Schemas {
         }
     }
 
+    static boolean columnExists(String tableName, String columnName, Connection connection)
+            throws SQLException {
+        logger.debug("columnExists(): tableName={}, columnName={}", tableName, columnName);
+        ResultSet resultSet = connection.getMetaData().getColumns(null, null,
+                tableName.toUpperCase(Locale.ENGLISH), columnName.toUpperCase(Locale.ENGLISH));
+        ResultSetCloser closer = new ResultSetCloser(resultSet);
+        try {
+            return resultSet.next();
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
+        } finally {
+            closer.close();
+        }
+    }
+
     static ImmutableList<Column> getColumns(String tableName, Connection connection)
             throws SQLException {
         List<Column> columns = Lists.newArrayList();

@@ -118,8 +118,7 @@ public class StorageModule {
                 aggregateDao, new MailService());
         aggregateRepositoryImpl = new AggregateRepositoryImpl(aggregateDao, alertingService);
         traceDao = new TraceDao(dataSource, cappedDatabase);
-        gaugePointDao =
-                new GaugePointDao(configService, dataSource, clock, FIXED_GAUGE_ROLLUP_SECONDS);
+        gaugePointDao = new GaugePointDao(dataSource, clock, FIXED_GAUGE_ROLLUP_SECONDS);
         PreInitializeStorageShutdownClasses.preInitializeClasses();
         if (viewerModeEnabled) {
             reaperRunnable = null;

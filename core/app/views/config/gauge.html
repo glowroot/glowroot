@@ -67,6 +67,11 @@
                style="padding-top: 10px;">
             MBean not found
           </div>
+          <div ng-show="mbeanUnmatched"
+               class="gt-red"
+               style="padding-top: 10px;">
+            No matching MBean found
+          </div>
           <div ng-show="duplicateMBean"
                class="gt-red"
                style="padding-top: 10px;">
@@ -92,7 +97,7 @@
                 <label>
                   <input type="checkbox" ng-model="mbeanAttribute.checked">
                   {{mbeanAttribute.name}}
-                <span ng-show="!mbeanAttribute.available && !mbeanUnavailable"
+                <span ng-show="!mbeanAttribute.available && !mbeanUnavailable && !mbeanUnmatched"
                       class="gt-red"
                       style="padding-left: 10px;">
                   Attribute not found
@@ -110,7 +115,7 @@
               </td>
             </tr>
           </table>
-          <div ng-show="!allMBeanAttributes.length && !mbeanUnavailable && config.selectedMBeanObjectName"
+          <div ng-show="!allMBeanAttributes.length && !mbeanUnavailable && !mbeanUnmatched && config.selectedMBeanObjectName"
                class="gt-red">
             There are no number-valued attributes for this MBean
           </div>

@@ -15,11 +15,16 @@
  */
 package org.glowroot.collector;
 
+import javax.annotation.Nullable;
+
 import org.immutables.value.Value;
 
 @Value.Immutable
 public abstract class GaugePointBase {
+
     public abstract String gaugeName();
+    // everIncreasing is only used during store for creating gauge meta records
+    public abstract @Nullable Boolean everIncreasing();
     public abstract long captureTime();
     public abstract double value();
 }

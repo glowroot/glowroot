@@ -46,6 +46,7 @@ glowroot.controller('ConfigGaugeCtrl', [
         $scope.heading = $scope.heading.replace(/ /g, '\u00a0');
         $scope.selectedMBeanObjectName = data.config.mbeanObjectName;
         $scope.mbeanUnavailable = data.mbeanUnavailable;
+        $scope.mbeanUnmatched = data.mbeanUnmatched;
         var allMBeanAttributes = {};
         angular.forEach(data.mbeanAvailableAttributeNames, function (mbeanAttributeName) {
           allMBeanAttributes[mbeanAttributeName] = {
@@ -126,6 +127,9 @@ glowroot.controller('ConfigGaugeCtrl', [
     $scope.showMBeanObjectNameSpinner = 0;
 
     $scope.mbeanObjectNames = function (suggestion) {
+      if (suggestion.indexOf('*') !== -1) {
+        return [suggestion];
+      }
       var queryData = {
         partialMBeanObjectName: suggestion,
         limit: 10
@@ -156,6 +160,7 @@ glowroot.controller('ConfigGaugeCtrl', [
       if (!$scope.config.mbeanObjectName) {
         // the user cleared the text input and tabbed away
         $scope.mbeanUnavailable = false;
+        $scope.mbeanUnmatched = false;
         $scope.duplicateMBean = false;
         $scope.allMBeanAttributes = [];
       }
@@ -171,6 +176,7 @@ glowroot.controller('ConfigGaugeCtrl', [
           .success(function (data) {
             $scope.mbeanAttributesLoading = false;
             $scope.mbeanUnavailable = data.mbeanUnavailable;
+            $scope.mbeanUnmatched = data.mbeanUnmatched;
             $scope.duplicateMBean = data.duplicateMBean;
             $scope.allMBeanAttributes = [];
             angular.forEach(data.mbeanAttributes, function (mbeanAttribute) {
@@ -189,12 +195,13 @@ glowroot.controller('ConfigGaugeCtrl', [
     }
 
     $scope.hasMBeanObjectNameError = function () {
-      return $scope.config && (!$scope.config.mbeanObjectName || $scope.mbeanUnavailable || $scope.duplicateMBean);
+      return $scope.config && (!$scope.config.mbeanObjectName || $scope.mbeanUnavailable
+          || $scope.mbeanUnmatched || $scope.duplicateMBean);
     };
 
     $scope.saveDisabled = function () {
       return !$scope.hasChanges() || !$scope.config.mbeanAttributes.length || $scope.formCtrl.$invalid
-          || $scope.mbeanUnavailable || $scope.duplicateMBean;
+          || $scope.mbeanUnavailable || $scope.mbeanUnmatched || $scope.duplicateMBean;
     };
 
     $scope.save = function (deferred) {

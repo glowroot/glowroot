@@ -246,17 +246,17 @@ public class AdviceBuilder {
         if (maybePattern.contains("|")) {
             String[] parts = maybePattern.split("\\|");
             for (int i = 0; i < parts.length; i++) {
-                parts[i] = buildPatternPart(parts[i]);
+                parts[i] = buildSimplePattern(parts[i]);
             }
             return Pattern.compile(Joiner.on('|').join(parts));
         }
         if (maybePattern.contains("*")) {
-            return Pattern.compile(buildPatternPart(maybePattern));
+            return Pattern.compile(buildSimplePattern(maybePattern));
         }
         return null;
     }
 
-    private static String buildPatternPart(String part) {
+    public static String buildSimplePattern(String part) {
         // convert * into .* and quote the rest of the text using \Q...\E
         String pattern = "\\Q" + part.replace("*", "\\E.*\\Q") + "\\E";
         // strip off unnecessary \\Q\\E in case * appeared at beginning or end of part

@@ -61,9 +61,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.GaugePoint;
+import org.glowroot.collector.PatternObjectNameQueryExp;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GaugeConfig;
+import org.glowroot.config.GaugeConfigBase;
 import org.glowroot.config.MBeanAttribute;
 import org.glowroot.jvm.Availability;
 import org.glowroot.jvm.HeapDumps;
@@ -154,13 +156,18 @@ class JvmJsonService {
     }
 
     @GET("/backend/jvm/all-gauges")
-    String getAllGaugeNames() throws IOException {
+    String getAllGaugeNames() throws Exception {
         List<Gauge> gauges = Lists.newArrayList();
         for (GaugeConfig gaugeConfig : configService.getGaugeConfigs()) {
-            for (MBeanAttribute mbeanAttribute : gaugeConfig.mbeanAttributes()) {
-                gauges.add(Gauge.of(gaugeConfig.mbeanObjectName() + "," + mbeanAttribute.name(),
-                        mbeanAttribute.everIncreasing(),
-                        gaugeConfig.display() + '/' + mbeanAttribute.name()));
+            List<String> mbeanObjectNames =
+                    getMatchingMBeanObjectNames(gaugeConfig.mbeanObjectName());
+            for (String mbeanObjectName : mbeanObjectNames) {
+                for (MBeanAttribute mbeanAttribute : gaugeConfig.mbeanAttributes()) {
+                    gauges.add(Gauge.of(mbeanObjectName + "," + mbeanAttribute.name(),
+                            mbeanAttribute.everIncreasing(),
+                            GaugeConfigBase.display(mbeanObjectName) + '/'
+                                    + mbeanAttribute.name()));
+                }
             }
         }
         ImmutableList<Gauge> sortedGauges = Gauge.ordering.immutableSortedCopy(gauges);
@@ -251,6 +258,9 @@ class JvmJsonService {
             public int compare(ThreadInfo left, ThreadInfo right) {
                 Transaction leftTransaction = matchedTransactions.get(left.getThreadId());
                 Transaction rightTransaction = matchedTransactions.get(right.getThreadId());
+                // left and right are from matchedThreadInfos so have corresponding transactions
+                checkNotNull(leftTransaction);
+                checkNotNull(rightTransaction);
                 return Longs.compare(rightTransaction.getDuration(), leftTransaction.getDuration());
             }
         });
@@ -433,6 +443,21 @@ class JvmJsonService {
         jg.writeEndObject();
         jg.close();
         return sb.toString();
+    }
+
+    private List<String> getMatchingMBeanObjectNames(String mbeanObjectName)
+            throws InterruptedException {
+        if (!mbeanObjectName.contains("*")) {
+            return ImmutableList.of(mbeanObjectName);
+        }
+        Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null,
+                new PatternObjectNameQueryExp(mbeanObjectName));
+        List<String> mbeanObjectNames = Lists.newArrayList();
+        for (ObjectName objectName : objectNames) {
+            mbeanObjectNames.add(
+                    objectName.getDomain() + ":" + objectName.getKeyPropertyListString());
+        }
+        return mbeanObjectNames;
     }
 
     private void writeThreadInfo(ThreadInfo threadInfo,

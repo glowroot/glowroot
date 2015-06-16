@@ -289,6 +289,24 @@ public class DataSource {
         return dbFile == null ? 0 : dbFile.length();
     }
 
+    // helpful for upgrading schema
+    void renameTable(@Untainted String oldTableName, @Untainted String newTableName)
+            throws SQLException {
+        if (Schemas.tableExists(oldTableName, connection)) {
+            execute("alter table " + oldTableName + " rename to " + newTableName);
+        }
+    }
+
+    // helpful for upgrading schema
+    void renameColumn(@Untainted String tableName, @Untainted String oldColumnName,
+            @Untainted String newColumnName)
+            throws SQLException {
+        if (Schemas.columnExists(tableName, oldColumnName, connection)) {
+            execute("alter table " + tableName + " alter column " + oldColumnName + " rename to "
+                    + newColumnName);
+        }
+    }
+
     @OnlyUsedByTests
     void close() throws SQLException {
         synchronized (lock) {

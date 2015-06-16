@@ -188,6 +188,15 @@ class ConfigFile {
                 .mbeanObjectName("java.lang:type=Memory")
                 .addMbeanAttributes(MBeanAttribute.of("HeapMemoryUsage/used", false))
                 .build());
+        defaultGaugeConfigs.add(GaugeConfig.builder()
+                .mbeanObjectName("java.lang:type=GarbageCollector,name=*")
+                .addMbeanAttributes(MBeanAttribute.of("CollectionCount", true))
+                .addMbeanAttributes(MBeanAttribute.of("CollectionTime", true))
+                .build());
+        defaultGaugeConfigs.add(GaugeConfig.builder()
+                .mbeanObjectName("java.lang:type=MemoryPool,name=*")
+                .addMbeanAttributes(MBeanAttribute.of("Usage/used", false))
+                .build());
         GaugeConfig.Builder operatingSystemMBean = GaugeConfig.builder()
                 .mbeanObjectName("java.lang:type=OperatingSystem")
                 .addMbeanAttributes(MBeanAttribute.of("FreePhysicalMemorySize", false));

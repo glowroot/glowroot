@@ -73,13 +73,13 @@ public class GaugeCollectorTest {
     }
 
     @Test
-    public void shouldHandleInvalidMBeanObjectName() {
+    public void shouldHandleInvalidMBeanObjectName() throws InterruptedException {
         // given
         GaugeConfig gaugeConfigs = GaugeConfig.builder()
                 .mbeanObjectName("invalid mbean object name")
                 .build();
         // when
-        List<GaugePoint> gaugePoints = gaugeCollector.runInternal(gaugeConfigs);
+        List<GaugePoint> gaugePoints = gaugeCollector.collectGaugePoints(gaugeConfigs);
         // then
         assertThat(gaugePoints).isEmpty();
         verify(logger).debug(anyString(), any(Exception.class));
@@ -100,7 +100,7 @@ public class GaugeCollectorTest {
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(InstanceNotFoundException.class);
         // when
-        List<GaugePoint> gaugePoints = gaugeCollector.runInternal(gaugeConfigs);
+        List<GaugePoint> gaugePoints = gaugeCollector.collectGaugePoints(gaugeConfigs);
         // then
         assertThat(gaugePoints).isEmpty();
         verify(logger).debug(anyString(), any(Exception.class));
@@ -119,11 +119,11 @@ public class GaugeCollectorTest {
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(InstanceNotFoundException.class);
         // when
-        List<GaugePoint> gaugePoints = gaugeCollector.runInternal(gaugeConfig);
+        List<GaugePoint> gaugePoints = gaugeCollector.collectGaugePoints(gaugeConfig);
         // then
         assertThat(gaugePoints).isEmpty();
         verify(logger).debug(anyString(), any(Exception.class));
-        verify(logger).warn("mbean not found: {}", "xyz:aaa=bbb");
+        verify(logger).warn("mbean not {}: {}", "found", "xyz:aaa=bbb");
     }
 
     @Test
@@ -139,17 +139,17 @@ public class GaugeCollectorTest {
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(InstanceNotFoundException.class);
         // when
-        gaugeCollector.runInternal(gaugeConfig);
-        gaugeCollector.runInternal(gaugeConfig);
-        gaugeCollector.runInternal(gaugeConfig);
-        gaugeCollector.runInternal(gaugeConfig);
-        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
         // then
         verify(logger, times(5)).debug(anyString(), any(Exception.class));
-        verify(logger).warn("mbean not found: {} (waited {} seconds after jvm startup before"
+        verify(logger).warn("mbean not {}: {} (waited {} seconds after jvm startup before"
                 + " logging this warning to allow time for mbean registration"
                 + " - this wait time can be changed under Configuration > Advanced)",
-                "xyz:aaa=bbb", 60);
+                "found", "xyz:aaa=bbb", 60);
     }
 
     @Test
@@ -164,11 +164,11 @@ public class GaugeCollectorTest {
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(AttributeNotFoundException.class);
         // when
-        gaugeCollector.runInternal(gaugeConfig);
-        gaugeCollector.runInternal(gaugeConfig);
-        gaugeCollector.runInternal(gaugeConfig);
-        gaugeCollector.runInternal(gaugeConfig);
-        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
         // then
         verify(logger, times(10)).debug(anyString(), any(Exception.class));
         verify(logger).warn("mbean attribute {} not found: {}", "ccc", "xyz:aaa=bbb");
@@ -186,11 +186,11 @@ public class GaugeCollectorTest {
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(new RuntimeException("A msg"));
         // when
-        gaugeCollector.runInternal(gaugeConfig);
-        gaugeCollector.runInternal(gaugeConfig);
-        gaugeCollector.runInternal(gaugeConfig);
-        gaugeCollector.runInternal(gaugeConfig);
-        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
         // then
         verify(logger, times(10)).debug(anyString(), any(Exception.class));
         verify(logger).warn("error accessing mbean attribute {} {}: {}", "xyz:aaa=bbb", "ccc",
@@ -210,11 +210,11 @@ public class GaugeCollectorTest {
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenReturn("not a number");
         // when
-        gaugeCollector.runInternal(gaugeConfig);
-        gaugeCollector.runInternal(gaugeConfig);
-        gaugeCollector.runInternal(gaugeConfig);
-        gaugeCollector.runInternal(gaugeConfig);
-        gaugeCollector.runInternal(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
         // then
         verify(logger).warn("error accessing mbean attribute {} {}: {}", "xyz:aaa=bbb", "ccc",
                 "MBean attribute value is not a number");

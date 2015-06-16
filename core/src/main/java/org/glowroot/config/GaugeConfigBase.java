@@ -38,7 +38,8 @@ public abstract class GaugeConfigBase {
         public int compare(@Nullable GaugeConfig left, @Nullable GaugeConfig right) {
             checkNotNull(left);
             checkNotNull(right);
-            return left.display().compareToIgnoreCase(right.display());
+            return display(left.mbeanObjectName())
+                    .compareToIgnoreCase(display(right.mbeanObjectName()));
         }
     };
 
@@ -47,9 +48,13 @@ public abstract class GaugeConfigBase {
 
     @Value.Derived
     @JsonIgnore
-    public String display() {
+    public String version() {
+        return Versions.getVersion(this);
+    }
+
+    public static String display(String mbeanObjectName) {
         // e.g. java.lang:name=PS Eden Space,type=MemoryPool
-        List<String> parts = Splitter.on(CharMatcher.anyOf(":,")).splitToList(mbeanObjectName());
+        List<String> parts = Splitter.on(CharMatcher.anyOf(":,")).splitToList(mbeanObjectName);
         StringBuilder name = new StringBuilder();
         name.append(parts.get(0));
         for (int i = 1; i < parts.size(); i++) {
@@ -57,12 +62,6 @@ public abstract class GaugeConfigBase {
             name.append(parts.get(i).split("=")[1]);
         }
         return name.toString();
-    }
-
-    @Value.Derived
-    @JsonIgnore
-    public String version() {
-        return Versions.getVersion(this);
     }
 
     @Value.Immutable

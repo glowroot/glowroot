@@ -21,6 +21,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
+import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 import javax.management.QueryExp;
 
@@ -65,6 +66,12 @@ public class LazyPlatformMBeanServer {
             throws InterruptedException {
         ensureInit();
         return mbeanServer.queryNames(name, query);
+    }
+
+    public Set<ObjectInstance> queryMBeans(@Nullable ObjectName name, @Nullable QueryExp query)
+            throws InterruptedException {
+        ensureInit();
+        return mbeanServer.queryMBeans(name, query);
     }
 
     public MBeanInfo getMBeanInfo(ObjectName name) throws Exception {
