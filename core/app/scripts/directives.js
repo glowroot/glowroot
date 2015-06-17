@@ -301,13 +301,15 @@ glowroot.directive('gtNavbarItem', [
 
 glowroot.directive('gtSidebarItem', [
   '$location',
-  function ($location) {
+  '$state',
+  function ($location, $state) {
     return {
       scope: {
         gtDisplay: '@',
         gtDisplayRight: '@',
         gtUrl: '@',
-        gtActive: '&'
+        gtActive: '&',
+        gtActiveRefresh: '&'
       },
       // replace is needed in order to not mess up bootstrap css hierarchical selectors
       replace: true,
@@ -315,6 +317,18 @@ glowroot.directive('gtSidebarItem', [
       link: function (scope, iElement, iAttrs) {
         scope.isActive = function () {
           return iAttrs.gtActive ? scope.gtActive() : $location.path() === '/' + scope.gtUrl;
+        };
+        scope.ngClick = function (event) {
+          if (scope.isActive() && !event.ctrlKey) {
+            if (iAttrs.gtActiveRefresh) {
+              scope.gtActiveRefresh();
+            } else {
+              $state.reload();
+            }
+            // suppress normal link
+            event.preventDefault();
+            return false;
+          }
         };
       }
     };

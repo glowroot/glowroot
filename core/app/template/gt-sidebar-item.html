@@ -1,6 +1,7 @@
 <a class="list-group-item selectable-list-group-item"
    ng-class="{active: isActive()}"
    ng-href="{{gtUrl}}"
+   ng-click="ngClick($event)"
    style="cursor: pointer;">
   <div ng-if="!gtDisplayRight">
     {{gtDisplay}}

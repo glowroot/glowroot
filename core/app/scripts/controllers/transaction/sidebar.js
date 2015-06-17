@@ -60,6 +60,10 @@ glowroot.controller('TransactionSidebarCtrl', [
       updateSummaries(false, true);
     };
 
+    $scope.refreshActiveItem = function () {
+      $scope.$parent.chartRefresh++;
+    };
+
     $scope.$watchGroup(['chartFrom', 'chartTo', 'summarySortOrder', 'chartRefresh'], function (newValues, oldValues) {
       if (newValues !== oldValues) {
         updateSummaries();

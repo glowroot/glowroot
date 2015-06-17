@@ -126,7 +126,7 @@ glowroot.controller('TransactionCtrl', [
     };
 
     $scope.currentTabUrl = function () {
-      return $location.path();
+      return $location.path().substring(1);
     };
   }
 ]);

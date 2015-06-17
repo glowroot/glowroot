@@ -107,7 +107,9 @@ glowroot.controller('TransactionTabCtrl', [
             if (concurrentUpdateCount) {
               return;
             }
-            delete $scope.activeTraceTabCount;
+            if ($scope.activeTabItem !== 'traces') {
+              delete $scope.activeTraceTabCount;
+            }
             $scope.tabBarData = data;
           })
           .error(httpErrors.handler($scope));
