@@ -57,9 +57,11 @@ class TraceExportHttpService implements HttpService {
     private static final Logger logger = LoggerFactory.getLogger(TraceExportHttpService.class);
 
     private final TraceCommonService traceCommonService;
+    private final String version;
 
-    TraceExportHttpService(TraceCommonService traceCommonService) {
+    TraceExportHttpService(TraceCommonService traceCommonService, String version) {
         this.traceCommonService = traceCommonService;
+        this.version = version;
     }
 
     @Override
@@ -100,23 +102,19 @@ class TraceExportHttpService implements HttpService {
                 getFilename(export.trace()));
     }
 
-    private static String getFilename(Trace trace) {
-        String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss-SSS").format(trace.startTime());
-        return "trace-" + timestamp;
-    }
-
-    private static ChunkSource render(TraceExport traceExport) throws IOException {
+    private ChunkSource render(TraceExport traceExport) throws IOException {
         String htmlStartTag = "<html>";
         String exportCssPlaceholder = "<link rel=\"stylesheet\" href=\"styles/export.css\">";
         String exportJsPlaceholder = "<script src=\"scripts/export.js\"></script>";
         String tracePlaceholder = "<script type=\"text/json\" id=\"traceJson\"></script>";
         String entriesPlaceholder = "<script type=\"text/json\" id=\"entriesJson\"></script>";
         String profilePlaceholder = "<script type=\"text/json\" id=\"profileJson\"></script>";
+        String footerMessagePlaceholder = "<span id=\"footerMessage\"></span>";
 
         String templateContent = asCharSource("trace-export.html").read();
         Pattern pattern = Pattern.compile("(" + htmlStartTag + "|" + exportCssPlaceholder + "|"
                 + exportJsPlaceholder + "|" + tracePlaceholder + "|" + entriesPlaceholder + "|"
-                + profilePlaceholder + ")");
+                + profilePlaceholder + "|" + footerMessagePlaceholder + ")");
         Matcher matcher = pattern.matcher(templateContent);
         int curr = 0;
         List<ChunkSource> chunkSources = Lists.newArrayList();
@@ -158,12 +156,17 @@ class TraceExportHttpService implements HttpService {
                     chunkSources.add(profile);
                 }
                 chunkSources.add(ChunkSource.wrap("</script>"));
+            } else if (match.equals(footerMessagePlaceholder)) {
+                chunkSources.add(ChunkSource.wrap("Glowroot version " + version));
             } else {
                 logger.error("unexpected match: {}", match);
             }
         }
         chunkSources.add(ChunkSource.wrap(templateContent.substring(curr)));
         return ChunkSource.concat(chunkSources);
+    }
+    private static String getFilename(Trace trace) {
+        return "trace-" + new SimpleDateFormat("yyyyMMdd-HHmmss-SSS").format(trace.startTime());
     }
 
     private static ChunkSource asChunkSource(String exportResourceName) {

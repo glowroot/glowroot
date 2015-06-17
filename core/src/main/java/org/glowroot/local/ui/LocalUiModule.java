@@ -96,7 +96,7 @@ public class LocalUiModule {
         TraceDetailHttpService traceDetailHttpService =
                 new TraceDetailHttpService(traceCommonService);
         TraceExportHttpService traceExportHttpService =
-                new TraceExportHttpService(traceCommonService);
+                new TraceExportHttpService(traceCommonService, version);
         GlowrootLogHttpService glowrootLogHttpService = new GlowrootLogHttpService(dataDir);
         ErrorCommonService errorCommonService = new ErrorCommonService(
                 aggregateDao, collectorModule.getAggregateCollector(),
