@@ -115,12 +115,8 @@ class PreparedStatementMirror extends StatementMirror {
         private final byte /*@Nullable*/[] bytes;
         public ByteArrayParameterValue(byte[] bytes, boolean displayAsHex) {
             length = bytes.length;
-            if (displayAsHex) {
-                // only retain bytes if needed for displaying as hex
-                this.bytes = bytes;
-            } else {
-                this.bytes = null;
-            }
+            // only retain bytes if needed for displaying as hex
+            this.bytes = displayAsHex ? bytes : null;
         }
         @Override
         public String toString() {

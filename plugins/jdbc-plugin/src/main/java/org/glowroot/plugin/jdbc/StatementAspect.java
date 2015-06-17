@@ -143,7 +143,7 @@ public class StatementAspect {
     // ================= Parameter Binding =================
 
     @Pointcut(className = "java.sql.PreparedStatement", methodName = "setArray|setBigDecimal"
-            + "|setBoolean|setByte|setDate|setDouble|setFloat|setInt|setLong|setNString|setObject"
+            + "|setBoolean|setByte|setDate|setDouble|setFloat|setInt|setLong|setNString"
             + "|setRef|setRowId|setShort|setString|setTime|setTimestamp|setURL",
             methodParameterTypes = {"int", "*", ".."})
     public static class SetXAdvice {
@@ -203,10 +203,36 @@ public class StatementAspect {
                 if (x == null) {
                     mirror.setParameterValue(parameterIndex, null);
                 } else {
-                    boolean displayAsHex = JdbcPluginProperties.displayBinaryParameterAsHex(
-                            mirror.getSql(), parameterIndex);
-                    mirror.setParameterValue(parameterIndex,
-                            new ByteArrayParameterValue(x, displayAsHex));
+                    setBytes(mirror, parameterIndex, x);
+                }
+            }
+        }
+        private static void setBytes(PreparedStatementMirror mirror, int parameterIndex, byte[] x) {
+            boolean displayAsHex = JdbcPluginProperties.displayBinaryParameterAsHex(
+                    mirror.getSql(), parameterIndex);
+            mirror.setParameterValue(parameterIndex, new ByteArrayParameterValue(x, displayAsHex));
+        }
+    }
+
+    @Pointcut(className = "java.sql.PreparedStatement", methodName = "setObject",
+            methodParameterTypes = {"int", "java.lang.Object", ".."})
+    public static class SetObjectAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return captureBindParameters.value();
+        }
+        @OnReturn
+        public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
+                @BindParameter int parameterIndex, @BindParameter @Nullable Object x) {
+            PreparedStatementMirror mirror =
+                    (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
+            if (mirror != null) {
+                if (x == null) {
+                    mirror.setParameterValue(parameterIndex, null);
+                } else if (x instanceof byte[]) {
+                    SetBytesAdvice.setBytes(mirror, parameterIndex, (byte[]) x);
+                } else {
+                    mirror.setParameterValue(parameterIndex, x);
                 }
             }
         }

@@ -278,6 +278,36 @@ public class PreparedStatementTest {
     }
 
     @Test
+    public void testPreparedStatementWithBinaryUsingSetObject() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        // when
+        container.executeAppUnderTest(ExecutePreparedStatementWithBinaryUsingSetObject.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        List<Query> queries = container.getAggregateService().getQueries();
+        assertThat(queries).hasSize(2);
+        Query query1 = queries.get(0);
+        assertThat(query1.isActive()).isFalse();
+        assertThat(query1.getExecutionCount()).isEqualTo(1);
+        Query query2 = queries.get(1);
+        assertThat(query2.isActive()).isFalse();
+        assertThat(query2.getExecutionCount()).isEqualTo(1);
+        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        assertThat(entries).hasSize(2);
+        TraceEntry entry1 = entries.get(0);
+        assertThat(entry1.isActive()).isFalse();
+        assertThat(entry1.getMessage().getText()).isEqualTo(
+                "jdbc execution: insert into employee (name, misc) values (?, ?) ['jane',"
+                        + " 0x00010203040506070809]");
+        TraceEntry entry2 = entries.get(1);
+        assertThat(entry2.isActive()).isFalse();
+        assertThat(entry2.getMessage().getText()).isEqualTo(
+                "jdbc execution: insert /**/ into employee (name, misc) values (?, ?) ['jane',"
+                        + " {10 bytes}]");
+    }
+
+    @Test
     public void testPreparedStatementWithBinaryStream() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
@@ -628,6 +658,46 @@ public class PreparedStatementTest {
                 preparedStatement.execute();
                 preparedStatement2.setString(1, "jane");
                 preparedStatement2.setBytes(2, bytes);
+                preparedStatement2.execute();
+            } finally {
+                preparedStatement.close();
+                preparedStatement2.close();
+            }
+        }
+    }
+
+    public static class ExecutePreparedStatementWithBinaryUsingSetObject implements AppUnderTest,
+            TraceMarker {
+        static {
+            JdbcPluginProperties.setDisplayBinaryParameterAsHex(
+                    "insert into employee (name, misc) values (?, ?)", 2);
+        }
+        private Connection connection;
+        @Override
+        public void executeApp() throws Exception {
+            connection = Connections.createConnection();
+            try {
+                traceMarker();
+            } finally {
+                Connections.closeConnection(connection);
+            }
+        }
+        @Override
+        public void traceMarker() throws Exception {
+            byte[] bytes = new byte[10];
+            for (int i = 0; i < 10; i++) {
+                bytes[i] = (byte) i;
+            }
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("insert into employee (name, misc) values (?, ?)");
+            PreparedStatement preparedStatement2 = connection.prepareStatement(
+                    "insert /**/ into employee (name, misc) values (?, ?)");
+            try {
+                preparedStatement.setString(1, "jane");
+                preparedStatement.setObject(2, bytes);
+                preparedStatement.execute();
+                preparedStatement2.setString(1, "jane");
+                preparedStatement2.setObject(2, bytes);
                 preparedStatement2.execute();
             } finally {
                 preparedStatement.close();
