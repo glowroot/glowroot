@@ -35,16 +35,16 @@ glowroot.filter('gtDuration', function () {
     }
     var duration = moment.duration(input);
     var parts = [];
-    if (duration.days() > 1) {
+    if (duration.days() >= 1) {
       parts.push(Math.floor(duration.days()) + 'd');
     }
-    if (duration.hours() > 1) {
+    if (duration.hours() >= 1) {
       parts.push(Math.floor(duration.hours()) + 'h');
     }
-    if (duration.minutes() > 1) {
+    if (duration.minutes() >= 1) {
       parts.push(Math.floor(duration.minutes()) + 'm');
     }
-    if (duration.seconds() > 1) {
+    if (duration.seconds() >= 1) {
       parts.push(Math.floor(duration.seconds()) + 's');
     }
     return parts.join(' ');
