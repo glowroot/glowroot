@@ -47,21 +47,31 @@
                   style="margin-left: 8px;">
             Import
           </button>
-          <div gt-button
-               ng-show="jvmRetransformClassesSupported && dirty"
-               gt-btn-class="btn-danger"
-               gt-label="Apply changes to running JVM"
-               gt-click="retransformClasses(deferred)"
-               gt-confirm-header="Apply changes to running JVM?"
-               gt-confirm-body="Important: Do not use this in production as it has chance of crashing the JVM."
-               class="pull-left"
-               style="margin-left: 8px;">
-          </div>
         </div>
       </div>
-      <div ng-show="!jvmRetransformClassesSupported && dirty"
-           style="padding-top: 20px;">
-        JVM restart is required to apply changes
+      <div style="margin-top: 30px;" ng-if="dirty">
+        <div ng-if="jvmRetransformClassesSupported">
+          <table>
+            <tr>
+              <td>
+                <strong>Restart the JVM to apply changes.</strong>
+                In non-production environments try <span style="margin: 0 5px; font-size: 20px;">&rarr;</span></td>
+              <td>
+                <div gt-button
+                     gt-btn-class="btn-danger"
+                     gt-label="Apply changes to running JVM"
+                     gt-click="retransformClasses(deferred)"
+                     gt-confirm-header="Apply changes to running JVM?"
+                     gt-confirm-body="Important: Do not use this in production as it has chance of crashing the JVM."
+                     style="vertical-align: middle; display: inline-block; margin-left: 8px;">
+                </div>
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div ng-if="!jvmRetransformClassesSupported">
+          <strong>Restart the JVM to apply changes.</strong>
+        </div>
       </div>
     </div>
   </div>
