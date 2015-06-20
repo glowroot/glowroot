@@ -844,7 +844,7 @@ HandlebarsRendering = (function () {
       }
       // build filter dropdown
       $.each(orderedNodes, function (i, node) {
-        var name = node.name || '<multiple root nodes>';
+        var name = node.name || MULTIPLE_ROOT_NODES;
         $profileFilter.append($('<option />').val(node.name)
             .text(name + ' (' + rootNode.timerCounts[node.name] + ')'));
       });

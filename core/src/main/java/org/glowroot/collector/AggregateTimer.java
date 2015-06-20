@@ -118,6 +118,11 @@ public class AggregateTimer {
                     new ArrayList<AggregateTimer>());
             nestedTimers.add(matchingAggregateTimer);
         }
+        if (name == null) {
+            // special case for synthetic root timer
+            totalMicros += NANOSECONDS.toMicros(timer.getTotal());
+            count += timer.getCount();
+        }
         matchingAggregateTimer.totalMicros += NANOSECONDS.toMicros(timer.getTotal());
         matchingAggregateTimer.count += timer.getCount();
         for (TimerImpl nestedTimer : timer.getNestedTimers()) {
