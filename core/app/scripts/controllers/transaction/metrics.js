@@ -36,7 +36,7 @@ glowroot.controller('TransactionMetricsCtrl', [
       }
     });
 
-    function onRefreshData(data) {
+    function onRefreshData(data, query) {
       // mergedAggregate.timers is always synthetic root timer
       var syntheticRootTimer = data.mergedAggregate.timers;
       if (syntheticRootTimer.nestedTimers.length === 1) {
@@ -48,6 +48,7 @@ glowroot.controller('TransactionMetricsCtrl', [
       $scope.transactionCounts = data.transactionCounts;
       $scope.mergedAggregate = data.mergedAggregate;
       $scope.threadInfoAggregate = data.threadInfoAggregate;
+      $scope.lastDurationMillis = query.to - query.from + 1000 * $scope.layout.fixedAggregateIntervalSeconds;
       if ($scope.mergedAggregate.transactionCount) {
         updateTreeTimers();
         updateFlattenedTimers();

@@ -63,8 +63,8 @@ public class AggregateMerging {
         return timerMergedAggregate.build();
     }
 
-    public static OverviewMergedAggregate getOverviewMergedAggregate(List<Aggregate> aggregates,
-            List<Double> percentiles) throws Exception {
+    public static PercentileMergedAggregate getPercentileMergedAggregate(
+            List<Aggregate> aggregates, List<Double> percentiles) throws Exception {
         long transactionCount = 0;
         long totalMicros = 0;
         LazyHistogram histogram = new LazyHistogram();
@@ -80,7 +80,7 @@ public class AggregateMerging {
                     AlertingService.getPercentileWithSuffix(percentile) + " percentile",
                     histogram.getValueAtPercentile(percentile)));
         }
-        return OverviewMergedAggregate.builder()
+        return PercentileMergedAggregate.builder()
                 .totalMicros(totalMicros)
                 .transactionCount(transactionCount)
                 .percentileValues(percentileValues)
@@ -154,7 +154,7 @@ public class AggregateMerging {
 
     @Value.Immutable
     @JsonSerialize
-    public static abstract class OverviewMergedAggregateBase {
+    public static abstract class PercentileMergedAggregateBase {
 
         public abstract long totalMicros();
         public abstract long transactionCount();

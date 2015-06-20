@@ -32,7 +32,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class UiSandboxMain {
 
-    private static final boolean useJavaagent = false;
+    private static final boolean useJavaagent = true;
     private static final boolean rollOverQuickly = false;
     private static final boolean useReverseProxy = false;
 

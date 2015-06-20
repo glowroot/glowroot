@@ -16,7 +16,7 @@
 
 /* global glowroot, angular, $ */
 
-glowroot.controller('TransactionOverviewCtrl', [
+glowroot.controller('TransactionPercentilesCtrl', [
   '$scope',
   '$location',
   '$http',
@@ -26,12 +26,12 @@ glowroot.controller('TransactionOverviewCtrl', [
   'modals',
   function ($scope, $location, $http, $filter, $timeout, charts, modals) {
 
-    $scope.$parent.activeTabItem = 'overview';
+    $scope.$parent.activeTabItem = 'percentiles';
 
     var chartState = charts.createState();
 
     function refreshData() {
-      charts.refreshData('backend/transaction/overview', chartState, $scope.$parent, addToQuery, onRefreshData);
+      charts.refreshData('backend/transaction/percentiles', chartState, $scope.$parent, addToQuery, onRefreshData);
     }
 
     $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function (newValues, oldValues) {

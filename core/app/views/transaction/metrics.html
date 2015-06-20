@@ -153,9 +153,8 @@
       </tr>
       </tbody>
     </table>
-    <br>
 
-    <div ng-show="threadInfoAggregate">
+    <div ng-show="threadInfoAggregate" style="margin-top: 20px;">
       <label>
         JVM thread metrics per transaction:
       </label>
@@ -178,6 +177,17 @@
           {{threadInfoAggregate.totalAllocatedKBytes * 1024 / mergedAggregate.transactionCount | gtBytes}}
         </div>
       </div>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <label>Throughput:</label>
+      {{(60 * 1000 * mergedAggregate.transactionCount / lastDurationMillis).toFixed(1)}}/min
+      ({{mergedAggregate.transactionCount}}
+      <span ng-pluralize
+            count="mergedAggregate.transactionCount"
+            when="{'1':'transaction','other':'transactions'}">
+      </span>
+      in this period)
     </div>
   </div>
 </div>

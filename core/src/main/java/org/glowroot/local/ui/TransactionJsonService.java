@@ -87,8 +87,8 @@ class TransactionJsonService {
         this.fixedAggregateRollupMillis = fixedAggregateRollupSeconds * 1000;
     }
 
-    @GET("/backend/transaction/overview")
-    String getOverview(String queryString) throws Exception {
+    @GET("/backend/transaction/percentiles")
+    String getPercentiles(String queryString) throws Exception {
         TransactionDataRequest request =
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
 
@@ -97,15 +97,15 @@ class TransactionJsonService {
                 request.transactionType(), request.transactionName(), request.from(), request.to(),
                 liveCaptureTime);
         List<DataSeries> dataSeriesList =
-                getDataSeriesForOverviewChart(request, aggregates, request.percentile());
+                getDataSeriesForPercentileChart(request, aggregates, request.percentile());
         Map<Long, Long> transactionCounts = getTransactionCounts(aggregates);
         if (!aggregates.isEmpty() && aggregates.get(0).captureTime() == request.from()) {
             // the left most aggregate is not really in the requested interval since it is for
             // prior capture times
             aggregates = aggregates.subList(1, aggregates.size());
         }
-        OverviewMergedAggregate mergedAggregate =
-                AggregateMerging.getOverviewMergedAggregate(aggregates, request.percentile());
+        PercentileMergedAggregate mergedAggregate =
+                AggregateMerging.getPercentileMergedAggregate(aggregates, request.percentile());
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -313,7 +313,7 @@ class TransactionJsonService {
         return sb.toString();
     }
 
-    private List<DataSeries> getDataSeriesForOverviewChart(TransactionDataRequest request,
+    private List<DataSeries> getDataSeriesForPercentileChart(TransactionDataRequest request,
             List<Aggregate> aggregates, List<Double> percentiles) throws Exception {
         if (aggregates.isEmpty()) {
             return Lists.newArrayList();

@@ -46,7 +46,7 @@ glowroot.config([
         };
       }
     ]);
-    $urlRouterProvider.otherwise('transaction/overview');
+    $urlRouterProvider.otherwise('transaction/metrics');
     $stateProvider.state('transaction', {
       abstract: true,
       url: '/transaction?transaction-type',
@@ -102,21 +102,21 @@ glowroot.config([
         }
       }
     });
-    $stateProvider.state('transaction.detail.overview', {
-      url: '/overview?transaction-name',
-      views: {
-        'main@transaction': {
-          templateUrl: 'views/transaction/overview.html',
-          controller: 'TransactionOverviewCtrl'
-        }
-      }
-    });
     $stateProvider.state('transaction.detail.metrics', {
       url: '/metrics?transaction-name',
       views: {
         'main@transaction': {
           templateUrl: 'views/transaction/metrics.html',
           controller: 'TransactionMetricsCtrl'
+        }
+      }
+    });
+    $stateProvider.state('transaction.detail.percentiles', {
+      url: '/percentiles?transaction-name',
+      views: {
+        'main@transaction': {
+          templateUrl: 'views/transaction/percentiles.html',
+          controller: 'TransactionPercentilesCtrl'
         }
       }
     });

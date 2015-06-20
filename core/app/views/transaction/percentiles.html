@@ -95,23 +95,20 @@
   </div>
   <div ng-show="mergedAggregate.transactionCount"
        style="position: relative; padding-top: 30px; margin-left: 40px;">
-    <div>
-      <label>Average:</label>
-      {{mergedAggregate.totalMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}} ms
-    </div>
-    <div>
-      <label>Throughput:</label>
-      {{(60 * 1000 * mergedAggregate.transactionCount / lastDurationMillis).toFixed(1)}}/min
-      ({{mergedAggregate.transactionCount}}
-    <span ng-pluralize
-          count="mergedAggregate.transactionCount"
-          when="{'1':'transaction','other':'transactions'}">
-    </span>
-      in this period)
-    </div>
     <div ng-repeat="percentileValue in mergedAggregate.percentileValues">
       <label>{{percentileValue.dataSeriesName}}:</label>
       {{percentileValue.value / 1000 | gtMillis}} ms
+    </div>
+
+    <div style="margin-top: 20px;">
+      <label>Throughput:</label>
+      {{(60 * 1000 * mergedAggregate.transactionCount / lastDurationMillis).toFixed(1)}}/min
+      ({{mergedAggregate.transactionCount}}
+      <span ng-pluralize
+            count="mergedAggregate.transactionCount"
+            when="{'1':'transaction','other':'transactions'}">
+      </span>
+      in this period)
     </div>
   </div>
 </div>

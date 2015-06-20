@@ -14,26 +14,26 @@
   limitations under the License.
 -->
 <ul class="nav nav-tabs gt-transaction-tabs">
-  <li ng-class="{active: activeTabItem === 'overview'}">
-    <a ng-href="transaction/overview{{tabQueryString()}}"
-       ng-click="clickTab('overview', $event)"
-       ng-keydown="keydownTab(null, 'tab_metrics', $event)"
-       id="tab_overview">
-      Overview
-    </a>
-  </li>
   <li ng-class="{active: activeTabItem === 'metrics'}">
     <a ng-href="transaction/metrics{{tabQueryString()}}"
        ng-click="clickTab('metrics', $event)"
-       ng-keydown="keydownTab('tab_overview', 'tab_queries', $event)"
+       ng-keydown="keydownTab(null, 'tab_percentiles', $event)"
        id="tab_metrics">
       Metrics
+    </a>
+  </li>
+  <li ng-class="{active: activeTabItem === 'percentiles'}">
+    <a ng-href="transaction/percentiles{{tabQueryString()}}"
+       ng-click="clickTab('percentiles', $event)"
+       ng-keydown="keydownTab('tab_metrics', 'tab_queries' , $event)"
+       id="tab_percentiles">
+      Percentiles
     </a>
   </li>
   <li ng-class="{active: activeTabItem === 'queries'}">
     <a ng-href="transaction/queries{{tabQueryString()}}"
        ng-click="clickTab('queries', $event)"
-       ng-keydown="keydownTab('tab_metrics', 'tab_profile', $event)"
+       ng-keydown="keydownTab('tab_percentiles', 'tab_profile', $event)"
        id="tab_queries">
       Queries
     </a>
