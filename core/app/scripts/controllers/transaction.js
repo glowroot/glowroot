@@ -24,17 +24,14 @@ glowroot.controller('TransactionCtrl', [
   'charts',
   'headerDisplay',
   'shortName',
-  'defaultTabUrl',
   'defaultSummarySortOrder',
-  function ($scope, $location, $timeout, queryStrings, charts, headerDisplay, shortName, defaultTabUrl,
-            defaultSummarySortOrder) {
+  function ($scope, $location, $timeout, queryStrings, charts, headerDisplay, shortName, defaultSummarySortOrder) {
     // \u00b7 is &middot;
     document.title = headerDisplay + ' \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = shortName;
 
     $scope.headerDisplay = headerDisplay;
     $scope.shortName = shortName;
-    $scope.defaultTabUrl = defaultTabUrl;
     $scope.defaultSummarySortOrder = defaultSummarySortOrder;
 
     $scope.headerQueryString = function (transactionType) {

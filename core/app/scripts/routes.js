@@ -59,9 +59,6 @@ glowroot.config([
         shortName: function () {
           return 'transaction';
         },
-        defaultTabUrl: function () {
-          return 'transaction/overview';
-        },
         defaultSummarySortOrder: function () {
           return 'total-time';
         },
@@ -189,9 +186,6 @@ glowroot.config([
         },
         shortName: function () {
           return 'error';
-        },
-        defaultTabUrl: function () {
-          return 'error/messages';
         },
         defaultSummarySortOrder: function () {
           return 'error-count';
