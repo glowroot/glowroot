@@ -30,9 +30,13 @@ glowroot.controller('TransactionOverviewCtrl', [
 
     var chartState = charts.createState();
 
+    function refreshData() {
+      charts.refreshData('backend/transaction/overview', chartState, $scope.$parent, addToQuery, onRefreshData);
+    }
+
     $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function (newValues, oldValues) {
       if (newValues !== oldValues) {
-        charts.refreshData('backend/transaction/overview', chartState, $scope, onRefreshData);
+        refreshData();
       }
     });
 
@@ -83,6 +87,10 @@ glowroot.controller('TransactionOverviewCtrl', [
     $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
     onLocationChangeSuccess();
 
+    function addToQuery(query) {
+      query.percentile = $scope.percentiles;
+    }
+
     function onRefreshData(data, query) {
       $scope.transactionCounts = data.transactionCounts;
       $scope.lastDurationMillis = query.to - query.from + 1000 * $scope.layout.fixedAggregateIntervalSeconds;
@@ -111,8 +119,8 @@ glowroot.controller('TransactionOverviewCtrl', [
       }
     };
 
-    charts.init(chartState, $('#chart'), $scope);
-    charts.plot([[]], chartOptions, chartState, $('#chart'), $scope);
-    charts.refreshData('backend/transaction/overview', chartState, $scope, onRefreshData);
+    charts.init(chartState, $('#chart'), $scope.$parent);
+    charts.plot([[]], chartOptions, chartState, $('#chart'), $scope.$parent);
+    refreshData();
   }
 ]);

@@ -26,9 +26,13 @@ glowroot.controller('TransactionMetricsCtrl', [
 
     var chartState = charts.createState();
 
+    function refreshData() {
+      charts.refreshData('backend/transaction/metrics', chartState, $scope, undefined, onRefreshData);
+    }
+
     $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function (newValues, oldValues) {
       if (newValues !== oldValues) {
-        charts.refreshData('backend/transaction/metrics', chartState, $scope, onRefreshData);
+        refreshData();
       }
     });
 
@@ -136,8 +140,8 @@ glowroot.controller('TransactionMetricsCtrl', [
       }
     };
 
-    charts.init(chartState, $('#chart'), $scope);
-    charts.plot([[]], chartOptions, chartState, $('#chart'), $scope);
-    charts.refreshData('backend/transaction/metrics', chartState, $scope, onRefreshData);
+    charts.init(chartState, $('#chart'), $scope.$parent);
+    charts.plot([[]], chartOptions, chartState, $('#chart'), $scope.$parent);
+    refreshData();
   }
 ]);

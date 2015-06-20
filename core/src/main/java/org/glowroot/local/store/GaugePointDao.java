@@ -31,9 +31,12 @@ import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.RowMapper;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.HOURS;
 import static org.glowroot.common.Checkers.castUntainted;
 
 public class GaugePointDao implements GaugePointRepository {
+
+    public static final long ROLLUP_THRESHOLD_MILLIS = HOURS.toMillis(1);
 
     private static final ImmutableList<Column> gaugePointColumns = ImmutableList.<Column>of(
             Column.of("gauge_meta_id", Types.BIGINT),

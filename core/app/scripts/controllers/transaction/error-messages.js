@@ -221,8 +221,8 @@ glowroot.controller('ErrorMessagesCtrl', [
       }
     };
 
-    charts.init(chartState, $('#chart'), $scope);
-    charts.plot([[]], chartOptions, chartState, $('#chart'), $scope);
+    charts.init(chartState, $('#chart'), $scope.$parent);
+    charts.plot([[]], chartOptions, chartState, $('#chart'), $scope.$parent);
 
     function onLocationChangeSuccess() {
       $scope.errorFilter = $location.search().filter || '';

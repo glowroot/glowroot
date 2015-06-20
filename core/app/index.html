@@ -82,25 +82,26 @@
         Glowroot
       </div>
     </div>
-    <div ng-hide="hideNavbar()">
+    <div ng-hide="hideNavbar()"
+         ng-controller="NavbarCtrl">
       <nav class="collapse navbar-collapse">
         <ul class="nav navbar-nav">
           <div gt-navbar-item
                gt-display="Transactions"
                gt-item-name="transaction"
-               gt-url="transaction/overview"
+               gt-url="transaction/overview{{activeNavbarItem === 'transaction' ? '' : queryString()}}"
                gt-state="transaction.detail.overview">
           </div>
           <div gt-navbar-item
                gt-display="Errors"
                gt-item-name="error"
-               gt-url="error/messages"
+               gt-url="error/messages{{activeNavbarItem === 'error' ? '' : queryString()}}"
                gt-state="error.detail.messages">
           </div>
           <div gt-navbar-item
                gt-display="JVM"
                gt-item-name="jvm"
-               gt-url="jvm/gauges"
+               gt-url="jvm/gauges{{activeNavbarItem === 'jvm' ? '' : queryString()}}"
                gt-state="jvm.gauges">
           </div>
         </ul>
@@ -212,8 +213,9 @@
 <script src="scripts/services/keyed-color-pools.js"></script>
 <script src="scripts/services/query-strings.js"></script>
 <script src="scripts/services/conversions.js"></script>
+<script src="scripts/controllers/navbar.js"></script>
+<script src="scripts/controllers/chart-range.js"></script>
 <script src="scripts/controllers/transaction.js"></script>
-<script src="scripts/controllers/transaction/header.js"></script>
 <script src="scripts/controllers/transaction/sidebar.js"></script>
 <script src="scripts/controllers/transaction/tabs.js"></script>
 <script src="scripts/controllers/transaction/overview.js"></script>

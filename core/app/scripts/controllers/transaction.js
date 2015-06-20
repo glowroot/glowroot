@@ -37,6 +37,22 @@ glowroot.controller('TransactionCtrl', [
     $scope.defaultTabUrl = defaultTabUrl;
     $scope.defaultSummarySortOrder = defaultSummarySortOrder;
 
+    $scope.headerQueryString = function (transactionType) {
+      var query = {};
+      // add transaction-type first so it is first in url
+      if (transactionType !== $scope.layout.defaultTransactionType) {
+        query['transaction-type'] = transactionType;
+      }
+      if ($scope.last) {
+        query.last = $scope.last;
+      } else {
+        query.from = $scope.chartFrom;
+        query.to = $scope.chartTo;
+      }
+      return queryStrings.encodeObject(query);
+    };
+
+    // TODO this is exact duplicate of same function in gauges.js
     $scope.applyLast = function () {
       if (!$scope.last) {
         return;
@@ -100,6 +116,7 @@ glowroot.controller('TransactionCtrl', [
       return queryStrings.encodeObject($scope.buildQueryObject({}));
     };
 
+    // TODO this is exact duplicate of same function in gauges.js
     $scope.buildQueryObject = function (baseQuery) {
       var query = baseQuery || angular.copy($location.search());
       if ($scope.transactionType !== $scope.layout.defaultTransactionType) {

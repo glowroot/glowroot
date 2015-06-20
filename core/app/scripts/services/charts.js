@@ -71,16 +71,16 @@ glowroot.factory('charts', [
 
       $scope.refresh = function () {
         $scope.applyLast();
-        $scope.$parent.chartRefresh++;
+        $scope.chartRefresh++;
       };
     }
 
     function updateRange($scope, from, to, zoomingOut, selection, selectionNearestLarger) {
       // force chart refresh even if chartFrom/chartTo don't change (e.g. trying to zoom in beyond single interval)
-      $scope.$parent.chartRefresh++;
+      $scope.chartRefresh++;
 
       if (zoomingOut && $scope.last) {
-        $scope.$parent.last = roundUpLast($scope.last * 2);
+        $scope.last = roundUpLast($scope.last * 2);
         $scope.applyLast();
         return;
       }
@@ -120,16 +120,16 @@ glowroot.factory('charts', [
           // double-click or scrollwheel zooming in, need special case here, otherwise might zoom in a bit too much
           // due to shrinking the zoom to data point interval, which could result in strange 2 days --> 22 hours
           // instead of the more obvious 2 days --> 1 day
-          $scope.$parent.last = roundUpLast($scope.last / 2);
+          $scope.last = roundUpLast($scope.last / 2);
           $scope.applyLast();
           return;
         }
-        $scope.$parent.last = roundUpLast(now - revisedFrom, selection);
+        $scope.last = roundUpLast(now - revisedFrom, selection);
         $scope.applyLast();
       } else {
-        $scope.$parent.chartFrom = revisedFrom;
-        $scope.$parent.chartTo = revisedTo;
-        $scope.$parent.last = 0;
+        $scope.chartFrom = revisedFrom;
+        $scope.chartTo = revisedTo;
+        $scope.last = 0;
       }
     }
 
@@ -160,14 +160,14 @@ glowroot.factory('charts', [
     }
 
     function getDataPointIntervalMillis(from, to) {
-      var rollupLevel = 0;
+      var fixedRollupSeconds = $location.path() === '/jvm/gauges' ? $rootScope.layout.fixedGaugeRollupSeconds
+          : $rootScope.layout.fixedAggregateRollupSeconds;
+      var fixedIntervalSeconds = $location.path() === '/jvm/gauges' ? $rootScope.layout.fixedGaugeIntervalSeconds
+          : $rootScope.layout.fixedAggregateIntervalSeconds;
       if (to - from > 3600 * 1000) {
-        rollupLevel = 1;
-      }
-      if (rollupLevel === 0) {
-        return $rootScope.layout.fixedAggregateIntervalSeconds * 1000;
+        return fixedRollupSeconds * 1000;
       } else {
-        return $rootScope.layout.fixedAggregateRollupSeconds * 1000;
+        return fixedIntervalSeconds * 1000;
       }
     }
 
@@ -226,16 +226,18 @@ glowroot.factory('charts', [
       chartState.plot.getAxes().yaxis.options.max = undefined;
     }
 
-    function refreshData(url, chartState, $scope, onRefreshData) {
+    function refreshData(url, chartState, $scope, addToQuery, onRefreshData) {
+      // addToQuery may change query.from/query.to (see gauges.js)
+      var chartFrom = $scope.chartFrom;
+      var chartTo = $scope.chartTo;
       var query = {
-        from: $scope.chartFrom,
-        to: $scope.chartTo,
+        from: chartFrom,
+        to: chartTo,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName
       };
-      // TODO remove overview tab specific code from here
-      if ($scope.percentiles) {
-        query.percentiles = $scope.percentiles;
+      if (addToQuery) {
+        addToQuery(query);
       }
       $scope.showChartSpinner++;
       $http.get(url + queryStrings.encodeObject(query))
@@ -246,10 +248,12 @@ glowroot.factory('charts', [
               return;
             }
             $scope.chartNoData = !data.dataSeries.length;
+            // allow callback to modify data if desired
+            onRefreshData(data, query);
             // reset axis in case user changed the date and then zoomed in/out to trigger this refresh
-            chartState.plot.getAxes().xaxis.options.min = query.from;
-            chartState.plot.getAxes().xaxis.options.max = query.to;
-            chartState.dataPointIntervalMillis = getDataPointIntervalMillis(query.from, query.to);
+            chartState.plot.getAxes().xaxis.options.min = chartFrom;
+            chartState.plot.getAxes().xaxis.options.max = chartTo;
+            chartState.dataPointIntervalMillis = getDataPointIntervalMillis(chartFrom, chartTo);
             var plotData = [];
             var labels = [];
             angular.forEach(data.dataSeries, function (dataSeries) {
@@ -261,6 +265,7 @@ glowroot.factory('charts', [
               plotData.push({
                 data: dataSeries.data,
                 label: label,
+                shortLabel: dataSeries.shortLabel,
                 color: chartState.keyedColorPool.get(label)
               });
             });
@@ -272,7 +277,6 @@ glowroot.factory('charts', [
             chartState.plot.setupGrid();
             chartState.plot.draw();
             updateLegend(chartState, $scope);
-            onRefreshData(data, query);
           })
           .error(function (data, status) {
             $scope.showChartSpinner--;
@@ -305,31 +309,37 @@ glowroot.factory('charts', [
       html += smartFormat(from);
       html += ' to ';
       html += smartFormat(to);
-      html += '</td></tr><tr><td colspan="3">';
-      html += transactionCount;
-      html += ' transactions';
-      html += '</td></tr></thead><tbody>';
+      html += '</td></tr>';
+      if (transactionCount !== undefined) {
+        html += '<tr><td colspan="3">';
+        html += transactionCount;
+        html += ' transactions';
+        html += '</td></tr>';
+      }
+      html += '</thead><tbody>';
       var plotData = plot.getData();
       var seriesIndex;
       var dataSeries;
       var value;
+      var label;
       var total = 0;
       for (seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
         dataSeries = plotData[seriesIndex];
         value = dataSeries.data[dataIndex][1];
         total += value;
         html += '<tr';
+        label = dataSeries.shortLabel ? dataSeries.shortLabel : dataSeries.label;
         if (seriesIndex === highlightSeriesIndex) {
           html += ' style="background-color: #eee;"';
         }
         html += '>' +
-        '<td class="legendColorBox">' +
-        '<div style="border: 1px solid rgb(204, 204, 204); padding: 1px;">' +
-        '<div style="width: 4px; height: 0px; border: 5px solid ' + dataSeries.color + '; overflow: hidden;">' +
-        '</div></div></td>' +
-        '<td style="padding-right: 10px;">' + dataSeries.label + '</td>' +
-        '<td style="font-weight: 600;">' + display(value) + '</td>' +
-        '</tr>';
+            '<td class="legendColorBox">' +
+            '<div style="border: 1px solid rgb(204, 204, 204); padding: 1px;">' +
+            '<div style="width: 4px; height: 0px; border: 5px solid ' + dataSeries.color + '; overflow: hidden;">' +
+            '</div></div></td>' +
+            '<td style="padding-right: 10px;">' + label + '</td>' +
+            '<td style="font-weight: 600;">' + display(value, dataSeries.label) + '</td>' +
+            '</tr>';
       }
       if (total === 0) {
         return 'No data';
@@ -348,5 +358,4 @@ glowroot.factory('charts', [
       getDataPointIntervalMillis: getDataPointIntervalMillis
     };
   }
-])
-;
+]);

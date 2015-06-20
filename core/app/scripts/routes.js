@@ -72,10 +72,6 @@ glowroot.config([
     $stateProvider.state('transaction.detail', {
       abstract: true,
       views: {
-        header: {
-          templateUrl: 'views/transaction/header.html',
-          controller: 'TransactionHeaderCtrl'
-        },
         sidebar: {
           templateUrl: 'views/transaction/sidebar.html',
           controller: 'TransactionSidebarCtrl',
@@ -207,10 +203,6 @@ glowroot.config([
     $stateProvider.state('error.detail', {
       abstract: true,
       views: {
-        header: {
-          templateUrl: 'views/transaction/header.html',
-          controller: 'TransactionHeaderCtrl'
-        },
         sidebar: {
           templateUrl: 'views/transaction/sidebar.html',
           controller: 'TransactionSidebarCtrl',

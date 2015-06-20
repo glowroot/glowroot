@@ -17,7 +17,44 @@
   <!-- need top padding so message is not hidden under navbar -->
   <div ng-include src="'template/gt-http-error.html'" style="padding-top: 50px;"></div>
 </div>
-<div ui-view="header" autoscroll="false"></div>
+<div class="gt-header clearfix"
+     style="padding-bottom: 46px;">
+  <div class="gt-header-page-name pull-left">
+    <div ng-show="layout.transactionTypes.length > 1"
+         style="margin-top: -16px;">
+      {{headerDisplay}}
+      <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
+           while chrome guesses the placement of the border based on default font and then it moves slightly
+           once font is available -->
+      <span class="gt-inline-block gt-separator">
+        |
+      </span>
+      <span class="gt-inline-block gt-header-menu">
+        <span class="dropdown">
+          <a href="#" role="button" data-toggle="dropdown" class="dropdown-toggle">
+            {{transactionType}}
+            <span class="gt-large-caret"></span>
+          </a>
+          <ul class="dropdown-menu" role="menu">
+            <li ng-repeat="tt in layout.transactionTypes"
+                ng-hide="tt === transactionType">
+              <a role="menuitem" tabindex="-1" ng-href="{{defaultTabUrl}}{{headerQueryString(tt)}}">
+                {{tt}}
+              </a>
+            </li>
+          </ul>
+        </span>
+      </span>
+    </div>
+    <div ng-hide="layout.transactionTypes.length > 1"
+         style="padding-bottom: 4px;">
+      {{headerDisplay}}
+    </div>
+  </div>
+  <div class="pull-right">
+    <div ng-controller="ChartRangeCtrl" ng-include="'template/gt-chart-range.html'"></div>
+  </div>
+</div>
 <div class="gt-transaction-sidebar">
   <div ui-view="sidebar" autoscroll="false"></div>
 </div>

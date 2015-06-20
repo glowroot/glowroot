@@ -16,13 +16,13 @@
 
 /* global glowroot, moment, $ */
 
-glowroot.controller('TransactionHeaderCtrl', [
+glowroot.controller('ChartRangeCtrl', [
   '$scope',
   '$location',
-  '$timeout',
   'queryStrings',
+  'charts',
   'modals',
-  function ($scope, $location, $timeout, queryStrings, modals) {
+  function ($scope, $location, queryStrings, charts, modals) {
 
     $scope.$parent.chartRefresh = 0;
 
@@ -79,21 +79,6 @@ glowroot.controller('TransactionHeaderCtrl', [
         return fromDate + ' ' + moment($scope.chartFrom).format('LT') + ' to ' + toDate + ' ' +
             moment($scope.chartTo).format('LT');
       }
-    };
-
-    $scope.headerQueryString = function (transactionType) {
-      var query = {};
-      // add transaction-type first so it is first in url
-      if (transactionType !== $scope.layout.defaultTransactionType) {
-        query['transaction-type'] = transactionType;
-      }
-      if ($scope.last) {
-        query.last = $scope.last;
-      } else {
-        query.from = $scope.chartFrom;
-        query.to = $scope.chartTo;
-      }
-      return queryStrings.encodeObject(query);
     };
 
     $scope.headerRangeQueryString = function (last) {

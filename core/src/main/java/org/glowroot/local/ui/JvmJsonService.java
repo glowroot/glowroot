@@ -140,19 +140,27 @@ class JvmJsonService {
     @GET("/backend/jvm/gauge-points")
     String getGaugePoints(String queryString) throws Exception {
         GaugePointRequest request = QueryStrings.decode(queryString, GaugePointRequest.class);
+        int rollupLevel = getRollupLevel(request.from(), request.to());
         double gapMillis;
-        if (request.rollupLevel() == 0) {
+        if (rollupLevel == 0) {
             gapMillis = fixedGaugeIntervalMillis * 1.5;
         } else {
             gapMillis = fixedGaugeRollupMillis * 1.5;
         }
-        List<List<Number /*@Nullable*/[]>> series = Lists.newArrayList();
+        List<DataSeries> dataSeriesList = Lists.newArrayList();
         for (String gaugeName : request.gaugeNames()) {
             ImmutableList<GaugePoint> gaugePoints = gaugePointDao.readGaugePoints(gaugeName,
-                    request.from(), request.to(), request.rollupLevel());
-            series.add(convertToDataSeriesWithGaps(gaugePoints, gapMillis));
+                    request.from(), request.to(), rollupLevel);
+            dataSeriesList.add(convertToDataSeriesWithGaps(gaugeName, gaugePoints, gapMillis));
         }
-        return mapper.writeValueAsString(series);
+
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeObjectField("dataSeries", dataSeriesList);
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
     }
 
     @GET("/backend/jvm/all-gauges")
@@ -482,19 +490,19 @@ class JvmJsonService {
         jg.writeEndObject();
     }
 
-    private static List<Number /*@Nullable*/[]> convertToDataSeriesWithGaps(
+    private static DataSeries convertToDataSeriesWithGaps(String dataSeriesName,
             ImmutableList<GaugePoint> gaugePoints, double gapMillis) {
-        List<Number /*@Nullable*/[]> points = Lists.newArrayList();
+        DataSeries dataSeries = new DataSeries(dataSeriesName);
         GaugePoint lastGaugePoint = null;
         for (GaugePoint gaugePoint : gaugePoints) {
             if (lastGaugePoint != null
                     && gaugePoint.captureTime() - lastGaugePoint.captureTime() > gapMillis) {
-                points.add(null);
+                dataSeries.addNull();
             }
-            points.add(new Number[] {gaugePoint.captureTime(), gaugePoint.value()});
+            dataSeries.add(gaugePoint.captureTime(), gaugePoint.value());
             lastGaugePoint = gaugePoint;
         }
-        return points;
+        return dataSeries;
     }
 
     private static Availability getThreadCpuTimeAvailability() {
@@ -555,6 +563,13 @@ class JvmJsonService {
         return sortedAttributeMap;
     }
 
+    private static int getRollupLevel(long from, long to) {
+        if (to - from <= GaugePointDao.ROLLUP_THRESHOLD_MILLIS) {
+            return 0;
+        } else {
+            return 1;
+        }
+    }
     private static Throwable getRootCause(Throwable t) {
         Throwable cause = t.getCause();
         if (cause == null) {
@@ -645,7 +660,6 @@ class JvmJsonService {
         abstract long from();
         abstract long to();
         abstract ImmutableList<String> gaugeNames();
-        abstract int rollupLevel();
     }
 
     @Value.Immutable

@@ -97,7 +97,7 @@ class TransactionJsonService {
                 request.transactionType(), request.transactionName(), request.from(), request.to(),
                 liveCaptureTime);
         List<DataSeries> dataSeriesList =
-                getDataSeriesForOverviewChart(request, aggregates, request.percentiles());
+                getDataSeriesForOverviewChart(request, aggregates, request.percentile());
         Map<Long, Long> transactionCounts = getTransactionCounts(aggregates);
         if (!aggregates.isEmpty() && aggregates.get(0).captureTime() == request.from()) {
             // the left most aggregate is not really in the requested interval since it is for
@@ -105,7 +105,7 @@ class TransactionJsonService {
             aggregates = aggregates.subList(1, aggregates.size());
         }
         OverviewMergedAggregate mergedAggregate =
-                AggregateMerging.getOverviewMergedAggregate(aggregates, request.percentiles());
+                AggregateMerging.getOverviewMergedAggregate(aggregates, request.percentile());
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -581,7 +581,8 @@ class TransactionJsonService {
         abstract long to();
         abstract String transactionType();
         abstract @Nullable String transactionName();
-        abstract ImmutableList<Double> percentiles();
+        // singular because this is used in query string
+        abstract ImmutableList<Double> percentile();
     }
 
     @Value.Immutable
