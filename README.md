@@ -3,7 +3,7 @@ Glowroot &nbsp;&nbsp; [![Build Status](https://img.shields.io/travis/glowroot/gl
 
 ## Quick start
 
-1. Download and unzip [glowroot-0.8-dist.zip](https://github.com/glowroot/glowroot/releases/download/v0.8/glowroot-0.8-dist.zip)
+1. Download and unzip [glowroot-0.8.1-dist.zip](https://github.com/glowroot/glowroot/releases/download/v0.8.1/glowroot-0.8.1-dist.zip)
 2. Add `-javaagent:path/to/glowroot.jar` to your application's JVM arguments
 3. Start your application
 4. Connect to http://localhost:4000
@@ -12,7 +12,7 @@ Glowroot supports Java 6+.
 
 ## Core plugins
 
-Included in this repo (under [plugins](plugins)) and included in the glowroot-0.8-dist.zip download:
+Included in this repo (under [plugins](plugins)) and included in the glowroot-0.8.1-dist.zip download:
 
  * Servlets
  * Jdbc
@@ -26,6 +26,7 @@ Included in this repo (under [plugins](plugins)) and included in the glowroot-0.
 
  * [GitHub issue tracker](https://github.com/glowroot/glowroot/issues)
  * [Google group](https://groups.google.com/forum/#!forum/glowroot)
+ * Twitter [@glowroot](https://twitter.com/glowroot)
 
 ## Building
 
