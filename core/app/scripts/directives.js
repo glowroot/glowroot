@@ -448,24 +448,25 @@ glowroot.directive('gtSmartClick', function () {
   };
 });
 
-glowroot.directive('gtSelectpicker', function () {
-  return {
-    scope: {
-      ngModel: '=',
-      gtSelectpickerOptions: '&'
-    },
-    link: function (scope, iElement) {
-      scope.$watch('ngModel', function (newValue) {
-        iElement.val(newValue);
-        iElement.selectpicker('refresh');
-      });
+glowroot.directive('gtSelectpicker', [
+  '$timeout',
+  function ($timeout) {
+    return {
+      scope: {
+        ngModel: '=',
+        gtSelectpickerOptions: '&'
+      },
+      link: function (scope, iElement) {
+        $timeout(function () {
+          iElement.selectpicker(scope.gtSelectpickerOptions());
+          iElement.selectpicker('val', scope.ngModel);
+          iElement.selectpicker('refresh');
+        });
 
-      iElement.selectpicker(scope.gtSelectpickerOptions());
-      iElement.selectpicker('refresh');
-
-      scope.$on('$destroy', function () {
-        iElement.selectpicker('destroy');
-      });
-    }
-  };
-});
+        scope.$on('$destroy', function () {
+          iElement.selectpicker('destroy');
+        });
+      }
+    };
+  }
+]);

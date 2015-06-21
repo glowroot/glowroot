@@ -92,7 +92,7 @@
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-guava</artifactId>
-      <version>2.5.3</version>
+      <version>2.6.0-rc2</version>
     </dependency>
     <dependency>
       <groupId>org.hdrhistogram</groupId>
@@ -112,7 +112,7 @@
     <dependency>
       <groupId>com.sun.mail</groupId>
       <artifactId>mailapi</artifactId>
-      <version>1.5.3</version>
+      <version>1.5.4</version>
       <exclusions>
         <exclusion>
           <!-- JAF included in Java SE 6+ -->
@@ -124,7 +124,7 @@
     <dependency>
       <groupId>com.sun.mail</groupId>
       <artifactId>smtp</artifactId>
-      <version>1.5.3</version>
+      <version>1.5.4</version>
       <exclusions>
         <exclusion>
           <!-- JAF included in Java SE 6+ -->

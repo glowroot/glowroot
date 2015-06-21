@@ -43,7 +43,7 @@ class PropertyValueDeserializer extends JsonDeserializer<PropertyValue> {
     }
 
     @Override
-    public PropertyValue getNullValue() {
+    public PropertyValue getNullValue(DeserializationContext ctxt) {
         return new PropertyValue(null);
     }
 }

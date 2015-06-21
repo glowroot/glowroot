@@ -18,9 +18,9 @@
     "grunt-contrib-uglify": "0.9.1",
     "grunt-contrib-watch": "0.6.1",
     "grunt-filerev": "2.3.1",
-    "grunt-newer": "1.1.0",
+    "grunt-newer": "1.1.1",
     "grunt-usemin": "3.0.0",
-    "jshint-stylish": "2.0.0",
+    "jshint-stylish": "2.0.1",
     "load-grunt-tasks": "3.2.0",
     "time-grunt": "1.2.1"
   }

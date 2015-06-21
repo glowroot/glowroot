@@ -18,8 +18,10 @@
     <ul class="list-group">
       <select gt-selectpicker
               gt-selectpicker-options="{width: '100%', style: 'gt-transaction-sidebar-by'}"
-              ng-model="$parent.summarySortOrder"
-              ng-options="value as display for (value, display) in summarySortOrders">
+              ng-model="$parent.summarySortOrder">
+        <option ng-repeat="(value, display) in summarySortOrders" value="{{value}}">
+          {{display}}
+        </option>
       </select>
 
       <div style="position: relative;">
