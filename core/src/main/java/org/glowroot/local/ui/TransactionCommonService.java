@@ -431,9 +431,11 @@ class TransactionCommonService {
     }
 
     // using non-recursive algorithm to avoid stack overflow error on deep profiles
-    private static void truncateLeafs(List<ProfileNode> rootNodes, int minSamples) {
+    private static void truncateLeafs(Iterable<ProfileNode> rootNodes, int minSamples) {
         Deque<ProfileNode> toBeVisited = new ArrayDeque<ProfileNode>();
-        toBeVisited.addAll(rootNodes);
+        for (ProfileNode rootNode : rootNodes) {
+            toBeVisited.add(rootNode);
+        }
         ProfileNode node;
         while ((node = toBeVisited.poll()) != null) {
             for (Iterator<ProfileNode> i = node.getChildNodes().iterator(); i.hasNext();) {

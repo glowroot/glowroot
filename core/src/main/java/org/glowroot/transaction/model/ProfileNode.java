@@ -18,7 +18,9 @@ package org.glowroot.transaction.model;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import javax.annotation.Nullable;
 
@@ -36,6 +38,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -43,18 +47,31 @@ import static com.google.common.base.Preconditions.checkState;
 
 @JsonSerialize(using = ProfileNode.Serializer.class)
 @JsonDeserialize(using = ProfileNode.Deserializer.class)
-public class ProfileNode {
+public class ProfileNode implements Iterable<ProfileNode> {
 
+    // the type is StackTraceElement when building profiles, but is String when reading profiles
+    // from store to avoid unnecessary parsing and creation of StackTraceElement
+    //
     // null for synthetic root only
-    private final @Nullable String stackTraceElement;
+    private final @Nullable Object stackTraceElementObj;
+
     private final @Nullable String leafThreadState;
     private int sampleCount;
+
     // using List over Set in order to preserve ordering
     // may contain duplicates (common from weaving groups of overloaded methods), these are filtered
     // out later when profile is written to json
-    private List<String> timerNames = Lists.newArrayList();
-    // nodes mostly have a single child node, and rarely have more than two child nodes
-    private final List<ProfileNode> childNodes = Lists.newArrayListWithCapacity(2);
+    //
+    // lazy instantiate list to save memory since it is usually empty
+    private @Nullable ImmutableList<String> timerNames;
+
+    // nodes mostly have a single child node, so to minimize memory consumption,
+    // childNodes can either be single ProfileNode or List<ProfileNode>
+    //
+    // important: it can be a single-valued or empty list if truncating occurred which removed small
+    // leafs
+    private @Nullable Object childNodes;
+
     // this is only used when sending profiles to the UI (it is not used when storing)
     private boolean ellipsed;
 
@@ -62,22 +79,34 @@ public class ProfileNode {
         return new ProfileNode(null, null);
     }
 
-    public static ProfileNode create(String stackTraceElement, @Nullable String leafThreadState) {
-        return new ProfileNode(stackTraceElement, leafThreadState);
+    public static ProfileNode create(Object stackTraceElementObj,
+            @Nullable String leafThreadState) {
+        return new ProfileNode(stackTraceElementObj, leafThreadState);
     }
 
-    private ProfileNode(@Nullable String stackTraceElement, @Nullable String leafThreadState) {
-        this.stackTraceElement = stackTraceElement;
+    private ProfileNode(@Nullable Object stackTraceElementObj,
+            @Nullable String leafThreadState) {
+        this.stackTraceElementObj = stackTraceElementObj;
         this.leafThreadState = leafThreadState;
     }
 
+    @SuppressWarnings("unchecked")
     public void addChildNode(ProfileNode node) {
-        childNodes.add(node);
+        if (childNodes == null) {
+            childNodes = node;
+        } else if (childNodes instanceof ProfileNode) {
+            List<ProfileNode> list = Lists.newArrayListWithCapacity(2);
+            list.add((ProfileNode) checkNotNull(childNodes));
+            list.add(node);
+            childNodes = list;
+        } else {
+            ((List<ProfileNode>) childNodes).add(node);
+        }
     }
 
     // may contain duplicates
-    public void setTimerNames(List<String> timerNames) {
-        this.timerNames = ImmutableList.copyOf(timerNames);
+    public void setTimerNames(ImmutableList<String> timerNames) {
+        this.timerNames = timerNames;
     }
 
     // sampleCount is volatile to ensure visibility, but this method still needs to be called under
@@ -91,8 +120,18 @@ public class ProfileNode {
     }
 
     // only returns null for synthetic root
-    public @Nullable String getStackTraceElement() {
-        return stackTraceElement;
+    public @Nullable Object getStackTraceElementObj() {
+        return stackTraceElementObj;
+    }
+
+    public String getStackTraceElementStr() {
+        if (stackTraceElementObj instanceof String) {
+            return (String) stackTraceElementObj;
+        } else if (stackTraceElementObj == null) {
+            return "";
+        } else {
+            return stackTraceElementObj.toString();
+        }
     }
 
     public @Nullable String getLeafThreadState() {
@@ -104,12 +143,79 @@ public class ProfileNode {
     }
 
     // may contain duplicates
-    public List<String> getTimerNames() {
-        return timerNames;
+    public ImmutableList<String> getTimerNames() {
+        return timerNames == null ? ImmutableList.<String>of() : timerNames;
     }
 
-    public List<ProfileNode> getChildNodes() {
-        return childNodes;
+    // this method only exists to make the code clearer in places where the node is being used as an
+    // iterable
+    public Iterable<ProfileNode> getChildNodes() {
+        return this;
+    }
+
+    // return value supports Iterator.remove() for use in truncating small leafs
+    @Override
+    @SuppressWarnings("unchecked")
+    public Iterator<ProfileNode> iterator() {
+        final Object childNodes = this.childNodes;
+        if (childNodes == null) {
+            return ImmutableList.<ProfileNode>of().iterator();
+        } else if (childNodes instanceof ProfileNode) {
+            return new Iterator<ProfileNode>() {
+                private boolean done;
+                @Override
+                public boolean hasNext() {
+                    return !done;
+                }
+                @Override
+                public ProfileNode next() {
+                    if (done) {
+                        throw new NoSuchElementException();
+                    }
+                    done = true;
+                    return (ProfileNode) checkNotNull(childNodes);
+                }
+                @Override
+                public void remove() {
+                    ProfileNode.this.childNodes = null;
+                }
+            };
+        } else {
+            return ((List<ProfileNode>) childNodes).iterator();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public boolean isChildNodesEmpty() {
+        if (childNodes == null) {
+            return true;
+        } else if (childNodes instanceof ProfileNode) {
+            return false;
+        } else {
+            return ((List<ProfileNode>) childNodes).isEmpty();
+        }
+    }
+
+    @EnsuresNonNullIf(expression = "childNodes", result = true)
+    @SuppressWarnings("unchecked")
+    public boolean hasOneChildNode() {
+        if (childNodes == null) {
+            return false;
+        } else if (childNodes instanceof ProfileNode) {
+            return true;
+        } else {
+            return ((List<ProfileNode>) childNodes).size() == 1;
+        }
+    }
+
+    @RequiresNonNull("childNodes")
+    @SuppressWarnings("unchecked")
+    public ProfileNode getOnlyChildNode() {
+        if (childNodes instanceof ProfileNode) {
+            return (ProfileNode) childNodes;
+        } else {
+            return ((List<ProfileNode>) childNodes).get(0);
+        }
     }
 
     public boolean isEllipsed() {
@@ -118,8 +224,19 @@ public class ProfileNode {
 
     public void mergeMatchedNode(ProfileNode anotherSyntheticRootNode) {
         // can only be called on synthetic root node
-        checkState(stackTraceElement == null);
+        checkState(stackTraceElementObj == null);
         merge(this, anotherSyntheticRootNode);
+    }
+
+    public boolean isSameStackTraceElement(StackTraceElement stackTraceElement) {
+        if (stackTraceElementObj instanceof StackTraceElement) {
+            return stackTraceElementObj.equals(stackTraceElement);
+        } else if (stackTraceElementObj == null) {
+            return false;
+        } else {
+            // stackTraceElementObj is a String
+            return stackTraceElementObj.equals(stackTraceElement.toString());
+        }
     }
 
     // merge the right side into the left side
@@ -132,7 +249,8 @@ public class ProfileNode {
             ProfileNode rightNode = matchedPair.rightNode();
             mergeNodeShallow(leftNode, rightNode);
             for (ProfileNode rightChildNode : rightNode.getChildNodes()) {
-                ProfileNode matchingLeftChildNode = findMatch(leftNode.childNodes, rightChildNode);
+                ProfileNode matchingLeftChildNode =
+                        findMatch(leftNode.getChildNodes(), rightChildNode);
                 if (matchingLeftChildNode == null) {
                     leftNode.addChildNode(rightChildNode);
                 } else {
@@ -142,7 +260,7 @@ public class ProfileNode {
         }
     }
 
-    private static @Nullable ProfileNode findMatch(List<ProfileNode> leftChildNodes,
+    private static @Nullable ProfileNode findMatch(Iterable<ProfileNode> leftChildNodes,
             ProfileNode rightChildNode) {
         for (ProfileNode leftChildNode : leftChildNodes) {
             if (matches(leftChildNode, rightChildNode)) {
@@ -160,15 +278,26 @@ public class ProfileNode {
         // trace was captured while one of the synthetic $glowroot$timer$ methods was
         // executing in which case one of the timer names may be a subset of the other,
         // in which case, the superset wins:
-        List<String> timerNames = rightNode.getTimerNames();
-        if (timerNames.size() > leftNode.timerNames.size()) {
-            leftNode.timerNames = timerNames;
+        ImmutableList<String> timerNames = rightNode.getTimerNames();
+        if (timerNames.size() > leftNode.getTimerNames().size()) {
+            leftNode.setTimerNames(timerNames);
         }
     }
 
-    private static boolean matches(ProfileNode leftNode, ProfileNode rightNode) {
-        return Objects.equal(leftNode.getStackTraceElement(), rightNode.getStackTraceElement())
-                && Objects.equal(leftNode.getLeafThreadState(), rightNode.getLeafThreadState());
+    public static boolean matches(ProfileNode leftNode, ProfileNode rightNode) {
+        if (!Objects.equal(leftNode.leafThreadState, rightNode.leafThreadState)) {
+            return false;
+        }
+        if (leftNode.stackTraceElementObj instanceof StackTraceElement) {
+            return rightNode.isSameStackTraceElement(
+                    (StackTraceElement) leftNode.stackTraceElementObj);
+        }
+        if (rightNode.stackTraceElementObj instanceof StackTraceElement) {
+            return leftNode.isSameStackTraceElement(
+                    (StackTraceElement) rightNode.stackTraceElementObj);
+        }
+        // both Strings/null
+        return Objects.equal(leftNode.stackTraceElementObj, rightNode.stackTraceElementObj);
     }
 
     // custom serializer to avoid StackOverflowError caused by default recursive algorithm
@@ -205,7 +334,7 @@ public class ProfileNode {
         @Override
         List<ProfileNode> visit(ProfileNode node) throws IOException {
             jg.writeStartObject();
-            jg.writeStringField("stackTraceElement", node.getStackTraceElement());
+            jg.writeStringField("stackTraceElement", node.getStackTraceElementStr());
             String leafThreadState = node.getLeafThreadState();
             if (leafThreadState != null) {
                 jg.writeStringField("leafThreadState", leafThreadState);
@@ -223,7 +352,7 @@ public class ProfileNode {
             if (ellipsed) {
                 jg.writeBooleanField("ellipsed", ellipsed);
             }
-            List<ProfileNode> childNodes = node.getChildNodes();
+            List<ProfileNode> childNodes = ImmutableList.copyOf(node.getChildNodes());
             if (!childNodes.isEmpty()) {
                 jg.writeArrayFieldStart("childNodes");
             }
@@ -232,8 +361,7 @@ public class ProfileNode {
 
         @Override
         void revisitAfterChildren(ProfileNode node) throws IOException {
-            List<ProfileNode> childNodes = node.getChildNodes();
-            if (!childNodes.isEmpty()) {
+            if (!node.isChildNodesEmpty()) {
                 jg.writeEndArray();
             }
             jg.writeEndObject();
@@ -286,8 +414,7 @@ public class ProfileNode {
                 }
                 parser.nextToken();
             }
-            checkNotNull(rootNode);
-            return rootNode;
+            return checkNotNull(rootNode);
         }
 
         private ProfileNode readNodeFields() throws IOException {
@@ -310,7 +437,7 @@ public class ProfileNode {
                 while (parser.nextToken() != JsonToken.END_ARRAY) {
                     timerNames.add(parser.getText());
                 }
-                node.setTimerNames(timerNames);
+                node.setTimerNames(ImmutableList.copyOf(timerNames));
                 token = parser.nextToken();
             }
             return node;

@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 
@@ -26,22 +27,33 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ScratchBuffer;
+import org.glowroot.config.ConfigService;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.Transaction;
 
 public class AggregateIntervalCollector {
 
+    private static final Logger logger = LoggerFactory.getLogger(AggregateIntervalCollector.class);
+
+    private static final AtomicBoolean maxAggregateTransactionsWarnLogged = new AtomicBoolean();
+
     private final long endTime;
     private final Map<String, IntervalTypeCollector> typeCollectors = Maps.newConcurrentMap();
+    private final int maxAggregateTransactionsPerTransactionType;
     private final int maxAggregateQueriesPerQueryType;
 
     AggregateIntervalCollector(long currentTime, long fixedAggregateIntervalMillis,
-            int maxAggregateQueriesPerQueryType) {
+            ConfigService configService) {
         endTime = (long) Math.ceil(currentTime / (double) fixedAggregateIntervalMillis)
                 * fixedAggregateIntervalMillis;
-        this.maxAggregateQueriesPerQueryType = maxAggregateQueriesPerQueryType;
+        this.maxAggregateTransactionsPerTransactionType =
+                configService.getAdvancedConfig().maxAggregateTransactionsPerTransactionType();
+        this.maxAggregateQueriesPerQueryType =
+                configService.getAdvancedConfig().maxAggregateQueriesPerQueryType();
     }
 
     public long getEndTime() {
@@ -186,8 +198,7 @@ public class AggregateIntervalCollector {
         IntervalTypeCollector typeBuilder;
         typeBuilder = typeCollectors.get(transactionType);
         if (typeBuilder == null) {
-            typeBuilder =
-                    new IntervalTypeCollector(transactionType, maxAggregateQueriesPerQueryType);
+            typeBuilder = new IntervalTypeCollector(transactionType);
             typeCollectors.put(transactionType, typeBuilder);
         }
         return typeBuilder;
@@ -213,16 +224,14 @@ public class AggregateIntervalCollector {
         }
     }
 
-    private static class IntervalTypeCollector {
+    private class IntervalTypeCollector {
 
         private final String transactionType;
         private final AggregateBuilder overallBuilder;
         private final Map<String, AggregateBuilder> transactionBuilders = Maps.newConcurrentMap();
-        private final int maxAggregateQueriesPerQueryType;
 
-        private IntervalTypeCollector(String transactionType, int maxAggregateQueriesPerQueryType) {
+        private IntervalTypeCollector(String transactionType) {
             this.transactionType = transactionType;
-            this.maxAggregateQueriesPerQueryType = maxAggregateQueriesPerQueryType;
             overallBuilder =
                     new AggregateBuilder(transactionType, null, maxAggregateQueriesPerQueryType);
         }
@@ -239,10 +248,21 @@ public class AggregateIntervalCollector {
             }
             AggregateBuilder transactionBuilder =
                     transactionBuilders.get(transaction.getTransactionName());
-            if (transactionBuilder == null) {
+            if (transactionBuilder == null
+                    && transactionBuilders.size() < maxAggregateTransactionsPerTransactionType) {
                 transactionBuilder = new AggregateBuilder(transactionType,
                         transaction.getTransactionName(), maxAggregateQueriesPerQueryType);
                 transactionBuilders.put(transaction.getTransactionName(), transactionBuilder);
+            }
+            if (transactionBuilder == null) {
+                if (!maxAggregateTransactionsWarnLogged.getAndSet(true)) {
+                    logger.warn("the max transaction names per transaction type was exceeded"
+                            + " during the current interval. consider increasing the limit under"
+                            + " Configuration > Advanced, or reducing the number of transaction"
+                            + " names by configuring instrumentation points under Configuration"
+                            + " > Instrumentation that override the transaction name.");
+                }
+                return;
             }
             synchronized (transactionBuilder) {
                 transactionBuilder.add(transaction);

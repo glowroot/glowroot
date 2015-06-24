@@ -112,7 +112,7 @@ public class Profile {
     public void addToStackTree(List<? extends /*@NonNull*/Object> stackTrace, String threadState) {
         syntheticRootNode.incrementSampleCount(1);
         ProfileNode lastMatchedNode = syntheticRootNode;
-        List<ProfileNode> nextChildNodes = syntheticRootNode.getChildNodes();
+        Iterable<ProfileNode> nextChildNodes = syntheticRootNode.getChildNodes();
         int nextIndex;
         // navigate the stack tree nodes
         // matching the new stack trace as far as possible
@@ -137,7 +137,7 @@ public class Profile {
             // the stack trace was captured while one of the synthetic $glowroot$timer$
             // methods was executing in which case one of the timer names may be a
             // subset of the other, in which case, the superset wins:
-            List<String> timerNames = getTimerNames(element);
+            ImmutableList<String> timerNames = getTimerNames(element);
             if (timerNames.size() > matchingNode.getTimerNames().size()) {
                 matchingNode.setTimerNames(timerNames);
             }
@@ -148,7 +148,7 @@ public class Profile {
         for (int i = nextIndex; i >= 0; i--) {
             Object element = stackTrace.get(i);
             ProfileNode nextNode;
-            String stackTraceElement = getStackTraceElement(element);
+            StackTraceElement stackTraceElement = getStackTraceElement(element);
             if (i == 0) {
                 // leaf node
                 nextNode = ProfileNode.create(stackTraceElement, threadState);
@@ -226,20 +226,20 @@ public class Profile {
         }
     }
 
-    private static boolean matches(String stackTraceElement, ProfileNode childNode, boolean leaf,
-            String threadState) {
+    private static boolean matches(StackTraceElement stackTraceElement, ProfileNode childNode,
+            boolean leaf, String threadState) {
         String leafThreadState = childNode.getLeafThreadState();
         if (leafThreadState != null && leaf) {
             // only consider thread state when matching the leaf node
-            return stackTraceElement.equals(childNode.getStackTraceElement())
+            return childNode.isSameStackTraceElement(stackTraceElement)
                     && leafThreadState.equals(threadState);
         } else {
             return leafThreadState == null && !leaf
-                    && stackTraceElement.equals(childNode.getStackTraceElement());
+                    && childNode.isSameStackTraceElement(stackTraceElement);
         }
     }
 
-    private static String getStackTraceElement(Object stackTraceElementOrPlus) {
+    private static StackTraceElement getStackTraceElement(Object stackTraceElementOrPlus) {
         StackTraceElement stackTraceElement;
         if (stackTraceElementOrPlus instanceof StackTraceElement) {
             stackTraceElement = (StackTraceElement) stackTraceElementOrPlus;
@@ -247,10 +247,10 @@ public class Profile {
             stackTraceElement =
                     ((StackTraceElementPlus) stackTraceElementOrPlus).stackTraceElement();
         }
-        return stackTraceElement.toString();
+        return stackTraceElement;
     }
 
-    private static List<String> getTimerNames(Object stackTraceElementOrPlus) {
+    private static ImmutableList<String> getTimerNames(Object stackTraceElementOrPlus) {
         if (stackTraceElementOrPlus instanceof StackTraceElement) {
             return ImmutableList.of();
         } else {

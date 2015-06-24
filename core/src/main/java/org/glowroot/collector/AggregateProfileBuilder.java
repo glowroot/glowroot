@@ -15,9 +15,7 @@
  */
 package org.glowroot.collector;
 
-import java.util.List;
-
-import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.ProfileNode;
@@ -49,7 +47,7 @@ class AggregateProfileBuilder {
             // the stack trace was captured while one of the synthetic $glowroot$timer$ methods was
             // executing in which case one of the timer names may be a subset of the other,
             // in which case, the superset wins:
-            List<String> timerNames = toBeMergedNode.getTimerNames();
+            ImmutableList<String> timerNames = toBeMergedNode.getTimerNames();
             if (timerNames.size() > node.getTimerNames().size()) {
                 node.setTimerNames(timerNames);
             }
@@ -58,7 +56,7 @@ class AggregateProfileBuilder {
             // for each to-be-merged child node look for a match
             ProfileNode foundMatchingChildNode = null;
             for (ProfileNode childNode : node.getChildNodes()) {
-                if (matches(toBeMergedChildNode, childNode)) {
+                if (ProfileNode.matches(toBeMergedChildNode, childNode)) {
                     foundMatchingChildNode = childNode;
                     break;
                 }
@@ -66,7 +64,7 @@ class AggregateProfileBuilder {
             if (foundMatchingChildNode == null) {
                 // since to-be-merged nodes may still be used when storing the trace, need to make
                 // copy here
-                String stackTraceElement = toBeMergedChildNode.getStackTraceElement();
+                Object stackTraceElement = toBeMergedChildNode.getStackTraceElementObj();
                 // stackTraceElement is only null for synthetic root
                 checkNotNull(stackTraceElement);
                 foundMatchingChildNode = ProfileNode.create(stackTraceElement,
@@ -75,10 +73,5 @@ class AggregateProfileBuilder {
             }
             mergeNode(foundMatchingChildNode, toBeMergedChildNode, mayHaveSyntheticTimerMethods);
         }
-    }
-
-    private boolean matches(ProfileNode node1, ProfileNode node2) {
-        return Objects.equal(node1.getStackTraceElement(), node2.getStackTraceElement())
-                && Objects.equal(node1.getLeafThreadState(), node2.getLeafThreadState());
     }
 }

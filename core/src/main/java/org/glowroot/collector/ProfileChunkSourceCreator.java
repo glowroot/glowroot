@@ -39,7 +39,7 @@ public class ProfileChunkSourceCreator {
         }
         synchronized (profile.getLock()) {
             ProfileNode syntheticRootNode = profile.getSyntheticRootNode();
-            if (syntheticRootNode.getChildNodes().isEmpty()) {
+            if (syntheticRootNode.isChildNodesEmpty()) {
                 return null;
             }
             // need to convert profile into bytes entirely inside of the above lock

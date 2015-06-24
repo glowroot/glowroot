@@ -31,7 +31,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -292,10 +291,10 @@ class TransactionJsonService {
                 request.transactionName(), request.from(), request.to(),
                 request.truncateLeafPercentage());
         ProfileNode interestingNode = profile;
-        while (interestingNode.getChildNodes().size() == 1) {
-            interestingNode = interestingNode.getChildNodes().get(0);
+        while (interestingNode.hasOneChildNode()) {
+            interestingNode = interestingNode.getOnlyChildNode();
         }
-        if (interestingNode.getChildNodes().isEmpty()) {
+        if (interestingNode.isChildNodesEmpty()) {
             // only a single branch through entire tree
             interestingNode = profile;
         }
@@ -475,8 +474,9 @@ class TransactionJsonService {
         return true;
     }
 
+    // TODO use non-recursive algorithm to guard from stack overflow error
     private static void writeFlameGraphNode(ProfileNode node, JsonGenerator jg) throws IOException {
-        jg.writeObjectFieldStart(Strings.nullToEmpty(node.getStackTraceElement()));
+        jg.writeObjectFieldStart(node.getStackTraceElementStr());
         int svUnique = node.getSampleCount();
         for (ProfileNode childNode : node.getChildNodes()) {
             svUnique -= childNode.getSampleCount();

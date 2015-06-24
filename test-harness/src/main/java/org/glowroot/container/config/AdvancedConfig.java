@@ -30,6 +30,7 @@ public class AdvancedConfig {
     private boolean timerWrapperMethods;
     private boolean weavingTimer;
     private int immediatePartialStoreThresholdSeconds;
+    private int maxAggregateTransactionsPerTransactionType;
     private int maxAggregateQueriesPerQueryType;
     private int maxTraceEntriesPerTransaction;
     private int maxStackTraceSamplesPerTransaction;
@@ -67,6 +68,16 @@ public class AdvancedConfig {
     public void setImmediatePartialStoreThresholdSeconds(
             int immediatePartialStoreThresholdSeconds) {
         this.immediatePartialStoreThresholdSeconds = immediatePartialStoreThresholdSeconds;
+    }
+
+    public int getMaxAggregateTransactionsPerTransactionType() {
+        return maxAggregateTransactionsPerTransactionType;
+    }
+
+    public void setMaxAggregateTransactionsPerTransactionType(
+            int maxAggregateTransactionsPerTransactionType) {
+        this.maxAggregateTransactionsPerTransactionType =
+                maxAggregateTransactionsPerTransactionType;
     }
 
     public int getMaxAggregateQueriesPerQueryType() {
@@ -140,6 +151,8 @@ public class AdvancedConfig {
                     && Objects.equal(weavingTimer, that.weavingTimer)
                     && Objects.equal(immediatePartialStoreThresholdSeconds,
                             that.immediatePartialStoreThresholdSeconds)
+                    && Objects.equal(maxAggregateTransactionsPerTransactionType,
+                            that.maxAggregateTransactionsPerTransactionType)
                     && Objects.equal(maxAggregateQueriesPerQueryType,
                             that.maxAggregateQueriesPerQueryType)
                     && Objects.equal(maxTraceEntriesPerTransaction,
@@ -161,10 +174,10 @@ public class AdvancedConfig {
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(timerWrapperMethods, weavingTimer,
-                immediatePartialStoreThresholdSeconds, maxAggregateQueriesPerQueryType,
-                maxTraceEntriesPerTransaction, maxStackTraceSamplesPerTransaction,
-                captureThreadInfo, captureGcInfo, mbeanGaugeNotFoundDelaySeconds,
-                internalQueryTimeoutSeconds);
+                immediatePartialStoreThresholdSeconds, maxAggregateTransactionsPerTransactionType,
+                maxAggregateQueriesPerQueryType, maxTraceEntriesPerTransaction,
+                maxStackTraceSamplesPerTransaction, captureThreadInfo, captureGcInfo,
+                mbeanGaugeNotFoundDelaySeconds, internalQueryTimeoutSeconds);
     }
 
     @Override
@@ -174,6 +187,8 @@ public class AdvancedConfig {
                 .add("timerWrapperMethods", timerWrapperMethods)
                 .add("weavingTimer", weavingTimer)
                 .add("immediatePartialStoreThresholdSeconds", immediatePartialStoreThresholdSeconds)
+                .add("maxAggregateTransactionsPerTransactionType",
+                        maxAggregateTransactionsPerTransactionType)
                 .add("maxAggregateQueriesPerQueryType", maxAggregateQueriesPerQueryType)
                 .add("maxTraceEntriesPerTransaction", maxTraceEntriesPerTransaction)
                 .add("maxStackTraceSamplesPerTransaction", maxStackTraceSamplesPerTransaction)
@@ -190,6 +205,7 @@ public class AdvancedConfig {
             @JsonProperty("timerWrapperMethods") @Nullable Boolean timerWrapperMethods,
             @JsonProperty("weavingTimer") @Nullable Boolean weavingTimer,
             @JsonProperty("immediatePartialStoreThresholdSeconds") @Nullable Integer immediatePartialStoreThresholdSeconds,
+            @JsonProperty("maxAggregateTransactionsPerTransactionType") @Nullable Integer maxAggregateTransactionsPerTransactionType,
             @JsonProperty("maxAggregateQueriesPerQueryType") @Nullable Integer maxAggregateQueriesPerQueryType,
             @JsonProperty("maxTraceEntriesPerTransaction") @Nullable Integer maxTraceEntriesPerTransaction,
             @JsonProperty("maxStackTraceSamplesPerTransaction") @Nullable Integer maxStackTraceSamplesPerTransaction,
@@ -202,6 +218,8 @@ public class AdvancedConfig {
         checkRequiredProperty(weavingTimer, "weavingTimer");
         checkRequiredProperty(immediatePartialStoreThresholdSeconds,
                 "immediatePartialStoreThresholdSeconds");
+        checkRequiredProperty(maxAggregateTransactionsPerTransactionType,
+                "maxAggregateTransactionsPerTransactionType");
         checkRequiredProperty(maxAggregateQueriesPerQueryType, "maxAggregateQueriesPerQueryType");
         checkRequiredProperty(maxTraceEntriesPerTransaction, "maxTraceEntriesPerTransaction");
         checkRequiredProperty(maxStackTraceSamplesPerTransaction,
@@ -215,6 +233,8 @@ public class AdvancedConfig {
         config.setTimerWrapperMethods(timerWrapperMethods);
         config.setWeavingTimer(weavingTimer);
         config.setImmediatePartialStoreThresholdSeconds(immediatePartialStoreThresholdSeconds);
+        config.setMaxAggregateTransactionsPerTransactionType(
+                maxAggregateTransactionsPerTransactionType);
         config.setMaxAggregateQueriesPerQueryType(maxAggregateQueriesPerQueryType);
         config.setMaxTraceEntriesPerTransaction(maxTraceEntriesPerTransaction);
         config.setMaxStackTraceSamplesPerTransaction(maxStackTraceSamplesPerTransaction);

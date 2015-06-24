@@ -64,8 +64,7 @@ public class AggregateCollector {
         this.clock = clock;
         this.fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
         activeIntervalCollector = new AggregateIntervalCollector(clock.currentTimeMillis(),
-                fixedAggregateIntervalMillis, configService.getAdvancedConfig()
-                        .maxAggregateQueriesPerQueryType());
+                fixedAggregateIntervalMillis, configService);
         // dedicated thread to aggregating transaction data
         processingThread = new Thread(new TransactionProcessor());
         processingThread.setDaemon(true);
@@ -153,7 +152,7 @@ public class AggregateCollector {
                 scheduledExecutor.execute(new IntervalFlusher(activeIntervalCollector));
                 activeIntervalCollector = new AggregateIntervalCollector(
                         pendingTransaction.captureTime(), fixedAggregateIntervalMillis,
-                        configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
+                        configService);
             }
             // the synchronized block is to ensure visibility of updates to this particular
             // activeIntervalCollector
@@ -179,8 +178,7 @@ public class AggregateCollector {
                     // flush in separate thread to avoid pending transactions from piling up quickly
                     scheduledExecutor.execute(new IntervalFlusher(activeIntervalCollector));
                     activeIntervalCollector = new AggregateIntervalCollector(currentTime,
-                            fixedAggregateIntervalMillis, configService.getAdvancedConfig()
-                                    .maxAggregateQueriesPerQueryType());
+                            fixedAggregateIntervalMillis, configService);
                 }
             }
         }

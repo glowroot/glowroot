@@ -669,6 +669,7 @@ class ConfigJsonService {
         abstract boolean timerWrapperMethods();
         abstract boolean weavingTimer();
         abstract int immediatePartialStoreThresholdSeconds();
+        abstract int maxAggregateTransactionsPerTransactionType();
         abstract int maxAggregateQueriesPerQueryType();
         abstract int maxTraceEntriesPerTransaction();
         abstract int maxStackTraceSamplesPerTransaction();
@@ -683,6 +684,8 @@ class ConfigJsonService {
                     .timerWrapperMethods(timerWrapperMethods())
                     .weavingTimer(weavingTimer())
                     .immediatePartialStoreThresholdSeconds(immediatePartialStoreThresholdSeconds())
+                    .maxAggregateTransactionsPerTransactionType(
+                            maxAggregateTransactionsPerTransactionType())
                     .maxAggregateQueriesPerQueryType(maxAggregateQueriesPerQueryType())
                     .maxTraceEntriesPerTransaction(maxTraceEntriesPerTransaction())
                     .maxStackTraceSamplesPerTransaction(maxStackTraceSamplesPerTransaction())
@@ -694,11 +697,14 @@ class ConfigJsonService {
         }
 
         private static AdvancedConfigDto fromConfig(AdvancedConfig config) {
-            return AdvancedConfigDto.builder()
+            return AdvancedConfigDto
+                    .builder()
                     .timerWrapperMethods(config.timerWrapperMethods())
                     .weavingTimer(config.weavingTimer())
                     .immediatePartialStoreThresholdSeconds(
                             config.immediatePartialStoreThresholdSeconds())
+                    .maxAggregateTransactionsPerTransactionType(
+                            config.maxAggregateTransactionsPerTransactionType())
                     .maxAggregateQueriesPerQueryType(config.maxAggregateQueriesPerQueryType())
                     .maxTraceEntriesPerTransaction(config.maxTraceEntriesPerTransaction())
                     .maxStackTraceSamplesPerTransaction(

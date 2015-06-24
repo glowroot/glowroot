@@ -163,7 +163,7 @@ class AggregateBuilder {
     @Nullable
     String getProfileJson() throws IOException {
         ProfileNode syntheticRootNode = aggregateProfile.getSyntheticRootNode();
-        if (syntheticRootNode.getChildNodes().isEmpty()) {
+        if (syntheticRootNode.isChildNodesEmpty()) {
             return null;
         }
         return mapper.writeValueAsString(syntheticRootNode);

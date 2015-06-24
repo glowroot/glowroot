@@ -41,6 +41,19 @@
         </div>
       </div>
       <div gt-form-group
+           gt-label="Max aggregate transactions per transaction type"
+           gt-model="config.maxAggregateTransactionsPerTransactionType"
+           gt-number="true"
+           gt-pattern="pattern.integer"
+           gt-required="loaded"
+           gt-width="7em">
+        <div class="help-block">
+          The maximum number of different transaction names in a given minute that each have their own aggregates.
+          If this is exceeded in any given minute, then transactions with other transactions names will still be
+          aggregated into the overall bucket, but will not have their own buckets for that minute time period.
+        </div>
+      </div>
+      <div gt-form-group
            gt-label="Max aggregate queries per query type"
            gt-model="config.maxAggregateQueriesPerQueryType"
            gt-number="true"
