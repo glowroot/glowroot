@@ -92,15 +92,12 @@ glowroot.controller('ChartRangeCtrl', [
     };
 
     $scope.updateLast = function (last, event) {
-      if (event.ctrlKey) {
-        return;
-      }
-      if (last === $scope.$parent.last) {
+      if (last === $scope.$parent.last && !event.ctrlKey) {
         // no change, force refresh
         $scope.$parent.chartRefresh++;
-      } else {
-        $scope.$parent.last = last;
-        $scope.applyLast();
+        // suppress normal link
+        event.preventDefault();
+        return false;
       }
     };
 
