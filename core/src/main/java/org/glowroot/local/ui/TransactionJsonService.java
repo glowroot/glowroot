@@ -191,7 +191,7 @@ class TransactionJsonService {
         if (queryList.isEmpty()
                 && transactionCommonService.shouldHaveQueries(request.transactionType(),
                         request.transactionName(), request.from(), request.to())) {
-            return "{\"expired\":true}";
+            return "{\"overwritten\":true}";
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -210,7 +210,7 @@ class TransactionJsonService {
         if (profile.getSampleCount() == 0
                 && transactionCommonService.shouldHaveProfile(request.transactionType(),
                         request.transactionName(), request.from(), request.to())) {
-            return "{\"expired\":true}";
+            return "{\"overwritten\":true}";
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));

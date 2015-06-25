@@ -348,9 +348,11 @@ HandlebarsRendering = (function () {
         $.get('backend/trace/entries?trace-id=' + traceId)
             .done(function (data) {
               if (data.overwritten) {
-                $('#sps').append('<div style="padding: 1em;">Sorry, the trace entries were overwritten</div>');
+                $('#sps').append('<div style="padding: 1em;">The trace entries have expired, see' +
+                    ' <a href="config/storage#capped-database-size">' +
+                    'Configuration &gt; Storage &gt; Capped database size</a></div>');
               } else if (data.expired) {
-                $('#sps').append('<div style="padding: 1em;">Sorry, the trace expired</div>');
+                $('#sps').append('<div style="padding: 1em;">This trace has expired</div>');
               } else {
                 // first time opening
                 initTraceEntryLineLength();
@@ -415,7 +417,15 @@ HandlebarsRendering = (function () {
         }, 100);
         $.get(url)
             .done(function (data) {
-              buildMergedStackTree(data, $selector);
+              if (data.overwritten) {
+                $selector.find('.gt-profile').html('<div style="padding: 1em;">The profile has expired, see' +
+                    ' <a href="config/storage#capped-database-size">' +
+                    'Configuration &gt; Storage &gt; Capped database size</a></div>');
+              } else if (data.expired) {
+                $selector.find('.gt-profile').html.append('<div style="padding: 1em;">This trace has expired</div>');
+              } else {
+                buildMergedStackTree(data, $selector);
+              }
               $selector.removeClass('hide');
             })
             .fail(function () {

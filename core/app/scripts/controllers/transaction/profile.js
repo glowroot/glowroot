@@ -58,8 +58,8 @@ glowroot.controller('TransactionProfileCtrl', [
       $http.get('backend/transaction/profile' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.showSpinner--;
-            if (data.expired) {
-              $scope.showExpiredMessage = true;
+            if (data.overwritten) {
+              $scope.showOverwrittenMessage = true;
               $scope.showProfile = false;
               return;
             }

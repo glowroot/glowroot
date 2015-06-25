@@ -176,8 +176,8 @@ glowroot.controller('TransactionQueriesCtrl', [
       $http.get('backend/transaction/queries' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.showSpinner--;
-            if (data.expired) {
-              $scope.showExpiredMessage = true;
+            if (data.overwritten) {
+              $scope.showOverwrittenMessage = true;
               $scope.showQueries = false;
               $scope.queries = [];
               return;

@@ -213,7 +213,9 @@
       <strong>
         Entries and profile for this trace have expired
       </strong>
-      <em>(see Configuration &gt; Storage &gt; Profiles/trace entries capped db)</em>
+      <em>
+        (see <a href="config/storage#capped-database-size">Configuration &gt; Storage &gt; Capped database size</a>)
+      </em>
     </div>
   {{/ifExistenceExpired}}
   {{#ifExistenceNo profileExistence}}
@@ -221,7 +223,9 @@
       <strong>
         Entries for this trace have expired
       </strong>
-      <em>(see Configuration &gt; Storage &gt; Profiles/trace entries capped db)</em>
+      <em>
+        (see <a href="config/storage#capped-database-size">Configuration &gt; Storage &gt; Capped database size</a>)
+      </em>
     </div>
   {{/ifExistenceNo}}
 {{/ifExistenceExpired}}
