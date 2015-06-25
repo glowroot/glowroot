@@ -271,6 +271,10 @@ module.exports = function (grunt) {
             ]
           },
           {
+            src: 'bower_components/zeroclipboard/dist/ZeroClipboard.swf',
+            dest: '<%= yeoman.dist %>/scripts/ZeroClipboard.swf'
+          },
+          {
             expand: true,
             cwd: '<%= yeoman.app %>',
             dest: '<%= yeoman.exportDist %>',
@@ -303,6 +307,7 @@ module.exports = function (grunt) {
       dist: {
         src: [
           '<%= yeoman.dist %>/scripts/*.js',
+          '<%= yeoman.dist %>/scripts/*.swf',
           '<%= yeoman.dist %>/styles/*.css',
           '<%= yeoman.dist %>/fonts/*',
           '<%= yeoman.dist %>/favicon.ico'
@@ -317,8 +322,15 @@ module.exports = function (grunt) {
         '<%= yeoman.exportDist %>/*-export.html'
       ],
       css: ['<%= yeoman.dist %>/styles/*.css'],
+      // need to rev ZeroClipboard.swf which is referenced in javascript
+      js: ['<%= yeoman.dist %>/scripts/vendor.*.js'],
       options: {
-        assetsDirs: ['<%= yeoman.dist %>', '<%= yeoman.dist %>/fonts']
+        assetsDirs: ['<%= yeoman.dist %>', '<%= yeoman.dist %>/fonts', '<%= yeoman.dist %>/scripts'],
+        patterns: {
+          js: [
+            [/(ZeroClipboard\.swf)/, 'Replacing reference to ZeroClipboard.swf']
+          ]
+        }
       }
     },
 

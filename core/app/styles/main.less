@@ -24,7 +24,8 @@
 // buttons is used by button-group styled radio buttons (e.g. On/Off)
 @import "../../bower_components/bootstrap/less/button-groups";
 // close is used by trace modal
-@import "../../bower_components/bootstrap/less/close";
+// bootstrap's close.less is copied/modified to workaround IE9 bug with normal css override
+@import "close";
 // component-animations is used by mobile navbar expanding/collapsing
 @import "../../bower_components/bootstrap/less/component-animations";
 // dropdowns is used by the trace search form (e.g. begins with / equals / ends with / contains)

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular */
+/* global glowroot, angular, gtClipboard */
 
 glowroot.controller('ConfigInstrumentationCtrl', [
   '$scope',
@@ -310,6 +310,13 @@ glowroot.controller('ConfigInstrumentationCtrl', [
         delete data.traceEntryEnabledProperty;
       }
       $scope.jsonExport = JSON.stringify(data, null, 2);
+
+      gtClipboard('#jsonExportModal .fa-clipboard', function () {
+        return document.getElementById('jsonExport');
+      }, function () {
+        return $scope.jsonExport;
+      });
+
       // need to wait to display jsonExport until after jsonExport gets bound to the dom
       // otherwise vertical centering won't work correctly
       $timeout(function () {

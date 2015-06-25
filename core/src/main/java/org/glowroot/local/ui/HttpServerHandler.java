@@ -104,6 +104,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                     .put("ico", MediaType.ICO)
                     .put("woff", MediaType.WOFF)
                     .put("woff2", MediaType.create("application", "font-woff2"))
+                    .put("swf", MediaType.create("application", "vnd.adobe.flash-movie"))
                     .put("map", MediaType.JSON_UTF_8)
                     .build();
 

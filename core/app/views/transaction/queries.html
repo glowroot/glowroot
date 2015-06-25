@@ -118,6 +118,8 @@
           data-dismiss="modal">
     &times;
   </button>
+  <i class="fa fa-clipboard gt-clip"></i>
+
   <div class="modal-dialog">
     <div class="modal-body">
       <!-- display: inline-block is so that true width can be calculated and modal shrunk to fit if possible -->
@@ -126,13 +128,15 @@
            style="white-space: pre-wrap; display: inline-block; margin: 0;">
       </pre>
       <div id="unformattedQuery" style="padding-bottom: 5px;"></div>
-      <a href="#"
-         id="formattingToggle"
-         ng-show="formattedQuery"
-         ng-click="toggleFormatted()"
-         style="display: block; margin: 15px 0 0 20px;">
-        {{ showFormatted ? '(show unformatted)' : '(show formatted)' }}
-      </a>
+      <div>
+        <a href="#"
+           id="formattingToggle"
+           ng-show="formattedQuery"
+           ng-click="toggleFormatted()"
+           style="margin: 15px 0 0 20px;">
+          {{ showFormatted ? '(show unformatted)' : '(show formatted)' }}
+        </a>
+      </div>
     </div>
   </div>
 </div>

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, SqlPrettyPrinter, angular, $, console */
+/* global glowroot, SqlPrettyPrinter, angular, $, gtClipboard, console */
 
 glowroot.controller('TransactionQueriesCtrl', [
   '$scope',
@@ -87,6 +87,8 @@ glowroot.controller('TransactionQueriesCtrl', [
       $modalDialog.removeAttr('style');
       var closeButton = $('#queryModal button.close');
       closeButton.removeAttr('style');
+      var $clipboardIcon = $('#queryModal .fa-clipboard');
+      $clipboardIcon.removeAttr('style');
       var $unformattedQuery = $('#unformattedQuery');
       var $formattedQuery = $('#formattedQuery');
       $unformattedQuery.text('');
@@ -98,8 +100,15 @@ glowroot.controller('TransactionQueriesCtrl', [
       $unformattedQuery.show();
       $formattedQuery.hide();
 
+      gtClipboard($clipboardIcon, function () {
+        return $scope.showFormatted ? $formattedQuery[0] : $unformattedQuery[0];
+      }, function () {
+        return $scope.showFormatted ? $scope.formattedQuery : $scope.unformattedQuery;
+      });
+
       if (query.queryType !== 'SQL') {
         modals.display('#queryModal');
+        return;
       }
 
       var formatted = SqlPrettyPrinter.format(query.queryText);
@@ -118,7 +127,8 @@ glowroot.controller('TransactionQueriesCtrl', [
       modals.display('#queryModal');
 
       var width = Math.max($formattedQuery.width() + 80, 500);
-      var height = $formattedQuery.height() + 130;
+      // +141 is needed for IE9 (other browsers seemed ok at +140)
+      var height = $formattedQuery.height() + 141;
       var horizontalScrolling = width > $(window).width() - 50;
       if (horizontalScrolling) {
         height += 17;
@@ -128,12 +138,16 @@ glowroot.controller('TransactionQueriesCtrl', [
         $modalDialog.css('width', width + 'px');
         $modalDialog.css('left', '50%');
         $modalDialog.css('margin-left', -width / 2 + 'px');
+        closeButton.css('right', 'auto');
         closeButton.css('left', '50%');
         var closeButtonLeftMargin = width / 2 - 46;
         if (!verticalScrolling) {
           closeButtonLeftMargin += 17;
         }
         closeButton.css('margin-left', closeButtonLeftMargin + 'px');
+        $clipboardIcon.css('right', 'auto');
+        $clipboardIcon.css('left', '50%');
+        $clipboardIcon.css('margin-left', (closeButtonLeftMargin - 3) + 'px');
       }
       if (!verticalScrolling) {
         $modalDialog.css('overflow-y', 'auto');
@@ -144,6 +158,8 @@ glowroot.controller('TransactionQueriesCtrl', [
         $modalDialog.css('border-bottom-right-radius', '6px');
         closeButton.css('top', '50%');
         closeButton.css('margin-top', -height / 2 + 10 + 'px');
+        $clipboardIcon.css('top', '50%');
+        $clipboardIcon.css('margin-top', -height / 2 + 34 + 'px');
       }
       if (horizontalScrolling) {
         $modalDialog.css('border-bottom-left-radius', 0);

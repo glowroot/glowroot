@@ -54,9 +54,6 @@
 
 .gt-expanded-content {
   background-color: #eee;
-  // margin for white space between successive expanded elements, at the bottom so that
-  // expanding doesn't create jitter/shift down of expanding section
-  margin-bottom: 4px;
 }
 
 // tighter vertical spacing in profile
@@ -150,4 +147,32 @@
   overflow: hidden;
   .gt-break-word;
   .gt-preserve-newlines;
+}
+
+.gt-with-clip {
+  position: relative;
+  padding-right: 33px;
+}
+
+.gt-clip {
+  position: absolute;
+  top: 5px;
+  right: 7px;
+  color: #666;
+  cursor: pointer;
+  // margin and padding are just to increase size of hitbox for ease of clicking
+  margin: -5px;
+  padding: 5px;
+}
+
+// .gt-clip:hover is for exported traces
+.gt-clip.zeroclipboard-is-hover, .gt-clip:hover {
+  // important is needed to override .gt-full-screen-modal.modal .gt-clip
+  color: @gt-blue !important;
+}
+
+// .gt-clip:active is for exported traces
+.gt-clip.zeroclipboard-is-hover.zeroclipboard-is-active, .gt-clip:active {
+  // important is needed to override .gt-full-screen-modal.modal .gt-clip
+  color: darken(@gt-blue, 12%) !important;
 }

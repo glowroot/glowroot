@@ -45,11 +45,8 @@ glowroot.controller('JvmThreadDumpCtrl', [
 
     $scope.exportAsText = function () {
       var textWindow = window.open();
-      var exportHtml = threadDumpHtml
-          .replace(/ <a [^>]*>view trace<\/a>/g, '')
-          .replace(/\n/g, '<br>')
-          .replace(/ /g, '&nbsp;');
-      $(textWindow.document.body).html(exportHtml);
+      var exportHtml = threadDumpHtml.replace(/ <a [^>]*>view trace<\/a>/g, '');
+      $(textWindow.document.body).html('<pre>' + exportHtml + '</pre>');
     };
 
     function onLocationChangeSuccess() {

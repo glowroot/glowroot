@@ -16,6 +16,7 @@
     "moment": "2.10.3",
     "sequeljs": "trask/sequeljs#glowroot-0.8",
     "spinjs": "2.3.1",
-    "stackvis": "trask/node-stackvis#glowroot-0.8"
+    "stackvis": "trask/node-stackvis#glowroot-0.8",
+    "zeroclipboard": "2.1.6"
   }
 }

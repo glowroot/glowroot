@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global angular, $, Spinner, alert */
+/* global angular, $, Spinner, ZeroClipboard, alert */
 
 var glowroot = angular.module('glowroot', [
   'ui.router',
@@ -188,6 +188,15 @@ glowroot.run([
       // tolerant of missing whole (.2) and missing decimal (2.)
       double: /^(0|[1-9][0-9]*)?(\.[0-9]*)?$/
     };
+
+    ZeroClipboard.config({
+      bubbleEvents: false,
+      // cache busting is not required since ZeroClipboard.swf is revved during grunt build
+      cacheBust: false
+    });
+    // this is a workaround for "IE freezes when clicking a ZeroClipboard clipped element within a Bootstrap Modal"
+    // see https://github.com/zeroclipboard/zeroclipboard/blob/master/docs/instructions.md#workaround-a
+    $(document).on('focusin', '#global-zeroclipboard-html-bridge', false);
   }
 ]);
 

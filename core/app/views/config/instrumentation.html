@@ -26,7 +26,7 @@
         <span class="gt-inline-block gt-separator">
           |
         </span>
-        <span style="font-size: 24px;">{{heading}}</span>
+        <span style="font-size: 24px; word-wrap: break-word;">{{heading}}</span>
       </span>
     </h2>
   </div>
@@ -46,6 +46,7 @@
                  for="className{{$id}}">
             Class name
           </label>
+
           <div class="col-lg-9">
             <input type="text"
                    class="form-control"
@@ -58,6 +59,7 @@
                    name="className"
                    id="className{{$id}}"
                    style="max-width: 40em; display: inline-block">
+
             <div gt-spinner
                  gt-spinner-inline="true"
                  gt-show="showClassNameSpinner"
@@ -75,6 +77,7 @@
                  for="methodName{{$id}}">
             Method name
           </label>
+
           <div class="col-lg-9">
             <input type="text"
                    class="form-control"
@@ -87,6 +90,7 @@
                    name="methodName"
                    id="methodName{{$id}}"
                    style="max-width: 40em; display: inline-block;">
+
             <div gt-spinner
                  gt-spinner-inline="true"
                  gt-show="showMethodNameSpinner"
@@ -111,6 +115,7 @@
           <label class="col-lg-3 control-label">
             Method signature
           </label>
+
           <div class="col-lg-9">
             <div ng-repeat="methodSignature in methodSignatures">
               <div class="radio">
@@ -388,13 +393,17 @@
   </div>
 </div>
 <div class="modal" id="jsonExportModal" tabindex="-1">
-  <div class="modal-dialog">
+  <div class="modal-dialog gt-modal-dialog-lg">
     <div class="modal-content">
-      <div class="modal-header">
-        <h3>Instrumentation JSON</h3>
+      <div class="modal-header gt-with-clip">
+        <h3>
+          Instrumentation JSON
+          <i class="fa fa-clipboard gt-clip"
+             style="font-size: 14px; position: inherit; margin-left: 5px;"></i>
+        </h3>
       </div>
       <div class="modal-body" style="padding-top: 20px;">
-        <pre>{{jsonExport}}</pre>
+        <pre id="jsonExport" style="white-space: pre-wrap; word-wrap: break-word;">{{jsonExport}}</pre>
       </div>
     </div>
   </div>

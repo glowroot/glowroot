@@ -38,9 +38,10 @@
     <div class="gt-trace-exception-indent">
       <span class="gt-inline-block gt-unexpanded-content gt-link-color">exception</span>
       {{! using span so background will stretch beyond page border if needed }}
-      <span class="gt-inline-block gt-expanded-content gt-nowrap hide">
+      <div class="gt-inline-block gt-expanded-content gt-nowrap gt-with-clip hide">
         {{{exceptionHtml errorThrowable}}}
-      </span>
+        <i class="fa fa-clipboard gt-clip"></i>
+      </div>
     </div>
   {{/if}}
 {{/if}}

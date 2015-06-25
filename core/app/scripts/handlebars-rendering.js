@@ -19,7 +19,7 @@
 // and that would significantly increase the size of the exported trace files
 
 // Glowroot dependency is used for spinner, but is not used in export file
-/* global $, Handlebars, JST, moment, Glowroot, SqlPrettyPrinter, console */
+/* global $, Handlebars, JST, moment, Glowroot, SqlPrettyPrinter, gtClipboard, console */
 
 // IMPORTANT: DO NOT USE ANGULAR IN THIS FILE
 // that would require adding angular to trace-export.js
@@ -224,7 +224,7 @@ HandlebarsRendering = (function () {
   });
 
   Handlebars.registerHelper('ifSqlMessage', function (message, options) {
-    if (message.startsWith('jdbc execution: ')) {
+    if (message.lastIndexOf('jdbc execution: ', 0) === 0) {
       return options.fn(this);
     }
     return options.inverse(this);
@@ -267,31 +267,34 @@ HandlebarsRendering = (function () {
   });
 
   Handlebars.registerHelper('exceptionHtml', function (throwable) {
-    var html = '<strong>';
+    var html = '<div class="gt-preserve-newlines">';
+    html += '<strong>';
     while (throwable) {
       html += '<span class="gt-break-word gt-preserve-newlines">' + escapeHtml(throwable.display)
-          + '</span></strong><br>';
+          + '</span></strong>\n';
       var i;
       for (i = 0; i < throwable.stackTrace.length; i++) {
-        html += '<div class="stack-trace-element">at ' + escapeHtml(throwable.stackTrace[i]) + '</div>';
+        html += 'at ' + escapeHtml(throwable.stackTrace[i]) + '\n';
       }
       if (throwable.framesInCommon) {
-        html += '... ' + throwable.framesInCommon + ' more<br>';
+        html += '... ' + throwable.framesInCommon + ' more\n';
       }
       throwable = throwable.cause;
       if (throwable) {
         html += '<strong>Caused by: ';
       }
     }
+    html += '</div>';
     return html;
   });
 
   Handlebars.registerHelper('stackTraceHtml', function (stackTrace) {
-    var html = '';
+    var html = '<div class="gt-preserve-newlines">';
     var i;
     for (i = 0; i < stackTrace.length; i++) {
-      html += escapeHtml(stackTrace[i]) + '<br>';
+      html += escapeHtml(stackTrace[i]) + '\n';
     }
+    html += '</div>';
     return html;
   });
 
@@ -506,10 +509,31 @@ HandlebarsRendering = (function () {
   function basicToggle(parent) {
     var expanded = parent.find('.gt-expanded-content');
     var unexpanded = parent.find('.gt-unexpanded-content');
-    if (expanded.hasClass('hide') && !expanded.data('formattingAttempted')) {
+    if (expanded.hasClass('hide') && !expanded.data('gtExpandedPreviously')) {
+      var $clipboardIcon = expanded.find('.fa-clipboard');
+      // mouseenter and mouseleave events are to deal with hover style being removed from expanded div
+      // see https://github.com/zeroclipboard/zeroclipboard/issues/536
+      $clipboardIcon.on('mouseenter', function () {
+        expanded.css('background-color', '#ddd');
+      });
+      expanded.on('mouseleave', function () {
+        expanded.css('background-color', '');
+      });
+      var expandedTextNode = expanded.children('div');
+      gtClipboard($clipboardIcon, function () {
+        return expandedTextNode[0];
+      }, function () {
+        var text = expandedTextNode.text().trim();
+        // TODO deal with this hacky special case for SQL formatting
+        if (text.lastIndexOf('jdbc execution:\n\n', 0) === 0) {
+          text = text.substring('jdbc execution:\n\n'.length);
+        }
+        return text;
+      });
+
       // TODO deal with this hacky special case for SQL formatting
-      var text = expanded.text();
-      if (text.startsWith('jdbc execution: ')) {
+      var text = expandedTextNode.text().trim();
+      if (text.lastIndexOf('jdbc execution: ', 0) === 0) {
         var beforeRowsStripped = text.substring('jdbc execution: '.length);
         var beforeParamsStripped = beforeRowsStripped.replace(/ => [0-9]+ rows?$/, '');
         var sql = beforeParamsStripped.replace(/ \[.*?]$/, '');
@@ -521,21 +545,31 @@ HandlebarsRendering = (function () {
         } else {
           var rows = beforeRowsStripped.substring(beforeParamsStripped.length);
           var parameters = beforeParamsStripped.substring(sql.length);
-          var html = 'jdbc execution:<br><pre style="padding: 0 15px; white-space: pre-wrap;">'
-              + formatted + '</pre>';
+          var html = 'jdbc execution:\n\n';
+          // simulating pre using span, because with pre tag, when selecting text and copy-pasting from firefox
+          // there are extra newlines after the pre tag
+          html += '<span style="display: inline-block; margin: 0; white-space: pre-wrap; font-family: monospace;">'
+              + formatted + '</span>';
           if (parameters) {
-            html += 'parameters:<br><pre style="padding: 0 15px; white-space: pre-wrap;">'
-                + parameters + '</pre>';
+            // the absolutely positioned &nbsp; is just for the copy to clipboard
+            html += '\n\nparameters:\n\n<span style="position: absolute;">&nbsp;</span>'
+                + '<span style="display: inline-block; margin: 0; padding-left: 15px;">' + parameters + '</span>';
           }
           if (rows) {
-            html += 'rows:<br><pre style="padding: 0 15px; white-space: pre-wrap;">'
-                + rows + '</pre>';
+            // the absolutely positioned &nbsp; is just for the copy to clipboard
+            html += '\n\nrows:\n\n<span style="position: absolute;">&nbsp;</span>'
+                + '<span style="display: inline-block; margin: 0; padding-left: 15px;">' + rows + '</span>';
           }
-          expanded.html(html);
-          expanded.css('min-width', 0.8 * unexpanded.width());
+          expanded.css('padding-bottom', '10px');
+          var $clip = expanded.find('.gt-clip');
+          $clip.css('top', '10px');
+          $clip.css('right', '10px');
+          var $message = expanded.find('.gt-preserve-newlines');
+          $message.html(html);
+          $message.css('min-width', 0.6 * unexpanded.width());
         }
       }
-      expanded.data('formattingAttempted', true);
+      expanded.data('gtExpandedPreviously', true);
     }
     unexpanded.toggleClass('hide');
     expanded.toggleClass('hide');

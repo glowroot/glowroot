@@ -139,7 +139,9 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
         $scope.importing = false;
         $('#importModal').data('location-query', 'import');
         modals.display('#importModal', true);
-        $('#importModal textarea').focus();
+        $timeout(function() {
+          $('#importModal textarea').focus();
+        });
       } else {
         $('#importModal').modal('hide');
       }
