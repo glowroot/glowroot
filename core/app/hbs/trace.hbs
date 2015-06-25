@@ -180,32 +180,32 @@
   <div style="margin: 10px 0;">
     <div id="sps"></div>
   </div>
-  {{#ifExistenceYes profileExistence}}
+{{/ifExistenceYes}}
+{{#ifExistenceYes profileExistence}}
+  <div>
+    <button class="gt-flat-btn gt-flat-btn-big-pad1aligned gt-profile-toggle">
+      <span class="gt-link-color">Profile ({{profileSampleCount}})</span>
+    </button>
+    {{! spinner is not used in export file }}
     <div>
-      <button class="gt-flat-btn gt-flat-btn-big-pad1aligned gt-profile-toggle">
-        <span class="gt-link-color">Profile ({{profileSampleCount}})</span>
+      <div class="hide gt-trace-detail-spinner"></div>
+    </div>
+  </div>
+  <div class="gt-nowrap hide" id="profileOuter" style="margin: 10px 0;">
+    <div style="padding-bottom: 10px;">
+      <input class="form-control gt-profile-text-filter hide"
+             style="display: inline-block; width: 25em;"
+             placeholder="filter the profile tree">
+      <select class="form-control gt-profile-filter gt-input-xlarge hide" onchange="this.blur()"
+              style="display: inline-block; vertical-align: middle;">
+      </select>
+      <button type="button" class="btn btn-default hide" style="margin-left: 20px;">
+        Switch to text filter
       </button>
-      {{! spinner is not used in export file }}
-      <div>
-        <div class="hide gt-trace-detail-spinner"></div>
-      </div>
     </div>
-    <div class="gt-nowrap hide" id="profileOuter" style="margin: 10px 0;">
-      <div style="padding-bottom: 10px;">
-        <input class="form-control gt-profile-text-filter hide"
-               style="display: inline-block; width: 25em;"
-               placeholder="filter the profile tree">
-        <select class="form-control gt-profile-filter gt-input-xlarge hide" onchange="this.blur()"
-                style="display: inline-block; vertical-align: middle;">
-        </select>
-        <button type="button" class="btn btn-default hide" style="margin-left: 20px;">
-          Switch to text filter
-        </button>
-      </div>
 
-      <div class="gt-profile gt-indent1"></div>
-    </div>
-  {{/ifExistenceYes}}
+    <div class="gt-profile gt-indent1"></div>
+  </div>
 {{/ifExistenceYes}}
 {{#ifExistenceExpired entriesExistence}}
   {{#ifExistenceExpired profileExistence}}
@@ -217,8 +217,7 @@
         (see <a href="config/storage#capped-database-size">Configuration &gt; Storage &gt; Capped database size</a>)
       </em>
     </div>
-  {{/ifExistenceExpired}}
-  {{#ifExistenceNo profileExistence}}
+  {{^}}
     <div style="margin: 10px 0;">
       <strong>
         Entries for this trace have expired
@@ -227,5 +226,16 @@
         (see <a href="config/storage#capped-database-size">Configuration &gt; Storage &gt; Capped database size</a>)
       </em>
     </div>
-  {{/ifExistenceNo}}
+  {{/ifExistenceExpired}}
+{{^}}
+  {{#ifExistenceExpired profileExistence}}
+    <div style="margin: 10px 0;">
+      <strong>
+        Profile for this trace has expired
+      </strong>
+      <em>
+        (see <a href="config/storage#capped-database-size">Configuration &gt; Storage &gt; Capped database size</a>)
+      </em>
+    </div>
+  {{/ifExistenceExpired}}
 {{/ifExistenceExpired}}
