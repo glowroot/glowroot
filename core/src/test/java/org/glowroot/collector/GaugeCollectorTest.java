@@ -217,8 +217,31 @@ public class GaugeCollectorTest {
         gaugeCollector.collectGaugePoints(gaugeConfig);
         // then
         verify(logger).warn("error accessing mbean attribute {} {}: {}", "xyz:aaa=bbb", "ccc",
-                "MBean attribute value is not a number");
+                "MBean attribute value is not a valid number: \"not a number\"");
         verify(logger).warn("error accessing mbean attribute {} {}: {}", "xyz:aaa=bbb", "ddd",
-                "MBean attribute value is not a number");
+                "MBean attribute value is not a valid number: \"not a number\"");
+    }
+
+    @Test
+    public void shouldHandleMBeanAttributeNotANumberOrString() throws Exception {
+        // given
+        GaugeConfig gaugeConfig = GaugeConfig.builder()
+                .mbeanObjectName("xyz:aaa=bbb")
+                .addMbeanAttributes(MBeanAttribute.of("ccc", false))
+                .addMbeanAttributes(MBeanAttribute.of("ddd", false))
+                .build();
+        when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
+                .thenReturn(new Object());
+        // when
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        gaugeCollector.collectGaugePoints(gaugeConfig);
+        // then
+        verify(logger).warn("error accessing mbean attribute {} {}: {}", "xyz:aaa=bbb", "ccc",
+                "MBean attribute value is not a number or string");
+        verify(logger).warn("error accessing mbean attribute {} {}: {}", "xyz:aaa=bbb", "ddd",
+                "MBean attribute value is not a number or string");
     }
 }

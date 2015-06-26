@@ -51,9 +51,9 @@ public class LazyPlatformMBeanServer {
         this.jbossModules = jbossModules;
     }
 
-    void getObjectInstance(ObjectName name) throws Exception {
+    public ObjectInstance getObjectInstance(ObjectName name) throws Exception {
         ensureInit();
-        mbeanServer.getObjectInstance(name);
+        return mbeanServer.getObjectInstance(name);
     }
 
     void invoke(ObjectName name, String operationName, Object[] params, String[] signature)
@@ -66,12 +66,6 @@ public class LazyPlatformMBeanServer {
             throws InterruptedException {
         ensureInit();
         return mbeanServer.queryNames(name, query);
-    }
-
-    public Set<ObjectInstance> queryMBeans(@Nullable ObjectName name, @Nullable QueryExp query)
-            throws InterruptedException {
-        ensureInit();
-        return mbeanServer.queryMBeans(name, query);
     }
 
     public MBeanInfo getMBeanInfo(ObjectName name) throws Exception {

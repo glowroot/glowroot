@@ -25,7 +25,6 @@ import javax.management.Descriptor;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
-import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 import javax.management.QueryExp;
 import javax.management.openmbean.CompositeData;
@@ -36,6 +35,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
@@ -124,13 +124,13 @@ class GaugeJsonService {
             }
         }
         boolean pattern = request.mbeanObjectName().contains("*");
-        List<MBeanInfo> mbeanInfos = getMBeanInfos(request.mbeanObjectName());
-        if (mbeanInfos.isEmpty() && pattern) {
+        Set<ObjectName> objectNames = getObjectNames(request.mbeanObjectName());
+        if (objectNames.isEmpty() && pattern) {
             builder.mbeanUnmatched(true);
-        } else if (mbeanInfos.isEmpty()) {
+        } else if (objectNames.isEmpty()) {
             builder.mbeanUnavailable(true);
         } else {
-            builder.addAllMbeanAttributes(getAttributeNames(mbeanInfos));
+            builder.addAllMbeanAttributes(getAttributeNames(objectNames));
         }
         return mapper.writeValueAsString(builder.build());
     }
@@ -172,78 +172,72 @@ class GaugeJsonService {
         configService.deleteGaugeConfig(version);
     }
 
-    private GaugeResponse buildResponse(GaugeConfig gaugeConfig) throws InterruptedException {
+    private GaugeResponse buildResponse(GaugeConfig gaugeConfig) throws Exception {
         boolean pattern = gaugeConfig.mbeanObjectName().contains("*");
-        List<MBeanInfo> mbeanInfos = getMBeanInfos(gaugeConfig.mbeanObjectName());
+        Set<ObjectName> objectNames = getObjectNames(gaugeConfig.mbeanObjectName());
         GaugeResponse.Builder builder =
                 GaugeResponse.builder().config(GaugeConfigDtoBase.fromConfig(gaugeConfig));
-        if (mbeanInfos.isEmpty() && pattern) {
+        if (objectNames.isEmpty() && pattern) {
             builder.mbeanUnmatched(true);
-        } else if (mbeanInfos.isEmpty()) {
+        } else if (objectNames.isEmpty()) {
             builder.mbeanUnavailable(true);
         } else {
-            builder.addAllMbeanAvailableAttributeNames(getAttributeNames(mbeanInfos));
+            builder.addAllMbeanAvailableAttributeNames(getAttributeNames(objectNames));
         }
         return builder.build();
     }
 
-    private List<MBeanInfo> getMBeanInfos(String objectName) throws InterruptedException {
-        if (!objectName.contains("*")) {
-            try {
-                return ImmutableList.of(lazyPlatformMBeanServer.getMBeanInfo(
-                        ObjectName.getInstance(objectName)));
-            } catch (Exception e) {
-                // log exception at debug level
-                logger.debug(e.getMessage(), e);
-                return ImmutableList.of();
-            }
+    private Set<ObjectName> getObjectNames(String objectName) throws Exception {
+        if (objectName.contains("*")) {
+            return lazyPlatformMBeanServer.queryNames(null, new PatternObjectNameQueryExp(
+                    objectName));
+        } else {
+            return ImmutableSet.of(ObjectName.getInstance(objectName));
         }
-        Set<ObjectInstance> objectInstances = lazyPlatformMBeanServer.queryMBeans(null,
-                new PatternObjectNameQueryExp(objectName));
-        List<MBeanInfo> mbeanInfos = Lists.newArrayList();
-        for (ObjectInstance objectInstance : objectInstances) {
-            try {
-                mbeanInfos.add(lazyPlatformMBeanServer.getMBeanInfo(
-                        objectInstance.getObjectName()));
-            } catch (Exception e) {
-                // log exception at debug level
-                logger.debug(e.getMessage(), e);
-            }
-        }
-        return mbeanInfos;
     }
 
-    private static Set<String> getAttributeNames(List<MBeanInfo> mbeanInfos) {
+    private Set<String> getAttributeNames(Set<ObjectName> objectNames) throws Exception {
         Set<String> attributeNames = Sets.newHashSet();
-        for (MBeanInfo mbeanInfo : mbeanInfos) {
+        for (ObjectName objectName : objectNames) {
+            MBeanInfo mbeanInfo = lazyPlatformMBeanServer.getMBeanInfo(objectName);
             for (MBeanAttributeInfo attribute : mbeanInfo.getAttributes()) {
                 if (attribute.isReadable()) {
-                    addNumericAttributes(attribute, attributeNames);
+                    Object value =
+                            lazyPlatformMBeanServer.getAttribute(objectName, attribute.getName());
+                    addNumericAttributes(attribute, value, attributeNames);
                 }
             }
         }
         return attributeNames;
     }
 
-    private static void addNumericAttributes(MBeanAttributeInfo attribute,
+    private static void addNumericAttributes(MBeanAttributeInfo attribute, Object value,
             Set<String> attributeNames) {
         String attributeType = attribute.getType();
         if (attributeType.equals("long") || attributeType.equals("int")
                 || attributeType.equals("double") || attributeType.equals("float")) {
             attributeNames.add(attribute.getName());
+        } else if (attributeType.equals("java.lang.String") && value instanceof String) {
+            try {
+                Double.parseDouble((String) value);
+                attributeNames.add(attribute.getName());
+            } catch (NumberFormatException e) {
+                // log exception at debug level
+                logger.debug(e.getMessage(), e);
+            }
         } else if (attributeType.equals(CompositeData.class.getName())) {
             Descriptor descriptor = attribute.getDescriptor();
             Object descriptorFieldValue = descriptor.getFieldValue("openType");
             if (descriptorFieldValue instanceof CompositeType) {
                 CompositeType compositeType = (CompositeType) descriptorFieldValue;
-                attributeNames.addAll(getCompositeTypeAttributeNames(attribute,
+                attributeNames.addAll(getCompositeTypeAttributeNames(attribute, value,
                         compositeType));
             }
         }
     }
 
     private static List<String> getCompositeTypeAttributeNames(MBeanAttributeInfo attribute,
-            CompositeType compositeType) {
+            Object compositeData, CompositeType compositeType) {
         List<String> attributeNames = Lists.newArrayList();
         for (String itemName : compositeType.keySet()) {
             OpenType<?> itemType = compositeType.getType(itemName);
@@ -260,6 +254,17 @@ class GaugeJsonService {
             }
             if (Number.class.isAssignableFrom(clazz)) {
                 attributeNames.add(attribute.getName() + '/' + itemName);
+            } else if (clazz == String.class && compositeData instanceof CompositeData) {
+                Object val = ((CompositeData) compositeData).get(itemName);
+                if (val instanceof String) {
+                    try {
+                        Double.parseDouble((String) val);
+                        attributeNames.add(attribute.getName() + '/' + itemName);
+                    } catch (NumberFormatException e) {
+                        // log exception at debug level
+                        logger.debug(e.getMessage(), e);
+                    }
+                }
             }
         }
         return attributeNames;

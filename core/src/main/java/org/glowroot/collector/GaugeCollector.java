@@ -29,7 +29,6 @@ import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
-import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 
@@ -158,15 +157,14 @@ class GaugeCollector extends ScheduledRunnable {
             }
             return collectGaugePoints(objectName, gaugeConfig.mbeanAttributes(), mbeanObjectName);
         }
-        Set<ObjectInstance> objectInstances = lazyPlatformMBeanServer.queryMBeans(null,
+        Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null,
                 new PatternObjectNameQueryExp(mbeanObjectName));
-        if (objectInstances.isEmpty()) {
+        if (objectNames.isEmpty()) {
             logFirstTimeMBeanNotMatchedOrFound(mbeanObjectName);
             return ImmutableList.of();
         }
         List<GaugePoint> gaugePoints = Lists.newArrayList();
-        for (ObjectInstance objectInstance : objectInstances) {
-            ObjectName objectName = objectInstance.getObjectName();
+        for (ObjectName objectName : objectNames) {
             gaugePoints.addAll(collectGaugePoints(objectName, gaugeConfig.mbeanAttributes(),
                     objectName.getDomain() + ":" + objectName.getKeyPropertyListString()));
         }
@@ -206,17 +204,28 @@ class GaugeCollector extends ScheduledRunnable {
                 logFirstTimeMBeanAttributeError(mbeanObjectName, mbeanAttributeName, e.toString());
                 continue;
             }
+            Double value = null;
             if (attributeValue instanceof Number) {
-                double value = ((Number) attributeValue).doubleValue();
+                value = ((Number) attributeValue).doubleValue();
+            } else if (attributeValue instanceof String) {
+                try {
+                    value = Double.parseDouble((String) attributeValue);
+                } catch (NumberFormatException e) {
+                    logFirstTimeMBeanAttributeError(mbeanObjectName, mbeanAttributeName,
+                            "MBean attribute value is not a valid number: \"" + attributeValue
+                                    + "\"");
+                }
+            } else {
+                logFirstTimeMBeanAttributeError(mbeanObjectName, mbeanAttributeName,
+                        "MBean attribute value is not a number or string");
+            }
+            if (value != null) {
                 gaugePoints.add(GaugePoint.builder()
                         .gaugeName(mbeanObjectName + ',' + mbeanAttributeName)
                         .everIncreasing(mbeanAttribute.everIncreasing())
                         .captureTime(captureTime)
                         .value(value)
                         .build());
-            } else {
-                logFirstTimeMBeanAttributeError(mbeanObjectName, mbeanAttributeName,
-                        "MBean attribute value is not a number");
             }
         }
         return gaugePoints;
