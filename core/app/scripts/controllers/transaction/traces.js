@@ -21,13 +21,12 @@ glowroot.controller('TracesCtrl', [
   '$location',
   '$http',
   '$q',
-  '$timeout',
   'charts',
   'httpErrors',
   'traceModal',
   'queryStrings',
   'errorOnly',
-  function ($scope, $location, $http, $q, $timeout, charts, httpErrors, traceModal, queryStrings, errorOnly) {
+  function ($scope, $location, $http, $q, charts, httpErrors, traceModal, queryStrings, errorOnly) {
 
     $scope.$parent.activeTabItem = 'traces';
 
@@ -102,6 +101,7 @@ glowroot.controller('TracesCtrl', [
               }
               return false;
             }
+
             function highlight() {
               if (tryHighlight(data.normalPoints, plot.getData()[0])) {
                 return;

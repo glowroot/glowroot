@@ -20,12 +20,11 @@
 glowroot.factory('charts', [
   '$http',
   '$location',
-  '$timeout',
   '$rootScope',
   'keyedColorPools',
   'queryStrings',
   'httpErrors',
-  function ($http, $location, $timeout, $rootScope, keyedColorPools, queryStrings, httpErrors) {
+  function ($http, $location, $rootScope, keyedColorPools, queryStrings, httpErrors) {
 
     function createState() {
       return {
