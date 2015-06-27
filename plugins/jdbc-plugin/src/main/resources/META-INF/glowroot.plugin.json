@@ -21,15 +21,29 @@
     {
       "name": "captureResultSetGet",
       "type": "boolean",
-      "default": false,
       "label": "ResultSet values",
       "checkboxLabel": "Capture timings for ResultSet value retrieval",
       "description": "Capture timings for executions of ResultSet.get*() to read the individual column values out of a result set record. This defaults to false since the number of calls can be excessive and generally ResultSet.next() captures more interesting info with less overhead."
     },
     {
+      "name": "captureGetConnection",
+      "type": "boolean",
+      "default": true,
+      "label": "Get connection",
+      "checkboxLabel": "Capture timings for DataSource.getConnection()",
+      "description": "Capture timings for executions of DataSource.getConnection()."
+    },
+    {
+      "name": "captureConnectionClose",
+      "type": "boolean",
+      "default": true,
+      "label": "Connection close",
+      "checkboxLabel": "Capture timings for Connection.close()",
+      "description": "Capture timings for executions of Connection.close()."
+    },
+    {
       "name": "capturePreparedStatementCreation",
       "type": "boolean",
-      "default": false,
       "label": "Prepared statement creation",
       "checkboxLabel": "Capture timings for Connection.prepare*()",
       "description": "Capture timings for executions of Connection.prepareStatement() and Connection.prepareCall()."
@@ -37,7 +51,6 @@
     {
       "name": "captureStatementClose",
       "type": "boolean",
-      "default": false,
       "label": "Statement close",
       "checkboxLabel": "Capture timings for Statement.close()",
       "description": "Capture timings for executions of Statement.close()."

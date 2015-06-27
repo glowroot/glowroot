@@ -49,6 +49,8 @@ public class DataSourceAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
+    private static final BooleanProperty captureGetConnection =
+            pluginServices.getEnabledProperty("captureGetConnection");
     private static final BooleanProperty captureConnectionLifecycleTraceEntries =
             pluginServices.getEnabledProperty("captureConnectionLifecycleTraceEntries");
     private static final BooleanProperty captureTransactionLifecycleTraceEntries =
@@ -62,7 +64,8 @@ public class DataSourceAspect {
                 pluginServices.getTimerName(GetConnectionAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return pluginServices.isEnabled() && (captureGetConnection.value()
+                    || captureConnectionLifecycleTraceEntries.value());
         }
         @OnBefore
         public static Object onBefore() {

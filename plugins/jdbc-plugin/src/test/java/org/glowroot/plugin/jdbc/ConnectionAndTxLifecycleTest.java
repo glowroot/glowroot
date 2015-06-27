@@ -76,6 +76,19 @@ public class ConnectionAndTxLifecycleTest {
     @Test
     public void testConnectionLifecycleDisabled() throws Exception {
         // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureGetConnection", false);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionClose", false);
+        // when
+        container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getRootTimer().getNestedTimerNames()).isEmpty();
+        assertThat(trace.getEntryCount()).isZero();
+    }
+
+    @Test
+    public void testConnectionLifecyclePartiallyDisabled() throws Exception {
+        // given
         // when
         container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
         // then
@@ -104,6 +117,19 @@ public class ConnectionAndTxLifecycleTest {
 
     @Test
     public void testConnectionLifecycleGetConnectionThrowsDisabled() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureGetConnection", false);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionClose", false);
+        // when
+        container.executeAppUnderTest(ExecuteGetConnectionOnThrowingDataSource.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getRootTimer().getNestedTimerNames()).isEmpty();
+        assertThat(trace.getEntryCount()).isZero();
+    }
+
+    @Test
+    public void testConnectionLifecycleGetConnectionThrowsPartiallyDisabled() throws Exception {
         // given
         // when
         container.executeAppUnderTest(ExecuteGetConnectionOnThrowingDataSource.class);
@@ -136,6 +162,19 @@ public class ConnectionAndTxLifecycleTest {
 
     @Test
     public void testConnectionLifecycleCloseConnectionThrowsDisabled() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureGetConnection", false);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionClose", false);
+        // when
+        container.executeAppUnderTest(ExecuteCloseConnectionOnThrowingDataSource.class);
+        // then
+        Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getRootTimer().getNestedTimerNames()).isEmpty();
+        assertThat(trace.getEntryCount()).isZero();
+    }
+
+    @Test
+    public void testConnectionLifecycleCloseConnectionThrowsPartiallyDisabled() throws Exception {
         // given
         // when
         container.executeAppUnderTest(ExecuteCloseConnectionOnThrowingDataSource.class);

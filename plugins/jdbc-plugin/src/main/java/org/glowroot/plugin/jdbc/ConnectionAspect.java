@@ -44,6 +44,8 @@ public class ConnectionAspect {
 
     private static final BooleanProperty capturePreparedStatementCreation =
             pluginServices.getEnabledProperty("capturePreparedStatementCreation");
+    private static final BooleanProperty captureConnectionClose =
+            pluginServices.getEnabledProperty("captureConnectionClose");
     private static final BooleanProperty captureConnectionLifecycleTraceEntries =
             pluginServices.getEnabledProperty("captureConnectionLifecycleTraceEntries");
     private static final BooleanProperty captureTransactionLifecycleTraceEntries =
@@ -150,7 +152,8 @@ public class ConnectionAspect {
                 pluginServices.getTimerName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return pluginServices.isEnabled() && (captureConnectionClose.value()
+                    || captureConnectionLifecycleTraceEntries.value());
         }
         @OnBefore
         public static Object onBefore() {
