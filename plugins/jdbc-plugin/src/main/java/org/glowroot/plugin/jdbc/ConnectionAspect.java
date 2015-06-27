@@ -15,6 +15,8 @@
  */
 package org.glowroot.plugin.jdbc;
 
+import javax.annotation.Nullable;
+
 import org.glowroot.api.ErrorMessage;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
@@ -23,13 +25,16 @@ import org.glowroot.api.Timer;
 import org.glowroot.api.TimerName;
 import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindParameter;
+import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
+import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.plugin.jdbc.StatementAspect.HasStatementMirror;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -37,13 +42,59 @@ public class ConnectionAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("jdbc");
 
+    private static final BooleanProperty capturePreparedStatementCreation =
+            pluginServices.getEnabledProperty("capturePreparedStatementCreation");
     private static final BooleanProperty captureConnectionLifecycleTraceEntries =
             pluginServices.getEnabledProperty("captureConnectionLifecycleTraceEntries");
     private static final BooleanProperty captureTransactionLifecycleTraceEntries =
             pluginServices.getEnabledProperty("captureTransactionLifecycleTraceEntries");
 
+    // ===================== Statement Preparation =====================
+
+    // capture the sql used to create the PreparedStatement
+    @Pointcut(className = "java.sql.Connection", methodName = "prepare*",
+            methodParameterTypes = {"java.lang.String", ".."}, timerName = "jdbc prepare")
+    public static class PrepareAdvice {
+        private static final TimerName timerName =
+                pluginServices.getTimerName(PrepareAdvice.class);
+        @OnBefore
+        public static @Nullable Timer onBefore() {
+            if (capturePreparedStatementCreation.value()) {
+                return pluginServices.startTimer(timerName);
+            } else {
+                return null;
+            }
+        }
+        @OnReturn
+        public static void onReturn(@BindReturn HasStatementMirror preparedStatement,
+                @BindParameter @Nullable String sql) {
+            if (sql == null) {
+                // seems nothing sensible to do here other than ignore
+                return;
+            }
+            // this runs even if plugin is temporarily disabled
+            preparedStatement.setGlowrootStatementMirror(new PreparedStatementMirror(sql));
+        }
+        @OnAfter
+        public static void onAfter(@BindTraveler @Nullable Timer timer) {
+            if (timer != null) {
+                timer.stop();
+            }
+        }
+    }
+
+    @Pointcut(className = "java.sql.Connection", methodName = "createStatement",
+            methodParameterTypes = {".."})
+    public static class CreateStatementAdvice {
+        @OnReturn
+        public static void onReturn(@BindReturn HasStatementMirror statement) {
+            // this runs even if glowroot temporarily disabled
+            statement.setGlowrootStatementMirror(new StatementMirror());
+        }
+    }
+
     @Pointcut(className = "java.sql.Connection", methodName = "commit", methodParameterTypes = {},
-            timerName = "jdbc commit")
+            timerName = "jdbc commit", ignoreSelfNested = true)
     public static class CommitAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(CommitAdvice.class);
@@ -68,7 +119,7 @@ public class ConnectionAspect {
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "rollback", methodParameterTypes = {},
-            timerName = "jdbc rollback")
+            timerName = "jdbc rollback", ignoreSelfNested = true)
     public static class RollbackAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(RollbackAdvice.class);
@@ -93,7 +144,7 @@ public class ConnectionAspect {
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "close", methodParameterTypes = {},
-            timerName = "jdbc connection close")
+            timerName = "jdbc connection close", ignoreSelfNested = true)
     public static class CloseAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(CloseAdvice.class);
@@ -131,7 +182,8 @@ public class ConnectionAspect {
     }
 
     @Pointcut(className = "java.sql.Connection", methodName = "setAutoCommit",
-            methodParameterTypes = {"boolean"}, timerName = "jdbc set autocommit")
+            methodParameterTypes = {"boolean"}, timerName = "jdbc set autocommit",
+            ignoreSelfNested = true)
     public static class SetAutoCommitAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(CloseAdvice.class);

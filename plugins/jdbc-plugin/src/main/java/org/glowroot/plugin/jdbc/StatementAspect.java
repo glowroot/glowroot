@@ -58,8 +58,6 @@ public class StatementAspect {
 
     private static final BooleanProperty captureBindParameters =
             pluginServices.getEnabledProperty("captureBindParameters");
-    private static final BooleanProperty capturePreparedStatementCreation =
-            pluginServices.getEnabledProperty("capturePreparedStatementCreation");
     private static final BooleanProperty captureStatementClose =
             pluginServices.getEnabledProperty("captureStatementClose");
 
@@ -94,50 +92,6 @@ public class StatementAspect {
         StatementMirror getGlowrootStatementMirror();
         void setGlowrootStatementMirror(@Nullable StatementMirror glowrootStatementMirror);
         boolean hasGlowrootStatementMirror();
-    }
-
-    // ===================== Statement Preparation =====================
-
-    // capture the sql used to create the PreparedStatement
-    @Pointcut(className = "java.sql.Connection", methodName = "prepare*",
-            methodParameterTypes = {"java.lang.String", ".."}, timerName = "jdbc prepare")
-    public static class PrepareAdvice {
-        private static final TimerName timerName =
-                pluginServices.getTimerName(PrepareAdvice.class);
-        @OnBefore
-        public static @Nullable Timer onBefore() {
-            if (capturePreparedStatementCreation.value()) {
-                return pluginServices.startTimer(timerName);
-            } else {
-                return null;
-            }
-        }
-        @OnReturn
-        public static void onReturn(@BindReturn HasStatementMirror preparedStatement,
-                @BindParameter @Nullable String sql) {
-            if (sql == null) {
-                // seems nothing sensible to do here other than ignore
-                return;
-            }
-            // this runs even if plugin is temporarily disabled
-            preparedStatement.setGlowrootStatementMirror(new PreparedStatementMirror(sql));
-        }
-        @OnAfter
-        public static void onAfter(@BindTraveler @Nullable Timer timer) {
-            if (timer != null) {
-                timer.stop();
-            }
-        }
-    }
-
-    @Pointcut(className = "java.sql.Connection", methodName = "createStatement",
-            methodParameterTypes = {".."})
-    public static class CreateStatementAdvice {
-        @OnReturn
-        public static void onReturn(@BindReturn HasStatementMirror statement) {
-            // this runs even if glowroot temporarily disabled
-            statement.setGlowrootStatementMirror(new StatementMirror());
-        }
     }
 
     // ================= Parameter Binding =================

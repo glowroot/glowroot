@@ -55,7 +55,8 @@ public class DataSourceAspect {
             pluginServices.getEnabledProperty("captureTransactionLifecycleTraceEntries");
 
     @Pointcut(className = "javax.sql.DataSource", methodName = "getConnection",
-            methodParameterTypes = {".."}, timerName = "jdbc get connection")
+            methodParameterTypes = {".."}, timerName = "jdbc get connection",
+            ignoreSelfNested = true)
     public static class GetConnectionAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(GetConnectionAdvice.class);

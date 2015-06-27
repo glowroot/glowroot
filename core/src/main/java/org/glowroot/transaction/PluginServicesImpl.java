@@ -243,10 +243,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         if (transaction == null) {
             return NopTraceEntry.INSTANCE;
         }
-        TimerImpl currentTimer = transaction.getCurrentTimer();
-        if (currentTimer != null && currentTimer.getTimerName() == timerName) {
-            return NopTraceEntry.INSTANCE;
-        }
         return startTraceEntryInternal(transaction, messageSupplier, null, null, 0, timerName);
     }
 
@@ -277,10 +273,6 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction == null) {
-            return NopQuery.INSTANCE;
-        }
-        TimerImpl currentTimer = transaction.getCurrentTimer();
-        if (currentTimer != null && currentTimer.getTimerName() == timerName) {
             return NopQuery.INSTANCE;
         }
         return startTraceEntryInternal(transaction, messageSupplier, queryType, queryText,
