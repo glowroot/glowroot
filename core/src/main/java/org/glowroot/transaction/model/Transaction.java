@@ -17,9 +17,11 @@ package org.glowroot.transaction.model;
 
 import java.lang.management.ThreadInfo;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.NoSuchElementException;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
@@ -27,6 +29,7 @@ import javax.annotation.concurrent.GuardedBy;
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
@@ -93,9 +96,11 @@ public class Transaction {
     // root entry for this trace
     private final TraceEntryComponent traceEntryComponent;
 
-    // TODO optimize this, many options, need to benchmark
-    private final Map<String, Map<String, QueryData>> queries =
-            new ConcurrentHashMap<String, Map<String, QueryData>>(1, 0.75f, 1);
+    // linked list of QueryData instances for safe concurrent access
+    private @MonotonicNonNull QueryData headQueryData;
+    // these maps are only accessed by the transaction thread
+    private @MonotonicNonNull Map<String, QueryData> firstQueryTypeQueries;
+    private @MonotonicNonNull Map<String, Map<String, QueryData>> allQueryTypesMap;
     private final int maxAggregateQueriesPerQueryType;
 
     // stack trace data constructed from profiling
@@ -141,11 +146,11 @@ public class Transaction {
         TimerImpl rootTimer = TimerImpl.createRootTimer(this, (TimerNameImpl) timerName);
         this.rootTimer = rootTimer;
         rootTimer.start(startTick);
-        traceEntryComponent =
-                new TraceEntryComponent(messageSupplier, rootTimer, startTick, ticker);
+        traceEntryComponent = new TraceEntryComponent(messageSupplier, rootTimer, startTick,
+                ticker);
         threadId = Thread.currentThread().getId();
-        threadInfoComponent =
-                captureThreadInfo ? new ThreadInfoComponent(threadAllocatedBytes) : null;
+        threadInfoComponent = captureThreadInfo ? new ThreadInfoComponent(threadAllocatedBytes)
+                : null;
         gcInfoComponent = captureGcInfo ? new GcInfoComponent() : null;
         this.maxAggregateQueriesPerQueryType = maxAggregateQueriesPerQueryType;
         this.completionCallback = completionCallback;
@@ -200,8 +205,8 @@ public class Transaction {
         if (customAttributes == null) {
             return ImmutableSetMultimap.of();
         }
-        SetMultimap<String, String> orderedCustomAttributes =
-                TreeMultimap.create(String.CASE_INSENSITIVE_ORDER, String.CASE_INSENSITIVE_ORDER);
+        SetMultimap<String, String> orderedCustomAttributes = TreeMultimap
+                .create(String.CASE_INSENSITIVE_ORDER, String.CASE_INSENSITIVE_ORDER);
         synchronized (customAttributes) {
             orderedCustomAttributes.putAll(customAttributes);
         }
@@ -252,10 +257,37 @@ public class Transaction {
         return traceEntryComponent.getEntryCount();
     }
 
-    public Map<String, Map<String, QueryData>> getQueries() {
-        // read memory barrier is for QueryData values (the map itself is concurrent map)
+    public Iterable<QueryData> getQueries() {
+        // read memory barrier is for QueryData values
         readMemoryBarrier();
-        return queries;
+        if (headQueryData == null) {
+            return ImmutableList.of();
+        }
+        return new Iterable<QueryData>() {
+            @Override
+            public Iterator<QueryData> iterator() {
+                return new Iterator<QueryData>() {
+                    private @Nullable QueryData next = headQueryData;
+                    @Override
+                    public boolean hasNext() {
+                        return next != null;
+                    }
+                    @Override
+                    public QueryData next() {
+                        QueryData curr = next;
+                        if (curr == null) {
+                            throw new NoSuchElementException();
+                        }
+                        next = curr.getNextQueryData();
+                        return curr;
+                    }
+                    @Override
+                    public void remove() {
+                        throw new UnsupportedOperationException();
+                    }
+                };
+            }
+        };
     }
 
     public Iterable<TraceEntryImpl> getEntries() {
@@ -380,17 +412,28 @@ public class Transaction {
                 queryExecutionCount, timer);
     }
 
+    // only called by transaction thread
     public @Nullable QueryData getOrCreateQueryDataIfPossible(String queryType, String queryText) {
-        Map<String, QueryData> queriesForQueryType = queries.get(queryType);
-        if (queriesForQueryType == null) {
-            queriesForQueryType = new ConcurrentHashMap<String, QueryData>(16, 0.75f, 1);
-            queries.put(queryType, queriesForQueryType);
+        if (headQueryData == null) {
+            QueryData queryData = new QueryData(queryType, queryText, null);
+            // TODO build a micro-optimized query data map, e.g. NestedTimerMap
+            firstQueryTypeQueries = new HashMap<String, QueryData>(4);
+            firstQueryTypeQueries.put(queryText, queryData);
+            headQueryData = queryData;
+            return headQueryData;
         }
-        QueryData queryData = queriesForQueryType.get(queryText);
-        if (queryData == null && queriesForQueryType.size() < maxAggregateQueriesPerQueryType
+        Map<String, QueryData> currentQueryTypeQueries;
+        if (queryType.equals(headQueryData.getQueryType())) {
+            currentQueryTypeQueries = checkNotNull(firstQueryTypeQueries);
+        } else {
+            currentQueryTypeQueries = getOrCreateQueriesForQueryType(queryType);
+        }
+        QueryData queryData = currentQueryTypeQueries.get(queryText);
+        if (queryData == null && currentQueryTypeQueries.size() < maxAggregateQueriesPerQueryType
                 * AdvancedConfigBase.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER) {
-            queryData = new QueryData();
-            queriesForQueryType.put(queryText, queryData);
+            queryData = new QueryData(queryType, queryText, headQueryData);
+            currentQueryTypeQueries.put(queryText, queryData);
+            headQueryData = queryData;
         }
         return queryData;
     }
@@ -477,6 +520,21 @@ public class Transaction {
 
     void setCurrentTimer(@Nullable TimerImpl currentTimer) {
         this.currentTimer = currentTimer;
+    }
+
+    private Map<String, QueryData> getOrCreateQueriesForQueryType(String queryType) {
+        if (allQueryTypesMap == null) {
+            allQueryTypesMap = new HashMap<String, Map<String, QueryData>>(2);
+            Map<String, QueryData> currentQueryTypeQueries = new HashMap<String, QueryData>(4);
+            allQueryTypesMap.put(queryType, currentQueryTypeQueries);
+            return currentQueryTypeQueries;
+        }
+        Map<String, QueryData> currentQueryTypeQueries = allQueryTypesMap.get(queryType);
+        if (currentQueryTypeQueries == null) {
+            currentQueryTypeQueries = new HashMap<String, QueryData>(4);
+            allQueryTypesMap.put(queryType, currentQueryTypeQueries);
+        }
+        return currentQueryTypeQueries;
     }
 
     private boolean readMemoryBarrier() {

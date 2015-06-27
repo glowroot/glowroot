@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
@@ -91,9 +90,9 @@ class AggregateBuilder {
         syntheticRootTimer.mergeAsChildTimer(rootTimer);
     }
 
-    void addToQueries(Map<String, Map<String, QueryData>> queries) {
-        for (Entry<String, Map<String, QueryData>> entry : queries.entrySet()) {
-            queryComponent.mergeQueries(entry.getKey(), entry.getValue());
+    void addToQueries(Iterable<QueryData> queries) {
+        for (QueryData query : queries) {
+            queryComponent.mergeQuery(query);
         }
     }
 

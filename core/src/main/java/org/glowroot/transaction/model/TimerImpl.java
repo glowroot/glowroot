@@ -16,14 +16,14 @@
 package org.glowroot.transaction.model;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,20 +72,20 @@ public class TimerImpl implements Timer {
     // lazy initialize to save memory in common case where this is a leaf timer
     private @MonotonicNonNull NestedTimerMap nestedTimers;
 
-    // separate list for thread safe access by other threads (e.g. partial trace capture and
+    // separate linked list for safe iterating by other threads (e.g. partial trace capture and
     // active trace viewer)
-    //
-    // lazy initialize to save memory in common case where this is a leaf timer
-    private volatile @MonotonicNonNull List<TimerImpl> threadSafeNestedTimers;
+    private @MonotonicNonNull TimerImpl headChild;
+    private final @Nullable TimerImpl nextSibling;
 
     public static TimerImpl createRootTimer(Transaction transaction, TimerNameImpl timerName) {
-        return new TimerImpl(transaction, null, timerName);
+        return new TimerImpl(transaction, null, null, timerName);
     }
 
     private TimerImpl(Transaction transaction, @Nullable TimerImpl parent,
-            TimerNameImpl timerName) {
+            @Nullable TimerImpl nextSibling, TimerNameImpl timerName) {
         this.timerName = timerName;
         this.parent = parent;
+        this.nextSibling = nextSibling;
         this.transaction = transaction;
     }
 
@@ -125,14 +125,12 @@ public class TimerImpl implements Timer {
             jg.writeNumberField("total", total);
             jg.writeNumberField("count", count);
         }
-        if (threadSafeNestedTimers != null) {
-            ImmutableList<TimerImpl> copyOfNestedTimers;
-            synchronized (threadSafeNestedTimers) {
-                copyOfNestedTimers = ImmutableList.copyOf(threadSafeNestedTimers);
-            }
+        if (headChild != null) {
             jg.writeArrayFieldStart("nestedTimers");
-            for (TimerImpl nestedTimer : copyOfNestedTimers) {
-                nestedTimer.writeValue(jg);
+            TimerImpl curr = headChild;
+            while (curr != null) {
+                curr.writeValue(jg);
+                curr = curr.nextSibling;
             }
             jg.writeEndArray();
         }
@@ -175,11 +173,35 @@ public class TimerImpl implements Timer {
     }
 
     // only called after transaction completion
-    public List<TimerImpl> getNestedTimers() {
-        if (threadSafeNestedTimers == null) {
+    public Iterable<TimerImpl> getNestedTimers() {
+        if (headChild == null) {
             return ImmutableList.of();
         } else {
-            return threadSafeNestedTimers;
+            return new Iterable<TimerImpl>() {
+                @Override
+                public Iterator<TimerImpl> iterator() {
+                    return new Iterator<TimerImpl>() {
+                        private @Nullable TimerImpl next = headChild;
+                        @Override
+                        public boolean hasNext() {
+                            return next != null;
+                        }
+                        @Override
+                        public TimerImpl next() {
+                            TimerImpl curr = next;
+                            if (curr == null) {
+                                throw new NoSuchElementException();
+                            }
+                            next = curr.nextSibling;
+                            return curr;
+                        }
+                        @Override
+                        public void remove() {
+                            throw new UnsupportedOperationException();
+                        }
+                    };
+                }
+            };
         }
     }
 
@@ -283,15 +305,10 @@ public class TimerImpl implements Timer {
             nestedTimer.start(nestedTimerStartTick);
             return nestedTimer;
         }
-        nestedTimer = new TimerImpl(transaction, this, timerNameImpl);
+        nestedTimer = new TimerImpl(transaction, this, headChild, timerNameImpl);
         nestedTimer.start(nestedTimerStartTick);
         nestedTimers.put(timerNameImpl, nestedTimer);
-        if (threadSafeNestedTimers == null) {
-            threadSafeNestedTimers = Lists.newArrayList();
-        }
-        synchronized (threadSafeNestedTimers) {
-            threadSafeNestedTimers.add(nestedTimer);
-        }
+        headChild = nestedTimer;
         return nestedTimer;
     }
 }

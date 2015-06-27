@@ -17,12 +17,16 @@ package org.glowroot.transaction.model;
 
 import java.io.IOException;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Ticker;
 
 import org.glowroot.api.Timer;
 import org.glowroot.common.Tickers;
 
+// TODO update this comment that was copied from TimerImpl
+//
 // instances are updated by a single thread, but can be read by other threads
 // memory visibility is therefore an issue for the reading threads
 //
@@ -44,6 +48,10 @@ public class QueryData implements Timer {
 
     private static final Ticker ticker = Tickers.getTicker();
 
+    private final String queryType;
+    private final String queryText;
+    private final @Nullable QueryData nextQueryData;
+
     // nanosecond rollover (292 years) isn't a concern for total time on a single transaction
     private long totalTime;
     private long executionCount;
@@ -51,6 +59,25 @@ public class QueryData implements Timer {
 
     private long startTick;
     private int selfNestingLevel;
+
+    QueryData(String queryType, String queryText, @Nullable QueryData nextQueryData) {
+        this.queryType = queryType;
+        this.queryText = queryText;
+        this.nextQueryData = nextQueryData;
+    }
+
+    public String getQueryType() {
+        return queryType;
+    }
+
+    public String getQueryText() {
+        return queryText;
+    }
+
+    @Nullable
+    QueryData getNextQueryData() {
+        return nextQueryData;
+    }
 
     // safe to be called from another thread
     public void writeValue(String queryType, String queryText, JsonGenerator jg)

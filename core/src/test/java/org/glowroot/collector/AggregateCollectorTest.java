@@ -18,6 +18,7 @@ package org.glowroot.collector;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -25,6 +26,7 @@ import org.mockito.stubbing.Answer;
 import org.glowroot.common.Clock;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
+import org.glowroot.transaction.model.QueryData;
 import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.Transaction;
 
@@ -58,10 +60,12 @@ public class AggregateCollectorTest {
         Transaction transaction = mock(Transaction.class);
         TimerImpl timer = mock(TimerImpl.class);
         when(timer.getName()).thenReturn("test 123");
+        when(timer.getNestedTimers()).thenReturn(ImmutableList.<TimerImpl>of());
         when(transaction.getTransactionType()).thenReturn("a type");
         when(transaction.getTransactionName()).thenReturn("a name");
         when(transaction.getDuration()).thenReturn(MILLISECONDS.toNanos(123));
         when(transaction.getRootTimer()).thenReturn(timer);
+        when(transaction.getQueries()).thenReturn(ImmutableList.<QueryData>of());
         // when
         int count = 0;
         long firstCaptureTime = aggregateCollector.add(transaction);

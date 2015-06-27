@@ -86,19 +86,14 @@ public class QueryComponent {
         }
     }
 
-    void mergeQueries(String queryType, Map<String, QueryData> toBeMergedQueries) {
-        Map<String, AggregateQuery> queriesForQueryType = queries.get(queryType);
+    void mergeQuery(QueryData queryData) {
+        Map<String, AggregateQuery> queriesForQueryType = queries.get(queryData.getQueryType());
         if (queriesForQueryType == null) {
             queriesForQueryType = Maps.newHashMap();
-            queries.put(queryType, queriesForQueryType);
+            queries.put(queryData.getQueryType(), queriesForQueryType);
         }
-        for (Entry<String, QueryData> toBeMergedQuery : toBeMergedQueries.entrySet()) {
-            String queryText = toBeMergedQuery.getKey();
-            QueryData queryData = toBeMergedQuery.getValue();
-            mergeQuery(queryText, NANOSECONDS.toMicros(queryData.getTotalTime()),
-                    queryData.getExecutionCount(), queryData.getTotalRows(),
-                    queriesForQueryType);
-        }
+        mergeQuery(queryData.getQueryText(), NANOSECONDS.toMicros(queryData.getTotalTime()),
+                queryData.getExecutionCount(), queryData.getTotalRows(), queriesForQueryType);
     }
 
     private void mergeQuery(String queryText, long totalMicros, long executionCount,

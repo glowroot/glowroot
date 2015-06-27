@@ -18,9 +18,13 @@ package org.glowroot.transaction.model;
 import javax.annotation.Nullable;
 
 // micro-optimized map for nested timers
+// TODO get rid of Entry objects, e.g. gs collection's UnifiedMap
 class NestedTimerMap {
 
     // table length must always be a power of 2, see comment in get()
+    //
+    // TODO reduce initial capacity (to reduce memory in typical case of few entries) and add
+    // resizing (to avoid collisions in atypical case of lots of entries)
     private final @Nullable Entry[] table = new Entry[16];
 
     @Nullable
