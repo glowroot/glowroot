@@ -150,7 +150,7 @@ public class TraceEntry {
             @JsonProperty("stackTrace") @Nullable List</*@Nullable*/String> uncheckedStackTrace,
             @JsonProperty("limitExceededMarker") @Nullable Boolean limitExceededMarker,
             @JsonProperty("limitExtendedMarker") @Nullable Boolean limitExtendedMarker)
-            throws JsonMappingException {
+                    throws JsonMappingException {
         List<String> stackTrace = checkNotNullItems(uncheckedStackTrace, "stackTrace");
         return new TraceEntry(nullToZero(offset), nullToZero(duration), nullToFalse(active),
                 nullToZero(nestingLevel), message, error, stackTrace,

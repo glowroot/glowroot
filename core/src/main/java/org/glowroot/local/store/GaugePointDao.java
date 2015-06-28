@@ -15,24 +15,24 @@
  */
 package org.glowroot.local.store;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static org.glowroot.common.Checkers.castUntainted;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.tainting.qual.Untainted;
-
 import org.glowroot.collector.GaugePoint;
 import org.glowroot.collector.GaugePointRepository;
 import org.glowroot.common.Clock;
 import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.RowMapper;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.HOURS;
-import static org.glowroot.common.Checkers.castUntainted;
+import com.google.common.collect.ImmutableList;
 
 public class GaugePointDao implements GaugePointRepository {
 
@@ -88,21 +88,22 @@ public class GaugePointDao implements GaugePointRepository {
         }
         dataSource.batchUpdate("insert into gauge_point (gauge_meta_id, capture_time, value)"
                 + " values (?, ?, ?)", new BatchAdder() {
-            @Override
-            public void addBatches(PreparedStatement preparedStatement) throws SQLException {
-                for (GaugePoint gaugePoint : gaugePoints) {
-                    // everIncreasing must be supplied when calling this method
-                    Boolean everIncreasing = gaugePoint.everIncreasing();
-                    checkNotNull(everIncreasing);
-                    long gaugeMetaId = gaugeMetaDao.getOrCreateGaugeMetaId(gaugePoint.gaugeName(),
-                            everIncreasing);
-                    preparedStatement.setLong(1, gaugeMetaId);
-                    preparedStatement.setLong(2, gaugePoint.captureTime());
-                    preparedStatement.setDouble(3, gaugePoint.value());
-                    preparedStatement.addBatch();
-                }
-            }
-        });
+                    @Override
+                    public void addBatches(PreparedStatement preparedStatement)
+                            throws SQLException {
+                        for (GaugePoint gaugePoint : gaugePoints) {
+                            // everIncreasing must be supplied when calling this method
+                            Boolean everIncreasing = gaugePoint.everIncreasing();
+                            checkNotNull(everIncreasing);
+                            long gaugeMetaId = gaugeMetaDao.getOrCreateGaugeMetaId(
+                                    gaugePoint.gaugeName(), everIncreasing);
+                            preparedStatement.setLong(1, gaugeMetaId);
+                            preparedStatement.setLong(2, gaugePoint.captureTime());
+                            preparedStatement.setDouble(3, gaugePoint.value());
+                            preparedStatement.addBatch();
+                        }
+                    }
+                });
         // clock can never go backwards and future gauge captures will wait until this method
         // completes since ScheduledExecutorService.scheduleAtFixedRate() guarantees that future
         // invocations of GaugeCollector will wait until prior invocations complete

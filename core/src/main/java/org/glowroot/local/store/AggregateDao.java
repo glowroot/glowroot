@@ -242,7 +242,7 @@ public class AggregateDao {
 
     public ImmutableList<Aggregate> readTransactionAggregates(String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
-            throws SQLException {
+                    throws SQLException {
         String rollupSuffix = getRollupSuffix(rollupLevel);
         return dataSource.query("select capture_time, total_micros, error_count,"
                 + " transaction_count, total_cpu_micros, total_blocked_micros,"
@@ -268,7 +268,7 @@ public class AggregateDao {
     // captureTimeFrom is non-inclusive
     public ImmutableList<QueryAggregate> readTransactionQueryAggregates(String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
-            throws SQLException {
+                    throws SQLException {
         String rollupSuffix = getRollupSuffix(rollupLevel);
         return dataSource.query("select capture_time, queries_capped_id from transaction_aggregate"
                 + rollupSuffix + " where transaction_type = ? and transaction_name = ?"
@@ -291,7 +291,7 @@ public class AggregateDao {
     // captureTimeFrom is non-inclusive
     public ImmutableList<ProfileAggregate> readTransactionProfileAggregates(String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
-            throws SQLException {
+                    throws SQLException {
         String rollupSuffix = getRollupSuffix(rollupLevel);
         return dataSource.query("select capture_time, profile_capped_id from transaction_aggregate"
                 + rollupSuffix + " where transaction_type = ? and transaction_name = ?"
@@ -312,7 +312,7 @@ public class AggregateDao {
 
     public ImmutableList<ErrorPoint> readTransactionErrorPoints(String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
-            throws SQLException {
+                    throws SQLException {
         String rollupSuffix = getRollupSuffix(rollupLevel);
         return dataSource.query("select capture_time, error_count, transaction_count from"
                 + " transaction_aggregate" + rollupSuffix + " where transaction_type = ?"

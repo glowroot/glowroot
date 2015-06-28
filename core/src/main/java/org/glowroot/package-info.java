@@ -20,4 +20,3 @@
 package org.glowroot;
 
 import org.immutables.value.Value;
-

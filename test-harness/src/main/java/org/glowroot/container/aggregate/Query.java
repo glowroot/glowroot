@@ -87,7 +87,7 @@ public class Query {
             @JsonProperty("executionCount") @Nullable Long executionCount,
             @JsonProperty("totalRows") @Nullable Long totalRows,
             @JsonProperty("active") @Nullable Boolean active)
-            throws JsonMappingException {
+                    throws JsonMappingException {
         checkRequiredProperty(queryType, "queryType");
         checkRequiredProperty(queryText, "queryText");
         checkRequiredProperty(totalMicros, "totalMicros");

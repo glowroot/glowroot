@@ -97,7 +97,7 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
 
     public JavaagentContainer(@Nullable File dataDir, boolean useFileDb, int port, boolean shared,
             boolean captureConsoleOutput, boolean viewerMode, List<String> extraJvmArgs)
-            throws Exception {
+                    throws Exception {
         if (dataDir == null) {
             this.dataDir = TempDirs.createTempDir("glowroot-test-datadir");
             deleteDataDirOnClose = true;

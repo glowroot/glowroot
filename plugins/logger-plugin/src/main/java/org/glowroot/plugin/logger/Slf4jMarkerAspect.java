@@ -146,7 +146,8 @@ public class Slf4jMarkerAspect {
 
     @Pointcut(className = "org.slf4j.Logger", methodName = "warn|error",
             methodParameterTypes = {"org.slf4j.Marker", "java.lang.String", "java.lang.Object",
-                    "java.lang.Object"}, timerName = TIMER_NAME)
+                    "java.lang.Object"},
+            timerName = TIMER_NAME)
     public static class LogTwoArgsAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(LogTwoArgsAdvice.class);

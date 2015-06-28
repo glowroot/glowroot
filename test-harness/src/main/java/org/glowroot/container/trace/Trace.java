@@ -254,7 +254,7 @@ public class Trace {
             @JsonProperty("profileSampleCount") @Nullable Long profileSampleCount,
             @JsonProperty("entriesExistence") @Nullable Existence entriesExistence,
             @JsonProperty("profileExistence") @Nullable Existence profileExistence)
-            throws JsonMappingException {
+                    throws JsonMappingException {
         List<TraceGcInfo> gcInfos = orEmpty(gcInfosUnchecked, "gcInfos");
         checkRequiredProperty(id, "id");
         checkRequiredProperty(active, "active");

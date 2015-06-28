@@ -15,7 +15,6 @@
  */
 package org.glowroot.container.impl;
 
-
 // this class is used (for better or worse) by a couple of tests, and is needed so that those tests
 // do not depend directly on glowroot-core classes which causes an issue during mvn clean install
 public class SpyingLogbackFilter {

@@ -109,7 +109,7 @@ public class AggregateMerging {
 
     public static Map<String, List<AggregateQuery>> getOrderedAndTruncatedQueries(
             List<QueryAggregate> queryAggregates, int maxAggregateQueriesPerQueryType)
-            throws IOException {
+                    throws IOException {
         QueryComponent queryComponent = new QueryComponent(maxAggregateQueriesPerQueryType, 0);
         for (QueryAggregate queryAggregate : queryAggregates) {
             String queries = queryAggregate.queries().read();

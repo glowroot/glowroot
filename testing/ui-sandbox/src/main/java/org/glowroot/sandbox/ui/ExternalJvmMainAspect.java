@@ -49,7 +49,8 @@ public class ExternalJvmMainAspect {
         public static TraceEntry onBefore() {
             return pluginServices.startTransaction("Sandbox", "javaagent container main",
                     MessageSupplier.from("org.glowroot.container.impl.JavaagentMain"
-                            + ".main()"), timerName);
+                            + ".main()"),
+                    timerName);
         }
 
         @OnAfter

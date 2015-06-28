@@ -171,7 +171,7 @@ public class ObjectMappers {
                 @Override
                 public EnumDeserializer findEnumDeserializer(Class<?> enumClass,
                         DeserializationConfig config, BeanDescription beanDesc)
-                        throws JsonMappingException {
+                                throws JsonMappingException {
                     return new EnumDeserializer(enumClass);
                 }
             });

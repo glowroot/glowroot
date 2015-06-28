@@ -144,7 +144,8 @@ public class Log4jAspect {
 
     @Pointcut(className = "org.apache.log4j.Category", methodName = "log",
             methodParameterTypes = {"org.apache.log4j.Priority", "java.lang.Object",
-                    "java.lang.Throwable"}, timerName = TIMER_NAME)
+                    "java.lang.Throwable"},
+            timerName = TIMER_NAME)
     public static class LogWithPriorityAndThrowableAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(LogWithPriorityAndThrowableAdvice.class);
@@ -190,7 +191,8 @@ public class Log4jAspect {
 
     @Pointcut(className = "org.apache.log4j.Category", methodName = "l7dlog",
             methodParameterTypes = {"org.apache.log4j.Priority", "java.lang.String",
-                    "java.lang.Throwable"}, timerName = TIMER_NAME)
+                    "java.lang.Throwable"},
+            timerName = TIMER_NAME)
     public static class LocalizedLogAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(LocalizedLogAdvice.class);
@@ -235,7 +237,8 @@ public class Log4jAspect {
 
     @Pointcut(className = "org.apache.log4j.Category", methodName = "l7dlog",
             methodParameterTypes = {"org.apache.log4j.Priority", "java.lang.String",
-                    "java.lang.Object[]", "java.lang.Throwable"}, timerName = TIMER_NAME)
+                    "java.lang.Object[]", "java.lang.Throwable"},
+            timerName = TIMER_NAME)
     public static class LocalizedLogWithParametersAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(LocalizedLogWithParametersAdvice.class);
@@ -272,7 +275,8 @@ public class Log4jAspect {
                 }
                 return pluginServices.startTraceEntry(
                         MessageSupplier.from("log {} (localized): {} [{}]", level, key,
-                                sb.toString()), timerName);
+                                sb.toString()),
+                        timerName);
             } else {
                 return pluginServices.startTraceEntry(
                         MessageSupplier.from("log {} (localized): {}", level, key),

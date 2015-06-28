@@ -165,7 +165,7 @@ public class GaugeConfig {
         @JsonCreator
         static MBeanAttribute readValue(@JsonProperty("name") @Nullable String name,
                 @JsonProperty("everIncreasing") @Nullable Boolean everIncreasing)
-                throws JsonMappingException {
+                        throws JsonMappingException {
             checkRequiredProperty(name, "name");
             checkRequiredProperty(everIncreasing, "everIncreasing");
             MBeanAttribute mbeanAttribute = new MBeanAttribute();

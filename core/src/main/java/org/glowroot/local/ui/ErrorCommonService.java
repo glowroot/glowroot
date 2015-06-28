@@ -162,7 +162,7 @@ class ErrorCommonService {
 
     private List<ErrorPoint> readErrorPointsFromDao(String transactionType,
             @Nullable String transactionName, long from, long to, int rollupLevel)
-            throws SQLException {
+                    throws SQLException {
         if (transactionName == null) {
             return aggregateDao.readOverallErrorPoints(transactionType, from, to, rollupLevel);
         } else {

@@ -184,7 +184,7 @@ class TransactionCommonService {
 
     private List<Aggregate> getAggregatesFromDao(String transactionType,
             @Nullable String transactionName, long from, long to, int rollupLevel)
-            throws SQLException {
+                    throws SQLException {
         if (transactionName == null) {
             return aggregateDao.readOverallAggregates(transactionType, from, to, rollupLevel);
         } else {
@@ -228,7 +228,7 @@ class TransactionCommonService {
 
     private List<QueryAggregate> getQueryAggregatesFromDao(String transactionType,
             @Nullable String transactionName, long from, long to, int rollupLevel)
-            throws SQLException {
+                    throws SQLException {
         if (transactionName == null) {
             return aggregateDao.readOverallQueryAggregates(transactionType, from, to, rollupLevel);
         } else {
@@ -273,7 +273,7 @@ class TransactionCommonService {
 
     private List<ProfileAggregate> getProfileAggregatesFromDao(String transactionType,
             @Nullable String transactionName, long from, long to, int rollupLevel)
-            throws SQLException {
+                    throws SQLException {
         if (transactionName == null) {
             return aggregateDao.readOverallProfileAggregates(transactionType, from, to,
                     rollupLevel);
@@ -395,7 +395,7 @@ class TransactionCommonService {
 
     private static List<QueryAggregate> getLiveQueryAggregates(String transactionType,
             @Nullable String transactionName, List<AggregateIntervalCollector> intervalCollectors)
-            throws IOException {
+                    throws IOException {
         List<QueryAggregate> queryAggregates = Lists.newArrayList();
         for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
             QueryAggregate liveQueryAggregate =
@@ -409,7 +409,7 @@ class TransactionCommonService {
 
     private static List<ProfileAggregate> getLiveProfileAggregates(String transactionType,
             @Nullable String transactionName, List<AggregateIntervalCollector> intervalCollectors)
-            throws IOException {
+                    throws IOException {
         List<ProfileAggregate> profileAggregates = Lists.newArrayList();
         for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
             ProfileAggregate liveProfileAggregate =

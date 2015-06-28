@@ -75,7 +75,7 @@ public class ThrowableInfo {
             @JsonProperty("stackTrace") @Nullable List</*@Nullable*/String> uncheckedStackTrace,
             @JsonProperty("framesInCommonWithCaused") @Nullable Integer framesInCommonWithCaused,
             @JsonProperty("cause") @Nullable ThrowableInfo cause)
-            throws JsonMappingException {
+                    throws JsonMappingException {
         List<String> stackTrace = orEmpty(uncheckedStackTrace, "stackTrace");
         checkRequiredProperty(display, "display");
         checkRequiredProperty(framesInCommonWithCaused, "framesInCommonWithCaused");

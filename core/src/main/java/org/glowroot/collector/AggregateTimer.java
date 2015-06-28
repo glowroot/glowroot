@@ -137,7 +137,7 @@ public class AggregateTimer {
             @JsonProperty("totalMicros") @Nullable Long totalMicros,
             @JsonProperty("count") @Nullable Long count,
             @JsonProperty("nestedTimers") @Nullable List</*@Nullable*/AggregateTimer> uncheckedNestedTimers)
-            throws JsonMappingException {
+                    throws JsonMappingException {
         List<AggregateTimer> nestedTimers = orEmpty(uncheckedNestedTimers, "nestedTimers");
         checkRequiredProperty(totalMicros, "totalMicros");
         checkRequiredProperty(count, "count");

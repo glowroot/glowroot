@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ public class Message {
     static Message readValue(
             @JsonProperty("text") @Nullable String text,
             @JsonProperty("detail") @Nullable Map<String, /*@Nullable*/Object> detail)
-            throws JsonMappingException {
+                    throws JsonMappingException {
         return new Message(text, nullToEmpty(detail));
     }
 }

@@ -98,7 +98,8 @@ public class ServletAspect {
 
     @Pointcut(className = "javax.servlet.Servlet", methodName = "service",
             methodParameterTypes = {"javax.servlet.ServletRequest",
-                    "javax.servlet.ServletResponse"}, timerName = "http request")
+                    "javax.servlet.ServletResponse"},
+            timerName = "http request")
     public static class ServiceAdvice {
         private static final TimerName timerName =
                 pluginServices.getTimerName(ServiceAdvice.class);
@@ -189,7 +190,8 @@ public class ServletAspect {
 
     @Pointcut(className = "javax.servlet.http.HttpServlet", methodName = "do*",
             methodParameterTypes = {"javax.servlet.http.HttpServletRequest",
-                    "javax.servlet.http.HttpServletResponse"}, timerName = "http request")
+                    "javax.servlet.http.HttpServletResponse"},
+            timerName = "http request")
     public static class DoMethodsAdvice extends ServiceAdvice {
         @IsEnabled
         public static boolean isEnabled() {

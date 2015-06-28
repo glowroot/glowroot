@@ -52,7 +52,7 @@ public class ErrorMessage {
     static ErrorMessage readValue(
             @JsonProperty("message") @Nullable String message,
             @JsonProperty("throwable") @Nullable ThrowableInfo throwable)
-            throws JsonMappingException {
+                    throws JsonMappingException {
         return new ErrorMessage(message, throwable);
     }
 }

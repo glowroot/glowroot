@@ -60,7 +60,7 @@ class TracePointResponse {
             @JsonProperty("normalPoints") @Nullable List</*@Nullable*/RawPoint> uncheckedNormalPoints,
             @JsonProperty("errorPoints") @Nullable List</*@Nullable*/RawPoint> uncheckedErrorPoints,
             @JsonProperty("activePoints") @Nullable List</*@Nullable*/RawPoint> uncheckedActivePoints)
-            throws JsonMappingException {
+                    throws JsonMappingException {
         List<RawPoint> normalPoints = orEmpty(uncheckedNormalPoints, "normalPoints");
         List<RawPoint> errorPoints = orEmpty(uncheckedErrorPoints, "errorPoints");
         List<RawPoint> activePoints = orEmpty(uncheckedActivePoints, "activePoints");

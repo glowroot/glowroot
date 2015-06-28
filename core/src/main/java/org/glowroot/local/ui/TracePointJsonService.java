@@ -241,7 +241,7 @@ class TracePointJsonService {
         private boolean matchesCustomAttribute(Transaction transaction) {
             if (Strings.isNullOrEmpty(query.customAttributeName())
                     && (query.customAttributeValueComparator() == null
-                    || Strings.isNullOrEmpty(query.customAttributeValue()))) {
+                            || Strings.isNullOrEmpty(query.customAttributeValue()))) {
                 // no custom attribute filter
                 return true;
             }
@@ -331,7 +331,7 @@ class TracePointJsonService {
 
         private String writeResponse(List<TracePoint> points, List<Transaction> activeTraces,
                 long captureTime, long captureTick, boolean limitExceeded, boolean expired)
-                throws IOException, SQLException {
+                        throws IOException, SQLException {
             StringBuilder sb = new StringBuilder();
             JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
             jg.writeStartObject();

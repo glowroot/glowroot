@@ -84,7 +84,7 @@ public class ProfileNode {
             @JsonProperty("sampleCount") @Nullable Integer sampleCount,
             @JsonProperty("timerNames") @Nullable List</*@Nullable*/String> uncheckedTimerNames,
             @JsonProperty("childNodes") @Nullable List</*@Nullable*/ProfileNode> uncheckedChildNodes)
-            throws JsonMappingException {
+                    throws JsonMappingException {
         List<String> timerNames = orEmpty(uncheckedTimerNames, "timerNames");
         List<ProfileNode> childNodes = orEmpty(uncheckedChildNodes, "childNodes");
         checkRequiredProperty(sampleCount, "sampleCount");

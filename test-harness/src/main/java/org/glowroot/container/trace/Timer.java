@@ -115,7 +115,7 @@ public class Timer {
             @JsonProperty("count") @Nullable Long count,
             @JsonProperty("active") @Nullable Boolean active,
             @JsonProperty("nestedTimers") @Nullable List</*@Nullable*/Timer> uncheckedNestedTimers)
-            throws JsonMappingException {
+                    throws JsonMappingException {
         List<Timer> nestedTimers = orEmpty(uncheckedNestedTimers, "nestedTimers");
         checkRequiredProperty(name, "name");
         checkRequiredProperty(total, "total");

@@ -68,7 +68,7 @@ public class StorageModule {
     public StorageModule(File dataDir, Map<String, String> properties, Clock clock, Ticker ticker,
             ConfigModule configModule, ScheduledExecutorService scheduledExecutor,
             LazyPlatformMBeanServer lazyPlatformMBeanServer, boolean viewerModeEnabled)
-            throws Exception {
+                    throws Exception {
         // mem db is only used for testing (by glowroot-test-container)
         String h2MemDb = properties.get("internal.h2.memdb");
         final DataSource dataSource;

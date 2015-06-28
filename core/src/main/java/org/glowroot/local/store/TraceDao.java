@@ -146,18 +146,19 @@ public class TraceDao implements TraceRepository {
         if (!customAttributesForIndexing.isEmpty()) {
             dataSource.batchUpdate("insert into trace_custom_attribute (trace_id, name,"
                     + " value, capture_time) values (?, ?, ?, ?)", new BatchAdder() {
-                @Override
-                public void addBatches(PreparedStatement preparedStatement)
-                        throws SQLException {
-                    for (Entry<String, String> entry : customAttributesForIndexing.entries()) {
-                        preparedStatement.setString(1, trace.id());
-                        preparedStatement.setString(2, entry.getKey());
-                        preparedStatement.setString(3, entry.getValue());
-                        preparedStatement.setLong(4, trace.captureTime());
-                        preparedStatement.addBatch();
-                    }
-                }
-            });
+                        @Override
+                        public void addBatches(PreparedStatement preparedStatement)
+                                throws SQLException {
+                            for (Entry<String, String> entry : customAttributesForIndexing
+                                    .entries()) {
+                                preparedStatement.setString(1, trace.id());
+                                preparedStatement.setString(2, entry.getKey());
+                                preparedStatement.setString(3, entry.getValue());
+                                preparedStatement.setLong(4, trace.captureTime());
+                                preparedStatement.addBatch();
+                            }
+                        }
+                    });
         }
     }
 
