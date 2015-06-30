@@ -33,7 +33,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
     $scope.displayExtra = function (config) {
       var captureKind = config.captureKind;
       if (captureKind === 'timer') {
-        return 'timer';
+        return 'Timer';
       } else if (captureKind === 'trace-entry') {
         return 'Trace entry';
       } else if (captureKind === 'transaction') {
