@@ -76,6 +76,7 @@ class TraceEntryComponent implements Iterable<TraceEntryImpl> {
     }
 
     // this does not include root trace entry
+    // IMPORTANT: this does not include limit exceeded or limit extended marker trace entries
     int getEntryCount() {
         return entryCount;
     }
@@ -139,7 +140,7 @@ class TraceEntryComponent implements Iterable<TraceEntryImpl> {
         TraceEntryImpl entry = TraceEntryImpl.getLimitExceededMarker();
         tailEntry.setNextTraceEntry(entry);
         tailEntry = entry;
-        entryCount++;
+        // note: intentionally not incrementing entryCount
     }
 
     private TraceEntryImpl createEntry(long startTick, @Nullable MessageSupplier messageSupplier,
@@ -154,7 +155,7 @@ class TraceEntryComponent implements Iterable<TraceEntryImpl> {
             TraceEntryImpl entry = TraceEntryImpl.getLimitExtendedMarker();
             tailEntry.setNextTraceEntry(entry);
             tailEntry = entry;
-            entryCount++;
+            // note: intentionally not incrementing entryCount
         }
         int nestingLevel;
         if (entryLimitExceeded && limitBypassed) {

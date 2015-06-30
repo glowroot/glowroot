@@ -87,12 +87,13 @@ public class MaxEntriesLimitTest {
             if (trace == null) {
                 continue;
             }
-            if (trace.getEntryCount() == 101) {
+            if (trace.getEntryCount() == 100) {
                 break;
             }
             // otherwise continue
         }
         assertThat(trace).isNotNull();
+        assertThat(trace.getEntryCount()).isEqualTo(100);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(101);
         assertThat(entries.get(100).isLimitExceededMarker()).isTrue();
@@ -107,18 +108,19 @@ public class MaxEntriesLimitTest {
             if (trace == null) {
                 continue;
             }
-            if (trace.getEntryCount() == 201) {
+            if (trace.getEntryCount() == 200) {
                 break;
             }
             // otherwise continue
         }
         container.interruptAppUnderTest();
         assertThat(trace).isNotNull();
+        assertThat(trace.getEntryCount()).isEqualTo(200);
         entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(201);
+        assertThat(entries).hasSize(203);
         assertThat(entries.get(100).isLimitExceededMarker()).isTrue();
         assertThat(entries.get(101).isLimitExtendedMarker()).isTrue();
-        assertThat(entries.get(200).isLimitExceededMarker()).isTrue();
+        assertThat(entries.get(202).isLimitExceededMarker()).isTrue();
         // cleanup
         executorService.shutdown();
     }
@@ -133,6 +135,7 @@ public class MaxEntriesLimitTest {
         container.executeAppUnderTest(GenerateLimitBypassedEntries.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
+        assertThat(trace.getEntryCount()).isEqualTo(101);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace).isNotNull();
         assertThat(entries).hasSize(102);
