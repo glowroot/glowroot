@@ -58,6 +58,9 @@ glowroot.controller('JvmGaugesCtrl', [
         if ($scope.gaugeNames.length) {
           refreshData();
         } else {
+          // ideally wouldn't need to refreshData here, but this seems a rare condition (to de-select all gauges)
+          // and need some way to clear the last gauge from the chart, and this is easy
+          refreshData();
           $scope.chartNoData = true;
         }
       }
