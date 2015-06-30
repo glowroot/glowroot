@@ -223,13 +223,16 @@ glowroot.controller('JvmGaugesCtrl', [
         var point;
         if (gaugeDeltas[dataSeries.name]) {
           var deltas = [];
+          var lastPoint;
           for (j = 1; j < dataSeries.data.length; j++) {
             point = dataSeries.data[j];
-            var lastPoint = dataSeries.data[j - 1];
             if (point && lastPoint) {
               deltas[j - 1] = [point[0], point[1] - lastPoint[1]];
             } else {
               deltas[j - 1] = null;
+            }
+            if (point) {
+              lastPoint = point;
             }
           }
           dataSeries.data = deltas;
