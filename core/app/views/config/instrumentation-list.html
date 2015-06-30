@@ -49,27 +49,29 @@
           </button>
         </div>
       </div>
-      <div style="margin-top: 30px;" ng-if="dirty">
-        <div ng-if="jvmRetransformClassesSupported">
-          <table>
-            <tr>
-              <td>
-                <strong>Restart the JVM to apply changes.</strong>
-                In non-production environments try <span style="margin: 0 5px; font-size: 20px;">&rarr;</span></td>
-              <td>
-                <div gt-button
-                     gt-btn-class="btn-danger"
-                     gt-label="Apply changes to running JVM"
-                     gt-click="retransformClasses(deferred)"
-                     gt-confirm-header="Apply changes to running JVM?"
-                     gt-confirm-body="Important: Do not use this in production as it has chance of crashing the JVM."
-                     style="vertical-align: middle; display: inline-block; margin-left: 8px;">
-                </div>
-              </td>
-            </tr>
-          </table>
+      <div style="margin-top: 20px;" ng-if="dirty">
+        <div ng-if="jvmRetransformClassesSupported"
+             class="clearfix">
+          <div style="float: left; margin: 10px 60px 0 0;">
+            <strong>Restart the JVM to apply changes.</strong>
+          </div>
+          <div style="float: left; margin-top: 5px;">
+            <div style="float: left; margin: 5px 6px 0 0;">
+              In non-production environments try
+            </div>
+            <div gt-button
+                 gt-btn-class="btn-danger"
+                 gt-label="Apply changes to running JVM"
+                 gt-click="retransformClasses(deferred)"
+                 gt-confirm-header="Apply changes to running JVM?"
+                 gt-confirm-body="Important: Do not use this in production as it has chance of crashing the JVM."
+                 class="gt-reweave-btn"
+                 style="float: left; margin-top: 2px;">
+            </div>
+          </div>
         </div>
-        <div ng-if="!jvmRetransformClassesSupported">
+        <div ng-if="!jvmRetransformClassesSupported"
+             style="margin-top: 30px;">
           <strong>Restart the JVM to apply changes.</strong>
         </div>
       </div>
