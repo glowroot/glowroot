@@ -467,8 +467,12 @@ HandlebarsRendering = (function () {
       // first batch size is smaller to make the records show up on screen right away
       batchSize = 100;
       var maxDuration = 0;
+      // find the largest entry duration, not including trace entry exceeded/extended markers which have no duration
       for (i = 0; i < traceEntries.length; i++) {
-        maxDuration = Math.max(maxDuration, traceEntries[i].duration);
+        var entryDuration = traceEntries[i].duration;
+        if (entryDuration) {
+          maxDuration = Math.max(maxDuration, entryDuration);
+        }
       }
       durationColumnWidth = formatMillis(maxDuration / 1000000).length / 2 + indent1;
     } else {
@@ -476,7 +480,14 @@ HandlebarsRendering = (function () {
       batchSize = 500;
     }
     var html = '<div id="block' + start + '">';
-    var maxOffset = traceEntries[traceEntries.length - 1].offset;
+    var maxOffset;
+    // find the last entry offset, not including trace entry exceeded/extended markers which have no offset
+    for (i = traceEntries.length - 1; i >= 0; i--) {
+      maxOffset = traceEntries[i].offset;
+      if (maxOffset) {
+        break;
+      }
+    }
     var offsetColumnWidth = formatMillis(maxOffset / 1000000).length / 2 + indent1;
     for (i = start; i < Math.min(start + batchSize, traceEntries.length); i++) {
       traceEntries[i].offsetColumnWidth = offsetColumnWidth;
