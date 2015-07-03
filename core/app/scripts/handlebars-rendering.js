@@ -267,11 +267,12 @@ HandlebarsRendering = (function () {
   });
 
   Handlebars.registerHelper('exceptionHtml', function (throwable) {
-    var html = '<div class="gt-preserve-newlines">';
+    // don't pre-wrap stack traces (using overflow-x: auto on container)
+    var html = '<div style="white-space: pre;">';
     html += '<strong>';
     while (throwable) {
-      html += '<span class="gt-break-word gt-preserve-newlines">' + escapeHtml(throwable.display)
-          + '</span></strong>\n';
+      var message = throwable.display.replace(/\n/g, '\n    ');
+      html += escapeHtml(message) + '</strong>\n';
       var i;
       for (i = 0; i < throwable.stackTrace.length; i++) {
         html += 'at ' + escapeHtml(throwable.stackTrace[i]) + '\n';
@@ -281,7 +282,7 @@ HandlebarsRendering = (function () {
       }
       throwable = throwable.cause;
       if (throwable) {
-        html += '<strong>Caused by: ';
+        html += '\n<strong>Caused by: ';
       }
     }
     html += '</div>';
@@ -289,7 +290,8 @@ HandlebarsRendering = (function () {
   });
 
   Handlebars.registerHelper('stackTraceHtml', function (stackTrace) {
-    var html = '<div class="gt-preserve-newlines">';
+    // don't pre-wrap stack traces (using overflow-x: auto on container)
+    var html = '<div style="white-space: pre;">';
     var i;
     for (i = 0; i < stackTrace.length; i++) {
       html += escapeHtml(stackTrace[i]) + '\n';
@@ -456,8 +458,8 @@ HandlebarsRendering = (function () {
     // using an average character (width-wise) 'o'
     $('body').prepend('<span class="gt-offscreen" id="bodyFontCharWidth">o</span>');
     var charWidth = $('#bodyFontCharWidth').width();
-    // -100 for the left margin of the trace entry lines
-    traceEntryLineLength = ($('#sps').width() - 100) / charWidth;
+    // -170 for the left margin of the trace entry lines
+    traceEntryLineLength = ($('#sps').width() - 170) / charWidth;
     // min value of 80, otherwise not enough context provided by the elipsed line
     traceEntryLineLength = Math.max(traceEntryLineLength, 80);
   }
@@ -564,15 +566,18 @@ HandlebarsRendering = (function () {
           var $clip = expanded.find('.gt-clip');
           $clip.css('top', '10px');
           $clip.css('right', '10px');
-          var $message = expanded.find('.gt-preserve-newlines');
+          var $message = expanded.find('.gt-pre-wrap');
           $message.html(html);
-          $message.css('min-width', 0.6 * unexpanded.width());
+          $message.css('min-width', 0.6 * unexpanded.parent().width());
         }
       }
       expanded.data('gtExpandedPreviously', true);
     }
     unexpanded.toggleClass('hide');
     expanded.toggleClass('hide');
+    if (expanded.width() >= expanded.parent().width()) {
+      expanded.css('display', 'block');
+    }
     // re-focus on visible element, otherwise up/down/pgup/pgdown/ESC don't work
     if (unexpanded.hasClass('hide')) {
       expanded.attr('tabindex', -1);

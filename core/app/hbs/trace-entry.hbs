@@ -29,11 +29,11 @@
                 {{lastPart message.text}}
               </div>
               <!-- only convert newlines to <br>s for long messages -->
-              <div class="gt-inline-block gt-expanded-content gt-with-clip hide">
+              <div class="gt-expanded-content gt-with-clip hide"
+                   style="position: relative; display: inline-block;">
                 <i class="fa fa-clipboard gt-clip"></i>
-                <div class="gt-break-word gt-preserve-newlines"
-                     style="display: inline-block;"><!--
-                  lack of space here is significant because of gt-preserve-newlines
+                <div class="gt-break-word gt-pre-wrap"><!--
+                  lack of space here is significant because of gt-pre-wrap
                -->{{message.text}}<!--
              --></div>
               </div>
@@ -44,12 +44,11 @@
               <div class="gt-inline-block gt-unexpanded-content">
                 {{message.text}}
               </div>
-              <div class="gt-inline-block gt-expanded-content gt-with-clip hide"
-                   style="position: relative;">
+              <div class="gt-expanded-content gt-with-clip hide"
+                   style="position: relative; display: inline-block;">
                 <i class="fa fa-clipboard gt-clip"></i>
-                <div class="gt-break-word gt-preserve-newlines"
-                     style="display: inline-block;"><!--
-                  lack of space here is significant because of gt-preserve-newlines
+                <div class="gt-break-word gt-pre-wrap"><!--
+                  lack of space here is significant because of gt-pre-wrap
                -->{{message.text}}<!--
              --></div>
               </div>
@@ -68,8 +67,8 @@
           <div class="{{{errorIndentClass message}}}">
             <div>
               <strong>
-                <span class="gt-inline-block gt-content-padding gt-break-word gt-preserve-newlines"><!--
-                 lack of space here is significant because of gt-preserve-newlines
+                <span class="gt-inline-block gt-content-padding gt-break-word gt-pre-wrap"><!--
+                 lack of space here is significant because of gt-pre-wrap
               -->{{error.message}}<!--
              --></span>
               </strong>
@@ -78,7 +77,8 @@
               <div class="{{{exceptionIndentClass message}}}">
                 <div class="gt-inline-block gt-unexpanded-content gt-link-color">exception</div>
                 {{! using span so background will stretch beyond page border if needed }}
-                <div class="gt-inline-block gt-expanded-content gt-nowrap gt-with-clip hide">
+                <div class="gt-inline-block gt-expanded-content gt-nowrap gt-with-clip hide"
+                     style="overflow-x: auto;">
                   {{{exceptionHtml error.throwable}}}
                   <i class="fa fa-clipboard gt-clip"></i>
                 </div>
@@ -90,7 +90,8 @@
           <div class="gt-indent2">
             <div class="gt-inline-block gt-unexpanded-content gt-link-color">location stack trace</div>
             {{! using span so background will stretch beyond page border if needed }}
-            <div class="gt-inline-block gt-expanded-content gt-nowrap gt-with-clip hide">
+            <div class="gt-inline-block gt-expanded-content gt-nowrap gt-with-clip hide"
+                 style="overflow-x: auto;">
               {{{stackTraceHtml stackTrace}}}
               <i class="fa fa-clipboard gt-clip"></i>
             </div>
