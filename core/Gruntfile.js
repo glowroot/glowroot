@@ -291,6 +291,7 @@ module.exports = function (grunt) {
 
     uglify: {
       options: {
+        screwIE8: true,
         // currently report is not displayed unless without grunt -v
         // see https://github.com/gruntjs/grunt-contrib-uglify/issues/254
         report: 'gzip'
