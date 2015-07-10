@@ -22,7 +22,7 @@ Included in this repo (under [plugins](plugins)) and included in the glowroot-0.
  * Quartz Scheduler
  * JMS
 
-## Questions, bugs, feature requests
+## Questions, bugs, feature requests, news
 
  * [GitHub issue tracker](https://github.com/glowroot/glowroot/issues)
  * [Google group](https://groups.google.com/forum/#!forum/glowroot)
