@@ -61,6 +61,10 @@ class GaugeJsonService {
     private static final Logger logger = LoggerFactory.getLogger(GaugeJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
+    private static final ImmutableSet<String> numericAttributeTypes =
+            ImmutableSet.of("long", "int", "double", "float", "java.lang.Long", "java.lang.Integer",
+                    "java.lang.Double", "java.lang.Float");
+
     private final ConfigService configService;
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
 
@@ -213,8 +217,7 @@ class GaugeJsonService {
     private static void addNumericAttributes(MBeanAttributeInfo attribute, Object value,
             Set<String> attributeNames) {
         String attributeType = attribute.getType();
-        if (attributeType.equals("long") || attributeType.equals("int")
-                || attributeType.equals("double") || attributeType.equals("float")) {
+        if (numericAttributeTypes.contains(attributeType)) {
             attributeNames.add(attribute.getName());
         } else if (attributeType.equals("java.lang.String") && value instanceof String) {
             try {
