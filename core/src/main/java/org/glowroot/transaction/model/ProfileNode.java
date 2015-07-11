@@ -42,6 +42,8 @@ import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
 
+import org.glowroot.common.Styles;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -445,10 +447,9 @@ public class ProfileNode implements Iterable<ProfileNode> {
     }
 
     @Value.Immutable
+    @Styles.AllParameters
     abstract static class MatchedNodePairBase {
-        @Value.Parameter
         abstract ProfileNode leftNode();
-        @Value.Parameter
         abstract ProfileNode rightNode();
     }
 }

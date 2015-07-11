@@ -28,7 +28,6 @@ import java.util.zip.DataFormatException;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -497,7 +496,6 @@ public class AggregateDao {
     }
 
     @Value.Immutable
-    @JsonSerialize
     public abstract static class TransactionSummaryQueryBase {
         public abstract String transactionType();
         public abstract long from();
@@ -507,7 +505,6 @@ public class AggregateDao {
     }
 
     @Value.Immutable
-    @JsonSerialize
     public abstract static class ErrorSummaryQueryBase {
         public abstract String transactionType();
         public abstract long from();

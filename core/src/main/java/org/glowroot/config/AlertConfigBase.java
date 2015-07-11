@@ -18,7 +18,6 @@ package org.glowroot.config;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import org.immutables.value.Value;
@@ -26,7 +25,6 @@ import org.immutables.value.Value;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Value.Immutable
-@JsonSerialize
 public abstract class AlertConfigBase {
 
     public static final Ordering<AlertConfigBase> orderingByName = new Ordering<AlertConfigBase>() {

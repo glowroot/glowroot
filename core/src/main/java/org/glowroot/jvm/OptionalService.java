@@ -17,10 +17,11 @@ package org.glowroot.jvm;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import org.immutables.value.Value;
+
+import org.glowroot.common.Styles;
 
 public abstract class OptionalService<T> {
 
@@ -41,12 +42,10 @@ public abstract class OptionalService<T> {
     public abstract @Nullable T getService();
 
     @Value.Immutable
-    @JsonSerialize
+    @Styles.AllParameters
     public abstract static class AvailabilityBase {
-        @Value.Parameter
         public abstract boolean isAvailable();
         // reason only needed when available is false
-        @Value.Parameter
         public abstract String getReason();
     }
 

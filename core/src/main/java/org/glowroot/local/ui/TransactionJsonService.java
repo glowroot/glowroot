@@ -28,7 +28,6 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
@@ -565,7 +564,6 @@ class TransactionJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class TransactionSummaryRequestBase {
         abstract long from();
         abstract long to();
@@ -575,7 +573,6 @@ class TransactionJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class TransactionDataRequestBase {
         abstract long from();
         abstract long to();
@@ -586,7 +583,6 @@ class TransactionJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class TransactionProfileRequestBase {
         abstract long from();
         abstract long to();
@@ -596,7 +592,6 @@ class TransactionJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class FlameGraphRequestBase {
         abstract long from();
         abstract long to();
@@ -606,7 +601,6 @@ class TransactionJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class QueryBase {
         abstract String queryType();
         abstract String queryText();

@@ -17,13 +17,13 @@ package org.glowroot.collector;
 
 import org.immutables.value.Value;
 
+import org.glowroot.common.Styles;
+
 @Value.Immutable
+@Styles.AllParameters
 public abstract class ErrorPointBase {
 
-    @Value.Parameter
     public abstract long captureTime();
-    @Value.Parameter
     public abstract long errorCount();
-    @Value.Parameter
     public abstract long transactionCount();
 }

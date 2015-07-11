@@ -81,7 +81,7 @@ public class TraceCreator {
         builder.user(transaction.getUser());
         ImmutableSetMultimap<String, String> customAttributes = transaction.getCustomAttributes();
         builder.customAttributes(writeCustomAttributesAsString(customAttributes));
-        builder.customAttributesForIndexing(customAttributes);
+        builder.putAllCustomAttributesForIndexing(customAttributes);
         builder.customDetail(writeCustomDetailAsString(transaction.getCustomDetail()));
         if (errorMessage != null) {
             builder.errorMessage(errorMessage.getMessage());

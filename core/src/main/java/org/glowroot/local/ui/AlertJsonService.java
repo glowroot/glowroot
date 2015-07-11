@@ -22,7 +22,6 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -102,7 +101,6 @@ class AlertJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class AlertConfigDtoBase {
 
         public abstract String transactionType();

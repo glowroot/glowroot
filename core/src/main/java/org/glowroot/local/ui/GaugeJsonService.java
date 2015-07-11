@@ -33,7 +33,6 @@ import javax.management.openmbean.OpenType;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -289,28 +288,24 @@ class GaugeJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class GaugeConfigWithWarningMessagesBase {
         abstract GaugeConfigDto config();
         abstract ImmutableList<String> warningMessages();
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class MBeanObjectNameRequestBase {
         abstract String partialMBeanObjectName();
         abstract int limit();
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class MBeanAttributeNamesRequestBase {
         abstract String mbeanObjectName();
         abstract @Nullable String gaugeVersion();
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class MBeanAttributeNamesResponseBase {
         @Value.Default
         boolean mbeanUnavailable() {
@@ -328,7 +323,6 @@ class GaugeJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class GaugeResponseBase {
         abstract GaugeConfigDto config();
         @Value.Default
@@ -343,7 +337,6 @@ class GaugeJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class GaugeConfigDtoBase {
 
         // name is only used in one direction since it is a derived attribute

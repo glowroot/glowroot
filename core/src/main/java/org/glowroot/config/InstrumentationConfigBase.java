@@ -21,7 +21,6 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
@@ -33,7 +32,6 @@ import org.glowroot.api.weaving.MethodModifier;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Value.Immutable
-@JsonSerialize
 public abstract class InstrumentationConfigBase {
 
     public static final Ordering<InstrumentationConfig> ordering =

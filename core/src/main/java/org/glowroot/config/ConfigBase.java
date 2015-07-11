@@ -16,12 +16,10 @@
 package org.glowroot.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonSerialize
 abstract class ConfigBase {
 
     @Value.Default

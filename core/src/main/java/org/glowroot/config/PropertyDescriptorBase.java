@@ -18,13 +18,11 @@ package org.glowroot.config;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Value.Immutable
-@JsonSerialize
 public abstract class PropertyDescriptorBase {
 
     private static final Logger logger = LoggerFactory.getLogger(PropertyDescriptorBase.class);

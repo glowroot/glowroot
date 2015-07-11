@@ -44,6 +44,7 @@ import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
+import org.glowroot.common.Styles;
 import org.glowroot.weaving.AdviceFlowOuterHolder.AdviceFlowHolder;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -770,13 +771,10 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     @Value.Immutable
+    @Styles.AllParameters
     abstract static class CatchHandlerBase {
-
-        @Value.Parameter
         abstract Label catchStartLabel();
-
         // advisors that have successfully executed @OnBefore
-        @Value.Parameter
         abstract List<Advice> advisors();
     }
 }

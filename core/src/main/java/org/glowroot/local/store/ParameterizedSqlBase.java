@@ -19,12 +19,13 @@ import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.tainting.qual.Untainted;
 import org.immutables.value.Value;
 
+import org.glowroot.common.Styles;
+
 @Value.Immutable
+@Styles.AllParameters
 abstract class ParameterizedSqlBase {
 
-    @Value.Parameter
     abstract @Untainted String sql();
-    @Value.Parameter
     abstract ImmutableList<Object> args();
 
     Object[] argsAsArray() {

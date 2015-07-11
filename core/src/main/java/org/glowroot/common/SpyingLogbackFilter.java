@@ -138,19 +138,17 @@ public class SpyingLogbackFilter extends Filter<ILoggingEvent> {
     }
 
     @Value.Immutable
+    @Styles.AllParameters
     @SuppressWarnings("serial")
     public abstract static class MessageCountBase implements Serializable {
-        @Value.Parameter(order = 1)
         abstract int expectedCount();
-        @Value.Parameter(order = 2)
         abstract int unexpectedCount();
     }
 
     @Value.Immutable
+    @Styles.AllParameters
     abstract static class ExpectedMessageBase {
-        @Value.Parameter(order = 1)
         abstract String loggerName();
-        @Value.Parameter(order = 2)
         abstract String partialMessage();
     }
 }

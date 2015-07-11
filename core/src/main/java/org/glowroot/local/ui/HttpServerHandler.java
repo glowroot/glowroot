@@ -68,6 +68,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Reflections;
+import org.glowroot.common.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -569,11 +570,9 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Value.Immutable
+    @Styles.AllParameters
     static abstract class JsonServiceMatcherBase {
-
-        @Value.Parameter
         abstract JsonServiceMapping jsonServiceMapping();
-        @Value.Parameter
         abstract Matcher matcher();
     }
 

@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ClassNames;
 import org.glowroot.common.Reflections;
+import org.glowroot.common.Styles;
 import org.glowroot.weaving.WeavingClassVisitor.ShortCircuitException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -426,10 +427,9 @@ public class AnalyzedWorld {
     }
 
     @Value.Immutable
+    @Styles.AllParameters
     static abstract class ParseContextBase {
-        @Value.Parameter
         abstract String className();
-        @Value.Parameter
         abstract @Nullable CodeSource codeSource();
         // toString() is used in logger warning construction
         @Override

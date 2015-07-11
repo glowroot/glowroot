@@ -150,7 +150,8 @@ class LayoutService {
                 .anonymousAccess(userInterfaceConfig.anonymousAccess())
                 .addAllTransactionTypes(orderedTransactionTypes)
                 .defaultTransactionType(defaultDisplayedTransactionType)
-                .defaultPercentiles(configService.getGeneralConfig().defaultDisplayedPercentiles())
+                .addAllDefaultPercentiles(
+                        configService.getGeneralConfig().defaultDisplayedPercentiles())
                 .addAllTransactionCustomAttributes(transactionCustomAttributes)
                 .fixedAggregateIntervalSeconds(fixedAggregateIntervalSeconds)
                 .fixedAggregateRollupSeconds(fixedAggregateRollupSeconds)

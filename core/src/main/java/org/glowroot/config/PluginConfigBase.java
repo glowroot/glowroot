@@ -21,7 +21,6 @@ import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -30,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Value.Immutable
-@JsonSerialize
 public abstract class PluginConfigBase {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginConfig.class);

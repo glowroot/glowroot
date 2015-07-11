@@ -24,7 +24,6 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.immutables.value.Value;
@@ -37,6 +36,7 @@ import org.glowroot.collector.QueryAggregate;
 import org.glowroot.collector.QueryComponent;
 import org.glowroot.collector.QueryComponent.AggregateQuery;
 import org.glowroot.common.ObjectMappers;
+import org.glowroot.common.Styles;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AlertingService;
 import org.glowroot.transaction.model.ProfileNode;
@@ -83,7 +83,7 @@ public class AggregateMerging {
         return PercentileMergedAggregate.builder()
                 .totalMicros(totalMicros)
                 .transactionCount(transactionCount)
-                .percentileValues(percentileValues)
+                .addAllPercentileValues(percentileValues)
                 .build();
     }
 
@@ -145,7 +145,6 @@ public class AggregateMerging {
     }
 
     @Value.Immutable
-    @JsonSerialize
     public static abstract class TimerMergedAggregateBase {
         @JsonProperty("timers")
         public abstract AggregateTimer syntheticRootTimer();
@@ -153,7 +152,6 @@ public class AggregateMerging {
     }
 
     @Value.Immutable
-    @JsonSerialize
     public static abstract class PercentileMergedAggregateBase {
 
         public abstract long totalMicros();
@@ -162,16 +160,13 @@ public class AggregateMerging {
     }
 
     @Value.Immutable
-    @JsonSerialize
+    @Styles.AllParameters
     public static abstract class PercentileValueBase {
-        @Value.Parameter
         public abstract String dataSeriesName();
-        @Value.Parameter
         public abstract long value();
     }
 
     @Value.Immutable
-    @JsonSerialize
     public abstract static class ThreadInfoAggregateBase {
 
         abstract @Nullable Long totalCpuMicros();

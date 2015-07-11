@@ -27,6 +27,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import org.glowroot.common.Styles;
 import org.glowroot.local.store.DataSource.RowMapper;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -108,10 +109,9 @@ class GaugeMetaDao {
     }
 
     @Value.Immutable
+    @Styles.AllParameters
     static abstract class GaugeMetaBase {
-        @Value.Parameter
         abstract long id();
-        @Value.Parameter
         abstract boolean everIncreasing();
     }
 

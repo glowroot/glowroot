@@ -17,7 +17,6 @@ package org.glowroot.collector;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
@@ -26,7 +25,6 @@ import org.immutables.value.Value;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Value.Immutable
-@JsonSerialize
 public abstract class ErrorSummaryBase {
 
     public static final Ordering<ErrorSummaryBase> orderingByErrorCountDesc =

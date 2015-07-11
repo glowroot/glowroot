@@ -27,8 +27,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.api.weaving.MethodModifier;
+import org.glowroot.common.Styles;
 
 @Value.Immutable
+@Styles.AllParameters
 abstract class AdviceMatcherBase {
 
     private static final Logger logger = LoggerFactory.getLogger(AdviceMatcher.class);
@@ -43,7 +45,6 @@ abstract class AdviceMatcherBase {
         return ImmutableList.copyOf(adviceMatchers);
     }
 
-    @Value.Parameter
     abstract Advice advice();
 
     boolean isMethodLevelMatch(String methodName, List<Type> parameterTypes, Type returnType,

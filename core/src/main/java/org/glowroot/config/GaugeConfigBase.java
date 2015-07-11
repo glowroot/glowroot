@@ -20,17 +20,17 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import org.immutables.value.Value;
 
+import org.glowroot.common.Styles;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Value.Immutable
-@JsonSerialize
 public abstract class GaugeConfigBase {
 
     public static final Ordering<GaugeConfig> orderingByName = new Ordering<GaugeConfig>() {
@@ -65,12 +65,9 @@ public abstract class GaugeConfigBase {
     }
 
     @Value.Immutable
-    @JsonSerialize
+    @Styles.AllParameters
     public abstract static class MBeanAttributeBase {
-
-        @Value.Parameter
         public abstract String name();
-        @Value.Parameter
         public abstract boolean everIncreasing();
     }
 }

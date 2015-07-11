@@ -43,7 +43,6 @@ import javax.management.openmbean.TabularData;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Splitter;
@@ -63,6 +62,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.collector.GaugePoint;
 import org.glowroot.collector.PatternObjectNameQueryExp;
 import org.glowroot.common.ObjectMappers;
+import org.glowroot.common.Styles;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.GaugeConfig;
 import org.glowroot.config.GaugeConfigBase;
@@ -655,7 +655,6 @@ class JvmJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class GaugePointRequestBase {
         abstract long from();
         abstract long to();
@@ -663,7 +662,7 @@ class JvmJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
+    @Styles.AllParameters
     abstract static class GaugeBase {
 
         static final Ordering<Gauge> ordering = new Ordering<Gauge>() {
@@ -675,11 +674,8 @@ class JvmJsonService {
             }
         };
 
-        @Value.Parameter
         public abstract String name();
-        @Value.Parameter
         public abstract boolean everIncreasing();
-        @Value.Parameter
         public abstract String display();
     }
 
@@ -759,25 +755,21 @@ class JvmJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class MBeanTreeRequestBase {
         abstract public List<String> expanded();
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class MBeanAttributeMapRequestBase {
         abstract String objectName();
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class RequestWithDirectoryBase {
         abstract String directory();
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class ThreadDumpItemBase {
         abstract String objectName();
     }

@@ -23,7 +23,6 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -212,7 +211,6 @@ class ErrorJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class ErrorSummaryRequestBase {
         abstract long from();
         abstract long to();
@@ -222,7 +220,6 @@ class ErrorJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class TabBarDataRequestBase {
         abstract long from();
         abstract long to();
@@ -231,7 +228,6 @@ class ErrorJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class ErrorMessageRequestBase {
         abstract long from();
         abstract long to();

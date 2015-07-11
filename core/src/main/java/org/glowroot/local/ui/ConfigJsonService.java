@@ -27,7 +27,6 @@ import javax.mail.internet.MimeMessage;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -447,7 +446,6 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class UserInterfaceConfigResponseBase {
         abstract UserInterfaceConfigDto config();
         abstract int activePort();
@@ -455,21 +453,18 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class SmtpConfigResponseBase {
         abstract SmtpConfigDto config();
         abstract String localServerName();
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class AdvancedConfigResponseBase {
         abstract AdvancedConfigDto config();
         abstract boolean timerWrapperMethodsActive();
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class PluginResponseBase {
         abstract String id();
         abstract String name();
@@ -477,7 +472,6 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class PluginConfigResponseBase {
         abstract String name();
         abstract PluginConfigDto config();
@@ -488,7 +482,6 @@ class ConfigJsonService {
     // attribute, and that they have no default attribute values
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class GeneralConfigDtoBase {
 
         abstract boolean enabled();
@@ -514,14 +507,13 @@ class ConfigJsonService {
                     .traceStoreThresholdMillis(config.traceStoreThresholdMillis())
                     .profilingIntervalMillis(config.profilingIntervalMillis())
                     .defaultDisplayedTransactionType(config.defaultDisplayedTransactionType())
-                    .defaultDisplayedPercentiles(config.defaultDisplayedPercentiles())
+                    .addAllDefaultDisplayedPercentiles(config.defaultDisplayedPercentiles())
                     .version(config.version())
                     .build();
         }
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class UserInterfaceConfigDtoBase {
 
         abstract int port();
@@ -570,7 +562,6 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class StorageConfigDtoBase {
 
         abstract int aggregateExpirationHours();
@@ -600,7 +591,6 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class SmtpConfigDtoBase {
 
         abstract String fromEmailAddress();
@@ -636,7 +626,6 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class UserRecordingConfigDtoBase {
 
         abstract boolean enabled();
@@ -663,7 +652,6 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class AdvancedConfigDtoBase {
 
         abstract boolean timerWrapperMethods();
@@ -719,7 +707,6 @@ class ConfigJsonService {
     }
 
     @Value.Immutable
-    @JsonSerialize
     abstract static class PluginConfigDtoBase {
 
         abstract boolean enabled();

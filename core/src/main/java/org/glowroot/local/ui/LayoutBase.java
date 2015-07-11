@@ -15,7 +15,6 @@
  */
 package org.glowroot.local.ui;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
@@ -23,7 +22,6 @@ import org.glowroot.config.AnonymousAccess;
 import org.glowroot.config.Versions;
 
 @Value.Immutable
-@JsonSerialize
 abstract class LayoutBase {
 
     abstract boolean jvmHeapDump();

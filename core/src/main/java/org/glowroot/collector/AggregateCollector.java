@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Clock;
+import org.glowroot.common.Styles;
 import org.glowroot.config.ConfigService;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.transaction.model.Transaction;
@@ -211,10 +212,9 @@ public class AggregateCollector {
     }
 
     @Value.Immutable
+    @Styles.AllParameters
     static abstract class PendingTransactionBase {
-        @Value.Parameter
         abstract long captureTime();
-        @Value.Parameter
         abstract Transaction transaction();
     }
 }

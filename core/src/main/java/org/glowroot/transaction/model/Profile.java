@@ -30,6 +30,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
+import org.glowroot.common.Styles;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Profile {
@@ -259,10 +261,9 @@ public class Profile {
     }
 
     @Value.Immutable
+    @Styles.AllParameters
     public abstract static class StackTraceElementPlusBase {
-        @Value.Parameter
         public abstract StackTraceElement stackTraceElement();
-        @Value.Parameter
         abstract ImmutableList<String> timerNames();
     }
 }

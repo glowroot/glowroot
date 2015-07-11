@@ -19,13 +19,14 @@ import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.google.common.io.CharSource;
 import org.immutables.value.Value;
 
+import org.glowroot.common.Styles;
+
 @Value.Immutable
+@Styles.AllParameters
 public abstract class QueryAggregateBase {
 
-    @Value.Parameter
     public abstract long captureTime();
     @JsonRawValue
-    @Value.Parameter
     public abstract CharSource queries();
     // profile json is always from "synthetic root"
 }

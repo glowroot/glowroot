@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-// the "from" builder name is customized because several @Value.Immutable classes already have an
-// attribute named "from"
-@Value.Style(typeAbstract = "*Base", typeImmutable = "", from = "all")
+@Styles.Standard
 package org.glowroot;
 
-import org.immutables.value.Value;
+import org.glowroot.common.Styles;

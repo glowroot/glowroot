@@ -474,9 +474,9 @@ class WeavingClassVisitor extends ClassVisitor {
             Type returnType = Type.getReturnType(desc);
             methodMetaGroups.add(MethodMetaGroup.builder()
                     .returnType(returnType)
-                    .parameterTypes(parameterTypes)
+                    .addAllParameterTypes(parameterTypes)
                     .uniqueNum(methodMetaUniqueNum)
-                    .methodMetaTypes(methodMetaTypes)
+                    .addAllMethodMetaTypes(methodMetaTypes)
                     .build());
         }
         if ((!classMetaTypes.isEmpty() || !methodMetaTypes.isEmpty())

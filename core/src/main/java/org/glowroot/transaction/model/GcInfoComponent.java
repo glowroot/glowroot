@@ -23,7 +23,6 @@ import java.util.Set;
 
 import javax.annotation.concurrent.GuardedBy;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -113,7 +112,6 @@ class GcInfoComponent {
     }
 
     @Value.Immutable
-    @JsonSerialize
     public abstract static class GcInfoBase {
         abstract String name();
         abstract long collectionCount();

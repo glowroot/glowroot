@@ -17,11 +17,12 @@ package org.glowroot.local.store;
 
 import org.immutables.value.Value;
 
+import org.glowroot.common.Styles;
+
 @Value.Immutable
+@Styles.AllParameters
 public abstract class TraceErrorPointBase {
 
-    @Value.Parameter
     public abstract long captureTime();
-    @Value.Parameter
     public abstract long errorCount();
 }
