@@ -39,7 +39,7 @@ glowroot.factory('traceModal', [
               $('#traceModal .modal-body button.download-trace').click(function () {
                 var $traceParent = $(this).parents('.gt-trace-parent');
                 var traceId = $traceParent.data('gtTraceId');
-                window.location = 'export/trace/' + traceId;
+                window.location = document.getElementsByTagName('base')[0].href + 'export/trace/' + traceId;
               });
             }
           })
