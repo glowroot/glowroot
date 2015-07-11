@@ -121,8 +121,8 @@ glowroot.controller('ChartRangeCtrl', [
         date: 'fa fa-calendar',
         up: 'fa fa-chevron-up',
         down: 'fa fa-chevron-down',
-        previous: 'fa fa-chevron-left gt-datepicker-arrows',
-        next: 'fa fa-chevron-right gt-datepicker-arrows'
+        previous: 'fa fa-chevron-left',
+        next: 'fa fa-chevron-right'
       };
       var from = $scope.chartFrom;
       var to = $scope.chartTo;

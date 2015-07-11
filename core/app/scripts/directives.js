@@ -200,38 +200,6 @@ glowroot.directive('gtFormGroup', [
   }
 ]);
 
-glowroot.directive('gtDatepicker', function () {
-  return {
-    scope: {
-      gtModel: '=',
-      gtId: '@'
-    },
-    templateUrl: 'template/gt-datepicker.html',
-    link: function (scope, iElement) {
-      var icons = {
-        time: 'fa fa-clock-o',
-        date: 'fa fa-calendar',
-        up: 'fa fa-chevron-up',
-        down: 'fa fa-chevron-down',
-        previous: 'fa fa-chevron-left gt-datepicker-arrows',
-        next: 'fa fa-chevron-right gt-datepicker-arrows'
-      };
-      var $element = iElement.find('input');
-      $element.datetimepicker({
-        icons: icons,
-        defaultDate: scope.gtModel,
-        format: 'L'
-      });
-      $element.on('dp.change', function (e) {
-        scope.$apply(function () {
-          scope.gtModel = e.date.toDate();
-          document.activeElement.blur();
-        });
-      });
-    }
-  };
-});
-
 glowroot.directive('gtInputGroupDropdown', function () {
   return {
     scope: {
