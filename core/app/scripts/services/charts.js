@@ -37,12 +37,6 @@ glowroot.factory('charts', [
 
       $scope.showChartSpinner = 0;
 
-      $scope.$watchGroup(['containerWidth', 'windowHeight'], function () {
-        chartState.plot.resize();
-        chartState.plot.setupGrid();
-        chartState.plot.draw();
-      });
-
       $chart.bind('plotzoom', function (event, plot, args) {
         var zoomingOut = args.amount && args.amount < 1;
         $scope.$apply(function () {
@@ -72,6 +66,14 @@ glowroot.factory('charts', [
         $scope.applyLast();
         $scope.chartRefresh++;
       };
+    }
+
+    function initResize(plot, $scope) {
+      $scope.$watchGroup(['containerWidth', 'windowHeight'], function () {
+        plot.resize();
+        plot.setupGrid();
+        plot.draw();
+      });
     }
 
     function updateRange($scope, from, to, zoomingOut, selection, selectionNearestLarger) {
@@ -350,6 +352,7 @@ glowroot.factory('charts', [
     return {
       createState: createState,
       init: init,
+      initResize: initResize,
       plot: plot,
       refreshData: refreshData,
       renderTooltipHtml: renderTooltipHtml,

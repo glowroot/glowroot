@@ -40,12 +40,6 @@ glowroot.controller('TracesCtrl', [
 
     var highlightedTraceId;
 
-    $scope.$watchGroup(['containerWidth', 'windowHeight'], function () {
-      plot.resize();
-      plot.setupGrid();
-      plot.draw();
-    });
-
     $scope.showChartSpinner = 0;
     $scope.showErrorFilter = errorOnly;
 
@@ -537,6 +531,7 @@ glowroot.controller('TracesCtrl', [
     })();
 
     plot.getAxes().yaxis.options.max = undefined;
+    charts.initResize(plot, $scope);
     refreshChart();
   }
 ]);

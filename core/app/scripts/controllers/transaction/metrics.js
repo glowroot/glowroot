@@ -143,6 +143,7 @@ glowroot.controller('TransactionMetricsCtrl', [
 
     charts.init(chartState, $('#chart'), $scope.$parent);
     charts.plot([[]], chartOptions, chartState, $('#chart'), $scope.$parent);
+    charts.initResize(chartState.plot, $scope);
     refreshData();
   }
 ]);
