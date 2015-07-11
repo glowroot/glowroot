@@ -87,7 +87,11 @@ glowroot.controller('ChartRangeCtrl', [
       delete query['trace-chart-to'];
       delete query.from;
       delete query.to;
-      query.last = last;
+      if (last === 4 * 60 * 60 * 1000) {
+        delete query.last;
+      } else {
+        query.last = last;
+      }
       return queryStrings.encodeObject(query);
     };
 
