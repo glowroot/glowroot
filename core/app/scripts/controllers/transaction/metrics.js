@@ -30,10 +30,8 @@ glowroot.controller('TransactionMetricsCtrl', [
       charts.refreshData('backend/transaction/metrics', chartState, $scope, undefined, onRefreshData);
     }
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function (newValues, oldValues) {
-      if (newValues !== oldValues) {
-        refreshData();
-      }
+    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function () {
+      refreshData();
     });
 
     function onRefreshData(data, query) {
@@ -144,6 +142,5 @@ glowroot.controller('TransactionMetricsCtrl', [
     charts.init(chartState, $('#chart'), $scope.$parent);
     charts.plot([[]], chartOptions, chartState, $('#chart'), $scope.$parent);
     charts.initResize(chartState.plot, $scope);
-    refreshData();
   }
 ]);

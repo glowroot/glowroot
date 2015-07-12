@@ -295,7 +295,7 @@ public class Transaction {
         return traceEntryComponent;
     }
 
-    public int getProfileSampleCount() {
+    public long getProfileSampleCount() {
         if (profile == null) {
             return 0;
         } else {

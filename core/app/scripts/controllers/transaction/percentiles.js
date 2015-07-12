@@ -34,10 +34,8 @@ glowroot.controller('TransactionPercentilesCtrl', [
       charts.refreshData('backend/transaction/percentiles', chartState, $scope.$parent, addToQuery, onRefreshData);
     }
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function (newValues, oldValues) {
-      if (newValues !== oldValues) {
-        refreshData();
-      }
+    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function () {
+      refreshData();
     });
 
     $scope.openCustomPercentilesModal = function () {
@@ -122,6 +120,5 @@ glowroot.controller('TransactionPercentilesCtrl', [
     charts.init(chartState, $('#chart'), $scope.$parent);
     charts.plot([[]], chartOptions, chartState, $('#chart'), $scope.$parent);
     charts.initResize(chartState.plot, $scope);
-    refreshData();
   }
 ]);

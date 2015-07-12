@@ -363,7 +363,7 @@ public class TraceDao implements TraceRepository {
                     .threadWaitedTime(RowMappers.getLong(resultSet, columnIndex++))
                     .threadAllocatedBytes(RowMappers.getLong(resultSet, columnIndex++))
                     .gcInfos(resultSet.getString(columnIndex++))
-                    .entryCount(resultSet.getLong(columnIndex++))
+                    .entryCount(resultSet.getInt(columnIndex++))
                     .entriesExistence(
                             RowMappers.getExistence(resultSet, columnIndex++, cappedDatabase))
                     .profileSampleCount(resultSet.getLong(columnIndex++))

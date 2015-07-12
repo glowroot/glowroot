@@ -52,7 +52,7 @@ public abstract class TraceBase {
     public abstract @Nullable Long threadAllocatedBytes();
     @JsonRawValue
     public abstract @Nullable String gcInfos();
-    public abstract long entryCount();
+    public abstract int entryCount();
     public abstract long profileSampleCount();
     abstract Existence entriesExistence();
     abstract Existence profileExistence();

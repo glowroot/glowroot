@@ -27,6 +27,8 @@ glowroot.controller('ErrorMessagesCtrl', [
 
     $scope.$parent.activeTabItem = 'messages';
 
+    var appliedFilter;
+
     var chartState = charts.createState();
 
     $scope.showChartOverlay = 0;
@@ -35,20 +37,24 @@ glowroot.controller('ErrorMessagesCtrl', [
     var errorMessageLimit = 25;
     var dataSeriesExtra;
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function (newValues, oldValues) {
-      if (newValues !== oldValues) {
-        refreshData();
-      }
+    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function () {
+      $location.search('filter', $scope.filter || null);
+      refreshData();
     });
 
     function refreshData(deferred) {
+      $scope.parsingError = undefined;
+      parseQuery($scope.filter);
+      if ($scope.parsingError) {
+        return;
+      }
       var query = {
         from: $scope.chartFrom,
         to: $scope.chartTo,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
-        include: $scope.errorFilterIncludes,
-        exclude: $scope.errorFilterExcludes,
+        include: $scope.filterIncludes,
+        exclude: $scope.filterExcludes,
         errorMessageLimit: errorMessageLimit
       };
       if (deferred) {
@@ -122,9 +128,24 @@ glowroot.controller('ErrorMessagesCtrl', [
     };
 
     $scope.refreshButtonClick = function () {
+      $scope.applyLast();
+      appliedFilter = $scope.filter;
       $scope.$parent.chartRefresh++;
-      $location.search('filter', $scope.errorFilter);
     };
+
+    function onLocationChangeSuccess() {
+      var priorAppliedFilter = appliedFilter;
+      appliedFilter = $location.search().filter || '';
+
+      if (priorAppliedFilter !== undefined && appliedFilter !== priorAppliedFilter) {
+        // e.g. back or forward button was used to navigate
+        $scope.$parent.chartRefresh++;
+      }
+      $scope.filter = appliedFilter;
+    }
+
+    $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
+    onLocationChangeSuccess();
 
     function parseQuery(text) {
       var includes = [];
@@ -183,8 +204,8 @@ glowroot.controller('ErrorMessagesCtrl', [
         // end the last non-quoted term
         pushCurrTerm();
       }
-      $scope.errorFilterIncludes = includes;
-      $scope.errorFilterExcludes = excludes;
+      $scope.filterIncludes = includes;
+      $scope.filterExcludes = excludes;
     }
 
     // 100% yaxis max just for initial empty chart rendering
@@ -224,19 +245,5 @@ glowroot.controller('ErrorMessagesCtrl', [
     charts.init(chartState, $('#chart'), $scope.$parent);
     charts.plot([[]], chartOptions, chartState, $('#chart'), $scope.$parent);
     charts.initResize(chartState.plot, $scope);
-
-    function onLocationChangeSuccess() {
-      $scope.errorFilter = $location.search().filter || '';
-      $scope.parsingError = undefined;
-      parseQuery($scope.errorFilter);
-      if ($scope.parsingError) {
-        return;
-      }
-      $scope.applyLast();
-      refreshData();
-    }
-
-    $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
-    onLocationChangeSuccess();
   }
 ]);

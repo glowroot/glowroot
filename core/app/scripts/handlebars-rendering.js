@@ -19,7 +19,8 @@
 // and that would significantly increase the size of the exported trace files
 
 // Glowroot dependency is used for spinner, but is not used in export file
-/* global $, Handlebars, JST, moment, Glowroot, SqlPrettyPrinter, gtClipboard, console */
+// glowroot (angular) dependency is used conditionally, only by transaction profile tab
+/* global $, Handlebars, JST, moment, Glowroot, SqlPrettyPrinter, gtClipboard, glowroot, console */
 
 // IMPORTANT: DO NOT USE ANGULAR IN THIS FILE
 // that would require adding angular to trace-export.js
@@ -609,9 +610,12 @@ HandlebarsRendering = (function () {
   function buildMergedStackTree(rootNode, selector) {
 
     // root node is always synthetic root node
-    if (rootNode.childNodes.length === 1) {
+    if (rootNode.childNodes && rootNode.childNodes.length === 1 && !rootNode.ellipsedSampleCount) {
+      var rootSampleCount = rootNode.sampleCount;
       // strip off synthetic root node
       rootNode = rootNode.childNodes[0];
+      // preserve root sample count for case of filtered profile
+      rootNode.sampleCount = rootSampleCount;
     } else {
       rootNode.stackTraceElement = MULTIPLE_ROOT_NODES;
     }
@@ -658,7 +662,7 @@ HandlebarsRendering = (function () {
 
       function filterNode(node, underMatchingNode) {
         var nodes = [node];
-        while (node.childNodes && node.childNodes.length === 1 && !node.leafThreadState && !node.ellipsed) {
+        while (node.childNodes && node.childNodes.length === 1 && !node.leafThreadState && !node.ellipsedSampleCount) {
           node = node.childNodes[0];
           nodes.push(node);
         }
@@ -682,7 +686,7 @@ HandlebarsRendering = (function () {
         if (currMatchingNode || underMatchingNode) {
           for (i = 0; i < nodes.length; i++) {
             nodes[i].filteredSampleCount = nodes[i].sampleCount;
-            nodes[i].filteredEllipsed = nodes[i].ellipsed;
+            nodes[i].filteredEllipsedSampleCount = nodes[i].ellipsedSampleCount;
           }
           if (lastNode.childNodes) {
             for (i = 0; i < lastNode.childNodes.length; i++) {
@@ -692,7 +696,7 @@ HandlebarsRendering = (function () {
         } else {
           for (i = 0; i < nodes.length; i++) {
             nodes[i].filteredSampleCount = 0;
-            nodes[i].filteredEllipsed = false;
+            nodes[i].filteredEllipsedSampleCount = false;
           }
           if (lastNode.childNodes) {
             for (i = 0; i < lastNode.childNodes.length; i++) {
@@ -700,9 +704,9 @@ HandlebarsRendering = (function () {
             }
           }
         }
-        if (lastNode.ellipsed && lastNode.filteredEllipsed) {
+        if (lastNode.ellipsedSampleCount && lastNode.filteredEllipsedSampleCount) {
           $('#gtProfileNodeEllipsed' + lastNode.id).show();
-        } else if (lastNode.ellipsed) {
+        } else if (lastNode.ellipsedSampleCount) {
           $('#gtProfileNodeEllipsed' + lastNode.id).hide();
         }
         if (lastNode.filteredSampleCount === 0) {
@@ -718,7 +722,7 @@ HandlebarsRendering = (function () {
           }
         }
         var samplePercentage = (lastNode.filteredSampleCount / rootNode.sampleCount) * 100;
-        $('#gtProfileNodePercent' + lastNode.id).text(samplePercentage.toFixed(1) + '%');
+        $('#gtProfileNodePercent' + lastNode.id).text(formatPercent(samplePercentage) + '%');
         $('#gtProfileNode' + lastNode.id).show();
         if (nodes.length > 1) {
           var nodeTextParent = $('#gtProfileNodeText' + lastNode.id).parent();
@@ -754,7 +758,7 @@ HandlebarsRendering = (function () {
           return '';
         }
         var nodes = [node];
-        while (node.childNodes && node.childNodes.length === 1 && !node.leafThreadState && !node.ellipsed) {
+        while (node.childNodes && node.childNodes.length === 1 && !node.leafThreadState && !node.ellipsedSampleCount) {
           node = node.childNodes[0];
           nodes.push(node);
         }
@@ -762,7 +766,7 @@ HandlebarsRendering = (function () {
         ret += '<span class="gt-inline-block" style="width: 4em; margin-left: ' + level + 'em;"';
         ret += ' id="gtProfileNodePercent' + node.id + '">';
         var samplePercentage = (nodeSampleCount / rootNode.sampleCount) * 100;
-        ret += samplePercentage.toFixed(1);
+        ret += formatPercent(samplePercentage);
         // the space after the % is actually important when highlighting a block of stack trace
         // elements in the ui and copy pasting into the eclipse java stack trace console, because the
         // space gives separation between the percentage and the stack trace element and so eclipse is
@@ -808,11 +812,14 @@ HandlebarsRendering = (function () {
             ret += curr(childNodes[i], level + 1);
           }
         }
-        if (node.ellipsed) {
+        if (node.ellipsedSampleCount) {
+          var ellipsedSamplePercentage = (node.ellipsedSampleCount / rootNode.sampleCount) * 100;
           ret += '<div id="gtProfileNodeEllipsed' + node.id + '">';
           ret += '<span class="gt-inline-block" style="width: 4em; margin-left: ' + (level + 1) + 'em;"></span>';
           ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
-          ret += '<span class="gt-inline-block" style="padding: 1px 1em;">(some branches < 0.1%)</span></div>';
+          ret += '<span class="gt-inline-block" style="padding: 1px 1em;">(one or more branches ~ ';
+          ret += formatPercent(ellipsedSamplePercentage);
+          ret += '%)</span></div>';
         }
         ret += '</span>';
         return ret;
@@ -831,25 +838,29 @@ HandlebarsRendering = (function () {
     var mergedCounts = calculateTimerCounts(rootNode, []);
     // set up text filter
     var $profileTextFilter = $selector.find('.gt-profile-text-filter');
+    var $profileTextFilterRefresh = $selector.find('.gt-profile-text-filter-refresh');
     var timer;
     $profileTextFilter.off('input.gtProfileFilter');
-    $profileTextFilter.on('input.gtProfileFilter', function () {
-      // primarily timer is used to deal with lagging when holding down backspace to clear out filter
-      clearTimeout(timer);
-      timer = setTimeout(function () {
-        // update merged stack tree based on filter
-        var filterText = $profileTextFilter.val();
-        filter(filterText);
-      }, 50);
-    });
+    if (!$profileTextFilterRefresh.length) {
+      $profileTextFilter.on('input.gtProfileFilter', function () {
+        // primarily timer is used to deal with lagging when holding down backspace to clear out filter
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+          // update merged stack tree based on filter
+          var filterText = $profileTextFilter.val();
+          filter(filterText);
+        }, 50);
+      });
+    }
     // apply initial filter text if any (e.g. user changes Last 30 min to Last 60 min) triggering profile refresh
     // but filter text stays the same (which seems good)
     var filterText = $profileTextFilter.val();
     if (filterText) {
       filter(filterText);
+      $selector.data('gtTextFilterOverride', true);
     }
-    var $profileFilter = $selector.find('.gt-profile-filter');
-    var $switchFilterButton = $profileFilter.parent().find(':button');
+    var $profileDropdownFilter = $selector.find('.gt-profile-filter');
+    var $switchFilterButton = $profileDropdownFilter.parent().find('.gt-profile-view-toggle');
     if (!$.isEmptyObject(mergedCounts)) {
       // build tree
       var tree = {name: '', childNodes: {}};
@@ -905,10 +916,10 @@ HandlebarsRendering = (function () {
       // build filter dropdown
       $.each(orderedNodes, function (i, node) {
         var name = node.name || MULTIPLE_ROOT_NODES;
-        $profileFilter.append($('<option />').val(node.name)
+        $profileDropdownFilter.append($('<option />').val(node.name)
             .text(name + ' (' + rootNode.timerCounts[node.name] + ')'));
       });
-      $profileFilter.change(function () {
+      $profileDropdownFilter.change(function () {
         // update merged stack tree based on filter
         var html = generateHtml($(this).val());
         $selector.find('.gt-profile').html(html);
@@ -916,15 +927,24 @@ HandlebarsRendering = (function () {
       // remove previous click handler, e.g. when range filter is changed
       $switchFilterButton.off('click').click(function () {
         $profileTextFilter.toggleClass('hide');
-        $profileFilter.toggleClass('hide');
-        if ($profileFilter.is(':visible')) {
+        $profileTextFilterRefresh.toggleClass('hide');
+        $profileDropdownFilter.toggleClass('hide');
+        if ($profileDropdownFilter.is(':visible')) {
           $selector.data('gtTextFilterOverride', false);
-          $profileTextFilter.val('');
+          if (typeof glowroot !== 'undefined') {
+            glowroot.run(['$rootScope'], function ($rootScope) {
+              $rootScope.apply(function () {
+                $profileTextFilter.val('');
+              });
+            });
+          } else {
+            $profileTextFilter.val('');
+          }
           filter('');
           $switchFilterButton.text('Switch to text filter');
         } else {
           $selector.data('gtTextFilterOverride', true);
-          $profileFilter.find('option:first-child').attr('selected', 'selected');
+          $profileDropdownFilter.find('option:first-child').attr('selected', 'selected');
           var html = generateHtml();
           $selector.find('.gt-profile').html(html);
           $switchFilterButton.text('Switch to dropdown filter');
@@ -933,8 +953,13 @@ HandlebarsRendering = (function () {
     }
     if ($.isEmptyObject(mergedCounts) || $selector.data('gtTextFilterOverride')) {
       $profileTextFilter.removeClass('hide');
+      $profileTextFilterRefresh.removeClass('hide');
+      $switchFilterButton.text('Switch to dropdown filter');
     } else {
-      $profileFilter.removeClass('hide');
+      $profileDropdownFilter.removeClass('hide');
+      $switchFilterButton.text('Switch to text filter');
+    }
+    if (!$.isEmptyObject(mergedCounts)) {
       $switchFilterButton.removeClass('hide');
     }
   }
@@ -1020,6 +1045,10 @@ HandlebarsRendering = (function () {
       return number.toPrecision(1);
     }
     return number.toFixed(1);
+  }
+
+  function formatPercent(number) {
+    return formatCount(number);
   }
 
   return {

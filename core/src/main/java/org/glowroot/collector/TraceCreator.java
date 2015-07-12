@@ -100,7 +100,7 @@ public class TraceCreator {
             builder.gcInfos(mapper.writeValueAsString(gcInfos));
         }
         int entryCount = transaction.getEntryCount();
-        int profileSampleCount = transaction.getProfileSampleCount();
+        long profileSampleCount = transaction.getProfileSampleCount();
         builder.entryCount(entryCount);
         builder.profileSampleCount(profileSampleCount);
         if (entryCount == 0) {

@@ -26,6 +26,7 @@ glowroot.controller('TransactionTabCtrl', [
   'shortName',
   function ($scope, $location, $http, $timeout, queryStrings, httpErrors, shortName) {
 
+    var filteredTraceTabCount;
     var concurrentUpdateCount = 0;
 
     $scope.$watchGroup(['chartFrom', 'chartTo', 'transactionName', 'chartRefresh'], function (newValues, oldValues) {
@@ -35,20 +36,15 @@ glowroot.controller('TransactionTabCtrl', [
     });
 
     $scope.$on('updateTraceTabCount', function (event, traceCount) {
-      $scope.activeTraceTabCount = traceCount;
-    });
-
-    $scope.$on('$stateChangeStart', function () {
-      // need to clear trace tab count right away since it is based on filter criteria
-      delete $scope.activeTraceTabCount;
+      filteredTraceTabCount = traceCount;
     });
 
     $scope.traceCount = function () {
       if (!$scope.tabBarData) {
         return '...';
       }
-      if ($scope.activeTraceTabCount !== undefined) {
-        return $scope.activeTraceTabCount;
+      if (filteredTraceTabCount !== undefined) {
+        return filteredTraceTabCount;
       }
       return $scope.tabBarData.traceCount;
     };
@@ -108,7 +104,7 @@ glowroot.controller('TransactionTabCtrl', [
               return;
             }
             if ($scope.activeTabItem !== 'traces') {
-              delete $scope.activeTraceTabCount;
+              filteredTraceTabCount = undefined;
             }
             $scope.tabBarData = data;
           })

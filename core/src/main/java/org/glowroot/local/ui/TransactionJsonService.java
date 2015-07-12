@@ -204,9 +204,9 @@ class TransactionJsonService {
         TransactionProfileRequest request =
                 QueryStrings.decode(queryString, TransactionProfileRequest.class);
         ProfileNode profile = transactionCommonService.getProfile(request.transactionType(),
-                request.transactionName(), request.from(), request.to(),
+                request.transactionName(), request.from(), request.to(), request.filter(),
                 request.truncateLeafPercentage());
-        if (profile.getSampleCount() == 0
+        if (profile.getSampleCount() == 0 && request.filter() != null
                 && transactionCommonService.shouldHaveProfile(request.transactionType(),
                         request.transactionName(), request.from(), request.to())) {
             return "{\"overwritten\":true}";
@@ -286,8 +286,9 @@ class TransactionJsonService {
     @GET("/backend/transaction/flame-graph")
     String getFlameGraph(String queryString) throws Exception {
         FlameGraphRequest request = QueryStrings.decode(queryString, FlameGraphRequest.class);
+        // TODO add text filter to flame graph
         ProfileNode profile = transactionCommonService.getProfile(request.transactionType(),
-                request.transactionName(), request.from(), request.to(),
+                request.transactionName(), request.from(), request.to(), null,
                 request.truncateLeafPercentage());
         ProfileNode interestingNode = profile;
         while (interestingNode.hasOneChildNode()) {
@@ -476,7 +477,7 @@ class TransactionJsonService {
     // TODO use non-recursive algorithm to guard from stack overflow error
     private static void writeFlameGraphNode(ProfileNode node, JsonGenerator jg) throws IOException {
         jg.writeObjectFieldStart(node.getStackTraceElementStr());
-        int svUnique = node.getSampleCount();
+        long svUnique = node.getSampleCount();
         for (ProfileNode childNode : node.getChildNodes()) {
             svUnique -= childNode.getSampleCount();
         }
@@ -588,6 +589,7 @@ class TransactionJsonService {
         abstract long to();
         abstract String transactionType();
         abstract @Nullable String transactionName();
+        abstract @Nullable String filter();
         abstract double truncateLeafPercentage();
     }
 

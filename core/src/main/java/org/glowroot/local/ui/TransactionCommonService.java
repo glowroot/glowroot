@@ -21,6 +21,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -37,6 +38,7 @@ import org.glowroot.collector.QueryAggregate;
 import org.glowroot.collector.QueryComponent.AggregateQuery;
 import org.glowroot.collector.TransactionSummary;
 import org.glowroot.common.ScratchBuffer;
+import org.glowroot.common.Traverser;
 import org.glowroot.config.ConfigService;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregateDao.MergedAggregate;
@@ -162,15 +164,21 @@ class TransactionCommonService {
     }
 
     ProfileNode getProfile(String transactionType, @Nullable String transactionName, long from,
-            long to, double truncateLeafPercentage) throws Exception {
+            long to, @Nullable String filterText, double truncateLeafPercentage) throws Exception {
         List<ProfileAggregate> profileAggregate =
                 getProfileAggregates(transactionType, transactionName, from, to);
         ProfileNode syntheticRootNode = AggregateMerging.getMergedProfile(profileAggregate);
+        long syntheticRootNodeSampleCount = syntheticRootNode.getSampleCount();
+        if (filterText != null) {
+            filter(syntheticRootNode, filterText);
+        }
         if (truncateLeafPercentage != 0) {
             int minSamples = (int) (syntheticRootNode.getSampleCount() * truncateLeafPercentage);
             // don't truncate any root nodes
             truncateLeafs(syntheticRootNode.getChildNodes(), minSamples);
         }
+        // retain original sample count for synthetic root node in case of filtered profile
+        syntheticRootNode.setSampleCount(syntheticRootNodeSampleCount);
         return syntheticRootNode;
     }
 
@@ -431,6 +439,11 @@ class TransactionCommonService {
     }
 
     // using non-recursive algorithm to avoid stack overflow error on deep profiles
+    private static void filter(ProfileNode syntheticRootNode, String filterText) {
+        new ProfileFilterer(syntheticRootNode, filterText).traverse();
+    }
+
+    // using non-recursive algorithm to avoid stack overflow error on deep profiles
     private static void truncateLeafs(Iterable<ProfileNode> rootNodes, int minSamples) {
         Deque<ProfileNode> toBeVisited = new ArrayDeque<ProfileNode>();
         for (ProfileNode rootNode : rootNodes) {
@@ -442,9 +455,10 @@ class TransactionCommonService {
                 ProfileNode childNode = i.next();
                 if (childNode.getSampleCount() < minSamples) {
                     i.remove();
-                    // TODO capture sampleCount per timerName of ellipsed structure
-                    // and use this in UI
-                    node.setEllipsed();
+                    // TODO capture sampleCount per timerName of non-ellipsed structure
+                    // and use this in UI dropdown filter of timer names
+                    // (currently sampleCount per timerName of ellipsed structure is used)
+                    node.incrementEllipsedSampleCount((int) childNode.getSampleCount());
                 } else {
                     toBeVisited.add(childNode);
                 }
@@ -467,6 +481,74 @@ class TransactionCommonService {
                         transactionSummaries);
             default:
                 throw new AssertionError("Unexpected sort order: " + sortOrder);
+        }
+    }
+
+    private static class ProfileFilterer extends Traverser<ProfileNode, RuntimeException> {
+
+        private final String filterTextUpper;
+
+        private ProfileFilterer(ProfileNode rootNode, String filterText) {
+            super(rootNode);
+            this.filterTextUpper = filterText.toUpperCase(Locale.ENGLISH);
+        }
+
+        @Override
+        public List<ProfileNode> visit(ProfileNode node) {
+            if (isMatch(node)) {
+                node.setMatched();
+                // no need to visit children
+                return ImmutableList.of();
+            }
+            return ImmutableList.copyOf(node.getChildNodes());
+        }
+
+        @Override
+        public void revisitAfterChildren(ProfileNode node) {
+            if (node.isMatched()) {
+                // keep node and all children
+                return;
+            }
+            if (!hasMatchedChild(node) && !node.isSyntheticRootNode()) {
+                // node is unmatched and will be removed by parent
+                return;
+            }
+            node.setMatched();
+            long filteredSampleCount = 0;
+            for (Iterator<ProfileNode> i = node.iterator(); i.hasNext();) {
+                ProfileNode childNode = i.next();
+                if (childNode.isMatched()) {
+                    filteredSampleCount += childNode.getSampleCount();
+                } else {
+                    i.remove();
+                }
+            }
+            node.setSampleCount(filteredSampleCount);
+        }
+
+        private boolean isMatch(ProfileNode node) {
+            String stackTraceElementUpper =
+                    node.getStackTraceElementStr().toUpperCase(Locale.ENGLISH);
+            if (stackTraceElementUpper.contains(filterTextUpper)) {
+                return true;
+            }
+            String leafThreadState = node.getLeafThreadState();
+            if (leafThreadState != null) {
+                String leafThreadStateUpper = leafThreadState.toUpperCase(Locale.ENGLISH);
+                if (leafThreadStateUpper.contains(filterTextUpper)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static boolean hasMatchedChild(ProfileNode node) {
+            for (ProfileNode childNode : node) {
+                if (childNode.isMatched()) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

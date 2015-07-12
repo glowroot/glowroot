@@ -66,7 +66,7 @@ public class Profile {
         return syntheticRootNode;
     }
 
-    public int getSampleCount() {
+    public long getSampleCount() {
         synchronized (lock) {
             return syntheticRootNode.getSampleCount() + unmergedStackTraces.size();
         }

@@ -13,28 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.transaction.model;
+package org.glowroot.common;
 
-import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 
 import com.google.common.collect.Lists;
 
-abstract class Traverser<T extends /*@NonNull*/Object> {
+public abstract class Traverser<T extends /*@NonNull*/Object, E extends Exception> {
 
     private static final Object ALREADY_TRAVERSED_MARKER = new Object();
 
     private final Deque<Object> stack;
 
-    Traverser(T root) {
+    public Traverser(T root) {
         stack = new ArrayDeque<Object>();
         stack.push(root);
     }
 
     @SuppressWarnings("unchecked")
-    void traverse() throws IOException {
+    public void traverse() throws E {
         while (!stack.isEmpty()) {
             Object popped = stack.pop();
             if (popped == ALREADY_TRAVERSED_MARKER) {
@@ -56,7 +55,7 @@ abstract class Traverser<T extends /*@NonNull*/Object> {
         }
     }
 
-    abstract List<T> visit(T node) throws IOException;
+    public abstract List<T> visit(T node) throws E;
 
-    abstract void revisitAfterChildren(T node) throws IOException;
+    public abstract void revisitAfterChildren(T node) throws E;
 }

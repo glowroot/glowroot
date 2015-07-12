@@ -19,14 +19,22 @@
 glowroot.controller('TransactionProfileCtrl', [
   '$scope',
   '$http',
+  '$location',
   'queryStrings',
   'httpErrors',
-  function ($scope, $http, queryStrings, httpErrors) {
+  function ($scope, $http, $location, queryStrings, httpErrors) {
 
     $scope.$parent.activeTabItem = 'profile';
 
+    var appliedFilter;
+
     $scope.showProfile = false;
     $scope.showSpinner = 0;
+
+    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function () {
+      $location.search('filter', $scope.filter || null);
+      refreshData();
+    });
 
     $scope.flameGraphQueryString = function () {
       var query = {};
@@ -39,11 +47,25 @@ glowroot.controller('TransactionProfileCtrl', [
       return queryStrings.encodeObject(query);
     };
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function (newValues, oldValues) {
-      if (newValues !== oldValues) {
-        refreshData();
+    $scope.refreshButtonClick = function () {
+      $scope.applyLast();
+      appliedFilter = $scope.filter;
+      $scope.$parent.chartRefresh++;
+    };
+
+    function onLocationChangeSuccess() {
+      var priorAppliedFilter = appliedFilter;
+      appliedFilter = $location.search().filter || '';
+
+      if (priorAppliedFilter !== undefined && appliedFilter !== priorAppliedFilter) {
+        // e.g. back or forward button was used to navigate
+        $scope.$parent.chartRefresh++;
       }
-    });
+      $scope.filter = appliedFilter;
+    }
+
+    $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
+    onLocationChangeSuccess();
 
     function refreshData() {
       var query = {
@@ -51,6 +73,7 @@ glowroot.controller('TransactionProfileCtrl', [
         to: $scope.chartTo,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
+        filter: $scope.filter,
         truncateLeafPercentage: 0.001
       };
 
@@ -75,7 +98,5 @@ glowroot.controller('TransactionProfileCtrl', [
             httpErrors.handler($scope)(data, status);
           });
     }
-
-    refreshData();
   }
 ]);

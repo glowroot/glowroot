@@ -15,12 +15,12 @@
 -->
 <div ng-form
      gt-form-with-primary-button
-     style="margin-left: 42px;">
+     style="margin-left: 42px; margin-bottom: 5px;">
   <input type="text"
-         ng-model="errorFilter"
+         ng-model="filter"
          class="form-control"
          placeholder="filter the error messages"
-         id="errorFilter"
+         id="filter"
          style="display: inline-block; width: 25em; vertical-align: middle;">
   <button class="btn btn-primary"
           ng-click="refreshButtonClick()"
@@ -38,6 +38,9 @@
        class="fa fa-question-circle"
        style="font-size: 28px; vertical-align: middle; margin-left: 3px;"></i><!-- lack of space here is significant
  --></a>
+  <div ng-if="parsingError" class="gt-red" style="margin-top: 10px; margin-bottom: -5px;">
+    {{parsingError}}
+  </div>
 </div>
 <!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
 <div class="clearfix" style="position: relative; z-index: 800;">

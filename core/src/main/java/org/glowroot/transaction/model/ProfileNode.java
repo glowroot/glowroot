@@ -43,6 +43,7 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
 
 import org.glowroot.common.Styles;
+import org.glowroot.common.Traverser;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -58,7 +59,7 @@ public class ProfileNode implements Iterable<ProfileNode> {
     private final @Nullable Object stackTraceElementObj;
 
     private final @Nullable String leafThreadState;
-    private int sampleCount;
+    private long sampleCount;
 
     // using List over Set in order to preserve ordering
     // may contain duplicates (common from weaving groups of overloaded methods), these are filtered
@@ -75,7 +76,10 @@ public class ProfileNode implements Iterable<ProfileNode> {
     private @Nullable Object childNodes;
 
     // this is only used when sending profiles to the UI (it is not used when storing)
-    private boolean ellipsed;
+    private int ellipsedSampleCount;
+
+    // this is only used temporarily while filtering a profile
+    private boolean matched;
 
     public static ProfileNode createSyntheticRoot() {
         return new ProfileNode(null, null);
@@ -113,17 +117,29 @@ public class ProfileNode implements Iterable<ProfileNode> {
 
     // sampleCount is volatile to ensure visibility, but this method still needs to be called under
     // an appropriate lock so that two threads do not try to increment the count at the same time
-    public void incrementSampleCount(int num) {
+    public void incrementSampleCount(long num) {
         sampleCount += num;
     }
 
-    public void setEllipsed() {
-        ellipsed = true;
+    public void incrementEllipsedSampleCount(int sampleCount) {
+        ellipsedSampleCount += sampleCount;
+    }
+
+    public void setMatched() {
+        matched = true;
+    }
+
+    public void setSampleCount(long sampleCount) {
+        this.sampleCount = sampleCount;
     }
 
     // only returns null for synthetic root
     public @Nullable Object getStackTraceElementObj() {
         return stackTraceElementObj;
+    }
+
+    public boolean isSyntheticRootNode() {
+        return stackTraceElementObj == null;
     }
 
     public String getStackTraceElementStr() {
@@ -140,7 +156,7 @@ public class ProfileNode implements Iterable<ProfileNode> {
         return leafThreadState;
     }
 
-    public int getSampleCount() {
+    public long getSampleCount() {
         return sampleCount;
     }
 
@@ -220,8 +236,12 @@ public class ProfileNode implements Iterable<ProfileNode> {
         }
     }
 
-    public boolean isEllipsed() {
-        return ellipsed;
+    public int getEllipsedSampleCount() {
+        return ellipsedSampleCount;
+    }
+
+    public boolean isMatched() {
+        return matched;
     }
 
     public void mergeMatchedNode(ProfileNode anotherSyntheticRootNode) {
@@ -320,7 +340,7 @@ public class ProfileNode implements Iterable<ProfileNode> {
         }
     }
 
-    private static class ProfileWriter extends Traverser<ProfileNode> {
+    private static class ProfileWriter extends Traverser<ProfileNode, IOException> {
 
         private final JsonGenerator jg;
 
@@ -334,7 +354,7 @@ public class ProfileNode implements Iterable<ProfileNode> {
         }
 
         @Override
-        List<ProfileNode> visit(ProfileNode node) throws IOException {
+        public List<ProfileNode> visit(ProfileNode node) throws IOException {
             jg.writeStartObject();
             jg.writeStringField("stackTraceElement", node.getStackTraceElementStr());
             String leafThreadState = node.getLeafThreadState();
@@ -350,9 +370,9 @@ public class ProfileNode implements Iterable<ProfileNode> {
                 }
                 jg.writeEndArray();
             }
-            boolean ellipsed = node.isEllipsed();
-            if (ellipsed) {
-                jg.writeBooleanField("ellipsed", ellipsed);
+            int ellipsedSampleCount = node.getEllipsedSampleCount();
+            if (ellipsedSampleCount != 0) {
+                jg.writeNumberField("ellipsedSampleCount", ellipsedSampleCount);
             }
             List<ProfileNode> childNodes = ImmutableList.copyOf(node.getChildNodes());
             if (!childNodes.isEmpty()) {
@@ -362,7 +382,7 @@ public class ProfileNode implements Iterable<ProfileNode> {
         }
 
         @Override
-        void revisitAfterChildren(ProfileNode node) throws IOException {
+        public void revisitAfterChildren(ProfileNode node) throws IOException {
             if (!node.isChildNodesEmpty()) {
                 jg.writeEndArray();
             }
@@ -430,7 +450,7 @@ public class ProfileNode implements Iterable<ProfileNode> {
             }
             ProfileNode node = new ProfileNode(stackTraceElement, leafThreadState);
             if (token == JsonToken.FIELD_NAME && parser.getText().equals("sampleCount")) {
-                node.sampleCount = parser.nextIntValue(0);
+                node.sampleCount = parser.nextLongValue(0);
                 token = parser.nextToken();
             }
             if (token == JsonToken.FIELD_NAME && parser.getText().equals("timerNames")) {

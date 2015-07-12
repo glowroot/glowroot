@@ -55,15 +55,23 @@
           Profile based on {{sampleCount}} samples
         </div>
       </div>
-      <div style="margin-bottom: 10px;">
+      <div ng-form
+           gt-form-with-primary-button
+           style="margin-bottom: 10px;">
         <input class="form-control gt-profile-text-filter hide"
-               style="display: inline-block; width: 25em;"
+               ng-model="filter"
+               style="display: inline-block; vertical-align: middle; width: 25em;"
                placeholder="filter the profile tree">
+        <button class="btn btn-primary gt-profile-text-filter-refresh hide"
+                ng-click="refreshButtonClick()"
+                style="vertical-align: middle; margin-left: 5px;">
+          Refresh
+        </button>
         <select class="form-control gt-profile-filter gt-input-xlarge hide"
                 onchange="this.blur()"
                 style="display: inline-block; vertical-align: middle;">
         </select>
-        <button type="button" class="btn btn-default hide" style="margin-left: 20px;">
+        <button type="button" class="btn btn-default gt-profile-view-toggle hide" style="margin-left: 100px;">
           Switch to text filter
         </button>
       </div>

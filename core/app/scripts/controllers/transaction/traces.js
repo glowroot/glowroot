@@ -43,17 +43,15 @@ glowroot.controller('TracesCtrl', [
     $scope.showChartSpinner = 0;
     $scope.showErrorFilter = errorOnly;
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function (newValues, oldValues) {
-      if (newValues !== oldValues) {
-        appliedFilter.from = $scope.traceChartFrom || $scope.chartFrom;
-        appliedFilter.to = $scope.traceChartTo || $scope.chartTo;
-        updateLocation();
-        if ($scope.suppressChartRefresh) {
-          $scope.suppressChartRefresh = false;
-          return;
-        }
-        refreshChart();
+    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function () {
+      appliedFilter.from = $scope.traceChartFrom || $scope.chartFrom;
+      appliedFilter.to = $scope.traceChartTo || $scope.chartTo;
+      updateLocation();
+      if ($scope.suppressChartRefresh) {
+        $scope.suppressChartRefresh = false;
+        return;
       }
+      refreshChart();
     });
 
     function refreshChart(deferred) {
@@ -394,7 +392,7 @@ glowroot.controller('TracesCtrl', [
       appliedFilter.customAttributeValue = $location.search()['custom-attribute-value'] || '';
       appliedFilter.limit = Number($location.search().limit) || defaultFilterLimit;
 
-      if (priorAppliedFilter && !angular.equals(appliedFilter, priorAppliedFilter)) {
+      if (priorAppliedFilter !== undefined && !angular.equals(appliedFilter, priorAppliedFilter)) {
         // e.g. back or forward button was used to navigate
         $scope.$parent.chartRefresh++;
       }
@@ -469,6 +467,8 @@ glowroot.controller('TracesCtrl', [
       if (Number(appliedFilter.limit) !== defaultFilterLimit) {
         query.limit = appliedFilter.limit;
       }
+      // preserve modal-trace-id, otherwise refresh on modal trace does not work
+      query['modal-trace-id'] = $location.search()['modal-trace-id'];
       $location.search(query);
     }
 
@@ -532,6 +532,5 @@ glowroot.controller('TracesCtrl', [
 
     plot.getAxes().yaxis.options.max = undefined;
     charts.initResize(plot, $scope);
-    refreshChart();
   }
 ]);

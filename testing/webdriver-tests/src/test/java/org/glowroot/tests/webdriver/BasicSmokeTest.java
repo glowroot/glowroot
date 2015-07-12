@@ -118,7 +118,7 @@ public class BasicSmokeTest extends WebDriverTest {
         Utils.withWait(driver,
                 By.xpath("//a[@gt-display='All Transactions'][not(contains(., '%'))]"));
 
-        Utils.withWait(driver, By.xpath("//input[@ng-model='errorFilter']")).sendKeys("xyz");
+        Utils.withWait(driver, By.xpath("//input[@ng-model='filter']")).sendKeys("xyz");
         Utils.withWait(driver, By.xpath("//button[@ng-click='refreshButtonClick()']")).click();
         Utils.withWait(driver, By.partialLinkText("Traces")).click();
         globalNavbar.getErrorsLink().click();

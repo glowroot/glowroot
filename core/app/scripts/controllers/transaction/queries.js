@@ -31,10 +31,8 @@ glowroot.controller('TransactionQueriesCtrl', [
     $scope.showQueries = false;
     $scope.showSpinner = 0;
 
-    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function (newValues, oldValues) {
-      if (newValues !== oldValues) {
-        refreshData();
-      }
+    $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function () {
+      refreshData();
     });
 
     $scope.sort = function (attributeName) {
@@ -210,7 +208,5 @@ glowroot.controller('TransactionQueriesCtrl', [
             httpErrors.handler($scope)(data, status);
           });
     }
-
-    refreshData();
   }
 ]);
