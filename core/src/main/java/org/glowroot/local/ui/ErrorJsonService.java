@@ -54,18 +54,23 @@ class ErrorJsonService {
 
     private final ErrorCommonService errorCommonService;
     private final TraceDao traceDao;
+    private final AggregateDao aggregateDao;
     private final Clock clock;
 
     private final long fixedAggregateIntervalMillis;
-    private final long fixedAggregateRollupMillis;
+    private final long fixedAggregateRollup1Millis;
+    private final long fixedAggregateRollup2Millis;
 
-    ErrorJsonService(ErrorCommonService errorCommonService, TraceDao traceDao, Clock clock,
-            long fixedAggregateIntervalSeconds, long fixedAggregateRollupSeconds) {
+    ErrorJsonService(ErrorCommonService errorCommonService, TraceDao traceDao,
+            AggregateDao aggregateDao, Clock clock, long fixedAggregateIntervalSeconds,
+            long fixedAggregateRollup1Seconds, long fixedAggregateRollup2Seconds) {
         this.errorCommonService = errorCommonService;
         this.traceDao = traceDao;
+        this.aggregateDao = aggregateDao;
         this.clock = clock;
         fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
-        fixedAggregateRollupMillis = fixedAggregateRollupSeconds * 1000;
+        fixedAggregateRollup1Millis = fixedAggregateRollup1Seconds * 1000;
+        fixedAggregateRollup2Millis = fixedAggregateRollup2Seconds * 1000;
     }
 
     @GET("/backend/error/messages")
@@ -203,8 +208,11 @@ class ErrorJsonService {
     }
 
     private long getDataPointIntervalMillis(ErrorMessageQuery request) {
-        if (request.to() - request.from() > AggregateDao.ROLLUP_THRESHOLD_MILLIS) {
-            return fixedAggregateRollupMillis;
+        long millis = request.to() - request.from();
+        if (millis >= aggregateDao.getRollup2ViewThresholdMillis()) {
+            return fixedAggregateRollup2Millis;
+        } else if (millis >= aggregateDao.getRollup1ViewThresholdMillis()) {
+            return fixedAggregateRollup1Millis;
         } else {
             return fixedAggregateIntervalMillis;
         }

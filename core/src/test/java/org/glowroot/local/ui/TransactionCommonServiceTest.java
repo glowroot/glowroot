@@ -55,7 +55,7 @@ public class TransactionCommonServiceTest {
         ConfigService configService = mock(ConfigService.class);
         when(configService.getAdvancedConfig()).thenReturn(AdvancedConfig.builder().build());
         TransactionCommonService transactionCommonService =
-                new TransactionCommonService(aggregateDao, null, configService, 15);
+                new TransactionCommonService(aggregateDao, null, configService, 15, 900000);
         // when
         List<Aggregate> aggregates =
                 transactionCommonService.getAggregates("a type", null, 0, 3600001, Long.MAX_VALUE);

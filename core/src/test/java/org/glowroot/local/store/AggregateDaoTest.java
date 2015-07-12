@@ -56,7 +56,7 @@ public class AggregateDaoTest {
         cappedDatabase = new CappedDatabase(cappedFile, 1000000, Tickers.getTicker());
         ConfigService configService = mock(ConfigService.class);
         when(configService.getAdvancedConfig()).thenReturn(AdvancedConfig.builder().build());
-        aggregateDao = new AggregateDao(dataSource, cappedDatabase, configService, 15);
+        aggregateDao = new AggregateDao(dataSource, cappedDatabase, configService, 15, 900000);
     }
 
     @After

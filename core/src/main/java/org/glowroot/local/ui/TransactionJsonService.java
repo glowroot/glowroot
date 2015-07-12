@@ -68,21 +68,26 @@ class TransactionJsonService {
     private final TraceDao traceDao;
     private final TransactionRegistry transactionRegistry;
     private final TransactionCollector transactionCollector;
+    private final AggregateDao aggregateDao;
     private final Clock clock;
 
     private final long fixedAggregateIntervalMillis;
-    private final long fixedAggregateRollupMillis;
+    private final long fixedAggregateRollup1Millis;
+    private final long fixedAggregateRollup2Millis;
 
     TransactionJsonService(TransactionCommonService transactionCommonService, TraceDao traceDao,
             TransactionRegistry transactionRegistry, TransactionCollector transactionCollector,
-            Clock clock, long fixedAggregateIntervalSeconds, long fixedAggregateRollupSeconds) {
+            AggregateDao aggregateDao, Clock clock, long fixedAggregateIntervalSeconds,
+            long fixedAggregateRollup1Seconds, long fixedAggregateRollup2Seconds) {
         this.transactionCommonService = transactionCommonService;
         this.traceDao = traceDao;
         this.transactionRegistry = transactionRegistry;
         this.transactionCollector = transactionCollector;
+        this.aggregateDao = aggregateDao;
         this.clock = clock;
         this.fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
-        this.fixedAggregateRollupMillis = fixedAggregateRollupSeconds * 1000;
+        this.fixedAggregateRollup1Millis = fixedAggregateRollup1Seconds * 1000;
+        this.fixedAggregateRollup2Millis = fixedAggregateRollup2Seconds * 1000;
     }
 
     @GET("/backend/transaction/percentiles")
@@ -420,8 +425,11 @@ class TransactionJsonService {
     }
 
     private long getDataPointIntervalMillis(TransactionDataRequest request) {
-        if (request.to() - request.from() > AggregateDao.ROLLUP_THRESHOLD_MILLIS) {
-            return fixedAggregateRollupMillis;
+        long millis = request.to() - request.from();
+        if (millis >= aggregateDao.getRollup2ViewThresholdMillis()) {
+            return fixedAggregateRollup2Millis;
+        } else if (millis >= aggregateDao.getRollup1ViewThresholdMillis()) {
+            return fixedAggregateRollup1Millis;
         } else {
             return fixedAggregateIntervalMillis;
         }

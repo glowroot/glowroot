@@ -46,10 +46,14 @@ public class StorageModule {
 
     private static final long SNAPSHOT_REAPER_PERIOD_MINUTES = 5;
 
-    private static final long FIXED_GAUGE_ROLLUP_SECONDS =
+    private static final long FIXED_GAUGE_ROLLUP1_SECONDS =
             Long.getLong("glowroot.internal.gaugeRollup1", 60);
-    private static final long FIXED_AGGREGATE_ROLLUP_SECONDS =
-            Long.getLong("glowroot.internal.aggregateRollup1", 300);
+    private static final long FIXED_GAUGE_ROLLUP2_SECONDS =
+            Long.getLong("glowroot.internal.gaugeRollup2", 15 * 60);
+    private static final long FIXED_AGGREGATE_ROLLUP1_SECONDS =
+            Long.getLong("glowroot.internal.aggregateRollup1", 5 * 60);
+    private static final long FIXED_AGGREGATE_ROLLUP2_SECONDS =
+            Long.getLong("glowroot.internal.aggregateRollup2", 30 * 60);
 
     private static final Logger logger = LoggerFactory.getLogger(StorageModule.class);
 
@@ -112,13 +116,15 @@ public class StorageModule {
             }
         });
         aggregateDao = new AggregateDao(dataSource, cappedDatabase,
-                configModule.getConfigService(), FIXED_AGGREGATE_ROLLUP_SECONDS);
+                configModule.getConfigService(), FIXED_AGGREGATE_ROLLUP1_SECONDS,
+                FIXED_AGGREGATE_ROLLUP2_SECONDS);
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
         AlertingService alertingService = new AlertingService(configService, triggeredAlertDao,
                 aggregateDao, new MailService());
         aggregateRepositoryImpl = new AggregateRepositoryImpl(aggregateDao, alertingService);
         traceDao = new TraceDao(dataSource, cappedDatabase);
-        gaugePointDao = new GaugePointDao(dataSource, clock, FIXED_GAUGE_ROLLUP_SECONDS);
+        gaugePointDao = new GaugePointDao(dataSource, clock, FIXED_GAUGE_ROLLUP1_SECONDS,
+                FIXED_GAUGE_ROLLUP2_SECONDS);
         PreInitializeStorageShutdownClasses.preInitializeClasses();
         if (viewerModeEnabled) {
             reaperRunnable = null;
@@ -157,12 +163,20 @@ public class StorageModule {
         return cappedDatabase;
     }
 
-    public long getFixedAggregateRollupSeconds() {
-        return FIXED_AGGREGATE_ROLLUP_SECONDS;
+    public long getFixedAggregateRollup1Seconds() {
+        return FIXED_AGGREGATE_ROLLUP1_SECONDS;
     }
 
-    public long getFixedGaugeRollupSeconds() {
-        return FIXED_GAUGE_ROLLUP_SECONDS;
+    public long getFixedAggregateRollup2Seconds() {
+        return FIXED_AGGREGATE_ROLLUP2_SECONDS;
+    }
+
+    public long getFixedGaugeRollup1Seconds() {
+        return FIXED_GAUGE_ROLLUP1_SECONDS;
+    }
+
+    public long getFixedGaugeRollup2Seconds() {
+        return FIXED_GAUGE_ROLLUP2_SECONDS;
     }
 
     @OnlyUsedByTests

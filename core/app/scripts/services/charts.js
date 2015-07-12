@@ -161,14 +161,27 @@ glowroot.factory('charts', [
     }
 
     function getDataPointIntervalMillis(from, to) {
-      var fixedRollupSeconds = $location.path() === '/jvm/gauges' ? $rootScope.layout.fixedGaugeRollupSeconds
-          : $rootScope.layout.fixedAggregateRollupSeconds;
-      var fixedIntervalSeconds = $location.path() === '/jvm/gauges' ? $rootScope.layout.fixedGaugeIntervalSeconds
-          : $rootScope.layout.fixedAggregateIntervalSeconds;
-      if (to - from > 3600 * 1000) {
-        return fixedRollupSeconds * 1000;
+      var millis = to - from;
+      if ($location.path() === '/jvm/gauges') {
+        if (millis >= 16 * $rootScope.layout.fixedGaugeRollup2Seconds * 1000) {
+          // 16x multiplier is also hard-coded in GaugePointDao
+          return $rootScope.layout.fixedGaugeRollup2Seconds * 1000;
+        }
+        if (millis >= 15 * $rootScope.layout.fixedGaugeRollup1Seconds * 1000) {
+          // 15x multiplier is also hard-coded in GaugePointDao
+          return $rootScope.layout.fixedGaugeRollup1Seconds * 1000;
+        }
+        return $rootScope.layout.fixedGaugeIntervalSeconds * 1000;
       } else {
-        return fixedIntervalSeconds * 1000;
+        if (millis >= 16 * $rootScope.layout.fixedAggregateRollup2Seconds * 1000) {
+          // 16x multiplier is also hard-coded in AggregateDao
+          return $rootScope.layout.fixedAggregateRollup2Seconds * 1000;
+        }
+        if (millis >= 12 * $rootScope.layout.fixedAggregateRollup1Seconds * 1000) {
+          // 12x multiplier is also hard-coded in AggregateDao
+          return $rootScope.layout.fixedAggregateRollup1Seconds * 1000;
+        }
+        return $rootScope.layout.fixedAggregateIntervalSeconds * 1000;
       }
     }
 
@@ -254,7 +267,9 @@ glowroot.factory('charts', [
             // reset axis in case user changed the date and then zoomed in/out to trigger this refresh
             chartState.plot.getAxes().xaxis.options.min = chartFrom;
             chartState.plot.getAxes().xaxis.options.max = chartTo;
-            chartState.dataPointIntervalMillis = getDataPointIntervalMillis(chartFrom, chartTo);
+            // data point interval calculation must match server-side calculation, so based on query.from/query.to
+            // instead of chartFrom/chartTo
+            chartState.dataPointIntervalMillis = getDataPointIntervalMillis(query.from, query.to);
             var plotData = [];
             var labels = [];
             angular.forEach(data.dataSeries, function (dataSeries) {

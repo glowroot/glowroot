@@ -48,24 +48,29 @@ class LayoutService {
     private final ImmutableList<PluginDescriptor> pluginDescriptors;
     private final OptionalService<HeapDumps> heapDumps;
     private final long fixedAggregateIntervalSeconds;
-    private final long fixedAggregateRollupSeconds;
+    private final long fixedAggregateRollup1Seconds;
+    private final long fixedAggregateRollup2Seconds;
     private final long fixedGaugeIntervalSeconds;
-    private final long fixedGaugeRollupSeconds;
+    private final long fixedGaugeRollup1Seconds;
+    private final long fixedGaugeRollup2Seconds;
 
     private volatile @Nullable Layout layout;
 
     LayoutService(String version, ConfigService configService,
             List<PluginDescriptor> pluginDescriptors, OptionalService<HeapDumps> heapDumps,
-            long fixedAggregateIntervalSeconds, long fixedAggregateRollupSeconds,
-            long fixedGaugeIntervalSeconds, long fixedGaugeRollupSeconds) {
+            long fixedAggregateIntervalSeconds, long fixedAggregateRollup1Seconds,
+            long fixedAggregateRollup2Seconds, long fixedGaugeIntervalSeconds,
+            long fixedGaugeRollup1Seconds, long fixedGaugeRollup2Seconds) {
         this.version = version;
         this.configService = configService;
         this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
         this.heapDumps = heapDumps;
         this.fixedAggregateIntervalSeconds = fixedAggregateIntervalSeconds;
-        this.fixedAggregateRollupSeconds = fixedAggregateRollupSeconds;
+        this.fixedAggregateRollup1Seconds = fixedAggregateRollup1Seconds;
+        this.fixedAggregateRollup2Seconds = fixedAggregateRollup2Seconds;
         this.fixedGaugeIntervalSeconds = fixedGaugeIntervalSeconds;
-        this.fixedGaugeRollupSeconds = fixedGaugeRollupSeconds;
+        this.fixedGaugeRollup1Seconds = fixedGaugeRollup1Seconds;
+        this.fixedGaugeRollup2Seconds = fixedGaugeRollup2Seconds;
         ConfigListener listener = new ConfigListener() {
             @Override
             public void onChange() {
@@ -83,8 +88,8 @@ class LayoutService {
         if (localLayout == null) {
             localLayout = buildLayout(version, configService, pluginDescriptors,
                     heapDumps.getService(), fixedAggregateIntervalSeconds,
-                    fixedAggregateRollupSeconds, fixedGaugeIntervalSeconds,
-                    fixedGaugeRollupSeconds);
+                    fixedAggregateRollup1Seconds, fixedAggregateRollup2Seconds,
+                    fixedGaugeIntervalSeconds, fixedGaugeRollup1Seconds, fixedGaugeRollup2Seconds);
             layout = localLayout;
         }
         return mapper.writeValueAsString(localLayout);
@@ -95,8 +100,8 @@ class LayoutService {
         if (localLayout == null) {
             localLayout = buildLayout(version, configService, pluginDescriptors,
                     heapDumps.getService(), fixedAggregateIntervalSeconds,
-                    fixedAggregateRollupSeconds, fixedGaugeIntervalSeconds,
-                    fixedGaugeRollupSeconds);
+                    fixedAggregateRollup1Seconds, fixedAggregateRollup2Seconds,
+                    fixedGaugeIntervalSeconds, fixedGaugeRollup1Seconds, fixedGaugeRollup2Seconds);
             layout = localLayout;
         }
         return localLayout.version();
@@ -118,8 +123,9 @@ class LayoutService {
 
     private static Layout buildLayout(String version, ConfigService configService,
             List<PluginDescriptor> pluginDescriptors, @Nullable HeapDumps heapDumps,
-            long fixedAggregateIntervalSeconds, long fixedAggregateRollupSeconds,
-            long fixedGaugeIntervalSeconds, long fixedGaugeRollupSeconds) {
+            long fixedAggregateIntervalSeconds, long fixedAggregateRollup1Seconds,
+            long fixedAggregateRollup2Seconds, long fixedGaugeIntervalSeconds,
+            long fixedGaugeRollup1Seconds, long fixedGaugeRollup2Seconds) {
         // use linked hash set to maintain ordering in case there is no default transaction type
         List<String> transactionTypes = Lists.newArrayList(configService.getAllTransactionTypes());
         String defaultDisplayedTransactionType = configService.getDefaultDisplayedTransactionType();
@@ -154,9 +160,11 @@ class LayoutService {
                         configService.getGeneralConfig().defaultDisplayedPercentiles())
                 .addAllTransactionCustomAttributes(transactionCustomAttributes)
                 .fixedAggregateIntervalSeconds(fixedAggregateIntervalSeconds)
-                .fixedAggregateRollupSeconds(fixedAggregateRollupSeconds)
+                .fixedAggregateRollup1Seconds(fixedAggregateRollup1Seconds)
+                .fixedAggregateRollup2Seconds(fixedAggregateRollup2Seconds)
                 .fixedGaugeIntervalSeconds(fixedGaugeIntervalSeconds)
-                .fixedGaugeRollupSeconds(fixedGaugeRollupSeconds)
+                .fixedGaugeRollup1Seconds(fixedGaugeRollup1Seconds)
+                .fixedGaugeRollup2Seconds(fixedGaugeRollup2Seconds)
                 .build();
     }
 }

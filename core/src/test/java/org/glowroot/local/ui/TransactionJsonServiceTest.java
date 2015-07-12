@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import org.glowroot.collector.TransactionCollectorImpl;
 import org.glowroot.common.Clock;
+import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.transaction.model.Transaction;
@@ -40,9 +41,10 @@ public class TransactionJsonServiceTest {
         TraceDao traceDao = mock(TraceDao.class);
         TransactionRegistry transactionRegistry = mock(TransactionRegistry.class);
         transactionCollector = mock(TransactionCollectorImpl.class);
+        AggregateDao aggregateDao = mock(AggregateDao.class);
         Clock clock = mock(Clock.class);
         transactionJsonService = new TransactionJsonService(transactionCommonService, traceDao,
-                transactionRegistry, transactionCollector, clock, 60, 300);
+                transactionRegistry, transactionCollector, aggregateDao, clock, 60, 300, 1800);
     }
 
     @Test

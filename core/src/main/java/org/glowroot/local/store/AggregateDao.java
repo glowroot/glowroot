@@ -54,12 +54,9 @@ import org.glowroot.local.store.DataSource.RowMapper;
 import org.glowroot.transaction.model.ProfileNode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.HOURS;
 import static org.glowroot.common.Checkers.castUntainted;
 
 public class AggregateDao {
-
-    public static final long ROLLUP_THRESHOLD_MILLIS = HOURS.toMillis(1);
 
     public static final String OVERWRITTEN = "{\"overwritten\":true}";
 
@@ -109,8 +106,11 @@ public class AggregateDao {
                     "transaction_count", "error_count");
     private static final ImmutableList<Index> overallAggregateIndexes = ImmutableList.<Index>of(
             Index.of("overall_aggregate_idx", overallAggregateIndexColumns));
-    private static final ImmutableList<Index> overallAggregateRollupIndexes =
+    private static final ImmutableList<Index> overallAggregateRollup1Indexes =
             ImmutableList.<Index>of(Index.of("overall_aggregate_rollup_1_idx",
+                    overallAggregateIndexColumns));
+    private static final ImmutableList<Index> overallAggregateRollup2Indexes =
+            ImmutableList.<Index>of(Index.of("overall_aggregate_rollup_2_idx",
                     overallAggregateIndexColumns));
 
     // this index includes all columns needed for the transaction aggregate query so h2 can return
@@ -123,45 +123,76 @@ public class AggregateDao {
     private static final ImmutableList<Index> transactionAggregateIndexes =
             ImmutableList.<Index>of(Index.of("transaction_aggregate_idx",
                     transactionAggregateIndexColumns));
-    private static final ImmutableList<Index> transactionAggregateRollupIndexes =
+    private static final ImmutableList<Index> transactionAggregateRollup1Indexes =
             ImmutableList.<Index>of(Index.of("transaction_aggregate_rollup_1_idx",
+                    transactionAggregateIndexColumns));
+    private static final ImmutableList<Index> transactionAggregateRollup2Indexes =
+            ImmutableList.<Index>of(Index.of("transaction_aggregate_rollup_2_idx",
                     transactionAggregateIndexColumns));
 
     private final DataSource dataSource;
     private final CappedDatabase cappedDatabase;
     private final ConfigService configService;
 
-    private final long fixedRollupMillis;
+    private final long fixedRollup1Millis;
+    private final long fixedRollup2Millis;
+    private final long rollup1ViewThresholdMillis;
+    private final long rollup2ViewThresholdMillis;
 
-    private volatile long lastRollupTime;
+    private volatile long lastRollup1Time;
+    private volatile long lastRollup2Time;
+
+    private final Object rollupLock = new Object();
 
     AggregateDao(DataSource dataSource, CappedDatabase cappedDatabase, ConfigService configService,
-            long fixedRollupSeconds) throws SQLException {
+            long fixedRollup1Seconds, long fixedRollup2Seconds) throws SQLException {
         this.dataSource = dataSource;
         this.cappedDatabase = cappedDatabase;
         this.configService = configService;
-        fixedRollupMillis = fixedRollupSeconds * 1000;
+        fixedRollup1Millis = fixedRollup1Seconds * 1000;
+        fixedRollup2Millis = fixedRollup2Seconds * 1000;
+        // default rollup1 is 5 minutes, making default rollup1 view threshold 1 hour
+        rollup1ViewThresholdMillis = fixedRollup1Millis * 12;
+        // default rollup2 is 30 minutes, making default rollup1 view threshold 8 hours
+        rollup2ViewThresholdMillis = fixedRollup2Millis * 16;
+
         dataSource.syncTable("overall_aggregate", overallAggregatePointColumns);
         dataSource.syncIndexes("overall_aggregate", overallAggregateIndexes);
         dataSource.syncTable("transaction_aggregate", transactionAggregateColumns);
         dataSource.syncIndexes("transaction_aggregate", transactionAggregateIndexes);
         dataSource.syncTable("overall_aggregate_rollup_1", overallAggregatePointColumns);
-        dataSource.syncIndexes("overall_aggregate_rollup_1", overallAggregateRollupIndexes);
+        dataSource.syncIndexes("overall_aggregate_rollup_1", overallAggregateRollup1Indexes);
         dataSource.syncTable("transaction_aggregate_rollup_1", transactionAggregateColumns);
-        dataSource.syncIndexes("transaction_aggregate_rollup_1", transactionAggregateRollupIndexes);
+        dataSource.syncIndexes("transaction_aggregate_rollup_1",
+                transactionAggregateRollup1Indexes);
+        dataSource.syncTable("overall_aggregate_rollup_2", overallAggregatePointColumns);
+        dataSource.syncIndexes("overall_aggregate_rollup_2", overallAggregateRollup2Indexes);
+        dataSource.syncTable("transaction_aggregate_rollup_2", transactionAggregateColumns);
+        dataSource.syncIndexes("transaction_aggregate_rollup_2",
+                transactionAggregateRollup2Indexes);
         // TODO initial rollup in case store is not called in a reasonable time
-        lastRollupTime = dataSource.queryForLong(
+        lastRollup1Time = dataSource.queryForLong(
                 "select ifnull(max(capture_time), 0) from overall_aggregate_rollup_1");
+        lastRollup2Time = dataSource.queryForLong(
+                "select ifnull(max(capture_time), 0) from overall_aggregate_rollup_2");
     }
 
     void store(final List<Aggregate> overallAggregates, List<Aggregate> transactionAggregates,
             long captureTime) throws Exception {
         store(overallAggregates, transactionAggregates, "");
-        long rollupTime =
-                (long) Math.floor(captureTime / (double) fixedRollupMillis) * fixedRollupMillis;
-        if (rollupTime > lastRollupTime) {
-            rollup(lastRollupTime, rollupTime);
-            lastRollupTime = rollupTime;
+        synchronized (rollupLock) {
+            long rollup1Time = (long) Math.floor(captureTime / (double) fixedRollup1Millis)
+                    * fixedRollup1Millis;
+            if (rollup1Time > lastRollup1Time) {
+                rollup(lastRollup1Time, rollup1Time, fixedRollup1Millis, "_rollup_1", "");
+                lastRollup1Time = rollup1Time;
+            }
+            long rollup2Time = (long) Math.floor(captureTime / (double) fixedRollup2Millis)
+                    * fixedRollup2Millis;
+            if (rollup2Time > lastRollup2Time) {
+                rollup(lastRollup2Time, rollup2Time, fixedRollup2Millis, "_rollup_2", "_rollup_1");
+                lastRollup2Time = rollup2Time;
+            }
         }
     }
 
@@ -348,21 +379,45 @@ public class AggregateDao {
                 transactionName, captureTimeFrom, captureTimeTo);
     }
 
+    public long getRollup1ViewThresholdMillis() {
+        return rollup1ViewThresholdMillis;
+    }
+
+    public long getRollup2ViewThresholdMillis() {
+        return rollup2ViewThresholdMillis;
+    }
+
+    public int getRollupLevelForView(long from, long to) {
+        long millis = to - from;
+        if (millis >= rollup2ViewThresholdMillis) {
+            return 2;
+        } else if (millis >= rollup1ViewThresholdMillis) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
     public void deleteAll() throws SQLException {
         dataSource.execute("truncate table overall_aggregate");
-        dataSource.execute("truncate table transaction_aggregate");
         dataSource.execute("truncate table overall_aggregate_rollup_1");
+        dataSource.execute("truncate table overall_aggregate_rollup_2");
+        dataSource.execute("truncate table transaction_aggregate");
         dataSource.execute("truncate table transaction_aggregate_rollup_1");
+        dataSource.execute("truncate table transaction_aggregate_rollup_2");
     }
 
     void deleteBefore(long captureTime) throws SQLException {
         dataSource.deleteBefore("overall_aggregate", captureTime);
         dataSource.deleteBefore("overall_aggregate_rollup_1", captureTime);
+        dataSource.deleteBefore("overall_aggregate_rollup_2", captureTime);
         dataSource.deleteBefore("transaction_aggregate", captureTime);
         dataSource.deleteBefore("transaction_aggregate_rollup_1", captureTime);
+        dataSource.deleteBefore("transaction_aggregate_rollup_2", captureTime);
     }
 
-    private void rollup(long lastRollupTime, long curentRollupTime) throws Exception {
+    private void rollup(long lastRollupTime, long curentRollupTime, long fixedRollupMillis,
+            @Untainted String rollupSuffix, @Untainted String sourceSuffix) throws Exception {
         // need ".0" to force double result
         String captureTimeSql = castUntainted("ceil(capture_time / " + fixedRollupMillis + ".0) * "
                 + fixedRollupMillis);
@@ -370,16 +425,17 @@ public class AggregateDao {
                 + " from overall_aggregate where capture_time > ? and capture_time <= ?",
                 new LongRowMapper(), lastRollupTime, curentRollupTime);
         for (Long rollupTime : rollupTimes) {
-            rollupOneInterval(rollupTime);
+            rollupOneInterval(rollupTime, fixedRollupMillis, rollupSuffix, sourceSuffix);
         }
     }
 
-    private void rollupOneInterval(long rollupTime) throws Exception {
+    private void rollupOneInterval(long rollupTime, long fixedRollupMillis,
+            @Untainted String rollupSuffix, @Untainted String sourceSuffix) throws Exception {
         List<Aggregate> overallAggregates = dataSource.query("select transaction_type,"
                 + " total_micros, error_count, transaction_count, total_cpu_micros,"
                 + " total_blocked_micros, total_waited_micros, total_allocated_kbytes,"
                 + " queries_capped_id, profile_capped_id, histogram, timers from overall_aggregate"
-                + " where capture_time > ? and capture_time <= ?",
+                + sourceSuffix + " where capture_time > ? and capture_time <= ?",
                 new OverallRollupResultSetExtractor(rollupTime), rollupTime - fixedRollupMillis,
                 rollupTime);
         if (overallAggregates == null) {
@@ -390,14 +446,15 @@ public class AggregateDao {
                 + " transaction_name, total_micros, error_count, transaction_count,"
                 + " total_cpu_micros, total_blocked_micros, total_waited_micros,"
                 + " total_allocated_kbytes, queries_capped_id, profile_capped_id, histogram,"
-                + " timers from transaction_aggregate where capture_time > ?"
-                + " and capture_time <= ?", new TransactionRollupResultSetExtractor(rollupTime),
+                + " timers from transaction_aggregate" + sourceSuffix
+                + " where capture_time > ? and capture_time <= ?",
+                new TransactionRollupResultSetExtractor(rollupTime),
                 rollupTime - fixedRollupMillis, rollupTime);
         if (transactionAggregates == null) {
             // data source is closing
             return;
         }
-        store(overallAggregates, transactionAggregates, "_rollup_1");
+        store(overallAggregates, transactionAggregates, rollupSuffix);
     }
 
     private void store(List<Aggregate> overallAggregates, List<Aggregate> transactionAggregates,
@@ -491,7 +548,7 @@ public class AggregateDao {
         if (rollupLevel == 0) {
             return "";
         } else {
-            return "_rollup_1";
+            return "_rollup_" + castUntainted(rollupLevel);
         }
     }
 

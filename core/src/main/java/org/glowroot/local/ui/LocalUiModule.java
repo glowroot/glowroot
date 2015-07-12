@@ -72,9 +72,11 @@ public class LocalUiModule {
         LayoutService layoutService = new LayoutService(version, configService,
                 configModule.getPluginDescriptors(), jvmModule.getHeapDumps(),
                 collectorModule.getFixedAggregateIntervalSeconds(),
-                storageModule.getFixedAggregateRollupSeconds(),
+                storageModule.getFixedAggregateRollup1Seconds(),
+                storageModule.getFixedAggregateRollup2Seconds(),
                 collectorModule.getFixedGaugeIntervalSeconds(),
-                storageModule.getFixedGaugeRollupSeconds());
+                storageModule.getFixedGaugeRollup1Seconds(),
+                storageModule.getFixedGaugeRollup2Seconds());
         HttpSessionManager httpSessionManager =
                 new HttpSessionManager(configService, clock, layoutService);
         IndexHtmlHttpService indexHtmlHttpService =
@@ -83,13 +85,15 @@ public class LocalUiModule {
                 new LayoutHttpService(httpSessionManager, layoutService);
         TransactionCommonService transactionCommonService = new TransactionCommonService(
                 aggregateDao, collectorModule.getAggregateCollector(), configService,
-                storageModule.getFixedAggregateRollupSeconds());
+                storageModule.getFixedAggregateRollup1Seconds(),
+                storageModule.getFixedAggregateRollup2Seconds());
         TraceCommonService traceCommonService = new TraceCommonService(traceDao,
                 transactionRegistry, transactionCollector, clock, ticker);
         TransactionJsonService transactionJsonService = new TransactionJsonService(
                 transactionCommonService, traceDao, transactionRegistry, transactionCollector,
-                clock, collectorModule.getFixedAggregateIntervalSeconds(),
-                storageModule.getFixedAggregateRollupSeconds());
+                aggregateDao, clock, collectorModule.getFixedAggregateIntervalSeconds(),
+                storageModule.getFixedAggregateRollup1Seconds(),
+                storageModule.getFixedAggregateRollup2Seconds());
         TracePointJsonService tracePointJsonService = new TracePointJsonService(traceDao,
                 transactionRegistry, transactionCollector, configService, ticker, clock);
         TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);
@@ -100,15 +104,18 @@ public class LocalUiModule {
         GlowrootLogHttpService glowrootLogHttpService = new GlowrootLogHttpService(dataDir);
         ErrorCommonService errorCommonService = new ErrorCommonService(
                 aggregateDao, collectorModule.getAggregateCollector(),
-                storageModule.getFixedAggregateRollupSeconds());
+                storageModule.getFixedAggregateRollup1Seconds(),
+                storageModule.getFixedAggregateRollup2Seconds());
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService, traceDao,
-                clock, collectorModule.getFixedAggregateIntervalSeconds(),
-                storageModule.getFixedAggregateRollupSeconds());
+                aggregateDao, clock, collectorModule.getFixedAggregateIntervalSeconds(),
+                storageModule.getFixedAggregateRollup1Seconds(),
+                storageModule.getFixedAggregateRollup2Seconds());
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
                 gaugePointDao, configService, transactionRegistry, transactionCollector,
                 jvmModule.getThreadAllocatedBytes(), jvmModule.getHeapDumps(),
                 jvmModule.getProcessId(), collectorModule.getFixedGaugeIntervalSeconds(),
-                storageModule.getFixedGaugeRollupSeconds());
+                storageModule.getFixedGaugeRollup1Seconds(),
+                storageModule.getFixedGaugeRollup2Seconds());
         ConfigJsonService configJsonService = new ConfigJsonService(configService,
                 cappedDatabase, configModule.getPluginDescriptors(), httpSessionManager,
                 transactionModule, new MailService());

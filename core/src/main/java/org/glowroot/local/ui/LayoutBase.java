@@ -34,9 +34,11 @@ abstract class LayoutBase {
     abstract ImmutableList<Double> defaultPercentiles();
     abstract ImmutableList<String> transactionCustomAttributes();
     abstract long fixedAggregateIntervalSeconds();
-    abstract long fixedAggregateRollupSeconds();
+    abstract long fixedAggregateRollup1Seconds();
+    abstract long fixedAggregateRollup2Seconds();
     abstract long fixedGaugeIntervalSeconds();
-    abstract long fixedGaugeRollupSeconds();
+    abstract long fixedGaugeRollup1Seconds();
+    abstract long fixedGaugeRollup2Seconds();
 
     @Value.Derived
     public String version() {

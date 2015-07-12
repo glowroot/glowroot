@@ -55,15 +55,17 @@ class TransactionCommonService {
     private final @Nullable AggregateCollector aggregateCollector;
     private final ConfigService configService;
 
-    private final long fixedRollupMillis;
+    private final long fixedRollup1Millis;
+    private final long fixedRollup2Millis;
 
     TransactionCommonService(AggregateDao aggregateDao,
             @Nullable AggregateCollector aggregateCollector, ConfigService configService,
-            long fixedRollupSeconds) {
+            long fixedRollup1Seconds, long fixedRollup2Seconds) {
         this.aggregateDao = aggregateDao;
         this.aggregateCollector = aggregateCollector;
         this.configService = configService;
-        this.fixedRollupMillis = fixedRollupSeconds * 1000;
+        this.fixedRollup1Millis = fixedRollup1Seconds * 1000;
+        this.fixedRollup2Millis = fixedRollup2Seconds * 1000;
     }
 
     TransactionSummary readOverallSummary(String transactionType, long from, long to)
@@ -127,7 +129,7 @@ class TransactionCommonService {
 
     List<Aggregate> getAggregates(String transactionType, @Nullable String transactionName,
             long from, long to, long liveCaptureTime) throws Exception {
-        int rollupLevel = getRollupLevel(from, to);
+        int rollupLevel = aggregateDao.getRollupLevelForView(from, to);
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(from, to);
         long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
@@ -151,7 +153,7 @@ class TransactionCommonService {
                 orderedIntervalCollectors, liveCaptureTime));
         aggregates = Lists.newArrayList(aggregates);
         aggregates.addAll(rollUp(transactionType, transactionName, orderedNonRolledUpAggregates,
-                liveCaptureTime));
+                liveCaptureTime, rollupLevel));
         return aggregates;
     }
 
@@ -207,7 +209,7 @@ class TransactionCommonService {
     // result as opposed to charted over time period
     private List<QueryAggregate> getQueryAggregates(String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
-        int rollupLevel = getRollupLevel(from, to);
+        int rollupLevel = aggregateDao.getRollupLevelForView(from, to);
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(from, to);
         long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
@@ -251,7 +253,7 @@ class TransactionCommonService {
     // result as opposed to charted over time period
     private List<ProfileAggregate> getProfileAggregates(String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
-        int rollupLevel = getRollupLevel(from, to);
+        int rollupLevel = aggregateDao.getRollupLevelForView(from, to);
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(from, to);
         long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
@@ -292,7 +294,14 @@ class TransactionCommonService {
     }
 
     private List<Aggregate> rollUp(String transactionType, @Nullable String transactionName,
-            List<Aggregate> orderedNonRolledUpAggregates, long liveCaptureTime) throws Exception {
+            List<Aggregate> orderedNonRolledUpAggregates, long liveCaptureTime, int rollupLevel)
+                    throws Exception {
+        long fixedRollupMillis;
+        if (rollupLevel == 1) {
+            fixedRollupMillis = fixedRollup1Millis;
+        } else {
+            fixedRollupMillis = fixedRollup2Millis;
+        }
         List<Aggregate> rolledUpAggregates = Lists.newArrayList();
         ScratchBuffer scratchBuffer = new ScratchBuffer();
         MergedAggregate currMergedAggregate = null;
@@ -328,14 +337,6 @@ class TransactionCommonService {
             rolledUpAggregates.add(currMergedAggregate.toAggregate(scratchBuffer));
         }
         return rolledUpAggregates;
-    }
-
-    private static int getRollupLevel(long from, long to) {
-        if (to - from <= AggregateDao.ROLLUP_THRESHOLD_MILLIS) {
-            return 0;
-        } else {
-            return 1;
-        }
     }
 
     private static long getRevisedTo(long to,

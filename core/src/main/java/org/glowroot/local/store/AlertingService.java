@@ -78,7 +78,7 @@ public class AlertingService {
         long startTime = endTime - MINUTES.toMillis(alertConfig.timePeriodMinutes());
         // don't want to include the aggregate at startTime, so add 1
         startTime++;
-        int rollupLevel = getRollupLevel(startTime, endTime);
+        int rollupLevel = aggregateDao.getRollupLevelForView(startTime, endTime);
         ImmutableList<Aggregate> aggregates = aggregateDao.readOverallAggregates(
                 alertConfig.transactionType(), startTime, endTime, rollupLevel);
         long transactionCount = 0;
@@ -179,14 +179,6 @@ public class AlertingService {
             };
         }
         return Session.getInstance(props, authenticator);
-    }
-
-    private static int getRollupLevel(long from, long to) {
-        if (to - from <= AggregateDao.ROLLUP_THRESHOLD_MILLIS) {
-            return 0;
-        } else {
-            return 1;
-        }
     }
 
     public static String getPercentileWithSuffix(double percentile) {

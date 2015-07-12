@@ -42,13 +42,15 @@ class ErrorCommonService {
     private final AggregateDao aggregateDao;
     private final @Nullable AggregateCollector aggregateCollector;
 
-    private final long fixedRollupMillis;
+    private final long fixedRollup1Millis;
+    private final long fixedRollup2Millis;
 
     ErrorCommonService(AggregateDao aggregateDao, @Nullable AggregateCollector aggregateCollector,
-            long fixedRollupSeconds) {
+            long fixedRollup1Seconds, long fixedRollup2Seconds) {
         this.aggregateDao = aggregateDao;
         this.aggregateCollector = aggregateCollector;
-        this.fixedRollupMillis = fixedRollupSeconds * 1000;
+        this.fixedRollup1Millis = fixedRollup1Seconds * 1000;
+        this.fixedRollup2Millis = fixedRollup2Seconds * 1000;
     }
 
     ErrorSummary readOverallErrorSummary(String transactionType, long from, long to)
@@ -91,7 +93,7 @@ class ErrorCommonService {
 
     List<ErrorPoint> readErrorPoints(String transactionType, @Nullable String transactionName,
             long from, long to, long liveCaptureTime) throws Exception {
-        int rollupLevel = getRollupLevel(from, to);
+        int rollupLevel = aggregateDao.getRollupLevelForView(from, to);
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(from, to);
         long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
@@ -114,7 +116,7 @@ class ErrorCommonService {
         orderedNonRolledUpErrorPoints.addAll(getLiveErrorPoints(transactionType, transactionName,
                 orderedIntervalCollectors, liveCaptureTime));
         errorPoints = Lists.newArrayList(errorPoints);
-        errorPoints.addAll(rollUp(orderedNonRolledUpErrorPoints, liveCaptureTime));
+        errorPoints.addAll(rollUp(orderedNonRolledUpErrorPoints, liveCaptureTime, rollupLevel));
         return errorPoints;
     }
 
@@ -127,7 +129,13 @@ class ErrorCommonService {
     }
 
     private List<ErrorPoint> rollUp(List<ErrorPoint> orderedNonRolledUpErrorPoints,
-            long liveCaptureTime) {
+            long liveCaptureTime, int rollupLevel) {
+        long fixedRollupMillis;
+        if (rollupLevel == 1) {
+            fixedRollupMillis = fixedRollup1Millis;
+        } else {
+            fixedRollupMillis = fixedRollup2Millis;
+        }
         List<ErrorPoint> rolledUpErrorPoints = Lists.newArrayList();
         long currRollupTime = Long.MIN_VALUE;
         long currErrorCount = 0;
@@ -150,14 +158,6 @@ class ErrorCommonService {
                     currErrorCount, currTransactionCount));
         }
         return rolledUpErrorPoints;
-    }
-
-    private static int getRollupLevel(long from, long to) {
-        if (to - from <= AggregateDao.ROLLUP_THRESHOLD_MILLIS) {
-            return 0;
-        } else {
-            return 1;
-        }
     }
 
     private List<ErrorPoint> readErrorPointsFromDao(String transactionType,
