@@ -544,8 +544,11 @@ HandlebarsRendering = (function () {
         var formatted = SqlPrettyPrinter.format(sql);
         if (typeof formatted === 'object') {
           // intentional console logging
-          console.log(formatted.message);
-          console.log(sql);
+          // need conditional since console does not exist in IE9 unless dev tools is open
+          if (window.console) {
+            console.log(formatted.message);
+            console.log(sql);
+          }
         } else {
           var rows = beforeRowsStripped.substring(beforeParamsStripped.length);
           var parameters = beforeParamsStripped.substring(sql.length);

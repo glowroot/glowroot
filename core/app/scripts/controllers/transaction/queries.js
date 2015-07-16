@@ -112,8 +112,11 @@ glowroot.controller('TransactionQueriesCtrl', [
       var formatted = SqlPrettyPrinter.format(query.queryText);
       if (typeof formatted === 'object') {
         // intentional console logging
-        console.log(formatted.message);
-        console.log(query.queryText);
+        // need conditional since console does not exist in IE9 unless dev tools is open
+        if (window.console) {
+          console.log(formatted.message);
+          console.log(query.queryText);
+        }
         modals.display('#queryModal');
         return;
       }
