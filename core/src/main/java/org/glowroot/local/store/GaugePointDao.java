@@ -28,6 +28,7 @@ import org.glowroot.collector.GaugePoint;
 import org.glowroot.collector.GaugePointRepository;
 import org.glowroot.common.Clock;
 import org.glowroot.local.store.DataSource.BatchAdder;
+import org.glowroot.local.store.DataSource.ResultSetExtractor;
 import org.glowroot.local.store.DataSource.RowMapper;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -57,6 +58,10 @@ public class GaugePointDao implements GaugePointRepository {
     private static final ImmutableList<Index> gaugePointRollup2Indexes =
             ImmutableList.<Index>of(Index.of("gauge_point_rollup_2_idx",
                     ImmutableList.of("gauge_meta_id", "capture_time", "value")));
+
+    private static final ImmutableList<Column> gaugePointLastRollupTimesColumns =
+            ImmutableList.<Column>of(Column.of("last_rollup_1_time", Types.BIGINT),
+                    Column.of("last_rollup_2_time", Types.BIGINT));
 
     private final GaugeMetaDao gaugeMetaDao;
     private final DataSource dataSource;
@@ -93,11 +98,24 @@ public class GaugePointDao implements GaugePointRepository {
         dataSource.syncIndexes("gauge_point_rollup_1", gaugePointRollup1Indexes);
         dataSource.syncTable("gauge_point_rollup_2", gaugePointRollupColumns);
         dataSource.syncIndexes("gauge_point_rollup_2", gaugePointRollup2Indexes);
+        dataSource.syncTable("gauge_point_last_rollup_times", gaugePointLastRollupTimesColumns);
+
+        Long[] lastRollupTimes = dataSource.query("select last_rollup_1_time, last_rollup_2_time"
+                + " from gauge_point_last_rollup_times", new LastRollupTimesExtractor());
+        if (lastRollupTimes == null) {
+            // need to populate correctly in case this is upgrade from 0.8.2
+            lastRollup1Time = dataSource.queryForLong(
+                    "select ifnull(max(capture_time), 0) from gauge_point_rollup_1");
+            lastRollup2Time = dataSource.queryForLong(
+                    "select ifnull(max(capture_time), 0) from gauge_point_rollup_2");
+            dataSource.update("insert into gauge_point_last_rollup_times (last_rollup_1_time, "
+                    + "last_rollup_2_time) values (?, ?)", lastRollup1Time, lastRollup2Time);
+        } else {
+            lastRollup1Time = lastRollupTimes[0];
+            lastRollup2Time = lastRollupTimes[1];
+        }
+
         // TODO initial rollup in case store is not called in a reasonable time
-        lastRollup1Time = dataSource.queryForLong(
-                "select ifnull(max(capture_time), 0) from gauge_point_rollup_1");
-        lastRollup2Time = dataSource.queryForLong(
-                "select ifnull(max(capture_time), 0) from gauge_point_rollup_2");
     }
 
     @Override
@@ -134,6 +152,8 @@ public class GaugePointDao implements GaugePointRepository {
                     * fixedRollup1Millis;
             if (safeRollup1Time > lastRollup1Time) {
                 rollup(lastRollup1Time, safeRollup1Time, fixedRollup1Millis, "_rollup_1", "");
+                dataSource.update("update gauge_point_last_rollup_times set last_rollup_1_time = ?",
+                        lastRollup1Time);
                 lastRollup1Time = safeRollup1Time;
             }
             long safeRollup2Time = (long) Math.floor(safeRollupTime / (double) fixedRollup2Millis)
@@ -141,6 +161,8 @@ public class GaugePointDao implements GaugePointRepository {
             if (safeRollup2Time > lastRollup2Time) {
                 rollup(lastRollup2Time, safeRollup2Time, fixedRollup2Millis, "_rollup_2",
                         "_rollup_1");
+                dataSource.update("update gauge_point_last_rollup_times set last_rollup_2_time = ?",
+                        lastRollup2Time);
                 lastRollup2Time = safeRollup2Time;
             }
         }
@@ -207,6 +229,17 @@ public class GaugePointDao implements GaugePointRepository {
                 + " and gp.gauge_meta_id = gm.id and gm.ever_increasing = ?"
                 + " group by gp.gauge_meta_id, ceil_capture_time", lastRollupTime, safeRollupTime,
                 everIncreasing);
+    }
+
+    private static class LastRollupTimesExtractor
+            implements ResultSetExtractor<Long/*@Nullable*/[]> {
+        @Override
+        public Long/*@Nullable*/[] extractData(ResultSet resultSet) throws Exception {
+            if (resultSet.next()) {
+                return new Long[] {resultSet.getLong(1), resultSet.getLong(2)};
+            }
+            return null;
+        }
     }
 
     private static class GaugePointRowMapper implements RowMapper<GaugePoint> {

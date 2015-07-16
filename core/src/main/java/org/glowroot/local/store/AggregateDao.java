@@ -170,11 +170,15 @@ public class AggregateDao {
         dataSource.syncTable("transaction_aggregate_rollup_2", transactionAggregateColumns);
         dataSource.syncIndexes("transaction_aggregate_rollup_2",
                 transactionAggregateRollup2Indexes);
-        // TODO initial rollup in case store is not called in a reasonable time
+
+        // don't need last_rollup_times table like in GaugePointDao since there is already index
+        // on capture_time so these queries are relatively fast
         lastRollup1Time = dataSource.queryForLong(
                 "select ifnull(max(capture_time), 0) from overall_aggregate_rollup_1");
         lastRollup2Time = dataSource.queryForLong(
                 "select ifnull(max(capture_time), 0) from overall_aggregate_rollup_2");
+
+        // TODO initial rollup in case store is not called in a reasonable time
     }
 
     void store(final List<Aggregate> overallAggregates, List<Aggregate> transactionAggregates,

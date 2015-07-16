@@ -81,17 +81,8 @@ public class StorageModule {
         } else {
             dataSource = new DataSource(new File(dataDir, "glowroot.h2.db"));
         }
-        final ConfigService configService = configModule.getConfigService();
-        dataSource.setQueryTimeoutSeconds(
-                configService.getAdvancedConfig().internalQueryTimeoutSeconds());
-        configService.addConfigListener(new ConfigListener() {
-            @Override
-            public void onChange() {
-                dataSource.setQueryTimeoutSeconds(
-                        configService.getAdvancedConfig().internalQueryTimeoutSeconds());
-            }
-        });
         this.dataSource = dataSource;
+        final ConfigService configService = configModule.getConfigService();
         int cappedDatabaseSizeMb = configService.getStorageConfig().cappedDatabaseSizeMb();
         cappedDatabase = new CappedDatabase(new File(dataDir, "glowroot.capped.db"),
                 cappedDatabaseSizeMb * 1024, ticker);
@@ -125,6 +116,16 @@ public class StorageModule {
         traceDao = new TraceDao(dataSource, cappedDatabase);
         gaugePointDao = new GaugePointDao(dataSource, clock, FIXED_GAUGE_ROLLUP1_SECONDS,
                 FIXED_GAUGE_ROLLUP2_SECONDS);
+        // safe to set query timeout after all daos have initialized
+        dataSource.setQueryTimeoutSeconds(
+                configService.getAdvancedConfig().internalQueryTimeoutSeconds());
+        configService.addConfigListener(new ConfigListener() {
+            @Override
+            public void onChange() {
+                dataSource.setQueryTimeoutSeconds(
+                        configService.getAdvancedConfig().internalQueryTimeoutSeconds());
+            }
+        });
         PreInitializeStorageShutdownClasses.preInitializeClasses();
         if (viewerModeEnabled) {
             reaperRunnable = null;
