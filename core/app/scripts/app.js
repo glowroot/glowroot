@@ -61,9 +61,9 @@ glowroot.config([
                 return $q.defer().promise;
               }
               if (response.data.timedOut) {
-                login.showLogin('Your session has timed out');
+                login.goToLogin('Your session has timed out');
               } else {
-                login.showLogin();
+                login.goToLogin();
               }
               // return a never-resolving promise
               return $q.defer().promise;
@@ -93,8 +93,9 @@ glowroot.run([
   '$rootScope',
   '$http',
   '$location',
+  '$state',
   'login',
-  function ($rootScope, $http, $location, login) {
+  function ($rootScope, $http, $location, $state, login) {
 
     $rootScope.showSignIn = function () {
       return !$rootScope.authenticatedUser && $rootScope.layout && $rootScope.layout.adminPasswordEnabled;
@@ -102,6 +103,14 @@ glowroot.run([
 
     $rootScope.showSignOut = function () {
       return $rootScope.authenticatedUser && $rootScope.layout && $rootScope.layout.adminPasswordEnabled;
+    };
+
+    $rootScope.goToLogin = function (event) {
+      if (!event.ctrlKey) {
+        login.goToLogin();
+        // suppress normal hyperlink
+        return false;
+      }
     };
 
     $rootScope.signOut = function () {
@@ -113,9 +122,11 @@ glowroot.run([
           .success(function () {
             $rootScope.authenticatedUser = undefined;
             if ($rootScope.layout.anonymousAccess === 'none') {
-              login.showLogin('You have been signed out');
+              login.goToLogin('You have been signed out', true);
             } else {
-              $location.path('/');
+              // reload is just for visual indication of sign out
+              // TODO display "You have been signed out" and do not perform reload
+              $state.reload();
             }
           })
           .error(function () {
@@ -149,8 +160,8 @@ glowroot.run([
     function setInitialLayout(data) {
       $rootScope.layout = data;
       if ($rootScope.layout.needsAuthentication) {
-        login.showLogin();
-      } else if ($location.path() === '/login') {
+        login.goToLogin();
+      } else if ($location.path() === '/login' && $rootScope.authenticatedUser) {
         // authentication is not needed
         $location.path('/').replace();
       }
@@ -161,13 +172,13 @@ glowroot.run([
       $rootScope.authenticatedUser = window.authenticatedUser;
     } else {
       // running in dev under 'grunt server'
-      $http.get('backend/layout')
-          .success(function (data) {
-            setInitialLayout(data);
-          });
       $http.get('backend/authenticated-user')
           .success(function (data) {
             $rootScope.authenticatedUser = data;
+            $http.get('backend/layout')
+                .success(function (data) {
+                  setInitialLayout(data);
+                });
           });
     }
 
