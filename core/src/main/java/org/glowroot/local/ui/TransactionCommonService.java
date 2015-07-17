@@ -175,7 +175,8 @@ class TransactionCommonService {
             filter(syntheticRootNode, filterText);
         }
         if (truncateLeafPercentage != 0) {
-            int minSamples = (int) (syntheticRootNode.getSampleCount() * truncateLeafPercentage);
+            int minSamples =
+                    (int) Math.ceil(syntheticRootNode.getSampleCount() * truncateLeafPercentage);
             // don't truncate any root nodes
             truncateLeafs(syntheticRootNode.getChildNodes(), minSamples);
         }
