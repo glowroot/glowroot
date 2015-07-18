@@ -47,7 +47,7 @@
         </div>
         <div gt-sidebar-item
              ng-show="transactionSummaries.length"
-             gt-display="All Transactions"
+             gt-display="{{'All ' + transactionType + ' Transactions'}}"
              gt-display-right="{{overallSummaryValue()}}"
              gt-url="{{currentTabUrl()}}{{sidebarQueryString(null)}}"
              gt-active="!transactionName"

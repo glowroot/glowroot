@@ -19,7 +19,7 @@
        ng-click="clickTab('messages', $event)"
        ng-keydown="keydownTab(null, 'tab_traces', $event)"
        id="tab_messages">
-      Messages
+      Error messages
     </a>
   </li>
   <li ng-class="{active: activeTabItem === 'traces'}">
@@ -27,7 +27,7 @@
        ng-click="clickTab('traces', $event)"
        ng-keydown="keydownTab('tab_messages', null, $event)"
        id="tab_traces">
-      Traces ({{traceCount()}})
+      Error traces ({{traceCount()}})
     </a>
   </li>
 </ul>

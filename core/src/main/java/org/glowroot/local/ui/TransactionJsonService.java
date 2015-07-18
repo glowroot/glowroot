@@ -90,6 +90,41 @@ class TransactionJsonService {
         this.fixedAggregateRollup2Millis = fixedAggregateRollup2Seconds * 1000;
     }
 
+    @GET("/backend/transaction/average")
+    String getOverview(String queryString) throws Exception {
+        TransactionDataRequest request =
+                QueryStrings.decode(queryString, TransactionDataRequest.class);
+
+        long liveCaptureTime = clock.currentTimeMillis();
+        List<Aggregate> aggregates = transactionCommonService.getAggregates(
+                request.transactionType(), request.transactionName(), request.from(), request.to(),
+                liveCaptureTime);
+        List<DataSeries> dataSeriesList = getDataSeriesForTimersChart(request, aggregates);
+        Map<Long, Long> transactionCounts = getTransactionCounts(aggregates);
+        if (!aggregates.isEmpty() && aggregates.get(0).captureTime() == request.from()) {
+            // the left most aggregate is not really in the requested interval since it is for
+            // prior capture times
+            aggregates = aggregates.subList(1, aggregates.size());
+        }
+        TimerMergedAggregate timerMergedAggregate =
+                AggregateMerging.getTimerMergedAggregate(aggregates);
+        ThreadInfoAggregate threadInfoAggregate =
+                AggregateMerging.getThreadInfoAggregate(aggregates);
+
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeObjectField("dataSeries", dataSeriesList);
+        jg.writeObjectField("transactionCounts", transactionCounts);
+        jg.writeObjectField("mergedAggregate", timerMergedAggregate);
+        if (!threadInfoAggregate.isEmpty()) {
+            jg.writeObjectField("threadInfoAggregate", threadInfoAggregate);
+        }
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
+    }
+
     @GET("/backend/transaction/percentiles")
     String getPercentiles(String queryString) throws Exception {
         TransactionDataRequest request =
@@ -127,41 +162,6 @@ class TransactionJsonService {
             transactionCounts.put(aggregate.captureTime(), aggregate.transactionCount());
         }
         return transactionCounts;
-    }
-
-    @GET("/backend/transaction/metrics")
-    String getMetrics(String queryString) throws Exception {
-        TransactionDataRequest request =
-                QueryStrings.decode(queryString, TransactionDataRequest.class);
-
-        long liveCaptureTime = clock.currentTimeMillis();
-        List<Aggregate> aggregates = transactionCommonService.getAggregates(
-                request.transactionType(), request.transactionName(), request.from(), request.to(),
-                liveCaptureTime);
-        List<DataSeries> dataSeriesList = getDataSeriesForMetricsChart(request, aggregates);
-        Map<Long, Long> transactionCounts = getTransactionCounts(aggregates);
-        if (!aggregates.isEmpty() && aggregates.get(0).captureTime() == request.from()) {
-            // the left most aggregate is not really in the requested interval since it is for
-            // prior capture times
-            aggregates = aggregates.subList(1, aggregates.size());
-        }
-        TimerMergedAggregate timerMergedAggregate =
-                AggregateMerging.getTimerMergedAggregate(aggregates);
-        ThreadInfoAggregate threadInfoAggregate =
-                AggregateMerging.getThreadInfoAggregate(aggregates);
-
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeObjectField("dataSeries", dataSeriesList);
-        jg.writeObjectField("transactionCounts", transactionCounts);
-        jg.writeObjectField("mergedAggregate", timerMergedAggregate);
-        if (!threadInfoAggregate.isEmpty()) {
-            jg.writeObjectField("threadInfoAggregate", threadInfoAggregate);
-        }
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
     }
 
     @GET("/backend/transaction/queries")
@@ -356,7 +356,7 @@ class TransactionJsonService {
         return dataSeriesList;
     }
 
-    private List<DataSeries> getDataSeriesForMetricsChart(TransactionDataRequest request,
+    private List<DataSeries> getDataSeriesForTimersChart(TransactionDataRequest request,
             List<Aggregate> aggregates) throws IOException {
         if (aggregates.isEmpty()) {
             return Lists.newArrayList();
@@ -365,10 +365,10 @@ class TransactionJsonService {
         for (Aggregate aggregate : aggregates) {
             stackedPoints.add(StackedPoint.create(aggregate));
         }
-        return getMetricDataSeries(request, stackedPoints);
+        return getTimerDataSeries(request, stackedPoints);
     }
 
-    private List<DataSeries> getMetricDataSeries(TransactionDataRequest request,
+    private List<DataSeries> getTimerDataSeries(TransactionDataRequest request,
             List<StackedPoint> stackedPoints) {
         DataSeriesHelper dataSeriesHelper =
                 new DataSeriesHelper(clock, getDataPointIntervalMillis(request));

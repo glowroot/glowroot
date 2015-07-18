@@ -48,12 +48,13 @@ public class NoTracesNoProfilesSmokeTest extends WebDriverTest {
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
 
         app.open();
-        Utils.withWait(driver, By.linkText("Traces (0)"));
+        Utils.withWait(driver, By.linkText("Slow traces (0)"));
         Utils.withWait(driver, By.partialLinkText("/jdbcservlet")).click();
         // give time for page to load and tab bar to refresh
         Thread.sleep(1000);
         globalNavbar.getErrorsLink().click();
-        Utils.withWait(driver, By.xpath("//a[@href='error/traces'][contains(., 'Traces (0)')]"));
+        Utils.withWait(driver,
+                By.xpath("//a[@href='error/traces'][contains(., 'Error traces (0)')]"));
         globalNavbar.getJvmLink().click();
         // todo wait
     }

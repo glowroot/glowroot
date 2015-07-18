@@ -89,8 +89,8 @@
           <div gt-navbar-item
                gt-display="Transactions"
                gt-item-name="transaction"
-               gt-url="transaction/metrics{{activeNavbarItem === 'transaction' ? '' : queryString()}}"
-               gt-state="transaction.detail.metrics">
+               gt-url="transaction/average{{activeNavbarItem === 'transaction' ? '' : queryString()}}"
+               gt-state="transaction.detail.average">
           </div>
           <div gt-navbar-item
                gt-display="Errors"
@@ -223,13 +223,13 @@
 <script src="scripts/controllers/transaction.js"></script>
 <script src="scripts/controllers/transaction/sidebar.js"></script>
 <script src="scripts/controllers/transaction/tabs.js"></script>
+<script src="scripts/controllers/transaction/average.js"></script>
 <script src="scripts/controllers/transaction/percentiles.js"></script>
-<script src="scripts/controllers/transaction/metrics.js"></script>
-<script src="scripts/controllers/transaction/queries.js"></script>
 <script src="scripts/controllers/transaction/profile.js"></script>
+<script src="scripts/controllers/transaction/traces.js"></script>
+<script src="scripts/controllers/transaction/queries.js"></script>
 <script src="scripts/controllers/transaction/flame-graph.js"></script>
 <script src="scripts/controllers/transaction/error-messages.js"></script>
-<script src="scripts/controllers/transaction/traces.js"></script>
 <script src="scripts/controllers/jvm.js"></script>
 <script src="scripts/controllers/jvm/gauges.js"></script>
 <script src="scripts/controllers/jvm/mbean-tree.js"></script>

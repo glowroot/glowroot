@@ -29,7 +29,7 @@ class GlobalNavbar {
     }
 
     WebElement getTransactionsLink() {
-        return Utils.withWait(driver, xpath("//nav//a[@href='transaction/metrics']"));
+        return Utils.withWait(driver, xpath("//nav//a[@href='transaction/average']"));
     }
 
     WebElement getErrorsLink() {

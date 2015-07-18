@@ -14,44 +14,36 @@
   limitations under the License.
 -->
 <ul class="nav nav-tabs gt-transaction-tabs">
-  <li ng-class="{active: activeTabItem === 'metrics'}">
-    <a ng-href="transaction/metrics{{tabQueryString()}}"
-       ng-click="clickTab('metrics', $event)"
-       ng-keydown="keydownTab(null, 'tab_percentiles', $event)"
-       id="tab_metrics">
-      Metrics
-    </a>
-  </li>
-  <li ng-class="{active: activeTabItem === 'percentiles'}">
-    <a ng-href="transaction/percentiles{{tabQueryString()}}"
-       ng-click="clickTab('percentiles', $event)"
-       ng-keydown="keydownTab('tab_metrics', 'tab_queries' , $event)"
-       id="tab_percentiles">
-      Percentiles
-    </a>
-  </li>
-  <li ng-class="{active: activeTabItem === 'queries'}">
-    <a ng-href="transaction/queries{{tabQueryString()}}"
-       ng-click="clickTab('queries', $event)"
-       ng-keydown="keydownTab('tab_percentiles', 'tab_profile', $event)"
-       id="tab_queries">
-      Queries
+  <li ng-class="{active: activeTabItem === 'time'}">
+    <a ng-href="transaction/average{{tabQueryString()}}"
+       ng-click="clickTab('time', $event)"
+       ng-keydown="keydownTab(null, 'tab_profile', $event)"
+       id="tab_time">
+      Response time
     </a>
   </li>
   <li ng-class="{active: activeTabItem === 'profile'}">
     <a ng-href="transaction/profile{{tabQueryString()}}"
        ng-click="clickTab('profile', $event)"
-       ng-keydown="keydownTab('tab_queries', 'tab_traces', $event)"
+       ng-keydown="keydownTab('tab_time', 'tab_traces', $event)"
        id="tab_profile">
-      Profile
+      Continuous profile
     </a>
   </li>
   <li ng-class="{active: activeTabItem === 'traces'}">
     <a ng-href="transaction/traces{{tabQueryString()}}"
        ng-click="clickTab('traces', $event)"
-       ng-keydown="keydownTab('tab_profile', null, $event)"
+       ng-keydown="keydownTab('tab_profile', 'tab_queries', $event)"
        id="tab_traces">
-      Traces ({{traceCount()}})
+      Slow traces ({{traceCount()}})
+    </a>
+  </li>
+  <li ng-class="{active: activeTabItem === 'queries'}">
+    <a ng-href="transaction/queries{{tabQueryString()}}"
+       ng-click="clickTab('queries', $event)"
+       ng-keydown="keydownTab('tab_traces', null, $event)"
+       id="tab_queries">
+      External queries
     </a>
   </li>
 </ul>

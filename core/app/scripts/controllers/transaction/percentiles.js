@@ -26,7 +26,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
   'modals',
   function ($scope, $location, $http, $filter, $timeout, charts, modals) {
 
-    $scope.$parent.activeTabItem = 'percentiles';
+    $scope.$parent.activeTabItem = 'time';
 
     var chartState = charts.createState();
 
@@ -37,6 +37,23 @@ glowroot.controller('TransactionPercentilesCtrl', [
     $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function () {
       refreshData();
     });
+
+    $scope.clickTopRadioButton = function (item, event) {
+      if (item === 'percentiles') {
+        $scope.$parent.chartRefresh++;
+      } else {
+        $location.url('transaction/average' + $scope.tabQueryString());
+      }
+    };
+
+    $scope.clickActiveTopLink = function (event) {
+      if (!event.ctrlKey) {
+        $scope.$parent.chartRefresh++;
+        // suppress normal link
+        event.preventDefault();
+        return false;
+      }
+    };
 
     $scope.openCustomPercentilesModal = function () {
       $scope.customPercentiles = $scope.percentiles.join(', ');

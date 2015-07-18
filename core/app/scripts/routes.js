@@ -46,7 +46,7 @@ glowroot.config([
         };
       }
     ]);
-    $urlRouterProvider.otherwise('transaction/metrics');
+    $urlRouterProvider.otherwise('transaction/average');
     $stateProvider.state('transaction', {
       abstract: true,
       url: '/transaction?transaction-type',
@@ -102,12 +102,12 @@ glowroot.config([
         }
       }
     });
-    $stateProvider.state('transaction.detail.metrics', {
-      url: '/metrics?transaction-name',
+    $stateProvider.state('transaction.detail.average', {
+      url: '/average?transaction-name',
       views: {
         'main@transaction': {
-          templateUrl: 'views/transaction/metrics.html',
-          controller: 'TransactionMetricsCtrl'
+          templateUrl: 'views/transaction/average.html',
+          controller: 'TransactionAverageCtrl'
         }
       }
     });

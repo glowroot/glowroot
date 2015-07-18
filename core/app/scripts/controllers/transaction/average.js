@@ -16,23 +16,40 @@
 
 /* global glowroot, $ */
 
-glowroot.controller('TransactionMetricsCtrl', [
+glowroot.controller('TransactionAverageCtrl', [
   '$scope',
   '$location',
   'charts',
   function ($scope, $location, charts) {
 
-    $scope.$parent.activeTabItem = 'metrics';
+    $scope.$parent.activeTabItem = 'time';
 
     var chartState = charts.createState();
 
     function refreshData() {
-      charts.refreshData('backend/transaction/metrics', chartState, $scope, undefined, onRefreshData);
+      charts.refreshData('backend/transaction/average', chartState, $scope, undefined, onRefreshData);
     }
 
     $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function () {
       refreshData();
     });
+
+    $scope.clickTopRadioButton = function (item, event) {
+      if (item === 'average') {
+        $scope.$parent.chartRefresh++;
+      } else {
+        $location.url('transaction/percentiles' + $scope.tabQueryString());
+      }
+    };
+
+    $scope.clickActiveTopLink = function (event) {
+      if (!event.ctrlKey) {
+        $scope.$parent.chartRefresh++;
+        // suppress normal link
+        event.preventDefault();
+        return false;
+      }
+    };
 
     function onRefreshData(data, query) {
       // mergedAggregate.timers is always synthetic root timer

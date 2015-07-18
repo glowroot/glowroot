@@ -13,6 +13,23 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+<div style="text-align: center; margin-top: -6px; margin-bottom: 2px; color: #555;">
+  <label class="radio-inline">
+    <input type="radio" name="view" value="average" ng-click="clickTopRadioButton('average')" checked>
+    <a class="gt-radio-link"
+       href="transaction/average{{tabQueryString()}}"
+       ng-click="clickActiveTopLink($event)">
+      average
+    </a>
+  </label>
+  <label class="radio-inline">
+    <input type="radio" name="view" value="percentiles" ng-click="clickTopRadioButton('percentiles')">
+    <a class="gt-radio-link"
+       href="transaction/percentiles{{tabQueryString()}}">
+      percentiles
+    </a>
+  </label>
+</div>
 <!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
 <div class="clearfix" style="position: relative; z-index: 800;">
   <div class="pull-right" style="margin-top: -20px; margin-bottom: -8px; font-size: 22px;">
@@ -86,7 +103,7 @@
        style="position: relative; padding-top: 30px; margin-left: 40px;">
     <div>
       <label>
-        Average breakdown per transaction:
+        Complete timer breakdown:
       </label>
     </div>
     <table class="gt-timers-table gt-indent2"
@@ -156,7 +173,7 @@
 
     <div ng-show="threadInfoAggregate" style="margin-top: 20px;">
       <label>
-        JVM thread metrics per transaction:
+        Average JVM thread info:
       </label>
 
       <div class="gt-indent2">
