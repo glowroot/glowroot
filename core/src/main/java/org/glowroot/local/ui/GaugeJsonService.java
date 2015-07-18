@@ -199,15 +199,31 @@ class GaugeJsonService {
         }
     }
 
-    private Set<String> getAttributeNames(Set<ObjectName> objectNames) throws Exception {
+    private Set<String> getAttributeNames(Set<ObjectName> objectNames) {
         Set<String> attributeNames = Sets.newHashSet();
         for (ObjectName objectName : objectNames) {
-            MBeanInfo mbeanInfo = lazyPlatformMBeanServer.getMBeanInfo(objectName);
-            for (MBeanAttributeInfo attribute : mbeanInfo.getAttributes()) {
-                if (attribute.isReadable()) {
-                    Object value =
-                            lazyPlatformMBeanServer.getAttribute(objectName, attribute.getName());
+            try {
+                MBeanInfo mbeanInfo = lazyPlatformMBeanServer.getMBeanInfo(objectName);
+                attributeNames.addAll(getAttributeNames(mbeanInfo, objectName));
+            } catch (Exception e) {
+                // log exception at debug level
+                logger.debug(e.getMessage(), e);
+            }
+        }
+        return attributeNames;
+    }
+
+    private Set<String> getAttributeNames(MBeanInfo mbeanInfo, ObjectName objectName) {
+        Set<String> attributeNames = Sets.newHashSet();
+        for (MBeanAttributeInfo attribute : mbeanInfo.getAttributes()) {
+            if (attribute.isReadable()) {
+                try {
+                    Object value = lazyPlatformMBeanServer.getAttribute(objectName,
+                            attribute.getName());
                     addNumericAttributes(attribute, value, attributeNames);
+                } catch (Exception e) {
+                    // log exception at debug level
+                    logger.debug(e.getMessage(), e);
                 }
             }
         }
