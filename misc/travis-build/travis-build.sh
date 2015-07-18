@@ -88,6 +88,8 @@ case "$1" in
                                  -Djacoco.propertyName=jacocoArgLine \
                                  -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                  -B
+                 # basic mvn install so the additional runs can use the installed artifacts
+                 mvn clean install -DskipTests=true
                  # also running integration-tests with (default) local test harness to capture a
                  # couple methods exercised only by the local test harness
                  mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent test \
