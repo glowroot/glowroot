@@ -172,7 +172,10 @@ glowroot.directive('gtFormGroup', [
           scope.gtType = 'text';
         }
         scope.$watch('gtModel', function (newValue) {
-          scope.ngModel = newValue;
+          // conditional prevents the '.' from being automatically deleted when user deletes the '3' in '2.3'
+          if (conversions.toNumber(scope.ngModel) !== newValue) {
+            scope.ngModel = newValue;
+          }
         });
         scope.$watch('ngModel', function (newValue) {
           if (scope.gtNumber()) {
