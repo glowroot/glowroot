@@ -26,13 +26,13 @@ glowroot.controller('ConfigCtrl', [
 
     $scope.percentileSuffix = function (percentile) {
       var text = String(percentile);
-      if (text.equals('11') || /\.11$/.test(text)) {
+      if (text === '11' || /\.11$/.test(text)) {
         return 'th';
       }
-      if (text.equals('12') || /\.12$/.test(text)) {
+      if (text === '12' || /\.12$/.test(text)) {
         return 'th';
       }
-      if (text.equals('13') || /\.13$/.test(text)) {
+      if (text === '13' || /\.13$/.test(text)) {
         return 'th';
       }
       var lastChar = text.charAt(text.length - 1);
