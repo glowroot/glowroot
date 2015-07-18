@@ -1,5 +1,5 @@
 <a class="list-group-item selectable-list-group-item"
-   ng-class="{active: isActive()}"
+   ng-class="{active: isActive() || isSubActive()}"
    ng-href="{{gtUrl}}"
    ng-click="ngClick($event)"
    style="cursor: pointer;">

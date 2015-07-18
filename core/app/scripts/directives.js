@@ -277,6 +277,7 @@ glowroot.directive('gtSidebarItem', [
         gtDisplayRight: '@',
         gtUrl: '@',
         gtActive: '&',
+        gtSubActive: '&',
         gtActiveRefresh: '&'
       },
       // replace is needed in order to not mess up bootstrap css hierarchical selectors
@@ -285,6 +286,10 @@ glowroot.directive('gtSidebarItem', [
       link: function (scope, iElement, iAttrs) {
         scope.isActive = function () {
           return iAttrs.gtActive ? scope.gtActive() : $location.path() === '/' + scope.gtUrl;
+        };
+        // isSubActive sidebar items are marked active, but when clicked will return to their parent
+        scope.isSubActive = function () {
+          return iAttrs.gtSubActive && scope.gtSubActive();
         };
         scope.ngClick = function (event) {
           if (scope.isActive() && !event.ctrlKey) {
