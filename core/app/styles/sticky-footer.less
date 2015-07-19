@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,26 @@
 
 // http://getbootstrap.com/examples/sticky-footer-navbar/
 
-html, body {
-  height: 100%;
+html {
+  position: relative;
+  min-height: 100%;
   // the html and body elements cannot have any padding or margin
 }
 
-// container for page content to push down footer
+body {
+  // same as footer height
+  margin-bottom: 40px;
+}
+
 #container {
-  min-height: 100%;
-  height: auto !important;
-  height: 100%;
-  // negative indent footer by its height
-  margin: 0 auto -40px;
-  // pad bottom by footer height, plus an extra 100px to give some spacing
-  padding: 0 0 140px;
+  padding-bottom: 100px;
 }
 
 // set the fixed height of the footer here
 #footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
   height: 40px;
   background-color: #edeae4;
   text-align: center;
