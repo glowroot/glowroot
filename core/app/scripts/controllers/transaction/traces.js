@@ -30,6 +30,11 @@ glowroot.controller('TracesCtrl', [
 
     $scope.$parent.activeTabItem = 'traces';
 
+    if ($scope.last) {
+      // force the sidebar to update
+      $scope.$parent.chartRefresh++;
+    }
+
     var plot;
 
     var $chart = $('#chart');

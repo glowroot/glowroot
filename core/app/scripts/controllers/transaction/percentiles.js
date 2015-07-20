@@ -28,6 +28,11 @@ glowroot.controller('TransactionPercentilesCtrl', [
 
     $scope.$parent.activeTabItem = 'time';
 
+    if ($scope.last) {
+      // force the sidebar to update
+      $scope.$parent.chartRefresh++;
+    }
+
     var chartState = charts.createState();
 
     function refreshData() {

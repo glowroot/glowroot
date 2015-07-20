@@ -28,6 +28,11 @@ glowroot.controller('TransactionQueriesCtrl', [
 
     $scope.$parent.activeTabItem = 'queries';
 
+    if ($scope.last) {
+      // force the sidebar to update
+      $scope.$parent.chartRefresh++;
+    }
+
     $scope.showQueries = false;
     $scope.showSpinner = 0;
 

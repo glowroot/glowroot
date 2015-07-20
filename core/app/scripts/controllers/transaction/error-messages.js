@@ -27,6 +27,11 @@ glowroot.controller('ErrorMessagesCtrl', [
 
     $scope.$parent.activeTabItem = 'messages';
 
+    if ($scope.last) {
+      // force the sidebar to update
+      $scope.$parent.chartRefresh++;
+    }
+
     var appliedFilter;
 
     var chartState = charts.createState();

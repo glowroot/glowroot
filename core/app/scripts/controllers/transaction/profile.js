@@ -26,6 +26,11 @@ glowroot.controller('TransactionProfileCtrl', [
 
     $scope.$parent.activeTabItem = 'profile';
 
+    if ($scope.last) {
+      // force the sidebar to update
+      $scope.$parent.chartRefresh++;
+    }
+
     var appliedFilter;
 
     $scope.showProfile = false;
