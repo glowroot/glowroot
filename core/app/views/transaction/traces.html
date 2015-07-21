@@ -260,15 +260,10 @@
 
     <div class="col-lg-8">
       <select ng-model="filter.limit"
+              ng-options="option.value as option.text for option in filterLimitOptions"
               class="form-control"
               id="filterLimit"
               style="width: 8em;">
-        <option value="100">100</option>
-        <option value="200">200</option>
-        <option value="500">500</option>
-        <option value="1000">1,000</option>
-        <option value="2000">2,000</option>
-        <option value="5000">5,000</option>
       </select>
     </div>
   </div>

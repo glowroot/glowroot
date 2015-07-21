@@ -48,6 +48,15 @@ glowroot.controller('TracesCtrl', [
     $scope.showChartSpinner = 0;
     $scope.showErrorFilter = errorOnly;
 
+    $scope.filterLimitOptions = [
+      {text: '100', value: 100},
+      {text: '200', value: 200},
+      {text: '500', value: 500},
+      {text: '1,000', value: 1000},
+      {text: '2,000', value: 2000},
+      {text: '5,000', value: 5000}
+    ];
+
     $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function () {
       appliedFilter.from = $scope.traceChartFrom || $scope.chartFrom;
       appliedFilter.to = $scope.traceChartTo || $scope.chartTo;
