@@ -18,7 +18,7 @@
 
 glowroot.factory('keyedColorPools', [
   function () {
-    var fixedPool = ['#edc240', '#9dc2df', '#cb4b4b', '#4da74d', '#9440ed'];
+    var fixedPool = ['#edc240', '#8fc6ef', '#cb4b4b', '#4da74d', '#9440ed'];
     var dynamicPool = fixedPool.slice(0);
     var variation = 1;
 
@@ -66,7 +66,9 @@ glowroot.factory('keyedColorPools', [
           });
           colors = preservedColors;
           angular.forEach(keys, function (key) {
-            if (!colors[key]) {
+            if (key === 'Other') {
+              colors[key] = '#bbb';
+            } else if (!colors[key]) {
               var color = nextAvailable();
               colors[key] = color;
               used[color] = true;
