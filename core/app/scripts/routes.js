@@ -38,14 +38,6 @@ glowroot.config([
         return deferred.promise;
       }];
     }
-    // overriding autoscroll=true behavior to scroll to the top of the page
-    $provide.decorator('$uiViewScroll', [
-      function () {
-        return function () {
-          window.scrollTo(0, 0);
-        };
-      }
-    ]);
     $urlRouterProvider.otherwise('transaction/average');
     $stateProvider.state('transaction', {
       abstract: true,

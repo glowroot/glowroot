@@ -56,7 +56,7 @@
   </div>
 </div>
 <div class="gt-transaction-sidebar">
-  <div ui-view="sidebar" autoscroll="false"></div>
+  <div ui-view="sidebar"></div>
 </div>
 <div class="gt-transaction-main-column">
   <div class="panel panel-default">
@@ -64,9 +64,9 @@
       <h2>{{transactionName ? transactionName : 'All ' + transactionType + ' Transactions'}}</h2>
     </div>
     <div class="panel-body">
-      <div ui-view="tabs" autoscroll="false"></div>
+      <div ui-view="tabs"></div>
       <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-      <div ui-view="main" autoscroll="false"></div>
+      <div ui-view="main"></div>
     </div>
   </div>
 </div>
