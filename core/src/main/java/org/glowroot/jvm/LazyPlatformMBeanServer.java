@@ -16,9 +16,11 @@
 package org.glowroot.jvm;
 
 import java.lang.management.ManagementFactory;
+import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectInstance;
@@ -27,6 +29,7 @@ import javax.management.QueryExp;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
@@ -44,6 +47,9 @@ public class LazyPlatformMBeanServer {
     private static final Logger logger = LoggerFactory.getLogger(LazyPlatformMBeanServer.class);
 
     private final boolean jbossModules;
+
+    @GuardedBy("initListeners")
+    private final List<InitListener> initListeners = Lists.newArrayList();
 
     private volatile @MonotonicNonNull MBeanServer mbeanServer;
 
@@ -78,33 +84,18 @@ public class LazyPlatformMBeanServer {
         return mbeanServer.getAttribute(name, attribute);
     }
 
-    public void possiblyDelayedCall(final MBeanServerCallback callback) {
-        if (needsDelayedInit()) {
-            Thread thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        ensureInit();
-                        callback.call(mbeanServer);
-                    } catch (Throwable t) {
-                        logger.error(t.getMessage(), t);
-                    }
+    public void addInitListener(InitListener initListener) {
+        synchronized (initListeners) {
+            if (mbeanServer == null) {
+                initListeners.add(initListener);
+            } else {
+                try {
+                    initListener.postInit(mbeanServer);
+                } catch (Throwable t) {
+                    logger.error(t.getMessage(), t);
                 }
-            });
-            thread.setDaemon(true);
-            thread.setName("Glowroot-Delayed-MBean-Server-Call");
-            thread.start();
-            return;
+            }
         }
-        if (mbeanServer == null) {
-            mbeanServer = ManagementFactory.getPlatformMBeanServer();
-        }
-        try {
-            callback.call(mbeanServer);
-        } catch (Throwable t) {
-            logger.error(t.getMessage(), t);
-        }
-        return;
     }
 
     @OnlyUsedByTests
@@ -120,8 +111,17 @@ public class LazyPlatformMBeanServer {
             // getPlatformMBeanServer()
             waitForJBossModuleInitialization(Stopwatch.createUnstarted());
         }
-        if (mbeanServer == null) {
-            mbeanServer = ManagementFactory.getPlatformMBeanServer();
+        synchronized (initListeners) {
+            if (mbeanServer == null) {
+                mbeanServer = ManagementFactory.getPlatformMBeanServer();
+                for (InitListener initListener : initListeners) {
+                    try {
+                        initListener.postInit(mbeanServer);
+                    } catch (Throwable t) {
+                        logger.error(t.getMessage(), t);
+                    }
+                }
+            }
         }
     }
 
@@ -143,7 +143,7 @@ public class LazyPlatformMBeanServer {
                 + " java.util.logging.manager");
     }
 
-    public interface MBeanServerCallback {
-        void call(MBeanServer mbeanServer) throws Exception;
+    public interface InitListener {
+        void postInit(MBeanServer mbeanServer) throws Exception;
     }
 }

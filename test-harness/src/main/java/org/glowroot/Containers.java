@@ -94,28 +94,28 @@ public class Containers {
         return container;
     }
 
-    public static Container createWithFileDb(File dataDir) throws Exception {
-        return create(dataDir, true);
+    public static Container createWithFileDb(File baseDir) throws Exception {
+        return create(baseDir, true);
     }
 
-    // since dataDir is passed to the container, the container will not delete dataDir on close
-    public static Container create(File dataDir, boolean useFileDb) throws Exception {
-        return create(dataDir, useFileDb, false);
+    // since baseDir is passed to the container, the container will not delete baseDir on close
+    public static Container create(File baseDir, boolean useFileDb) throws Exception {
+        return create(baseDir, useFileDb, false);
     }
 
-    private static Container create(@Nullable File dataDir, boolean useFileDb, boolean shared)
+    private static Container create(@Nullable File baseDir, boolean useFileDb, boolean shared)
             throws Exception {
         switch (harness) {
             case JAVAAGENT:
                 // this is the most realistic way to run tests because it launches an external JVM
                 // process using -javaagent:glowroot.jar
                 logger.debug("create(): using javaagent container");
-                return new JavaagentContainer(dataDir, useFileDb, 0, shared, false, false,
+                return new JavaagentContainer(baseDir, useFileDb, 0, shared, false, false,
                         ImmutableList.<String>of());
             case LOCAL:
                 // this is the easiest way to run/debug tests inside of Eclipse
                 logger.debug("create(): using local container");
-                return new LocalContainer(dataDir, useFileDb, 0, shared,
+                return new LocalContainer(baseDir, useFileDb, 0, shared,
                         ImmutableMap.<String, String>of());
             default:
                 throw new IllegalStateException("Unexpected harness enum value: " + harness);

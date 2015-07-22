@@ -49,9 +49,9 @@ public class ConfigJsonServiceTest {
         httpSessionManager = mock(HttpSessionManager.class);
         transactionModule = mock(TransactionModule.class);
         mailService = new MockMailService();
-        configJsonService = new ConfigJsonService(configService, cappedDatabase,
-                ImmutableList.<PluginDescriptor>of(), httpSessionManager, transactionModule,
-                mailService);
+        configJsonService = new ConfigJsonService(configService, ImmutableList.<CappedDatabase>of(),
+                cappedDatabase, ImmutableList.<PluginDescriptor>of(), httpSessionManager,
+                transactionModule, mailService);
     }
 
     @Test

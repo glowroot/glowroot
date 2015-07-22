@@ -68,7 +68,7 @@ public class AdviceCache {
     private final ImmutableList<ShimType> shimTypes;
     private final ImmutableList<MixinType> mixinTypes;
     private final @Nullable Instrumentation instrumentation;
-    private final File dataDir;
+    private final File baseDir;
 
     private volatile ImmutableList<Advice> reweavableAdvisors;
     private volatile ImmutableSet<String> reweavableConfigVersions;
@@ -77,7 +77,7 @@ public class AdviceCache {
 
     AdviceCache(List<PluginDescriptor> pluginDescriptors, List<File> pluginJars,
             List<InstrumentationConfig> reweavableConfigs,
-            @Nullable Instrumentation instrumentation, File dataDir) throws Exception {
+            @Nullable Instrumentation instrumentation, File baseDir) throws Exception {
 
         List<Advice> pluginAdvisors = Lists.newArrayList();
         List<ShimType> shimTypes = Lists.newArrayList();
@@ -113,7 +113,7 @@ public class AdviceCache {
             checkNotNull(loader, "Context class loader must be set");
             ClassLoaders.defineClassesInClassLoader(lazyAdvisors.values(), loader);
         } else {
-            File generatedJarDir = new File(dataDir, "tmp");
+            File generatedJarDir = new File(baseDir, "tmp");
             ClassLoaders.createDirectoryOrCleanPreviousContentsWithPrefix(generatedJarDir,
                     "plugin-pointcuts.jar");
             if (!lazyAdvisors.isEmpty()) {
@@ -126,7 +126,7 @@ public class AdviceCache {
         this.shimTypes = ImmutableList.copyOf(shimTypes);
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
         this.instrumentation = instrumentation;
-        this.dataDir = dataDir;
+        this.baseDir = baseDir;
         updateAdvisors(reweavableConfigs, true);
     }
 
@@ -160,7 +160,7 @@ public class AdviceCache {
             checkNotNull(loader, "Context class loader must be set");
             ClassLoaders.defineClassesInClassLoader(advisors.values(), loader);
         } else {
-            File generatedJarDir = new File(dataDir, "tmp");
+            File generatedJarDir = new File(baseDir, "tmp");
             if (cleanTmpDir) {
                 ClassLoaders.createDirectoryOrCleanPreviousContentsWithPrefix(generatedJarDir,
                         "config-pointcuts");

@@ -6,20 +6,20 @@
 <div ng-form="formGroupCtrl" class="form-group" ng-class="{'has-error': formGroupCtrl.property.$invalid}">
   <div ng-switch="gtType">
     <div ng-switch-when="checkbox">
-      <label class="control-label col-lg-3"
+      <label class="control-label {{gtColClass1 || 'col-lg-3'}}"
              for="{{gtId}}"
              style="margin-top: -7px;">
         {{gtLabel}}
       </label>
     </div>
     <div ng-switch-default>
-      <label class="control-label col-lg-3"
+      <label class="control-label {{gtColClass1 || 'col-lg-3'}}"
              for="{{gtId}}">
         {{gtLabel}}
       </label>
     </div>
   </div>
-  <div class="col-lg-9">
+  <div class="{{gtColClass2 || 'col-lg-9'}}">
     <div ng-switch="gtType">
       <div ng-switch-when="switch">
         <div class="btn-group" data-toggle="buttons">

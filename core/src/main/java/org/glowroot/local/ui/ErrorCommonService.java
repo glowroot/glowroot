@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.collector.AggregateCollector;
 import org.glowroot.collector.AggregateIntervalCollector;
@@ -55,14 +56,15 @@ class ErrorCommonService {
 
     ErrorSummary readOverallErrorSummary(String transactionType, long from, long to)
             throws SQLException {
+        int rollupLevel = aggregateDao.getRollupLevelForView(from, to);
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(from, to);
         if (orderedIntervalCollectors.isEmpty()) {
-            return aggregateDao.readOverallErrorSummary(transactionType, from, to);
+            return aggregateDao.readOverallErrorSummary(transactionType, from, to, rollupLevel);
         }
         long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
         ErrorSummary overallSummary =
-                aggregateDao.readOverallErrorSummary(transactionType, from, revisedTo);
+                aggregateDao.readOverallErrorSummary(transactionType, from, revisedTo, rollupLevel);
         for (AggregateIntervalCollector intervalCollector : orderedIntervalCollectors) {
             ErrorSummary liveOverallSummary =
                     intervalCollector.getLiveOverallErrorSummary(transactionType);
@@ -75,15 +77,16 @@ class ErrorCommonService {
 
     QueryResult<ErrorSummary> readTransactionErrorSummaries(ErrorSummaryQuery query)
             throws SQLException {
+        int rollupLevel = aggregateDao.getRollupLevelForView(query.from(), query.to());
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(query.from(), query.to());
         if (orderedIntervalCollectors.isEmpty()) {
-            return aggregateDao.readTransactionErrorSummaries(query);
+            return aggregateDao.readTransactionErrorSummaries(query, rollupLevel);
         }
         long revisedTo = getRevisedTo(query.to(), orderedIntervalCollectors);
         ErrorSummaryQuery revisedQuery = query.withTo(revisedTo);
         QueryResult<ErrorSummary> queryResult =
-                aggregateDao.readTransactionErrorSummaries(revisedQuery);
+                aggregateDao.readTransactionErrorSummaries(revisedQuery, rollupLevel);
         if (orderedIntervalCollectors.isEmpty()) {
             return queryResult;
         }
@@ -161,7 +164,7 @@ class ErrorCommonService {
     }
 
     private List<ErrorPoint> readErrorPointsFromDao(String transactionType,
-            @Nullable String transactionName, long from, long to, int rollupLevel)
+            @Nullable String transactionName, long from, long to, @Untainted int rollupLevel)
                     throws SQLException {
         if (transactionName == null) {
             return aggregateDao.readOverallErrorPoints(transactionType, from, to, rollupLevel);

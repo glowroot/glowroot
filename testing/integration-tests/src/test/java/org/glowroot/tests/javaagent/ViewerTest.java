@@ -36,14 +36,22 @@ public class ViewerTest {
     @Test
     public void shouldReadTraces() throws Exception {
         // given
-        File dataDir = TempDirs.createTempDir("glowroot-test-datadir");
+        File baseDir = TempDirs.createTempDir("glowroot-test-basedir");
+        File dataDir = new File(baseDir, "data");
+        dataDir.mkdir();
         Resources.asByteSource(Resources.getResource("for-upgrade-test/config.json"))
-                .copyTo(Files.asByteSink(new File(dataDir, "config.json")));
-        Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.h2.db"))
-                .copyTo(Files.asByteSink(new File(dataDir, "glowroot.h2.db")));
-        Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.capped.db"))
-                .copyTo(Files.asByteSink(new File(dataDir, "glowroot.capped.db")));
-        Container container = new JavaagentContainer(dataDir, true, 0, false, false, true,
+                .copyTo(Files.asByteSink(new File(baseDir, "config.json")));
+        Resources.asByteSource(Resources.getResource("for-upgrade-test/data/data.h2.db"))
+                .copyTo(Files.asByteSink(new File(dataDir, "data.h2.db")));
+        for (int i = 0; i < 3; i++) {
+            String filename = "aggregate-detail-rollup-" + i + ".capped.db";
+            Resources.asByteSource(Resources.getResource("for-upgrade-test/data/" + filename))
+                    .copyTo(Files.asByteSink(new File(dataDir, filename)));
+        }
+        Resources.asByteSource(
+                Resources.getResource("for-upgrade-test/data/trace-detail.capped.db"))
+                .copyTo(Files.asByteSink(new File(dataDir, "trace-detail.capped.db")));
+        Container container = new JavaagentContainer(baseDir, true, 0, false, false, true,
                 ImmutableList.<String>of());
         // when
         Trace trace = container.getTraceService().getLastTrace();
@@ -63,7 +71,7 @@ public class ViewerTest {
             // cleanup
             container.checkAndReset();
             container.close();
-            TempDirs.deleteRecursively(dataDir);
+            TempDirs.deleteRecursively(baseDir);
         }
     }
 }

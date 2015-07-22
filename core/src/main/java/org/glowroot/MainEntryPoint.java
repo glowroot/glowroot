@@ -34,7 +34,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.GlowrootModule.DataDirLockedException;
+import org.glowroot.GlowrootModule.BaseDirLockedException;
 import org.glowroot.common.JavaVersion;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.markers.OnlyUsedByTests;
@@ -61,11 +61,11 @@ public class MainEntryPoint {
             System.setProperty("jboss.modules.system.pkgs", jbossModulesSystemPkgs);
         }
         ImmutableMap<String, String> properties = getGlowrootProperties();
-        File dataDir = DataDir.getDataDir(properties, glowrootJarFile);
+        File baseDir = BaseDir.getBaseDir(properties, glowrootJarFile);
         try {
-            start(dataDir, properties, instrumentation, glowrootJarFile, jbossModules);
-        } catch (DataDirLockedException e) {
-            logDataDirLockedException(dataDir);
+            start(baseDir, properties, instrumentation, glowrootJarFile, jbossModules);
+        } catch (BaseDirLockedException e) {
+            logBaseDirLockedException(baseDir);
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
             startupLogger.error("Glowroot not started: {}", t.getMessage(), t);
@@ -74,13 +74,13 @@ public class MainEntryPoint {
 
     static void runViewer(@Nullable File glowrootJarFile) throws InterruptedException {
         ImmutableMap<String, String> properties = getGlowrootProperties();
-        File dataDir = DataDir.getDataDir(properties, glowrootJarFile);
+        File baseDir = BaseDir.getBaseDir(properties, glowrootJarFile);
         String version = Version.getVersion();
         try {
-            glowrootModule = new GlowrootModule(dataDir, properties, null, glowrootJarFile,
+            glowrootModule = new GlowrootModule(baseDir, properties, null, glowrootJarFile,
                     version, true, false);
-        } catch (DataDirLockedException e) {
-            logDataDirLockedException(dataDir);
+        } catch (BaseDirLockedException e) {
+            logBaseDirLockedException(baseDir);
             return;
         } catch (Throwable t) {
             startupLogger.error("Viewer cannot start: {}", t.getMessage(), t);
@@ -94,13 +94,13 @@ public class MainEntryPoint {
         Thread.sleep(Long.MAX_VALUE);
     }
 
-    private static void start(File dataDir, Map<String, String> properties,
+    private static void start(File baseDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
             boolean jbossModules) throws Exception {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion();
-        glowrootModule = new GlowrootModule(dataDir, properties, instrumentation, glowrootJarFile,
+        glowrootModule = new GlowrootModule(baseDir, properties, instrumentation, glowrootJarFile,
                 version, false, jbossModules);
         startupLogger.info("Glowroot started (version {})", version);
         List<PluginDescriptor> pluginDescriptors =
@@ -131,7 +131,7 @@ public class MainEntryPoint {
         return builder.build();
     }
 
-    private static void logDataDirLockedException(File dataDir) {
+    private static void logBaseDirLockedException(File baseDir) {
         // this is common when stopping tomcat since 'catalina.sh stop' launches a java process
         // to stop the tomcat jvm, and it uses the same JAVA_OPTS environment variable that may
         // have been used to specify '-javaagent:glowroot.jar', in which case Glowroot tries
@@ -145,7 +145,7 @@ public class MainEntryPoint {
         // no need for logging in the special (but common) case described above
         if (!isTomcatStop()) {
             startupLogger.error("Glowroot not started: data dir in used by another jvm process",
-                    dataDir.getAbsolutePath());
+                    baseDir.getAbsolutePath());
         }
     }
 
@@ -171,8 +171,8 @@ public class MainEntryPoint {
 
     @OnlyUsedByTests
     public static void start(Map<String, String> properties) throws Exception {
-        File dataDir = DataDir.getDataDir(properties, null);
-        start(dataDir, properties, null, null, false);
+        File baseDir = BaseDir.getBaseDir(properties, null);
+        start(baseDir, properties, null, null, false);
     }
 
     @OnlyUsedByTests

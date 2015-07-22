@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.AggregateCollector;
@@ -70,14 +71,16 @@ class TransactionCommonService {
 
     TransactionSummary readOverallSummary(String transactionType, long from, long to)
             throws SQLException {
+        int rollupLevel = aggregateDao.getRollupLevelForView(from, to);
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(from, to);
         if (orderedIntervalCollectors.isEmpty()) {
-            return aggregateDao.readOverallTransactionSummary(transactionType, from, to);
+            return aggregateDao.readOverallTransactionSummary(transactionType, from, to,
+                    rollupLevel);
         }
         long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
-        TransactionSummary overallSummary =
-                aggregateDao.readOverallTransactionSummary(transactionType, from, revisedTo);
+        TransactionSummary overallSummary = aggregateDao.readOverallTransactionSummary(
+                transactionType, from, revisedTo, rollupLevel);
         for (AggregateIntervalCollector intervalCollector : orderedIntervalCollectors) {
             TransactionSummary liveOverallSummary =
                     intervalCollector.getLiveOverallSummary(transactionType);
@@ -91,15 +94,16 @@ class TransactionCommonService {
 
     QueryResult<TransactionSummary> readTransactionSummaries(TransactionSummaryQuery query)
             throws SQLException {
+        int rollupLevel = aggregateDao.getRollupLevelForView(query.from(), query.to());
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(query.from(), query.to());
         if (orderedIntervalCollectors.isEmpty()) {
-            return aggregateDao.readTransactionSummaries(query);
+            return aggregateDao.readTransactionSummaries(query, rollupLevel);
         }
         long revisedTo = getRevisedTo(query.to(), orderedIntervalCollectors);
         TransactionSummaryQuery revisedQuery = query.withTo(revisedTo);
         QueryResult<TransactionSummary> queryResult =
-                aggregateDao.readTransactionSummaries(revisedQuery);
+                aggregateDao.readTransactionSummaries(revisedQuery, rollupLevel);
         if (orderedIntervalCollectors.isEmpty()) {
             return queryResult;
         }
@@ -194,7 +198,7 @@ class TransactionCommonService {
     }
 
     private List<Aggregate> getAggregatesFromDao(String transactionType,
-            @Nullable String transactionName, long from, long to, int rollupLevel)
+            @Nullable String transactionName, long from, long to, @Untainted int rollupLevel)
                     throws SQLException {
         if (transactionName == null) {
             return aggregateDao.readOverallAggregates(transactionType, from, to, rollupLevel);
@@ -238,7 +242,7 @@ class TransactionCommonService {
     }
 
     private List<QueryAggregate> getQueryAggregatesFromDao(String transactionType,
-            @Nullable String transactionName, long from, long to, int rollupLevel)
+            @Nullable String transactionName, long from, long to, @Untainted int rollupLevel)
                     throws SQLException {
         if (transactionName == null) {
             return aggregateDao.readOverallQueryAggregates(transactionType, from, to, rollupLevel);
@@ -283,7 +287,7 @@ class TransactionCommonService {
     }
 
     private List<ProfileAggregate> getProfileAggregatesFromDao(String transactionType,
-            @Nullable String transactionName, long from, long to, int rollupLevel)
+            @Nullable String transactionName, long from, long to, @Untainted int rollupLevel)
                     throws SQLException {
         if (transactionName == null) {
             return aggregateDao.readOverallProfileAggregates(transactionType, from, to,

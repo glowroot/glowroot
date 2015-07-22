@@ -56,14 +56,14 @@ public class TransactionModule {
     public TransactionModule(final Clock clock, final Ticker ticker,
             final ConfigModule configModule, final TransactionCollector transactionCollector,
             final @Nullable ThreadAllocatedBytes threadAllocatedBytes,
-            @Nullable Instrumentation instrumentation, File dataDir,
+            @Nullable Instrumentation instrumentation, File baseDir,
             @Nullable ExtraBootResourceFinder extraBootResourceFinder,
             ScheduledExecutorService scheduledExecutor) throws Exception {
         ConfigService configService = configModule.getConfigService();
         transactionRegistry = new TransactionRegistry();
         adviceCache = new AdviceCache(configModule.getPluginDescriptors(),
                 configModule.getPluginJars(), configService.getInstrumentationConfigs(),
-                instrumentation, dataDir);
+                instrumentation, baseDir);
         analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
                 adviceCache.getShimTypes(), adviceCache.getMixinTypes(), extraBootResourceFinder);
         final TimerNameCache timerNameCache = new TimerNameCache();

@@ -158,7 +158,9 @@ glowroot.directive('gtFormGroup', [
         gtDisabled: '&',
         gtPlaceholder: '@',
         gtNumber: '&',
-        gtRows: '@'
+        gtRows: '@',
+        gtColClass1: '@',
+        gtColClass2: '@'
       },
       transclude: true,
       require: '^form',

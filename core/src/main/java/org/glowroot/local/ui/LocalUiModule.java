@@ -33,7 +33,6 @@ import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.jvm.JvmModule;
 import org.glowroot.local.store.AggregateDao;
-import org.glowroot.local.store.CappedDatabase;
 import org.glowroot.local.store.DataSource;
 import org.glowroot.local.store.GaugePointDao;
 import org.glowroot.local.store.MailService;
@@ -51,7 +50,7 @@ public class LocalUiModule {
 
     private final LazyHttpServer lazyHttpServer;
 
-    public LocalUiModule(Ticker ticker, Clock clock, File dataDir, JvmModule jvmModule,
+    public LocalUiModule(Ticker ticker, Clock clock, File baseDir, JvmModule jvmModule,
             ConfigModule configModule, StorageModule storageModule,
             CollectorModule collectorModule, TransactionModule transactionModule,
             @Nullable Instrumentation instrumentation, Map<String, String> properties,
@@ -63,7 +62,6 @@ public class LocalUiModule {
         TraceDao traceDao = storageModule.getTraceDao();
         GaugePointDao gaugePointDao = storageModule.getGaugePointDao();
         DataSource dataSource = storageModule.getDataSource();
-        CappedDatabase cappedDatabase = storageModule.getCappedDatabase();
         TransactionCollector transactionCollector = collectorModule.getTransactionCollector();
         AnalyzedWorld analyzedWorld = transactionModule.getAnalyzedWorld();
 
@@ -101,7 +99,7 @@ public class LocalUiModule {
                 new TraceDetailHttpService(traceCommonService);
         TraceExportHttpService traceExportHttpService =
                 new TraceExportHttpService(traceCommonService, version);
-        GlowrootLogHttpService glowrootLogHttpService = new GlowrootLogHttpService(dataDir);
+        GlowrootLogHttpService glowrootLogHttpService = new GlowrootLogHttpService(baseDir);
         ErrorCommonService errorCommonService = new ErrorCommonService(
                 aggregateDao, collectorModule.getAggregateCollector(),
                 storageModule.getFixedAggregateRollup1Seconds(),
@@ -117,8 +115,9 @@ public class LocalUiModule {
                 storageModule.getFixedGaugeRollup1Seconds(),
                 storageModule.getFixedGaugeRollup2Seconds());
         ConfigJsonService configJsonService = new ConfigJsonService(configService,
-                cappedDatabase, configModule.getPluginDescriptors(), httpSessionManager,
-                transactionModule, new MailService());
+                storageModule.getAggregateDetailRollupDatabase(),
+                storageModule.getTraceDetailDatabase(), configModule.getPluginDescriptors(),
+                httpSessionManager, transactionModule, new MailService());
         InstrumentationJsonService instrumentationJsonService = new InstrumentationJsonService(
                 configService, transactionModule.getAdviceCache(), transactionModule,
                 analyzedWorld, instrumentation);

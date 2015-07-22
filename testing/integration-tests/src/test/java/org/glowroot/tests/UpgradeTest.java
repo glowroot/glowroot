@@ -18,6 +18,7 @@ package org.glowroot.tests;
 import java.io.File;
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import org.junit.Test;
@@ -38,14 +39,22 @@ public class UpgradeTest {
     @Test
     public void shouldReadTraces() throws Exception {
         // given
-        File dataDir = TempDirs.createTempDir("glowroot-test-datadir");
+        File baseDir = TempDirs.createTempDir("glowroot-test-basedir");
+        File dataDir = new File(baseDir, "data");
+        dataDir.mkdir();
         Resources.asByteSource(Resources.getResource("for-upgrade-test/config.json"))
-                .copyTo(Files.asByteSink(new File(dataDir, "config.json")));
-        Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.h2.db"))
-                .copyTo(Files.asByteSink(new File(dataDir, "glowroot.h2.db")));
-        Resources.asByteSource(Resources.getResource("for-upgrade-test/glowroot.capped.db"))
-                .copyTo(Files.asByteSink(new File(dataDir, "glowroot.capped.db")));
-        Container container = Containers.createWithFileDb(dataDir);
+                .copyTo(Files.asByteSink(new File(baseDir, "config.json")));
+        Resources.asByteSource(Resources.getResource("for-upgrade-test/data/data.h2.db"))
+                .copyTo(Files.asByteSink(new File(dataDir, "data.h2.db")));
+        for (int i = 0; i < 3; i++) {
+            String filename = "aggregate-detail-rollup-" + i + ".capped.db";
+            Resources.asByteSource(Resources.getResource("for-upgrade-test/data/" + filename))
+                    .copyTo(Files.asByteSink(new File(dataDir, filename)));
+        }
+        Resources.asByteSource(
+                Resources.getResource("for-upgrade-test/data/trace-detail.capped.db"))
+                .copyTo(Files.asByteSink(new File(dataDir, "trace-detail.capped.db")));
+        Container container = Containers.createWithFileDb(baseDir);
         // when
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
@@ -64,27 +73,36 @@ public class UpgradeTest {
             // cleanup
             container.checkAndReset();
             container.close();
-            TempDirs.deleteRecursively(dataDir);
+            TempDirs.deleteRecursively(baseDir);
         }
     }
+
     // create initial database for upgrade test
     public static void main(String... args) throws Exception {
-        File dataDir = TempDirs.createTempDir("glowroot-test-datadir");
-        Container container = LocalContainer.createWithFileDb(dataDir);
+        File baseDir = TempDirs.createTempDir("glowroot-test-basedir");
+        Container container = LocalContainer.createWithFileDb(baseDir);
         StorageConfig storageConfig = container.getConfigService().getStorageConfig();
         // disable expiration so the test data won't expire
-        storageConfig.setAggregateExpirationHours(Integer.MAX_VALUE);
+        storageConfig.setAggregateRollupExpirationHours(
+                ImmutableList.of(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE));
         storageConfig.setTraceExpirationHours(Integer.MAX_VALUE);
         container.getConfigService().updateStorageConfig(storageConfig);
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         container.close();
-        Files.copy(new File(dataDir, "config.json"),
+        Files.copy(new File(baseDir, "config.json"),
                 new File("src/test/resources/for-upgrade-test/config.json"));
-        Files.copy(new File(dataDir, "glowroot.h2.db"),
-                new File("src/test/resources/for-upgrade-test/glowroot.h2.db"));
-        Files.copy(new File(dataDir, "glowroot.capped.db"),
-                new File("src/test/resources/for-upgrade-test/glowroot.capped.db"));
-        TempDirs.deleteRecursively(dataDir);
+        File dataDir = new File(baseDir, "data");
+        Files.copy(new File(dataDir, "data.h2.db"),
+                new File("src/test/resources/for-upgrade-test/data/data.h2.db"));
+        Files.copy(new File(dataDir, "aggregate-detail-rollup-0.capped.db"), new File(
+                "src/test/resources/for-upgrade-test/data/aggregate-detail-rollup-0.capped.db"));
+        Files.copy(new File(dataDir, "aggregate-detail-rollup-1.capped.db"), new File(
+                "src/test/resources/for-upgrade-test/data/aggregate-detail-rollup-1.capped.db"));
+        Files.copy(new File(dataDir, "aggregate-detail-rollup-2.capped.db"), new File(
+                "src/test/resources/for-upgrade-test/data/aggregate-detail-rollup-2.capped.db"));
+        Files.copy(new File(dataDir, "trace-detail.capped.db"),
+                new File("src/test/resources/for-upgrade-test/data/trace-detail.capped.db"));
+        TempDirs.deleteRecursively(baseDir);
     }
 
     public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest {

@@ -3,7 +3,12 @@
     "enabled": true,
     "traceStoreThresholdMillis": 0,
     "profilingIntervalMillis": 1000,
-    "defaultTransactionType": "Integration test"
+    "defaultDisplayedTransactionType": "Integration test",
+    "defaultDisplayedPercentiles": [
+      50.0,
+      95.0,
+      99.0
+    ]
   },
   "ui": {
     "port": 0,
@@ -13,10 +18,23 @@
     "sessionTimeoutMinutes": 30
   },
   "storage": {
-    "aggregateExpirationHours": 2147483647,
+    "aggregateRollupExpirationHours": [
+      2147483647,
+      2147483647,
+      2147483647
+    ],
+    "gaugeRollupExpirationHours": [
+      48,
+      336,
+      1440
+    ],
     "traceExpirationHours": 2147483647,
-    "gaugeExpirationHours": 168,
-    "cappedDatabaseSizeMb": 1000
+    "aggregateDetailRollupDatabaseSizeMb": [
+      500,
+      500,
+      500
+    ],
+    "traceDetailDatabaseSizeMb": 500
   },
   "smtp": {
     "fromEmailAddress": "",
@@ -37,6 +55,7 @@
     "timerWrapperMethods": false,
     "weavingTimer": false,
     "immediatePartialStoreThresholdSeconds": 60,
+    "maxAggregateTransactionsPerTransactionType": 500,
     "maxAggregateQueriesPerQueryType": 500,
     "maxTraceEntriesPerTransaction": 2000,
     "maxStackTraceSamplesPerTransaction": 10000,
@@ -74,6 +93,28 @@
       "mbeanAttributes": [
         {
           "name": "HeapMemoryUsage/used",
+          "everIncreasing": false
+        }
+      ]
+    },
+    {
+      "mbeanObjectName": "java.lang:type=GarbageCollector,name=*",
+      "mbeanAttributes": [
+        {
+          "name": "CollectionCount",
+          "everIncreasing": true
+        },
+        {
+          "name": "CollectionTime",
+          "everIncreasing": true
+        }
+      ]
+    },
+    {
+      "mbeanObjectName": "java.lang:type=MemoryPool,name=*",
+      "mbeanAttributes": [
+        {
+          "name": "Usage/used",
           "everIncreasing": false
         }
       ]

@@ -42,7 +42,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ChunkSource;
-import org.glowroot.local.store.CappedDatabaseStatsMXBean.Stats;
 import org.glowroot.markers.OnlyUsedByTests;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -61,7 +60,7 @@ public class CappedDatabase {
     private volatile boolean closing = false;
 
     private final Ticker ticker;
-    private final Map<String, Stats> statsByType = Maps.newHashMap();
+    private final Map<String, CappedDatabaseStats> statsByType = Maps.newHashMap();
 
     CappedDatabase(File file, int requestedSizeKb, Ticker ticker) throws IOException {
         this.file = file;
@@ -90,10 +89,10 @@ public class CappedDatabase {
         });
     }
 
-    Stats getStats(String type) {
-        Stats stats = statsByType.get(type);
+    CappedDatabaseStats getStats(String type) {
+        CappedDatabaseStats stats = statsByType.get(type);
         if (stats == null) {
-            return new Stats();
+            return new CappedDatabaseStats();
         }
         return stats;
     }
@@ -114,9 +113,9 @@ public class CappedDatabase {
             copier.copyTo(compressedWriter);
             compressedWriter.close();
             long endTick = ticker.read();
-            Stats stats = statsByType.get(type);
+            CappedDatabaseStats stats = statsByType.get(type);
             if (stats == null) {
-                stats = new Stats();
+                stats = new CappedDatabaseStats();
                 statsByType.put(type, stats);
             }
             stats.record(countingStreamBeforeCompression.getCount(),

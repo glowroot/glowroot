@@ -42,25 +42,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ConfiguredInstrumentationTest {
 
     protected static Container container;
-    private static File dataDir;
+    private static File baseDir;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        dataDir = TempDirs.createTempDir("glowroot-test-datadir");
-        container = Containers.createWithFileDb(dataDir);
+        baseDir = TempDirs.createTempDir("glowroot-test-basedir");
+        container = Containers.createWithFileDb(baseDir);
         addInstrumentationForExecute1();
         addInstrumentationForExecute1TimerOnly();
         addInstrumentationForExecuteWithReturn();
         addInstrumentationForExecuteWithArgs();
         // re-start now with pointcut configs
         container.close();
-        container = Containers.createWithFileDb(dataDir);
+        container = Containers.createWithFileDb(baseDir);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         container.close();
-        TempDirs.deleteRecursively(dataDir);
+        TempDirs.deleteRecursively(baseDir);
     }
 
     @After

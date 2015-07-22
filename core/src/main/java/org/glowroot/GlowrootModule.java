@@ -72,40 +72,40 @@ public class GlowrootModule {
     private final CollectorModule collectorModule;
     private final TransactionModule transactionModule;
     private final LocalUiModule uiModule;
-    private final File dataDir;
+    private final File baseDir;
 
-    private final RandomAccessFile dataDirLockFile;
-    private final FileLock dataDirFileLock;
+    private final RandomAccessFile baseDirLockFile;
+    private final FileLock baseDirFileLock;
 
     // this is used by tests to check that no warnings/errors are logged during tests
     private final boolean loggingSpy;
 
-    GlowrootModule(File dataDir, Map<String, String> properties,
+    GlowrootModule(File baseDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
             String version, boolean viewerModeEnabled, boolean jbossModules) throws Exception {
 
         loggingSpy = Boolean.valueOf(properties.get("internal.logging.spy"));
-        initStaticLoggerState(dataDir, loggingSpy);
+        initStaticLoggerState(baseDir, loggingSpy);
 
         // lock data dir
-        File tmpDir = new File(dataDir, "tmp");
+        File tmpDir = new File(baseDir, "tmp");
         File lockFile = new File(tmpDir, ".lock");
         try {
             Files.createParentDirs(lockFile);
             Files.touch(lockFile);
         } catch (IOException e) {
-            throw new DataDirLockedException(e);
+            throw new BaseDirLockedException(e);
         }
-        dataDirLockFile = new RandomAccessFile(lockFile, "rw");
-        FileLock dataDirFileLock = dataDirLockFile.getChannel().tryLock();
-        if (dataDirFileLock == null) {
-            throw new DataDirLockedException();
+        baseDirLockFile = new RandomAccessFile(lockFile, "rw");
+        FileLock baseDirFileLock = baseDirLockFile.getChannel().tryLock();
+        if (baseDirFileLock == null) {
+            throw new BaseDirLockedException();
         }
-        this.dataDirFileLock = dataDirFileLock;
+        this.baseDirFileLock = baseDirFileLock;
         lockFile.deleteOnExit();
 
         // init config module
-        configModule = new ConfigModule(dataDir, glowrootJarFile, viewerModeEnabled);
+        configModule = new ConfigModule(baseDir, glowrootJarFile, viewerModeEnabled);
 
         ticker = Tickers.getTicker();
         clock = Clock.systemClock();
@@ -124,8 +124,8 @@ public class GlowrootModule {
         TransactionCollectorProxy transactionCollectorProxy = new TransactionCollectorProxy();
         transactionModule = new TransactionModule(clock, ticker, configModule,
                 transactionCollectorProxy, jvmModule.getThreadAllocatedBytes().getService(),
-                instrumentation, dataDir, extraBootResourceFinder, scheduledExecutor);
-        storageModule = new StorageModule(dataDir, properties, clock, ticker, configModule,
+                instrumentation, baseDir, extraBootResourceFinder, scheduledExecutor);
+        storageModule = new StorageModule(baseDir, properties, clock, ticker, configModule,
                 scheduledExecutor, jvmModule.getLazyPlatformMBeanServer(), viewerModeEnabled);
         collectorModule = new CollectorModule(clock, ticker, jvmModule, configModule,
                 storageModule.getTraceRepository(), storageModule.getAggregateRepository(),
@@ -134,15 +134,15 @@ public class GlowrootModule {
         // now inject the real TransactionCollector into the proxy
         transactionCollectorProxy.setInstance(collectorModule.getTransactionCollector());
         initPlugins(configModule.getPluginDescriptors());
-        uiModule = new LocalUiModule(ticker, clock, dataDir, jvmModule, configModule,
+        uiModule = new LocalUiModule(ticker, clock, baseDir, jvmModule, configModule,
                 storageModule, collectorModule, transactionModule, instrumentation, properties,
                 version);
-        this.dataDir = dataDir;
+        this.baseDir = baseDir;
     }
 
-    private static void initStaticLoggerState(File dataDir, boolean loggingSpy) {
+    private static void initStaticLoggerState(File baseDir, boolean loggingSpy) {
         if (shouldOverrideLogging()) {
-            overrideLogging(dataDir);
+            overrideLogging(baseDir);
         }
         if (loggingSpy) {
             SpyingLogbackFilter.init();
@@ -180,14 +180,14 @@ public class GlowrootModule {
         return isShaded() && ClassLoader.getSystemResource("glowroot.logback-test.xml") == null;
     }
 
-    private static void overrideLogging(File dataDir) {
+    private static void overrideLogging(File baseDir) {
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
         try {
             JoranConfigurator configurator = new JoranConfigurator();
             configurator.setContext(context);
             context.reset();
-            context.putProperty("glowroot.data.dir", dataDir.getPath());
-            File logbackXmlFile = new File(dataDir, "glowroot.logback.xml");
+            context.putProperty("glowroot.base.dir", baseDir.getPath());
+            File logbackXmlFile = new File(baseDir, "glowroot.logback.xml");
             if (logbackXmlFile.exists()) {
                 configurator.doConfigure(logbackXmlFile);
             } else {
@@ -227,7 +227,7 @@ public class GlowrootModule {
 
     @OnlyUsedByTests
     public void reopen() {
-        initStaticLoggerState(dataDir, loggingSpy);
+        initStaticLoggerState(baseDir, loggingSpy);
         transactionModule.reopen();
     }
 
@@ -244,8 +244,8 @@ public class GlowrootModule {
         if (shouldOverrideLogging()) {
             ((LoggerContext) LoggerFactory.getILoggerFactory()).reset();
         }
-        dataDirFileLock.release();
-        dataDirLockFile.close();
+        baseDirFileLock.release();
+        baseDirLockFile.close();
     }
 
     @VisibleForTesting
@@ -262,13 +262,13 @@ public class GlowrootModule {
     }
 
     @SuppressWarnings("serial")
-    static class DataDirLockedException extends StartupFailedException {
+    static class BaseDirLockedException extends StartupFailedException {
 
-        private DataDirLockedException() {
+        private BaseDirLockedException() {
             super();
         }
 
-        private DataDirLockedException(Throwable cause) {
+        private BaseDirLockedException(Throwable cause) {
             super(cause);
         }
     }

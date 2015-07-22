@@ -15,36 +15,50 @@
  */
 package org.glowroot.local.store;
 
-public class CappedDatabaseStats implements CappedDatabaseStatsMXBean {
+public class CappedDatabaseStats {
 
-    static final String AGGREGATE_QUERIES = "aggregate queries";
-    static final String AGGREGATE_PROFILES = "aggregate profiles";
-    static final String TRACE_ENTRIES = "trace entries";
-    static final String TRACE_PROFILES = "trace profiles";
+    private long totalBytesBeforeCompression;
+    private long totalBytesAfterCompression;
+    private long totalMicros;
+    private long totalWrites;
 
-    private final CappedDatabase cappedDatabase;
-
-    CappedDatabaseStats(CappedDatabase cappedDatabase) {
-        this.cappedDatabase = cappedDatabase;
+    public long getTotalBytesBeforeCompression() {
+        return totalBytesBeforeCompression;
     }
 
-    @Override
-    public Stats getAggregateQueries() {
-        return cappedDatabase.getStats(AGGREGATE_QUERIES);
+    public long getTotalBytesAfterCompression() {
+        return totalBytesAfterCompression;
     }
 
-    @Override
-    public Stats getAggregateProfiles() {
-        return cappedDatabase.getStats(AGGREGATE_PROFILES);
+    public double getTotalMillis() {
+        return totalMicros / 1000.0;
     }
 
-    @Override
-    public Stats getTraceEntries() {
-        return cappedDatabase.getStats(TRACE_ENTRIES);
+    public long getTotalWrites() {
+        return totalWrites;
     }
 
-    @Override
-    public Stats getTraceProfiles() {
-        return cappedDatabase.getStats(TRACE_PROFILES);
+    public double getCompressionRatio() {
+        return (totalBytesBeforeCompression - totalBytesAfterCompression)
+                / (double) totalBytesBeforeCompression;
+    }
+
+    public double getAverageBytesPerWriteBeforeCompression() {
+        return totalBytesBeforeCompression / (double) totalWrites;
+    }
+
+    public double getAverageBytesPerWriteAfterCompression() {
+        return totalBytesAfterCompression / (double) totalWrites;
+    }
+
+    public double getAverageMillisPerWrite() {
+        return totalMicros / (double) (1000 * totalWrites);
+    }
+
+    void record(long bytesBeforeCompression, long bytesAfterCompression, long micros) {
+        totalBytesBeforeCompression += bytesBeforeCompression;
+        totalBytesAfterCompression += bytesAfterCompression;
+        totalMicros += micros;
+        totalWrites++;
     }
 }

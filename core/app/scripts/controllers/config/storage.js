@@ -32,21 +32,21 @@ glowroot.controller('ConfigStorageCtrl', [
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
-    $scope.$watch('page.aggregateExpirationDays', function (newValue) {
+    $scope.$watchCollection('page.aggregateRollupExpirationDays', function (newValue) {
       if ($scope.config) {
-        $scope.config.aggregateExpirationHours = newValue * 24;
+        $scope.config.aggregateRollupExpirationHours = daysArrToHoursArr(newValue);
       }
     });
 
-    $scope.$watch('page.traceExpirationDays', function (newValue) {
+    $scope.$watchCollection('page.gaugeRollupExpirationDays', function (newValue) {
+      if ($scope.config) {
+        $scope.config.gaugeRollupExpirationHours = daysArrToHoursArr(newValue);
+      }
+    });
+
+    $scope.$watchCollection('page.traceExpirationDays', function (newValue) {
       if ($scope.config) {
         $scope.config.traceExpirationHours = newValue * 24;
-      }
-    });
-
-    $scope.$watch('page.gaugeExpirationDays', function (newValue) {
-      if ($scope.config) {
-        $scope.config.gaugeExpirationHours = newValue * 24;
       }
     });
 
@@ -55,9 +55,25 @@ glowroot.controller('ConfigStorageCtrl', [
       $scope.config = data;
       $scope.originalConfig = angular.copy(data);
 
-      $scope.page.aggregateExpirationDays = data.aggregateExpirationHours / 24;
+      $scope.page.aggregateRollupExpirationDays = hoursArrToDaysArr(data.aggregateRollupExpirationHours);
+      $scope.page.gaugeRollupExpirationDays = hoursArrToDaysArr(data.gaugeRollupExpirationHours);
       $scope.page.traceExpirationDays = data.traceExpirationHours / 24;
-      $scope.page.gaugeExpirationDays = data.gaugeExpirationHours / 24;
+    }
+
+    function daysArrToHoursArr(daysArr) {
+      var hoursArr = [];
+      angular.forEach(daysArr, function (days) {
+        hoursArr.push(days * 24);
+      });
+      return hoursArr;
+    }
+
+    function hoursArrToDaysArr(hoursArr) {
+      var daysArr = [];
+      angular.forEach(hoursArr, function (hours) {
+        daysArr.push(hours / 24);
+      });
+      return daysArr;
     }
 
     $scope.save = function (deferred) {

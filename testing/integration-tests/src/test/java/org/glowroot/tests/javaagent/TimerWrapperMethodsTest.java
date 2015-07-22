@@ -42,11 +42,11 @@ public class TimerWrapperMethodsTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        File dataDir = Files.createTempDir();
-        File configFile = new File(dataDir, "config.json");
+        File baseDir = Files.createTempDir();
+        File configFile = new File(baseDir, "config.json");
         Files.write("{\"ui\":{\"port\":0},\"advanced\":{\"timerWrapperMethods\":true}}}",
                 configFile, Charsets.UTF_8);
-        container = JavaagentContainer.createWithFileDb(dataDir);
+        container = JavaagentContainer.createWithFileDb(baseDir);
         // capture one trace to warm up the system, otherwise sometimes there are delays in class
         // loading and the profiler captures too many or too few samples
         container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);

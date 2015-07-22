@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,10 @@ public class ConfigModule {
     private final PluginCache pluginCache;
     private final ConfigService configService;
 
-    public ConfigModule(File dataDir, @Nullable File glowrootJarFile, boolean viewerModeEnabled)
+    public ConfigModule(File baseDir, @Nullable File glowrootJarFile, boolean viewerModeEnabled)
             throws Exception {
         pluginCache = PluginCache.create(glowrootJarFile, viewerModeEnabled);
-        configService = new ConfigService(dataDir, pluginCache.pluginDescriptors());
+        configService = new ConfigService(baseDir, pluginCache.pluginDescriptors());
     }
 
     public List<PluginDescriptor> getPluginDescriptors() {

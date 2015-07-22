@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,18 +30,18 @@ public class ConfigFileLastModifiedTest {
     @Test
     public void shouldNotUpdateFileOnStartupIfNoChanges() throws Exception {
         // given
-        File dataDir = TempDirs.createTempDir("glowroot-test-datadir");
-        Container container = Containers.create(dataDir, false);
-        File configFile = new File(dataDir, "config.json");
+        File baseDir = TempDirs.createTempDir("glowroot-test-basedir");
+        Container container = Containers.create(baseDir, false);
+        File configFile = new File(baseDir, "config.json");
         long originalLastModified = configFile.lastModified();
         // when
         container.close();
-        container = Containers.create(dataDir, true);
+        container = Containers.create(baseDir, true);
         long lastModified = configFile.lastModified();
         // then
         assertThat(lastModified).isEqualTo(originalLastModified);
         // cleanup
         container.close();
-        TempDirs.deleteRecursively(dataDir);
+        TempDirs.deleteRecursively(baseDir);
     }
 }

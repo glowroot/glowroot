@@ -43,27 +43,27 @@ public class TraceDaoDeletePerformanceMain {
             Thread.sleep(1000);
             pendingWrites = container.getAdminService().getNumPendingCompleteTransactions();
         }
-        File dbFile = new File("target/glowroot.h2.db");
+        File dbFile = new File("target/data/data.h2.db");
         long dbSize = dbFile.length();
-        logger.info("glowroot.h2.db: {} bytes", dbSize);
+        logger.info("data.h2.db: {} bytes", dbSize);
         Stopwatch stopwatch = Stopwatch.createStarted();
         container.getAdminService().deleteAllData();
         logger.info("all traces deleted in: {} millis", stopwatch.elapsed(MILLISECONDS));
-        logger.info("glowroot.h2.db: {} bytes", dbFile.length());
+        logger.info("data.h2.db: {} bytes", dbFile.length());
         container.close();
-        logger.info("glowroot.h2.db: {} bytes", dbFile.length());
+        logger.info("data.h2.db: {} bytes", dbFile.length());
     }
 
     public static class GenerateTraces implements AppUnderTest {
         @Override
         public void executeApp() throws InterruptedException {
-            File dbFile = new File("target/glowroot.h2.db");
+            File dbFile = new File("target/data/data.h2.db");
             long lastSizeMb = 0;
             while (dbFile.length() < 100 * 1024 * 1024) {
                 new NestableCall(new NestableCall(10, 2, 5000), 20, 2, 5000).execute();
                 long sizeMb = dbFile.length() / (1024 * 1024);
                 if (sizeMb > lastSizeMb) {
-                    logger.info("glowroot.h2.db: {} mb", sizeMb);
+                    logger.info("data.h2.db: {} mb", sizeMb);
                     lastSizeMb = sizeMb;
                 }
             }

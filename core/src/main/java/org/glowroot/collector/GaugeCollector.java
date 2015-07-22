@@ -47,7 +47,7 @@ import org.glowroot.config.ConfigService;
 import org.glowroot.config.GaugeConfig;
 import org.glowroot.config.MBeanAttribute;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
-import org.glowroot.jvm.LazyPlatformMBeanServer.MBeanServerCallback;
+import org.glowroot.jvm.LazyPlatformMBeanServer.InitListener;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -88,9 +88,9 @@ class GaugeCollector extends ScheduledRunnable {
                 .setNameFormat("Glowroot-Gauge-Collector-%d")
                 .build();
         dedicatedScheduledExecutor = Executors.newScheduledThreadPool(1, threadFactory);
-        lazyPlatformMBeanServer.possiblyDelayedCall(new MBeanServerCallback() {
+        lazyPlatformMBeanServer.addInitListener(new InitListener() {
             @Override
-            public void call(MBeanServer mbeanServer) {
+            public void postInit(MBeanServer mbeanServer) {
                 try {
                     Class<?> sunManagementFactoryHelperClass =
                             Class.forName("sun.management.ManagementFactoryHelper");

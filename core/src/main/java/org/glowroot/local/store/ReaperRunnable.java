@@ -20,6 +20,7 @@ import java.sql.SQLException;
 import org.glowroot.common.Clock;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.config.ConfigService;
+import org.glowroot.config.StorageConfig;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
@@ -42,16 +43,20 @@ class ReaperRunnable extends ScheduledRunnable {
 
     @Override
     protected void runInternal() throws SQLException {
-        long aggregateCaptureTime = clock.currentTimeMillis()
-                - HOURS.toMillis(configService.getStorageConfig().aggregateExpirationHours());
-        aggregateDao.deleteBefore(aggregateCaptureTime);
+        StorageConfig storageConfig = configService.getStorageConfig();
+        for (int i = 0; i < storageConfig.aggregateRollupExpirationHours().size(); i++) {
+            int hours = storageConfig.aggregateRollupExpirationHours().get(i);
+            long aggregateCaptureTime = clock.currentTimeMillis() - HOURS.toMillis(hours);
+            aggregateDao.deleteBefore(aggregateCaptureTime, i);
+        }
+        for (int i = 0; i < storageConfig.gaugeRollupExpirationHours().size(); i++) {
+            int hours = storageConfig.gaugeRollupExpirationHours().get(i);
+            long gaugeCaptureTime = clock.currentTimeMillis() - HOURS.toMillis(hours);
+            gaugePointDao.deleteBefore(gaugeCaptureTime, i);
+        }
 
         long traceCaptureTime = clock.currentTimeMillis()
-                - HOURS.toMillis(configService.getStorageConfig().traceExpirationHours());
+                - HOURS.toMillis(storageConfig.traceExpirationHours());
         traceDao.deleteBefore(traceCaptureTime);
-
-        long gaugeCaptureTime = clock.currentTimeMillis()
-                - HOURS.toMillis(configService.getStorageConfig().gaugeExpirationHours());
-        gaugePointDao.deleteBefore(gaugeCaptureTime);
     }
 }

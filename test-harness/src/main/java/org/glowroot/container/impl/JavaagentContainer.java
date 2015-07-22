@@ -64,8 +64,8 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
 
     private static final Logger logger = LoggerFactory.getLogger(JavaagentContainer.class);
 
-    private final File dataDir;
-    private final boolean deleteDataDirOnClose;
+    private final File baseDir;
+    private final boolean deleteBaseDirOnClose;
     private final boolean shared;
 
     private final ServerSocket serverSocket;
@@ -85,8 +85,8 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
                 ImmutableList.<String>of());
     }
 
-    public static JavaagentContainer createWithFileDb(File dataDir) throws Exception {
-        return new JavaagentContainer(dataDir, true, 0, false, false, false,
+    public static JavaagentContainer createWithFileDb(File baseDir) throws Exception {
+        return new JavaagentContainer(baseDir, true, 0, false, false, false,
                 ImmutableList.<String>of());
     }
 
@@ -95,24 +95,24 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
         return new JavaagentContainer(null, false, 0, false, false, false, extraJvmArgs);
     }
 
-    public JavaagentContainer(@Nullable File dataDir, boolean useFileDb, int port, boolean shared,
+    public JavaagentContainer(@Nullable File baseDir, boolean useFileDb, int port, boolean shared,
             boolean captureConsoleOutput, boolean viewerMode, List<String> extraJvmArgs)
                     throws Exception {
-        if (dataDir == null) {
-            this.dataDir = TempDirs.createTempDir("glowroot-test-datadir");
-            deleteDataDirOnClose = true;
+        if (baseDir == null) {
+            this.baseDir = TempDirs.createTempDir("glowroot-test-basedir");
+            deleteBaseDirOnClose = true;
         } else {
-            this.dataDir = dataDir;
-            deleteDataDirOnClose = false;
+            this.baseDir = baseDir;
+            deleteBaseDirOnClose = false;
         }
         this.shared = shared;
         // need to start socket listener before spawning process so process can connect to socket
         serverSocket = new ServerSocket(0);
-        File configFile = new File(this.dataDir, "config.json");
+        File configFile = new File(this.baseDir, "config.json");
         if (!configFile.exists()) {
             Files.write("{\"ui\":{\"port\":" + port + "}}", configFile, Charsets.UTF_8);
         }
-        List<String> command = buildCommand(serverSocket.getLocalPort(), this.dataDir, useFileDb,
+        List<String> command = buildCommand(serverSocket.getLocalPort(), this.baseDir, useFileDb,
                 viewerMode, extraJvmArgs);
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
@@ -281,12 +281,12 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
         consolePipeExecutorService.shutdownNow();
         Runtime.getRuntime().removeShutdownHook(shutdownHook);
         httpClient.close();
-        if (deleteDataDirOnClose) {
-            TempDirs.deleteRecursively(dataDir);
+        if (deleteBaseDirOnClose) {
+            TempDirs.deleteRecursively(baseDir);
         }
     }
 
-    static List<String> buildCommand(int containerPort, File dataDir, boolean useFileDb,
+    static List<String> buildCommand(int containerPort, File baseDir, boolean useFileDb,
             boolean viewerMode, List<String> extraJvmArgs) throws Exception {
         List<String> command = Lists.newArrayList();
         String javaExecutable = StandardSystemProperty.JAVA_HOME.value() + File.separator + "bin"
@@ -321,14 +321,14 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
             command.add("-Xbootclasspath/a:" + Joiner.on(File.pathSeparatorChar).join(paths));
             if (javaagentJarFile == null) {
                 // create jar file in data dir since that gets cleaned up at end of test already
-                javaagentJarFile = DelegatingJavaagent.createDelegatingJavaagentJarFile(dataDir);
+                javaagentJarFile = DelegatingJavaagent.createDelegatingJavaagentJarFile(baseDir);
                 command.add("-javaagent:" + javaagentJarFile);
                 command.add("-DdelegateJavaagent=" + Agent.class.getName());
             } else {
                 command.add("-javaagent:" + javaagentJarFile);
             }
         }
-        command.add("-Dglowroot.data.dir=" + dataDir.getAbsolutePath());
+        command.add("-Dglowroot.base.dir=" + baseDir.getAbsolutePath());
         command.add("-Dglowroot.internal.logging.spy=true");
         if (!useFileDb) {
             command.add("-Dglowroot.internal.h2.memdb=true");

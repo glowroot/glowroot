@@ -34,19 +34,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class DataSourceCompactTest {
 
-    private static File dataDir;
+    private static File baseDir;
     private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        dataDir = TempDirs.createTempDir("glowroot-test-datadir");
-        container = Containers.createWithFileDb(dataDir);
+        baseDir = TempDirs.createTempDir("glowroot-test-basedir");
+        container = Containers.createWithFileDb(baseDir);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         container.close();
-        TempDirs.deleteRecursively(dataDir);
+        TempDirs.deleteRecursively(baseDir);
     }
 
     @After
@@ -57,7 +57,7 @@ public class DataSourceCompactTest {
     @Test
     public void shouldCompact() throws Exception {
         // given
-        File dbFile = new File(dataDir, "glowroot.h2.db");
+        File dbFile = new File(baseDir, "data/data.h2.db");
         // when
         container.addExpectedLogMessage("org.glowroot.collector.TransactionCollectorImpl",
                 "not storing a trace because of an excessive backlog");

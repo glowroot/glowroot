@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,19 +27,19 @@ import org.glowroot.container.impl.JavaagentContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DataDirLockTest {
+public class BaseDirLockTest {
 
     @Test
     public void shouldShutdown() throws Exception {
         // given
-        File dataDir = TempDirs.createTempDir("glowroot-test-datadir");
-        Container container = Containers.createWithFileDb(dataDir);
+        File baseDir = TempDirs.createTempDir("glowroot-test-basedir");
+        Container container = Containers.createWithFileDb(baseDir);
         // when
         boolean exception = false;
         try {
             // this test is only relevant using an external jvm for one of containers
             // since the data dir lock is held globally by the jvm
-            JavaagentContainer.createWithFileDb(dataDir);
+            JavaagentContainer.createWithFileDb(baseDir);
         } catch (StartupFailedException e) {
             exception = true;
         }
@@ -47,6 +47,6 @@ public class DataDirLockTest {
         assertThat(exception).isTrue();
         // cleanup
         container.close();
-        TempDirs.deleteRecursively(dataDir);
+        TempDirs.deleteRecursively(baseDir);
     }
 }

@@ -51,8 +51,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LocalContainer implements Container {
 
-    private final File dataDir;
-    private final boolean deleteDataDirOnClose;
+    private final File baseDir;
+    private final boolean deleteBaseDirOnClose;
     private final boolean shared;
 
     private final IsolatedWeavingClassLoader isolatedWeavingClassLoader;
@@ -64,26 +64,26 @@ public class LocalContainer implements Container {
     private final List<Thread> executingAppThreads = Lists.newCopyOnWriteArrayList();
     private final GlowrootModule glowrootModule;
 
-    public static Container createWithFileDb(File dataDir) throws Exception {
-        return new LocalContainer(dataDir, true, 0, false, ImmutableMap.<String, String>of());
+    public static Container createWithFileDb(File baseDir) throws Exception {
+        return new LocalContainer(baseDir, true, 0, false, ImmutableMap.<String, String>of());
     }
 
-    public LocalContainer(@Nullable File dataDir, boolean useFileDb, int port, boolean shared,
+    public LocalContainer(@Nullable File baseDir, boolean useFileDb, int port, boolean shared,
             Map<String, String> extraProperties) throws Exception {
-        if (dataDir == null) {
-            this.dataDir = TempDirs.createTempDir("glowroot-test-datadir");
-            deleteDataDirOnClose = true;
+        if (baseDir == null) {
+            this.baseDir = TempDirs.createTempDir("glowroot-test-basedir");
+            deleteBaseDirOnClose = true;
         } else {
-            this.dataDir = dataDir;
-            deleteDataDirOnClose = false;
+            this.baseDir = baseDir;
+            deleteBaseDirOnClose = false;
         }
         this.shared = shared;
-        File configFile = new File(this.dataDir, "config.json");
+        File configFile = new File(this.baseDir, "config.json");
         if (!configFile.exists()) {
             Files.write("{\"ui\":{\"port\":" + port + "}}", configFile, Charsets.UTF_8);
         }
         Map<String, String> properties = Maps.newHashMap();
-        properties.put("data.dir", this.dataDir.getAbsolutePath());
+        properties.put("base.dir", this.baseDir.getAbsolutePath());
         properties.put("internal.logging.spy", "true");
         if (!useFileDb) {
             properties.put("internal.h2.memdb", "true");
@@ -229,8 +229,8 @@ public class LocalContainer implements Container {
         }
         httpClient.close();
         glowrootModule.close();
-        if (deleteDataDirOnClose) {
-            TempDirs.deleteRecursively(dataDir);
+        if (deleteBaseDirOnClose) {
+            TempDirs.deleteRecursively(baseDir);
         }
     }
 

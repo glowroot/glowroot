@@ -15,17 +15,31 @@
  */
 package org.glowroot.config;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
 @Value.Immutable
+// ignore these old properties as part of upgrade from 0.8.3 to 0.8.4
+@JsonIgnoreProperties({"aggregateExpirationHours", "gaugeExpirationHours"})
 public abstract class StorageConfigBase {
 
     // currently aggregate expiration should be at least as big as trace expiration
     // errors/messages page depends on this for calculating error percentage when using the filter
     @Value.Default
-    public int aggregateExpirationHours() {
-        return 24 * 7;
+    public ImmutableList<Integer> aggregateRollupExpirationHours() {
+        // 2 days, 2 weeks, 2 months
+        return ImmutableList.of(24 * 2, 24 * 14, 24 * 60);
+    }
+
+    @Value.Default
+    public ImmutableList<Integer> gaugeRollupExpirationHours() {
+        // 2 days, 2 weeks, 2 months
+        return ImmutableList.of(24 * 2, 24 * 14, 24 * 60);
     }
 
     @Value.Default
@@ -34,19 +48,52 @@ public abstract class StorageConfigBase {
     }
 
     @Value.Default
-    public int gaugeExpirationHours() {
-        return 24 * 7;
+    public ImmutableList<Integer> aggregateDetailRollupDatabaseSizeMb() {
+        return ImmutableList.of(500, 500, 500);
     }
 
-    // size of capped database for storing trace details (entries and profiles)
     @Value.Default
-    public int cappedDatabaseSizeMb() {
-        return 1000;
+    public int traceDetailDatabaseSizeMb() {
+        return 500;
     }
 
     @Value.Derived
     @JsonIgnore
     public String version() {
         return Versions.getVersion(this);
+    }
+
+    boolean hasListIssues() {
+        return aggregateRollupExpirationHours().size() != 3
+                || gaugeRollupExpirationHours().size() != 3
+                || aggregateDetailRollupDatabaseSizeMb().size() != 3;
+    }
+
+    StorageConfig withCorrectedLists() {
+        StorageConfig thisConfig = (StorageConfig) this;
+        StorageConfig defaultConfig = StorageConfig.builder().build();
+        ImmutableList<Integer> aggregateRollupExpirationHours =
+                fix(aggregateRollupExpirationHours(),
+                        defaultConfig.aggregateRollupExpirationHours());
+        ImmutableList<Integer> gaugeRollupExpirationHours =
+                fix(gaugeRollupExpirationHours(),
+                        defaultConfig.gaugeRollupExpirationHours());
+        ImmutableList<Integer> aggregateDetailRollupDatabaseSizeMb =
+                fix(aggregateDetailRollupDatabaseSizeMb(),
+                        defaultConfig.aggregateDetailRollupDatabaseSizeMb());
+        return thisConfig.withAggregateRollupExpirationHours(aggregateRollupExpirationHours)
+                .withGaugeRollupExpirationHours(gaugeRollupExpirationHours)
+                .withAggregateDetailRollupDatabaseSizeMb(aggregateDetailRollupDatabaseSizeMb);
+    }
+
+    private ImmutableList<Integer> fix(ImmutableList<Integer> thisList, List<Integer> defaultList) {
+        if (thisList.size() >= defaultList.size()) {
+            return thisList.subList(0, defaultList.size());
+        }
+        List<Integer> correctedList = Lists.newArrayList(thisList);
+        for (int i = thisList.size(); i < defaultList.size(); i++) {
+            correctedList.add(defaultList.get(i));
+        }
+        return ImmutableList.copyOf(correctedList);
     }
 }

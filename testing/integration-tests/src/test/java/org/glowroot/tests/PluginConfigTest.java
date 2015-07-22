@@ -40,23 +40,23 @@ public class PluginConfigTest {
 
     private static final Random random = new Random();
 
-    private static File dataDir;
+    private static File baseDir;
     private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
         // create config.json with empty properties to test different code path
-        dataDir = TempDirs.createTempDir("glowroot-test-datadir");
+        baseDir = TempDirs.createTempDir("glowroot-test-basedir");
         Files.write("{\"ui\":{\"port\":0},\"plugins\":[{\"id\":\"glowroot-integration-tests\","
-                + "\"enabled\":true}]}", new File(dataDir, "config.json"),
+                + "\"enabled\":true}]}", new File(baseDir, "config.json"),
                 Charsets.UTF_8);
-        container = Containers.createWithFileDb(dataDir);
+        container = Containers.createWithFileDb(baseDir);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         container.close();
-        TempDirs.deleteRecursively(dataDir);
+        TempDirs.deleteRecursively(baseDir);
     }
 
     @After

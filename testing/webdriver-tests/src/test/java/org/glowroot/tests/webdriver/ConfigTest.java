@@ -152,24 +152,43 @@ public class ConfigTest extends WebDriverTest {
         configSidebar.getStorageLink().click();
 
         // when
-        page.getAggregateExpirationTextField().clear();
-        page.getAggregateExpirationTextField().sendKeys("44");
+        for (int i = 0; i < 3; i++) {
+            page.getAggregateRollupExpirationTextField(i).clear();
+            page.getAggregateRollupExpirationTextField(i).sendKeys("44" + i);
+        }
+        for (int i = 0; i < 3; i++) {
+            page.getGaugeRollupExpirationTextField(i).clear();
+            page.getGaugeRollupExpirationTextField(i).sendKeys("55" + i);
+        }
         page.getTraceExpirationTextField().clear();
-        page.getTraceExpirationTextField().sendKeys("55");
-        page.getGaugeExpirationTextField().clear();
-        page.getGaugeExpirationTextField().sendKeys("66");
-        page.getCappedDatabaseSizeTextField().clear();
-        page.getCappedDatabaseSizeTextField().sendKeys("678");
+        page.getTraceExpirationTextField().sendKeys("66");
+        for (int i = 0; i < 3; i++) {
+            page.getAggregateDetailRollupDatabaseSizeTextField(i).clear();
+            page.getAggregateDetailRollupDatabaseSizeTextField(i).sendKeys("77" + i);
+        }
+        page.getTraceDetailDatabaseSizeTextField().clear();
+        page.getTraceDetailDatabaseSizeTextField().sendKeys("88");
         page.clickSaveButton();
 
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
         configSidebar.getStorageLink().click();
-        assertThat(page.getAggregateExpirationTextField().getAttribute("value")).isEqualTo("44");
-        assertThat(page.getTraceExpirationTextField().getAttribute("value")).isEqualTo("55");
-        assertThat(page.getGaugeExpirationTextField().getAttribute("value")).isEqualTo("66");
-        assertThat(page.getCappedDatabaseSizeTextField().getAttribute("value")).isEqualTo("678");
+        for (int i = 0; i < 3; i++) {
+            assertThat(page.getAggregateRollupExpirationTextField(i).getAttribute("value"))
+                    .isEqualTo("44" + i);
+        }
+        for (int i = 0; i < 3; i++) {
+            assertThat(page.getGaugeRollupExpirationTextField(i).getAttribute("value"))
+                    .isEqualTo("55" + i);
+        }
+        assertThat(page.getTraceExpirationTextField().getAttribute("value")).isEqualTo("66");
+        for (int i = 0; i < 3; i++) {
+            assertThat(page.getAggregateDetailRollupDatabaseSizeTextField(i).getAttribute("value"))
+                    .isEqualTo("77" + i);
+        }
+        assertThat(page.getTraceDetailDatabaseSizeTextField().getAttribute("value"))
+                .isEqualTo("88");
     }
 
     @Test

@@ -36,20 +36,20 @@ import static org.glowroot.common.Checkers.castUntainted;
 
 public class GaugePointDao implements GaugePointRepository {
 
-    private static final ImmutableList<Column> gaugePointColumns = ImmutableList.<Column>of(
+    private static final ImmutableList<Column> gaugePointRollup0Columns = ImmutableList.<Column>of(
             Column.of("gauge_meta_id", Types.BIGINT),
             Column.of("capture_time", Types.BIGINT),
             Column.of("value", Types.DOUBLE));
 
-    private static final ImmutableList<Index> gaugePointIndexes =
-            ImmutableList.<Index>of(Index.of("gauge_point_idx",
-                    ImmutableList.of("gauge_meta_id", "capture_time", "value")));
-
-    private static final ImmutableList<Column> gaugePointRollupColumns = ImmutableList.<Column>of(
+    private static final ImmutableList<Column> gaugePointRollupXColumns = ImmutableList.<Column>of(
             Column.of("gauge_meta_id", Types.BIGINT),
             Column.of("capture_time", Types.BIGINT),
             Column.of("value", Types.DOUBLE),
             Column.of("count", Types.DOUBLE)); // count is needed for further rollups
+
+    private static final ImmutableList<Index> gaugePointRollup0Indexes =
+            ImmutableList.<Index>of(Index.of("gauge_point_rollup_0_idx",
+                    ImmutableList.of("gauge_meta_id", "capture_time", "value")));
 
     private static final ImmutableList<Index> gaugePointRollup1Indexes =
             ImmutableList.<Index>of(Index.of("gauge_point_rollup_1_idx",
@@ -92,11 +92,16 @@ public class GaugePointDao implements GaugePointRepository {
         dataSource.renameColumn("gauge_point", "gauge_id", "gauge_meta_id");
         dataSource.renameColumn("gauge_point_rollup_1", "gauge_id", "gauge_meta_id");
 
-        dataSource.syncTable("gauge_point", gaugePointColumns);
-        dataSource.syncIndexes("gauge_point", gaugePointIndexes);
-        dataSource.syncTable("gauge_point_rollup_1", gaugePointRollupColumns);
+        // upgrade from 0.8.3 to 0.8.4
+        if (dataSource.tableExists("gauge_point")) {
+            dataSource.execute("alter table gauge_point rename to gauge_point_rollup_0");
+        }
+
+        dataSource.syncTable("gauge_point_rollup_0", gaugePointRollup0Columns);
+        dataSource.syncIndexes("gauge_point_rollup_0", gaugePointRollup0Indexes);
+        dataSource.syncTable("gauge_point_rollup_1", gaugePointRollupXColumns);
         dataSource.syncIndexes("gauge_point_rollup_1", gaugePointRollup1Indexes);
-        dataSource.syncTable("gauge_point_rollup_2", gaugePointRollupColumns);
+        dataSource.syncTable("gauge_point_rollup_2", gaugePointRollupXColumns);
         dataSource.syncIndexes("gauge_point_rollup_2", gaugePointRollup2Indexes);
         dataSource.syncTable("gauge_point_last_rollup_times", gaugePointLastRollupTimesColumns);
 
@@ -123,8 +128,8 @@ public class GaugePointDao implements GaugePointRepository {
         if (gaugePoints.isEmpty()) {
             return;
         }
-        dataSource.batchUpdate("insert into gauge_point (gauge_meta_id, capture_time, value)"
-                + " values (?, ?, ?)", new BatchAdder() {
+        dataSource.batchUpdate("insert into gauge_point_rollup_0"
+                + " (gauge_meta_id, capture_time, value) values (?, ?, ?)", new BatchAdder() {
                     @Override
                     public void addBatches(PreparedStatement preparedStatement)
                             throws SQLException {
@@ -151,7 +156,7 @@ public class GaugePointDao implements GaugePointRepository {
             long safeRollup1Time = (long) Math.floor(safeRollupTime / (double) fixedRollup1Millis)
                     * fixedRollup1Millis;
             if (safeRollup1Time > lastRollup1Time) {
-                rollup(lastRollup1Time, safeRollup1Time, fixedRollup1Millis, "_rollup_1", "");
+                rollup(lastRollup1Time, safeRollup1Time, fixedRollup1Millis, 1, 0);
                 dataSource.update("update gauge_point_last_rollup_times set last_rollup_1_time = ?",
                         lastRollup1Time);
                 lastRollup1Time = safeRollup1Time;
@@ -159,8 +164,7 @@ public class GaugePointDao implements GaugePointRepository {
             long safeRollup2Time = (long) Math.floor(safeRollupTime / (double) fixedRollup2Millis)
                     * fixedRollup2Millis;
             if (safeRollup2Time > lastRollup2Time) {
-                rollup(lastRollup2Time, safeRollup2Time, fixedRollup2Millis, "_rollup_2",
-                        "_rollup_1");
+                rollup(lastRollup2Time, safeRollup2Time, fixedRollup2Millis, 2, 1);
                 dataSource.update("update gauge_point_last_rollup_times set last_rollup_2_time = ?",
                         lastRollup2Time);
                 lastRollup2Time = safeRollup2Time;
@@ -169,11 +173,8 @@ public class GaugePointDao implements GaugePointRepository {
     }
 
     public ImmutableList<GaugePoint> readGaugePoints(String gaugeName, long captureTimeFrom,
-            long captureTimeTo, int rollupLevel) throws SQLException {
-        String tableName = "gauge_point";
-        if (rollupLevel > 0) {
-            tableName += "_rollup_" + castUntainted(rollupLevel);
-        }
+            long captureTimeTo, @Untainted int rollupLevel) throws SQLException {
+        String tableName = "gauge_point_rollup_" + rollupLevel;
         Long gaugeMetaId = gaugeMetaDao.getGaugeMetaId(gaugeName);
         if (gaugeMetaId == null) {
             // not necessarily an error, gauge id not created until first store
@@ -197,35 +198,35 @@ public class GaugePointDao implements GaugePointRepository {
     }
 
     public void deleteAll() throws SQLException {
-        dataSource.execute("truncate table gauge_point");
+        dataSource.execute("truncate table gauge_point_rollup_0");
         dataSource.execute("truncate table gauge_point_rollup_1");
         dataSource.execute("truncate table gauge_point_rollup_2");
     }
 
-    void deleteBefore(long captureTime) throws SQLException {
-        dataSource.deleteBefore("gauge_point", captureTime);
-        dataSource.deleteBefore("gauge_point_rollup_1", captureTime);
-        dataSource.deleteBefore("gauge_point_rollup_2", captureTime);
+    void deleteBefore(long captureTime, @Untainted int rollupLevel) throws SQLException {
+        dataSource.deleteBefore("gauge_point_rollup_" + rollupLevel, captureTime);
     }
 
     private void rollup(long lastRollupTime, long safeRollupTime, long fixedRollupMillis,
-            @Untainted String rollupSuffix, @Untainted String sourceSuffix) throws SQLException {
+            @Untainted int toRollupLevel, @Untainted int fromRollupLevel) throws SQLException {
         // need ".0" to force double result
         String captureTimeSql = castUntainted("ceil(capture_time / " + fixedRollupMillis + ".0) * "
                 + fixedRollupMillis);
-        rollup(lastRollupTime, safeRollupTime, captureTimeSql, false, rollupSuffix, sourceSuffix);
-        rollup(lastRollupTime, safeRollupTime, captureTimeSql, true, rollupSuffix, sourceSuffix);
+        rollup(lastRollupTime, safeRollupTime, captureTimeSql, false, toRollupLevel,
+                fromRollupLevel);
+        rollup(lastRollupTime, safeRollupTime, captureTimeSql, true, toRollupLevel,
+                fromRollupLevel);
     }
 
     private void rollup(long lastRollupTime, long safeRollupTime, @Untainted String captureTimeSql,
-            boolean everIncreasing, @Untainted String rollupSuffix, @Untainted String sourceSuffix)
+            boolean everIncreasing, @Untainted int toRollupLevel, @Untainted int fromRollupLevel)
                     throws SQLException {
         String aggregateFunction = everIncreasing ? "max" : "avg";
-        dataSource.update("insert into gauge_point" + rollupSuffix
+        dataSource.update("insert into gauge_point_rollup_" + toRollupLevel
                 + " (gauge_meta_id, capture_time, value, count) select gauge_meta_id, "
                 + captureTimeSql + " ceil_capture_time, " + aggregateFunction
-                + "(value), count(*) from gauge_point" + sourceSuffix + " gp, gauge_meta gm"
-                + " where gp.capture_time > ? and gp.capture_time <= ?"
+                + "(value), count(*) from gauge_point_rollup_" + fromRollupLevel
+                + " gp, gauge_meta gm where gp.capture_time > ? and gp.capture_time <= ?"
                 + " and gp.gauge_meta_id = gm.id and gm.ever_increasing = ?"
                 + " group by gp.gauge_meta_id, ceil_capture_time", lastRollupTime, safeRollupTime,
                 everIncreasing);

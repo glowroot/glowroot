@@ -39,17 +39,17 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 class GlowrootLogHttpService implements UnauthenticatedHttpService {
 
-    private final File dataDir;
+    private final File baseDir;
 
-    GlowrootLogHttpService(File dataDir) {
-        this.dataDir = dataDir;
+    GlowrootLogHttpService(File baseDir) {
+        this.baseDir = baseDir;
     }
 
     @Override
     public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
             throws Exception {
 
-        File glowrootLogFile = new File(dataDir, "glowroot.log");
+        File glowrootLogFile = new File(baseDir, "glowroot.log");
         CharSource glowrootLogCharSource = Files.asCharSource(glowrootLogFile, Charsets.UTF_8);
 
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);

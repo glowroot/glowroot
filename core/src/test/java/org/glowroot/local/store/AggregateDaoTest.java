@@ -56,7 +56,8 @@ public class AggregateDaoTest {
         cappedDatabase = new CappedDatabase(cappedFile, 1000000, Tickers.getTicker());
         ConfigService configService = mock(ConfigService.class);
         when(configService.getAdvancedConfig()).thenReturn(AdvancedConfig.builder().build());
-        aggregateDao = new AggregateDao(dataSource, cappedDatabase, configService, 15, 900000);
+        aggregateDao = new AggregateDao(dataSource, ImmutableList.<CappedDatabase>of(),
+                configService, 15, 900000);
     }
 
     @After
@@ -81,7 +82,7 @@ public class AggregateDaoTest {
                 .limit(10)
                 .build();
         QueryResult<TransactionSummary> queryResult =
-                aggregateDao.readTransactionSummaries(query);
+                aggregateDao.readTransactionSummaries(query, 0);
         // then
         assertThat(overallAggregates).hasSize(2);
         assertThat(queryResult.records()).hasSize(3);

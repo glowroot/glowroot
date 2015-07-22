@@ -105,11 +105,11 @@ public class TraceDao implements TraceRepository {
                     ImmutableList.of("transaction_type", "capture_time")));
 
     private final DataSource dataSource;
-    private final CappedDatabase cappedDatabase;
+    private final CappedDatabase traceDetailDatabase;
 
-    TraceDao(DataSource dataSource, CappedDatabase cappedDatabase) throws SQLException {
+    TraceDao(DataSource dataSource, CappedDatabase traceDetailDatabase) throws SQLException {
         this.dataSource = dataSource;
-        this.cappedDatabase = cappedDatabase;
+        this.traceDetailDatabase = traceDetailDatabase;
         upgradeTraceTable(dataSource);
         dataSource.syncTable("trace", traceColumns);
         dataSource.syncIndexes("trace", traceIndexes);
@@ -121,11 +121,11 @@ public class TraceDao implements TraceRepository {
             @Nullable ChunkSource profile) throws Exception {
         Long entriesId = null;
         if (entries != null) {
-            entriesId = cappedDatabase.write(entries, CappedDatabaseStats.TRACE_ENTRIES);
+            entriesId = traceDetailDatabase.write(entries, TraceDetailDatabaseStats.TRACE_ENTRIES);
         }
         Long profileId = null;
         if (profile != null) {
-            profileId = cappedDatabase.write(profile, CappedDatabaseStats.TRACE_PROFILES);
+            profileId = traceDetailDatabase.write(profile, TraceDetailDatabaseStats.TRACE_PROFILES);
         }
         dataSource.update("merge into trace (id, partial, error, start_time, capture_time,"
                 + " duration, transaction_type, transaction_name, headline, user,"
@@ -313,7 +313,7 @@ public class TraceDao implements TraceRepository {
             if (resultSet.wasNull()) {
                 return null;
             }
-            return cappedDatabase.read(cappedId, "{\"overwritten\":true}");
+            return traceDetailDatabase.read(cappedId, "{\"overwritten\":true}");
 
         }
     }
@@ -365,10 +365,10 @@ public class TraceDao implements TraceRepository {
                     .gcInfos(resultSet.getString(columnIndex++))
                     .entryCount(resultSet.getInt(columnIndex++))
                     .entriesExistence(
-                            RowMappers.getExistence(resultSet, columnIndex++, cappedDatabase))
+                            RowMappers.getExistence(resultSet, columnIndex++, traceDetailDatabase))
                     .profileSampleCount(resultSet.getLong(columnIndex++))
                     .profileExistence(
-                            RowMappers.getExistence(resultSet, columnIndex++, cappedDatabase))
+                            RowMappers.getExistence(resultSet, columnIndex++, traceDetailDatabase))
                     .build();
         }
     }

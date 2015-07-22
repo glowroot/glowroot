@@ -67,6 +67,12 @@ class ConfigFile {
 
     private Config readValue(String content) throws IOException {
         Config config = mapper.readValue(content, Config.class);
+        // validation/auto-correction of storage config arrays
+        StorageConfig storageConfig = config.storageConfig();
+        if (storageConfig.hasListIssues()) {
+            storageConfig = storageConfig.withCorrectedLists();
+            config = config.withStorageConfig(storageConfig);
+        }
         GeneralConfig generalConfig = config.generalConfig();
         if (generalConfig.defaultDisplayedTransactionType().isEmpty()) {
             generalConfig = generalConfig.withDefaultDisplayedTransactionType(
@@ -120,6 +126,9 @@ class ConfigFile {
             // handling upgrade from 0.8 to 0.8.1
             content = content.replace("\"defaultTransactionType\"",
                     "\"defaultDisplayedTransactionType\"");
+            // handling upgrade from 0.8.3 to 0.8.4
+            content = content.replace("\"cappedDatabaseSizeMb\"",
+                    "\"traceDetailDatabaseSizeMb\"");
             config = readValue(content);
         } catch (Exception e) {
             // immutables json processing wraps IOExceptions inside RuntimeExceptions so can't rely

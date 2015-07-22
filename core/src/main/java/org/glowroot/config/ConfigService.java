@@ -63,10 +63,10 @@ public class ConfigService {
     // volatile not needed as access is guarded by secretKeyFile
     private @MonotonicNonNull SecretKey secretKey;
 
-    ConfigService(File dataDir, List<PluginDescriptor> pluginDescriptors) {
-        configFile = new ConfigFile(new File(dataDir, "config.json"), pluginDescriptors);
+    ConfigService(File baseDir, List<PluginDescriptor> pluginDescriptors) {
+        configFile = new ConfigFile(new File(baseDir, "config.json"), pluginDescriptors);
         this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
-        secretFile = new File(dataDir, "secret");
+        secretFile = new File(baseDir, "secret");
         try {
             config = configFile.loadConfig();
         } catch (IOException e) {

@@ -355,10 +355,11 @@ public class ConfigTest {
     }
 
     private static void updateAllFields(StorageConfig config) {
-        config.setAggregateExpirationHours(config.getAggregateExpirationHours() + 1);
+        config.setAggregateRollupExpirationHours(ImmutableList.of(1, 2, 3));
+        config.setGaugeRollupExpirationHours(ImmutableList.of(10, 20, 30));
         config.setTraceExpirationHours(config.getTraceExpirationHours() + 10);
-        config.setGaugeExpirationHours(config.getGaugeExpirationHours() + 100);
-        config.setCappedDatabaseSizeMb(config.getCappedDatabaseSizeMb() + 1000);
+        config.setAggregateDetailRollupDatabaseSizeMb(ImmutableList.of(100, 200, 300));
+        config.setTraceDetailDatabaseSizeMb(config.getTraceDetailDatabaseSizeMb() + 100);
     }
 
     private static void updateAllFields(SmtpConfig config) {

@@ -38,19 +38,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ImmediatePartialStoreTest {
 
-    private static File dataDir;
+    private static File baseDir;
     private static Container container;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        dataDir = TempDirs.createTempDir("glowroot-test-datadir");
-        container = JavaagentContainer.createWithFileDb(dataDir);
+        baseDir = TempDirs.createTempDir("glowroot-test-basedir");
+        container = JavaagentContainer.createWithFileDb(baseDir);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         container.close();
-        TempDirs.deleteRecursively(dataDir);
+        TempDirs.deleteRecursively(baseDir);
     }
 
     @After
@@ -85,7 +85,7 @@ public class ImmediatePartialStoreTest {
         ((JavaagentContainer) container).cleanup();
         // give jvm a second to shut down
         Thread.sleep(1000);
-        container = LocalContainer.createWithFileDb(dataDir);
+        container = LocalContainer.createWithFileDb(baseDir);
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace).isNotNull();

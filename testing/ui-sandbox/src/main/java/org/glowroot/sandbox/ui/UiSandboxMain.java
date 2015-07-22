@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableMap;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.config.GeneralConfig;
-import org.glowroot.container.config.StorageConfig;
 import org.glowroot.container.impl.JavaagentContainer;
 import org.glowroot.container.impl.LocalContainer;
 
@@ -33,7 +32,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class UiSandboxMain {
 
     private static final boolean useJavaagent = false;
-    private static final boolean rollOverQuickly = false;
     private static final boolean useReverseProxy = false;
 
     static {
@@ -46,14 +44,14 @@ public class UiSandboxMain {
 
     public static void main(String... args) throws Exception {
         Container container;
-        File dataDir = new File("target");
-        File configFile = new File(dataDir, "config.json");
+        File baseDir = new File("target");
+        File configFile = new File(baseDir, "config.json");
         boolean initConfig = !configFile.exists();
         if (useJavaagent) {
-            container = new JavaagentContainer(dataDir, true, 4000, false, false, false,
+            container = new JavaagentContainer(baseDir, true, 4000, false, false, false,
                     ImmutableList.<String>of());
         } else {
-            container = new LocalContainer(dataDir, true, 4000, false,
+            container = new LocalContainer(baseDir, true, 4000, false,
                     ImmutableMap.<String, String>of());
         }
         if (initConfig) {
@@ -62,11 +60,6 @@ public class UiSandboxMain {
             generalConfig.setProfilingIntervalMillis(100);
             generalConfig.setDefaultDisplayedTransactionType("Sandbox");
             container.getConfigService().updateGeneralConfig(generalConfig);
-            if (rollOverQuickly) {
-                StorageConfig storageConfig = container.getConfigService().getStorageConfig();
-                storageConfig.setCappedDatabaseSizeMb(10);
-                container.getConfigService().updateStorageConfig(storageConfig);
-            }
         }
         container.executeAppUnderTest(GenerateTraces.class);
     }
