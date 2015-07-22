@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, $ */
+/* global glowroot, angular, $ */
 
 glowroot.controller('TransactionSidebarCtrl', [
   '$scope',
@@ -49,7 +49,7 @@ glowroot.controller('TransactionSidebarCtrl', [
     };
 
     $scope.sidebarQueryString = function (transactionName) {
-      var query = $scope.buildQueryObject({});
+      var query = angular.copy($location.search());
       query['transaction-name'] = transactionName;
       return queryStrings.encodeObject(query);
     };
