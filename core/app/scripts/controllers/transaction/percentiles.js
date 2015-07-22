@@ -35,11 +35,18 @@ glowroot.controller('TransactionPercentilesCtrl', [
 
     var chartState = charts.createState();
 
+    var appliedPercentiles;
+
     function refreshData() {
       charts.refreshData('backend/transaction/percentiles', chartState, $scope.$parent, addToQuery, onRefreshData);
     }
 
     $scope.$watchGroup(['chartFrom', 'chartTo', 'chartRefresh'], function () {
+      if (angular.equals(appliedPercentiles, $scope.layout.defaultPercentiles)) {
+        $location.search('percentile', null);
+      } else {
+        $location.search('percentile', appliedPercentiles);
+      }
       refreshData();
     });
 
@@ -61,7 +68,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
     };
 
     $scope.openCustomPercentilesModal = function () {
-      $scope.customPercentiles = $scope.percentiles.join(', ');
+      $scope.customPercentiles = appliedPercentiles.join(', ');
       modals.display('#customPercentilesModal', true);
       $timeout(function () {
         $('#customPercentiles').focus();
@@ -69,37 +76,38 @@ glowroot.controller('TransactionPercentilesCtrl', [
     };
 
     $scope.applyCustomPercentiles = function () {
-      var percentiles = [];
+      appliedPercentiles = [];
       angular.forEach($scope.customPercentiles.split(','), function (percentile) {
         percentile = percentile.trim();
         if (percentile.length) {
-          percentiles.push(Number(percentile));
+          appliedPercentiles.push(Number(percentile));
         }
       });
-      $scope.percentiles = sortNumbers(percentiles);
-      if (angular.equals($scope.percentiles, $scope.layout.defaultPercentiles)) {
-        $location.search('percentile', null);
-      } else {
-        $location.search('percentile', $scope.percentiles);
-      }
+      sortNumbers(appliedPercentiles);
       $('#customPercentilesModal').modal('hide');
       $scope.$parent.chartRefresh++;
     };
 
     function onLocationChangeSuccess() {
+      var priorAppliedPercentiles = appliedPercentiles;
       if ($location.search().percentile) {
-        var percentiles = [];
+        appliedPercentiles = [];
         angular.forEach($location.search().percentile, function (percentile) {
-          percentiles.push(Number(percentile));
+          appliedPercentiles.push(Number(percentile));
         });
-        $scope.percentiles = sortNumbers(percentiles);
+        sortNumbers(appliedPercentiles);
       } else {
-        $scope.percentiles = $location.search().percentile || $scope.layout.defaultPercentiles;
+        appliedPercentiles = $scope.layout.defaultPercentiles;
       }
+
+      if (priorAppliedPercentiles !== undefined && !angular.equals(appliedPercentiles, priorAppliedPercentiles)) {
+        $scope.$parent.chartRefresh++;
+      }
+      $scope.percentiles = appliedPercentiles;
     }
 
     function sortNumbers(arr) {
-      return arr.sort(function (a, b) {
+      arr.sort(function (a, b) {
         return a - b;
       });
     }
@@ -108,7 +116,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
     onLocationChangeSuccess();
 
     function addToQuery(query) {
-      query.percentile = $scope.percentiles;
+      query.percentile = appliedPercentiles;
     }
 
     function onRefreshData(data, query) {
