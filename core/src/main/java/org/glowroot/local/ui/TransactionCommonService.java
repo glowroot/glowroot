@@ -75,11 +75,11 @@ class TransactionCommonService {
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(from, to);
         if (orderedIntervalCollectors.isEmpty()) {
-            return aggregateDao.readOverallTransactionSummary(transactionType, from, to,
+            return aggregateDao.readOverallSummary(transactionType, from, to,
                     rollupLevel);
         }
         long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
-        TransactionSummary overallSummary = aggregateDao.readOverallTransactionSummary(
+        TransactionSummary overallSummary = aggregateDao.readOverallSummary(
                 transactionType, from, revisedTo, rollupLevel);
         for (AggregateIntervalCollector intervalCollector : orderedIntervalCollectors) {
             TransactionSummary liveOverallSummary =

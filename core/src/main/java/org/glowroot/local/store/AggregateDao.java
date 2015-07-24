@@ -210,7 +210,7 @@ public class AggregateDao {
     }
 
     // captureTimeFrom is non-inclusive
-    public TransactionSummary readOverallTransactionSummary(String transactionType,
+    public TransactionSummary readOverallSummary(String transactionType,
             long captureTimeFrom, long captureTimeTo, @Untainted int rollupLevel)
                     throws SQLException {
         // it's important that all these columns are in a single index so h2 can return the
