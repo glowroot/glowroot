@@ -81,8 +81,7 @@ public class AggregateDaoTest {
                 .sortOrder(TransactionSummarySortOrder.TOTAL_TIME)
                 .limit(10)
                 .build();
-        QueryResult<TransactionSummary> queryResult =
-                aggregateDao.readTransactionSummaries(query, 0);
+        QueryResult<TransactionSummary> queryResult = aggregateDao.readTransactionSummaries(query);
         // then
         assertThat(overallAggregates).hasSize(2);
         assertThat(queryResult.records()).hasSize(3);

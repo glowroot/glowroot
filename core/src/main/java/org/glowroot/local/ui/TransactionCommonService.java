@@ -71,39 +71,29 @@ class TransactionCommonService {
 
     TransactionSummary readOverallSummary(String transactionType, long from, long to)
             throws SQLException {
-        int rollupLevel = aggregateDao.getRollupLevelForView(from, to);
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(from, to);
         if (orderedIntervalCollectors.isEmpty()) {
-            return aggregateDao.readOverallSummary(transactionType, from, to,
-                    rollupLevel);
+            return aggregateDao.readOverallSummary(transactionType, from, to);
         }
         long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
-        TransactionSummary overallSummary = aggregateDao.readOverallSummary(
-                transactionType, from, revisedTo, rollupLevel);
-        for (AggregateIntervalCollector intervalCollector : orderedIntervalCollectors) {
-            TransactionSummary liveOverallSummary =
-                    intervalCollector.getLiveOverallSummary(transactionType);
-            if (liveOverallSummary != null) {
-                overallSummary = combineTransactionSummaries(null, overallSummary,
-                        liveOverallSummary);
-            }
-        }
-        return overallSummary;
+        TransactionSummary overallSummary =
+                aggregateDao.readOverallSummary(transactionType, from, revisedTo);
+        return mergeInLiveOverallSummaries(transactionType, overallSummary,
+                orderedIntervalCollectors);
     }
 
     QueryResult<TransactionSummary> readTransactionSummaries(TransactionSummaryQuery query)
             throws SQLException {
-        int rollupLevel = aggregateDao.getRollupLevelForView(query.from(), query.to());
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(query.from(), query.to());
         if (orderedIntervalCollectors.isEmpty()) {
-            return aggregateDao.readTransactionSummaries(query, rollupLevel);
+            return aggregateDao.readTransactionSummaries(query);
         }
         long revisedTo = getRevisedTo(query.to(), orderedIntervalCollectors);
         TransactionSummaryQuery revisedQuery = query.withTo(revisedTo);
         QueryResult<TransactionSummary> queryResult =
-                aggregateDao.readTransactionSummaries(revisedQuery, rollupLevel);
+                aggregateDao.readTransactionSummaries(revisedQuery);
         if (orderedIntervalCollectors.isEmpty()) {
             return queryResult;
         }
@@ -353,6 +343,20 @@ class TransactionCommonService {
             // this way don't need to worry about de-dupping between live and stored aggregates
             return orderedIntervalCollectors.get(0).getEndTime() - 1;
         }
+    }
+
+    private TransactionSummary mergeInLiveOverallSummaries(String transactionType,
+            TransactionSummary overallSummary,
+            List<AggregateIntervalCollector> intervalCollectors) {
+        for (AggregateIntervalCollector intervalCollector : intervalCollectors) {
+            TransactionSummary liveOverallSummary =
+                    intervalCollector.getLiveOverallSummary(transactionType);
+            if (liveOverallSummary != null) {
+                overallSummary =
+                        combineTransactionSummaries(null, overallSummary, liveOverallSummary);
+            }
+        }
+        return overallSummary;
     }
 
     private static QueryResult<TransactionSummary> mergeInLiveTransactionSummaries(

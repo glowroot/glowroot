@@ -210,36 +210,40 @@ public class AggregateDao {
     }
 
     // captureTimeFrom is non-inclusive
-    public TransactionSummary readOverallSummary(String transactionType,
-            long captureTimeFrom, long captureTimeTo, @Untainted int rollupLevel)
-                    throws SQLException {
-        // it's important that all these columns are in a single index so h2 can return the
-        // result set directly from the index without having to reference the table for each row
-        TransactionSummary summary = dataSource.query("select sum(total_micros),"
-                + " sum(transaction_count) from overall_aggregate_rollup_" + rollupLevel
-                + " where transaction_type = ? and capture_time > ? and capture_time <= ?",
-                new OverallSummaryResultSetExtractor(), transactionType, captureTimeFrom,
-                captureTimeTo);
-        if (summary == null) {
-            // this can happen if datasource is in the middle of closing
-            return TransactionSummary.builder().build();
-        } else {
-            return summary;
+    public TransactionSummary readOverallSummary(String transactionType, long captureTimeFrom,
+            long captureTimeTo) throws SQLException {
+        int rollupLevel = getRollupLevelForView(captureTimeFrom, captureTimeTo);
+        // may need to aggregate some non-rolled up data
+        if (rollupLevel == 1 && captureTimeTo > lastRollup1Time) {
+            TransactionSummary overallSummary = readOverallSummaryInternal(transactionType,
+                    captureTimeFrom, lastRollup1Time, rollupLevel);
+            TransactionSummary sinceLastRollupSummary =
+                    readOverallSummaryInternal(transactionType, lastRollup1Time, captureTimeTo, 0);
+            return combineOverallSummaries(overallSummary, sinceLastRollupSummary);
+        } else if (rollupLevel == 2 && captureTimeTo > lastRollup2Time) {
+            TransactionSummary overallSummary = readOverallSummaryInternal(transactionType,
+                    captureTimeFrom, lastRollup2Time, rollupLevel);
+            TransactionSummary sinceLastRollupSummary =
+                    readOverallSummaryInternal(transactionType, lastRollup2Time, captureTimeTo, 0);
+            return combineOverallSummaries(overallSummary, sinceLastRollupSummary);
         }
+        return readOverallSummaryInternal(transactionType, captureTimeFrom, captureTimeTo,
+                rollupLevel);
     }
 
-    // captureTimeFrom is non-inclusive
-    public QueryResult<TransactionSummary> readTransactionSummaries(TransactionSummaryQuery query,
-            @Untainted int rollupLevel) throws SQLException {
-        // it's important that all these columns are in a single index so h2 can return the
-        // result set directly from the index without having to reference the table for each row
-        ImmutableList<TransactionSummary> summaries = dataSource.query("select transaction_name,"
-                + " sum(total_micros), sum(transaction_count) from transaction_aggregate_rollup_"
-                + rollupLevel + " where transaction_type = ? and capture_time > ?"
-                + " and capture_time <= ? group by transaction_name order by "
-                + getSortClause(query.sortOrder()) + ", transaction_name limit ?",
-                new TransactionSummaryRowMapper(), query.transactionType(), query.from(),
-                query.to(), query.limit() + 1);
+    // query.from() is non-inclusive
+    public QueryResult<TransactionSummary> readTransactionSummaries(TransactionSummaryQuery query)
+            throws SQLException {
+        int rollupLevel = getRollupLevelForView(query.from(), query.to());
+        ImmutableList<TransactionSummary> summaries;
+        // may need to aggregate some non-rolled up data
+        if (rollupLevel == 1 && query.to() > lastRollup1Time) {
+            summaries = readTransactionSummariesInternal2(query, rollupLevel, lastRollup1Time);
+        } else if (rollupLevel == 2 && query.to() > lastRollup2Time) {
+            summaries = readTransactionSummariesInternal2(query, rollupLevel, lastRollup2Time);
+        } else {
+            summaries = readTransactionSummariesInternal(query, rollupLevel);
+        }
         // one extra record over the limit is fetched above to identify if the limit was hit
         return QueryResult.from(summaries, query.limit());
     }
@@ -403,8 +407,9 @@ public class AggregateDao {
         return rollup2ViewThresholdMillis;
     }
 
-    public @Untainted int getRollupLevelForView(long from, long to) {
-        long millis = to - from;
+    // captureTimeFrom is non-inclusive
+    public @Untainted int getRollupLevelForView(long captureTimeFrom, long captureTimeTo) {
+        long millis = captureTimeTo - captureTimeFrom;
         if (millis >= rollup2ViewThresholdMillis) {
             return 2;
         } else if (millis >= rollup1ViewThresholdMillis) {
@@ -487,6 +492,65 @@ public class AggregateDao {
                 new TransactionBatchAdder(transactionAggregates, rollupLevel));
     }
 
+    // captureTimeFrom is non-inclusive
+    private TransactionSummary readOverallSummaryInternal(String transactionType,
+            long captureTimeFrom, long captureTimeTo, @Untainted int rollupLevel)
+                    throws SQLException {
+        // it's important that all these columns are in a single index so h2 can return the
+        // result set directly from the index without having to reference the table for each row
+        TransactionSummary summary = dataSource.query("select sum(total_micros),"
+                + " sum(transaction_count) from overall_aggregate_rollup_" + rollupLevel
+                + " where transaction_type = ? and capture_time > ? and capture_time <= ?",
+                new OverallSummaryResultSetExtractor(), transactionType, captureTimeFrom,
+                captureTimeTo);
+        if (summary == null) {
+            // this can happen if datasource is in the middle of closing
+            return TransactionSummary.builder().build();
+        } else {
+            return summary;
+        }
+    }
+
+    private TransactionSummary combineOverallSummaries(TransactionSummary overallSummary1,
+            TransactionSummary overallSummary2) {
+        return TransactionSummary.builder()
+                .totalMicros(overallSummary1.totalMicros() + overallSummary2.totalMicros())
+                .transactionCount(overallSummary1.transactionCount()
+                        + overallSummary2.transactionCount())
+                .build();
+    }
+
+    private ImmutableList<TransactionSummary> readTransactionSummariesInternal(
+            TransactionSummaryQuery query, int rollupLevel) throws SQLException {
+        // it's important that all these columns are in a single index so h2 can return the
+        // result set directly from the index without having to reference the table for each row
+        return dataSource.query("select transaction_name, sum(total_micros), sum(transaction_count)"
+                + " from transaction_aggregate_rollup_" + rollupLevel
+                + " where transaction_type = ? and capture_time > ? and capture_time <= ?"
+                + " group by transaction_name order by " + getSortClause(query.sortOrder())
+                + ", transaction_name limit ?", new TransactionSummaryRowMapper(),
+                query.transactionType(), query.from(), query.to(), query.limit() + 1);
+    }
+
+    private ImmutableList<TransactionSummary> readTransactionSummariesInternal2(
+            TransactionSummaryQuery query, int rollupLevel, long lastRollupTime)
+                    throws SQLException {
+        // it's important that all these columns are in a single index so h2 can return the
+        // result set directly from the index without having to reference the table for each row
+        return dataSource.query("select transaction_name, sum(total_micros), sum(transaction_count)"
+                + " from (select transaction_name, total_micros, transaction_count"
+                + " from transaction_aggregate_rollup_" + rollupLevel
+                + " where transaction_type = ? and capture_time > ? and capture_time <= ?"
+                + " union all select transaction_name, total_micros, transaction_count"
+                + " from transaction_aggregate_rollup_0 where transaction_type = ?"
+                + " and capture_time > ? and capture_time <= ?) group by transaction_name order by "
+                + getSortClause(query.sortOrder()) + ", transaction_name limit ?",
+                new TransactionSummaryRowMapper(), query.transactionType(), query.from(),
+                lastRollupTime, query.transactionType(), lastRollupTime, query.to(),
+                query.limit() + 1);
+    }
+
+    // captureTimeFrom is non-inclusive
     private boolean shouldHaveOverallSomething(@Untainted String cappedIdColumnName,
             String transactionType, long captureTimeFrom, long captureTimeTo) throws SQLException {
         int rollupLevel = getRollupLevelForView(captureTimeFrom, captureTimeTo);
@@ -496,6 +560,7 @@ public class AggregateDao {
                 transactionType, captureTimeFrom, captureTimeTo);
     }
 
+    // captureTimeFrom is non-inclusive
     private boolean shouldHaveTransactionSomething(@Untainted String cappedIdColumnName,
             String transactionType, String transactionName, long captureTimeFrom,
             long captureTimeTo) throws SQLException {
@@ -563,6 +628,7 @@ public class AggregateDao {
     @Value.Immutable
     public abstract static class TransactionSummaryQueryBase {
         public abstract String transactionType();
+        // from is non-inclusive
         public abstract long from();
         public abstract long to();
         public abstract TransactionSummarySortOrder sortOrder();
@@ -572,6 +638,7 @@ public class AggregateDao {
     @Value.Immutable
     public abstract static class ErrorSummaryQueryBase {
         public abstract String transactionType();
+        // from is non-inclusive
         public abstract long from();
         public abstract long to();
         public abstract ErrorSummarySortOrder sortOrder();
