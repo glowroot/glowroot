@@ -157,16 +157,22 @@ public class GaugePointDao implements GaugePointRepository {
                     * fixedRollup1Millis;
             if (safeRollup1Time > lastRollup1Time) {
                 rollup(lastRollup1Time, safeRollup1Time, fixedRollup1Millis, 1, 0);
+                // JVM termination here will cause last_rollup_1_time to be out of sync, which will
+                // cause a re-rollup of this time after the next startup, but this possible
+                // duplicate is filtered out by the distinct clause in readGaugePoints()
                 dataSource.update("update gauge_point_last_rollup_times set last_rollup_1_time = ?",
-                        lastRollup1Time);
+                        safeRollup1Time);
                 lastRollup1Time = safeRollup1Time;
             }
             long safeRollup2Time = (long) Math.floor(safeRollupTime / (double) fixedRollup2Millis)
                     * fixedRollup2Millis;
             if (safeRollup2Time > lastRollup2Time) {
                 rollup(lastRollup2Time, safeRollup2Time, fixedRollup2Millis, 2, 1);
+                // JVM termination here will cause last_rollup_2_time to be out of sync, which will
+                // cause a re-rollup of this time after the next startup, but this possible
+                // duplicate is filtered out by the distinct clause in readGaugePoints()
                 dataSource.update("update gauge_point_last_rollup_times set last_rollup_2_time = ?",
-                        lastRollup2Time);
+                        safeRollup2Time);
                 lastRollup2Time = safeRollup2Time;
             }
         }
@@ -180,7 +186,10 @@ public class GaugePointDao implements GaugePointRepository {
             // not necessarily an error, gauge id not created until first store
             return ImmutableList.of();
         }
-        return dataSource.query("select capture_time, value from " + tableName
+        // the distinct clause is needed for the rollup tables in order to handle corner case where
+        // JVM termination occurs in between rollup and updating gauge_point_last_rollup_times
+        // in which case a duplicate entry will occur after the next startup
+        return dataSource.query("select distinct capture_time, value from " + tableName
                 + " where gauge_meta_id = ? and capture_time >= ? and capture_time <= ?"
                 + " order by capture_time", new GaugePointRowMapper(gaugeName), gaugeMetaId,
                 captureTimeFrom, captureTimeTo);
