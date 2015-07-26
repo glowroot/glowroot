@@ -44,7 +44,7 @@ public class TransactionJsonServiceTest {
         AggregateDao aggregateDao = mock(AggregateDao.class);
         Clock clock = mock(Clock.class);
         transactionJsonService = new TransactionJsonService(transactionCommonService, traceDao,
-                transactionRegistry, transactionCollector, aggregateDao, clock, 60, 300, 1800);
+                transactionRegistry, transactionCollector, aggregateDao, clock);
     }
 
     @Test

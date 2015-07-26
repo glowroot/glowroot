@@ -44,19 +44,17 @@ class ReaperRunnable extends ScheduledRunnable {
     @Override
     protected void runInternal() throws SQLException {
         StorageConfig storageConfig = configService.getStorageConfig();
-        for (int i = 0; i < storageConfig.aggregateRollupExpirationHours().size(); i++) {
-            int hours = storageConfig.aggregateRollupExpirationHours().get(i);
-            long aggregateCaptureTime = clock.currentTimeMillis() - HOURS.toMillis(hours);
-            aggregateDao.deleteBefore(aggregateCaptureTime, i);
+        long currentTime = clock.currentTimeMillis();
+        for (int i = 0; i < storageConfig.rollupExpirationHours().size(); i++) {
+            int hours = storageConfig.rollupExpirationHours().get(i);
+            long captureTime = currentTime - HOURS.toMillis(hours);
+            aggregateDao.deleteBefore(captureTime, i);
+            if (i == 0) {
+                gaugePointDao.deleteBefore(captureTime, i);
+            }
+            gaugePointDao.deleteBefore(captureTime, i + 1);
         }
-        for (int i = 0; i < storageConfig.gaugeRollupExpirationHours().size(); i++) {
-            int hours = storageConfig.gaugeRollupExpirationHours().get(i);
-            long gaugeCaptureTime = clock.currentTimeMillis() - HOURS.toMillis(hours);
-            gaugePointDao.deleteBefore(gaugeCaptureTime, i);
-        }
-
-        long traceCaptureTime = clock.currentTimeMillis()
-                - HOURS.toMillis(storageConfig.traceExpirationHours());
+        long traceCaptureTime = currentTime - HOURS.toMillis(storageConfig.traceExpirationHours());
         traceDao.deleteBefore(traceCaptureTime);
     }
 }

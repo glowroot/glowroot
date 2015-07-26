@@ -18,23 +18,18 @@
     "sessionTimeoutMinutes": 30
   },
   "storage": {
-    "aggregateRollupExpirationHours": [
+    "rollupExpirationHours": [
       2147483647,
       2147483647,
       2147483647
     ],
-    "gaugeRollupExpirationHours": [
-      48,
-      336,
-      1440
-    ],
     "traceExpirationHours": 2147483647,
-    "aggregateDetailRollupDatabaseSizeMb": [
+    "rollupCappedDatabaseSizesMb": [
       500,
       500,
       500
     ],
-    "traceDetailDatabaseSizeMb": 500
+    "traceCappedDatabaseSizeMb": 500
   },
   "smtp": {
     "fromEmailAddress": "",

@@ -31,6 +31,7 @@ import org.glowroot.collector.AggregateCollector;
 import org.glowroot.collector.AggregateIntervalCollector;
 import org.glowroot.collector.ErrorPoint;
 import org.glowroot.collector.ErrorSummary;
+import org.glowroot.config.RollupConfig;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregateDao.ErrorSummarySortOrder;
 import org.glowroot.local.store.ErrorSummaryQuery;
@@ -42,18 +43,16 @@ class ErrorCommonService {
 
     private final AggregateDao aggregateDao;
     private final @Nullable AggregateCollector aggregateCollector;
-
-    private final long fixedRollup1Millis;
-    private final long fixedRollup2Millis;
+    private final ImmutableList<RollupConfig> rollupConfigs;
 
     ErrorCommonService(AggregateDao aggregateDao, @Nullable AggregateCollector aggregateCollector,
-            long fixedRollup1Seconds, long fixedRollup2Seconds) {
+            ImmutableList<RollupConfig> rollupConfigs) {
         this.aggregateDao = aggregateDao;
         this.aggregateCollector = aggregateCollector;
-        this.fixedRollup1Millis = fixedRollup1Seconds * 1000;
-        this.fixedRollup2Millis = fixedRollup2Seconds * 1000;
+        this.rollupConfigs = rollupConfigs;
     }
 
+    // from is non-inclusive
     ErrorSummary readOverallErrorSummary(String transactionType, long from, long to)
             throws SQLException {
         int rollupLevel = aggregateDao.getRollupLevelForView(from, to);
@@ -75,6 +74,7 @@ class ErrorCommonService {
         return overallSummary;
     }
 
+    // query.from() is non-inclusive
     QueryResult<ErrorSummary> readTransactionErrorSummaries(ErrorSummaryQuery query)
             throws SQLException {
         int rollupLevel = aggregateDao.getRollupLevelForView(query.from(), query.to());
@@ -123,6 +123,7 @@ class ErrorCommonService {
         return errorPoints;
     }
 
+    // from is non-inclusive
     private List<AggregateIntervalCollector> getOrderedIntervalCollectorsInRange(long from,
             long to) {
         if (aggregateCollector == null) {
@@ -133,19 +134,14 @@ class ErrorCommonService {
 
     private List<ErrorPoint> rollUp(List<ErrorPoint> orderedNonRolledUpErrorPoints,
             long liveCaptureTime, int rollupLevel) {
-        long fixedRollupMillis;
-        if (rollupLevel == 1) {
-            fixedRollupMillis = fixedRollup1Millis;
-        } else {
-            fixedRollupMillis = fixedRollup2Millis;
-        }
+        long fixedIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
         List<ErrorPoint> rolledUpErrorPoints = Lists.newArrayList();
         long currRollupTime = Long.MIN_VALUE;
         long currErrorCount = 0;
         long currTransactionCount = 0;
         for (ErrorPoint errorPoint : orderedNonRolledUpErrorPoints) {
             long rollupTime = (long) Math.ceil(errorPoint.captureTime()
-                    / (double) fixedRollupMillis) * fixedRollupMillis;
+                    / (double) fixedIntervalMillis) * fixedIntervalMillis;
             if (rollupTime != currRollupTime && currTransactionCount != 0) {
                 rolledUpErrorPoints.add(ErrorPoint.of(Math.min(currRollupTime, liveCaptureTime),
                         currErrorCount, currTransactionCount));

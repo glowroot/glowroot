@@ -15,24 +15,24 @@
  */
 package org.glowroot.local.store;
 
-public class AggregateDetailDatabaseStats implements AggregateDetailDatabaseStatsMXBean {
+public class TraceCappedDatabaseStats implements TraceCappedDatabaseStatsMXBean {
 
-    static final String AGGREGATE_QUERIES = "aggregate queries";
-    static final String AGGREGATE_PROFILES = "aggregate profiles";
+    static final String TRACE_ENTRIES = "trace entries";
+    static final String TRACE_PROFILES = "trace profiles";
 
     private final CappedDatabase cappedDatabase;
 
-    AggregateDetailDatabaseStats(CappedDatabase cappedDatabase) {
+    TraceCappedDatabaseStats(CappedDatabase cappedDatabase) {
         this.cappedDatabase = cappedDatabase;
     }
 
     @Override
-    public CappedDatabaseStats getAggregateQueries() {
-        return cappedDatabase.getStats(AGGREGATE_QUERIES);
+    public CappedDatabaseStats getTraceEntries() {
+        return cappedDatabase.getStats(TRACE_ENTRIES);
     }
 
     @Override
-    public CappedDatabaseStats getAggregateProfiles() {
-        return cappedDatabase.getStats(AGGREGATE_PROFILES);
+    public CappedDatabaseStats getTraceProfiles() {
+        return cappedDatabase.getStats(TRACE_PROFILES);
     }
 }

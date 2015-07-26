@@ -13,10 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.local.store;
+package org.glowroot.config;
 
-public interface TraceDetailDatabaseStatsMXBean {
+import org.immutables.value.Value;
 
-    CappedDatabaseStats getTraceEntries();
-    CappedDatabaseStats getTraceProfiles();
+import org.glowroot.common.Styles;
+
+@Value.Immutable
+@Styles.AllParameters
+public abstract class RollupConfigBase {
+
+    public abstract long intervalMillis();
+    public abstract long viewThresholdMillis();
 }

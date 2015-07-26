@@ -55,7 +55,7 @@ public class AggregateCollectorTest {
         ConfigService configService = mock(ConfigService.class);
         when(configService.getAdvancedConfig()).thenReturn(AdvancedConfig.builder().build());
         AggregateCollector aggregateCollector = new AggregateCollector(scheduledExecutorService,
-                aggregateRepository, configService, 1, Clock.systemClock());
+                aggregateRepository, configService, 1000, Clock.systemClock());
 
         Transaction transaction = mock(Transaction.class);
         TimerImpl timer = mock(TimerImpl.class);

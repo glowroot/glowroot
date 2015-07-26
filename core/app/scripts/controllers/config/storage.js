@@ -32,15 +32,12 @@ glowroot.controller('ConfigStorageCtrl', [
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
-    $scope.$watchCollection('page.aggregateRollupExpirationDays', function (newValue) {
+    $scope.$watchCollection('page.rollupExpirationDays', function (newValue) {
       if ($scope.config) {
-        $scope.config.aggregateRollupExpirationHours = daysArrToHoursArr(newValue);
-      }
-    });
-
-    $scope.$watchCollection('page.gaugeRollupExpirationDays', function (newValue) {
-      if ($scope.config) {
-        $scope.config.gaugeRollupExpirationHours = daysArrToHoursArr(newValue);
+        $scope.config.rollupExpirationHours = [];
+        angular.forEach(newValue, function (days) {
+          $scope.config.rollupExpirationHours.push(days * 24);
+        });
       }
     });
 
@@ -55,25 +52,11 @@ glowroot.controller('ConfigStorageCtrl', [
       $scope.config = data;
       $scope.originalConfig = angular.copy(data);
 
-      $scope.page.aggregateRollupExpirationDays = hoursArrToDaysArr(data.aggregateRollupExpirationHours);
-      $scope.page.gaugeRollupExpirationDays = hoursArrToDaysArr(data.gaugeRollupExpirationHours);
+      $scope.page.rollupExpirationDays = [];
+      angular.forEach(data.rollupExpirationHours, function (hours) {
+        $scope.page.rollupExpirationDays.push(hours / 24);
+      });
       $scope.page.traceExpirationDays = data.traceExpirationHours / 24;
-    }
-
-    function daysArrToHoursArr(daysArr) {
-      var hoursArr = [];
-      angular.forEach(daysArr, function (days) {
-        hoursArr.push(days * 24);
-      });
-      return hoursArr;
-    }
-
-    function hoursArrToDaysArr(hoursArr) {
-      var daysArr = [];
-      angular.forEach(hoursArr, function (hours) {
-        daysArr.push(hours / 24);
-      });
-      return daysArr;
     }
 
     $scope.save = function (deferred) {
@@ -105,10 +88,13 @@ glowroot.controller('ConfigStorageCtrl', [
         .success(onNewData)
         .error(httpErrors.handler($scope));
 
-    // not using gt-form-autofocus-on-first-input in order to handle special case #capped-database-size url
+    // not using gt-form-autofocus-on-first-input in order to handle special case #rollup-capped-database-size and
+    // #trace-capped-database-size urls
     var selector = 'input:not(.gt-autofocus-ignore)';
-    if ($location.hash() === 'capped-database-size') {
-      selector = '.gt-capped-database-size input';
+    if ($location.hash() === 'rollup-capped-database-size') {
+      selector = '.gt-rollup-capped-database-size input';
+    } else if ($location.hash() === 'trace-capped-database-size') {
+      selector = '.gt-trace-capped-database-size input';
     }
     var $form = $('.form-horizontal');
     var unregisterWatch = $scope.$watch(function () {

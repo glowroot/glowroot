@@ -32,14 +32,12 @@ import org.glowroot.transaction.TransactionCollector;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.transaction.model.Transaction;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class CollectorModule {
 
-    private static final long FIXED_AGGREGATE_INTERVAL_SECONDS =
-            Long.getLong("glowroot.internal.aggregateInterval", 60);
-    private static final long FIXED_GAUGE_INTERVAL_SECONDS =
-            Long.getLong("glowroot.internal.gaugeInterval", 5);
+    private static final long GAUGE_COLLECTION_INTERVAL_MILLIS =
+            Long.getLong("glowroot.internal.gaugeCollectionIntervalMillis", 5000);
 
     private final TransactionCollector transactionCollector;
     private final @Nullable AggregateCollector aggregateCollector;
@@ -62,13 +60,15 @@ public class CollectorModule {
             transactionCollector = new NopTransactionCollector();
         } else {
             aggregateCollector = new AggregateCollector(scheduledExecutor, aggregateRepository,
-                    configModule.getConfigService(), FIXED_AGGREGATE_INTERVAL_SECONDS, clock);
+                    configModule.getConfigService(),
+                    configService.getRollupConfigs().get(0).intervalMillis(), clock);
             gaugeCollector = new GaugeCollector(configService, gaugePointRepository,
                     jvmModule.getLazyPlatformMBeanServer(), scheduledExecutor, clock, null);
             // using fixed rate to keep gauge collections close to on the second mark
-            long initialDelay = FIXED_GAUGE_INTERVAL_SECONDS
-                    - (clock.currentTimeMillis() % FIXED_GAUGE_INTERVAL_SECONDS);
-            gaugeCollector.scheduleAtFixedRate(initialDelay, FIXED_GAUGE_INTERVAL_SECONDS, SECONDS);
+            long initialDelay = GAUGE_COLLECTION_INTERVAL_MILLIS
+                    - (clock.currentTimeMillis() % GAUGE_COLLECTION_INTERVAL_MILLIS);
+            gaugeCollector.scheduleAtFixedRate(initialDelay, GAUGE_COLLECTION_INTERVAL_MILLIS,
+                    MILLISECONDS);
             stackTraceCollector = StackTraceCollector.create(transactionRegistry, configService,
                     scheduledExecutor);
             transactionCollector = new TransactionCollectorImpl(scheduledExecutor, configService,
@@ -84,12 +84,8 @@ public class CollectorModule {
         return aggregateCollector;
     }
 
-    public long getFixedAggregateIntervalSeconds() {
-        return FIXED_AGGREGATE_INTERVAL_SECONDS;
-    }
-
-    public long getFixedGaugeIntervalSeconds() {
-        return FIXED_GAUGE_INTERVAL_SECONDS;
+    public long getGaugeCollectionIntervalMillis() {
+        return GAUGE_COLLECTION_INTERVAL_MILLIS;
     }
 
     @OnlyUsedByTests

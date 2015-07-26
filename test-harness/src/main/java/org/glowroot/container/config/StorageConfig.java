@@ -30,11 +30,10 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class StorageConfig {
 
-    private List<Integer> aggregateRollupExpirationHours = Lists.newArrayList();
-    private List<Integer> gaugeRollupExpirationHours = Lists.newArrayList();
+    private List<Integer> rollupExpirationHours = Lists.newArrayList();
     private int traceExpirationHours;
-    private List<Integer> aggregateDetailRollupDatabaseSizeMb = Lists.newArrayList();
-    private int traceDetailDatabaseSizeMb;
+    private List<Integer> rollupCappedDatabaseSizesMb = Lists.newArrayList();
+    private int traceCappedDatabaseSizeMb;
 
     private final String version;
 
@@ -46,20 +45,12 @@ public class StorageConfig {
         return version;
     }
 
-    public List<Integer> getAggregateRollupExpirationHours() {
-        return aggregateRollupExpirationHours;
+    public List<Integer> getRollupExpirationHours() {
+        return rollupExpirationHours;
     }
 
-    public void setAggregateRollupExpirationHours(List<Integer> aggregateRollupExpirationHours) {
-        this.aggregateRollupExpirationHours = aggregateRollupExpirationHours;
-    }
-
-    public List<Integer> getGaugeRollupExpirationHours() {
-        return gaugeRollupExpirationHours;
-    }
-
-    public void setGaugeRollupExpirationHours(List<Integer> gaugeRollupExpirationHours) {
-        this.gaugeRollupExpirationHours = gaugeRollupExpirationHours;
+    public void setRollupExpirationHours(List<Integer> rollupExpirationHours) {
+        this.rollupExpirationHours = rollupExpirationHours;
     }
 
     public int getTraceExpirationHours() {
@@ -70,21 +61,20 @@ public class StorageConfig {
         this.traceExpirationHours = traceExpirationHours;
     }
 
-    public List<Integer> getAggregateDetailRollupDatabaseSizeMb() {
-        return aggregateDetailRollupDatabaseSizeMb;
+    public List<Integer> getRollupCappedDatabaseSizesMb() {
+        return rollupCappedDatabaseSizesMb;
     }
 
-    public void setAggregateDetailRollupDatabaseSizeMb(
-            List<Integer> aggregateDetailRollupDatabaseSizeMb) {
-        this.aggregateDetailRollupDatabaseSizeMb = aggregateDetailRollupDatabaseSizeMb;
+    public void setRollupCappedDatabaseSizesMb(List<Integer> rollupCappedDatabaseSizesMb) {
+        this.rollupCappedDatabaseSizesMb = rollupCappedDatabaseSizesMb;
     }
 
-    public int getTraceDetailDatabaseSizeMb() {
-        return traceDetailDatabaseSizeMb;
+    public int getTraceCappedDatabaseSizeMb() {
+        return traceCappedDatabaseSizeMb;
     }
 
-    public void setTraceDetailDatabaseSizeMb(int traceDetailDatabaseSizeMb) {
-        this.traceDetailDatabaseSizeMb = traceDetailDatabaseSizeMb;
+    public void setTraceCappedDatabaseSizeMb(int traceCappedDatabaseSizeMb) {
+        this.traceCappedDatabaseSizeMb = traceCappedDatabaseSizeMb;
     }
 
     @Override
@@ -94,13 +84,10 @@ public class StorageConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(aggregateRollupExpirationHours,
-                    that.aggregateRollupExpirationHours)
-                    && Objects.equal(gaugeRollupExpirationHours, that.gaugeRollupExpirationHours)
+            return Objects.equal(rollupExpirationHours, that.rollupExpirationHours)
                     && Objects.equal(traceExpirationHours, that.traceExpirationHours)
-                    && Objects.equal(aggregateDetailRollupDatabaseSizeMb,
-                            that.aggregateDetailRollupDatabaseSizeMb)
-                    && Objects.equal(traceDetailDatabaseSizeMb, that.traceDetailDatabaseSizeMb);
+                    && Objects.equal(rollupCappedDatabaseSizesMb, that.rollupCappedDatabaseSizesMb)
+                    && Objects.equal(traceCappedDatabaseSizeMb, that.traceCappedDatabaseSizeMb);
         }
         return false;
     }
@@ -110,44 +97,39 @@ public class StorageConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(aggregateRollupExpirationHours, gaugeRollupExpirationHours,
-                traceExpirationHours, aggregateDetailRollupDatabaseSizeMb,
-                traceDetailDatabaseSizeMb);
+        return Objects.hashCode(rollupExpirationHours, traceExpirationHours,
+                rollupCappedDatabaseSizesMb,
+                traceCappedDatabaseSizeMb);
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("aggregateRollupExpirationHours", aggregateRollupExpirationHours)
-                .add("gaugeRollupExpirationHours", gaugeRollupExpirationHours)
+                .add("rollupExpirationHours", rollupExpirationHours)
                 .add("traceExpirationHours", traceExpirationHours)
-                .add("aggregateDetailRollupDatabaseSizeMb", aggregateDetailRollupDatabaseSizeMb)
-                .add("traceDetailDatabaseSizeMb", traceDetailDatabaseSizeMb)
+                .add("rollupCappedDatabaseSizesMb", rollupCappedDatabaseSizesMb)
+                .add("traceCappedDatabaseSizeMb", traceCappedDatabaseSizeMb)
                 .add("version", version)
                 .toString();
     }
 
     @JsonCreator
     static StorageConfig readValue(
-            @JsonProperty("aggregateRollupExpirationHours") @Nullable List<Integer> aggregateRollupExpirationHours,
-            @JsonProperty("gaugeRollupExpirationHours") @Nullable List<Integer> gaugeRollupExpirationHours,
+            @JsonProperty("rollupExpirationHours") @Nullable List<Integer> rollupExpirationHours,
             @JsonProperty("traceExpirationHours") @Nullable Integer traceExpirationHours,
-            @JsonProperty("aggregateDetailRollupDatabaseSizeMb") @Nullable List<Integer> aggregateDetailRollupDatabaseSizeMb,
-            @JsonProperty("traceDetailDatabaseSizeMb") @Nullable Integer traceDetailDatabaseSizeMb,
+            @JsonProperty("rollupCappedDatabaseSizesMb") @Nullable List<Integer> rollupCappedDatabaseSizesMb,
+            @JsonProperty("traceCappedDatabaseSizeMb") @Nullable Integer traceCappedDatabaseSizeMb,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(aggregateRollupExpirationHours, "aggregateRollupExpirationHours");
-        checkRequiredProperty(gaugeRollupExpirationHours, "gaugeRollupExpirationHours");
+        checkRequiredProperty(rollupExpirationHours, "rollupExpirationHours");
         checkRequiredProperty(traceExpirationHours, "traceExpirationHours");
-        checkRequiredProperty(aggregateDetailRollupDatabaseSizeMb,
-                "aggregateDetailRollupDatabaseSizeMb");
-        checkRequiredProperty(traceDetailDatabaseSizeMb, "traceDetailDatabaseSizeMb");
+        checkRequiredProperty(rollupCappedDatabaseSizesMb, "rollupCappedDatabaseSizesMb");
+        checkRequiredProperty(traceCappedDatabaseSizeMb, "traceCappedDatabaseSizeMb");
         checkRequiredProperty(version, "version");
         StorageConfig config = new StorageConfig(version);
-        config.setAggregateRollupExpirationHours(aggregateRollupExpirationHours);
-        config.setGaugeRollupExpirationHours(gaugeRollupExpirationHours);
+        config.setRollupExpirationHours(rollupExpirationHours);
         config.setTraceExpirationHours(traceExpirationHours);
-        config.setAggregateDetailRollupDatabaseSizeMb(aggregateDetailRollupDatabaseSizeMb);
-        config.setTraceDetailDatabaseSizeMb(traceDetailDatabaseSizeMb);
+        config.setRollupCappedDatabaseSizesMb(rollupCappedDatabaseSizesMb);
+        config.setTraceCappedDatabaseSizeMb(traceCappedDatabaseSizeMb);
         return config;
     }
 }

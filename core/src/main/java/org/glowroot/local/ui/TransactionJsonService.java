@@ -71,23 +71,15 @@ class TransactionJsonService {
     private final AggregateDao aggregateDao;
     private final Clock clock;
 
-    private final long fixedAggregateIntervalMillis;
-    private final long fixedAggregateRollup1Millis;
-    private final long fixedAggregateRollup2Millis;
-
     TransactionJsonService(TransactionCommonService transactionCommonService, TraceDao traceDao,
             TransactionRegistry transactionRegistry, TransactionCollector transactionCollector,
-            AggregateDao aggregateDao, Clock clock, long fixedAggregateIntervalSeconds,
-            long fixedAggregateRollup1Seconds, long fixedAggregateRollup2Seconds) {
+            AggregateDao aggregateDao, Clock clock) {
         this.transactionCommonService = transactionCommonService;
         this.traceDao = traceDao;
         this.transactionRegistry = transactionRegistry;
         this.transactionCollector = transactionCollector;
         this.aggregateDao = aggregateDao;
         this.clock = clock;
-        this.fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
-        this.fixedAggregateRollup1Millis = fixedAggregateRollup1Seconds * 1000;
-        this.fixedAggregateRollup2Millis = fixedAggregateRollup2Seconds * 1000;
     }
 
     @GET("/backend/transaction/average")
@@ -229,11 +221,11 @@ class TransactionJsonService {
                 QueryStrings.decode(queryString, TransactionSummaryRequest.class);
 
         TransactionSummary overallSummary = transactionCommonService.readOverallSummary(
-                request.transactionType(), request.from() + 1, request.to());
+                request.transactionType(), request.from(), request.to());
 
         TransactionSummaryQuery query = TransactionSummaryQuery.builder()
                 .transactionType(request.transactionType())
-                .from(request.from() + 1)
+                .from(request.from())
                 .to(request.to())
                 .sortOrder(request.sortOrder())
                 .limit(request.limit())
@@ -322,8 +314,8 @@ class TransactionJsonService {
         if (aggregates.isEmpty()) {
             return Lists.newArrayList();
         }
-        DataSeriesHelper dataSeriesHelper =
-                new DataSeriesHelper(clock, getDataPointIntervalMillis(request));
+        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock,
+                aggregateDao.getDataPointIntervalMillis(request.from(), request.to()));
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         for (double percentile : percentiles) {
             dataSeriesList.add(new DataSeries(AlertingService.getPercentileWithSuffix(percentile)
@@ -370,8 +362,8 @@ class TransactionJsonService {
 
     private List<DataSeries> getTimerDataSeries(TransactionDataRequest request,
             List<StackedPoint> stackedPoints) {
-        DataSeriesHelper dataSeriesHelper =
-                new DataSeriesHelper(clock, getDataPointIntervalMillis(request));
+        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock,
+                aggregateDao.getDataPointIntervalMillis(request.from(), request.to()));
         final int topX = 5;
         List<String> timerNames = getTopTimerNames(stackedPoints, topX + 1);
         List<DataSeries> dataSeriesList = Lists.newArrayList();
@@ -422,17 +414,6 @@ class TransactionJsonService {
         }
         dataSeriesList.add(otherDataSeries);
         return dataSeriesList;
-    }
-
-    private long getDataPointIntervalMillis(TransactionDataRequest request) {
-        long millis = request.to() - request.from();
-        if (millis >= aggregateDao.getRollup2ViewThresholdMillis()) {
-            return fixedAggregateRollup2Millis;
-        } else if (millis >= aggregateDao.getRollup1ViewThresholdMillis()) {
-            return fixedAggregateRollup1Millis;
-        } else {
-            return fixedAggregateIntervalMillis;
-        }
     }
 
     // calculate top 5 timers

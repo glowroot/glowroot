@@ -28,16 +28,12 @@ import org.immutables.value.Value;
 @JsonIgnoreProperties({"aggregateExpirationHours", "gaugeExpirationHours"})
 public abstract class StorageConfigBase {
 
+    // TODO revisit this comment
+    //
     // currently aggregate expiration should be at least as big as trace expiration
     // errors/messages page depends on this for calculating error percentage when using the filter
     @Value.Default
-    public ImmutableList<Integer> aggregateRollupExpirationHours() {
-        // 2 days, 2 weeks, 2 months
-        return ImmutableList.of(24 * 2, 24 * 14, 24 * 60);
-    }
-
-    @Value.Default
-    public ImmutableList<Integer> gaugeRollupExpirationHours() {
+    public ImmutableList<Integer> rollupExpirationHours() {
         // 2 days, 2 weeks, 2 months
         return ImmutableList.of(24 * 2, 24 * 14, 24 * 60);
     }
@@ -48,12 +44,12 @@ public abstract class StorageConfigBase {
     }
 
     @Value.Default
-    public ImmutableList<Integer> aggregateDetailRollupDatabaseSizeMb() {
+    public ImmutableList<Integer> rollupCappedDatabaseSizesMb() {
         return ImmutableList.of(500, 500, 500);
     }
 
     @Value.Default
-    public int traceDetailDatabaseSizeMb() {
+    public int traceCappedDatabaseSizeMb() {
         return 500;
     }
 
@@ -64,26 +60,18 @@ public abstract class StorageConfigBase {
     }
 
     boolean hasListIssues() {
-        return aggregateRollupExpirationHours().size() != 3
-                || gaugeRollupExpirationHours().size() != 3
-                || aggregateDetailRollupDatabaseSizeMb().size() != 3;
+        return rollupExpirationHours().size() != 3 || rollupCappedDatabaseSizesMb().size() != 3;
     }
 
     StorageConfig withCorrectedLists() {
         StorageConfig thisConfig = (StorageConfig) this;
         StorageConfig defaultConfig = StorageConfig.builder().build();
-        ImmutableList<Integer> aggregateRollupExpirationHours =
-                fix(aggregateRollupExpirationHours(),
-                        defaultConfig.aggregateRollupExpirationHours());
-        ImmutableList<Integer> gaugeRollupExpirationHours =
-                fix(gaugeRollupExpirationHours(),
-                        defaultConfig.gaugeRollupExpirationHours());
-        ImmutableList<Integer> aggregateDetailRollupDatabaseSizeMb =
-                fix(aggregateDetailRollupDatabaseSizeMb(),
-                        defaultConfig.aggregateDetailRollupDatabaseSizeMb());
-        return thisConfig.withAggregateRollupExpirationHours(aggregateRollupExpirationHours)
-                .withGaugeRollupExpirationHours(gaugeRollupExpirationHours)
-                .withAggregateDetailRollupDatabaseSizeMb(aggregateDetailRollupDatabaseSizeMb);
+        ImmutableList<Integer> rollupExpirationHours =
+                fix(rollupExpirationHours(), defaultConfig.rollupExpirationHours());
+        ImmutableList<Integer> rollupCappedDatabaseSizesMb =
+                fix(rollupCappedDatabaseSizesMb(), defaultConfig.rollupCappedDatabaseSizesMb());
+        return thisConfig.withRollupExpirationHours(rollupExpirationHours)
+                .withRollupCappedDatabaseSizesMb(rollupCappedDatabaseSizesMb);
     }
 
     private ImmutableList<Integer> fix(ImmutableList<Integer> thisList, List<Integer> defaultList) {

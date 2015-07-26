@@ -33,27 +33,22 @@ public class StorageConfigPage {
         this.driver = driver;
     }
 
-    public WebElement getAggregateRollupExpirationTextField(int i) {
+    public WebElement getRollupExpirationTextField(int i) {
         return withWait(xpath(
-                "//div[@gt-model='page.aggregateRollupExpirationDays[" + i + "]']//input"));
-    }
-
-    public WebElement getGaugeRollupExpirationTextField(int i) {
-        return withWait(xpath(
-                "//div[@gt-model='page.gaugeRollupExpirationDays[" + i + "]']//input"));
+                "//div[@gt-model='page.rollupExpirationDays[" + i + "]']//input"));
     }
 
     public WebElement getTraceExpirationTextField() {
         return withWait(xpath("//div[@gt-model='page.traceExpirationDays']//input"));
     }
 
-    public WebElement getAggregateDetailRollupDatabaseSizeTextField(int i) {
+    public WebElement getRollupCappedDatabaseSizeTextField(int i) {
         return withWait(xpath(
-                "//div[@gt-model='config.aggregateDetailRollupDatabaseSizeMb[" + i + "]']//input"));
+                "//div[@gt-model='config.rollupCappedDatabaseSizesMb[" + i + "]']//input"));
     }
 
-    public WebElement getTraceDetailDatabaseSizeTextField() {
-        return withWait(xpath("//div[@gt-model='config.traceDetailDatabaseSizeMb']//input"));
+    public WebElement getTraceCappedDatabaseSizeTextField() {
+        return withWait(xpath("//div[@gt-model='config.traceCappedDatabaseSizeMb']//input"));
     }
 
     public void clickSaveButton() {

@@ -47,6 +47,13 @@ import static com.google.common.base.Preconditions.checkState;
 
 public class ConfigService {
 
+    private static final long ROLLUP_0_INTERVAL_MILLIS =
+            Long.getLong("glowroot.internal.rollup.0.intervalMillis", 60 * 1000);
+    private static final long ROLLUP_1_INTERVAL_MILLIS =
+            Long.getLong("glowroot.internal.rollup.1.intervalMillis", 5 * 60 * 1000);
+    private static final long ROLLUP_2_INTERVAL_MILLIS =
+            Long.getLong("glowroot.internal.rollup.2.intervalMillis", 30 * 60 * 1000);
+
     private static final Logger logger = LoggerFactory.getLogger(ConfigService.class);
 
     private final ConfigFile configFile;
@@ -58,6 +65,8 @@ public class ConfigService {
     private final Multimap<String, ConfigListener> pluginConfigListeners =
             Multimaps.synchronizedMultimap(ArrayListMultimap.<String, ConfigListener>create());
 
+    private final ImmutableList<RollupConfig> rollupConfigs;
+
     private volatile Config config;
 
     // volatile not needed as access is guarded by secretKeyFile
@@ -67,6 +76,16 @@ public class ConfigService {
         configFile = new ConfigFile(new File(baseDir, "config.json"), pluginDescriptors);
         this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
         secretFile = new File(baseDir, "secret");
+        rollupConfigs = ImmutableList.of(
+                // default rollup level #0 fixed interval is 1 minute,
+                // making default view threshold 15 min
+                RollupConfig.of(ROLLUP_0_INTERVAL_MILLIS, ROLLUP_0_INTERVAL_MILLIS * 15),
+                // default rollup level #1 fixed interval is 5 minutes,
+                // making default view threshold 1 hour
+                RollupConfig.of(ROLLUP_1_INTERVAL_MILLIS, ROLLUP_1_INTERVAL_MILLIS * 12),
+                // default rollup level #2 fixed interval is 30 minutes,
+                // making default view threshold 8 hour
+                RollupConfig.of(ROLLUP_2_INTERVAL_MILLIS, ROLLUP_2_INTERVAL_MILLIS * 16));
         try {
             config = configFile.loadConfig();
         } catch (IOException e) {
@@ -160,6 +179,10 @@ public class ConfigService {
             }
         }
         return null;
+    }
+
+    public ImmutableList<RollupConfig> getRollupConfigs() {
+        return rollupConfigs;
     }
 
     public void addConfigListener(ConfigListener listener) {

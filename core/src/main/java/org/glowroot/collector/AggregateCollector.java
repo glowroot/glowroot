@@ -58,12 +58,12 @@ public class AggregateCollector {
 
     AggregateCollector(ScheduledExecutorService scheduledExecutor,
             AggregateRepository aggregateRepository, ConfigService configService,
-            long fixedAggregateIntervalSeconds, Clock clock) {
+            long fixedAggregateIntervalMillis, Clock clock) {
         this.scheduledExecutor = scheduledExecutor;
         this.aggregateRepository = aggregateRepository;
         this.configService = configService;
         this.clock = clock;
-        this.fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
+        this.fixedAggregateIntervalMillis = fixedAggregateIntervalMillis;
         activeIntervalCollector = new AggregateIntervalCollector(clock.currentTimeMillis(),
                 fixedAggregateIntervalMillis, configService);
         // dedicated thread to aggregating transaction data
@@ -73,12 +73,13 @@ public class AggregateCollector {
         processingThread.start();
     }
 
+    // from is non-inclusive
     public List<AggregateIntervalCollector> getOrderedIntervalCollectorsInRange(long from,
             long to) {
         List<AggregateIntervalCollector> intervalCollectors = Lists.newArrayList();
         for (AggregateIntervalCollector intervalCollector : getOrderedAllIntervalCollectors()) {
             long endTime = intervalCollector.getEndTime();
-            if (endTime >= from && endTime <= to) {
+            if (endTime > from && endTime <= to) {
                 intervalCollectors.add(intervalCollector);
             }
         }

@@ -40,10 +40,10 @@ public class WebDriverSetup {
     private static final TestName testNameWatcher = new TestName();
 
     static {
-        System.setProperty("glowroot.internal.aggregateInterval", "1");
-        System.setProperty("glowroot.internal.aggregateRollup1", "2");
-        System.setProperty("glowroot.internal.gaugeInterval", "1");
-        System.setProperty("glowroot.internal.gaugeRollup1", "2");
+        System.setProperty("glowroot.internal.rollup.0.intervalMillis", "1000");
+        System.setProperty("glowroot.internal.rollup.1.intervalMillis", "2000");
+        System.setProperty("glowroot.internal.rollup.2.intervalMillis", "4000");
+        System.setProperty("glowroot.internal.gaugeCollectionIntervalMillis", "500");
     }
 
     public static WebDriverSetup create() throws Exception {

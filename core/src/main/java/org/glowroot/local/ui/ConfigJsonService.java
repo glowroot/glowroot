@@ -75,8 +75,8 @@ class ConfigJsonService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final ConfigService configService;
-    private final List<CappedDatabase> aggregateDetailRollupDatabases;
-    private final CappedDatabase traceDetailDatabase;
+    private final List<CappedDatabase> rollupCappedDatabases;
+    private final CappedDatabase traceCappedDatabase;
     private final ImmutableList<PluginDescriptor> pluginDescriptors;
     private final HttpSessionManager httpSessionManager;
     private final TransactionModule transactionModule;
@@ -85,12 +85,12 @@ class ConfigJsonService {
     private volatile @MonotonicNonNull HttpServer httpServer;
 
     ConfigJsonService(ConfigService configService,
-            List<CappedDatabase> aggregateDetailRollupDatabases, CappedDatabase traceDetailDatabase,
+            List<CappedDatabase> rollupCappedDatabases, CappedDatabase traceCappedDatabase,
             List<PluginDescriptor> pluginDescriptors, HttpSessionManager httpSessionManager,
             TransactionModule transactionModule, MailService mailService) {
         this.configService = configService;
-        this.aggregateDetailRollupDatabases = aggregateDetailRollupDatabases;
-        this.traceDetailDatabase = traceDetailDatabase;
+        this.rollupCappedDatabases = rollupCappedDatabases;
+        this.traceCappedDatabase = traceCappedDatabase;
         this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
         this.httpSessionManager = httpSessionManager;
         this.transactionModule = transactionModule;
@@ -221,12 +221,12 @@ class ConfigJsonService {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         // resize() doesn't do anything if the new and old value are the same
-        for (int i = 0; i < aggregateDetailRollupDatabases.size(); i++) {
-            aggregateDetailRollupDatabases.get(i).resize(configService.getStorageConfig()
-                    .aggregateDetailRollupDatabaseSizeMb().get(i) * 1024);
+        for (int i = 0; i < rollupCappedDatabases.size(); i++) {
+            rollupCappedDatabases.get(i).resize(
+                    configService.getStorageConfig().rollupCappedDatabaseSizesMb().get(i) * 1024);
         }
-        traceDetailDatabase.resize(
-                configService.getStorageConfig().traceDetailDatabaseSizeMb() * 1024);
+        traceCappedDatabase.resize(
+                configService.getStorageConfig().traceCappedDatabaseSizeMb() * 1024);
         return getStorageConfig();
     }
 
@@ -572,31 +572,27 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class StorageConfigDtoBase {
 
-        abstract ImmutableList<Integer> aggregateRollupExpirationHours();
-        abstract ImmutableList<Integer> gaugeRollupExpirationHours();
+        abstract ImmutableList<Integer> rollupExpirationHours();
         abstract int traceExpirationHours();
-        abstract ImmutableList<Integer> aggregateDetailRollupDatabaseSizeMb();
-        abstract int traceDetailDatabaseSizeMb();
+        abstract ImmutableList<Integer> rollupCappedDatabaseSizesMb();
+        abstract int traceCappedDatabaseSizeMb();
         abstract String version();
 
         StorageConfig toConfig() {
             return StorageConfig.builder()
-                    .aggregateRollupExpirationHours(aggregateRollupExpirationHours())
-                    .gaugeRollupExpirationHours(gaugeRollupExpirationHours())
+                    .rollupExpirationHours(rollupExpirationHours())
                     .traceExpirationHours(traceExpirationHours())
-                    .aggregateDetailRollupDatabaseSizeMb(aggregateDetailRollupDatabaseSizeMb())
-                    .traceDetailDatabaseSizeMb(traceDetailDatabaseSizeMb())
+                    .rollupCappedDatabaseSizesMb(rollupCappedDatabaseSizesMb())
+                    .traceCappedDatabaseSizeMb(traceCappedDatabaseSizeMb())
                     .build();
         }
 
         private static StorageConfigDto fromConfig(StorageConfig config) {
             return StorageConfigDto.builder()
-                    .addAllAggregateRollupExpirationHours(config.aggregateRollupExpirationHours())
-                    .addAllGaugeRollupExpirationHours(config.gaugeRollupExpirationHours())
+                    .addAllRollupExpirationHours(config.rollupExpirationHours())
                     .traceExpirationHours(config.traceExpirationHours())
-                    .addAllAggregateDetailRollupDatabaseSizeMb(
-                            config.aggregateDetailRollupDatabaseSizeMb())
-                    .traceDetailDatabaseSizeMb(config.traceDetailDatabaseSizeMb())
+                    .addAllRollupCappedDatabaseSizesMb(config.rollupCappedDatabaseSizesMb())
+                    .traceCappedDatabaseSizeMb(config.traceCappedDatabaseSizeMb())
                     .version(config.version())
                     .build();
         }

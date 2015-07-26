@@ -20,8 +20,8 @@
   <div class="panel-body">
     <div ng-include src="'template/gt-loading-overlay.html'"></div>
     <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-    <!-- not using gt-form-autofocus-on-first-input in order to handle special case #capped-database-size url
-         (see storage.js) -->
+    <!-- not using gt-form-autofocus-on-first-input in order to handle special case #rollup-detail-capped-size
+         and trace-detail-capped-size urls (see storage.js) -->
     <div ng-form
          gt-form-with-primary-button
          class="form-horizontal"
@@ -29,8 +29,8 @@
       <fieldset>
         <legend>data.h2.db</legend>
         <div gt-form-group
-             gt-label="Response time tab (1&nbsp;minute&nbsp;interval&nbsp;data)"
-             gt-model="page.aggregateRollupExpirationDays[0]"
+             gt-label="Response time and JVM gauge tabs (1&nbsp;minute&nbsp;interval&nbsp;data)"
+             gt-model="page.rollupExpirationDays[0]"
              gt-number="true"
              gt-pattern="pattern.integer"
              gt-required="loaded"
@@ -44,8 +44,8 @@
           </div>
         </div>
         <div gt-form-group
-             gt-label="Response time tab (5&nbsp;minute&nbsp;interval&nbsp;data)"
-             gt-model="page.aggregateRollupExpirationDays[1]"
+             gt-label="Response time and JVM gauge tab (5&nbsp;minute&nbsp;interval&nbsp;data)"
+             gt-model="page.rollupExpirationDays[1]"
              gt-number="true"
              gt-pattern="pattern.integer"
              gt-required="loaded"
@@ -59,8 +59,8 @@
           </div>
         </div>
         <div gt-form-group
-             gt-label="Response time tab (30&nbsp;&nbsp;interval&nbsp;data)"
-             gt-model="page.aggregateRollupExpirationDays[2]"
+             gt-label="Response time and JVM gauge tabs (30&nbsp;&nbsp;interval&nbsp;data)"
+             gt-model="page.rollupExpirationDays[2]"
              gt-number="true"
              gt-pattern="pattern.integer"
              gt-required="loaded"
@@ -71,51 +71,6 @@
           <div class="help-block">
             Response time tab data is rolled up again at 30 minute intervals.
             This setting defines how long to retain this 30 minute rollup data.
-          </div>
-        </div>
-        <div gt-form-group
-             gt-label="JVM gauge tab (5&nbsp;second&nbsp;interval&nbsp;data)"
-             gt-model="page.gaugeRollupExpirationDays[0]"
-             gt-number="true"
-             gt-pattern="pattern.integer"
-             gt-required="loaded"
-             gt-width="7em"
-             gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
-          <div class="help-block">
-            JVM gauge tab data is collected and stored at 5 second intervals.
-            This setting defines how long to retain this 5 second interval data.
-          </div>
-        </div>
-        <div gt-form-group
-             gt-label="JVM gauge tab (1&nbsp;minute&nbsp;interval&nbsp;data)"
-             gt-model="page.gaugeRollupExpirationDays[1]"
-             gt-number="true"
-             gt-pattern="pattern.integer"
-             gt-required="loaded"
-             gt-width="7em"
-             gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
-          <div class="help-block">
-            JVM gauge tab data is rolled up at 1 minute intervals.
-            This setting defines how long to retain this 1 minute rollup data.
-          </div>
-        </div>
-        <div gt-form-group
-             gt-label="JVM gauge tab (15&nbsp;minute&nbsp;interval&nbsp;data)"
-             gt-model="page.gaugeRollupExpirationDays[2]"
-             gt-number="true"
-             gt-pattern="pattern.integer"
-             gt-required="loaded"
-             gt-width="7em"
-             gt-addon="days"
-             gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8">
-          <div class="help-block">
-            JVM gauge tab data is rolled up again at 15 minute intervals.
-            This setting defines how long to retain this 15 minute rollup data.
           </div>
         </div>
         <div gt-form-group
@@ -137,7 +92,7 @@
         <legend>*.capped.db</legend>
         <div gt-form-group
              gt-label="Profile and queries tab data (1&nbsp;minute&nbsp;interval&nbsp;data)"
-             gt-model="config.aggregateDetailRollupDatabaseSizeMb[0]"
+             gt-model="config.rollupCappedDatabaseSizesMb[0]"
              gt-number="true"
              gt-pattern="pattern.integer"
              gt-required="loaded"
@@ -145,7 +100,7 @@
              gt-addon="MB"
              gt-col-class1="col-lg-4"
              gt-col-class2="col-lg-8"
-             class="gt-capped-database-size">
+             class="gt-rollup-capped-database-size">
           <div class="help-block">
             Profile and queries tab data is collected continuously and stored at 1 minute intervals.
             This setting defines the size of the capped data file used to store this 1 minute interval data.
@@ -153,15 +108,14 @@
         </div>
         <div gt-form-group
              gt-label="Profile and queries tab data (5&nbsp;minute&nbsp;interval&nbsp;data)"
-             gt-model="config.aggregateDetailRollupDatabaseSizeMb[1]"
+             gt-model="config.rollupCappedDatabaseSizesMb[1]"
              gt-number="true"
              gt-pattern="pattern.integer"
              gt-required="loaded"
              gt-width="7em"
              gt-addon="MB"
              gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8"
-             class="gt-capped-database-size">
+             gt-col-class2="col-lg-8">
           <div class="help-block">
             Profile and queries tab data is rolled up at 5 minute intervals.
             This setting defines the size of the capped data file used to store this 5 minute interval data.
@@ -169,15 +123,14 @@
         </div>
         <div gt-form-group
              gt-label="Profile and queries tab data (30&nbsp;minute&nbsp;interval&nbsp;data)"
-             gt-model="config.aggregateDetailRollupDatabaseSizeMb[2]"
+             gt-model="config.rollupCappedDatabaseSizesMb[2]"
              gt-number="true"
              gt-pattern="pattern.integer"
              gt-required="loaded"
              gt-width="7em"
              gt-addon="MB"
              gt-col-class1="col-lg-4"
-             gt-col-class2="col-lg-8"
-             class="gt-capped-database-size">
+             gt-col-class2="col-lg-8">
           <div class="help-block">
             Profile and queries tab data is rolled up at 30 minute intervals.
             This setting defines the size of the capped data file used to store this 30 minute interval data.
@@ -185,7 +138,7 @@
         </div>
         <div gt-form-group
              gt-label="Trace detail data"
-             gt-model="config.traceDetailDatabaseSizeMb"
+             gt-model="config.traceCappedDatabaseSizeMb"
              gt-number="true"
              gt-pattern="pattern.integer"
              gt-required="loaded"
@@ -193,7 +146,7 @@
              gt-addon="MB"
              gt-col-class1="col-lg-4"
              gt-col-class2="col-lg-8"
-             class="gt-capped-database-size">
+             class="gt-trace-capped-database-size">
           <div class="help-block">
             This setting defines the size of the capped data file used to store the trace detail data
             (trace entries and trace profiles).

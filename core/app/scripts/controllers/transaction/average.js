@@ -68,7 +68,7 @@ glowroot.controller('TransactionAverageCtrl', [
       $scope.transactionCounts = data.transactionCounts;
       $scope.mergedAggregate = data.mergedAggregate;
       $scope.threadInfoAggregate = data.threadInfoAggregate;
-      $scope.lastDurationMillis = query.to - query.from + 1000 * $scope.layout.fixedAggregateIntervalSeconds;
+      $scope.lastDurationMillis = query.to - query.from;
       if ($scope.mergedAggregate.transactionCount) {
         updateTreeTimers();
         updateFlattenedTimers();

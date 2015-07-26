@@ -69,12 +69,7 @@ public class LocalUiModule {
 
         LayoutService layoutService = new LayoutService(version, configService,
                 configModule.getPluginDescriptors(), jvmModule.getHeapDumps(),
-                collectorModule.getFixedAggregateIntervalSeconds(),
-                storageModule.getFixedAggregateRollup1Seconds(),
-                storageModule.getFixedAggregateRollup2Seconds(),
-                collectorModule.getFixedGaugeIntervalSeconds(),
-                storageModule.getFixedGaugeRollup1Seconds(),
-                storageModule.getFixedGaugeRollup2Seconds());
+                collectorModule.getGaugeCollectionIntervalMillis());
         HttpSessionManager httpSessionManager =
                 new HttpSessionManager(configService, clock, layoutService);
         IndexHtmlHttpService indexHtmlHttpService =
@@ -82,16 +77,12 @@ public class LocalUiModule {
         LayoutHttpService layoutHttpService =
                 new LayoutHttpService(httpSessionManager, layoutService);
         TransactionCommonService transactionCommonService = new TransactionCommonService(
-                aggregateDao, collectorModule.getAggregateCollector(), configService,
-                storageModule.getFixedAggregateRollup1Seconds(),
-                storageModule.getFixedAggregateRollup2Seconds());
+                aggregateDao, collectorModule.getAggregateCollector(), configService);
         TraceCommonService traceCommonService = new TraceCommonService(traceDao,
                 transactionRegistry, transactionCollector, clock, ticker);
         TransactionJsonService transactionJsonService = new TransactionJsonService(
                 transactionCommonService, traceDao, transactionRegistry, transactionCollector,
-                aggregateDao, clock, collectorModule.getFixedAggregateIntervalSeconds(),
-                storageModule.getFixedAggregateRollup1Seconds(),
-                storageModule.getFixedAggregateRollup2Seconds());
+                aggregateDao, clock);
         TracePointJsonService tracePointJsonService = new TracePointJsonService(traceDao,
                 transactionRegistry, transactionCollector, configService, ticker, clock);
         TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);
@@ -102,22 +93,17 @@ public class LocalUiModule {
         GlowrootLogHttpService glowrootLogHttpService = new GlowrootLogHttpService(baseDir);
         ErrorCommonService errorCommonService = new ErrorCommonService(
                 aggregateDao, collectorModule.getAggregateCollector(),
-                storageModule.getFixedAggregateRollup1Seconds(),
-                storageModule.getFixedAggregateRollup2Seconds());
+                configService.getRollupConfigs());
         ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService, traceDao,
-                aggregateDao, clock, collectorModule.getFixedAggregateIntervalSeconds(),
-                storageModule.getFixedAggregateRollup1Seconds(),
-                storageModule.getFixedAggregateRollup2Seconds());
+                aggregateDao, clock);
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
                 gaugePointDao, configService, transactionRegistry, transactionCollector,
                 jvmModule.getThreadAllocatedBytes(), jvmModule.getHeapDumps(),
-                jvmModule.getProcessId(), collectorModule.getFixedGaugeIntervalSeconds(),
-                storageModule.getFixedGaugeRollup1Seconds(),
-                storageModule.getFixedGaugeRollup2Seconds());
+                jvmModule.getProcessId(), collectorModule.getGaugeCollectionIntervalMillis());
         ConfigJsonService configJsonService = new ConfigJsonService(configService,
-                storageModule.getAggregateDetailRollupDatabase(),
-                storageModule.getTraceDetailDatabase(), configModule.getPluginDescriptors(),
-                httpSessionManager, transactionModule, new MailService());
+                storageModule.getRollupCappedDatabases(), storageModule.getTraceCappedDatabase(),
+                configModule.getPluginDescriptors(), httpSessionManager, transactionModule,
+                new MailService());
         InstrumentationJsonService instrumentationJsonService = new InstrumentationJsonService(
                 configService, transactionModule.getAdviceCache(), transactionModule,
                 analyzedWorld, instrumentation);

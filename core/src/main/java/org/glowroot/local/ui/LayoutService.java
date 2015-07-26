@@ -34,6 +34,7 @@ import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptor;
+import org.glowroot.config.RollupConfig;
 import org.glowroot.config.UserInterfaceConfig;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.OptionalService;
@@ -47,30 +48,18 @@ class LayoutService {
     private final ConfigService configService;
     private final ImmutableList<PluginDescriptor> pluginDescriptors;
     private final OptionalService<HeapDumps> heapDumps;
-    private final long fixedAggregateIntervalSeconds;
-    private final long fixedAggregateRollup1Seconds;
-    private final long fixedAggregateRollup2Seconds;
-    private final long fixedGaugeIntervalSeconds;
-    private final long fixedGaugeRollup1Seconds;
-    private final long fixedGaugeRollup2Seconds;
+    private final long gaugeCollectionIntervalMillis;
 
     private volatile @Nullable Layout layout;
 
     LayoutService(String version, ConfigService configService,
             List<PluginDescriptor> pluginDescriptors, OptionalService<HeapDumps> heapDumps,
-            long fixedAggregateIntervalSeconds, long fixedAggregateRollup1Seconds,
-            long fixedAggregateRollup2Seconds, long fixedGaugeIntervalSeconds,
-            long fixedGaugeRollup1Seconds, long fixedGaugeRollup2Seconds) {
+            long gaugeCollectionIntervalMillis) {
         this.version = version;
         this.configService = configService;
         this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
         this.heapDumps = heapDumps;
-        this.fixedAggregateIntervalSeconds = fixedAggregateIntervalSeconds;
-        this.fixedAggregateRollup1Seconds = fixedAggregateRollup1Seconds;
-        this.fixedAggregateRollup2Seconds = fixedAggregateRollup2Seconds;
-        this.fixedGaugeIntervalSeconds = fixedGaugeIntervalSeconds;
-        this.fixedGaugeRollup1Seconds = fixedGaugeRollup1Seconds;
-        this.fixedGaugeRollup2Seconds = fixedGaugeRollup2Seconds;
+        this.gaugeCollectionIntervalMillis = gaugeCollectionIntervalMillis;
         ConfigListener listener = new ConfigListener() {
             @Override
             public void onChange() {
@@ -87,9 +76,8 @@ class LayoutService {
         Layout localLayout = layout;
         if (localLayout == null) {
             localLayout = buildLayout(version, configService, pluginDescriptors,
-                    heapDumps.getService(), fixedAggregateIntervalSeconds,
-                    fixedAggregateRollup1Seconds, fixedAggregateRollup2Seconds,
-                    fixedGaugeIntervalSeconds, fixedGaugeRollup1Seconds, fixedGaugeRollup2Seconds);
+                    heapDumps.getService(), configService.getRollupConfigs(),
+                    gaugeCollectionIntervalMillis);
             layout = localLayout;
         }
         return mapper.writeValueAsString(localLayout);
@@ -99,9 +87,8 @@ class LayoutService {
         Layout localLayout = layout;
         if (localLayout == null) {
             localLayout = buildLayout(version, configService, pluginDescriptors,
-                    heapDumps.getService(), fixedAggregateIntervalSeconds,
-                    fixedAggregateRollup1Seconds, fixedAggregateRollup2Seconds,
-                    fixedGaugeIntervalSeconds, fixedGaugeRollup1Seconds, fixedGaugeRollup2Seconds);
+                    heapDumps.getService(), configService.getRollupConfigs(),
+                    gaugeCollectionIntervalMillis);
             layout = localLayout;
         }
         return localLayout.version();
@@ -123,9 +110,7 @@ class LayoutService {
 
     private static Layout buildLayout(String version, ConfigService configService,
             List<PluginDescriptor> pluginDescriptors, @Nullable HeapDumps heapDumps,
-            long fixedAggregateIntervalSeconds, long fixedAggregateRollup1Seconds,
-            long fixedAggregateRollup2Seconds, long fixedGaugeIntervalSeconds,
-            long fixedGaugeRollup1Seconds, long fixedGaugeRollup2Seconds) {
+            ImmutableList<RollupConfig> rollupConfigs, long gaugeCollectionIntervalMillis) {
         // use linked hash set to maintain ordering in case there is no default transaction type
         List<String> transactionTypes = Lists.newArrayList(configService.getAllTransactionTypes());
         String defaultDisplayedTransactionType = configService.getDefaultDisplayedTransactionType();
@@ -159,12 +144,8 @@ class LayoutService {
                 .addAllDefaultPercentiles(
                         configService.getGeneralConfig().defaultDisplayedPercentiles())
                 .addAllTransactionCustomAttributes(transactionCustomAttributes)
-                .fixedAggregateIntervalSeconds(fixedAggregateIntervalSeconds)
-                .fixedAggregateRollup1Seconds(fixedAggregateRollup1Seconds)
-                .fixedAggregateRollup2Seconds(fixedAggregateRollup2Seconds)
-                .fixedGaugeIntervalSeconds(fixedGaugeIntervalSeconds)
-                .fixedGaugeRollup1Seconds(fixedGaugeRollup1Seconds)
-                .fixedGaugeRollup2Seconds(fixedGaugeRollup2Seconds)
+                .addAllRollupConfigs(rollupConfigs)
+                .gaugeCollectionIntervalMillis(gaugeCollectionIntervalMillis)
                 .build();
     }
 }

@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.zip.DataFormatException;
 
 import javax.annotation.Nullable;
@@ -48,6 +49,7 @@ import org.glowroot.collector.TransactionSummary;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.common.ScratchBuffer;
 import org.glowroot.config.ConfigService;
+import org.glowroot.config.RollupConfig;
 import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.ResultSetExtractor;
 import org.glowroot.local.store.DataSource.RowMapper;
@@ -104,14 +106,6 @@ public class AggregateDao {
     private static final ImmutableList<String> overallAggregateIndexColumns =
             ImmutableList.of("capture_time", "transaction_type", "total_micros",
                     "transaction_count", "error_count");
-    private static final ImmutableList<Index> overallAggregateIndexes = ImmutableList.<Index>of(
-            Index.of("overall_aggregate_idx", overallAggregateIndexColumns));
-    private static final ImmutableList<Index> overallAggregateRollup1Indexes =
-            ImmutableList.<Index>of(Index.of("overall_aggregate_rollup_1_idx",
-                    overallAggregateIndexColumns));
-    private static final ImmutableList<Index> overallAggregateRollup2Indexes =
-            ImmutableList.<Index>of(Index.of("overall_aggregate_rollup_2_idx",
-                    overallAggregateIndexColumns));
 
     // this index includes all columns needed for the transaction aggregate query so h2 can return
     // the result set directly from the index without having to reference the table for each row
@@ -120,42 +114,20 @@ public class AggregateDao {
     private static final ImmutableList<String> transactionAggregateIndexColumns =
             ImmutableList.of("capture_time", "transaction_type", "transaction_name",
                     "total_micros", "transaction_count", "error_count");
-    private static final ImmutableList<Index> transactionAggregateIndexes =
-            ImmutableList.<Index>of(Index.of("transaction_aggregate_idx",
-                    transactionAggregateIndexColumns));
-    private static final ImmutableList<Index> transactionAggregateRollup1Indexes =
-            ImmutableList.<Index>of(Index.of("transaction_aggregate_rollup_1_idx",
-                    transactionAggregateIndexColumns));
-    private static final ImmutableList<Index> transactionAggregateRollup2Indexes =
-            ImmutableList.<Index>of(Index.of("transaction_aggregate_rollup_2_idx",
-                    transactionAggregateIndexColumns));
 
     private final DataSource dataSource;
-    private final List<CappedDatabase> rollupDatabases;
+    private final List<CappedDatabase> rollupCappedDatabases;
     private final ConfigService configService;
 
-    private final long fixedRollup1Millis;
-    private final long fixedRollup2Millis;
-    private final long rollup1ViewThresholdMillis;
-    private final long rollup2ViewThresholdMillis;
-
-    private volatile long lastRollup1Time;
-    private volatile long lastRollup2Time;
+    private final AtomicLongArray lastRollupTimes;
 
     private final Object rollupLock = new Object();
 
-    AggregateDao(DataSource dataSource, List<CappedDatabase> rollupDatabases,
-            ConfigService configService, long fixedRollup1Seconds, long fixedRollup2Seconds)
-                    throws SQLException {
+    AggregateDao(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
+            ConfigService configService) throws SQLException {
         this.dataSource = dataSource;
-        this.rollupDatabases = rollupDatabases;
+        this.rollupCappedDatabases = rollupCappedDatabases;
         this.configService = configService;
-        fixedRollup1Millis = fixedRollup1Seconds * 1000;
-        fixedRollup2Millis = fixedRollup2Seconds * 1000;
-        // default rollup1 is 5 minutes, making default rollup1 view threshold 1 hour
-        rollup1ViewThresholdMillis = fixedRollup1Millis * 12;
-        // default rollup2 is 30 minutes, making default rollup1 view threshold 8 hours
-        rollup2ViewThresholdMillis = fixedRollup2Millis * 16;
 
         // upgrade from 0.8.3 to 0.8.4
         if (dataSource.tableExists("overall_aggregate")) {
@@ -165,27 +137,27 @@ public class AggregateDao {
                     "alter table transaction_aggregate rename to transaction_aggregate_rollup_0");
         }
 
-        dataSource.syncTable("overall_aggregate_rollup_0", overallAggregatePointColumns);
-        dataSource.syncIndexes("overall_aggregate_rollup_0", overallAggregateIndexes);
-        dataSource.syncTable("transaction_aggregate_rollup_0", transactionAggregateColumns);
-        dataSource.syncIndexes("transaction_aggregate_rollup_0", transactionAggregateIndexes);
-        dataSource.syncTable("overall_aggregate_rollup_1", overallAggregatePointColumns);
-        dataSource.syncIndexes("overall_aggregate_rollup_1", overallAggregateRollup1Indexes);
-        dataSource.syncTable("transaction_aggregate_rollup_1", transactionAggregateColumns);
-        dataSource.syncIndexes("transaction_aggregate_rollup_1",
-                transactionAggregateRollup1Indexes);
-        dataSource.syncTable("overall_aggregate_rollup_2", overallAggregatePointColumns);
-        dataSource.syncIndexes("overall_aggregate_rollup_2", overallAggregateRollup2Indexes);
-        dataSource.syncTable("transaction_aggregate_rollup_2", transactionAggregateColumns);
-        dataSource.syncIndexes("transaction_aggregate_rollup_2",
-                transactionAggregateRollup2Indexes);
+        ImmutableList<RollupConfig> rollupConfigs = configService.getRollupConfigs();
+        for (int i = 0; i < rollupConfigs.size(); i++) {
+            dataSource.syncTable("overall_aggregate_rollup_" + i, overallAggregatePointColumns);
+            dataSource.syncIndexes("overall_aggregate_rollup_" + i,
+                    ImmutableList.<Index>of(Index.of("overall_aggregate_rollup_" + i + "_idx",
+                            overallAggregateIndexColumns)));
+            dataSource.syncTable("transaction_aggregate_rollup_" + i, transactionAggregateColumns);
+            dataSource.syncIndexes("transaction_aggregate_rollup_" + i,
+                    ImmutableList.<Index>of(Index.of("transaction_aggregate_rollup_" + i + "idx",
+                            transactionAggregateIndexColumns)));
+        }
 
         // don't need last_rollup_times table like in GaugePointDao since there is already index
         // on capture_time so these queries are relatively fast
-        lastRollup1Time = dataSource.queryForLong(
-                "select ifnull(max(capture_time), 0) from overall_aggregate_rollup_1");
-        lastRollup2Time = dataSource.queryForLong(
-                "select ifnull(max(capture_time), 0) from overall_aggregate_rollup_2");
+        long[] lastRollupTimes = new long[rollupConfigs.size()];
+        lastRollupTimes[0] = 0;
+        for (int i = 1; i < lastRollupTimes.length; i++) {
+            lastRollupTimes[i] = dataSource.queryForLong(
+                    "select ifnull(max(capture_time), 0) from overall_aggregate_rollup_" + i);
+        }
+        this.lastRollupTimes = new AtomicLongArray(lastRollupTimes);
 
         // TODO initial rollup in case store is not called in a reasonable time
     }
@@ -194,17 +166,17 @@ public class AggregateDao {
             long captureTime) throws Exception {
         storeAtRollupLevel(overallAggregates, transactionAggregates, 0);
         synchronized (rollupLock) {
-            long rollup1Time = (long) Math.floor(captureTime / (double) fixedRollup1Millis)
-                    * fixedRollup1Millis;
-            if (rollup1Time > lastRollup1Time) {
-                rollup(lastRollup1Time, rollup1Time, fixedRollup1Millis, 1, 0);
-                lastRollup1Time = rollup1Time;
-            }
-            long rollup2Time = (long) Math.floor(captureTime / (double) fixedRollup2Millis)
-                    * fixedRollup2Millis;
-            if (rollup2Time > lastRollup2Time) {
-                rollup(lastRollup2Time, rollup2Time, fixedRollup2Millis, 2, 1);
-                lastRollup2Time = rollup2Time;
+            ImmutableList<RollupConfig> rollupConfigs = configService.getRollupConfigs();
+            for (int i = 1; i < rollupConfigs.size(); i++) {
+                RollupConfig rollupConfig = rollupConfigs.get(i);
+                long currentRollupTime =
+                        (long) Math.floor(captureTime / (double) rollupConfig.intervalMillis())
+                                * rollupConfig.intervalMillis();
+                if (currentRollupTime > lastRollupTimes.get(i)) {
+                    rollup(lastRollupTimes.get(i), currentRollupTime, rollupConfig.intervalMillis(),
+                            i, i - 1);
+                    lastRollupTimes.set(i, currentRollupTime);
+                }
             }
         }
     }
@@ -213,18 +185,13 @@ public class AggregateDao {
     public TransactionSummary readOverallSummary(String transactionType, long captureTimeFrom,
             long captureTimeTo) throws SQLException {
         int rollupLevel = getRollupLevelForView(captureTimeFrom, captureTimeTo);
-        // may need to aggregate some non-rolled up data
-        if (rollupLevel == 1 && captureTimeTo > lastRollup1Time) {
+        long lastRollupTime = lastRollupTimes.get(rollupLevel);
+        if (rollupLevel != 0 && captureTimeTo > lastRollupTime) {
+            // need to aggregate some non-rolled up data
             TransactionSummary overallSummary = readOverallSummaryInternal(transactionType,
-                    captureTimeFrom, lastRollup1Time, rollupLevel);
+                    captureTimeFrom, lastRollupTime, rollupLevel);
             TransactionSummary sinceLastRollupSummary =
-                    readOverallSummaryInternal(transactionType, lastRollup1Time, captureTimeTo, 0);
-            return combineOverallSummaries(overallSummary, sinceLastRollupSummary);
-        } else if (rollupLevel == 2 && captureTimeTo > lastRollup2Time) {
-            TransactionSummary overallSummary = readOverallSummaryInternal(transactionType,
-                    captureTimeFrom, lastRollup2Time, rollupLevel);
-            TransactionSummary sinceLastRollupSummary =
-                    readOverallSummaryInternal(transactionType, lastRollup2Time, captureTimeTo, 0);
+                    readOverallSummaryInternal(transactionType, lastRollupTime, captureTimeTo, 0);
             return combineOverallSummaries(overallSummary, sinceLastRollupSummary);
         }
         return readOverallSummaryInternal(transactionType, captureTimeFrom, captureTimeTo,
@@ -236,11 +203,10 @@ public class AggregateDao {
             throws SQLException {
         int rollupLevel = getRollupLevelForView(query.from(), query.to());
         ImmutableList<TransactionSummary> summaries;
-        // may need to aggregate some non-rolled up data
-        if (rollupLevel == 1 && query.to() > lastRollup1Time) {
-            summaries = readTransactionSummariesInternal2(query, rollupLevel, lastRollup1Time);
-        } else if (rollupLevel == 2 && query.to() > lastRollup2Time) {
-            summaries = readTransactionSummariesInternal2(query, rollupLevel, lastRollup2Time);
+        long lastRollupTime = lastRollupTimes.get(rollupLevel);
+        if (rollupLevel != 0 && query.to() > lastRollupTime) {
+            // need to aggregate some non-rolled up data
+            summaries = readTransactionSummariesInternalSplit(query, rollupLevel, lastRollupTime);
         } else {
             summaries = readTransactionSummariesInternal(query, rollupLevel);
         }
@@ -278,6 +244,7 @@ public class AggregateDao {
         return QueryResult.from(summary, query.limit());
     }
 
+    // captureTimeFrom is INCLUSIVE
     public ImmutableList<Aggregate> readOverallAggregates(String transactionType,
             long captureTimeFrom, long captureTimeTo, @Untainted int rollupLevel)
                     throws SQLException {
@@ -290,6 +257,7 @@ public class AggregateDao {
                 captureTimeTo);
     }
 
+    // captureTimeFrom is INCLUSIVE
     public ImmutableList<Aggregate> readTransactionAggregates(String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo,
             @Untainted int rollupLevel) throws SQLException {
@@ -311,7 +279,7 @@ public class AggregateDao {
                 + " from overall_aggregate_rollup_" + rollupLevel + " where transaction_type = ?"
                 + " and capture_time > ? and capture_time <= ? and queries_capped_id >= ?",
                 new QueryAggregateRowMapper(rollupLevel), transactionType, captureTimeFrom,
-                captureTimeTo, rollupDatabases.get(rollupLevel).getSmallestNonExpiredId());
+                captureTimeTo, rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
     }
 
     // captureTimeFrom is non-inclusive
@@ -324,7 +292,7 @@ public class AggregateDao {
                 + " and capture_time <= ? and queries_capped_id >= ?",
                 new QueryAggregateRowMapper(rollupLevel), transactionType, transactionName,
                 captureTimeFrom, captureTimeTo,
-                rollupDatabases.get(rollupLevel).getSmallestNonExpiredId());
+                rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
     }
 
     // captureTimeFrom is non-inclusive
@@ -335,7 +303,7 @@ public class AggregateDao {
                 + " from overall_aggregate_rollup_" + rollupLevel + " where transaction_type = ?"
                 + " and capture_time > ? and capture_time <= ? and profile_capped_id >= ?",
                 new ProfileAggregateRowMapper(rollupLevel), transactionType, captureTimeFrom,
-                captureTimeTo, rollupDatabases.get(rollupLevel).getSmallestNonExpiredId());
+                captureTimeTo, rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
     }
 
     // captureTimeFrom is non-inclusive
@@ -348,7 +316,7 @@ public class AggregateDao {
                 + " and capture_time <= ? and profile_capped_id >= ?",
                 new ProfileAggregateRowMapper(rollupLevel), transactionType, transactionName,
                 captureTimeFrom, captureTimeTo,
-                rollupDatabases.get(rollupLevel).getSmallestNonExpiredId());
+                rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
     }
 
     public ImmutableList<ErrorPoint> readOverallErrorPoints(String transactionType,
@@ -399,33 +367,35 @@ public class AggregateDao {
                 transactionName, captureTimeFrom, captureTimeTo);
     }
 
-    public long getRollup1ViewThresholdMillis() {
-        return rollup1ViewThresholdMillis;
+    public long getDataPointIntervalMillis(long captureTimeFrom, long captureTimeTo) {
+        long millis = captureTimeTo - captureTimeFrom;
+        ImmutableList<RollupConfig> rollupConfigs = configService.getRollupConfigs();
+        for (int i = rollupConfigs.size() - 1; i >= 0; i--) {
+            RollupConfig rollupConfig = rollupConfigs.get(i);
+            if (millis >= rollupConfig.viewThresholdMillis()) {
+                return rollupConfig.intervalMillis();
+            }
+        }
+        return rollupConfigs.get(0).intervalMillis();
     }
 
-    public long getRollup2ViewThresholdMillis() {
-        return rollup2ViewThresholdMillis;
-    }
-
-    // captureTimeFrom is non-inclusive
     public @Untainted int getRollupLevelForView(long captureTimeFrom, long captureTimeTo) {
         long millis = captureTimeTo - captureTimeFrom;
-        if (millis >= rollup2ViewThresholdMillis) {
-            return 2;
-        } else if (millis >= rollup1ViewThresholdMillis) {
-            return 1;
-        } else {
-            return 0;
+        ImmutableList<RollupConfig> rollupConfigs = configService.getRollupConfigs();
+        for (int i = rollupConfigs.size() - 1; i >= 0; i--) {
+            RollupConfig rollupConfig = rollupConfigs.get(i);
+            if (millis >= rollupConfig.viewThresholdMillis()) {
+                return i;
+            }
         }
+        return 0;
     }
 
     public void deleteAll() throws SQLException {
-        dataSource.execute("truncate table overall_aggregate_rollup_0");
-        dataSource.execute("truncate table overall_aggregate_rollup_1");
-        dataSource.execute("truncate table overall_aggregate_rollup_2");
-        dataSource.execute("truncate table transaction_aggregate_rollup_0");
-        dataSource.execute("truncate table transaction_aggregate_rollup_1");
-        dataSource.execute("truncate table transaction_aggregate_rollup_2");
+        for (int i = 0; i < configService.getRollupConfigs().size(); i++) {
+            dataSource.execute("truncate table overall_aggregate_rollup_" + i);
+            dataSource.execute("truncate table transaction_aggregate_rollup_" + i);
+        }
     }
 
     void deleteBefore(long captureTime, @Untainted int rollupLevel) throws SQLException {
@@ -433,20 +403,20 @@ public class AggregateDao {
         dataSource.deleteBefore("transaction_aggregate_rollup_" + rollupLevel, captureTime);
     }
 
-    private void rollup(long lastRollupTime, long curentRollupTime, long fixedRollupMillis,
+    private void rollup(long lastRollupTime, long curentRollupTime, long fixedIntervalMillis,
             @Untainted int toRollupLevel, @Untainted int fromRollupLevel) throws Exception {
         // need ".0" to force double result
-        String captureTimeSql = castUntainted("ceil(capture_time / " + fixedRollupMillis + ".0) * "
-                + fixedRollupMillis);
+        String captureTimeSql = castUntainted("ceil(capture_time / " + fixedIntervalMillis
+                + ".0) * " + fixedIntervalMillis);
         List<Long> rollupTimes = dataSource.query("select distinct " + captureTimeSql
                 + " from overall_aggregate_rollup_" + fromRollupLevel + " where capture_time > ?"
                 + " and capture_time <= ?", new LongRowMapper(), lastRollupTime, curentRollupTime);
         for (Long rollupTime : rollupTimes) {
-            rollupOneInterval(rollupTime, fixedRollupMillis, toRollupLevel, fromRollupLevel);
+            rollupOneInterval(rollupTime, fixedIntervalMillis, toRollupLevel, fromRollupLevel);
         }
     }
 
-    private void rollupOneInterval(long rollupTime, long fixedRollupMillis,
+    private void rollupOneInterval(long rollupTime, long fixedIntervalMillis,
             @Untainted int toRollupLevel, @Untainted int fromRollupLevel) throws Exception {
         List<Aggregate> overallAggregates = dataSource.query("select transaction_type,"
                 + " total_micros, error_count, transaction_count, total_cpu_micros,"
@@ -455,7 +425,7 @@ public class AggregateDao {
                 + " from overall_aggregate_rollup_" + fromRollupLevel + " where capture_time > ?"
                 + " and capture_time <= ?",
                 new OverallRollupResultSetExtractor(rollupTime, fromRollupLevel),
-                rollupTime - fixedRollupMillis, rollupTime);
+                rollupTime - fixedIntervalMillis, rollupTime);
         if (overallAggregates == null) {
             // data source is closing
             return;
@@ -467,7 +437,7 @@ public class AggregateDao {
                 + " timers from transaction_aggregate_rollup_" + fromRollupLevel
                 + " where capture_time > ? and capture_time <= ?",
                 new TransactionRollupResultSetExtractor(rollupTime, fromRollupLevel),
-                rollupTime - fixedRollupMillis, rollupTime);
+                rollupTime - fixedIntervalMillis, rollupTime);
         if (transactionAggregates == null) {
             // data source is closing
             return;
@@ -532,7 +502,7 @@ public class AggregateDao {
                 query.transactionType(), query.from(), query.to(), query.limit() + 1);
     }
 
-    private ImmutableList<TransactionSummary> readTransactionSummariesInternal2(
+    private ImmutableList<TransactionSummary> readTransactionSummariesInternalSplit(
             TransactionSummaryQuery query, int rollupLevel, long lastRollupTime)
                     throws SQLException {
         // it's important that all these columns are in a single index so h2 can return the
@@ -577,14 +547,14 @@ public class AggregateDao {
         Long queriesCappedId = null;
         String queries = overallAggregate.queries();
         if (queries != null) {
-            queriesCappedId = rollupDatabases.get(rollupLevel).write(CharSource.wrap(queries),
-                    AggregateDetailDatabaseStats.AGGREGATE_QUERIES);
+            queriesCappedId = rollupCappedDatabases.get(rollupLevel).write(CharSource.wrap(queries),
+                    RollupCappedDatabaseStats.AGGREGATE_QUERIES);
         }
         Long profileCappedId = null;
         String profile = overallAggregate.profile();
         if (profile != null) {
-            profileCappedId = rollupDatabases.get(rollupLevel).write(CharSource.wrap(profile),
-                    AggregateDetailDatabaseStats.AGGREGATE_PROFILES);
+            profileCappedId = rollupCappedDatabases.get(rollupLevel).write(CharSource.wrap(profile),
+                    RollupCappedDatabaseStats.AGGREGATE_PROFILES);
         }
         int i = startIndex;
         preparedStatement.setLong(i++, overallAggregate.captureTime());
@@ -808,7 +778,7 @@ public class AggregateDao {
         public QueryAggregate mapRow(ResultSet resultSet) throws SQLException {
             long captureTime = resultSet.getLong(1);
             CharSource queries =
-                    rollupDatabases.get(rollupLevel).read(resultSet.getLong(2), OVERWRITTEN);
+                    rollupCappedDatabases.get(rollupLevel).read(resultSet.getLong(2), OVERWRITTEN);
             return QueryAggregate.of(captureTime, queries);
         }
     }
@@ -825,7 +795,7 @@ public class AggregateDao {
         public ProfileAggregate mapRow(ResultSet resultSet) throws SQLException {
             long captureTime = resultSet.getLong(1);
             CharSource profile =
-                    rollupDatabases.get(rollupLevel).read(resultSet.getLong(2), OVERWRITTEN);
+                    rollupCappedDatabases.get(rollupLevel).read(resultSet.getLong(2), OVERWRITTEN);
             return ProfileAggregate.of(captureTime, profile);
         }
     }
@@ -863,14 +833,14 @@ public class AggregateDao {
             mergedAggregate.addHistogram(histogram);
             mergedAggregate.addTimers(timers);
             if (queriesCappedId != null) {
-                String queriesContent = rollupDatabases.get(fromRollupLevel)
+                String queriesContent = rollupCappedDatabases.get(fromRollupLevel)
                         .read(queriesCappedId, AggregateDao.OVERWRITTEN).read();
                 if (!queriesContent.equals(AggregateDao.OVERWRITTEN)) {
                     mergedAggregate.addQueries(queriesContent);
                 }
             }
             if (profileCappedId != null) {
-                String profileContent = rollupDatabases.get(fromRollupLevel)
+                String profileContent = rollupCappedDatabases.get(fromRollupLevel)
                         .read(profileCappedId, AggregateDao.OVERWRITTEN).read();
                 if (!profileContent.equals(AggregateDao.OVERWRITTEN)) {
                     mergedAggregate.addProfile(profileContent);

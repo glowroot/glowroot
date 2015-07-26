@@ -57,20 +57,12 @@ class ErrorJsonService {
     private final AggregateDao aggregateDao;
     private final Clock clock;
 
-    private final long fixedAggregateIntervalMillis;
-    private final long fixedAggregateRollup1Millis;
-    private final long fixedAggregateRollup2Millis;
-
     ErrorJsonService(ErrorCommonService errorCommonService, TraceDao traceDao,
-            AggregateDao aggregateDao, Clock clock, long fixedAggregateIntervalSeconds,
-            long fixedAggregateRollup1Seconds, long fixedAggregateRollup2Seconds) {
+            AggregateDao aggregateDao, Clock clock) {
         this.errorCommonService = errorCommonService;
         this.traceDao = traceDao;
         this.aggregateDao = aggregateDao;
         this.clock = clock;
-        fixedAggregateIntervalMillis = fixedAggregateIntervalSeconds * 1000;
-        fixedAggregateRollup1Millis = fixedAggregateRollup1Seconds * 1000;
-        fixedAggregateRollup2Millis = fixedAggregateRollup2Seconds * 1000;
     }
 
     @GET("/backend/error/messages")
@@ -104,7 +96,8 @@ class ErrorJsonService {
                         unfilteredErrorPoint.transactionCount());
             }
             ImmutableList<TraceErrorPoint> traceErrorPoints = traceDao.readErrorPoints(query,
-                    getDataPointIntervalMillis(query), liveCaptureTime);
+                    aggregateDao.getDataPointIntervalMillis(query.from(), query.to()),
+                    liveCaptureTime);
             List<ErrorPoint> errorPoints = Lists.newArrayList();
             for (TraceErrorPoint traceErrorPoint : traceErrorPoints) {
                 Long transactionCount = transactionCountMap.get(traceErrorPoint.captureTime());
@@ -133,11 +126,11 @@ class ErrorJsonService {
         ErrorSummaryRequest request = QueryStrings.decode(queryString, ErrorSummaryRequest.class);
 
         ErrorSummary overallSummary = errorCommonService.readOverallErrorSummary(
-                request.transactionType(), request.from() + 1, request.to());
+                request.transactionType(), request.from(), request.to());
 
         ErrorSummaryQuery query = ErrorSummaryQuery.builder()
                 .transactionType(request.transactionType())
-                .from(request.from() + 1)
+                .from(request.from())
                 .to(request.to())
                 .sortOrder(request.sortOrder())
                 .limit(request.limit())
@@ -182,8 +175,8 @@ class ErrorJsonService {
 
     private void populateDataSeries(ErrorMessageQuery request, List<ErrorPoint> errorPoints,
             DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra) {
-        DataSeriesHelper dataSeriesHelper =
-                new DataSeriesHelper(clock, getDataPointIntervalMillis(request));
+        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock,
+                aggregateDao.getDataPointIntervalMillis(request.from(), request.to()));
         ErrorPoint lastErrorPoint = null;
         for (ErrorPoint errorPoint : errorPoints) {
             if (lastErrorPoint == null) {
@@ -204,17 +197,6 @@ class ErrorJsonService {
         if (lastErrorPoint != null) {
             dataSeriesHelper.addFinalDownslopeIfNeeded(request.to(), dataSeries,
                     lastErrorPoint.captureTime());
-        }
-    }
-
-    private long getDataPointIntervalMillis(ErrorMessageQuery request) {
-        long millis = request.to() - request.from();
-        if (millis >= aggregateDao.getRollup2ViewThresholdMillis()) {
-            return fixedAggregateRollup2Millis;
-        } else if (millis >= aggregateDao.getRollup1ViewThresholdMillis()) {
-            return fixedAggregateRollup1Millis;
-        } else {
-            return fixedAggregateIntervalMillis;
         }
     }
 

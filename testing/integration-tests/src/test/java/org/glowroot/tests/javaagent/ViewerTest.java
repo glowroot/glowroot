@@ -44,7 +44,7 @@ public class ViewerTest {
         Resources.asByteSource(Resources.getResource("for-upgrade-test/data/data.h2.db"))
                 .copyTo(Files.asByteSink(new File(dataDir, "data.h2.db")));
         for (int i = 0; i < 3; i++) {
-            String filename = "aggregate-detail-rollup-" + i + ".capped.db";
+            String filename = "rollup-" + i + "-detail.capped.db";
             Resources.asByteSource(Resources.getResource("for-upgrade-test/data/" + filename))
                     .copyTo(Files.asByteSink(new File(dataDir, filename)));
         }

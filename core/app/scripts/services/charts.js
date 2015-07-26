@@ -162,27 +162,15 @@ glowroot.factory('charts', [
 
     function getDataPointIntervalMillis(from, to) {
       var millis = to - from;
-      if ($location.path() === '/jvm/gauges') {
-        if (millis >= 16 * $rootScope.layout.fixedGaugeRollup2Seconds * 1000) {
-          // 16x multiplier is also hard-coded in GaugePointDao
-          return $rootScope.layout.fixedGaugeRollup2Seconds * 1000;
+      var i;
+      var rollupConfigs = $rootScope.layout.rollupConfigs;
+      for (i = rollupConfigs.length - 1; i >= 0; i--) {
+        var rollupConfig = rollupConfigs[i];
+        if (millis >= rollupConfig.viewThresholdMillis) {
+          return rollupConfig.intervalMillis;
         }
-        if (millis >= 15 * $rootScope.layout.fixedGaugeRollup1Seconds * 1000) {
-          // 15x multiplier is also hard-coded in GaugePointDao
-          return $rootScope.layout.fixedGaugeRollup1Seconds * 1000;
-        }
-        return $rootScope.layout.fixedGaugeIntervalSeconds * 1000;
-      } else {
-        if (millis >= 16 * $rootScope.layout.fixedAggregateRollup2Seconds * 1000) {
-          // 16x multiplier is also hard-coded in AggregateDao
-          return $rootScope.layout.fixedAggregateRollup2Seconds * 1000;
-        }
-        if (millis >= 12 * $rootScope.layout.fixedAggregateRollup1Seconds * 1000) {
-          // 12x multiplier is also hard-coded in AggregateDao
-          return $rootScope.layout.fixedAggregateRollup1Seconds * 1000;
-        }
-        return $rootScope.layout.fixedAggregateIntervalSeconds * 1000;
       }
+      return rollupConfigs[0].intervalMillis;
     }
 
     function plot(data, chartOptions, chartState, $chart, $scope) {

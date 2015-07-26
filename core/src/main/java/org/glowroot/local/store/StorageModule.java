@@ -50,20 +50,11 @@ public class StorageModule {
 
     private static final long SNAPSHOT_REAPER_PERIOD_MINUTES = 5;
 
-    private static final long FIXED_GAUGE_ROLLUP1_SECONDS =
-            Long.getLong("glowroot.internal.gaugeRollup1", 60);
-    private static final long FIXED_GAUGE_ROLLUP2_SECONDS =
-            Long.getLong("glowroot.internal.gaugeRollup2", 15 * 60);
-    private static final long FIXED_AGGREGATE_ROLLUP1_SECONDS =
-            Long.getLong("glowroot.internal.aggregateRollup1", 5 * 60);
-    private static final long FIXED_AGGREGATE_ROLLUP2_SECONDS =
-            Long.getLong("glowroot.internal.aggregateRollup2", 30 * 60);
-
     private static final Logger logger = LoggerFactory.getLogger(StorageModule.class);
 
     private final DataSource dataSource;
-    private final ImmutableList<CappedDatabase> aggregateDetailRollupDatabases;
-    private final CappedDatabase traceDetailDatabase;
+    private final ImmutableList<CappedDatabase> rollupCappedDatabases;
+    private final CappedDatabase traceCappedDatabase;
     private final AggregateDao aggregateDao;
     private final AggregateRepositoryImpl aggregateRepositoryImpl;
     private final TraceDao traceDao;
@@ -93,27 +84,26 @@ public class StorageModule {
         this.dataSource = dataSource;
         final ConfigService configService = configModule.getConfigService();
         StorageConfig storageConfig = configService.getStorageConfig();
-        List<CappedDatabase> aggregateDetailRollupDatabases = Lists.newArrayList();
-        for (int i = 0; i < storageConfig.aggregateDetailRollupDatabaseSizeMb().size(); i++) {
-            File file = new File(dataDir, "aggregate-detail-rollup-" + i + ".capped.db");
-            int sizeKb = storageConfig.aggregateDetailRollupDatabaseSizeMb().get(i) * 1024;
-            aggregateDetailRollupDatabases.add(new CappedDatabase(file, sizeKb, ticker));
+        List<CappedDatabase> rollupCappedDatabases = Lists.newArrayList();
+        for (int i = 0; i < storageConfig.rollupCappedDatabaseSizesMb().size(); i++) {
+            File file = new File(dataDir, "rollup-" + i + "-detail.capped.db");
+            int sizeKb = storageConfig.rollupCappedDatabaseSizesMb().get(i) * 1024;
+            rollupCappedDatabases.add(new CappedDatabase(file, sizeKb, ticker));
         }
-        this.aggregateDetailRollupDatabases = ImmutableList.copyOf(aggregateDetailRollupDatabases);
-        traceDetailDatabase = new CappedDatabase(new File(dataDir, "trace-detail.capped.db"),
-                storageConfig.traceDetailDatabaseSizeMb() * 1024, ticker);
+        this.rollupCappedDatabases = ImmutableList.copyOf(rollupCappedDatabases);
+        traceCappedDatabase = new CappedDatabase(new File(dataDir, "trace-detail.capped.db"),
+                storageConfig.traceCappedDatabaseSizeMb() * 1024, ticker);
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
         lazyPlatformMBeanServer.addInitListener(new LazyInit());
-        aggregateDao = new AggregateDao(dataSource, this.aggregateDetailRollupDatabases,
-                configModule.getConfigService(), FIXED_AGGREGATE_ROLLUP1_SECONDS,
-                FIXED_AGGREGATE_ROLLUP2_SECONDS);
+        aggregateDao =
+                new AggregateDao(dataSource, this.rollupCappedDatabases,
+                        configModule.getConfigService());
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
         AlertingService alertingService = new AlertingService(configService, triggeredAlertDao,
                 aggregateDao, new MailService());
         aggregateRepositoryImpl = new AggregateRepositoryImpl(aggregateDao, alertingService);
-        traceDao = new TraceDao(dataSource, traceDetailDatabase);
-        gaugePointDao = new GaugePointDao(dataSource, clock, FIXED_GAUGE_ROLLUP1_SECONDS,
-                FIXED_GAUGE_ROLLUP2_SECONDS);
+        traceDao = new TraceDao(dataSource, traceCappedDatabase);
+        gaugePointDao = new GaugePointDao(dataSource, clock, configService.getRollupConfigs());
         // safe to set query timeout after all daos have initialized
         dataSource.setQueryTimeoutSeconds(
                 configService.getAdvancedConfig().internalQueryTimeoutSeconds());
@@ -158,28 +148,12 @@ public class StorageModule {
         return traceDao;
     }
 
-    public ImmutableList<CappedDatabase> getAggregateDetailRollupDatabase() {
-        return aggregateDetailRollupDatabases;
+    public ImmutableList<CappedDatabase> getRollupCappedDatabases() {
+        return rollupCappedDatabases;
     }
 
-    public CappedDatabase getTraceDetailDatabase() {
-        return traceDetailDatabase;
-    }
-
-    public long getFixedAggregateRollup1Seconds() {
-        return FIXED_AGGREGATE_ROLLUP1_SECONDS;
-    }
-
-    public long getFixedAggregateRollup2Seconds() {
-        return FIXED_AGGREGATE_ROLLUP2_SECONDS;
-    }
-
-    public long getFixedGaugeRollup1Seconds() {
-        return FIXED_GAUGE_ROLLUP1_SECONDS;
-    }
-
-    public long getFixedGaugeRollup2Seconds() {
-        return FIXED_GAUGE_ROLLUP2_SECONDS;
+    public CappedDatabase getTraceCappedDatabase() {
+        return traceCappedDatabase;
     }
 
     private class LazyInit implements InitListener {
@@ -187,13 +161,13 @@ public class StorageModule {
         @Override
         public void postInit(MBeanServer mbeanServer) throws Exception {
             try {
-                for (int i = 0; i < aggregateDetailRollupDatabases.size(); i++) {
+                for (int i = 0; i < rollupCappedDatabases.size(); i++) {
                     mbeanServer.registerMBean(
-                            new AggregateDetailDatabaseStats(aggregateDetailRollupDatabases.get(i)),
-                            new ObjectName("org.glowroot:type=AggregateDetailRollupDatabase" + i));
+                            new RollupCappedDatabaseStats(rollupCappedDatabases.get(i)),
+                            new ObjectName("org.glowroot:type=RollupCappedDatabase" + i));
                 }
-                mbeanServer.registerMBean(new TraceDetailDatabaseStats(traceDetailDatabase),
-                        new ObjectName("org.glowroot:type=TraceDetailDatabase"));
+                mbeanServer.registerMBean(new TraceCappedDatabaseStats(traceCappedDatabase),
+                        new ObjectName("org.glowroot:type=TraceCappedDatabase"));
                 mbeanServer.registerMBean(new H2DatabaseStats(dataSource),
                         new ObjectName("org.glowroot:type=H2Database"));
                 unregisterMBeans = true;
@@ -210,22 +184,22 @@ public class StorageModule {
     @OnlyUsedByTests
     public void close() throws Exception {
         if (unregisterMBeans) {
-            for (int i = 0; i < aggregateDetailRollupDatabases.size(); i++) {
+            for (int i = 0; i < rollupCappedDatabases.size(); i++) {
                 lazyPlatformMBeanServer.unregisterMBean(
-                        new ObjectName("org.glowroot:type=AggregateDetailRollupDatabase" + i));
+                        new ObjectName("org.glowroot:type=RollupCappedDatabase" + i));
             }
             lazyPlatformMBeanServer.unregisterMBean(
-                    new ObjectName("org.glowroot:type=TraceDetailDatabase"));
+                    new ObjectName("org.glowroot:type=TraceCappedDatabase"));
             lazyPlatformMBeanServer.unregisterMBean(
                     new ObjectName("org.glowroot:type=H2Database"));
         }
         if (reaperRunnable != null) {
             reaperRunnable.cancel();
         }
-        for (CappedDatabase rollupDatabase : aggregateDetailRollupDatabases) {
-            rollupDatabase.close();
+        for (CappedDatabase cappedDatabase : rollupCappedDatabases) {
+            cappedDatabase.close();
         }
-        traceDetailDatabase.close();
+        traceCappedDatabase.close();
         dataSource.close();
     }
 }

@@ -123,10 +123,6 @@ glowroot.controller('JvmGaugesCtrl', [
 
     function addToQuery(query) {
       query.gaugeNames = $scope.gaugeNames;
-      var plusMinus = charts.getDataPointIntervalMillis($scope.chartFrom, $scope.chartTo);
-      // 2x in order to deal with displaying deltas
-      query.from = $scope.chartFrom - 2 * plusMinus;
-      query.to = $scope.chartTo + plusMinus;
     }
 
     function onRefreshData(data) {
@@ -490,7 +486,7 @@ glowroot.controller('JvmGaugesCtrl', [
       },
       tooltipOpts: {
         content: function (label, xval, yval, flotItem) {
-          if ($scope.chartTo - $scope.chartFrom <= 16 * $scope.layout.fixedGaugeIntervalSeconds * 1000) {
+          if ($scope.chartTo - $scope.chartFrom < $scope.layout.rollupConfigs[0].viewThresholdMillis) {
             // 16x multiplier is also hard-coded in GaugePointDao
             var nonScaledValue = yvalMaps[label][xval];
             var tooltip = '<table class="gt-chart-tooltip">';

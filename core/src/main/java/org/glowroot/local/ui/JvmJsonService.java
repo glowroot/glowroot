@@ -116,17 +116,14 @@ class JvmJsonService {
     private final OptionalService<HeapDumps> heapDumps;
     private final @Nullable String processId;
 
-    private final long fixedGaugeIntervalMillis;
-    private final long fixedGaugeRollup1Millis;
-    private final long fixedGaugeRollup2Millis;
+    private final long gaugeCollectionIntervalMillis;
 
     JvmJsonService(LazyPlatformMBeanServer lazyPlatformMBeanServer, GaugePointDao gaugePointDao,
             ConfigService configService, TransactionRegistry transactionRegistry,
             TransactionCollector transactionCollector,
             OptionalService<ThreadAllocatedBytes> threadAllocatedBytes,
             OptionalService<HeapDumps> heapDumps, @Nullable String processId,
-            long fixedGaugeIntervalSeconds, long fixedGaugeRollup1Seconds,
-            long fixedGaugeRollup2Seconds) {
+            long gaugeCollectionIntervalMillis) {
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
         this.gaugePointDao = gaugePointDao;
         this.configService = configService;
@@ -135,27 +132,28 @@ class JvmJsonService {
         this.threadAllocatedBytes = threadAllocatedBytes;
         this.heapDumps = heapDumps;
         this.processId = processId;
-        this.fixedGaugeIntervalMillis = fixedGaugeIntervalSeconds * 1000;
-        this.fixedGaugeRollup1Millis = fixedGaugeRollup1Seconds * 1000;
-        this.fixedGaugeRollup2Millis = fixedGaugeRollup2Seconds * 1000;
+        this.gaugeCollectionIntervalMillis = gaugeCollectionIntervalMillis;
     }
 
     @GET("/backend/jvm/gauge-points")
     String getGaugePoints(String queryString) throws Exception {
         GaugePointRequest request = QueryStrings.decode(queryString, GaugePointRequest.class);
         int rollupLevel = gaugePointDao.getRollupLevelForView(request.from(), request.to());
-        double gapMillis;
+        long intervalMillis;
         if (rollupLevel == 0) {
-            gapMillis = fixedGaugeIntervalMillis * 1.5;
-        } else if (rollupLevel == 1) {
-            gapMillis = fixedGaugeRollup1Millis * 1.5;
+            intervalMillis = gaugeCollectionIntervalMillis;
         } else {
-            gapMillis = fixedGaugeRollup2Millis * 1.5;
+            intervalMillis = configService.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
         }
+        double gapMillis = intervalMillis * 1.5;
+        // 2x in order to deal with displaying deltas
+        long revisedFrom = request.from() - 2 * intervalMillis;
+        long revisedTo = request.to() + intervalMillis;
+
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         for (String gaugeName : request.gaugeNames()) {
             ImmutableList<GaugePoint> gaugePoints = gaugePointDao.readGaugePoints(gaugeName,
-                    request.from(), request.to(), rollupLevel);
+                    revisedFrom, revisedTo, rollupLevel);
             dataSeriesList.add(convertToDataSeriesWithGaps(gaugeName, gaugePoints, gapMillis));
         }
 

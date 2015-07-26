@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 import org.glowroot.config.AnonymousAccess;
+import org.glowroot.config.RollupConfig;
 import org.glowroot.config.Versions;
 
 @Value.Immutable
@@ -33,12 +34,8 @@ abstract class LayoutBase {
     abstract String defaultTransactionType();
     abstract ImmutableList<Double> defaultPercentiles();
     abstract ImmutableList<String> transactionCustomAttributes();
-    abstract long fixedAggregateIntervalSeconds();
-    abstract long fixedAggregateRollup1Seconds();
-    abstract long fixedAggregateRollup2Seconds();
-    abstract long fixedGaugeIntervalSeconds();
-    abstract long fixedGaugeRollup1Seconds();
-    abstract long fixedGaugeRollup2Seconds();
+    abstract ImmutableList<RollupConfig> rollupConfigs();
+    abstract long gaugeCollectionIntervalMillis();
 
     @Value.Derived
     public String version() {

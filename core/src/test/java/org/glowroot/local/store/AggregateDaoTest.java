@@ -30,6 +30,7 @@ import org.glowroot.collector.TransactionSummary;
 import org.glowroot.common.Tickers;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
+import org.glowroot.config.RollupConfig;
 import org.glowroot.local.store.AggregateDao.TransactionSummarySortOrder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,8 +57,11 @@ public class AggregateDaoTest {
         cappedDatabase = new CappedDatabase(cappedFile, 1000000, Tickers.getTicker());
         ConfigService configService = mock(ConfigService.class);
         when(configService.getAdvancedConfig()).thenReturn(AdvancedConfig.builder().build());
-        aggregateDao = new AggregateDao(dataSource, ImmutableList.<CappedDatabase>of(),
-                configService, 15, 900000);
+        ImmutableList<RollupConfig> rollupConfigs = ImmutableList.of(RollupConfig.of(1000, 0),
+                RollupConfig.of(15000, 3600000), RollupConfig.of(900000000, 8 * 3600000));
+        when(configService.getRollupConfigs()).thenReturn(rollupConfigs);
+        aggregateDao =
+                new AggregateDao(dataSource, ImmutableList.<CappedDatabase>of(), configService);
     }
 
     @After

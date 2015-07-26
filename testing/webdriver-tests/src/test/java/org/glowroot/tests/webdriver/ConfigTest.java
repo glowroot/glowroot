@@ -153,21 +153,17 @@ public class ConfigTest extends WebDriverTest {
 
         // when
         for (int i = 0; i < 3; i++) {
-            page.getAggregateRollupExpirationTextField(i).clear();
-            page.getAggregateRollupExpirationTextField(i).sendKeys("44" + i);
-        }
-        for (int i = 0; i < 3; i++) {
-            page.getGaugeRollupExpirationTextField(i).clear();
-            page.getGaugeRollupExpirationTextField(i).sendKeys("55" + i);
+            page.getRollupExpirationTextField(i).clear();
+            page.getRollupExpirationTextField(i).sendKeys("44" + i);
         }
         page.getTraceExpirationTextField().clear();
         page.getTraceExpirationTextField().sendKeys("66");
         for (int i = 0; i < 3; i++) {
-            page.getAggregateDetailRollupDatabaseSizeTextField(i).clear();
-            page.getAggregateDetailRollupDatabaseSizeTextField(i).sendKeys("77" + i);
+            page.getRollupCappedDatabaseSizeTextField(i).clear();
+            page.getRollupCappedDatabaseSizeTextField(i).sendKeys("77" + i);
         }
-        page.getTraceDetailDatabaseSizeTextField().clear();
-        page.getTraceDetailDatabaseSizeTextField().sendKeys("88");
+        page.getTraceCappedDatabaseSizeTextField().clear();
+        page.getTraceCappedDatabaseSizeTextField().sendKeys("88");
         page.clickSaveButton();
 
         // then
@@ -175,19 +171,15 @@ public class ConfigTest extends WebDriverTest {
         globalNavbar.getConfigurationLink().click();
         configSidebar.getStorageLink().click();
         for (int i = 0; i < 3; i++) {
-            assertThat(page.getAggregateRollupExpirationTextField(i).getAttribute("value"))
+            assertThat(page.getRollupExpirationTextField(i).getAttribute("value"))
                     .isEqualTo("44" + i);
-        }
-        for (int i = 0; i < 3; i++) {
-            assertThat(page.getGaugeRollupExpirationTextField(i).getAttribute("value"))
-                    .isEqualTo("55" + i);
         }
         assertThat(page.getTraceExpirationTextField().getAttribute("value")).isEqualTo("66");
         for (int i = 0; i < 3; i++) {
-            assertThat(page.getAggregateDetailRollupDatabaseSizeTextField(i).getAttribute("value"))
+            assertThat(page.getRollupCappedDatabaseSizeTextField(i).getAttribute("value"))
                     .isEqualTo("77" + i);
         }
-        assertThat(page.getTraceDetailDatabaseSizeTextField().getAttribute("value"))
+        assertThat(page.getTraceCappedDatabaseSizeTextField().getAttribute("value"))
                 .isEqualTo("88");
     }
 

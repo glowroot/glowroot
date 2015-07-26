@@ -56,19 +56,14 @@ class TransactionCommonService {
     private final @Nullable AggregateCollector aggregateCollector;
     private final ConfigService configService;
 
-    private final long fixedRollup1Millis;
-    private final long fixedRollup2Millis;
-
     TransactionCommonService(AggregateDao aggregateDao,
-            @Nullable AggregateCollector aggregateCollector, ConfigService configService,
-            long fixedRollup1Seconds, long fixedRollup2Seconds) {
+            @Nullable AggregateCollector aggregateCollector, ConfigService configService) {
         this.aggregateDao = aggregateDao;
         this.aggregateCollector = aggregateCollector;
         this.configService = configService;
-        this.fixedRollup1Millis = fixedRollup1Seconds * 1000;
-        this.fixedRollup2Millis = fixedRollup2Seconds * 1000;
     }
 
+    // from is non-inclusive
     TransactionSummary readOverallSummary(String transactionType, long from, long to)
             throws SQLException {
         List<AggregateIntervalCollector> orderedIntervalCollectors =
@@ -83,6 +78,7 @@ class TransactionCommonService {
                 orderedIntervalCollectors);
     }
 
+    // query.from() is non-inclusive
     QueryResult<TransactionSummary> readTransactionSummaries(TransactionSummaryQuery query)
             throws SQLException {
         List<AggregateIntervalCollector> orderedIntervalCollectors =
@@ -101,6 +97,7 @@ class TransactionCommonService {
                 orderedIntervalCollectors);
     }
 
+    // from is non-inclusive
     boolean shouldHaveQueries(String transactionType, @Nullable String transactionName, long from,
             long to) throws SQLException {
         if (transactionName == null) {
@@ -111,6 +108,7 @@ class TransactionCommonService {
         }
     }
 
+    // from is non-inclusive
     boolean shouldHaveProfile(String transactionType, @Nullable String transactionName, long from,
             long to) throws SQLException {
         if (transactionName == null) {
@@ -121,11 +119,12 @@ class TransactionCommonService {
         }
     }
 
+    // from is INCLUSIVE
     List<Aggregate> getAggregates(String transactionType, @Nullable String transactionName,
             long from, long to, long liveCaptureTime) throws Exception {
         int rollupLevel = aggregateDao.getRollupLevelForView(from, to);
         List<AggregateIntervalCollector> orderedIntervalCollectors =
-                getOrderedIntervalCollectorsInRange(from, to);
+                getOrderedIntervalCollectorsInRange(from - 1, to);
         long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
         List<Aggregate> aggregates = getAggregatesFromDao(transactionType, transactionName, from,
                 revisedTo, rollupLevel);
@@ -151,6 +150,7 @@ class TransactionCommonService {
         return aggregates;
     }
 
+    // from is non-inclusive
     Map<String, List<AggregateQuery>> getQueries(String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
         List<QueryAggregate> queryAggregates =
@@ -159,6 +159,7 @@ class TransactionCommonService {
                 configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
     }
 
+    // from is non-inclusive
     ProfileNode getProfile(String transactionType, @Nullable String transactionName, long from,
             long to, @Nullable String filterText, double truncateLeafPercentage) throws Exception {
         List<ProfileAggregate> profileAggregate =
@@ -179,6 +180,7 @@ class TransactionCommonService {
         return syntheticRootNode;
     }
 
+    // from is non-inclusive
     private List<AggregateIntervalCollector> getOrderedIntervalCollectorsInRange(long from,
             long to) {
         if (aggregateCollector == null) {
@@ -187,6 +189,7 @@ class TransactionCommonService {
         return aggregateCollector.getOrderedIntervalCollectorsInRange(from, to);
     }
 
+    // from is INCLUSIVE
     private List<Aggregate> getAggregatesFromDao(String transactionType,
             @Nullable String transactionName, long from, long to, @Untainted int rollupLevel)
                     throws SQLException {
@@ -202,6 +205,8 @@ class TransactionCommonService {
     // they are all distinct though
     // this is ok since the results of this method are currently just aggregated into single
     // result as opposed to charted over time period
+    //
+    // from is non-inclusive
     private List<QueryAggregate> getQueryAggregates(String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
         int rollupLevel = aggregateDao.getRollupLevelForView(from, to);
@@ -231,6 +236,7 @@ class TransactionCommonService {
         return queryAggregates;
     }
 
+    // from is non-inclusive
     private List<QueryAggregate> getQueryAggregatesFromDao(String transactionType,
             @Nullable String transactionName, long from, long to, @Untainted int rollupLevel)
                     throws SQLException {
@@ -246,6 +252,8 @@ class TransactionCommonService {
     // they are all distinct though
     // this is ok since the results of this method are currently just aggregated into single
     // result as opposed to charted over time period
+    //
+    // from is non-inclusive
     private List<ProfileAggregate> getProfileAggregates(String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
         int rollupLevel = aggregateDao.getRollupLevelForView(from, to);
@@ -276,6 +284,7 @@ class TransactionCommonService {
         return profileAggregates;
     }
 
+    // from is non-inclusive
     private List<ProfileAggregate> getProfileAggregatesFromDao(String transactionType,
             @Nullable String transactionName, long from, long to, @Untainted int rollupLevel)
                     throws SQLException {
@@ -291,19 +300,15 @@ class TransactionCommonService {
     private List<Aggregate> rollUp(String transactionType, @Nullable String transactionName,
             List<Aggregate> orderedNonRolledUpAggregates, long liveCaptureTime, int rollupLevel)
                     throws Exception {
-        long fixedRollupMillis;
-        if (rollupLevel == 1) {
-            fixedRollupMillis = fixedRollup1Millis;
-        } else {
-            fixedRollupMillis = fixedRollup2Millis;
-        }
+        long fixedIntervalMillis =
+                configService.getRollupConfigs().get(rollupLevel).intervalMillis();
         List<Aggregate> rolledUpAggregates = Lists.newArrayList();
         ScratchBuffer scratchBuffer = new ScratchBuffer();
         MergedAggregate currMergedAggregate = null;
         long currRollupTime = Long.MIN_VALUE;
         for (Aggregate nonRolledUpAggregate : orderedNonRolledUpAggregates) {
             long rollupTime = (long) Math.ceil(nonRolledUpAggregate.captureTime()
-                    / (double) fixedRollupMillis) * fixedRollupMillis;
+                    / (double) fixedIntervalMillis) * fixedIntervalMillis;
             if (rollupTime != currRollupTime && currMergedAggregate != null) {
                 rolledUpAggregates.add(currMergedAggregate.toAggregate(scratchBuffer));
                 currMergedAggregate = new MergedAggregate(Math.min(rollupTime, liveCaptureTime),

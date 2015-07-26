@@ -121,7 +121,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
 
     function onRefreshData(data, query) {
       $scope.transactionCounts = data.transactionCounts;
-      $scope.lastDurationMillis = query.to - query.from + 1000 * $scope.layout.fixedAggregateIntervalSeconds;
+      $scope.lastDurationMillis = query.to - query.from;
       $scope.mergedAggregate = data.mergedAggregate;
     }
 

@@ -73,8 +73,6 @@ public class AlertingService {
     }
 
     private void checkAlert(AlertConfig alertConfig, long endTime) throws Exception {
-        // TODO this is operating under the assumption
-        // that glowroot.internal.aggregateInterval is 60 seconds
         long startTime = endTime - MINUTES.toMillis(alertConfig.timePeriodMinutes());
         // don't want to include the aggregate at startTime, so add 1
         startTime++;

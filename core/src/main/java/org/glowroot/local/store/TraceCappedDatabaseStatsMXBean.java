@@ -15,24 +15,8 @@
  */
 package org.glowroot.local.store;
 
-public class TraceDetailDatabaseStats implements TraceDetailDatabaseStatsMXBean {
+public interface TraceCappedDatabaseStatsMXBean {
 
-    static final String TRACE_ENTRIES = "trace entries";
-    static final String TRACE_PROFILES = "trace profiles";
-
-    private final CappedDatabase cappedDatabase;
-
-    TraceDetailDatabaseStats(CappedDatabase cappedDatabase) {
-        this.cappedDatabase = cappedDatabase;
-    }
-
-    @Override
-    public CappedDatabaseStats getTraceEntries() {
-        return cappedDatabase.getStats(TRACE_ENTRIES);
-    }
-
-    @Override
-    public CappedDatabaseStats getTraceProfiles() {
-        return cappedDatabase.getStats(TRACE_PROFILES);
-    }
+    CappedDatabaseStats getTraceEntries();
+    CappedDatabaseStats getTraceProfiles();
 }

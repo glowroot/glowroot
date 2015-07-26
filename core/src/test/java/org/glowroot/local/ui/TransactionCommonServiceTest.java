@@ -17,6 +17,7 @@ package org.glowroot.local.ui;
 
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,6 +25,7 @@ import org.junit.Test;
 import org.glowroot.collector.Aggregate;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
+import org.glowroot.config.RollupConfig;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregateDaoTest;
 
@@ -54,11 +56,14 @@ public class TransactionCommonServiceTest {
         // given
         ConfigService configService = mock(ConfigService.class);
         when(configService.getAdvancedConfig()).thenReturn(AdvancedConfig.builder().build());
+        ImmutableList<RollupConfig> rollupConfigs = ImmutableList.of(RollupConfig.of(1000, 0),
+                RollupConfig.of(15000, 3600000), RollupConfig.of(900000000, 8 * 3600000));
+        when(configService.getRollupConfigs()).thenReturn(rollupConfigs);
         TransactionCommonService transactionCommonService =
-                new TransactionCommonService(aggregateDao, null, configService, 15, 900000);
+                new TransactionCommonService(aggregateDao, null, configService);
         // when
-        List<Aggregate> aggregates =
-                transactionCommonService.getAggregates("a type", null, 0, 3600001, Long.MAX_VALUE);
+        List<Aggregate> aggregates = transactionCommonService.getAggregates("a type", null, 0,
+                3600001, Long.MAX_VALUE);
         // then
         assertThat(aggregates).hasSize(2);
         Aggregate aggregate1 = aggregates.get(0);

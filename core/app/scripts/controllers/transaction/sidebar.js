@@ -111,7 +111,7 @@ glowroot.controller('TransactionSidebarCtrl', [
               return;
             }
             lastSortOrder = query.sortOrder;
-            lastDurationMillis = query.to - query.from + 1000 * $scope.layout.fixedAggregateIntervalSeconds;
+            lastDurationMillis = query.to - query.from;
             $scope.summariesNoData = !data.transactions.length;
             $scope.overallSummary = data.overall;
             $scope.transactionSummaries = data.transactions;

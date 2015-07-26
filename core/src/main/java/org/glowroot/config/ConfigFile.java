@@ -128,7 +128,7 @@ class ConfigFile {
                     "\"defaultDisplayedTransactionType\"");
             // handling upgrade from 0.8.3 to 0.8.4
             content = content.replace("\"cappedDatabaseSizeMb\"",
-                    "\"traceDetailDatabaseSizeMb\"");
+                    "\"traceCappedDatabaseSizeMb\"");
             config = readValue(content);
         } catch (Exception e) {
             // immutables json processing wraps IOExceptions inside RuntimeExceptions so can't rely
