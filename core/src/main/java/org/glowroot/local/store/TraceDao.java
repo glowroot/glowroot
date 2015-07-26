@@ -52,6 +52,7 @@ public class TraceDao implements TraceRepository {
     private static final ImmutableList<Column> traceColumns = ImmutableList.<Column>of(
             Column.of("id", Types.VARCHAR).withPrimaryKey(true),
             Column.of("partial", Types.BIGINT),
+            Column.of("slow", Types.BOOLEAN),
             Column.of("error", Types.BOOLEAN),
             Column.of("start_time", Types.BIGINT),
             Column.of("capture_time", Types.BIGINT),
@@ -117,7 +118,7 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public void store(final Trace trace, @Nullable ChunkSource entries,
+    public void store(final Trace trace, boolean slow, @Nullable ChunkSource entries,
             @Nullable ChunkSource profile) throws Exception {
         Long entriesId = null;
         if (entries != null) {
@@ -127,17 +128,17 @@ public class TraceDao implements TraceRepository {
         if (profile != null) {
             profileId = traceCappedDatabase.write(profile, TraceCappedDatabaseStats.TRACE_PROFILES);
         }
-        dataSource.update("merge into trace (id, partial, error, start_time, capture_time,"
+        dataSource.update("merge into trace (id, partial, slow, error, start_time, capture_time,"
                 + " duration, transaction_type, transaction_name, headline, user,"
                 + " custom_attributes, custom_detail, error_message, error_throwable, timers,"
                 + " thread_cpu_time, thread_blocked_time, thread_waited_time,"
                 + " thread_allocated_bytes, gc_infos, entry_count, entries_capped_id,"
                 + " profile_sample_count, profile_capped_id) values"
-                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                trace.id(), trace.partial(), trace.error(), trace.startTime(), trace.captureTime(),
-                trace.duration(), trace.transactionType(), trace.transactionName(),
-                trace.headline(), trace.user(), trace.customAttributes(), trace.customDetail(),
-                trace.errorMessage(), trace.errorThrowable(), trace.timers(),
+                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                trace.id(), trace.partial(), slow, trace.error(), trace.startTime(),
+                trace.captureTime(), trace.duration(), trace.transactionType(),
+                trace.transactionName(), trace.headline(), trace.user(), trace.customAttributes(),
+                trace.customDetail(), trace.errorMessage(), trace.errorThrowable(), trace.timers(),
                 trace.threadCpuTime(), trace.threadBlockedTime(), trace.threadWaitedTime(),
                 trace.threadAllocatedBytes(), trace.gcInfos(), trace.entryCount(), entriesId,
                 trace.profileSampleCount(), profileId);
@@ -170,25 +171,18 @@ public class TraceDao implements TraceRepository {
         return QueryResult.from(points, query.limit());
     }
 
-    public long readTransactionCount(String transactionType, String transactionName,
-            long captureTimeFrom, long captureTimeTo) throws SQLException {
+    public long readOverallSlowCount(String transactionType, long captureTimeFrom,
+            long captureTimeTo) throws SQLException {
         return dataSource.queryForLong("select count(*) from trace where transaction_type = ?"
-                + " and transaction_name = ? and capture_time >= ? and capture_time <= ?",
-                transactionType, transactionName, captureTimeFrom, captureTimeTo);
+                + " and capture_time >= ? and capture_time <= ? and slow = ?", transactionType,
+                captureTimeFrom, captureTimeTo, true);
     }
 
-    public long readOverallCount(String transactionType, long captureTimeFrom, long captureTimeTo)
-            throws SQLException {
-        return dataSource.queryForLong("select count(*) from trace where transaction_type = ?"
-                + " and capture_time >= ? and capture_time <= ?", transactionType,
-                captureTimeFrom, captureTimeTo);
-    }
-
-    public long readTransactionErrorCount(String transactionType, String transactionName,
+    public long readTransactionSlowCount(String transactionType, String transactionName,
             long captureTimeFrom, long captureTimeTo) throws SQLException {
         return dataSource.queryForLong("select count(*) from trace where transaction_type = ?"
-                + " and transaction_name = ? and capture_time >= ? and capture_time <= ? and"
-                + " error = ?", transactionType, transactionName, captureTimeFrom, captureTimeTo,
+                + " and transaction_name = ? and capture_time >= ? and capture_time <= ?"
+                + " and slow = ?", transactionType, transactionName, captureTimeFrom, captureTimeTo,
                 true);
     }
 
@@ -197,6 +191,14 @@ public class TraceDao implements TraceRepository {
         return dataSource.queryForLong("select count(*) from trace where transaction_type = ?"
                 + " and capture_time >= ? and capture_time <= ? and error = ?", transactionType,
                 captureTimeFrom, captureTimeTo, true);
+    }
+
+    public long readTransactionErrorCount(String transactionType, String transactionName,
+            long captureTimeFrom, long captureTimeTo) throws SQLException {
+        return dataSource.queryForLong("select count(*) from trace where transaction_type = ?"
+                + " and transaction_name = ? and capture_time >= ? and capture_time <= ? and"
+                + " error = ?", transactionType, transactionName, captureTimeFrom, captureTimeTo,
+                true);
     }
 
     public ImmutableList<TraceErrorPoint> readErrorPoints(ErrorMessageQuery query,

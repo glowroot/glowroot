@@ -86,8 +86,8 @@ class TracePointJsonService {
 
         private final TracePointQuery query;
 
-        public Handler(TracePointQuery request) {
-            this.query = request;
+        public Handler(TracePointQuery query) {
+            this.query = query;
         }
 
         private String handle() throws Exception {
@@ -164,14 +164,7 @@ class TracePointJsonService {
         private List<TracePoint> getMatchingPendingPoints() {
             List<TracePoint> points = Lists.newArrayList();
             for (Transaction transaction : transactionCollector.getPendingTransactions()) {
-                if (matchesDuration(transaction)
-                        && matchesTransactionType(transaction)
-                        && matchesErrorOnly(transaction)
-                        && matchesHeadline(transaction)
-                        && matchesTransactionName(transaction)
-                        && matchesError(transaction)
-                        && matchesUser(transaction)
-                        && matchesCustomAttribute(transaction)) {
+                if (matches(transaction)) {
                     TracePoint point = TracePoint.builder()
                             .id(transaction.getId())
                             .captureTime(clock.currentTimeMillis())
@@ -185,9 +178,9 @@ class TracePointJsonService {
         }
 
         private boolean matches(Transaction transaction) {
-            return transactionCollector.shouldStore(transaction)
-                    && matchesDuration(transaction)
+            return matchesDuration(transaction)
                     && matchesTransactionType(transaction)
+                    && matchesSlowOnly(transaction)
                     && matchesErrorOnly(transaction)
                     && matchesHeadline(transaction)
                     && matchesTransactionName(transaction)
@@ -213,8 +206,12 @@ class TracePointJsonService {
             return transactionType.equals(transaction.getTransactionType());
         }
 
+        private boolean matchesSlowOnly(Transaction transaction) {
+            return !query.slowOnly() || transactionCollector.shouldStoreSlow(transaction);
+        }
+
         private boolean matchesErrorOnly(Transaction transaction) {
-            return !query.errorOnly() || transaction.getErrorMessage() != null;
+            return !query.errorOnly() || transactionCollector.shouldStoreError(transaction);
         }
 
         private boolean matchesHeadline(Transaction transaction) {

@@ -254,10 +254,10 @@ class TransactionJsonService {
         String transactionName = request.transactionName();
         long traceCount;
         if (transactionName == null) {
-            traceCount = traceDao.readOverallCount(request.transactionType(), request.from(),
+            traceCount = traceDao.readOverallSlowCount(request.transactionType(), request.from(),
                     request.to());
         } else {
-            traceCount = traceDao.readTransactionCount(request.transactionType(),
+            traceCount = traceDao.readTransactionSlowCount(request.transactionType(),
                     transactionName, request.from(), request.to());
         }
         boolean includeActiveTraces = shouldIncludeActiveTraces(request);
@@ -450,7 +450,7 @@ class TransactionJsonService {
 
     @VisibleForTesting
     boolean matchesActive(Transaction transaction, TransactionDataRequest request) {
-        if (!transactionCollector.shouldStore(transaction)) {
+        if (!transactionCollector.shouldStoreSlow(transaction)) {
             return false;
         }
         if (!request.transactionType().equals(transaction.getTransactionType())) {

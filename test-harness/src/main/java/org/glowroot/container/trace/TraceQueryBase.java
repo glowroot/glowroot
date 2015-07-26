@@ -26,15 +26,18 @@ public abstract class TraceQueryBase {
     public long from() {
         return 0;
     }
+
     @Value.Default
     public long to() {
         return Long.MAX_VALUE;
     }
+
     // nanoseconds
     @Value.Default
     public long durationLow() {
         return 0;
     }
+
     // nanoseconds
     public abstract @Nullable Long durationHigh();
     public abstract @Nullable String transactionType();
@@ -49,10 +52,17 @@ public abstract class TraceQueryBase {
     public abstract @Nullable String customAttributeName();
     public abstract @Nullable StringComparator customAttributeValueComparator();
     public abstract @Nullable String customAttributeValue();
+
     @Value.Default
     public boolean errorOnly() {
         return false;
     }
+
+    @Value.Default
+    public boolean slowOnly() {
+        return false;
+    }
+
     @Value.Default
     public int limit() {
         return 0;

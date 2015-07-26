@@ -73,17 +73,9 @@ public class TransactionCollectorImpl implements TransactionCollector {
     }
 
     @Override
-    public boolean shouldStore(Transaction transaction) {
-        if (transaction.isPartiallyStored() || transaction.getErrorMessage() != null) {
+    public boolean shouldStoreSlow(Transaction transaction) {
+        if (transaction.isPartiallyStored()) {
             return true;
-        }
-        // check if should store for user recording
-        if (configService.getUserRecordingConfig().enabled()) {
-            String user = transaction.getUser();
-            if (!Strings.isNullOrEmpty(user)
-                    && user.equalsIgnoreCase(configService.getUserRecordingConfig().user())) {
-                return true;
-            }
         }
         // check if trace-specific store threshold was set
         long traceStoreThresholdMillis = transaction.getTraceStoreThresholdMillisOverride();
@@ -92,7 +84,26 @@ public class TransactionCollectorImpl implements TransactionCollector {
         }
         // fall back to default trace store threshold
         traceStoreThresholdMillis = configService.getGeneralConfig().traceStoreThresholdMillis();
-        return transaction.getDuration() >= MILLISECONDS.toNanos(traceStoreThresholdMillis);
+        if (transaction.getDuration() >= MILLISECONDS.toNanos(traceStoreThresholdMillis)) {
+            return true;
+        }
+
+        // for now lumping user recording into slow traces tab
+        //
+        // check if should store for user recording
+        if (configService.getUserRecordingConfig().enabled()) {
+            String user = transaction.getUser();
+            if (!Strings.isNullOrEmpty(user)
+                    && user.equalsIgnoreCase(configService.getUserRecordingConfig().user())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean shouldStoreError(Transaction transaction) {
+        return transaction.getErrorMessage() != null;
     }
 
     @Override
@@ -108,7 +119,8 @@ public class TransactionCollectorImpl implements TransactionCollector {
         // increasing capture times so it can flush aggregates without concern for new data
         // arriving with a prior capture time
         long captureTime = aggregateCollector.add(transaction);
-        if (!shouldStore(transaction)) {
+        final boolean slow = shouldStoreSlow(transaction);
+        if (!slow && !shouldStoreError(transaction)) {
             return;
         }
         if (pendingTransactions.size() >= PENDING_LIMIT) {
@@ -126,7 +138,7 @@ public class TransactionCollectorImpl implements TransactionCollector {
             public void run() {
                 try {
                     Trace trace = TraceCreator.createCompletedTrace(transaction);
-                    store(trace, transaction);
+                    store(trace, slow, transaction);
                 } catch (Throwable t) {
                     logger.error(t.getMessage(), t);
                 } finally {
@@ -150,7 +162,7 @@ public class TransactionCollectorImpl implements TransactionCollector {
                     ticker.read());
             transaction.setPartiallyStored();
             if (!transaction.isCompleted()) {
-                store(trace, transaction);
+                store(trace, true, transaction);
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -171,7 +183,7 @@ public class TransactionCollectorImpl implements TransactionCollector {
         }
     }
 
-    private void store(Trace trace, Transaction transaction) throws Exception {
+    private void store(Trace trace, boolean slow, Transaction transaction) throws Exception {
         long captureTick;
         if (transaction.isCompleted()) {
             captureTick = transaction.getEndTick();
@@ -182,6 +194,6 @@ public class TransactionCollectorImpl implements TransactionCollector {
                 transaction.getEntries(), transaction.getStartTick(), captureTick);
         ChunkSource profile =
                 ProfileChunkSourceCreator.createProfileChunkSource(transaction.getProfile());
-        traceRepository.store(trace, entries, profile);
+        traceRepository.store(trace, slow, entries, profile);
     }
 }

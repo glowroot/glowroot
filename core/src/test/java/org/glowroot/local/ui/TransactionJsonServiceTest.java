@@ -51,7 +51,7 @@ public class TransactionJsonServiceTest {
     public void testShouldNotStore() throws Exception {
         // given
         Transaction transaction = mock(Transaction.class);
-        when(transactionCollector.shouldStore(any(Transaction.class))).thenReturn(false);
+        when(transactionCollector.shouldStoreSlow(any(Transaction.class))).thenReturn(false);
         when(transaction.getTransactionType()).thenReturn("tt");
         when(transaction.getTransactionName()).thenReturn("tn");
         TransactionDataRequest request = TransactionDataRequest.builder()
@@ -70,7 +70,7 @@ public class TransactionJsonServiceTest {
     public void testShouldStoreButDifferentTransactionType() throws Exception {
         // given
         Transaction transaction = mock(Transaction.class);
-        when(transactionCollector.shouldStore(any(Transaction.class))).thenReturn(true);
+        when(transactionCollector.shouldStoreSlow(any(Transaction.class))).thenReturn(true);
         when(transaction.getTransactionType()).thenReturn("tt");
         when(transaction.getTransactionName()).thenReturn("tn");
         TransactionDataRequest request = TransactionDataRequest.builder()
@@ -89,7 +89,7 @@ public class TransactionJsonServiceTest {
     public void testShouldStoreAndSameTransactionTypeButNullTransactionName() throws Exception {
         // given
         Transaction transaction = mock(Transaction.class);
-        when(transactionCollector.shouldStore(any(Transaction.class))).thenReturn(true);
+        when(transactionCollector.shouldStoreSlow(any(Transaction.class))).thenReturn(true);
         when(transaction.getTransactionType()).thenReturn("tt");
         when(transaction.getTransactionName()).thenReturn("tn");
         TransactionDataRequest request = TransactionDataRequest.builder()
@@ -108,7 +108,7 @@ public class TransactionJsonServiceTest {
     public void testShouldStoreAndSameTransactionTypeButDiffTransactionName() throws Exception {
         // given
         Transaction transaction = mock(Transaction.class);
-        when(transactionCollector.shouldStore(any(Transaction.class))).thenReturn(true);
+        when(transactionCollector.shouldStoreSlow(any(Transaction.class))).thenReturn(true);
         when(transaction.getTransactionType()).thenReturn("tt");
         when(transaction.getTransactionName()).thenReturn("tn");
         TransactionDataRequest request = TransactionDataRequest.builder()
@@ -127,7 +127,7 @@ public class TransactionJsonServiceTest {
     public void testShouldMatch() throws Exception {
         // given
         Transaction transaction = mock(Transaction.class);
-        when(transactionCollector.shouldStore(any(Transaction.class))).thenReturn(true);
+        when(transactionCollector.shouldStoreSlow(any(Transaction.class))).thenReturn(true);
         when(transaction.getTransactionType()).thenReturn("tt");
         when(transaction.getTransactionName()).thenReturn("tn");
         TransactionDataRequest request = TransactionDataRequest.builder()

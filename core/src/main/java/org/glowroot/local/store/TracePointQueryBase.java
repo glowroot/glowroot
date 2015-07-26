@@ -27,12 +27,11 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 public abstract class TracePointQueryBase {
+
     public abstract long from();
     public abstract long to();
-    // nanoseconds
-    public abstract long durationLow();
-    // nanoseconds
-    public abstract @Nullable Long durationHigh();
+    public abstract long durationLow(); // nanoseconds
+    public abstract @Nullable Long durationHigh(); // nanoseconds
     public abstract @Nullable String transactionType();
     public abstract @Nullable StringComparator transactionNameComparator();
     public abstract @Nullable String transactionName();
@@ -45,10 +44,17 @@ public abstract class TracePointQueryBase {
     public abstract @Nullable String customAttributeName();
     public abstract @Nullable StringComparator customAttributeValueComparator();
     public abstract @Nullable String customAttributeValue();
+
+    @Value.Default
+    public boolean slowOnly() {
+        return false;
+    }
+
     @Value.Default
     public boolean errorOnly() {
         return false;
     }
+
     public abstract int limit();
 
     // capture time lower bound is non-inclusive so that aggregate data intervals can be mapped
@@ -74,6 +80,7 @@ public abstract class TracePointQueryBase {
         builder.addArg(to());
         appendDurationCriteria(builder);
         appendTransactionTypeCriteria(builder);
+        appendSlowOnlyCriteria(builder);
         appendErrorOnlyCriteria(builder);
         appendTransactionNameCriteria(builder);
         appendHeadlineCriteria(builder);
@@ -124,6 +131,13 @@ public abstract class TracePointQueryBase {
         if (!Strings.isNullOrEmpty(transactionType)) {
             builder.appendText(" and trace.transaction_type = ?");
             builder.addArg(transactionType);
+        }
+    }
+
+    private void appendSlowOnlyCriteria(ParameterizedSqlBuilder builder) {
+        if (slowOnly()) {
+            builder.appendText(" and trace.slow = ?");
+            builder.addArg(true);
         }
     }
 

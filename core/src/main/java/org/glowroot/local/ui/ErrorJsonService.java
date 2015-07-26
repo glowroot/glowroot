@@ -121,6 +121,7 @@ class ErrorJsonService {
         jg.close();
         return sb.toString();
     }
+
     @GET("/backend/error/summaries")
     String getSummaries(String queryString) throws Exception {
         ErrorSummaryRequest request = QueryStrings.decode(queryString, ErrorSummaryRequest.class);

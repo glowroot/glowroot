@@ -25,8 +25,9 @@ glowroot.controller('TracesCtrl', [
   'httpErrors',
   'traceModal',
   'queryStrings',
+  'slowOnly',
   'errorOnly',
-  function ($scope, $location, $http, $q, charts, httpErrors, traceModal, queryStrings, errorOnly) {
+  function ($scope, $location, $http, $q, charts, httpErrors, traceModal, queryStrings, slowOnly, errorOnly) {
 
     $scope.$parent.activeTabItem = 'traces';
 
@@ -89,6 +90,9 @@ glowroot.controller('TracesCtrl', [
       query.durationLow = Math.ceil(query.durationLow * 1000000);
       if (query.durationHigh) {
         query.durationHigh = Math.floor(query.durationHigh * 1000000);
+      }
+      if (slowOnly) {
+        query.slowOnly = true;
       }
       if (errorOnly) {
         query.errorOnly = true;

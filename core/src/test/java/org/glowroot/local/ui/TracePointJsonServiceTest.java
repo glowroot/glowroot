@@ -193,7 +193,7 @@ public class TracePointJsonServiceTest {
         when(traceDao.readPoints(any(TracePointQuery.class))).thenReturn(queryResult);
         when(transactionRegistry.getTransactions()).thenReturn(activeTransactions);
         // for now, assume all active traces will be stored
-        when(transactionCollector.shouldStore(any(Transaction.class))).thenReturn(true);
+        when(transactionCollector.shouldStoreSlow(any(Transaction.class))).thenReturn(true);
         when(transactionCollector.getPendingTransactions()).thenReturn(pendingTransactions);
         when(configService.getStorageConfig()).thenReturn(StorageConfig.builder().build());
         when(ticker.read()).thenReturn(currentTick);

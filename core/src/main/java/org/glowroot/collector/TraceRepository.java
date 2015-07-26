@@ -21,6 +21,6 @@ import org.glowroot.common.ChunkSource;
 
 public interface TraceRepository {
 
-    void store(Trace trace, @Nullable ChunkSource entries, @Nullable ChunkSource profile)
-            throws Exception;
+    void store(Trace trace, boolean slow, @Nullable ChunkSource entries,
+            @Nullable ChunkSource profile) throws Exception;
 }

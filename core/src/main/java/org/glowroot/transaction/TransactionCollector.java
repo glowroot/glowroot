@@ -29,5 +29,8 @@ public interface TransactionCollector {
     Collection<Transaction> getPendingTransactions();
 
     // this is only used by the user interface
-    boolean shouldStore(Transaction transaction);
+    boolean shouldStoreSlow(Transaction transaction);
+
+    // this is only used by the user interface
+    boolean shouldStoreError(Transaction transaction);
 }

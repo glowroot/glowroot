@@ -115,7 +115,12 @@ public class CollectorModule {
         }
 
         @Override
-        public boolean shouldStore(Transaction transaction) {
+        public boolean shouldStoreSlow(Transaction transaction) {
+            return false;
+        }
+
+        @Override
+        public boolean shouldStoreError(Transaction transaction) {
             return false;
         }
     }

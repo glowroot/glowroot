@@ -478,7 +478,7 @@ class JvmJsonService {
             jg.writeStringField("transactionType", matchedTransaction.getTransactionType());
             jg.writeStringField("transactionName", matchedTransaction.getTransactionName());
             jg.writeNumberField("transactionDuration", matchedTransaction.getDuration());
-            if (transactionCollector.shouldStore(matchedTransaction)) {
+            if (transactionCollector.shouldStoreSlow(matchedTransaction)) {
                 jg.writeStringField("traceId", matchedTransaction.getId());
             }
         }

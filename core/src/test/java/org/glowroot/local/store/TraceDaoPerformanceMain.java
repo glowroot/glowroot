@@ -43,7 +43,7 @@ public class TraceDaoPerformanceMain {
         for (int i = 0; i < 1000; i++) {
             Trace trace = TraceTestData.createTrace();
             ChunkSource entries = createEntries();
-            traceDao.store(trace, entries, null);
+            traceDao.store(trace, true, entries, null);
         }
         logger.info("elapsed time: {}", stopwatch.elapsed(MILLISECONDS));
         logger.info("num traces: {}", traceDao.count());

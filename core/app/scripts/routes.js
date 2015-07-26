@@ -137,6 +137,9 @@ glowroot.config([
           templateUrl: 'views/transaction/traces.html',
           controller: 'TracesCtrl',
           resolve: {
+            slowOnly: function () {
+              return true;
+            },
             errorOnly: function () {
               return false;
             }
@@ -233,6 +236,9 @@ glowroot.config([
           templateUrl: 'views/transaction/traces.html',
           controller: 'TracesCtrl',
           resolve: {
+            slowOnly: function () {
+              return false;
+            },
             errorOnly: function () {
               return true;
             }
