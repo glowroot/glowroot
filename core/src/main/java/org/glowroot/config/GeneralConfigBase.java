@@ -38,7 +38,7 @@ public abstract class GeneralConfigBase {
     // 0 means store all traces
     @Value.Default
     public int traceStoreThresholdMillis() {
-        return 1000;
+        return 2000;
     }
 
     // 0 means profiling disabled
