@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, HandlebarsRendering, $ */
+/* global glowroot, HandlebarsRendering, gtParseIncludesExcludes, $ */
 
 glowroot.controller('TransactionProfileCtrl', [
   '$scope',
@@ -72,16 +72,34 @@ glowroot.controller('TransactionProfileCtrl', [
     $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
     onLocationChangeSuccess();
 
+    $('.gt-profile-text-filter').on('gtClearProfileFilter', function (event, response) {
+      $scope.$apply(function () {
+        $scope.filter = '';
+        $scope.refreshButtonClick();
+      });
+      response.handled = true;
+    });
+
     function refreshData() {
+      $scope.parsingError = undefined;
+      var parseResult = gtParseIncludesExcludes($scope.filter);
+      if (parseResult.error) {
+        $scope.parsingError = parseResult.error;
+        $scope.showProfile = true;
+        $scope.sampleCount = 0;
+        $('#profileOuter').removeData('gtLoaded');
+        HandlebarsRendering.profileToggle(undefined, '#profileOuter', {stackTraceElement: '', sampleCount: 0});
+        return;
+      }
       var query = {
         from: $scope.chartFrom,
         to: $scope.chartTo,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
-        filter: $scope.filter,
+        include: parseResult.includes,
+        exclude: parseResult.excludes,
         truncateLeafPercentage: 0.001
       };
-
       $scope.showSpinner++;
       $http.get('backend/transaction/profile' + queryStrings.encodeObject(query))
           .success(function (data) {

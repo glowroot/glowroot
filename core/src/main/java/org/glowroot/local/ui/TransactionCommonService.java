@@ -160,13 +160,14 @@ class TransactionCommonService {
 
     // from is non-inclusive
     ProfileNode getProfile(String transactionType, @Nullable String transactionName, long from,
-            long to, @Nullable String filterText, double truncateLeafPercentage) throws Exception {
+            long to, List<String> includes, List<String> excludes, double truncateLeafPercentage)
+                    throws Exception {
         List<ProfileAggregate> profileAggregate =
                 getProfileAggregates(transactionType, transactionName, from, to);
         ProfileNode syntheticRootNode = AggregateMerging.getMergedProfile(profileAggregate);
         long syntheticRootNodeSampleCount = syntheticRootNode.getSampleCount();
-        if (filterText != null) {
-            filter(syntheticRootNode, filterText);
+        if (!includes.isEmpty() || !excludes.isEmpty()) {
+            filter(syntheticRootNode, includes, excludes);
         }
         if (truncateLeafPercentage != 0) {
             int minSamples =
@@ -453,8 +454,22 @@ class TransactionCommonService {
     }
 
     // using non-recursive algorithm to avoid stack overflow error on deep profiles
-    private static void filter(ProfileNode syntheticRootNode, String filterText) {
-        new ProfileFilterer(syntheticRootNode, filterText).traverse();
+    private static void filter(ProfileNode syntheticRootNode, List<String> includes,
+            List<String> excludes) {
+        for (String include : includes) {
+            if (syntheticRootNode.isMatched()) {
+                new ProfileResetMatches(syntheticRootNode).traverse();
+            }
+            new ProfileFilterer(syntheticRootNode, include, false).traverse();
+        }
+        for (String exclude : excludes) {
+            // reset is only needed prior to first exclusion, since exclusions won't leave behind
+            // any matched nodes
+            if (syntheticRootNode.isMatched()) {
+                new ProfileResetMatches(syntheticRootNode).traverse();
+            }
+            new ProfileFilterer(syntheticRootNode, exclude, true).traverse();
+        }
     }
 
     // using non-recursive algorithm to avoid stack overflow error on deep profiles
@@ -501,10 +516,12 @@ class TransactionCommonService {
     private static class ProfileFilterer extends Traverser<ProfileNode, RuntimeException> {
 
         private final String filterTextUpper;
+        private final boolean exclusion;
 
-        private ProfileFilterer(ProfileNode rootNode, String filterText) {
+        private ProfileFilterer(ProfileNode rootNode, String filterText, boolean exclusion) {
             super(rootNode);
             this.filterTextUpper = filterText.toUpperCase(Locale.ENGLISH);
+            this.exclusion = exclusion;
         }
 
         @Override
@@ -520,18 +537,28 @@ class TransactionCommonService {
         @Override
         public void revisitAfterChildren(ProfileNode node) {
             if (node.isMatched()) {
-                // keep node and all children
+                // if exclusion then node will be removed by parent
+                // if not exclusion then keep node and all children
                 return;
             }
-            if (!hasMatchedChild(node) && !node.isSyntheticRootNode()) {
-                // node is unmatched and will be removed by parent
+            if (node.isChildNodesEmpty()) {
                 return;
             }
-            node.setMatched();
+            if (removeNode(node)) {
+                // node will be removed by parent
+                if (exclusion) {
+                    node.setMatched();
+                }
+                return;
+            }
+            if (!exclusion) {
+                node.setMatched();
+            }
+            // node is a partial match, need to filter it out
             long filteredSampleCount = 0;
             for (Iterator<ProfileNode> i = node.iterator(); i.hasNext();) {
                 ProfileNode childNode = i.next();
-                if (childNode.isMatched()) {
+                if (exclusion == !childNode.isMatched()) {
                     filteredSampleCount += childNode.getSampleCount();
                 } else {
                     i.remove();
@@ -556,13 +583,49 @@ class TransactionCommonService {
             return false;
         }
 
-        private static boolean hasMatchedChild(ProfileNode node) {
+        private boolean removeNode(ProfileNode node) {
+            if (node.isSyntheticRootNode()) {
+                return false;
+            }
+            if (exclusion) {
+                return hasOnlyMatchedChildren(node);
+            } else {
+                return hasNoMatchedChildren(node);
+            }
+        }
+
+        private boolean hasOnlyMatchedChildren(ProfileNode node) {
             for (ProfileNode childNode : node) {
-                if (childNode.isMatched()) {
-                    return true;
+                if (!childNode.isMatched()) {
+                    return false;
                 }
             }
-            return false;
+            return true;
         }
+
+        private boolean hasNoMatchedChildren(ProfileNode node) {
+            for (ProfileNode childNode : node) {
+                if (childNode.isMatched()) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    private static class ProfileResetMatches extends Traverser<ProfileNode, RuntimeException> {
+
+        private ProfileResetMatches(ProfileNode rootNode) {
+            super(rootNode);
+        }
+
+        @Override
+        public List<ProfileNode> visit(ProfileNode node) throws RuntimeException {
+            node.resetMatched();
+            return ImmutableList.copyOf(node.getChildNodes());
+        }
+
+        @Override
+        public void revisitAfterChildren(ProfileNode node) throws RuntimeException {}
     }
 }

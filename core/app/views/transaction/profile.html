@@ -54,7 +54,7 @@
         </a>
 
         <div class="pull-left" style="font-weight: 700;">
-          Profile based on {{sampleCount}} samples
+          Total of {{sampleCount}} sampled stack traces in selected time period
         </div>
       </div>
       <div ng-form
@@ -69,6 +69,17 @@
                 style="vertical-align: middle; margin-left: 5px;">
           Refresh
         </button>
+        <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
+        <a role="button"
+           class="gt-chart-button gt-inline-block gt-profile-text-filter-help hide"
+           href="#"
+           popover-template="'template/help/profile-filter.html'"
+           popover-placement="top"
+           popover-trigger="focus">
+          <i title="Help"
+             class="fa fa-question-circle"
+             style="font-size: 28px; vertical-align: middle; margin-left: 3px;"></i><!-- lack of space here is significant
+     --></a>
         <select class="form-control gt-profile-filter gt-input-xlarge hide"
                 onchange="this.blur()"
                 style="display: inline-block; vertical-align: middle;">
@@ -76,6 +87,9 @@
         <button type="button" class="btn btn-default gt-profile-view-toggle hide" style="margin-left: 100px;">
           Switch to text filter
         </button>
+        <div ng-if="parsingError" class="gt-red" style="margin-top: 10px; margin-bottom: -5px;">
+          {{parsingError}}
+        </div>
       </div>
       <!-- background-color: white is to help the text not overlap the right hand panel border -->
       <span class="gt-profile" style="background-color: white;"></span>

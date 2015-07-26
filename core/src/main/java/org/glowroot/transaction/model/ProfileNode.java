@@ -129,6 +129,10 @@ public class ProfileNode implements Iterable<ProfileNode> {
         matched = true;
     }
 
+    public void resetMatched() {
+        matched = false;
+    }
+
     public void setSampleCount(long sampleCount) {
         this.sampleCount = sampleCount;
     }

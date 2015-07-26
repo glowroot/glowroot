@@ -19,8 +19,7 @@
 // and that would significantly increase the size of the exported trace files
 
 // Glowroot dependency is used for spinner, but is not used in export file
-// glowroot (angular) dependency is used conditionally, only by transaction profile tab
-/* global $, Handlebars, JST, moment, Glowroot, SqlPrettyPrinter, gtClipboard, glowroot, console */
+/* global $, Handlebars, JST, moment, Glowroot, SqlPrettyPrinter, gtClipboard, gtParseIncludesExcludes, console */
 
 // IMPORTANT: DO NOT USE ANGULAR IN THIS FILE
 // that would require adding angular to trace-export.js
@@ -640,11 +639,11 @@ HandlebarsRendering = (function () {
       initNodeId(rootNode);
     }
 
-    function filter(filterText) {
-      var filterTextUpper = filterText.toUpperCase();
-      if (filterText.length === 1) {
-        // don't match anything with filter length 1 char
-        filterTextUpper = '';
+    function filter(includes) {
+      var includeUppers = [];
+      var i;
+      for (i = 0; i < includes.length; i++) {
+        includeUppers.push(includes[i].toUpperCase());
       }
 
       function highlightAndEscapeHtml(text) {
@@ -652,16 +651,27 @@ HandlebarsRendering = (function () {
           // don't highlight any part of "<multiple root nodes>"
           return escapeHtml(text);
         }
-        if (!filterTextUpper) {
-          return text;
+        if (includeUppers.length === 0) {
+          return escapeHtml(text);
         }
-        var index = text.toUpperCase().indexOf(filterTextUpper);
-        if (index === -1) {
-          return text;
+        var highlightRanges = [];
+        var index;
+        for (i = 0; i < includeUppers.length; i++) {
+          index = text.toUpperCase().indexOf(includeUppers[i]);
+          if (index !== -1) {
+            highlightRanges.push([index, index + includeUppers[i].length]);
+          }
         }
-        return escapeHtml(text.substring(0, index)) + '<strong>' +
-            escapeHtml(text.substring(index, index + filterTextUpper.length)) +
-            '</strong>' + highlightAndEscapeHtml(text.substring(index + filterTextUpper.length));
+        if (highlightRanges.length === 0) {
+          return escapeHtml(text);
+        }
+        highlightRanges.sort(function (range1, range2) {
+          return range1[0] - range2[0];
+        });
+        var firstHighlightRange = highlightRanges[0];
+        return escapeHtml(text.substring(0, firstHighlightRange[0])) + '<strong>' +
+            escapeHtml(text.substring(firstHighlightRange[0], firstHighlightRange[1])) +
+            '</strong>' + highlightAndEscapeHtml(text.substring(firstHighlightRange[1]));
       }
 
       function filterNode(node, underMatchingNode) {
@@ -670,21 +680,31 @@ HandlebarsRendering = (function () {
           node = node.childNodes[0];
           nodes.push(node);
         }
+        function matchIncludes(text) {
+          var i;
+          var textUpper = text.toUpperCase();
+          for (i = 0; i < includeUppers.length; i++) {
+            if (textUpper.indexOf(includeUppers[i]) !== -1) {
+              return true;
+            }
+          }
+          return false;
+        }
+
         var i;
         var currMatchingNode = false;
         var stackTraceElement;
         for (i = 0; i < nodes.length; i++) {
           stackTraceElement = nodes[i].stackTraceElement;
           // don't match any part of "<multiple root nodes>"
-          if (stackTraceElement !== MULTIPLE_ROOT_NODES
-              && stackTraceElement.toUpperCase().indexOf(filterTextUpper) !== -1) {
+          if (stackTraceElement !== MULTIPLE_ROOT_NODES && matchIncludes(stackTraceElement)) {
             currMatchingNode = true;
             break;
           }
         }
         // only the last node in nodes can be a leaf
         var lastNode = nodes[nodes.length - 1];
-        if (lastNode.leafThreadState && lastNode.leafThreadState.toUpperCase().indexOf(filterTextUpper) !== -1) {
+        if (lastNode.leafThreadState && matchIncludes(lastNode.leafThreadState)) {
           currMatchingNode = true;
         }
         if (currMatchingNode || underMatchingNode) {
@@ -706,6 +726,9 @@ HandlebarsRendering = (function () {
             for (i = 0; i < lastNode.childNodes.length; i++) {
               lastNode.filteredSampleCount += filterNode(lastNode.childNodes[i]);
             }
+          }
+          if (lastNode.ellipsedSampleCount) {
+            lastNode.filteredSampleCount += lastNode.ellipsedSampleCount;
           }
         }
         if (lastNode.ellipsedSampleCount && lastNode.filteredEllipsedSampleCount) {
@@ -732,7 +755,7 @@ HandlebarsRendering = (function () {
           var nodeTextParent = $('#gtProfileNodeText' + lastNode.id).parent();
           var nodeTextParentParent = $('#gtProfileNodeText' + lastNode.id).parent().parent();
           var unexpanded = nodeTextParentParent.find('.gt-unexpanded-content');
-          if (currMatchingNode && filterTextUpper) {
+          if (currMatchingNode && includes.length) {
             unexpanded.addClass('hide');
             nodeTextParent.removeClass('hide');
           } else {
@@ -746,7 +769,8 @@ HandlebarsRendering = (function () {
         return lastNode.filteredSampleCount;
       }
 
-      filterNode(rootNode);
+      // 2nd arg, starts automatically "underMatchingNode" when no includes
+      filterNode(rootNode, !includes.length);
     }
 
     function generateHtml(timer) {
@@ -843,6 +867,7 @@ HandlebarsRendering = (function () {
     // set up text filter
     var $profileTextFilter = $selector.find('.gt-profile-text-filter');
     var $profileTextFilterRefresh = $selector.find('.gt-profile-text-filter-refresh');
+    var gtProfileTextFilterHelp = $selector.find('.gt-profile-text-filter-help');
     var timer;
     $profileTextFilter.off('input.gtProfileFilter');
     if (!$profileTextFilterRefresh.length) {
@@ -852,105 +877,117 @@ HandlebarsRendering = (function () {
         timer = setTimeout(function () {
           // update merged stack tree based on filter
           var filterText = $profileTextFilter.val();
-          filter(filterText);
+          if (filterText) {
+            filter([filterText]);
+          } else {
+            filter([]);
+          }
         }, 50);
       });
     }
     // apply initial filter text if any (e.g. user changes Last 30 min to Last 60 min) triggering profile refresh
     // but filter text stays the same (which seems good)
     var filterText = $profileTextFilter.val();
-    if (filterText) {
-      filter(filterText);
+    var parseResult = gtParseIncludesExcludes(filterText);
+    if (!parseResult.error && (parseResult.includes.length || parseResult.excludes.length)) {
+      filter(parseResult.includes);
       $selector.data('gtTextFilterOverride', true);
     }
     var $profileDropdownFilter = $selector.find('.gt-profile-filter');
     var $switchFilterButton = $profileDropdownFilter.parent().find('.gt-profile-view-toggle');
     if (!$.isEmptyObject(mergedCounts)) {
-      // build tree
-      var tree = {name: '', childNodes: {}};
-      $.each(rootNode.timerCounts, function (timer) {
-        // only really need to look at leafs (' / other') to hit all nodes
-        if (timer.match(/ \/ other$/)) {
-          var parts = timer.split(' / ');
-          var node = tree;
-          var partialName = '';
-          $.each(parts, function (i, part) {
-            if (i > 0) {
-              partialName += ' / ';
-            }
-            partialName += part;
-            if (!node.childNodes[part]) {
-              node.childNodes[part] = {name: partialName, childNodes: {}};
-            }
-            node = node.childNodes[part];
+      if (!$profileTextFilter.val()) {
+        // build tree
+        var tree = {name: '', childNodes: {}};
+        $.each(rootNode.timerCounts, function (timer) {
+          // only really need to look at leafs (' / other') to hit all nodes
+          if (timer.match(/ \/ other$/)) {
+            var parts = timer.split(' / ');
+            var node = tree;
+            var partialName = '';
+            $.each(parts, function (i, part) {
+              if (i > 0) {
+                partialName += ' / ';
+              }
+              partialName += part;
+              if (!node.childNodes[part]) {
+                node.childNodes[part] = {name: partialName, childNodes: {}};
+              }
+              node = node.childNodes[part];
+            });
+          }
+        });
+        var nodesDepthFirst = function (node) {
+          var all = [node];
+          // order by count desc
+          var childNodes = [];
+          $.each(node.childNodes, function (name, childNode) {
+            childNodes.push(childNode);
           });
-        }
-      });
-      var nodesDepthFirst = function (node) {
-        var all = [node];
-        // order by count desc
-        var childNodes = [];
-        $.each(node.childNodes, function (name, childNode) {
-          childNodes.push(childNode);
-        });
-        childNodes.sort(function (a, b) {
-          return rootNode.timerCounts[b.name] - rootNode.timerCounts[a.name];
-        });
-        if (childNodes.length === 1 && childNodes[0].name.match(/ \/ other$/)) {
-          // skip if single 'other' node (in which case it will be represented by current node)
+          childNodes.sort(function (a, b) {
+            return rootNode.timerCounts[b.name] - rootNode.timerCounts[a.name];
+          });
+          if (childNodes.length === 1 && childNodes[0].name.match(/ \/ other$/)) {
+            // skip if single 'other' node (in which case it will be represented by current node)
+            return all;
+          }
+          $.each(childNodes, function (i, childNode) {
+            all = all.concat(nodesDepthFirst(childNode));
+          });
           return all;
-        }
-        $.each(childNodes, function (i, childNode) {
-          all = all.concat(nodesDepthFirst(childNode));
-        });
-        return all;
-      };
+        };
 
-      var orderedNodes = nodesDepthFirst(tree);
-      if (Object.keys(tree.childNodes).length === 1) {
-        // remove the root '' since all nodes are already under the single root timer
-        orderedNodes.splice(0, 1);
-      } else {
-        var sampleCount = 0;
-        $.each(tree.childNodes, function (name, childNode) {
-          sampleCount += rootNode.timerCounts[childNode.name];
+        var orderedNodes = nodesDepthFirst(tree);
+        if (Object.keys(tree.childNodes).length === 1) {
+          // remove the root '' since all nodes are already under the single root timer
+          orderedNodes.splice(0, 1);
+        } else {
+          var sampleCount = 0;
+          $.each(tree.childNodes, function (name, childNode) {
+            sampleCount += rootNode.timerCounts[childNode.name];
+          });
+          rootNode.timerCounts[tree.name] = sampleCount;
+        }
+        // build filter dropdown
+        $profileDropdownFilter.html('');
+        $.each(orderedNodes, function (i, node) {
+          var name = node.name || MULTIPLE_ROOT_NODES;
+          $profileDropdownFilter.append($('<option />').val(node.name)
+              .text(name + ' (' + rootNode.timerCounts[node.name] + ')'));
         });
-        rootNode.timerCounts[tree.name] = sampleCount;
+        $profileDropdownFilter.off('change').change(function () {
+          // update merged stack tree based on filter
+          var html = generateHtml($(this).val());
+          $selector.find('.gt-profile').html(html);
+        });
       }
-      // build filter dropdown
-      $.each(orderedNodes, function (i, node) {
-        var name = node.name || MULTIPLE_ROOT_NODES;
-        $profileDropdownFilter.append($('<option />').val(node.name)
-            .text(name + ' (' + rootNode.timerCounts[node.name] + ')'));
-      });
-      $profileDropdownFilter.change(function () {
-        // update merged stack tree based on filter
-        var html = generateHtml($(this).val());
-        $selector.find('.gt-profile').html(html);
-      });
       // remove previous click handler, e.g. when range filter is changed
       $switchFilterButton.off('click').click(function () {
         $profileTextFilter.toggleClass('hide');
         $profileTextFilterRefresh.toggleClass('hide');
+        gtProfileTextFilterHelp.toggleClass('hide');
         $profileDropdownFilter.toggleClass('hide');
         if ($profileDropdownFilter.is(':visible')) {
           $selector.data('gtTextFilterOverride', false);
-          if (typeof glowroot !== 'undefined') {
-            glowroot.run(['$rootScope'], function ($rootScope) {
-              $rootScope.apply(function () {
-                $profileTextFilter.val('');
-              });
-            });
-          } else {
+          if ($profileTextFilter.val()) {
             $profileTextFilter.val('');
+            var response = {
+              handled: false
+            };
+            $profileTextFilter.trigger('gtClearProfileFilter', [response]);
+            if (!response.handled) {
+              filter([]);
+            }
           }
-          filter('');
           $switchFilterButton.text('Switch to text filter');
         } else {
           $selector.data('gtTextFilterOverride', true);
+          var profileDropdownFilterVal = $profileDropdownFilter.val();
           $profileDropdownFilter.find('option:first-child').attr('selected', 'selected');
-          var html = generateHtml();
-          $selector.find('.gt-profile').html(html);
+          if ($profileDropdownFilter.val() !== profileDropdownFilterVal) {
+            var html = generateHtml();
+            $selector.find('.gt-profile').html(html);
+          }
           $switchFilterButton.text('Switch to dropdown filter');
         }
       });
@@ -958,6 +995,8 @@ HandlebarsRendering = (function () {
     if ($.isEmptyObject(mergedCounts) || $selector.data('gtTextFilterOverride')) {
       $profileTextFilter.removeClass('hide');
       $profileTextFilterRefresh.removeClass('hide');
+      gtProfileTextFilterHelp.removeClass('hide');
+      $profileDropdownFilter.addClass('hide');
       $switchFilterButton.text('Switch to dropdown filter');
     } else {
       $profileDropdownFilter.removeClass('hide');

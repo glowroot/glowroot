@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, moment, $ */
+/* global glowroot, moment, gtParseIncludesExcludes, $ */
 
 glowroot.controller('ErrorMessagesCtrl', [
   '$scope',
@@ -49,8 +49,9 @@ glowroot.controller('ErrorMessagesCtrl', [
 
     function refreshData(deferred) {
       $scope.parsingError = undefined;
-      parseQuery($scope.filter);
-      if ($scope.parsingError) {
+      var parseResult = gtParseIncludesExcludes($scope.filter);
+      if (parseResult.error) {
+        $scope.parsingError = parseResult.error;
         return;
       }
       var query = {
@@ -58,8 +59,8 @@ glowroot.controller('ErrorMessagesCtrl', [
         to: $scope.chartTo,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
-        include: $scope.filterIncludes,
-        exclude: $scope.filterExcludes,
+        include: parseResult.includes,
+        exclude: parseResult.excludes,
         errorMessageLimit: errorMessageLimit
       };
       if (deferred) {
@@ -151,67 +152,6 @@ glowroot.controller('ErrorMessagesCtrl', [
 
     $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
     onLocationChangeSuccess();
-
-    function parseQuery(text) {
-      var includes = [];
-      var excludes = [];
-      var i;
-      var c;
-      var currTerm;
-      var inQuote;
-      var inExclude;
-
-      function pushCurrTerm() {
-        if (inExclude) {
-          excludes.push(currTerm);
-        } else {
-          includes.push(currTerm);
-        }
-      }
-
-      for (i = 0; i < text.length; i++) {
-        c = text.charAt(i);
-        if (currTerm !== undefined) {
-          // inside quoted or non-quoted term
-          if (c === inQuote || !inQuote && c === ' ') {
-            // end of term (quoted or non-quoted)
-            pushCurrTerm();
-            currTerm = undefined;
-            inQuote = undefined;
-            inExclude = false;
-          } else if (!inQuote && (c === '\'' || c === '"')) {
-            $scope.parsingError = 'Mismatched quote';
-            return;
-          } else {
-            currTerm += c;
-          }
-        } else if (c === '\'' || c === '"') {
-          // start of quoted term
-          currTerm = '';
-          inQuote = c;
-        } else if (c === '-') {
-          // validate there is an immediate next term
-          if (i === text.length - 1 || text.charAt(i + 1) === ' ') {
-            $scope.parsingError = 'Invalid location for minus';
-          }
-          // next term is an exclude
-          inExclude = true;
-        } else if (c !== ' ') {
-          // start of non-quoted term
-          currTerm = c;
-        }
-      }
-      if (inQuote) {
-        $scope.parsingError = 'Mismatched quote';
-        return;
-      }
-      if (currTerm) {
-        // end the last non-quoted term
-        pushCurrTerm();
-      }
-      $scope.filterIncludes = includes;
-      $scope.filterExcludes = excludes;
-    }
 
     // 100% yaxis max just for initial empty chart rendering
     var chartOptions = {

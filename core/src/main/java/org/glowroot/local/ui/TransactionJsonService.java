@@ -201,9 +201,10 @@ class TransactionJsonService {
         TransactionProfileRequest request =
                 QueryStrings.decode(queryString, TransactionProfileRequest.class);
         ProfileNode profile = transactionCommonService.getProfile(request.transactionType(),
-                request.transactionName(), request.from(), request.to(), request.filter(),
-                request.truncateLeafPercentage());
-        if (profile.getSampleCount() == 0 && request.filter() != null
+                request.transactionName(), request.from(), request.to(), request.include(),
+                request.exclude(), request.truncateLeafPercentage());
+        if (profile.getSampleCount() == 0 && request.include().isEmpty()
+                && request.exclude().isEmpty()
                 && transactionCommonService.shouldHaveProfile(request.transactionType(),
                         request.transactionName(), request.from(), request.to())) {
             return "{\"overwritten\":true}";
@@ -285,8 +286,8 @@ class TransactionJsonService {
         FlameGraphRequest request = QueryStrings.decode(queryString, FlameGraphRequest.class);
         // TODO add text filter to flame graph
         ProfileNode profile = transactionCommonService.getProfile(request.transactionType(),
-                request.transactionName(), request.from(), request.to(), null,
-                request.truncateLeafPercentage());
+                request.transactionName(), request.from(), request.to(), ImmutableList.<String>of(),
+                ImmutableList.<String>of(), request.truncateLeafPercentage());
         ProfileNode interestingNode = profile;
         while (interestingNode.hasOneChildNode()) {
             interestingNode = interestingNode.getOnlyChildNode();
@@ -578,7 +579,10 @@ class TransactionJsonService {
         abstract long to();
         abstract String transactionType();
         abstract @Nullable String transactionName();
-        abstract @Nullable String filter();
+        // intentionally not plural since maps from query string
+        abstract ImmutableList<String> include();
+        // intentionally not plural since maps from query string
+        abstract ImmutableList<String> exclude();
         abstract double truncateLeafPercentage();
     }
 
