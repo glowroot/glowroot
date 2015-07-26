@@ -58,7 +58,7 @@
 <div class="gt-transaction-sidebar">
   <div ui-view="sidebar"></div>
 </div>
-<div class="gt-transaction-main-column">
+<div class="gt-transaction-main-column" ng-style="{'min-height': (windowHeight - 160) + 'px'}">
   <div class="panel panel-default">
     <div class="panel-heading" style="word-break: break-all;">
       <h2>{{transactionName ? transactionName : 'All ' + transactionType + ' Transactions'}}</h2>
