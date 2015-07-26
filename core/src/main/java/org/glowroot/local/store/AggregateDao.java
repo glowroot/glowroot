@@ -129,14 +129,6 @@ public class AggregateDao {
         this.rollupCappedDatabases = rollupCappedDatabases;
         this.configService = configService;
 
-        // upgrade from 0.8.3 to 0.8.4
-        if (dataSource.tableExists("overall_aggregate")) {
-            dataSource.execute(
-                    "alter table overall_aggregate rename to overall_aggregate_rollup_0");
-            dataSource.execute(
-                    "alter table transaction_aggregate rename to transaction_aggregate_rollup_0");
-        }
-
         ImmutableList<RollupConfig> rollupConfigs = configService.getRollupConfigs();
         for (int i = 0; i < rollupConfigs.size(); i++) {
             String overallTableName = "overall_aggregate_rollup_" + castUntainted(i);

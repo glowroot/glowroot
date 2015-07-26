@@ -98,15 +98,6 @@ public class GaugePointDao implements GaugePointRepository {
         viewThresholdMillis2 = rollupConfigs.get(1).viewThresholdMillis();
         viewThresholdMillis3 = rollupConfigs.get(2).viewThresholdMillis();
 
-        // upgrade from 0.8 to 0.8.1
-        dataSource.renameColumn("gauge_point", "gauge_id", "gauge_meta_id");
-        dataSource.renameColumn("gauge_point_rollup_1", "gauge_id", "gauge_meta_id");
-
-        // upgrade from 0.8.3 to 0.8.4
-        if (dataSource.tableExists("gauge_point")) {
-            dataSource.execute("alter table gauge_point rename to gauge_point_rollup_0");
-        }
-
         dataSource.syncTable("gauge_point_rollup_0", gaugePointRollup0Columns);
         dataSource.syncIndexes("gauge_point_rollup_0", gaugePointRollup0Indexes);
         dataSource.syncTable("gauge_point_rollup_1", gaugePointRollupXColumns);
@@ -121,16 +112,11 @@ public class GaugePointDao implements GaugePointRepository {
                 + " last_rollup_3_time from gauge_point_last_rollup_times",
                 new LastRollupTimesExtractor());
         if (lastRollupTimes == null) {
-            // need to populate correctly in case this is upgrade from 0.8.2
-            lastRollupTime1 = dataSource.queryForLong(
-                    "select ifnull(max(capture_time), 0) from gauge_point_rollup_1");
-            lastRollupTime2 = dataSource.queryForLong(
-                    "select ifnull(max(capture_time), 0) from gauge_point_rollup_2");
-            lastRollupTime3 = dataSource.queryForLong(
-                    "select ifnull(max(capture_time), 0) from gauge_point_rollup_3");
             dataSource.update("insert into gauge_point_last_rollup_times (last_rollup_1_time, "
-                    + "last_rollup_2_time, last_rollup_3_time) values (?, ?, ?)", lastRollupTime1,
-                    lastRollupTime2, lastRollupTime3);
+                    + "last_rollup_2_time, last_rollup_3_time) values (0, 0, 0)");
+            lastRollupTime1 = 0;
+            lastRollupTime2 = 0;
+            lastRollupTime3 = 0;
         } else {
             lastRollupTime1 = lastRollupTimes[0];
             lastRollupTime2 = lastRollupTimes[1];

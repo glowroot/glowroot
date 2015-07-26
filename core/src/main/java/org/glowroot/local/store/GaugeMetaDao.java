@@ -54,8 +54,6 @@ class GaugeMetaDao {
 
     GaugeMetaDao(DataSource dataSource) throws SQLException {
         this.dataSource = dataSource;
-        // upgrade from 0.8 to 0.8.1
-        dataSource.renameTable("gauge", "gauge_meta");
         dataSource.syncTable("gauge_meta", gaugeColumns);
         dataSource.syncIndexes("gauge_meta", gaugeIndexes);
     }
