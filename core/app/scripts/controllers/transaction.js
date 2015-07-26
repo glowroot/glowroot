@@ -71,30 +71,22 @@ glowroot.controller('TransactionCtrl', [
       $scope.chartTo = revisedTo;
     };
 
-    var location;
-
     function onLocationChangeSuccess() {
-      var priorLocation = location;
-      location = {};
-      location.transactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
-      location.transactionName = $location.search()['transaction-name'];
-      location.last = Number($location.search().last);
-      location.chartFrom = Number($location.search().from);
-      location.chartTo = Number($location.search().to);
+      $scope.transactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
+      $scope.transactionName = $location.search()['transaction-name'];
+      $scope.last = Number($location.search().last);
+      $scope.chartFrom = Number($location.search().from);
+      $scope.chartTo = Number($location.search().to);
       // both from and to must be supplied or neither will take effect
-      if (location.chartFrom && location.chartTo) {
-        location.last = 0;
-      } else if (!location.last) {
-        location.last = 4 * 60 * 60 * 1000;
+      if ($scope.chartFrom && $scope.chartTo) {
+        $scope.last = 0;
+      } else if (!$scope.last) {
+        $scope.last = 4 * 60 * 60 * 1000;
       }
-      location.summarySortOrder = $location.search()['summary-sort-order'] || $scope.defaultSummarySortOrder;
+      $scope.summarySortOrder = $location.search()['summary-sort-order'] || $scope.defaultSummarySortOrder;
 
-      if (!angular.equals(location, priorLocation)) {
-        // only call applyLast if relevant change, e.g. do not call applyLast when opening trace modal
-        // (applyLast can trigger new $scope chartFrom/chartTo which triggers chart refresh)
-        angular.extend($scope, location);
-        $scope.applyLast();
-      }
+      // always re-apply last in order to reflect the latest time
+      $scope.applyLast();
     }
 
     // need to defer listener registration, otherwise captures initial location change sometimes
