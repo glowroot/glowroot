@@ -29,7 +29,6 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.collector.Aggregate;
 import org.glowroot.collector.AggregateCollector;
@@ -191,7 +190,7 @@ class TransactionCommonService {
 
     // from is INCLUSIVE
     private List<Aggregate> getAggregatesFromDao(String transactionType,
-            @Nullable String transactionName, long from, long to, @Untainted int rollupLevel)
+            @Nullable String transactionName, long from, long to, int rollupLevel)
                     throws SQLException {
         if (transactionName == null) {
             return aggregateDao.readOverallAggregates(transactionType, from, to, rollupLevel);
@@ -238,7 +237,7 @@ class TransactionCommonService {
 
     // from is non-inclusive
     private List<QueryAggregate> getQueryAggregatesFromDao(String transactionType,
-            @Nullable String transactionName, long from, long to, @Untainted int rollupLevel)
+            @Nullable String transactionName, long from, long to, int rollupLevel)
                     throws SQLException {
         if (transactionName == null) {
             return aggregateDao.readOverallQueryAggregates(transactionType, from, to, rollupLevel);
@@ -286,7 +285,7 @@ class TransactionCommonService {
 
     // from is non-inclusive
     private List<ProfileAggregate> getProfileAggregatesFromDao(String transactionType,
-            @Nullable String transactionName, long from, long to, @Untainted int rollupLevel)
+            @Nullable String transactionName, long from, long to, int rollupLevel)
                     throws SQLException {
         if (transactionName == null) {
             return aggregateDao.readOverallProfileAggregates(transactionType, from, to,

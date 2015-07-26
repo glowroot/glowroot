@@ -207,8 +207,8 @@ public class GaugePointDao implements GaugePointRepository {
     }
 
     public ImmutableList<GaugePoint> readGaugePoints(String gaugeName, long captureTimeFrom,
-            long captureTimeTo, @Untainted int rollupLevel) throws SQLException {
-        String tableName = "gauge_point_rollup_" + rollupLevel;
+            long captureTimeTo, int rollupLevel) throws SQLException {
+        String tableName = "gauge_point_rollup_" + castUntainted(rollupLevel);
         Long gaugeMetaId = gaugeMetaDao.getGaugeMetaId(gaugeName);
         if (gaugeMetaId == null) {
             // not necessarily an error, gauge id not created until first store
@@ -243,12 +243,12 @@ public class GaugePointDao implements GaugePointRepository {
         dataSource.execute("truncate table gauge_point_rollup_3");
     }
 
-    void deleteBefore(long captureTime, @Untainted int rollupLevel) throws SQLException {
-        dataSource.deleteBefore("gauge_point_rollup_" + rollupLevel, captureTime);
+    void deleteBefore(long captureTime, int rollupLevel) throws SQLException {
+        dataSource.deleteBefore("gauge_point_rollup_" + castUntainted(rollupLevel), captureTime);
     }
 
     private void rollup(long lastRollupTime, long safeRollupTime, long fixedIntervalMillis,
-            @Untainted int toRollupLevel, @Untainted int fromRollupLevel) throws SQLException {
+            int toRollupLevel, int fromRollupLevel) throws SQLException {
         // need ".0" to force double result
         String captureTimeSql = castUntainted("ceil(capture_time / " + fixedIntervalMillis
                 + ".0) * " + fixedIntervalMillis);
@@ -259,13 +259,12 @@ public class GaugePointDao implements GaugePointRepository {
     }
 
     private void rollup(long lastRollupTime, long safeRollupTime, @Untainted String captureTimeSql,
-            boolean everIncreasing, @Untainted int toRollupLevel, @Untainted int fromRollupLevel)
-                    throws SQLException {
+            boolean everIncreasing, int toRollupLevel, int fromRollupLevel) throws SQLException {
         String aggregateFunction = everIncreasing ? "max" : "avg";
-        dataSource.update("insert into gauge_point_rollup_" + toRollupLevel
+        dataSource.update("insert into gauge_point_rollup_" + castUntainted(toRollupLevel)
                 + " (gauge_meta_id, capture_time, value, count) select gauge_meta_id, "
                 + captureTimeSql + " ceil_capture_time, " + aggregateFunction
-                + "(value), count(*) from gauge_point_rollup_" + fromRollupLevel
+                + "(value), count(*) from gauge_point_rollup_" + castUntainted(fromRollupLevel)
                 + " gp, gauge_meta gm where gp.capture_time > ? and gp.capture_time <= ?"
                 + " and gp.gauge_meta_id = gm.id and gm.ever_increasing = ?"
                 + " group by gp.gauge_meta_id, ceil_capture_time", lastRollupTime, safeRollupTime,

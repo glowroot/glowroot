@@ -25,7 +25,6 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.collector.AggregateCollector;
 import org.glowroot.collector.AggregateIntervalCollector;
@@ -160,7 +159,7 @@ class ErrorCommonService {
     }
 
     private List<ErrorPoint> readErrorPointsFromDao(String transactionType,
-            @Nullable String transactionName, long from, long to, @Untainted int rollupLevel)
+            @Nullable String transactionName, long from, long to, int rollupLevel)
                     throws SQLException {
         if (transactionName == null) {
             return aggregateDao.readOverallErrorPoints(transactionType, from, to, rollupLevel);
