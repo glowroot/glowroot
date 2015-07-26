@@ -339,10 +339,16 @@ glowroot.factory('charts', [
       var value;
       var label;
       var total = 0;
+      var displayText;
       for (seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
         dataSeries = plotData[seriesIndex];
-        value = dataSeries.data[dataIndex][1];
-        total += value;
+        if (dataSeries.data[dataIndex]) {
+          value = dataSeries.data[dataIndex][1];
+          total += value;
+          displayText = display(value, dataSeries.label);
+        } else {
+          displayText = 'no data';
+        }
         html += '<tr';
         label = dataSeries.shortLabel ? dataSeries.shortLabel : dataSeries.label;
         if (seriesIndex === highlightSeriesIndex) {
@@ -354,7 +360,7 @@ glowroot.factory('charts', [
             '<div style="width: 4px; height: 0px; border: 5px solid ' + dataSeries.color + '; overflow: hidden;">' +
             '</div></div></td>' +
             '<td style="padding-right: 10px;">' + label + '</td>' +
-            '<td style="font-weight: 600;">' + display(value, dataSeries.label) + '</td>' +
+            '<td style="font-weight: 600;">' + displayText + '</td>' +
             '</tr>';
       }
       if (total === 0) {

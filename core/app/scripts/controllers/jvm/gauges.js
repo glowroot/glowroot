@@ -222,21 +222,22 @@ glowroot.controller('JvmGaugesCtrl', [
         if (gaugeDeltas[dataSeries.name]) {
           var deltas = [];
           var lastPoint;
+          if (dataSeries.data.length > 0) {
+            lastPoint = dataSeries.data[0];
+            deltas[0] = null;
+          }
           for (j = 1; j < dataSeries.data.length; j++) {
             point = dataSeries.data[j];
             if (point && lastPoint) {
-              deltas[j - 1] = [point[0], point[1] - lastPoint[1]];
+              deltas[j] = [point[0], point[1] - lastPoint[1]];
             } else {
-              deltas[j - 1] = null;
+              deltas[j] = null;
             }
             if (point) {
               lastPoint = point;
             }
           }
           dataSeries.data = deltas;
-        } else {
-          // need to remove first data point so the x-axis of the non-deltas and deltas match (when rolled up)
-          dataSeries.data.splice(0, 1);
         }
         updateYvalMap(dataSeries.name, dataSeries.data);
         if (dataSeries.data.length) {
