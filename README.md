@@ -65,7 +65,7 @@ from the following locations:
 
 ## Overhead
 
-Monitoring overhead depends on many factors, but is generally in the low microseconds per transaction. See the [glowroot-benchmark](https://github.com/glowroot/glowroot-benchmark) repository for a concrete benchmark and results.
+Monitoring overhead depends on many factors, but is generally in the low microseconds per transaction. See [https://glowroot.org/overhead.html](https://glowroot.org/overhead.html) for a concrete benchmark and results.
 
 ## Code quality
 
