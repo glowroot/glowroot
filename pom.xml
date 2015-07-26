@@ -249,6 +249,9 @@
           <configuration>
             <source>1.6</source>
             <target>1.6</target>
+            <!-- prevents endPosTable exception for maven compile due to annotation processing,
+              see http://immutables.github.io/getstarted.html -->
+            <useIncrementalCompilation>false</useIncrementalCompilation>
           </configuration>
         </plugin>
         <plugin>
