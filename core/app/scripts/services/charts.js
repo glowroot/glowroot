@@ -266,12 +266,20 @@ glowroot.factory('charts', [
             chartState.keyedColorPool.reset(labels);
             angular.forEach(data.dataSeries, function (dataSeries, index) {
               var label = labels[index];
-              plotData.push({
+              var plotDataItem = {
                 data: dataSeries.data,
                 label: label,
                 shortLabel: dataSeries.shortLabel,
                 color: chartState.keyedColorPool.get(label)
-              });
+              };
+              if (dataSeries.data.length === 1) {
+                plotDataItem.points = {
+                  show: true,
+                  radius: 3,
+                  fillColor: chartState.keyedColorPool.get(label)
+                };
+              }
+              plotData.push(plotDataItem);
             });
             if (plotData.length) {
               chartState.plot.setData(plotData);

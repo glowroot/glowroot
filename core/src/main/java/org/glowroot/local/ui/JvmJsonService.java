@@ -22,6 +22,7 @@ import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Array;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Comparator;
@@ -61,6 +62,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.GaugePoint;
 import org.glowroot.collector.PatternObjectNameQueryExp;
+import org.glowroot.common.Clock;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.common.Styles;
 import org.glowroot.config.ConfigService;
@@ -115,6 +117,7 @@ class JvmJsonService {
     private final OptionalService<ThreadAllocatedBytes> threadAllocatedBytes;
     private final OptionalService<HeapDumps> heapDumps;
     private final @Nullable String processId;
+    private final Clock clock;
 
     private final long gaugeCollectionIntervalMillis;
 
@@ -123,7 +126,7 @@ class JvmJsonService {
             TransactionCollector transactionCollector,
             OptionalService<ThreadAllocatedBytes> threadAllocatedBytes,
             OptionalService<HeapDumps> heapDumps, @Nullable String processId,
-            long gaugeCollectionIntervalMillis) {
+            long gaugeCollectionIntervalMillis, Clock clock) {
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
         this.gaugePointDao = gaugePointDao;
         this.configService = configService;
@@ -133,6 +136,7 @@ class JvmJsonService {
         this.heapDumps = heapDumps;
         this.processId = processId;
         this.gaugeCollectionIntervalMillis = gaugeCollectionIntervalMillis;
+        this.clock = clock;
     }
 
     @GET("/backend/jvm/gauge-points")
@@ -150,10 +154,11 @@ class JvmJsonService {
         long revisedFrom = request.from() - 2 * intervalMillis;
         long revisedTo = request.to() + intervalMillis;
 
+        long liveCaptureTime = clock.currentTimeMillis();
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         for (String gaugeName : request.gaugeNames()) {
-            ImmutableList<GaugePoint> gaugePoints = gaugePointDao.readGaugePoints(gaugeName,
-                    revisedFrom, revisedTo, rollupLevel);
+            List<GaugePoint> gaugePoints =
+                    getGaugePoints(revisedFrom, revisedTo, gaugeName, rollupLevel, liveCaptureTime);
             dataSeriesList.add(convertToDataSeriesWithGaps(gaugeName, gaugePoints, gapMillis));
         }
 
@@ -456,6 +461,24 @@ class JvmJsonService {
         return sb.toString();
     }
 
+    private List<GaugePoint> getGaugePoints(long from, long to, String gaugeName, int rollupLevel,
+            long liveCaptureTime) throws SQLException {
+        ImmutableList<GaugePoint> gaugePoints =
+                gaugePointDao.readGaugePoints(gaugeName, from, to, rollupLevel);
+        if (rollupLevel == 0) {
+            return gaugePoints;
+        }
+        long nonRolledUpFrom = from;
+        if (!gaugePoints.isEmpty()) {
+            long lastRolledUpTime = gaugePoints.get(gaugePoints.size() - 1).captureTime();
+            nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
+        }
+        List<GaugePoint> allGaugePoints = Lists.newArrayList(gaugePoints);
+        allGaugePoints.addAll(gaugePointDao.readManuallyRolledUpGaugePoints(nonRolledUpFrom, to,
+                gaugeName, rollupLevel, liveCaptureTime));
+        return allGaugePoints;
+    }
+
     private List<String> getMatchingMBeanObjectNames(String mbeanObjectName)
             throws InterruptedException {
         if (!mbeanObjectName.contains("*")) {
@@ -494,7 +517,7 @@ class JvmJsonService {
     }
 
     private static DataSeries convertToDataSeriesWithGaps(String dataSeriesName,
-            ImmutableList<GaugePoint> gaugePoints, double gapMillis) {
+            List<GaugePoint> gaugePoints, double gapMillis) {
         DataSeries dataSeries = new DataSeries(dataSeriesName);
         GaugePoint lastGaugePoint = null;
         for (GaugePoint gaugePoint : gaugePoints) {

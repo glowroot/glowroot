@@ -83,17 +83,17 @@ class GaugeMetaDao {
     }
 
     @Nullable
-    Long getGaugeMetaId(String gaugeName) throws SQLException {
+    GaugeMeta getGaugeMetaId(String gaugeName) throws SQLException {
         GaugeMeta gaugeMeta = gaugeMetas.getIfPresent(gaugeName);
         if (gaugeMeta != null) {
-            return gaugeMeta.id();
+            return gaugeMeta;
         }
         gaugeMeta = readGaugeMeta(gaugeName);
         if (gaugeMeta == null) {
             return null;
         }
         gaugeMetas.put(gaugeName, gaugeMeta);
-        return gaugeMeta.id();
+        return gaugeMeta;
     }
 
     private @Nullable GaugeMeta readGaugeMeta(String gaugeName) throws SQLException {

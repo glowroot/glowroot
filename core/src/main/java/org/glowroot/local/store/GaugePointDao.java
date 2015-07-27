@@ -22,6 +22,7 @@ import java.sql.Types;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.collector.GaugePoint;
@@ -195,8 +196,8 @@ public class GaugePointDao implements GaugePointRepository {
     public ImmutableList<GaugePoint> readGaugePoints(String gaugeName, long captureTimeFrom,
             long captureTimeTo, int rollupLevel) throws SQLException {
         String tableName = "gauge_point_rollup_" + castUntainted(rollupLevel);
-        Long gaugeMetaId = gaugeMetaDao.getGaugeMetaId(gaugeName);
-        if (gaugeMetaId == null) {
+        GaugeMeta gaugeMeta = gaugeMetaDao.getGaugeMetaId(gaugeName);
+        if (gaugeMeta == null) {
             // not necessarily an error, gauge id not created until first store
             return ImmutableList.of();
         }
@@ -205,8 +206,47 @@ public class GaugePointDao implements GaugePointRepository {
         // in which case a duplicate entry will occur after the next startup
         return dataSource.query("select distinct capture_time, value from " + tableName
                 + " where gauge_meta_id = ? and capture_time >= ? and capture_time <= ?"
-                + " order by capture_time", new GaugePointRowMapper(gaugeName), gaugeMetaId,
+                + " order by capture_time", new GaugePointRowMapper(gaugeName), gaugeMeta.id(),
                 captureTimeFrom, captureTimeTo);
+    }
+
+    public List<GaugePoint> readManuallyRolledUpGaugePoints(long from, long to,
+            String gaugeName, int rollupLevel, long liveCaptureTime) throws SQLException {
+        long fixedIntervalMillis;
+        if (rollupLevel == 1) {
+            fixedIntervalMillis = fixedIntervalMillis1;
+        } else if (rollupLevel == 2) {
+            fixedIntervalMillis = fixedIntervalMillis2;
+        } else if (rollupLevel == 3) {
+            fixedIntervalMillis = fixedIntervalMillis3;
+        } else {
+            throw new IllegalArgumentException("Unexpected rollupLevel: " + rollupLevel);
+        }
+        GaugeMeta gaugeMeta = gaugeMetaDao.getGaugeMetaId(gaugeName);
+        if (gaugeMeta == null) {
+            // not necessarily an error, gauge id not created until first store
+            return ImmutableList.of();
+        }
+        String aggregateFunction = gaugeMeta.everIncreasing() ? "max" : "avg";
+        // need ".0" to force double result
+        String captureTimeSql = castUntainted("ceil(capture_time / " + fixedIntervalMillis
+                + ".0) * " + fixedIntervalMillis);
+        ImmutableList<GaugePoint> gaugePoints = dataSource.query("select " + captureTimeSql
+                + " ceil_capture_time, " + aggregateFunction + "(value) from gauge_point_rollup_0"
+                + " where gauge_meta_id = ? and capture_time > ? and capture_time <= ?"
+                + " group by ceil_capture_time order by ceil_capture_time",
+                new GaugePointRowMapper(gaugeName), gaugeMeta.id(), from, to);
+        if (gaugePoints.isEmpty()) {
+            return ImmutableList.of();
+        }
+        GaugePoint lastGaugePoint = gaugePoints.get(gaugePoints.size() - 1);
+        if (lastGaugePoint.captureTime() <= liveCaptureTime) {
+            return gaugePoints;
+        }
+        List<GaugePoint> correctedGaugePoints = Lists.newArrayList(gaugePoints);
+        correctedGaugePoints.set(correctedGaugePoints.size() - 1,
+                lastGaugePoint.withCaptureTime(liveCaptureTime));
+        return correctedGaugePoints;
     }
 
     public int getRollupLevelForView(long from, long to) {

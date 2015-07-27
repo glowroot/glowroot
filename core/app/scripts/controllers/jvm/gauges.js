@@ -220,7 +220,9 @@ glowroot.controller('JvmGaugesCtrl', [
           var lastPoint;
           if (dataSeries.data.length > 0) {
             lastPoint = dataSeries.data[0];
-            deltas[0] = null;
+            // 2x the rollup interval prior to chartFrom is returned from server, so if the first datapoint is
+            // even visible, that means there was significant gap prior and makes sense to diff delta with 0
+            deltas[0] = dataSeries.data[0];
           }
           for (j = 1; j < dataSeries.data.length; j++) {
             point = dataSeries.data[j];
@@ -499,6 +501,8 @@ glowroot.controller('JvmGaugesCtrl', [
             return tooltip;
           }
           var from = xval - chartState.dataPointIntervalMillis;
+          // this math is to deal with active aggregate
+          from = Math.ceil(from / chartState.dataPointIntervalMillis) * chartState.dataPointIntervalMillis;
           var to = xval;
           return charts.renderTooltipHtml(from, to, undefined, flotItem.dataIndex, flotItem.seriesIndex,
               chartState.plot, function (value, label) {

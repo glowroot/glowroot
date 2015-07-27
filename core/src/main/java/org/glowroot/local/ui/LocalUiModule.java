@@ -99,7 +99,8 @@ public class LocalUiModule {
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
                 gaugePointDao, configService, transactionRegistry, transactionCollector,
                 jvmModule.getThreadAllocatedBytes(), jvmModule.getHeapDumps(),
-                jvmModule.getProcessId(), collectorModule.getGaugeCollectionIntervalMillis());
+                jvmModule.getProcessId(), collectorModule.getGaugeCollectionIntervalMillis(),
+                clock);
         ConfigJsonService configJsonService = new ConfigJsonService(configService,
                 storageModule.getRollupCappedDatabases(), storageModule.getTraceCappedDatabase(),
                 configModule.getPluginDescriptors(), httpSessionManager, transactionModule,
