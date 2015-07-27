@@ -45,6 +45,9 @@
                style="position: absolute; width: 100%; bottom: 70px;">
           </div>
         </div>
+        <div style="height: 2px; border-top: 1px solid #eee;"
+             ng-show="transactionSummaries.length">
+        </div>
         <div gt-sidebar-item
              ng-show="transactionSummaries.length"
              gt-display="{{'All ' + transactionType + ' Transactions'}}"
@@ -52,6 +55,9 @@
              gt-url="{{currentTabUrl()}}{{sidebarQueryString(null)}}"
              gt-active="!transactionName"
              gt-active-refresh="refreshActiveItem()">
+        </div>
+        <div style="height: 3px;"
+             ng-show="transactionSummaries.length">
         </div>
         <div gt-sidebar-item
              ng-repeat="transactionSummary in transactionSummaries"
