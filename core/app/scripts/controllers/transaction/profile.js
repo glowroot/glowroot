@@ -49,6 +49,9 @@ glowroot.controller('TransactionProfileCtrl', [
       query['transaction-name'] = $scope.transactionName;
       query.from = $scope.chartFrom;
       query.to = $scope.chartTo;
+      if ($scope.filter) {
+        query.filter = $scope.filter;
+      }
       return queryStrings.encodeObject(query);
     };
 

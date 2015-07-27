@@ -22,8 +22,16 @@
     Flame graph (experimental)
   </div>
 </div>
+<div ng-if="filter" style="margin-bottom: 20px;">
+  <div style="font-size: 20px; font-weight: bold;">
+    Profile tree filter: {{filter}}
+  </div>
+  <div ng-if="parsingError" class="gt-red" style="margin-top: 10px; margin-bottom: -5px;">
+    {{parsingError}}
+  </div>
+</div>
 <div class="icicle">
-  <div id="info">
+  <div id="info" ng-if="!parsingError">
     Hover over a block for summary information. Click a block for details.
     <div class="svTooltip" id="svTooltip"></div>
   </div>

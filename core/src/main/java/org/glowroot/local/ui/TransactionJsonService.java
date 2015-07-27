@@ -284,10 +284,9 @@ class TransactionJsonService {
     @GET("/backend/transaction/flame-graph")
     String getFlameGraph(String queryString) throws Exception {
         FlameGraphRequest request = QueryStrings.decode(queryString, FlameGraphRequest.class);
-        // TODO add text filter to flame graph
         ProfileNode profile = transactionCommonService.getProfile(request.transactionType(),
-                request.transactionName(), request.from(), request.to(), ImmutableList.<String>of(),
-                ImmutableList.<String>of(), request.truncateLeafPercentage());
+                request.transactionName(), request.from(), request.to(), request.include(),
+                request.exclude(), request.truncateLeafPercentage());
         ProfileNode interestingNode = profile;
         while (interestingNode.hasOneChildNode()) {
             interestingNode = interestingNode.getOnlyChildNode();
@@ -592,6 +591,10 @@ class TransactionJsonService {
         abstract long to();
         abstract String transactionType();
         abstract @Nullable String transactionName();
+        // intentionally not plural since maps from query string
+        abstract ImmutableList<String> include();
+        // intentionally not plural since maps from query string
+        abstract ImmutableList<String> exclude();
         abstract double truncateLeafPercentage();
     }
 
