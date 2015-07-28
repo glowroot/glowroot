@@ -59,7 +59,7 @@ public class ErrorCaptureTest {
     public void shouldCaptureError() throws Exception {
         // given
         GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        generalConfig.setTraceStoreThresholdMillis(10000);
+        generalConfig.setSlowTraceThresholdMillis(10000);
         container.getConfigService().updateGeneralConfig(generalConfig);
         // when
         container.executeAppUnderTest(ShouldCaptureError.class);

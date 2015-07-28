@@ -106,7 +106,7 @@ public class PluginServicesImplOutsideTxTest {
 
     @Test
     public void testSetTraceStoreThreshold() {
-        pluginServices.setTraceStoreThreshold(1, SECONDS);
+        pluginServices.setSlowTraceThreshold(1, SECONDS);
     }
 
     @Test

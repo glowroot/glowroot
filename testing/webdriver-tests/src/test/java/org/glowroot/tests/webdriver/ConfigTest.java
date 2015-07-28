@@ -40,8 +40,8 @@ public class ConfigTest extends WebDriverTest {
         globalNavbar.getConfigurationLink().click();
 
         // when
-        page.getStoreThresholdTextField().clear();
-        page.getStoreThresholdTextField().sendKeys("2345");
+        page.getSlowTraceThresholdTextField().clear();
+        page.getSlowTraceThresholdTextField().sendKeys("2345");
         page.getProfilingIntervalTextField().clear();
         page.getProfilingIntervalTextField().sendKeys("3456");
         page.getDefaultDisplayedPercentilesTextField().clear();
@@ -51,7 +51,7 @@ public class ConfigTest extends WebDriverTest {
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
-        assertThat(page.getStoreThresholdTextField().getAttribute("value")).isEqualTo("2345");
+        assertThat(page.getSlowTraceThresholdTextField().getAttribute("value")).isEqualTo("2345");
         assertThat(page.getProfilingIntervalTextField().getAttribute("value")).isEqualTo("3456");
         assertThat(page.getDefaultDisplayedPercentilesTextField().getAttribute("value"))
                 .isEqualTo("3, 4, 5, 6");

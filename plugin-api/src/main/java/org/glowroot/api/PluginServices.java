@@ -307,7 +307,7 @@ public abstract class PluginServices {
     public abstract void addTransactionCustomAttribute(String name, @Nullable String value);
 
     /**
-     * Overrides the default trace store threshold (Configuration &gt; Traces &gt; Default store
+     * Overrides the default slow trace threshold (Configuration &gt; General &gt; Slow trace
      * threshold) for the current transaction. This can be used to store particular traces at a
      * lower or higher threshold than the general threshold.
      * 
@@ -316,7 +316,7 @@ public abstract class PluginServices {
      * 
      * If there is no current transaction, this method does nothing.
      */
-    public abstract void setTraceStoreThreshold(long threshold, TimeUnit unit);
+    public abstract void setSlowTraceThreshold(long threshold, TimeUnit unit);
 
     /**
      * Returns whether a transaction is already being captured.

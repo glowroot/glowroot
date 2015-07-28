@@ -94,7 +94,7 @@ public class LocalContainer implements Container {
         } catch (org.glowroot.GlowrootModule.StartupFailedException e) {
             throw new StartupFailedException(e);
         }
-        JavaagentMain.setTraceStoreThresholdMillisToZero();
+        JavaagentMain.setSlowTraceThresholdMillisToZero();
         final GlowrootModule glowrootModule = MainEntryPoint.getGlowrootModule();
         checkNotNull(glowrootModule);
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
@@ -204,8 +204,8 @@ public class LocalContainer implements Container {
     @Override
     public void checkAndResetConfigOnly() throws Exception {
         configService.resetAllConfig();
-        // traceStoreThresholdMillis=0 is the default for testing
-        configService.setTraceStoreThresholdMillis(0);
+        // slowTraceThresholdMillis=0 is the default for testing
+        configService.setSlowTraceThresholdMillis(0);
         // check and reset log messages
         MessageCount logMessageCount = SpyingLogbackFilter.clearMessages();
         if (logMessageCount.expectedCount() > 0) {

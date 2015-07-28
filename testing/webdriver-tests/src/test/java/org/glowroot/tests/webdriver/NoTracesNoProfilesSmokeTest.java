@@ -28,7 +28,7 @@ public class NoTracesNoProfilesSmokeTest extends WebDriverTest {
     public static void setUp() throws Exception {
         container.checkAndReset();
         GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        generalConfig.setTraceStoreThresholdMillis(Integer.MAX_VALUE);
+        generalConfig.setSlowTraceThresholdMillis(Integer.MAX_VALUE);
         generalConfig.setProfilingIntervalMillis(0);
         container.getConfigService().updateGeneralConfig(generalConfig);
         container.executeAppUnderTest(JdbcServlet.class);

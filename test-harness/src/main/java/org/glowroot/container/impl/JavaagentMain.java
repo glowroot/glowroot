@@ -40,8 +40,8 @@ public class JavaagentMain {
         if (viewerMode) {
             startViewer();
         } else {
-            // traceStoreThresholdMillis=0 is the default for testing
-            setTraceStoreThresholdMillisToZero();
+            // slowTraceThresholdMillis=0 is the default for testing
+            setSlowTraceThresholdMillisToZero();
         }
         int port = Integer.parseInt(args[0]);
         // socket is never closed since program is still running after main returns
@@ -62,7 +62,7 @@ public class JavaagentMain {
         }
     }
 
-    static void setTraceStoreThresholdMillisToZero() throws Exception {
+    static void setSlowTraceThresholdMillisToZero() throws Exception {
         GlowrootModule glowrootModule = MainEntryPoint.getGlowrootModule();
         if (glowrootModule == null) {
             // failed to start, e.g. DataSourceLockTest
@@ -73,8 +73,8 @@ public class JavaagentMain {
         GeneralConfig config = configService.getGeneralConfig();
         // conditional check is needed to prevent config file timestamp update when testing
         // ConfigFileLastModifiedTest.shouldNotUpdateFileOnStartupIfNoChanges()
-        if (config.traceStoreThresholdMillis() != 0) {
-            GeneralConfig updatedConfig = config.withTraceStoreThresholdMillis(0);
+        if (config.slowTraceThresholdMillis() != 0) {
+            GeneralConfig updatedConfig = config.withSlowTraceThresholdMillis(0);
             configService.updateGeneralConfig(updatedConfig, config.version());
         }
     }

@@ -76,7 +76,7 @@ public class StoreBenchmark {
         rootTraceEntry = pluginServices.startTransaction("Microbenchmark", "micro transaction",
                 MessageSupplier.from("micro transaction"), timerName);
         if (store) {
-            pluginServices.setTraceStoreThreshold(0, MILLISECONDS);
+            pluginServices.setSlowTraceThreshold(0, MILLISECONDS);
         }
         TraceEntryWorthy traceEntryWorthy = new TraceEntryWorthy();
         for (int i = 0; i < traceEntryCount; i++) {

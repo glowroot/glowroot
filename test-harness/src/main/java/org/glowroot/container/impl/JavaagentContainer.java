@@ -219,8 +219,8 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
     @Override
     public void checkAndResetConfigOnly() throws Exception {
         configService.resetAllConfig();
-        // traceStoreThresholdMillis=0 is the default for testing
-        configService.setTraceStoreThresholdMillis(0);
+        // slowTraceThresholdMillis=0 is the default for testing
+        configService.setSlowTraceThresholdMillis(0);
         // check and reset log messages
         MessageCount logMessageCount = (MessageCount) socketCommander
                 .sendCommand(SocketCommandProcessor.CLEAR_LOG_MESSAGES);

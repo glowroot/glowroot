@@ -495,15 +495,15 @@ public class AdviceGenerator {
                     "(Ljava/lang/String;Ljava/lang/String;)V",
                     false);
         }
-        Long traceStoreThresholdMillis = config.traceStoreThresholdMillis();
-        if (traceStoreThresholdMillis != null) {
+        Long slowTraceThresholdMillis = config.slowTraceThresholdMillis();
+        if (slowTraceThresholdMillis != null) {
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
                     "Lorg/glowroot/api/PluginServices;");
-            mv.visitLdcInsn(traceStoreThresholdMillis);
+            mv.visitLdcInsn(slowTraceThresholdMillis);
             mv.visitFieldInsn(GETSTATIC, "java/util/concurrent/TimeUnit", "MILLISECONDS",
                     "Ljava/util/concurrent/TimeUnit;");
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/api/PluginServices",
-                    "setTraceStoreThreshold", "(JLjava/util/concurrent/TimeUnit;)V", false);
+                    "setSlowTraceThreshold", "(JLjava/util/concurrent/TimeUnit;)V", false);
 
         }
     }

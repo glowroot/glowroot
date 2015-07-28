@@ -64,7 +64,7 @@ public class SetTraceStoreThresholdTest {
     public void shouldReadTrace() throws Exception {
         // given
         GeneralConfig config = container.getConfigService().getGeneralConfig();
-        config.setTraceStoreThresholdMillis(Integer.MAX_VALUE);
+        config.setSlowTraceThresholdMillis(Integer.MAX_VALUE);
         container.getConfigService().updateGeneralConfig(config);
         // when
         container.executeAppUnderTest(SetLargeAndThenSmallTraceStoreThreshold.class);
@@ -77,7 +77,7 @@ public class SetTraceStoreThresholdTest {
     public void shouldReadTrace2() throws Exception {
         // given
         GeneralConfig config = container.getConfigService().getGeneralConfig();
-        config.setTraceStoreThresholdMillis(Integer.MAX_VALUE);
+        config.setSlowTraceThresholdMillis(Integer.MAX_VALUE);
         container.getConfigService().updateGeneralConfig(config);
         // when
         container.executeAppUnderTest(SetSmallAndThenLargeTraceStoreThreshold.class);
@@ -95,7 +95,7 @@ public class SetTraceStoreThresholdTest {
         }
         @Override
         public void traceMarker() {
-            pluginServices.setTraceStoreThreshold(Long.MAX_VALUE, MILLISECONDS);
+            pluginServices.setSlowTraceThreshold(Long.MAX_VALUE, MILLISECONDS);
             new LevelOne().call("a", "b");
         }
     }
@@ -110,8 +110,8 @@ public class SetTraceStoreThresholdTest {
         }
         @Override
         public void traceMarker() {
-            pluginServices.setTraceStoreThreshold(Long.MAX_VALUE, MILLISECONDS);
-            pluginServices.setTraceStoreThreshold(0, MILLISECONDS);
+            pluginServices.setSlowTraceThreshold(Long.MAX_VALUE, MILLISECONDS);
+            pluginServices.setSlowTraceThreshold(0, MILLISECONDS);
             new LevelOne().call("a", "b");
         }
     }
@@ -126,8 +126,8 @@ public class SetTraceStoreThresholdTest {
         }
         @Override
         public void traceMarker() {
-            pluginServices.setTraceStoreThreshold(0, MILLISECONDS);
-            pluginServices.setTraceStoreThreshold(Long.MAX_VALUE, MILLISECONDS);
+            pluginServices.setSlowTraceThreshold(0, MILLISECONDS);
+            pluginServices.setSlowTraceThreshold(Long.MAX_VALUE, MILLISECONDS);
             new LevelOne().call("a", "b");
         }
     }

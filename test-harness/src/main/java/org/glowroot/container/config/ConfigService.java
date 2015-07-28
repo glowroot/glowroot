@@ -243,13 +243,13 @@ public class ConfigService {
 
     public void resetAllConfig() throws Exception {
         httpClient.post("/backend/admin/reset-all-config", "");
-        // traceStoreThresholdMillis=0 is by far the most useful setting for testing
-        setTraceStoreThresholdMillis(0);
+        // slowTraceThresholdMillis=0 is by far the most useful setting for testing
+        setSlowTraceThresholdMillis(0);
     }
 
-    public void setTraceStoreThresholdMillis(int traceStoreThresholdMillis) throws Exception {
+    public void setSlowTraceThresholdMillis(int slowTraceThresholdMillis) throws Exception {
         GeneralConfig generalConfig = getGeneralConfig();
-        generalConfig.setTraceStoreThresholdMillis(traceStoreThresholdMillis);
+        generalConfig.setSlowTraceThresholdMillis(slowTraceThresholdMillis);
         updateGeneralConfig(generalConfig);
     }
 

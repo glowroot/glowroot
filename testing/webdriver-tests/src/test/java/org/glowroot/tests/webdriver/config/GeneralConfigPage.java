@@ -33,8 +33,8 @@ public class GeneralConfigPage {
         this.driver = driver;
     }
 
-    public WebElement getStoreThresholdTextField() {
-        return withWait(xpath("//div[@gt-label='Trace store threshold']//input"));
+    public WebElement getSlowTraceThresholdTextField() {
+        return withWait(xpath("//div[@gt-label='Slow trace threshold']//input"));
     }
 
     public WebElement getProfilingIntervalTextField() {

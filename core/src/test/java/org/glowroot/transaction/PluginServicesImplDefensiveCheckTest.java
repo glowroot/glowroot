@@ -133,8 +133,8 @@ public class PluginServicesImplDefensiveCheckTest {
 
     @Test
     public void testSetTraceStoreThreshold() {
-        pluginServices.setTraceStoreThreshold(-1, SECONDS);
-        pluginServices.setTraceStoreThreshold(1, null);
+        pluginServices.setSlowTraceThreshold(-1, SECONDS);
+        pluginServices.setSlowTraceThreshold(1, null);
     }
 
     @Test

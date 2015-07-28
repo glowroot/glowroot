@@ -88,7 +88,7 @@ public abstract class InstrumentationConfigBase {
 
     public abstract Map<String, String> transactionCustomAttributeTemplates();
 
-    public abstract @Nullable Long traceStoreThresholdMillis();
+    public abstract @Nullable Long slowTraceThresholdMillis();
 
     // enabledProperty and traceEntryEnabledProperty are for plugin authors
     @Value.Default

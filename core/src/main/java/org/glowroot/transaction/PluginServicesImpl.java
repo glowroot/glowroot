@@ -367,7 +367,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
     }
 
     @Override
-    public void setTraceStoreThreshold(long threshold, TimeUnit unit) {
+    public void setSlowTraceThreshold(long threshold, TimeUnit unit) {
         if (threshold < 0) {
             logger.error("setTraceStoreThreshold(): argument 'threshold' must be non-negative");
             return;
@@ -379,7 +379,7 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
             int thresholdMillis = Ints.saturatedCast(unit.toMillis(threshold));
-            transaction.setTraceStoreThresholdMillisOverride(thresholdMillis);
+            transaction.setSlowTraceThresholdMillisOverride(thresholdMillis);
         }
     }
 

@@ -63,7 +63,7 @@ public class InstrumentationConfigTest extends WebDriverTest {
                 .isEqualTo("a type");
         assertThat(configPage.getTransactionNameTemplateTextField().getAttribute("value"))
                 .isEqualTo("a trace");
-        assertThat(configPage.getTraceStoreThresholdMillisTextField()
+        assertThat(configPage.getSlowTraceThresholdMillisTextField()
                 .getAttribute("value")).isEqualTo("123");
     }
 
@@ -172,8 +172,8 @@ public class InstrumentationConfigTest extends WebDriverTest {
         configPage.getTransactionTypeTextField().sendKeys("a type");
         configPage.getTransactionNameTemplateTextField().clear();
         configPage.getTransactionNameTemplateTextField().sendKeys("a trace");
-        configPage.getTraceStoreThresholdMillisTextField().clear();
-        configPage.getTraceStoreThresholdMillisTextField().sendKeys("123");
+        configPage.getSlowTraceThresholdMillisTextField().clear();
+        configPage.getSlowTraceThresholdMillisTextField().sendKeys("123");
         configPage.clickAddButton();
     }
 
