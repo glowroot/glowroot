@@ -30,7 +30,6 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class GeneralConfig {
 
-    private boolean enabled;
     private int traceStoreThresholdMillis;
     private int profilingIntervalMillis;
     private String defaultDisplayedTransactionType = "";
@@ -40,14 +39,6 @@ public class GeneralConfig {
 
     private GeneralConfig(String version) {
         this.version = version;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
     }
 
     public int getTraceStoreThresholdMillis() {
@@ -93,8 +84,7 @@ public class GeneralConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(enabled, that.enabled)
-                    && Objects.equal(traceStoreThresholdMillis, that.traceStoreThresholdMillis)
+            return Objects.equal(traceStoreThresholdMillis, that.traceStoreThresholdMillis)
                     && Objects.equal(profilingIntervalMillis, that.profilingIntervalMillis)
                     && Objects.equal(defaultDisplayedTransactionType,
                             that.defaultDisplayedTransactionType)
@@ -108,14 +98,13 @@ public class GeneralConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(enabled, traceStoreThresholdMillis, profilingIntervalMillis,
+        return Objects.hashCode(traceStoreThresholdMillis, profilingIntervalMillis,
                 defaultDisplayedTransactionType, defaultDisplayedPercentiles);
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("enabled", enabled)
                 .add("traceStoreThresholdMillis", traceStoreThresholdMillis)
                 .add("profilingIntervalMillis", profilingIntervalMillis)
                 .add("defaultDisplayedTransactionType", defaultDisplayedTransactionType)
@@ -126,20 +115,17 @@ public class GeneralConfig {
 
     @JsonCreator
     static GeneralConfig readValue(
-            @JsonProperty("enabled") @Nullable Boolean enabled,
             @JsonProperty("traceStoreThresholdMillis") @Nullable Integer traceStoreThresholdMillis,
             @JsonProperty("profilingIntervalMillis") @Nullable Integer profilingIntervalMillis,
             @JsonProperty("defaultDisplayedTransactionType") @Nullable String defaultDisplayedTransactionType,
             @JsonProperty("defaultDisplayedPercentiles") @Nullable List<Double> defaultDisplayedPercentiles,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(enabled, "enabled");
         checkRequiredProperty(traceStoreThresholdMillis, "traceStoreThresholdMillis");
         checkRequiredProperty(profilingIntervalMillis, "profilingIntervalMillis");
         checkRequiredProperty(defaultDisplayedTransactionType, "defaultDisplayedTransactionType");
         checkRequiredProperty(defaultDisplayedPercentiles, "defaultDisplayedPercentiles");
         checkRequiredProperty(version, "version");
         GeneralConfig config = new GeneralConfig(version);
-        config.setEnabled(enabled);
         config.setTraceStoreThresholdMillis(traceStoreThresholdMillis);
         config.setProfilingIntervalMillis(profilingIntervalMillis);
         config.setDefaultDisplayedTransactionType(defaultDisplayedTransactionType);

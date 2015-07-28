@@ -43,7 +43,6 @@ class StackTraceCollector implements Runnable {
     private final ConfigService configService;
     private final ScheduledExecutorService scheduledExecutor;
 
-    private volatile boolean currentEnabled;
     private volatile int currentIntervalMillis;
     private volatile @Nullable Future<?> currentFuture;
 
@@ -78,17 +77,15 @@ class StackTraceCollector implements Runnable {
     }
 
     private void updateScheduleIfNeeded() {
-        boolean newEnabled = configService.getGeneralConfig().enabled();
         int newIntervalMillis = configService.getGeneralConfig().profilingIntervalMillis();
-        if (newEnabled != currentEnabled || newIntervalMillis != currentIntervalMillis) {
+        if (newIntervalMillis != currentIntervalMillis) {
             if (currentFuture != null) {
                 currentFuture.cancel(false);
             }
-            if (newEnabled && newIntervalMillis > 0) {
+            if (newIntervalMillis > 0) {
                 currentFuture = scheduledExecutor.scheduleAtFixedRate(this, newIntervalMillis,
                         newIntervalMillis, MILLISECONDS);
             }
-            currentEnabled = newEnabled;
             currentIntervalMillis = newIntervalMillis;
         }
     }

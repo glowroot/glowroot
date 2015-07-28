@@ -22,19 +22,6 @@ import org.immutables.value.Value;
 @Value.Immutable
 public abstract class GeneralConfigBase {
 
-    // if tracing is disabled mid-trace there should be no issue
-    // active traces will not accumulate additional entries
-    // but they will be stored if they exceed the defined thresholds
-    //
-    // if tracing is enabled mid-trace there should be no issue
-    // active traces that were not captured at their start will
-    // continue not to accumulate entries
-    // and they will not be stored even if they exceed the defined thresholds
-    @Value.Default
-    public boolean enabled() {
-        return true;
-    }
-
     // 0 means store all traces
     @Value.Default
     public int traceStoreThresholdMillis() {

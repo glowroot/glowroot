@@ -44,7 +44,6 @@ import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.common.Clock;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.GeneralConfig;
 import org.glowroot.config.PluginConfig;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.jvm.ThreadAllocatedBytes;
@@ -391,15 +390,14 @@ class PluginServicesImpl extends PluginServices implements ConfigListener {
 
     @Override
     public void onChange() {
-        GeneralConfig generalConfig = configService.getGeneralConfig();
         if (pluginId == null) {
-            enabled = generalConfig.enabled();
+            enabled = true;
         } else {
             PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
             // pluginConfig should not be null since pluginId was already validated
             // at construction time and plugins cannot be removed (or their ids changed) at runtime
             checkNotNull(pluginConfig);
-            enabled = generalConfig.enabled() && pluginConfig.enabled();
+            enabled = pluginConfig.enabled();
             this.pluginConfig = pluginConfig;
         }
         AdvancedConfig advancedConfig = configService.getAdvancedConfig();

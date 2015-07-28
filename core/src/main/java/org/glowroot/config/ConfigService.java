@@ -196,19 +196,13 @@ public class ConfigService {
 
     public String updateGeneralConfig(GeneralConfig generalConfig, String priorVersion)
             throws Exception {
-        boolean notifyPluginConfigListeners;
         synchronized (writeLock) {
             checkVersionsEqual(config.generalConfig().version(), priorVersion);
-            boolean previousEnabled = config.generalConfig().enabled();
             Config updatedConfig = config.withGeneralConfig(generalConfig);
             configFile.write(updatedConfig);
             config = updatedConfig;
-            notifyPluginConfigListeners = config.generalConfig().enabled() != previousEnabled;
         }
         notifyConfigListeners();
-        if (notifyPluginConfigListeners) {
-            notifyAllPluginConfigListeners();
-        }
         return generalConfig.version();
     }
 

@@ -337,7 +337,6 @@ public class ConfigTest {
     }
 
     private static void updateAllFields(GeneralConfig config) {
-        config.setEnabled(!config.isEnabled());
         config.setTraceStoreThresholdMillis(config.getTraceStoreThresholdMillis() + 1);
         config.setProfilingIntervalMillis(config.getProfilingIntervalMillis() + 1);
         config.setDefaultDisplayedTransactionType(

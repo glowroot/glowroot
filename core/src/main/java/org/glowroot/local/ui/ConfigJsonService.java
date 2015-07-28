@@ -492,7 +492,6 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class GeneralConfigDtoBase {
 
-        abstract boolean enabled();
         abstract int traceStoreThresholdMillis();
         abstract int profilingIntervalMillis();
         abstract String defaultDisplayedTransactionType();
@@ -501,7 +500,6 @@ class ConfigJsonService {
 
         GeneralConfig toConfig() {
             return GeneralConfig.builder()
-                    .enabled(enabled())
                     .traceStoreThresholdMillis(traceStoreThresholdMillis())
                     .profilingIntervalMillis(profilingIntervalMillis())
                     .defaultDisplayedTransactionType(defaultDisplayedTransactionType())
@@ -511,7 +509,6 @@ class ConfigJsonService {
         }
         private static GeneralConfigDto fromConfig(GeneralConfig config) {
             return GeneralConfigDto.builder()
-                    .enabled(config.enabled())
                     .traceStoreThresholdMillis(config.traceStoreThresholdMillis())
                     .profilingIntervalMillis(config.profilingIntervalMillis())
                     .defaultDisplayedTransactionType(config.defaultDisplayedTransactionType())

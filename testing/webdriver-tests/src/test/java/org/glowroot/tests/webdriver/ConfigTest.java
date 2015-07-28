@@ -40,7 +40,6 @@ public class ConfigTest extends WebDriverTest {
         globalNavbar.getConfigurationLink().click();
 
         // when
-        page.getEnabledSwitchOff().click();
         page.getStoreThresholdTextField().clear();
         page.getStoreThresholdTextField().sendKeys("2345");
         page.getProfilingIntervalTextField().clear();
@@ -52,9 +51,6 @@ public class ConfigTest extends WebDriverTest {
         // then
         app.open();
         globalNavbar.getConfigurationLink().click();
-        assertThat(page.getEnabledSwitchOn().getAttribute("class").split(" "))
-                .doesNotContain("active");
-        assertThat(page.getEnabledSwitchOff().getAttribute("class").split(" ")).contains("active");
         assertThat(page.getStoreThresholdTextField().getAttribute("value")).isEqualTo("2345");
         assertThat(page.getProfilingIntervalTextField().getAttribute("value")).isEqualTo("3456");
         assertThat(page.getDefaultDisplayedPercentilesTextField().getAttribute("value"))

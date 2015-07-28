@@ -33,14 +33,6 @@ public class GeneralConfigPage {
         this.driver = driver;
     }
 
-    public WebElement getEnabledSwitchOn() {
-        return withWait(xpath("//div[@gt-label='Enabled']//label[@btn-radio='true']"));
-    }
-
-    public WebElement getEnabledSwitchOff() {
-        return withWait(xpath("//div[@gt-label='Enabled']//label[@btn-radio='false']"));
-    }
-
     public WebElement getStoreThresholdTextField() {
         return withWait(xpath("//div[@gt-label='Trace store threshold']//input"));
     }
