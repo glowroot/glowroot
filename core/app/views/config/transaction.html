@@ -32,7 +32,9 @@
            gt-pattern="pattern.integer"
            gt-required="loaded"
            gt-width="7em"
-           gt-addon="milliseconds">
+           gt-addon="milliseconds"
+           gt-col-class1="col-lg-4"
+           gt-col-class2="col-lg-8">
         <div class="help-block">
           The interval at which the profiler captures stack traces.
         </div>
@@ -44,18 +46,20 @@
            gt-pattern="pattern.integer"
            gt-required="loaded"
            gt-width="7em"
-           gt-addon="milliseconds">
+           gt-addon="milliseconds"
+           gt-col-class1="col-lg-4"
+           gt-col-class2="col-lg-8">
         <div class="help-block">
           Any transaction that exceeds this amount of time will be viewable immediately as
           an active trace and the trace will be stored to disk at its completion.
         </div>
       </div>
       <div class="form-group">
-        <label class="col-lg-3 control-label"
+        <label class="col-lg-4 control-label"
                for="defaultDisplayedTransactionType">
           Default displayed transaction type
         </label>
-        <div class="col-lg-9">
+        <div class="col-lg-8">
           <select ng-model="config.defaultDisplayedTransactionType"
                   class="form-control"
                   id="defaultDisplayedTransactionType"
@@ -76,7 +80,9 @@
            gt-model="page.defaultDisplayedPercentiles"
            gt-pattern="pattern.percentileList"
            gt-required="loaded"
-           gt-width="20em">
+           gt-width="20em"
+           gt-col-class1="col-lg-4"
+           gt-col-class2="col-lg-8">
         <div class="help-block">
           The default percentiles displayed on the transaction percentiles tab.
           <a href="http://hdrhistogram.github.io/HdrHistogram/">HdrHistogram</a> is used to bucket and store the
@@ -86,7 +92,7 @@
         </div>
       </div>
       <div class="form-group gt-form-buttons">
-        <div class="col-lg-offset-3 col-lg-9">
+        <div class="col-lg-offset-4 col-lg-8">
           <div gt-button
                gt-label="Save changes"
                gt-click="save(deferred)"
