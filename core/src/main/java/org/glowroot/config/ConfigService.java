@@ -109,8 +109,8 @@ public class ConfigService {
         }
     }
 
-    public GeneralConfig getGeneralConfig() {
-        return config.generalConfig();
+    public TransactionConfig getTransactionConfig() {
+        return config.transactionConfig();
     }
 
     public UserInterfaceConfig getUserInterfaceConfig() {
@@ -194,16 +194,16 @@ public class ConfigService {
         pluginConfigListeners.put(pluginId, listener);
     }
 
-    public String updateGeneralConfig(GeneralConfig generalConfig, String priorVersion)
+    public String updateTransactionConfig(TransactionConfig transactionConfig, String priorVersion)
             throws Exception {
         synchronized (writeLock) {
-            checkVersionsEqual(config.generalConfig().version(), priorVersion);
-            Config updatedConfig = config.withGeneralConfig(generalConfig);
+            checkVersionsEqual(config.transactionConfig().version(), priorVersion);
+            Config updatedConfig = config.withTransactionConfig(transactionConfig);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
         notifyConfigListeners();
-        return generalConfig.version();
+        return transactionConfig.version();
     }
 
     public String updateUserInterfaceConfig(UserInterfaceConfig userInterfaceConfig,
@@ -461,7 +461,7 @@ public class ConfigService {
 
     public String getDefaultDisplayedTransactionType() {
         String defaultDisplayedTransactionType =
-                config.generalConfig().defaultDisplayedTransactionType();
+                config.transactionConfig().defaultDisplayedTransactionType();
         if (!defaultDisplayedTransactionType.isEmpty()) {
             return defaultDisplayedTransactionType;
         }

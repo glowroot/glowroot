@@ -30,7 +30,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.container.config.GeneralConfig;
+import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.tests.webdriver.jvm.JvmSidebar;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -42,9 +42,9 @@ public class BasicSmokeTest extends WebDriverTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        generalConfig.setProfilingIntervalMillis(10);
-        container.getConfigService().updateGeneralConfig(generalConfig);
+        TransactionConfig transactionConfig = container.getConfigService().getTransactionConfig();
+        transactionConfig.setProfilingIntervalMillis(10);
+        container.getConfigService().updateTransactionConfig(transactionConfig);
         Executors.newSingleThreadExecutor().execute(new Runnable() {
             @Override
             public void run() {

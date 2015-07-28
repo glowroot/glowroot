@@ -142,7 +142,7 @@ class LayoutService {
                 .addAllTransactionTypes(orderedTransactionTypes)
                 .defaultTransactionType(defaultDisplayedTransactionType)
                 .addAllDefaultPercentiles(
-                        configService.getGeneralConfig().defaultDisplayedPercentiles())
+                        configService.getTransactionConfig().defaultDisplayedPercentiles())
                 .addAllTransactionCustomAttributes(transactionCustomAttributes)
                 .addAllRollupConfigs(rollupConfigs)
                 .gaugeCollectionIntervalMillis(gaugeCollectionIntervalMillis)

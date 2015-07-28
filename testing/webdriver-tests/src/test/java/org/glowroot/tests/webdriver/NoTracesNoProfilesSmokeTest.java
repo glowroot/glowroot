@@ -20,17 +20,17 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
 
-import org.glowroot.container.config.GeneralConfig;
+import org.glowroot.container.config.TransactionConfig;
 
 public class NoTracesNoProfilesSmokeTest extends WebDriverTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
         container.checkAndReset();
-        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        generalConfig.setSlowTraceThresholdMillis(Integer.MAX_VALUE);
-        generalConfig.setProfilingIntervalMillis(0);
-        container.getConfigService().updateGeneralConfig(generalConfig);
+        TransactionConfig transactionConfig = container.getConfigService().getTransactionConfig();
+        transactionConfig.setSlowTraceThresholdMillis(Integer.MAX_VALUE);
+        transactionConfig.setProfilingIntervalMillis(0);
+        container.getConfigService().updateTransactionConfig(transactionConfig);
         container.executeAppUnderTest(JdbcServlet.class);
         // sleep for a bit to give glowroot aggregator time to process these requests
         Thread.sleep(1000);

@@ -51,12 +51,12 @@ public class ConfigService {
         updatePluginConfig(pluginId, config);
     }
 
-    public GeneralConfig getGeneralConfig() throws Exception {
-        return getConfig("/backend/config/general", GeneralConfig.class);
+    public TransactionConfig getTransactionConfig() throws Exception {
+        return getConfig("/backend/config/transaction", TransactionConfig.class);
     }
 
-    public void updateGeneralConfig(GeneralConfig config) throws Exception {
-        httpClient.post("/backend/config/general", mapper.writeValueAsString(config));
+    public void updateTransactionConfig(TransactionConfig config) throws Exception {
+        httpClient.post("/backend/config/transaction", mapper.writeValueAsString(config));
     }
 
     public UserInterfaceConfig getUserInterfaceConfig() throws Exception {
@@ -248,9 +248,9 @@ public class ConfigService {
     }
 
     public void setSlowTraceThresholdMillis(int slowTraceThresholdMillis) throws Exception {
-        GeneralConfig generalConfig = getGeneralConfig();
-        generalConfig.setSlowTraceThresholdMillis(slowTraceThresholdMillis);
-        updateGeneralConfig(generalConfig);
+        TransactionConfig transactionConfig = getTransactionConfig();
+        transactionConfig.setSlowTraceThresholdMillis(slowTraceThresholdMillis);
+        updateTransactionConfig(transactionConfig);
     }
 
     private <T> T getConfig(String url, Class<T> valueType) throws Exception {

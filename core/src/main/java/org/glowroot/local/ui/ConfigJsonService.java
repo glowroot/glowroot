@@ -47,13 +47,13 @@ import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.AnonymousAccess;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.ConfigService.OptimisticLockException;
-import org.glowroot.config.GeneralConfig;
 import org.glowroot.config.PluginConfig;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.PropertyDescriptor;
 import org.glowroot.config.PropertyValue;
 import org.glowroot.config.SmtpConfig;
 import org.glowroot.config.StorageConfig;
+import org.glowroot.config.TransactionConfig;
 import org.glowroot.config.UserInterfaceConfig;
 import org.glowroot.config.UserRecordingConfig;
 import org.glowroot.local.store.AlertingService;
@@ -101,10 +101,10 @@ class ConfigJsonService {
         this.httpServer = httpServer;
     }
 
-    @GET("/backend/config/general")
-    String getGeneralConfig() throws Exception {
-        GeneralConfig config = configService.getGeneralConfig();
-        return mapper.writeValueAsString(GeneralConfigDtoBase.fromConfig(config));
+    @GET("/backend/config/transaction")
+    String getTransactionConfig() throws Exception {
+        TransactionConfig config = configService.getTransactionConfig();
+        return mapper.writeValueAsString(TransactionConfigDtoBase.fromConfig(config));
     }
 
     @GET("/backend/config/ui")
@@ -180,15 +180,15 @@ class ConfigJsonService {
                 .build());
     }
 
-    @POST("/backend/config/general")
-    String updateGeneralConfig(String content) throws Exception {
-        GeneralConfigDto configDto = mapper.readValue(content, GeneralConfigDto.class);
+    @POST("/backend/config/transaction")
+    String updateTransactionConfig(String content) throws Exception {
+        TransactionConfigDto configDto = mapper.readValue(content, TransactionConfigDto.class);
         try {
-            configService.updateGeneralConfig(configDto.toConfig(), configDto.version());
+            configService.updateTransactionConfig(configDto.toConfig(), configDto.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
-        return getGeneralConfig();
+        return getTransactionConfig();
     }
 
     @POST("/backend/config/ui")
@@ -490,7 +490,7 @@ class ConfigJsonService {
     // attribute, and that they have no default attribute values
 
     @Value.Immutable
-    abstract static class GeneralConfigDtoBase {
+    abstract static class TransactionConfigDtoBase {
 
         abstract int slowTraceThresholdMillis();
         abstract int profilingIntervalMillis();
@@ -498,8 +498,8 @@ class ConfigJsonService {
         abstract ImmutableList<Double> defaultDisplayedPercentiles();
         abstract String version();
 
-        GeneralConfig toConfig() {
-            return GeneralConfig.builder()
+        TransactionConfig toConfig() {
+            return TransactionConfig.builder()
                     .slowTraceThresholdMillis(slowTraceThresholdMillis())
                     .profilingIntervalMillis(profilingIntervalMillis())
                     .defaultDisplayedTransactionType(defaultDisplayedTransactionType())
@@ -507,8 +507,8 @@ class ConfigJsonService {
                             Ordering.natural().immutableSortedCopy(defaultDisplayedPercentiles()))
                     .build();
         }
-        private static GeneralConfigDto fromConfig(GeneralConfig config) {
-            return GeneralConfigDto.builder()
+        private static TransactionConfigDto fromConfig(TransactionConfig config) {
+            return TransactionConfigDto.builder()
                     .slowTraceThresholdMillis(config.slowTraceThresholdMillis())
                     .profilingIntervalMillis(config.profilingIntervalMillis())
                     .defaultDisplayedTransactionType(config.defaultDisplayedTransactionType())

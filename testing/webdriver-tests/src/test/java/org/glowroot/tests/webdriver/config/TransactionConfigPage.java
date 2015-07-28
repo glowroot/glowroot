@@ -25,11 +25,11 @@ import org.glowroot.tests.webdriver.Utils;
 
 import static org.openqa.selenium.By.xpath;
 
-public class GeneralConfigPage {
+public class TransactionConfigPage {
 
     private final WebDriver driver;
 
-    public GeneralConfigPage(WebDriver driver) {
+    public TransactionConfigPage(WebDriver driver) {
         this.driver = driver;
     }
 

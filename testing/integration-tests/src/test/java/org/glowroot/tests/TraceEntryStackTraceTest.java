@@ -26,7 +26,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.config.GeneralConfig;
+import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
@@ -57,8 +57,8 @@ public class TraceEntryStackTraceTest {
     @Test
     public void shouldReadTraceEntryStackTrace() throws Exception {
         // given
-        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        container.getConfigService().updateGeneralConfig(generalConfig);
+        TransactionConfig transactionConfig = container.getConfigService().getTransactionConfig();
+        container.getConfigService().updateTransactionConfig(transactionConfig);
         PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
         pluginConfig.setProperty("captureTraceEntryStackTraces", true);
         container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);

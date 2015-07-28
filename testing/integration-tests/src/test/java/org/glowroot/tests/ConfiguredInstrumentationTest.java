@@ -30,7 +30,7 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.config.GeneralConfig;
+import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.config.InstrumentationConfig;
 import org.glowroot.container.config.InstrumentationConfig.CaptureKind;
 import org.glowroot.container.config.InstrumentationConfig.MethodModifier;
@@ -71,9 +71,9 @@ public class ConfiguredInstrumentationTest {
     @Test
     public void shouldExecute1() throws Exception {
         // given
-        GeneralConfig config = container.getConfigService().getGeneralConfig();
+        TransactionConfig config = container.getConfigService().getTransactionConfig();
         config.setSlowTraceThresholdMillis(Integer.MAX_VALUE);
-        container.getConfigService().updateGeneralConfig(config);
+        container.getConfigService().updateTransactionConfig(config);
         // when
         container.executeAppUnderTest(ShouldExecute1.class);
         // then

@@ -26,7 +26,7 @@ import org.glowroot.api.TimerName;
 import org.glowroot.common.Clock;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.GeneralConfig;
+import org.glowroot.config.TransactionConfig;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 
@@ -44,9 +44,9 @@ public class PluginServicesImplOutsideTxTest {
         TransactionRegistry transactionRegistry = mock(TransactionRegistry.class);
         TransactionCollector transactionCollector = mock(TransactionCollector.class);
         ConfigService configService = mock(ConfigService.class);
-        GeneralConfig generalConfig = GeneralConfig.builder().build();
+        TransactionConfig transactionConfig = TransactionConfig.builder().build();
         AdvancedConfig advancedConfig = AdvancedConfig.builder().build();
-        when(configService.getGeneralConfig()).thenReturn(generalConfig);
+        when(configService.getTransactionConfig()).thenReturn(transactionConfig);
         when(configService.getAdvancedConfig()).thenReturn(advancedConfig);
 
         TimerNameCache timerNameCache = mock(TimerNameCache.class);

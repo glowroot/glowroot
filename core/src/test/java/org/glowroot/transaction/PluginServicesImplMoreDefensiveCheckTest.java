@@ -27,7 +27,7 @@ import org.glowroot.api.TraceEntry;
 import org.glowroot.common.Clock;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.GeneralConfig;
+import org.glowroot.config.TransactionConfig;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.transaction.model.TimerNameImpl;
@@ -48,11 +48,11 @@ public class PluginServicesImplMoreDefensiveCheckTest {
         TransactionCollector transactionCollector = mock(TransactionCollector.class);
         mockTransaction = mock(Transaction.class);
         ConfigService configService = mock(ConfigService.class);
-        GeneralConfig generalConfig = GeneralConfig.builder().build();
+        TransactionConfig transactionConfig = TransactionConfig.builder().build();
         AdvancedConfig advancedConfig =
                 AdvancedConfig.builder().maxTraceEntriesPerTransaction(100).build();
         when(transactionRegistry.getCurrentTransaction()).thenReturn(mockTransaction);
-        when(configService.getGeneralConfig()).thenReturn(generalConfig);
+        when(configService.getTransactionConfig()).thenReturn(transactionConfig);
         when(configService.getAdvancedConfig()).thenReturn(advancedConfig);
 
         TimerNameCache timerNameCache = mock(TimerNameCache.class);

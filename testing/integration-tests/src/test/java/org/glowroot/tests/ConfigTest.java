@@ -34,7 +34,7 @@ import org.glowroot.container.config.AdvancedConfig;
 import org.glowroot.container.config.AlertConfig;
 import org.glowroot.container.config.GaugeConfig;
 import org.glowroot.container.config.GaugeConfig.MBeanAttribute;
-import org.glowroot.container.config.GeneralConfig;
+import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.config.InstrumentationConfig;
 import org.glowroot.container.config.InstrumentationConfig.CaptureKind;
 import org.glowroot.container.config.PluginConfig;
@@ -68,14 +68,14 @@ public class ConfigTest {
     }
 
     @Test
-    public void shouldUpdateGeneralConfig() throws Exception {
+    public void shouldUpdateTransactionConfig() throws Exception {
         // given
-        GeneralConfig config = container.getConfigService().getGeneralConfig();
+        TransactionConfig config = container.getConfigService().getTransactionConfig();
         // when
         updateAllFields(config);
-        container.getConfigService().updateGeneralConfig(config);
+        container.getConfigService().updateTransactionConfig(config);
         // then
-        GeneralConfig updatedConfig = container.getConfigService().getGeneralConfig();
+        TransactionConfig updatedConfig = container.getConfigService().getTransactionConfig();
         assertThat(updatedConfig).isEqualTo(config);
     }
 
@@ -336,7 +336,7 @@ public class ConfigTest {
         assertThat(container.getConfigService().getAlertConfigs()).isEmpty();
     }
 
-    private static void updateAllFields(GeneralConfig config) {
+    private static void updateAllFields(TransactionConfig config) {
         config.setSlowTraceThresholdMillis(config.getSlowTraceThresholdMillis() + 1);
         config.setProfilingIntervalMillis(config.getProfilingIntervalMillis() + 1);
         config.setDefaultDisplayedTransactionType(

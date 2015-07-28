@@ -300,13 +300,13 @@ glowroot.config([
       templateUrl: 'views/config.html',
       controller: 'ConfigCtrl'
     });
-    $stateProvider.state('config.general', {
-      url: '/general',
-      templateUrl: 'views/config/general.html',
-      controller: 'ConfigGeneralCtrl',
+    $stateProvider.state('config.transaction', {
+      url: '/transaction',
+      templateUrl: 'views/config/transaction.html',
+      controller: 'ConfigTransactionCtrl',
       resolve: {
         backendUrl: function () {
-          return 'backend/config/general';
+          return 'backend/config/transaction';
         }
       }
     });

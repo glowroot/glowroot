@@ -31,7 +31,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.config.GeneralConfig;
+import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.tests.DetailMapTest.ShouldGenerateTraceWithNestedEntries;
 import org.glowroot.tests.ProfilingTest.ShouldGenerateTraceWithProfile;
@@ -73,9 +73,9 @@ public class ExportTest {
     @Test
     public void shouldExportTraceWithProfile() throws Exception {
         // given
-        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        generalConfig.setProfilingIntervalMillis(20);
-        container.getConfigService().updateGeneralConfig(generalConfig);
+        TransactionConfig transactionConfig = container.getConfigService().getTransactionConfig();
+        transactionConfig.setProfilingIntervalMillis(20);
+        container.getConfigService().updateTransactionConfig(transactionConfig);
         container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
         // when
         Trace trace = container.getTraceService().getLastTrace();
@@ -89,9 +89,9 @@ public class ExportTest {
     @Test
     public void shouldExportActiveTrace() throws Exception {
         // given
-        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        generalConfig.setProfilingIntervalMillis(20);
-        container.getConfigService().updateGeneralConfig(generalConfig);
+        TransactionConfig transactionConfig = container.getConfigService().getTransactionConfig();
+        transactionConfig.setProfilingIntervalMillis(20);
+        container.getConfigService().updateTransactionConfig(transactionConfig);
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.submit(new Callable<Void>() {
             @Override

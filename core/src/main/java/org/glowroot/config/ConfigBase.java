@@ -15,17 +15,20 @@
  */
 package org.glowroot.config;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 @Value.Immutable
+// ignore this old property name as part of upgrade from 0.8.3 to 0.8.4
+@JsonIgnoreProperties("general")
 abstract class ConfigBase {
 
     @Value.Default
-    @JsonProperty("general")
-    GeneralConfig generalConfig() {
-        return GeneralConfig.builder().build();
+    @JsonProperty("transaction")
+    TransactionConfig transactionConfig() {
+        return TransactionConfig.builder().build();
     }
 
     @Value.Default

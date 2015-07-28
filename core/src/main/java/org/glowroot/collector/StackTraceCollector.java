@@ -77,7 +77,7 @@ class StackTraceCollector implements Runnable {
     }
 
     private void updateScheduleIfNeeded() {
-        int newIntervalMillis = configService.getGeneralConfig().profilingIntervalMillis();
+        int newIntervalMillis = configService.getTransactionConfig().profilingIntervalMillis();
         if (newIntervalMillis != currentIntervalMillis) {
             if (currentFuture != null) {
                 currentFuture.cancel(false);

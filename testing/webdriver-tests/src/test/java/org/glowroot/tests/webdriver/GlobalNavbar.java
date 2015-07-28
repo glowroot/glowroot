@@ -41,7 +41,7 @@ class GlobalNavbar {
     }
 
     WebElement getConfigurationLink() {
-        return Utils.withWait(driver, xpath("//nav//a[@href='config/general']"));
+        return Utils.withWait(driver, xpath("//nav//a[@href='config/transaction']"));
     }
 
     WebElement getSignOutLink() {

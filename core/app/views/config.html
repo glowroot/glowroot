@@ -22,14 +22,8 @@
   <div class="panel panel-default">
     <ul class="list-group">
       <div gt-sidebar-item
-           gt-display="General"
-           gt-url="config/general">
-      </div>
-      <div gt-sidebar-item
-           gt-display="Instrumentation"
-           gt-url="config/instrumentation-list"
-           gt-active="currentUrl() === 'config/instrumentation-list'"
-           gt-sub-active="currentUrl() === 'config/instrumentation'">
+           gt-display="Transactions"
+           gt-url="config/transaction">
       </div>
       <div gt-sidebar-item
            gt-display="Gauges"
@@ -48,6 +42,12 @@
            gt-url="config/plugin-list"
            gt-active="currentUrl() === 'config/plugin-list'"
            gt-sub-active="currentUrl() === 'config/plugin'">
+      </div>
+      <div gt-sidebar-item
+           gt-display="Instrumentation"
+           gt-url="config/instrumentation-list"
+           gt-active="currentUrl() === 'config/instrumentation-list'"
+           gt-sub-active="currentUrl() === 'config/instrumentation'">
       </div>
       <div gt-sidebar-item
            gt-display="Advanced"

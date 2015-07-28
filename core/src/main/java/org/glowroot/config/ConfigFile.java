@@ -73,11 +73,11 @@ class ConfigFile {
             storageConfig = storageConfig.withCorrectedLists();
             config = config.withStorageConfig(storageConfig);
         }
-        GeneralConfig generalConfig = config.generalConfig();
-        if (generalConfig.defaultDisplayedTransactionType().isEmpty()) {
-            generalConfig = generalConfig.withDefaultDisplayedTransactionType(
+        TransactionConfig transactionConfig = config.transactionConfig();
+        if (transactionConfig.defaultDisplayedTransactionType().isEmpty()) {
+            transactionConfig = transactionConfig.withDefaultDisplayedTransactionType(
                     getDefaultDisplayedTransactionType(config.instrumentationConfigs()));
-            config = config.withGeneralConfig(generalConfig);
+            config = config.withTransactionConfig(transactionConfig);
         }
         if (!mapper.readTree(content).has("gauges")) {
             List<GaugeConfig> defaultGauges = getDefaultGaugeConfigs();

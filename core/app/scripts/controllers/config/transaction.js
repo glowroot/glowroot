@@ -16,7 +16,7 @@
 
 /* global glowroot, angular */
 
-glowroot.controller('ConfigGeneralCtrl', [
+glowroot.controller('ConfigTransactionCtrl', [
   '$scope',
   '$http',
   'backendUrl',

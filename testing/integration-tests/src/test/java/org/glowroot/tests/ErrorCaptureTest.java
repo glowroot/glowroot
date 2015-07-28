@@ -28,7 +28,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.config.GeneralConfig;
+import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.trace.ThrowableInfo;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
@@ -58,9 +58,9 @@ public class ErrorCaptureTest {
     @Test
     public void shouldCaptureError() throws Exception {
         // given
-        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        generalConfig.setSlowTraceThresholdMillis(10000);
-        container.getConfigService().updateGeneralConfig(generalConfig);
+        TransactionConfig transactionConfig = container.getConfigService().getTransactionConfig();
+        transactionConfig.setSlowTraceThresholdMillis(10000);
+        container.getConfigService().updateTransactionConfig(transactionConfig);
         // when
         container.executeAppUnderTest(ShouldCaptureError.class);
         // then

@@ -28,7 +28,7 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.Threads;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.config.GeneralConfig;
+import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.impl.JavaagentContainer;
 import org.glowroot.container.trace.ProfileNode;
 import org.glowroot.container.trace.Trace;
@@ -65,9 +65,9 @@ public class TimerWrapperMethodsTest {
     @Test
     public void shouldReadProfile() throws Exception {
         // given
-        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        generalConfig.setProfilingIntervalMillis(20);
-        container.getConfigService().updateGeneralConfig(generalConfig);
+        TransactionConfig transactionConfig = container.getConfigService().getTransactionConfig();
+        transactionConfig.setProfilingIntervalMillis(20);
+        container.getConfigService().updateTransactionConfig(transactionConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
         // then

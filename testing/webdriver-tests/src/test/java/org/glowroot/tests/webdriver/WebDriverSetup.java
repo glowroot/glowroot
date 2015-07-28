@@ -30,7 +30,7 @@ import org.openqa.selenium.server.SeleniumServer;
 
 import org.glowroot.Containers;
 import org.glowroot.container.Container;
-import org.glowroot.container.config.GeneralConfig;
+import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.config.UserInterfaceConfig;
 
 public class WebDriverSetup {
@@ -145,9 +145,9 @@ public class WebDriverSetup {
     }
 
     private void setDefaultTransactionType() throws Exception {
-        GeneralConfig generalConfig = container.getConfigService().getGeneralConfig();
-        generalConfig.setDefaultDisplayedTransactionType("Servlet");
-        container.getConfigService().updateGeneralConfig(generalConfig);
+        TransactionConfig transactionConfig = container.getConfigService().getTransactionConfig();
+        transactionConfig.setDefaultDisplayedTransactionType("Servlet");
+        container.getConfigService().updateTransactionConfig(transactionConfig);
     }
 
     private static WebDriverSetup createSetup(boolean shared) throws Exception {

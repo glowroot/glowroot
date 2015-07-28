@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
 import org.glowroot.Viewer;
-import org.glowroot.config.GeneralConfig;
+import org.glowroot.config.TransactionConfig;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -70,12 +70,12 @@ public class JavaagentMain {
         }
         org.glowroot.config.ConfigService configService =
                 glowrootModule.getConfigModule().getConfigService();
-        GeneralConfig config = configService.getGeneralConfig();
+        TransactionConfig config = configService.getTransactionConfig();
         // conditional check is needed to prevent config file timestamp update when testing
         // ConfigFileLastModifiedTest.shouldNotUpdateFileOnStartupIfNoChanges()
         if (config.slowTraceThresholdMillis() != 0) {
-            GeneralConfig updatedConfig = config.withSlowTraceThresholdMillis(0);
-            configService.updateGeneralConfig(updatedConfig, config.version());
+            TransactionConfig updatedConfig = config.withSlowTraceThresholdMillis(0);
+            configService.updateTransactionConfig(updatedConfig, config.version());
         }
     }
 

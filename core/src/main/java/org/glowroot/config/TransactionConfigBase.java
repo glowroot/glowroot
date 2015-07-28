@@ -16,14 +16,11 @@
 package org.glowroot.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 @Value.Immutable
-// ignore this old property as part of upgrade from 0.8.3 to 0.8.4
-@JsonIgnoreProperties("enabled")
-public abstract class GeneralConfigBase {
+public abstract class TransactionConfigBase {
 
     // 0 means profiling disabled
     @Value.Default

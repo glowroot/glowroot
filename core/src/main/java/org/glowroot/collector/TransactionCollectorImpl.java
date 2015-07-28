@@ -83,7 +83,7 @@ public class TransactionCollectorImpl implements TransactionCollector {
             return transaction.getDuration() >= MILLISECONDS.toNanos(slowTraceThresholdMillis);
         }
         // fall back to default slow trace threshold
-        slowTraceThresholdMillis = configService.getGeneralConfig().slowTraceThresholdMillis();
+        slowTraceThresholdMillis = configService.getTransactionConfig().slowTraceThresholdMillis();
         if (transaction.getDuration() >= MILLISECONDS.toNanos(slowTraceThresholdMillis)) {
             return true;
         }

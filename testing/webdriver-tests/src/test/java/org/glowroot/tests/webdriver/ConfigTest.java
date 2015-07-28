@@ -19,9 +19,9 @@ import org.junit.Test;
 
 import org.glowroot.tests.webdriver.config.AdvancedConfigPage;
 import org.glowroot.tests.webdriver.config.ConfigSidebar;
-import org.glowroot.tests.webdriver.config.GeneralConfigPage;
 import org.glowroot.tests.webdriver.config.SmtpConfigPage;
 import org.glowroot.tests.webdriver.config.StorageConfigPage;
+import org.glowroot.tests.webdriver.config.TransactionConfigPage;
 import org.glowroot.tests.webdriver.config.UserRecordingConfigPage;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,11 +30,11 @@ import static org.openqa.selenium.By.xpath;
 public class ConfigTest extends WebDriverTest {
 
     @Test
-    public void shouldUpdateGeneralConfig() throws Exception {
+    public void shouldUpdateTransactionConfig() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);
-        GeneralConfigPage page = new GeneralConfigPage(driver);
+        TransactionConfigPage page = new TransactionConfigPage(driver);
 
         app.open();
         globalNavbar.getConfigurationLink().click();
@@ -111,7 +111,7 @@ public class ConfigTest extends WebDriverTest {
         app.open();
         globalNavbar.getConfigurationLink().click();
         // user recording config is not accessible via config sidebar currently
-        String userRecordingUrl = driver.getCurrentUrl().replace("/config/general",
+        String userRecordingUrl = driver.getCurrentUrl().replace("/config/transaction",
                 "/config/user-recording");
         driver.navigate().to(userRecordingUrl);
 

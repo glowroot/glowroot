@@ -28,7 +28,7 @@ import com.google.common.collect.Lists;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
-public class GeneralConfig {
+public class TransactionConfig {
 
     private int slowTraceThresholdMillis;
     private int profilingIntervalMillis;
@@ -37,7 +37,7 @@ public class GeneralConfig {
 
     private final String version;
 
-    private GeneralConfig(String version) {
+    private TransactionConfig(String version) {
         this.version = version;
     }
 
@@ -79,8 +79,8 @@ public class GeneralConfig {
 
     @Override
     public boolean equals(@Nullable Object obj) {
-        if (obj instanceof GeneralConfig) {
-            GeneralConfig that = (GeneralConfig) obj;
+        if (obj instanceof TransactionConfig) {
+            TransactionConfig that = (TransactionConfig) obj;
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
@@ -114,7 +114,7 @@ public class GeneralConfig {
     }
 
     @JsonCreator
-    static GeneralConfig readValue(
+    static TransactionConfig readValue(
             @JsonProperty("slowTraceThresholdMillis") @Nullable Integer slowTraceThresholdMillis,
             @JsonProperty("profilingIntervalMillis") @Nullable Integer profilingIntervalMillis,
             @JsonProperty("defaultDisplayedTransactionType") @Nullable String defaultDisplayedTransactionType,
@@ -125,7 +125,7 @@ public class GeneralConfig {
         checkRequiredProperty(defaultDisplayedTransactionType, "defaultDisplayedTransactionType");
         checkRequiredProperty(defaultDisplayedPercentiles, "defaultDisplayedPercentiles");
         checkRequiredProperty(version, "version");
-        GeneralConfig config = new GeneralConfig(version);
+        TransactionConfig config = new TransactionConfig(version);
         config.setSlowTraceThresholdMillis(slowTraceThresholdMillis);
         config.setProfilingIntervalMillis(profilingIntervalMillis);
         config.setDefaultDisplayedTransactionType(defaultDisplayedTransactionType);
