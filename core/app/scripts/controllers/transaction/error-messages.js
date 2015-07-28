@@ -178,10 +178,11 @@ glowroot.controller('ErrorMessagesCtrl', [
           // this math is to deal with active aggregate
           from = Math.ceil(from / chartState.dataPointIntervalMillis) * chartState.dataPointIntervalMillis;
           var to = xval;
-          var html = '<strong>' + smartFormat(from) + ' to ' + smartFormat(to) +
-              '</strong><br>Error percentage: ' + yval.toFixed(1) +
-              '<br>Error count: ' + dataSeriesExtra[xval][0] +
-              '<br>Transaction count: ' + dataSeriesExtra[xval][1];
+          var html = '<div class="gt-chart-tooltip"><div style="font-weight: 600;">' +
+              smartFormat(from) + ' to ' + smartFormat(to) +
+              '</div><div>Error percentage: ' + yval.toFixed(1) +
+              '</div><div>Error count: ' + dataSeriesExtra[xval][0] +
+              '</div><div>Transaction count: ' + dataSeriesExtra[xval][1] + '</div></div>';
           return html;
         }
       }
