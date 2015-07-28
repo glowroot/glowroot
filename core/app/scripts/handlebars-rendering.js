@@ -1018,16 +1018,24 @@ HandlebarsRendering = (function () {
       });
     }
     var mergedCounts = {};
-    if (node.leafThreadState && timerNameStack.length) {
+    function addToMergedCounts(sampleCount) {
       var partial = '';
       $.each(timerNameStack, function (i, timerName) {
         if (i > 0) {
           partial += ' / ';
         }
         partial += timerName;
-        mergedCounts[partial] = node.sampleCount;
+        mergedCounts[partial] = sampleCount;
       });
-      mergedCounts[partial + ' / other'] = node.sampleCount;
+      if (partial) {
+        mergedCounts[partial + ' / other'] = sampleCount;
+      }
+    }
+    if (node.leafThreadState && timerNameStack.length) {
+      addToMergedCounts(node.sampleCount);
+    }
+    if (node.ellipsedSampleCount) {
+      addToMergedCounts(node.ellipsedSampleCount);
     }
     if (node.childNodes) {
       var childNodes = node.childNodes;
