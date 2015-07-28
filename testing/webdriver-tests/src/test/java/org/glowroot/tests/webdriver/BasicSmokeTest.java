@@ -91,7 +91,7 @@ public class BasicSmokeTest extends WebDriverTest {
         Utils.withWait(driver, By.partialLinkText("percentiles")).click();
         Utils.withWait(driver, By.partialLinkText("Slow traces")).click();
         Utils.withWait(driver, By.partialLinkText("External queries")).click();
-        Utils.withWait(driver, By.partialLinkText("Continuous profile")).click();
+        Utils.withWait(driver, By.partialLinkText("Continuous profiling")).click();
         Utils.withWait(driver, By.linkText("View flame graph (experimental)")).click();
         // give flame graph a chance to render (only for visual when running locally)
         Thread.sleep(500);
@@ -100,7 +100,7 @@ public class BasicSmokeTest extends WebDriverTest {
         Utils.withWait(driver, By.partialLinkText("percentiles")).click();
         Utils.withWait(driver, By.partialLinkText("Slow traces")).click();
         Utils.withWait(driver, By.partialLinkText("External queries")).click();
-        Utils.withWait(driver, By.partialLinkText("Continuous profile")).click();
+        Utils.withWait(driver, By.partialLinkText("Continuous profiling")).click();
         Utils.withWait(driver, By.linkText("View flame graph (experimental)")).click();
     }
 
