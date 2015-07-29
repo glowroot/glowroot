@@ -30,8 +30,6 @@ glowroot.controller('JvmGaugesCtrl', [
 
     var DEFAULT_GAUGES = ['java.lang:type=Memory,HeapMemoryUsage/used'];
 
-    var plotGaugeNames;
-
     var chartState = charts.createState();
 
     var yvalMaps = {};
@@ -378,7 +376,7 @@ glowroot.controller('JvmGaugesCtrl', [
     };
 
     $scope.gaugeColorText = function (gaugeName) {
-      if (plotGaugeNames && plotGaugeNames.indexOf(gaugeName) !== -1 && !gaugeScales[gaugeName]) {
+      if ($scope.gaugeNames.indexOf(gaugeName) !== -1 && !gaugeScales[gaugeName]) {
         return 'no data';
       }
       return '';

@@ -159,7 +159,9 @@ class JvmJsonService {
         for (String gaugeName : request.gaugeNames()) {
             List<GaugePoint> gaugePoints =
                     getGaugePoints(revisedFrom, revisedTo, gaugeName, rollupLevel, liveCaptureTime);
-            dataSeriesList.add(convertToDataSeriesWithGaps(gaugeName, gaugePoints, gapMillis));
+            if (!gaugePoints.isEmpty()) {
+                dataSeriesList.add(convertToDataSeriesWithGaps(gaugeName, gaugePoints, gapMillis));
+            }
         }
 
         StringBuilder sb = new StringBuilder();
