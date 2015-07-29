@@ -46,6 +46,7 @@ import org.glowroot.collector.QueryAggregate;
 import org.glowroot.collector.QueryComponent;
 import org.glowroot.collector.QueryComponent.AggregateQuery;
 import org.glowroot.collector.TransactionSummary;
+import org.glowroot.common.Clock;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.common.ScratchBuffer;
 import org.glowroot.config.ConfigService;
@@ -56,6 +57,7 @@ import org.glowroot.local.store.DataSource.RowMapper;
 import org.glowroot.transaction.model.ProfileNode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.HOURS;
 import static org.glowroot.common.Checkers.castUntainted;
 
 public class AggregateDao {
@@ -118,16 +120,18 @@ public class AggregateDao {
     private final DataSource dataSource;
     private final List<CappedDatabase> rollupCappedDatabases;
     private final ConfigService configService;
+    private final Clock clock;
 
     private final AtomicLongArray lastRollupTimes;
 
     private final Object rollupLock = new Object();
 
     AggregateDao(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
-            ConfigService configService) throws SQLException {
+            ConfigService configService, Clock clock) throws SQLException {
         this.dataSource = dataSource;
         this.rollupCappedDatabases = rollupCappedDatabases;
         this.configService = configService;
+        this.clock = clock;
 
         ImmutableList<RollupConfig> rollupConfigs = configService.getRollupConfigs();
         for (int i = 0; i < rollupConfigs.size(); i++) {
@@ -360,26 +364,35 @@ public class AggregateDao {
 
     public long getDataPointIntervalMillis(long captureTimeFrom, long captureTimeTo) {
         long millis = captureTimeTo - captureTimeFrom;
+        long timeAgoMillis = clock.currentTimeMillis() - captureTimeFrom;
+        ImmutableList<Integer> rollupExpirationHours =
+                configService.getStorageConfig().rollupExpirationHours();
         ImmutableList<RollupConfig> rollupConfigs = configService.getRollupConfigs();
-        for (int i = rollupConfigs.size() - 1; i >= 0; i--) {
-            RollupConfig rollupConfig = rollupConfigs.get(i);
-            if (millis >= rollupConfig.viewThresholdMillis()) {
-                return rollupConfig.intervalMillis();
+        for (int i = 0; i < rollupConfigs.size() - 1; i++) {
+            RollupConfig currRollupConfig = rollupConfigs.get(i);
+            RollupConfig nextRollupConfig = rollupConfigs.get(i + 1);
+            if (millis < nextRollupConfig.viewThresholdMillis()
+                    && HOURS.toMillis(rollupExpirationHours.get(i)) > timeAgoMillis) {
+                return currRollupConfig.intervalMillis();
             }
         }
-        return rollupConfigs.get(0).intervalMillis();
+        return rollupConfigs.get(rollupConfigs.size() - 1).intervalMillis();
     }
 
     public int getRollupLevelForView(long captureTimeFrom, long captureTimeTo) {
         long millis = captureTimeTo - captureTimeFrom;
+        long timeAgoMillis = clock.currentTimeMillis() - captureTimeFrom;
+        ImmutableList<Integer> rollupExpirationHours =
+                configService.getStorageConfig().rollupExpirationHours();
         ImmutableList<RollupConfig> rollupConfigs = configService.getRollupConfigs();
-        for (int i = rollupConfigs.size() - 1; i >= 0; i--) {
-            RollupConfig rollupConfig = rollupConfigs.get(i);
-            if (millis >= rollupConfig.viewThresholdMillis()) {
+        for (int i = 0; i < rollupConfigs.size() - 1; i++) {
+            RollupConfig nextRollupConfig = rollupConfigs.get(i + 1);
+            if (millis < nextRollupConfig.viewThresholdMillis()
+                    && HOURS.toMillis(rollupExpirationHours.get(i)) > timeAgoMillis) {
                 return i;
             }
         }
-        return 0;
+        return rollupConfigs.size() - 1;
     }
 
     public void deleteAll() throws SQLException {

@@ -28,12 +28,14 @@ import org.checkerframework.checker.tainting.qual.Untainted;
 import org.glowroot.collector.GaugePoint;
 import org.glowroot.collector.GaugePointRepository;
 import org.glowroot.common.Clock;
+import org.glowroot.config.ConfigService;
 import org.glowroot.config.RollupConfig;
 import org.glowroot.local.store.DataSource.BatchAdder;
 import org.glowroot.local.store.DataSource.ResultSetExtractor;
 import org.glowroot.local.store.DataSource.RowMapper;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.HOURS;
 import static org.glowroot.common.Checkers.castUntainted;
 
 public class GaugePointDao implements GaugePointRepository {
@@ -73,6 +75,7 @@ public class GaugePointDao implements GaugePointRepository {
 
     private final GaugeMetaDao gaugeMetaDao;
     private final DataSource dataSource;
+    private final ConfigService configService;
     private final Clock clock;
     private final long fixedIntervalMillis1;
     private final long fixedIntervalMillis2;
@@ -87,11 +90,13 @@ public class GaugePointDao implements GaugePointRepository {
 
     private final Object rollupLock = new Object();
 
-    GaugePointDao(DataSource dataSource, Clock clock, ImmutableList<RollupConfig> rollupConfigs)
+    GaugePointDao(DataSource dataSource, ConfigService configService, Clock clock)
             throws SQLException {
         gaugeMetaDao = new GaugeMetaDao(dataSource);
         this.dataSource = dataSource;
+        this.configService = configService;
         this.clock = clock;
+        ImmutableList<RollupConfig> rollupConfigs = configService.getRollupConfigs();
         fixedIntervalMillis1 = rollupConfigs.get(0).intervalMillis();
         fixedIntervalMillis2 = rollupConfigs.get(1).intervalMillis();
         fixedIntervalMillis3 = rollupConfigs.get(2).intervalMillis();
@@ -251,14 +256,22 @@ public class GaugePointDao implements GaugePointRepository {
 
     public int getRollupLevelForView(long from, long to) {
         long millis = to - from;
-        if (millis >= viewThresholdMillis3) {
-            return 3;
-        } else if (millis >= viewThresholdMillis2) {
-            return 2;
-        } else if (millis >= viewThresholdMillis1) {
-            return 1;
-        } else {
+        long timeAgoMillis = clock.currentTimeMillis() - from;
+        ImmutableList<Integer> rollupExpirationHours =
+                configService.getStorageConfig().rollupExpirationHours();
+        // gauge point rollup level 0 and rollup level 1 both share the same expiration
+        Integer rollupZeroAndOneExpirationHours = rollupExpirationHours.get(0);
+        if (millis < viewThresholdMillis1
+                && HOURS.toMillis(rollupZeroAndOneExpirationHours) > timeAgoMillis) {
             return 0;
+        } else if (millis < viewThresholdMillis2
+                && HOURS.toMillis(rollupZeroAndOneExpirationHours) > timeAgoMillis) {
+            return 1;
+        } else if (millis < viewThresholdMillis3
+                && HOURS.toMillis(rollupExpirationHours.get(1)) > timeAgoMillis) {
+            return 2;
+        } else {
+            return 3;
         }
     }
 

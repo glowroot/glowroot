@@ -26,6 +26,7 @@ import org.glowroot.collector.Aggregate;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.RollupConfig;
+import org.glowroot.config.StorageConfig;
 import org.glowroot.local.store.AggregateDao;
 import org.glowroot.local.store.AggregateDaoTest;
 
@@ -55,6 +56,13 @@ public class TransactionCommonServiceTest {
     public void test() throws Exception {
         // given
         ConfigService configService = mock(ConfigService.class);
+        when(configService.getStorageConfig()).thenReturn(
+                StorageConfig.builder().rollupExpirationHours(
+                        ImmutableList.<Integer>of(
+                                Integer.MAX_VALUE,
+                                Integer.MAX_VALUE,
+                                Integer.MAX_VALUE))
+                        .build());
         when(configService.getAdvancedConfig()).thenReturn(AdvancedConfig.builder().build());
         ImmutableList<RollupConfig> rollupConfigs = ImmutableList.of(RollupConfig.of(1000, 0),
                 RollupConfig.of(15000, 3600000), RollupConfig.of(900000000, 8 * 3600000));

@@ -95,15 +95,14 @@ public class StorageModule {
                 storageConfig.traceCappedDatabaseSizeMb() * 1024, ticker);
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
         lazyPlatformMBeanServer.addInitListener(new LazyInit());
-        aggregateDao =
-                new AggregateDao(dataSource, this.rollupCappedDatabases,
-                        configModule.getConfigService());
+        aggregateDao = new AggregateDao(dataSource, this.rollupCappedDatabases,
+                configModule.getConfigService(), clock);
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
         AlertingService alertingService = new AlertingService(configService, triggeredAlertDao,
                 aggregateDao, new MailService());
         aggregateRepositoryImpl = new AggregateRepositoryImpl(aggregateDao, alertingService);
         traceDao = new TraceDao(dataSource, traceCappedDatabase);
-        gaugePointDao = new GaugePointDao(dataSource, clock, configService.getRollupConfigs());
+        gaugePointDao = new GaugePointDao(dataSource, configService, clock);
         // safe to set query timeout after all daos have initialized
         dataSource.setQueryTimeoutSeconds(
                 configService.getAdvancedConfig().internalQueryTimeoutSeconds());

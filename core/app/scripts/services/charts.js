@@ -162,15 +162,18 @@ glowroot.factory('charts', [
 
     function getDataPointIntervalMillis(from, to) {
       var millis = to - from;
+      var timeAgoMillis = Date.now() - from;
       var i;
       var rollupConfigs = $rootScope.layout.rollupConfigs;
-      for (i = rollupConfigs.length - 1; i >= 0; i--) {
-        var rollupConfig = rollupConfigs[i];
-        if (millis >= rollupConfig.viewThresholdMillis) {
-          return rollupConfig.intervalMillis;
+      for (i = 0; i < rollupConfigs.length - 1; i++) {
+        var currRollupConfig = rollupConfigs[i];
+        var nextRollupConfig = rollupConfigs[i + 1];
+        if (millis < nextRollupConfig.viewThresholdMillis
+            && $rootScope.layout.rollupExpirationMillis[i] > timeAgoMillis) {
+          return currRollupConfig.intervalMillis;
         }
       }
-      return rollupConfigs[0].intervalMillis;
+      return rollupConfigs[rollupConfigs.length - 1].intervalMillis;
     }
 
     function plot(data, chartOptions, chartState, $chart, $scope) {

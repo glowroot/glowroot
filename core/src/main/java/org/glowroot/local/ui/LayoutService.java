@@ -34,10 +34,11 @@ import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptor;
-import org.glowroot.config.RollupConfig;
 import org.glowroot.config.UserInterfaceConfig;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.OptionalService;
+
+import static java.util.concurrent.TimeUnit.HOURS;
 
 class LayoutService {
 
@@ -76,8 +77,7 @@ class LayoutService {
         Layout localLayout = layout;
         if (localLayout == null) {
             localLayout = buildLayout(version, configService, pluginDescriptors,
-                    heapDumps.getService(), configService.getRollupConfigs(),
-                    gaugeCollectionIntervalMillis);
+                    heapDumps.getService(), gaugeCollectionIntervalMillis);
             layout = localLayout;
         }
         return mapper.writeValueAsString(localLayout);
@@ -87,8 +87,7 @@ class LayoutService {
         Layout localLayout = layout;
         if (localLayout == null) {
             localLayout = buildLayout(version, configService, pluginDescriptors,
-                    heapDumps.getService(), configService.getRollupConfigs(),
-                    gaugeCollectionIntervalMillis);
+                    heapDumps.getService(), gaugeCollectionIntervalMillis);
             layout = localLayout;
         }
         return localLayout.version();
@@ -110,7 +109,7 @@ class LayoutService {
 
     private static Layout buildLayout(String version, ConfigService configService,
             List<PluginDescriptor> pluginDescriptors, @Nullable HeapDumps heapDumps,
-            ImmutableList<RollupConfig> rollupConfigs, long gaugeCollectionIntervalMillis) {
+            long gaugeCollectionIntervalMillis) {
         // use linked hash set to maintain ordering in case there is no default transaction type
         List<String> transactionTypes = Lists.newArrayList(configService.getAllTransactionTypes());
         String defaultDisplayedTransactionType = configService.getDefaultDisplayedTransactionType();
@@ -132,6 +131,10 @@ class LayoutService {
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             transactionCustomAttributes.addAll(pluginDescriptor.transactionCustomAttributes());
         }
+        List<Long> rollupExpirationMillis = Lists.newArrayList();
+        for (long hours : configService.getStorageConfig().rollupExpirationHours()) {
+            rollupExpirationMillis.add(HOURS.toMillis(hours));
+        }
         UserInterfaceConfig userInterfaceConfig = configService.getUserInterfaceConfig();
         return Layout.builder()
                 .jvmHeapDump(heapDumps != null)
@@ -144,7 +147,8 @@ class LayoutService {
                 .addAllDefaultPercentiles(
                         configService.getTransactionConfig().defaultDisplayedPercentiles())
                 .addAllTransactionCustomAttributes(transactionCustomAttributes)
-                .addAllRollupConfigs(rollupConfigs)
+                .addAllRollupConfigs(configService.getRollupConfigs())
+                .addAllRollupExpirationMillis(rollupExpirationMillis)
                 .gaugeCollectionIntervalMillis(gaugeCollectionIntervalMillis)
                 .build();
     }

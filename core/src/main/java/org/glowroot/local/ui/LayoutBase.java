@@ -35,6 +35,7 @@ abstract class LayoutBase {
     abstract ImmutableList<Double> defaultPercentiles();
     abstract ImmutableList<String> transactionCustomAttributes();
     abstract ImmutableList<RollupConfig> rollupConfigs();
+    abstract ImmutableList<Long> rollupExpirationMillis();
     abstract long gaugeCollectionIntervalMillis();
 
     @Value.Derived
