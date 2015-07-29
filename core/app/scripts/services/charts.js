@@ -337,13 +337,13 @@ glowroot.factory('charts', [
       var dataSeries;
       var value;
       var label;
-      var total = 0;
+      var found = false;
       var displayText;
       for (seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
         dataSeries = plotData[seriesIndex];
         if (dataSeries.data[dataIndex]) {
           value = dataSeries.data[dataIndex][1];
-          total += value;
+          found = true;
           displayText = display(value, dataSeries.label);
         } else {
           displayText = 'no data';
@@ -362,7 +362,7 @@ glowroot.factory('charts', [
             '<td style="font-weight: 600;">' + displayText + '</td>' +
             '</tr>';
       }
-      if (total === 0) {
+      if (!found) {
         return 'No data';
       }
       html += '</tbody></table>';
