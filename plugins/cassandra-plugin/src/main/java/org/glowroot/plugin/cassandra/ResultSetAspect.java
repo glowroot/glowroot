@@ -44,20 +44,19 @@ public class ResultSetAspect {
         //
         // does not need to be volatile, app/framework must provide visibility of ResultSets and
         // ResultSetFutures if used across threads and this can piggyback
-        private @Nullable QueryEntry glowrootLastQueryEntry;
+        private @Nullable QueryEntry glowroot$lastQueryEntry;
         @Override
         @Nullable
-        public QueryEntry getGlowrootLastQueryEntry() {
-            return glowrootLastQueryEntry;
+        public QueryEntry glowroot$getLastQueryEntry() {
+            return glowroot$lastQueryEntry;
         }
         @Override
-        public void setGlowrootLastQueryEntry(
-                @Nullable QueryEntry glowrootLastQueryEntry) {
-            this.glowrootLastQueryEntry = glowrootLastQueryEntry;
+        public void glowroot$setLastQueryEntry(@Nullable QueryEntry lastQueryEntry) {
+            this.glowroot$lastQueryEntry = lastQueryEntry;
         }
         @Override
-        public boolean hasGlowrootLastQueryEntry() {
-            return glowrootLastQueryEntry != null;
+        public boolean glowroot$hasLastQueryEntry() {
+            return glowroot$lastQueryEntry != null;
         }
     }
 
@@ -65,9 +64,9 @@ public class ResultSetAspect {
     // that extend com.datastax.driver.core.ResultSet
     public interface HasLastQueryEntry {
         @Nullable
-        QueryEntry getGlowrootLastQueryEntry();
-        void setGlowrootLastQueryEntry(@Nullable QueryEntry lastQueryEntry);
-        boolean hasGlowrootLastQueryEntry();
+        QueryEntry glowroot$getLastQueryEntry();
+        void glowroot$setLastQueryEntry(@Nullable QueryEntry lastQueryEntry);
+        boolean glowroot$hasLastQueryEntry();
     }
 
     @Pointcut(className = "com.datastax.driver.core.ResultSet", methodName = "one",
@@ -78,7 +77,7 @@ public class ResultSetAspect {
                 pluginServices.getEnabledProperty("captureResultSetNavigate");
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasLastQueryEntry resultSet) {
-            return resultSet.hasGlowrootLastQueryEntry();
+            return resultSet.glowroot$hasLastQueryEntry();
         }
         @OnBefore
         public static @Nullable Timer onBefore() {
@@ -91,7 +90,7 @@ public class ResultSetAspect {
         @OnReturn
         public static void onReturn(@BindReturn @Nullable Object row,
                 @BindReceiver HasLastQueryEntry resultSet) {
-            QueryEntry lastQueryEntry = resultSet.getGlowrootLastQueryEntry();
+            QueryEntry lastQueryEntry = resultSet.glowroot$getLastQueryEntry();
             if (lastQueryEntry == null) {
                 // tracing must be disabled (e.g. exceeded trace entry limit)
                 return;

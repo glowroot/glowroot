@@ -140,7 +140,7 @@ public class SessionAspect {
                 @BindTraveler @Nullable QueryEntry queryEntry) {
             if (queryEntry != null) {
                 if (resultSetOrResultSetFuture != null) {
-                    resultSetOrResultSetFuture.setGlowrootLastQueryEntry(queryEntry);
+                    resultSetOrResultSetFuture.glowroot$setLastQueryEntry(queryEntry);
                 }
                 queryEntry.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
             }

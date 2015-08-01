@@ -70,18 +70,18 @@ public class StatementAspect {
         //
         // does not need to be volatile, app/framework must provide visibility of Statements and
         // ResultSets if used across threads and this can piggyback
-        private @Nullable StatementMirror glowrootStatementMirror;
+        private @Nullable StatementMirror glowroot$statementMirror;
         @Override
-        public @Nullable StatementMirror getGlowrootStatementMirror() {
-            return glowrootStatementMirror;
+        public @Nullable StatementMirror glowroot$getStatementMirror() {
+            return glowroot$statementMirror;
         }
         @Override
-        public void setGlowrootStatementMirror(@Nullable StatementMirror glowrootStatementMirror) {
-            this.glowrootStatementMirror = glowrootStatementMirror;
+        public void glowroot$setStatementMirror(@Nullable StatementMirror statementMirror) {
+            this.glowroot$statementMirror = statementMirror;
         }
         @Override
-        public boolean hasGlowrootStatementMirror() {
-            return glowrootStatementMirror != null;
+        public boolean glowroot$hasStatementMirror() {
+            return glowroot$statementMirror != null;
         }
     }
 
@@ -89,9 +89,9 @@ public class StatementAspect {
     // that extend java.sql.Statement
     public interface HasStatementMirror {
         @Nullable
-        StatementMirror getGlowrootStatementMirror();
-        void setGlowrootStatementMirror(@Nullable StatementMirror glowrootStatementMirror);
-        boolean hasGlowrootStatementMirror();
+        StatementMirror glowroot$getStatementMirror();
+        void glowroot$setStatementMirror(@Nullable StatementMirror statementMirror);
+        boolean glowroot$hasStatementMirror();
     }
 
     // ================= Parameter Binding =================
@@ -109,7 +109,7 @@ public class StatementAspect {
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
                 @BindParameter int parameterIndex, @BindParameter @Nullable Object x) {
             PreparedStatementMirror mirror =
-                    (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
+                    (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
             if (mirror != null) {
                 mirror.setParameterValue(parameterIndex, x);
             }
@@ -129,7 +129,7 @@ public class StatementAspect {
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
                 @BindParameter int parameterIndex, @BindParameter @Nullable Object x) {
             PreparedStatementMirror mirror =
-                    (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
+                    (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
             if (mirror != null) {
                 if (x == null) {
                     mirror.setParameterValue(parameterIndex, null);
@@ -152,7 +152,7 @@ public class StatementAspect {
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
                 @BindParameter int parameterIndex, @BindParameter byte/*@Nullable*/[] x) {
             PreparedStatementMirror mirror =
-                    (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
+                    (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
             if (mirror != null) {
                 if (x == null) {
                     mirror.setParameterValue(parameterIndex, null);
@@ -179,7 +179,7 @@ public class StatementAspect {
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
                 @BindParameter int parameterIndex, @BindParameter @Nullable Object x) {
             PreparedStatementMirror mirror =
-                    (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
+                    (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
             if (mirror != null) {
                 if (x == null) {
                     mirror.setParameterValue(parameterIndex, null);
@@ -203,7 +203,7 @@ public class StatementAspect {
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
                 @BindParameter int parameterIndex) {
             PreparedStatementMirror mirror =
-                    (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
+                    (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
             if (mirror != null) {
                 mirror.setParameterValue(parameterIndex, null);
             }
@@ -220,7 +220,7 @@ public class StatementAspect {
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement) {
             PreparedStatementMirror mirror =
-                    (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
+                    (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
             if (mirror != null) {
                 mirror.clearParameters();
             }
@@ -239,7 +239,7 @@ public class StatementAspect {
                 // seems nothing sensible to do here other than ignore
                 return;
             }
-            StatementMirror mirror = statement.getGlowrootStatementMirror();
+            StatementMirror mirror = statement.glowroot$getStatementMirror();
             if (mirror != null) {
                 mirror.addBatch(sql);
             }
@@ -252,7 +252,7 @@ public class StatementAspect {
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement) {
             PreparedStatementMirror mirror =
-                    (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
+                    (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
             if (mirror != null) {
                 mirror.addBatch();
             }
@@ -266,7 +266,7 @@ public class StatementAspect {
     public static class ClearBatchAdvice {
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror statement) {
-            StatementMirror mirror = statement.getGlowrootStatementMirror();
+            StatementMirror mirror = statement.glowroot$getStatementMirror();
             if (mirror != null) {
                 mirror.clearBatch();
             }
@@ -283,7 +283,7 @@ public class StatementAspect {
                 pluginServices.getTimerName(StatementExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
-            return statement.hasGlowrootStatementMirror();
+            return statement.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static @Nullable QueryEntry onBefore(@BindReceiver HasStatementMirror statement,
@@ -292,7 +292,7 @@ public class StatementAspect {
                 // seems nothing sensible to do here other than ignore
                 return null;
             }
-            StatementMirror mirror = statement.getGlowrootStatementMirror();
+            StatementMirror mirror = statement.glowroot$getStatementMirror();
             if (mirror == null) {
                 // this shouldn't happen since just checked hasGlowrootStatementMirror() above
                 return null;
@@ -332,7 +332,7 @@ public class StatementAspect {
     public static class StatementExecuteQueryAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
-            return statement.hasGlowrootStatementMirror();
+            return statement.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static @Nullable QueryEntry onBefore(@BindReceiver HasStatementMirror statement,
@@ -348,8 +348,8 @@ public class StatementAspect {
             // duper fast due to ResultSet wrapping and other checks, so StatementMirror is
             // stored directly in ResultSet as an optimization
             if (resultSet != null) {
-                StatementMirror mirror = statement.getGlowrootStatementMirror();
-                resultSet.setGlowrootStatementMirror(mirror);
+                StatementMirror mirror = statement.glowroot$getStatementMirror();
+                resultSet.glowroot$setStatementMirror(mirror);
             }
             if (queryEntry != null) {
                 queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
@@ -371,7 +371,7 @@ public class StatementAspect {
     public static class StatementExecuteUpdateAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
-            return statement.hasGlowrootStatementMirror();
+            return statement.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static @Nullable QueryEntry onBefore(@BindReceiver HasStatementMirror statement,
@@ -403,13 +403,13 @@ public class StatementAspect {
                 pluginServices.getTimerName(PreparedStatementExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror preparedStatement) {
-            return preparedStatement.hasGlowrootStatementMirror();
+            return preparedStatement.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static @Nullable QueryEntry onBefore(
                 @BindReceiver HasStatementMirror preparedStatement) {
             PreparedStatementMirror mirror =
-                    (PreparedStatementMirror) preparedStatement.getGlowrootStatementMirror();
+                    (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
             if (mirror == null) {
                 // this shouldn't happen since just checked hasGlowrootStatementMirror() above
                 return null;
@@ -456,7 +456,7 @@ public class StatementAspect {
     public static class PreparedStatementExecuteQueryAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror preparedStatement) {
-            return preparedStatement.hasGlowrootStatementMirror();
+            return preparedStatement.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static @Nullable QueryEntry onBefore(
@@ -472,8 +472,8 @@ public class StatementAspect {
             // duper fast due to ResultSet wrapping and other checks, so StatementMirror is
             // stored directly in ResultSet as an optimization
             if (resultSet != null) {
-                StatementMirror mirror = preparedStatement.getGlowrootStatementMirror();
-                resultSet.setGlowrootStatementMirror(mirror);
+                StatementMirror mirror = preparedStatement.glowroot$getStatementMirror();
+                resultSet.glowroot$setStatementMirror(mirror);
             }
             if (queryEntry != null) {
                 queryEntry.endWithStackTrace(JdbcPluginProperties.stackTraceThresholdMillis(),
@@ -495,7 +495,7 @@ public class StatementAspect {
     public static class PreparedStatementExecuteUpdateAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror preparedStatement) {
-            return preparedStatement.hasGlowrootStatementMirror();
+            return preparedStatement.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static @Nullable QueryEntry onBefore(
@@ -527,20 +527,20 @@ public class StatementAspect {
                 pluginServices.getTimerName(StatementExecuteBatchAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
-            return statement.hasGlowrootStatementMirror();
+            return statement.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static @Nullable QueryEntry onBefore(@BindReceiver HasStatementMirror statement) {
             if (statement instanceof PreparedStatement) {
                 PreparedStatementMirror mirror =
-                        (PreparedStatementMirror) statement.getGlowrootStatementMirror();
+                        (PreparedStatementMirror) statement.glowroot$getStatementMirror();
                 if (mirror == null) {
                     // this shouldn't happen since just checked hasGlowrootStatementMirror() above
                     return null;
                 }
                 return onBeforePreparedStatement(mirror);
             } else {
-                StatementMirror mirror = statement.getGlowrootStatementMirror();
+                StatementMirror mirror = statement.glowroot$getStatementMirror();
                 if (mirror == null) {
                     // this shouldn't happen since just checked hasGlowrootStatementMirror() above
                     return null;
@@ -618,13 +618,13 @@ public class StatementAspect {
     public static class StatementReturnResultSetAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
-            return statement.hasGlowrootStatementMirror();
+            return statement.glowroot$hasStatementMirror();
         }
         @OnReturn
         public static void onReturn(@BindReturn HasStatementMirror resultSet,
                 @BindReceiver HasStatementMirror statement) {
-            StatementMirror mirror = statement.getGlowrootStatementMirror();
-            resultSet.setGlowrootStatementMirror(mirror);
+            StatementMirror mirror = statement.glowroot$getStatementMirror();
+            resultSet.glowroot$setStatementMirror(mirror);
         }
     }
 
@@ -637,12 +637,12 @@ public class StatementAspect {
                 pluginServices.getTimerName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
-            return statement.hasGlowrootStatementMirror() && pluginServices.isEnabled();
+            return statement.glowroot$hasStatementMirror() && pluginServices.isEnabled();
         }
         @OnBefore
         public static @Nullable Timer onBefore(
                 @BindReceiver HasStatementMirror statement) {
-            StatementMirror mirror = statement.getGlowrootStatementMirror();
+            StatementMirror mirror = statement.glowroot$getStatementMirror();
             if (mirror != null) {
                 // this should always be true since just checked hasGlowrootStatementMirror() above
                 mirror.clearLastQuery();

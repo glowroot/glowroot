@@ -57,8 +57,7 @@ public class ConnectionAspect {
     @Pointcut(className = "java.sql.Connection", methodName = "prepare*",
             methodParameterTypes = {"java.lang.String", ".."}, timerName = "jdbc prepare")
     public static class PrepareAdvice {
-        private static final TimerName timerName =
-                pluginServices.getTimerName(PrepareAdvice.class);
+        private static final TimerName timerName = pluginServices.getTimerName(PrepareAdvice.class);
         @OnBefore
         public static @Nullable Timer onBefore() {
             if (capturePreparedStatementCreation.value()) {
@@ -75,7 +74,7 @@ public class ConnectionAspect {
                 return;
             }
             // this runs even if plugin is temporarily disabled
-            preparedStatement.setGlowrootStatementMirror(new PreparedStatementMirror(sql));
+            preparedStatement.glowroot$setStatementMirror(new PreparedStatementMirror(sql));
         }
         @OnAfter
         public static void onAfter(@BindTraveler @Nullable Timer timer) {
@@ -91,7 +90,7 @@ public class ConnectionAspect {
         @OnReturn
         public static void onReturn(@BindReturn HasStatementMirror statement) {
             // this runs even if glowroot temporarily disabled
-            statement.setGlowrootStatementMirror(new StatementMirror());
+            statement.glowroot$setStatementMirror(new StatementMirror());
         }
     }
 

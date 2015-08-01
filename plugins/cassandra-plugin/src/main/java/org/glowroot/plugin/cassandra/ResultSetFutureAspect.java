@@ -41,7 +41,7 @@ public class ResultSetFutureAspect {
         private static final TimerName timerName = pluginServices.getTimerName(GetAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasLastQueryEntry resultSetFuture) {
-            return resultSetFuture.hasGlowrootLastQueryEntry();
+            return resultSetFuture.glowroot$hasLastQueryEntry();
         }
         @OnBefore
         public static Timer onBefore() {
@@ -50,9 +50,9 @@ public class ResultSetFutureAspect {
         @OnReturn
         public static void onReturn(@BindReturn @Nullable HasLastQueryEntry resultSet,
                 @BindReceiver HasLastQueryEntry resultSetFuture) {
-            QueryEntry lastQueryEntry = resultSetFuture.getGlowrootLastQueryEntry();
+            QueryEntry lastQueryEntry = resultSetFuture.glowroot$getLastQueryEntry();
             if (resultSet != null) {
-                resultSet.setGlowrootLastQueryEntry(lastQueryEntry);
+                resultSet.glowroot$setLastQueryEntry(lastQueryEntry);
             }
         }
         @OnAfter

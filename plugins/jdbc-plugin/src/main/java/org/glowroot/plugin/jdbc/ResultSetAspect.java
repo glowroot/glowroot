@@ -53,7 +53,7 @@ public class ResultSetAspect {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return resultSet.hasGlowrootStatementMirror() && pluginServices.isEnabled();
+            return resultSet.glowroot$hasStatementMirror() && pluginServices.isEnabled();
         }
         @OnBefore
         public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
@@ -66,7 +66,7 @@ public class ResultSetAspect {
         @OnReturn
         public static void onReturn(@BindReturn boolean currentRowValid,
                 @BindReceiver HasStatementMirror resultSet) {
-            StatementMirror mirror = resultSet.getGlowrootStatementMirror();
+            StatementMirror mirror = resultSet.glowroot$getStatementMirror();
             if (mirror == null) {
                 // this shouldn't happen since just checked above in isEnabled(), unless some
                 // bizarre concurrent mis-usage of ResultSet
@@ -104,7 +104,7 @@ public class ResultSetAspect {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return resultSet.hasGlowrootStatementMirror() && pluginServices.isEnabled();
+            return resultSet.glowroot$hasStatementMirror() && pluginServices.isEnabled();
         }
         @OnBefore
         public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
@@ -117,7 +117,7 @@ public class ResultSetAspect {
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror resultSet) {
             try {
-                StatementMirror mirror = resultSet.getGlowrootStatementMirror();
+                StatementMirror mirror = resultSet.glowroot$getStatementMirror();
                 if (mirror == null) {
                     // this shouldn't happen since just checked above in isEnabled(), unless some
                     // bizarre concurrent mis-usage of ResultSet
@@ -151,7 +151,7 @@ public class ResultSetAspect {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return timerEnabled.value() && resultSet.hasGlowrootStatementMirror();
+            return timerEnabled.value() && resultSet.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
@@ -173,7 +173,7 @@ public class ResultSetAspect {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return timerEnabled.value() && resultSet.hasGlowrootStatementMirror();
+            return timerEnabled.value() && resultSet.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
@@ -186,7 +186,7 @@ public class ResultSetAspect {
     }
 
     private static Timer onBeforeCommon(HasStatementMirror resultSet, TimerName timerName) {
-        StatementMirror mirror = resultSet.getGlowrootStatementMirror();
+        StatementMirror mirror = resultSet.glowroot$getStatementMirror();
         if (mirror == null) {
             // this shouldn't happen since just checked above in isEnabled(), unless some
             // bizarre concurrent mis-usage of ResultSet
