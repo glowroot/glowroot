@@ -89,13 +89,13 @@
   </div>
 </div>
 <br>
-<div class="col-xs-12 col-sm-3"
-     style="float: right; margin: 10px auto 0; padding-right: 0;">
+<div class="col-lg-3 col-lg-push-9"
+     style="margin: 10px auto 0; padding-right: 0;">
   <div ng-show="chartLimitExceeded">
     <div class="gt-chart-warning">
       <strong>
-        Specified limit exceeded,<br>
-        only displaying the slowest<br>
+        Specified limit exceeded,
+        only displaying slowest
         {{chartLimit}} matching traces
       </strong>
     </div>
@@ -103,7 +103,7 @@
 </div>
 <div ng-form="formCtrl"
      gt-form-with-primary-button
-     class="col-xs-12 col-sm-9 form-horizontal"
+     class="col-lg-9 col-lg-pull-3 form-horizontal trace-filters"
      style="float: left; margin: 20px auto 0 auto;">
   <div class="form-group"
        ng-class="{'has-error': formCtrl.filterDurationLow.$invalid || formCtrl.filterDurationHigh.$invalid}">
