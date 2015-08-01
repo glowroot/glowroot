@@ -270,10 +270,10 @@ HandlebarsRendering = (function () {
   Handlebars.registerHelper('exceptionHtml', function (throwable) {
     // don't pre-wrap stack traces (using overflow-x: auto on container)
     var html = '<div style="white-space: pre;">';
-    html += '<strong>';
+    html += '<div style="font-weight: bold; white-space: pre-wrap;">';
     while (throwable) {
       var message = throwable.display.replace(/\n/g, '\n    ');
-      html += escapeHtml(message) + '</strong>\n';
+      html += escapeHtml(message) + '\n</div>';
       var i;
       for (i = 0; i < throwable.stackTrace.length; i++) {
         html += 'at ' + escapeHtml(throwable.stackTrace[i]) + '\n';
@@ -283,7 +283,7 @@ HandlebarsRendering = (function () {
       }
       throwable = throwable.cause;
       if (throwable) {
-        html += '\n<strong>Caused by: ';
+        html += '\n<div style="font-weight: bold; white-space: pre-wrap;">Caused by: ';
       }
     }
     html += '</div>';
