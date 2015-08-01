@@ -384,7 +384,7 @@ glowroot.controller('TracesCtrl', [
       },
       {
         display: 'Does not contain',
-        value: 'notContains'
+        value: 'not-contains'
       }
     ];
 
