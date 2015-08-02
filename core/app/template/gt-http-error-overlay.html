@@ -1,3 +1,4 @@
-<div class="gt-panel-overlay" ng-show="httpError">
+<!-- z-index 1000 to keep error overlay on top of chart controls (which are at z-index 800) -->
+<div class="gt-panel-overlay" ng-show="httpError" style="z-index: 1000;">
   <div ng-include src="'template/gt-http-error.html'"></div>
 </div>

@@ -13,10 +13,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div class="gt-panel-overlay" ng-show="httpError">
-  <!-- need top padding so message is not hidden under navbar -->
-  <div ng-include src="'template/gt-http-error.html'" style="padding-top: 50px;"></div>
-</div>
 <div class="gt-header clearfix"
      style="padding-bottom: 46px;">
   <div class="gt-header-page-name pull-left">
@@ -65,7 +61,6 @@
     </div>
     <div class="panel-body">
       <div ui-view="tabs"></div>
-      <div ng-include src="'template/gt-http-error-overlay.html'"></div>
       <div ui-view="main"></div>
     </div>
   </div>

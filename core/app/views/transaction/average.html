@@ -13,198 +13,201 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div style="text-align: center; margin-top: -6px; margin-bottom: 2px; color: #555;">
-  <label class="radio-inline">
-    <input type="radio" name="view" value="average" ng-click="clickTopRadioButton('average')" checked>
-    <a class="gt-radio-link"
-       href="transaction/average{{tabQueryString()}}"
-       ng-click="clickActiveTopLink($event)">
-      average
-    </a>
-  </label>
-  <label class="radio-inline">
-    <input type="radio" name="view" value="percentiles" ng-click="clickTopRadioButton('percentiles')">
-    <a class="gt-radio-link"
-       href="transaction/percentiles{{tabQueryString()}}">
-      percentiles
-    </a>
-  </label>
-</div>
-<!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
-<div class="clearfix" style="position: relative; z-index: 800;">
-  <div class="pull-right" style="margin-top: -20px; margin-bottom: -8px; font-size: 22px;">
-    <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-    <a role="button"
-       class="gt-chart-button"
-       href="#"
-       ng-click="zoomOut()">
-      <i title="Zoom out"
-         class="fa fa-search-minus"></i><!-- lack of space here is significant
- --></a>
-    <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-    <a role="button"
-       class="gt-chart-button"
-       href="#"
-       ng-click="refresh()">
-      <i title="Refresh"
-         class="fa fa-refresh"></i><!-- lack of space here is significant
- --></a>
-    <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-    <a role="button"
-       class="gt-chart-button"
-       href="#"
-       popover-template="'template/help/chart.html'"
-       popover-placement="left"
-       popover-trigger="focus">
-      <i title="Help"
-         class="fa fa-question-circle"></i><!-- lack of space here is significant
- --></a>
-  </div>
-</div>
 <div style="position: relative;">
-  <!-- negative position is so that overlay will cover chart legend which sometimes stick beyond container -->
-  <div class="gt-panel-overlay"
-       ng-show="showChartSpinner"
-       style="right: -20px; pointer-events: none;">
+  <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+  <div style="text-align: center; margin-top: -6px; margin-bottom: 2px; color: #555;">
+    <label class="radio-inline">
+      <input type="radio" name="view" value="average" ng-click="clickTopRadioButton('average')" checked>
+      <a class="gt-radio-link"
+         href="transaction/average{{tabQueryString()}}"
+         ng-click="clickActiveTopLink($event)">
+        average
+      </a>
+    </label>
+    <label class="radio-inline">
+      <input type="radio" name="view" value="percentiles" ng-click="clickTopRadioButton('percentiles')">
+      <a class="gt-radio-link"
+         href="transaction/percentiles{{tabQueryString()}}">
+        percentiles
+      </a>
+    </label>
   </div>
-  <div class="gt-chart-container">
-    <div gt-spinner
-         gt-show="showChartSpinner"
-         gt-no-delay="true"
-         id="chartSpinner"
-         class="gt-chart-panel">
+  <!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
+  <div class="clearfix" style="position: relative; z-index: 800;">
+    <div class="pull-right" style="margin-top: -20px; margin-bottom: -8px; font-size: 22px;">
+      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
+      <a role="button"
+         class="gt-chart-button"
+         href="#"
+         ng-click="zoomOut()">
+        <i title="Zoom out"
+           class="fa fa-search-minus"></i><!-- lack of space here is significant
+ --></a>
+      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
+      <a role="button"
+         class="gt-chart-button"
+         href="#"
+         ng-click="refresh()">
+        <i title="Refresh"
+           class="fa fa-refresh"></i><!-- lack of space here is significant
+ --></a>
+      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
+      <a role="button"
+         class="gt-chart-button"
+         href="#"
+         popover-template="'template/help/chart.html'"
+         popover-placement="left"
+         popover-trigger="focus">
+        <i title="Help"
+           class="fa fa-question-circle"></i><!-- lack of space here is significant
+ --></a>
     </div>
-    <div class="gt-chart-dimensions" id="chart"></div>
-    <div ng-show="chartNoData && !showChartSpinner"
-         class="gt-chart-panel"
-         style="display: table;">
-      <div style="display: table-cell; text-align: center; vertical-align: middle;">
-        <div class="gt-chart-no-data">No data for this time period</div>
+  </div>
+  <div style="position: relative;">
+    <!-- negative position is so that overlay will cover chart legend which sometimes stick beyond container -->
+    <div class="gt-panel-overlay"
+         ng-show="showChartSpinner"
+         style="right: -20px; pointer-events: none;">
+    </div>
+    <div class="gt-chart-container">
+      <div gt-spinner
+           gt-show="showChartSpinner"
+           gt-no-delay="true"
+           id="chartSpinner"
+           class="gt-chart-panel">
       </div>
-    </div>
-  </div>
-  <div class="legend" id="chartLegend"
-       ng-hide="chartNoData"
-       style="position: relative; text-align: center; margin-top: 10px; width: 100%;">
-    <div class="gt-inline-block" style="max-width: 600px;">
-      <div class="gt-inline-block" ng-repeat="seriesLabel in seriesLabels"
-           style="margin: 0 6px;">
-        <div class="legendColorBox gt-inline-block"
-             style="border: 1px solid rgb(204, 204, 204); padding: 1px;">
-          <div style="width: 4px; height: 0px; border: 5px solid rgb(237, 194, 64); overflow: hidden;"
-               ng-style="{'border': '5px solid ' + seriesLabel.color}">
-          </div>
+      <div class="gt-chart-dimensions" id="chart"></div>
+      <div ng-show="chartNoData && !showChartSpinner"
+           class="gt-chart-panel"
+           style="display: table;">
+        <div style="display: table-cell; text-align: center; vertical-align: middle;">
+          <div class="gt-chart-no-data">No data for this time period</div>
         </div>
-        <div class="legendLabel gt-inline-block">{{seriesLabel.text}}</div>
       </div>
     </div>
-  </div>
-  <div ng-show="mergedAggregate.transactionCount"
-       style="position: relative; padding-top: 30px; margin-left: 40px;">
-    <div>
-      <label>
-        Complete timer breakdown:
-      </label>
-    </div>
-    <table class="gt-timers-table gt-indent2"
-           ng-hide="showTreeView"
-           style="border-spacing: 0;">
-      <thead>
-      <tr>
-        <td></td>
-        <td style="font-weight: 600;">total&nbsp;(ms)</td>
-        <td style="font-weight: 600;">count</td>
-        <td>
-          <button class="gt-flat-btn gt-flat-btn-big gt-link-color"
-                  ng-click="showTreeView = true"
-                  style="margin-top: -6px; margin-bottom: -6px;">
-            switch to tree view
-          </button>
-        </td>
-      </tr>
-      </thead>
-      <tbody>
-      <tr class="align-top"
-          ng-repeat="flattenedTimer in flattenedTimers">
-        <td style="text-align: left;">
-          <div>
-            <div class="gt-break-word gt-second-line-indent">{{flattenedTimer.name}}</div>
-          </div>
-        </td>
-        <td>{{flattenedTimer.totalMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}}</td>
-        <td>{{flattenedTimer.count / mergedAggregate.transactionCount | gtCount}}</td>
-        <td></td>
-      </tr>
-      </tbody>
-    </table>
-    <table class="gt-timers-table gt-indent2"
-           ng-show="showTreeView"
-           style="border-spacing: 0;">
-      <thead>
-      <tr>
-        <td></td>
-        <td style="font-weight: 600;">total&nbsp;(ms)</td>
-        <td style="font-weight: 600;">count</td>
-        <td>
-          <button class="gt-flat-btn gt-flat-btn-big gt-link-color"
-                  ng-click="showTreeView = false"
-                  style="margin-top: -6px; margin-bottom: -6px;">
-            switch to flattened view
-          </button>
-        </td>
-      </tr>
-      </thead>
-      <tbody>
-      <tr class="align-top"
-          ng-repeat="treeTimer in treeTimers">
-        <td style="text-align: left;">
-          <div ng-style="{'margin-left': treeTimer.nestingLevel + 'em'}">
-            <div class="gt-break-word gt-second-line-indent">
-              {{treeTimer.name}}{{treeTimer.extended ? ' (extended)' : ''}}
+    <div class="legend" id="chartLegend"
+         ng-hide="chartNoData"
+         style="position: relative; text-align: center; margin-top: 10px; width: 100%;">
+      <div class="gt-inline-block" style="max-width: 600px;">
+        <div class="gt-inline-block" ng-repeat="seriesLabel in seriesLabels"
+             style="margin: 0 6px;">
+          <div class="legendColorBox gt-inline-block"
+               style="border: 1px solid rgb(204, 204, 204); padding: 1px;">
+            <div style="width: 4px; height: 0px; border: 5px solid rgb(237, 194, 64); overflow: hidden;"
+                 ng-style="{'border': '5px solid ' + seriesLabel.color}">
             </div>
           </div>
-        </td>
-        <td>{{treeTimer.totalMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}}</td>
-        <td>{{treeTimer.count / mergedAggregate.transactionCount | gtCount}}</td>
-        <td></td>
-      </tr>
-      </tbody>
-    </table>
-
-    <div ng-show="threadInfoAggregate" style="margin-top: 20px;">
-      <label>
-        Average JVM thread info:
-      </label>
-
-      <div class="gt-indent2">
-        <div ng-show="threadInfoAggregate.totalCpuMicros">
-          CPU time:
-          {{threadInfoAggregate.totalCpuMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}} ms
-        </div>
-        <div ng-show="threadInfoAggregate.totalBlockedMicros">
-          Blocked time:
-          {{threadInfoAggregate.totalBlockedMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}} ms
-        </div>
-        <div ng-show="threadInfoAggregate.totalWaitedMicros">
-          Waited time:
-          {{threadInfoAggregate.totalWaitedMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}} ms
-        </div>
-        <div ng-show="threadInfoAggregate.totalAllocatedKBytes">
-          Allocated memory:
-          {{threadInfoAggregate.totalAllocatedKBytes * 1024 / mergedAggregate.transactionCount | gtBytes}}
+          <div class="legendLabel gt-inline-block">{{seriesLabel.text}}</div>
         </div>
       </div>
     </div>
+    <div ng-show="mergedAggregate.transactionCount"
+         style="position: relative; padding-top: 30px; margin-left: 40px;">
+      <div>
+        <label>
+          Complete timer breakdown:
+        </label>
+      </div>
+      <table class="gt-timers-table gt-indent2"
+             ng-hide="showTreeView"
+             style="border-spacing: 0;">
+        <thead>
+        <tr>
+          <td></td>
+          <td style="font-weight: 600;">total&nbsp;(ms)</td>
+          <td style="font-weight: 600;">count</td>
+          <td>
+            <button class="gt-flat-btn gt-flat-btn-big gt-link-color"
+                    ng-click="showTreeView = true"
+                    style="margin-top: -6px; margin-bottom: -6px;">
+              switch to tree view
+            </button>
+          </td>
+        </tr>
+        </thead>
+        <tbody>
+        <tr class="align-top"
+            ng-repeat="flattenedTimer in flattenedTimers">
+          <td style="text-align: left;">
+            <div>
+              <div class="gt-break-word gt-second-line-indent">{{flattenedTimer.name}}</div>
+            </div>
+          </td>
+          <td>{{flattenedTimer.totalMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}}</td>
+          <td>{{flattenedTimer.count / mergedAggregate.transactionCount | gtCount}}</td>
+          <td></td>
+        </tr>
+        </tbody>
+      </table>
+      <table class="gt-timers-table gt-indent2"
+             ng-show="showTreeView"
+             style="border-spacing: 0;">
+        <thead>
+        <tr>
+          <td></td>
+          <td style="font-weight: 600;">total&nbsp;(ms)</td>
+          <td style="font-weight: 600;">count</td>
+          <td>
+            <button class="gt-flat-btn gt-flat-btn-big gt-link-color"
+                    ng-click="showTreeView = false"
+                    style="margin-top: -6px; margin-bottom: -6px;">
+              switch to flattened view
+            </button>
+          </td>
+        </tr>
+        </thead>
+        <tbody>
+        <tr class="align-top"
+            ng-repeat="treeTimer in treeTimers">
+          <td style="text-align: left;">
+            <div ng-style="{'margin-left': treeTimer.nestingLevel + 'em'}">
+              <div class="gt-break-word gt-second-line-indent">
+                {{treeTimer.name}}{{treeTimer.extended ? ' (extended)' : ''}}
+              </div>
+            </div>
+          </td>
+          <td>{{treeTimer.totalMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}}</td>
+          <td>{{treeTimer.count / mergedAggregate.transactionCount | gtCount}}</td>
+          <td></td>
+        </tr>
+        </tbody>
+      </table>
 
-    <div style="margin-top: 20px;">
-      <label>Throughput:</label>
-      {{(60 * 1000 * mergedAggregate.transactionCount / lastDurationMillis).toFixed(1)}}/min
-      ({{mergedAggregate.transactionCount}}
+      <div ng-show="threadInfoAggregate" style="margin-top: 20px;">
+        <label>
+          Average JVM thread info:
+        </label>
+
+        <div class="gt-indent2">
+          <div ng-show="threadInfoAggregate.totalCpuMicros">
+            CPU time:
+            {{threadInfoAggregate.totalCpuMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}} ms
+          </div>
+          <div ng-show="threadInfoAggregate.totalBlockedMicros">
+            Blocked time:
+            {{threadInfoAggregate.totalBlockedMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}} ms
+          </div>
+          <div ng-show="threadInfoAggregate.totalWaitedMicros">
+            Waited time:
+            {{threadInfoAggregate.totalWaitedMicros / (1000 * mergedAggregate.transactionCount) | gtMillis}} ms
+          </div>
+          <div ng-show="threadInfoAggregate.totalAllocatedKBytes">
+            Allocated memory:
+            {{threadInfoAggregate.totalAllocatedKBytes * 1024 / mergedAggregate.transactionCount | gtBytes}}
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <label>Throughput:</label>
+        {{(60 * 1000 * mergedAggregate.transactionCount / lastDurationMillis).toFixed(1)}}/min
+        ({{mergedAggregate.transactionCount}}
       <span ng-pluralize
             count="mergedAggregate.transactionCount"
             when="{'1':'transaction','other':'transactions'}">
       </span>
-      in this period)
+        in this period)
+      </div>
     </div>
   </div>
 </div>

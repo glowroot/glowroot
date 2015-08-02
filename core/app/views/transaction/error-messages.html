@@ -13,128 +13,132 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<div ng-form
-     gt-form-with-primary-button
-     style="margin-left: 42px; margin-bottom: 5px;">
-  <input type="text"
-         ng-model="filter"
-         class="form-control"
-         placeholder="filter the error messages"
-         id="filter"
-         style="display: inline-block; width: 25em; vertical-align: middle;">
-  <button class="btn btn-primary"
-          ng-click="refreshButtonClick()"
-          style="vertical-align: middle; margin-left: 5px;">
-    Refresh
-  </button>
-  <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-  <a role="button"
-     class="gt-chart-button gt-inline-block"
-     href="#"
-     popover-template="'template/help/error-message-filter.html'"
-     popover-placement="top"
-     popover-trigger="focus">
-    <i title="Help"
-       class="fa fa-question-circle"
-       style="font-size: 28px; vertical-align: middle; margin-left: 3px;"></i><!-- lack of space here is significant
- --></a>
-  <div ng-if="parsingError" class="gt-red" style="margin-top: 10px; margin-bottom: -5px;">
-    {{parsingError}}
-  </div>
-</div>
-<!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
-<div class="clearfix" style="position: relative; z-index: 800;">
-  <div class="pull-right" style="margin-top: -15px; margin-bottom: -8px; font-size: 22px;">
+<div style="position: relative;">
+  <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+  <div ng-form
+       gt-form-with-primary-button
+       style="margin-left: 42px; margin-bottom: 5px;">
+    <input type="text"
+           ng-model="filter"
+           class="form-control"
+           placeholder="filter the error messages"
+           id="filter"
+           style="display: inline-block; width: 25em; vertical-align: middle;">
+    <button class="btn btn-primary"
+            ng-click="refreshButtonClick()"
+            style="vertical-align: middle; margin-left: 5px;">
+      Refresh
+    </button>
     <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
     <a role="button"
-       class="gt-chart-button"
+       class="gt-chart-button gt-inline-block"
        href="#"
-       ng-click="zoomOut()">
-      <i title="Zoom out"
-         class="fa fa-search-minus"></i><!-- lack of space here is significant
- --></a>
-    <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-    <a role="button"
-       class="gt-chart-button"
-       href="#"
-       ng-click="refreshButtonClick()">
-      <i title="Refresh"
-         class="fa fa-refresh"></i><!-- lack of space here is significant
- --></a>
-    <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
-    <a role="button"
-       class="gt-chart-button"
-       href="#"
-       popover-template="'template/help/chart.html'"
-       popover-placement="left"
+       popover-template="'template/help/error-message-filter.html'"
+       popover-placement="top"
        popover-trigger="focus">
       <i title="Help"
-         class="fa fa-question-circle"></i><!-- lack of space here is significant
+         class="fa fa-question-circle"
+         style="font-size: 28px; vertical-align: middle; margin-left: 3px;"></i><!-- lack of space here is significant
  --></a>
-  </div>
-</div>
-<div style="position: relative;">
-  <!-- negative position is so that overlay will cover chart legend which sometimes stick beyond container -->
-  <!-- pointer-events: none is to allow scrollwheel events to pass through to flot in order to handle rapid zooming
-       and to prevent the browser from intercepting rapid ctrl + scrollwheel and doing browser level zoom -->
-  <div class="gt-panel-overlay"
-       ng-show="showChartSpinner"
-       style="right: -20px; pointer-events: none;">
-  </div>
-  <div class="gt-chart-container">
-    <div gt-spinner
-         gt-show="showChartSpinner"
-         gt-no-delay="true"
-         id="chartSpinner"
-         class="gt-chart-panel">
+
+    <div ng-if="parsingError" class="gt-red" style="margin-top: 10px; margin-bottom: -5px;">
+      {{parsingError}}
     </div>
-    <div class="gt-chart-dimensions" id="chart"></div>
-    <div ng-show="chartNoData && !showChartSpinner"
-         class="gt-chart-panel"
-         style="display: table;">
-      <div style="display: table-cell; text-align: center; vertical-align: middle;">
-        <div class="gt-chart-no-data">No data for this time period</div>
+  </div>
+  <!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
+  <div class="clearfix" style="position: relative; z-index: 800;">
+    <div class="pull-right" style="margin-top: -15px; margin-bottom: -8px; font-size: 22px;">
+      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
+      <a role="button"
+         class="gt-chart-button"
+         href="#"
+         ng-click="zoomOut()">
+        <i title="Zoom out"
+           class="fa fa-search-minus"></i><!-- lack of space here is significant
+ --></a>
+      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
+      <a role="button"
+         class="gt-chart-button"
+         href="#"
+         ng-click="refreshButtonClick()">
+        <i title="Refresh"
+           class="fa fa-refresh"></i><!-- lack of space here is significant
+ --></a>
+      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
+      <a role="button"
+         class="gt-chart-button"
+         href="#"
+         popover-template="'template/help/chart.html'"
+         popover-placement="left"
+         popover-trigger="focus">
+        <i title="Help"
+           class="fa fa-question-circle"></i><!-- lack of space here is significant
+ --></a>
+    </div>
+  </div>
+  <div style="position: relative;">
+    <!-- negative position is so that overlay will cover chart legend which sometimes stick beyond container -->
+    <!-- pointer-events: none is to allow scrollwheel events to pass through to flot in order to handle rapid zooming
+         and to prevent the browser from intercepting rapid ctrl + scrollwheel and doing browser level zoom -->
+    <div class="gt-panel-overlay"
+         ng-show="showChartSpinner"
+         style="right: -20px; pointer-events: none;">
+    </div>
+    <div class="gt-chart-container">
+      <div gt-spinner
+           gt-show="showChartSpinner"
+           gt-no-delay="true"
+           id="chartSpinner"
+           class="gt-chart-panel">
+      </div>
+      <div class="gt-chart-dimensions" id="chart"></div>
+      <div ng-show="chartNoData && !showChartSpinner"
+           class="gt-chart-panel"
+           style="display: table;">
+        <div style="display: table-cell; text-align: center; vertical-align: middle;">
+          <div class="gt-chart-no-data">No data for this time period</div>
+        </div>
       </div>
     </div>
-  </div>
-  <!-- 32px + 8px (padding on tds) is to match 40px margin on transactions tab -->
-  <div ng-hide="chartNoData"
-       style="position: relative; padding-top: 40px; margin-left: 32px;">
-    <table class="table">
-      <thead>
-      <tr>
-        <th width="98%">
-          Error
-        </th>
-        <th width="1%">
-          Count
-        </th>
-        <th width="1%">
-          Traces
-        </th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr ng-repeat="errorMessage in errorMessages">
-        <!-- no whitespace/indentation inside td is important here -->
-        <td style="word-break: break-all; white-space: pre-line;">{{errorMessage.message}}</td>
-        <td style="text-align: right;">
-          {{errorMessage.count}}
-        </td>
-        <td style="white-space: nowrap;">
-          <a ng-href="error/traces{{tracesQueryString(errorMessage)}}">
-            see traces
-          </a>
-        </td>
-      </tr>
-      </tbody>
-    </table>
-    <div ng-show="moreErrorMessagesAvailable"
-         style="vertical-align: middle; padding: 20px 0 0 30px;">
-      <div gt-button
-           gt-btn-class="btn-default"
-           gt-label="Show more"
-           gt-click="showMoreErrorMessages(deferred)">
+    <!-- 32px + 8px (padding on tds) is to match 40px margin on transactions tab -->
+    <div ng-hide="chartNoData"
+         style="position: relative; padding-top: 40px; margin-left: 32px;">
+      <table class="table">
+        <thead>
+        <tr>
+          <th width="98%">
+            Error
+          </th>
+          <th width="1%">
+            Count
+          </th>
+          <th width="1%">
+            Traces
+          </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="errorMessage in errorMessages">
+          <!-- no whitespace/indentation inside td is important here -->
+          <td style="word-break: break-all; white-space: pre-line;">{{errorMessage.message}}</td>
+          <td style="text-align: right;">
+            {{errorMessage.count}}
+          </td>
+          <td style="white-space: nowrap;">
+            <a ng-href="error/traces{{tracesQueryString(errorMessage)}}">
+              see traces
+            </a>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+      <div ng-show="moreErrorMessagesAvailable"
+           style="vertical-align: middle; padding: 20px 0 0 30px;">
+        <div gt-button
+             gt-btn-class="btn-default"
+             gt-label="Show more"
+             gt-click="showMoreErrorMessages(deferred)">
+        </div>
       </div>
     </div>
   </div>
