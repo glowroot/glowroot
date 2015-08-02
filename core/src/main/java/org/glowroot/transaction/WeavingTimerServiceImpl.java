@@ -15,10 +15,10 @@
  */
 package org.glowroot.transaction;
 
-import org.glowroot.api.PluginServices.ConfigListener;
-import org.glowroot.api.TimerName;
-import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.config.ConfigService;
+import org.glowroot.plugin.api.PluginServices.ConfigListener;
+import org.glowroot.plugin.api.TimerName;
+import org.glowroot.plugin.api.weaving.Pointcut;
 import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.Transaction;
 import org.glowroot.weaving.WeavingTimerService;

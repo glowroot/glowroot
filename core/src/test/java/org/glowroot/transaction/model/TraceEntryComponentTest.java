@@ -18,7 +18,7 @@ package org.glowroot.transaction.model;
 import com.google.common.base.Ticker;
 import org.junit.Test;
 
-import org.glowroot.api.MessageSupplier;
+import org.glowroot.plugin.api.MessageSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

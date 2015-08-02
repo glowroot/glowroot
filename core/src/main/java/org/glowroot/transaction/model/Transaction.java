@@ -37,14 +37,14 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.ErrorMessage;
-import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.TimerName;
-import org.glowroot.api.internal.ReadableErrorMessage;
-import org.glowroot.api.internal.ReadableMessage;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.config.AdvancedConfigBase;
 import org.glowroot.jvm.ThreadAllocatedBytes;
+import org.glowroot.plugin.api.ErrorMessage;
+import org.glowroot.plugin.api.MessageSupplier;
+import org.glowroot.plugin.api.TimerName;
+import org.glowroot.plugin.api.internal.ReadableErrorMessage;
+import org.glowroot.plugin.api.internal.ReadableMessage;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

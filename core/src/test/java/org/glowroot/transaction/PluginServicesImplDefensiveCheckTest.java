@@ -23,15 +23,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.PluginServices.ConfigListener;
-import org.glowroot.api.TimerName;
 import org.glowroot.common.Clock;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.TransactionConfig;
 import org.glowroot.config.PluginDescriptor;
+import org.glowroot.config.TransactionConfig;
 import org.glowroot.jvm.ThreadAllocatedBytes;
+import org.glowroot.plugin.api.MessageSupplier;
+import org.glowroot.plugin.api.PluginServices.ConfigListener;
+import org.glowroot.plugin.api.TimerName;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;

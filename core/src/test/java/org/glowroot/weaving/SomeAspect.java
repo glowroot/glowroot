@@ -17,27 +17,27 @@ package org.glowroot.weaving;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.api.OptionalReturn;
-import org.glowroot.api.weaving.BindClassMeta;
-import org.glowroot.api.weaving.BindMethodMeta;
-import org.glowroot.api.weaving.BindMethodName;
-import org.glowroot.api.weaving.BindOptionalReturn;
-import org.glowroot.api.weaving.BindParameter;
-import org.glowroot.api.weaving.BindParameterArray;
-import org.glowroot.api.weaving.BindReceiver;
-import org.glowroot.api.weaving.BindReturn;
-import org.glowroot.api.weaving.BindThrowable;
-import org.glowroot.api.weaving.BindTraveler;
-import org.glowroot.api.weaving.IsEnabled;
-import org.glowroot.api.weaving.MethodModifier;
-import org.glowroot.api.weaving.Mixin;
-import org.glowroot.api.weaving.MixinInit;
-import org.glowroot.api.weaving.OnAfter;
-import org.glowroot.api.weaving.OnBefore;
-import org.glowroot.api.weaving.OnReturn;
-import org.glowroot.api.weaving.OnThrow;
-import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.api.weaving.Shim;
+import org.glowroot.plugin.api.OptionalReturn;
+import org.glowroot.plugin.api.weaving.BindClassMeta;
+import org.glowroot.plugin.api.weaving.BindMethodMeta;
+import org.glowroot.plugin.api.weaving.BindMethodName;
+import org.glowroot.plugin.api.weaving.BindOptionalReturn;
+import org.glowroot.plugin.api.weaving.BindParameter;
+import org.glowroot.plugin.api.weaving.BindParameterArray;
+import org.glowroot.plugin.api.weaving.BindReceiver;
+import org.glowroot.plugin.api.weaving.BindReturn;
+import org.glowroot.plugin.api.weaving.BindThrowable;
+import org.glowroot.plugin.api.weaving.BindTraveler;
+import org.glowroot.plugin.api.weaving.IsEnabled;
+import org.glowroot.plugin.api.weaving.MethodModifier;
+import org.glowroot.plugin.api.weaving.Mixin;
+import org.glowroot.plugin.api.weaving.MixinInit;
+import org.glowroot.plugin.api.weaving.OnAfter;
+import org.glowroot.plugin.api.weaving.OnBefore;
+import org.glowroot.plugin.api.weaving.OnReturn;
+import org.glowroot.plugin.api.weaving.OnThrow;
+import org.glowroot.plugin.api.weaving.Pointcut;
+import org.glowroot.plugin.api.weaving.Shim;
 
 public class SomeAspect {
 

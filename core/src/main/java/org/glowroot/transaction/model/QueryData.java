@@ -22,8 +22,8 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Ticker;
 
-import org.glowroot.api.Timer;
 import org.glowroot.common.Tickers;
+import org.glowroot.plugin.api.Timer;
 
 // TODO update this comment that was copied from TimerImpl
 //

@@ -18,8 +18,8 @@ package org.glowroot.plugin.jdbc;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMultimap;
 
-import org.glowroot.api.PluginServices;
-import org.glowroot.api.PluginServices.ConfigListener;
+import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.PluginServices.ConfigListener;
 
 // this is public so it can be called from other plugins
 public class JdbcPluginProperties {

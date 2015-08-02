@@ -21,7 +21,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
-import org.glowroot.api.PluginServices;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.Threads;
@@ -31,6 +30,7 @@ import org.glowroot.container.config.UserRecordingConfig;
 import org.glowroot.container.trace.ProfileNode;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.Trace.Existence;
+import org.glowroot.plugin.api.PluginServices;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

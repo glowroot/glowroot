@@ -24,8 +24,8 @@ import com.google.common.base.Ticker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.ErrorMessage;
-import org.glowroot.api.MessageSupplier;
+import org.glowroot.plugin.api.ErrorMessage;
+import org.glowroot.plugin.api.MessageSupplier;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

@@ -24,8 +24,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
-import org.glowroot.api.PluginServices;
-import org.glowroot.api.PluginServices.ConfigListener;
+import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.PluginServices.ConfigListener;
 
 class ServletPluginProperties {
 

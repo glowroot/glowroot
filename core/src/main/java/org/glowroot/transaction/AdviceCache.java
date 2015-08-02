@@ -41,12 +41,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.advicegen.AdviceGenerator;
-import org.glowroot.api.weaving.Mixin;
-import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.api.weaving.Shim;
 import org.glowroot.config.InstrumentationConfig;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.plugin.api.weaving.Mixin;
+import org.glowroot.plugin.api.weaving.Pointcut;
+import org.glowroot.plugin.api.weaving.Shim;
 import org.glowroot.weaving.Advice;
 import org.glowroot.weaving.AdviceBuilder;
 import org.glowroot.weaving.ClassLoaders;

@@ -37,14 +37,14 @@ import org.objectweb.asm.commons.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.weaving.BindParameter;
-import org.glowroot.api.weaving.BindTraveler;
-import org.glowroot.api.weaving.IsEnabled;
-import org.glowroot.api.weaving.OnAfter;
-import org.glowroot.api.weaving.OnBefore;
-import org.glowroot.api.weaving.OnReturn;
-import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.common.Styles;
+import org.glowroot.plugin.api.weaving.BindParameter;
+import org.glowroot.plugin.api.weaving.BindTraveler;
+import org.glowroot.plugin.api.weaving.IsEnabled;
+import org.glowroot.plugin.api.weaving.OnAfter;
+import org.glowroot.plugin.api.weaving.OnBefore;
+import org.glowroot.plugin.api.weaving.OnReturn;
+import org.glowroot.plugin.api.weaving.OnThrow;
 import org.glowroot.weaving.AdviceFlowOuterHolder.AdviceFlowHolder;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -492,11 +492,11 @@ class WeavingMethodVisitor extends AdviceAdapter {
         if (opcode == RETURN) {
             // void
             visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/VoidReturn",
-                    "getInstance", "()Lorg/glowroot/api/OptionalReturn;", false);
+                    "getInstance", "()Lorg/glowroot/plugin/api/OptionalReturn;", false);
         } else {
             loadReturnValue(opcode, dup, true);
             visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/NonVoidReturn", "create",
-                    "(Ljava/lang/Object;)Lorg/glowroot/api/OptionalReturn;", false);
+                    "(Ljava/lang/Object;)Lorg/glowroot/plugin/api/OptionalReturn;", false);
         }
     }
 

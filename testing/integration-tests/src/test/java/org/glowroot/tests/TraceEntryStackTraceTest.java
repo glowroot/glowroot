@@ -26,8 +26,8 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.config.PluginConfig;
+import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 

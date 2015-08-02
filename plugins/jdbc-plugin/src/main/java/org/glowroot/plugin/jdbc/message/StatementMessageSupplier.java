@@ -15,8 +15,8 @@
  */
 package org.glowroot.plugin.jdbc.message;
 
-import org.glowroot.api.Message;
-import org.glowroot.api.MessageSupplier;
+import org.glowroot.plugin.api.Message;
+import org.glowroot.plugin.api.MessageSupplier;
 
 public class StatementMessageSupplier extends MessageSupplier {
 

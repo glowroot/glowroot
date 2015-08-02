@@ -21,8 +21,8 @@ import com.google.common.cache.LoadingCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.TimerName;
-import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.plugin.api.TimerName;
+import org.glowroot.plugin.api.weaving.Pointcut;
 import org.glowroot.transaction.model.TimerNameImpl;
 
 // used to ensure one instance per name so that pointer equality can be used instead of String

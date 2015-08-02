@@ -39,11 +39,11 @@ import com.google.common.collect.Sets;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.immutables.value.Value;
 
-import org.glowroot.api.weaving.MethodModifier;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.CaptureKind;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.InstrumentationConfig;
+import org.glowroot.plugin.api.weaving.MethodModifier;
 import org.glowroot.transaction.AdviceCache;
 import org.glowroot.transaction.TransactionModule;
 import org.glowroot.weaving.AnalyzedWorld;

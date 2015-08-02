@@ -27,7 +27,7 @@ import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 import org.immutables.value.Value;
 
-import org.glowroot.api.weaving.MethodModifier;
+import org.glowroot.plugin.api.weaving.MethodModifier;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 
-import org.glowroot.api.PluginServices;
 import org.glowroot.markers.UsedByReflection;
+import org.glowroot.plugin.api.PluginServices;
 
 @UsedByReflection
 public class PluginServicesRegistry {
@@ -57,7 +57,7 @@ public class PluginServicesRegistry {
         return pluginServices.getUnchecked(pluginId);
     }
 
-    // called via reflection from org.glowroot.api.PluginServices
+    // called via reflection from org.glowroot.plugin.api.PluginServices
     // also called via reflection from generated pointcut config advice
     //
     // null return value indicates glowroot hasn't started yet

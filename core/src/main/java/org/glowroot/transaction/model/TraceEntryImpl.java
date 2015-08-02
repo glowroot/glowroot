@@ -25,12 +25,12 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.ErrorMessage;
-import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.QueryEntry;
-import org.glowroot.api.Timer;
-import org.glowroot.api.internal.ReadableErrorMessage;
 import org.glowroot.common.Tickers;
+import org.glowroot.plugin.api.ErrorMessage;
+import org.glowroot.plugin.api.MessageSupplier;
+import org.glowroot.plugin.api.QueryEntry;
+import org.glowroot.plugin.api.Timer;
+import org.glowroot.plugin.api.internal.ReadableErrorMessage;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

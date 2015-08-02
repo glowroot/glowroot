@@ -29,9 +29,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.io.CharStreams;
 
-import org.glowroot.api.internal.ReadableErrorMessage;
-import org.glowroot.api.internal.ThrowableInfo;
 import org.glowroot.common.ObjectMappers;
+import org.glowroot.plugin.api.internal.ReadableErrorMessage;
+import org.glowroot.plugin.api.internal.ThrowableInfo;
 import org.glowroot.transaction.model.GcInfo;
 import org.glowroot.transaction.model.ThreadInfoData;
 import org.glowroot.transaction.model.TimerImpl;

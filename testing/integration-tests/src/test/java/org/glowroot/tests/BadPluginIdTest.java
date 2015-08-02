@@ -21,9 +21,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
-import org.glowroot.api.PluginServices;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
+import org.glowroot.plugin.api.PluginServices;
 
 public class BadPluginIdTest {
 

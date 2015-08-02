@@ -29,8 +29,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-import org.glowroot.api.Logger;
-import org.glowroot.api.LoggerFactory;
+import org.glowroot.plugin.api.Logger;
+import org.glowroot.plugin.api.LoggerFactory;
 
 class ResponseHeaderComponent {
 

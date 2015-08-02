@@ -17,8 +17,8 @@ package org.glowroot.weaving;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.api.OptionalReturn;
 import org.glowroot.markers.UsedByGeneratedBytecode;
+import org.glowroot.plugin.api.OptionalReturn;
 
 @UsedByGeneratedBytecode
 public class VoidReturn implements OptionalReturn {

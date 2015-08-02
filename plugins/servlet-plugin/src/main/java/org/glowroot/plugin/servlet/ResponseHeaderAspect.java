@@ -22,15 +22,15 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
-import org.glowroot.api.FastThreadLocal;
-import org.glowroot.api.PluginServices;
-import org.glowroot.api.weaving.BindClassMeta;
-import org.glowroot.api.weaving.BindParameter;
-import org.glowroot.api.weaving.BindReceiver;
-import org.glowroot.api.weaving.IsEnabled;
-import org.glowroot.api.weaving.OnAfter;
-import org.glowroot.api.weaving.OnBefore;
-import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.plugin.api.FastThreadLocal;
+import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.weaving.BindClassMeta;
+import org.glowroot.plugin.api.weaving.BindParameter;
+import org.glowroot.plugin.api.weaving.BindReceiver;
+import org.glowroot.plugin.api.weaving.IsEnabled;
+import org.glowroot.plugin.api.weaving.OnAfter;
+import org.glowroot.plugin.api.weaving.OnBefore;
+import org.glowroot.plugin.api.weaving.Pointcut;
 
 public class ResponseHeaderAspect {
 

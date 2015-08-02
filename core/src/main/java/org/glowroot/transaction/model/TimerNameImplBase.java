@@ -22,7 +22,7 @@ import javax.annotation.Nullable;
 import com.google.common.annotations.VisibleForTesting;
 import org.immutables.value.Value;
 
-import org.glowroot.api.TimerName;
+import org.glowroot.plugin.api.TimerName;
 
 @Value.Immutable
 public abstract class TimerNameImplBase implements TimerName {

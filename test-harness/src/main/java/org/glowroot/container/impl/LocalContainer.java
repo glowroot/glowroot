@@ -109,7 +109,7 @@ public class LocalContainer implements Container {
         loader.setTimerWrapperMethods(glowrootModule.getConfigModule().getConfigService()
                 .getAdvancedConfig().timerWrapperMethods());
         loader.addBridgeClasses(AppUnderTest.class, AppUnderTestServices.class);
-        loader.addExcludePackages("org.glowroot.api",
+        loader.addExcludePackages("org.glowroot.plugin.api",
                 "org.glowroot.advicegen",
                 "org.glowroot.collector",
                 "org.glowroot.common",

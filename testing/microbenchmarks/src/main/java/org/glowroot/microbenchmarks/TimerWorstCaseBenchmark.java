@@ -27,12 +27,12 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
-import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.PluginServices;
-import org.glowroot.api.TimerName;
-import org.glowroot.api.TraceEntry;
-import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.microbenchmarks.support.TimerWorthy;
+import org.glowroot.plugin.api.MessageSupplier;
+import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.TimerName;
+import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.weaving.Pointcut;
 
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)

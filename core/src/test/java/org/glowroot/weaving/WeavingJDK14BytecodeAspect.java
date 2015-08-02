@@ -15,9 +15,9 @@
  */
 package org.glowroot.weaving;
 
-import org.glowroot.api.weaving.BindMethodName;
-import org.glowroot.api.weaving.OnBefore;
-import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.plugin.api.weaving.BindMethodName;
+import org.glowroot.plugin.api.weaving.OnBefore;
+import org.glowroot.plugin.api.weaving.Pointcut;
 
 public class WeavingJDK14BytecodeAspect {
 

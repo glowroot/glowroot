@@ -30,13 +30,13 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
 
-import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.UserInterfaceConfig;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.OptionalService;
+import org.glowroot.plugin.api.PluginServices.ConfigListener;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 

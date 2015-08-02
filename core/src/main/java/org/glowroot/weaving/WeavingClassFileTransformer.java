@@ -117,7 +117,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
     private static boolean isGlowrootCoreClass(String className) {
         // can't just match "org/glowroot/" since that would match glowroot plugins
         // (and integration test classes)
-        return className.startsWith("org/glowroot/api/")
+        return className.startsWith("org/glowroot/plugin/api/")
                 || className.startsWith("org/glowroot/advicegen/")
                 || className.startsWith("org/glowroot/collector/")
                 || className.startsWith("org/glowroot/common/")

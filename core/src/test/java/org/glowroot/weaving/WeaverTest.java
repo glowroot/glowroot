@@ -23,10 +23,10 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.api.OptionalReturn;
-import org.glowroot.api.weaving.Mixin;
-import org.glowroot.api.weaving.Pointcut;
-import org.glowroot.api.weaving.Shim;
+import org.glowroot.plugin.api.OptionalReturn;
+import org.glowroot.plugin.api.weaving.Mixin;
+import org.glowroot.plugin.api.weaving.Pointcut;
+import org.glowroot.plugin.api.weaving.Shim;
 import org.glowroot.weaving.AbstractMisc.ExtendsAbstractMisc;
 import org.glowroot.weaving.AbstractNotMisc.ExtendsAbstractNotMisc;
 import org.glowroot.weaving.SomeAspect.BasicAdvice;

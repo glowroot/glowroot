@@ -21,8 +21,8 @@ import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 
-import org.glowroot.api.Logger;
-import org.glowroot.api.LoggerFactory;
+import org.glowroot.plugin.api.Logger;
+import org.glowroot.plugin.api.LoggerFactory;
 
 public class ResponseInvoker {
 

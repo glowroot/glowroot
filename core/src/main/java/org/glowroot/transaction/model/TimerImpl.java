@@ -28,9 +28,9 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.Timer;
-import org.glowroot.api.TimerName;
 import org.glowroot.common.Tickers;
+import org.glowroot.plugin.api.Timer;
+import org.glowroot.plugin.api.TimerName;
 
 // instances are updated by a single thread, but can be read by other threads
 // memory visibility is therefore an issue for the reading threads

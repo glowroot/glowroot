@@ -32,9 +32,9 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import org.glowroot.Containers;
-import org.glowroot.api.PluginServices;
 import org.glowroot.container.Container;
 import org.glowroot.container.trace.Trace;
+import org.glowroot.plugin.api.PluginServices;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

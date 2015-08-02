@@ -26,8 +26,8 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.weaving.MethodModifier;
 import org.glowroot.common.Styles;
+import org.glowroot.plugin.api.weaving.MethodModifier;
 
 @Value.Immutable
 @Styles.AllParameters

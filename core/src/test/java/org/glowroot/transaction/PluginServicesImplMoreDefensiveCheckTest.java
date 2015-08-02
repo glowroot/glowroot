@@ -20,16 +20,16 @@ import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.api.ErrorMessage;
-import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.TimerName;
-import org.glowroot.api.TraceEntry;
 import org.glowroot.common.Clock;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.TransactionConfig;
 import org.glowroot.config.PluginDescriptor;
+import org.glowroot.config.TransactionConfig;
 import org.glowroot.jvm.ThreadAllocatedBytes;
+import org.glowroot.plugin.api.ErrorMessage;
+import org.glowroot.plugin.api.MessageSupplier;
+import org.glowroot.plugin.api.TimerName;
+import org.glowroot.plugin.api.TraceEntry;
 import org.glowroot.transaction.model.TimerNameImpl;
 import org.glowroot.transaction.model.Transaction;
 

@@ -21,22 +21,22 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
-import org.glowroot.api.ErrorMessage;
-import org.glowroot.api.Message;
-import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.PluginServices;
-import org.glowroot.api.PluginServices.BooleanProperty;
-import org.glowroot.api.PluginServices.StringProperty;
-import org.glowroot.api.TimerName;
-import org.glowroot.api.TraceEntry;
-import org.glowroot.api.weaving.BindParameter;
-import org.glowroot.api.weaving.BindThrowable;
-import org.glowroot.api.weaving.BindTraveler;
-import org.glowroot.api.weaving.IsEnabled;
-import org.glowroot.api.weaving.OnBefore;
-import org.glowroot.api.weaving.OnReturn;
-import org.glowroot.api.weaving.OnThrow;
-import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.plugin.api.ErrorMessage;
+import org.glowroot.plugin.api.Message;
+import org.glowroot.plugin.api.MessageSupplier;
+import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.PluginServices.BooleanProperty;
+import org.glowroot.plugin.api.PluginServices.StringProperty;
+import org.glowroot.plugin.api.TimerName;
+import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.weaving.BindParameter;
+import org.glowroot.plugin.api.weaving.BindThrowable;
+import org.glowroot.plugin.api.weaving.BindTraveler;
+import org.glowroot.plugin.api.weaving.IsEnabled;
+import org.glowroot.plugin.api.weaving.OnBefore;
+import org.glowroot.plugin.api.weaving.OnReturn;
+import org.glowroot.plugin.api.weaving.OnThrow;
+import org.glowroot.plugin.api.weaving.Pointcut;
 
 public class LevelOneAspect {
 

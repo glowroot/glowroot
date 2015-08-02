@@ -64,7 +64,7 @@ class IsolatedClassLoader extends URLClassLoader {
     private boolean useBootstrapClassLoader(String name) {
         return name.startsWith("java.") || name.startsWith("sun.")
                 || name.startsWith("javax.management.")
-                || name.startsWith("org.glowroot.api.");
+                || name.startsWith("org.glowroot.plugin.api.");
     }
 
     private void createPackageIfNecessary(String packageName) {

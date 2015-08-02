@@ -38,10 +38,10 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.common.Encryption;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.plugin.api.PluginServices.ConfigListener;
 
 import static com.google.common.base.Preconditions.checkState;
 

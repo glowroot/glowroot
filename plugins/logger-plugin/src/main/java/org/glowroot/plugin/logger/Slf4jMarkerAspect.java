@@ -20,18 +20,18 @@ import javax.annotation.Nullable;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
-import org.glowroot.api.ErrorMessage;
-import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.PluginServices;
-import org.glowroot.api.TimerName;
-import org.glowroot.api.TraceEntry;
-import org.glowroot.api.weaving.BindMethodName;
-import org.glowroot.api.weaving.BindParameter;
-import org.glowroot.api.weaving.BindTraveler;
-import org.glowroot.api.weaving.IsEnabled;
-import org.glowroot.api.weaving.OnAfter;
-import org.glowroot.api.weaving.OnBefore;
-import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.plugin.api.ErrorMessage;
+import org.glowroot.plugin.api.MessageSupplier;
+import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.TimerName;
+import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.weaving.BindMethodName;
+import org.glowroot.plugin.api.weaving.BindParameter;
+import org.glowroot.plugin.api.weaving.BindTraveler;
+import org.glowroot.plugin.api.weaving.IsEnabled;
+import org.glowroot.plugin.api.weaving.OnAfter;
+import org.glowroot.plugin.api.weaving.OnBefore;
+import org.glowroot.plugin.api.weaving.Pointcut;
 
 public class Slf4jMarkerAspect {
 

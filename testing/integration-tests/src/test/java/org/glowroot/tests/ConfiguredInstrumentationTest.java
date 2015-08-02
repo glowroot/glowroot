@@ -30,10 +30,10 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.config.InstrumentationConfig;
 import org.glowroot.container.config.InstrumentationConfig.CaptureKind;
 import org.glowroot.container.config.InstrumentationConfig.MethodModifier;
+import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 

@@ -17,8 +17,8 @@ package org.glowroot.transaction;
 
 import org.junit.Test;
 
-import org.glowroot.api.TimerName;
-import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.plugin.api.TimerName;
+import org.glowroot.plugin.api.weaving.Pointcut;
 import org.glowroot.transaction.model.TimerNameImpl;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -32,7 +32,6 @@ import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.collector.AggregateRepository;
 import org.glowroot.collector.TraceRepository;
 import org.glowroot.common.Clock;
@@ -42,6 +41,7 @@ import org.glowroot.config.StorageConfig;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 import org.glowroot.jvm.LazyPlatformMBeanServer.InitListener;
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.plugin.api.PluginServices.ConfigListener;
 import org.glowroot.weaving.PreInitializeStorageShutdownClasses;
 
 import static java.util.concurrent.TimeUnit.MINUTES;

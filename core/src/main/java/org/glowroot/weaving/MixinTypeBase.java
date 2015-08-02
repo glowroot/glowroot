@@ -28,8 +28,8 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.weaving.Mixin;
-import org.glowroot.api.weaving.MixinInit;
+import org.glowroot.plugin.api.weaving.Mixin;
+import org.glowroot.plugin.api.weaving.MixinInit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

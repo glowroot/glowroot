@@ -27,8 +27,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
-import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.container.Container;
+import org.glowroot.plugin.api.weaving.Pointcut;
 
 // currently Jacoco counts private default constructors on utility classes as uncovered lines of
 // code when really they are there to enforce that the constructor can never be called

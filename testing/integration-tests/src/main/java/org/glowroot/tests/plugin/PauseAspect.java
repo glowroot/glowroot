@@ -15,16 +15,16 @@
  */
 package org.glowroot.tests.plugin;
 
-import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.PluginServices;
-import org.glowroot.api.PluginServices.BooleanProperty;
-import org.glowroot.api.TimerName;
-import org.glowroot.api.TraceEntry;
-import org.glowroot.api.weaving.BindTraveler;
-import org.glowroot.api.weaving.IsEnabled;
-import org.glowroot.api.weaving.OnAfter;
-import org.glowroot.api.weaving.OnBefore;
-import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.plugin.api.MessageSupplier;
+import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.PluginServices.BooleanProperty;
+import org.glowroot.plugin.api.TimerName;
+import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.weaving.BindTraveler;
+import org.glowroot.plugin.api.weaving.IsEnabled;
+import org.glowroot.plugin.api.weaving.OnAfter;
+import org.glowroot.plugin.api.weaving.OnBefore;
+import org.glowroot.plugin.api.weaving.Pointcut;
 import org.glowroot.tests.plugin.LogErrorAspect.LogErrorAdvice;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;

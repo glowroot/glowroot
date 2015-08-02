@@ -17,8 +17,8 @@ package org.glowroot.plugin.jdbc.message;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.api.Message;
-import org.glowroot.api.MessageSupplier;
+import org.glowroot.plugin.api.Message;
+import org.glowroot.plugin.api.MessageSupplier;
 
 public class PreparedStatementMessageSupplier extends MessageSupplier {
 

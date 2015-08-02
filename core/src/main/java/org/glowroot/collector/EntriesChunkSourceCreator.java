@@ -27,13 +27,13 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.ImmutableList;
 
-import org.glowroot.api.MessageSupplier;
-import org.glowroot.api.internal.ReadableErrorMessage;
-import org.glowroot.api.internal.ReadableMessage;
-import org.glowroot.api.internal.ThrowableInfo;
 import org.glowroot.common.ChunkSource;
 import org.glowroot.common.ChunkSource.ChunkCopier;
 import org.glowroot.common.Tickers;
+import org.glowroot.plugin.api.MessageSupplier;
+import org.glowroot.plugin.api.internal.ReadableErrorMessage;
+import org.glowroot.plugin.api.internal.ReadableMessage;
+import org.glowroot.plugin.api.internal.ThrowableInfo;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.StackTraceElementPlus;
 import org.glowroot.transaction.model.TraceEntryImpl;

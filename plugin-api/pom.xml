@@ -72,7 +72,7 @@
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
           <configuration>
-            <excludePackageNames>org.glowroot.api.internal</excludePackageNames>
+            <excludePackageNames>org.glowroot.plugin.api.internal</excludePackageNames>
           </configuration>
         </plugin>
       </plugins>

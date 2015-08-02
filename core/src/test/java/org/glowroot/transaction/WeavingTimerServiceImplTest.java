@@ -20,9 +20,9 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.glowroot.api.PluginServices.ConfigListener;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
+import org.glowroot.plugin.api.PluginServices.ConfigListener;
 import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.Transaction;
 import org.glowroot.weaving.WeavingTimerService.WeavingTimer;

@@ -30,7 +30,7 @@ import org.immutables.value.Value;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
-import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.plugin.api.weaving.Pointcut;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

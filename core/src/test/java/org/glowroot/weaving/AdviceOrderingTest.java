@@ -19,7 +19,7 @@ import com.google.common.collect.Ordering;
 import org.junit.Test;
 import org.objectweb.asm.Type;
 
-import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.plugin.api.weaving.Pointcut;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

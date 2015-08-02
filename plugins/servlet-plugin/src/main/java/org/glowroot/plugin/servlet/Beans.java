@@ -31,8 +31,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Maps;
 
-import org.glowroot.api.Logger;
-import org.glowroot.api.LoggerFactory;
+import org.glowroot.plugin.api.Logger;
+import org.glowroot.plugin.api.LoggerFactory;
 
 public class Beans {
 

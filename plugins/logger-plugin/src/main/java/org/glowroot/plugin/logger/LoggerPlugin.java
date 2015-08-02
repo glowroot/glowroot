@@ -15,9 +15,9 @@
  */
 package org.glowroot.plugin.logger;
 
-import org.glowroot.api.FastThreadLocal;
-import org.glowroot.api.PluginServices;
-import org.glowroot.api.PluginServices.BooleanProperty;
+import org.glowroot.plugin.api.FastThreadLocal;
+import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.PluginServices.BooleanProperty;
 
 class LoggerPlugin {
 

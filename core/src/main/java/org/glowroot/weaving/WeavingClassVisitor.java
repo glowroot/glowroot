@@ -55,8 +55,8 @@ import org.objectweb.asm.tree.MethodNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.api.weaving.Shim;
 import org.glowroot.common.ClassNames;
+import org.glowroot.plugin.api.weaving.Shim;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.AASTORE;
@@ -162,7 +162,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-        if (desc.equals("Lorg/glowroot/api/weaving/Pointcut;")) {
+        if (desc.equals("Lorg/glowroot/plugin/api/weaving/Pointcut;")) {
             throw PointcutClassFoundException.INSTANCE;
         }
         return cv.visitAnnotation(desc, visible);

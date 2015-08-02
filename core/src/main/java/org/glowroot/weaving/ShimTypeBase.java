@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 import org.objectweb.asm.Type;
 
-import org.glowroot.api.weaving.Shim;
+import org.glowroot.plugin.api.weaving.Shim;
 
 @Value.Immutable
 public abstract class ShimTypeBase {

@@ -20,12 +20,12 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.api.PluginServices;
-import org.glowroot.api.weaving.BindParameter;
-import org.glowroot.api.weaving.BindReceiver;
-import org.glowroot.api.weaving.IsEnabled;
-import org.glowroot.api.weaving.OnAfter;
-import org.glowroot.api.weaving.Pointcut;
+import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.weaving.BindParameter;
+import org.glowroot.plugin.api.weaving.BindReceiver;
+import org.glowroot.plugin.api.weaving.IsEnabled;
+import org.glowroot.plugin.api.weaving.OnAfter;
+import org.glowroot.plugin.api.weaving.Pointcut;
 import org.glowroot.plugin.servlet.ServletAspect.HttpSession;
 
 public class SessionAspect {

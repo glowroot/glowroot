@@ -21,12 +21,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
-import org.glowroot.api.PluginServices;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.trace.Trace;
+import org.glowroot.plugin.api.PluginServices;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
