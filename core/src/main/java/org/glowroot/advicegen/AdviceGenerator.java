@@ -161,6 +161,7 @@ public class AdviceGenerator {
         AnnotationVisitor annotationVisitor =
                 cw.visitAnnotation("Lorg/glowroot/api/weaving/Pointcut;", true);
         annotationVisitor.visit("className", config.className());
+        annotationVisitor.visit("declaringClassName", config.declaringClassName());
         annotationVisitor.visit("methodName", config.methodName());
         AnnotationVisitor arrayAnnotationVisitor =
                 annotationVisitor.visitArray("methodParameterTypes");

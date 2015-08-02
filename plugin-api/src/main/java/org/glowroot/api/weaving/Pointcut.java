@@ -25,7 +25,14 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 public @interface Pointcut {
 
+    // target class name
     String className();
+    // restrict pointcut to the given subclass and below
+    // e.g. useful for pointcut on java.lang.Runnable.run(), but only for classes
+    // matching com.yourcompany.*
+    // also useful for pointcut on java.util.concurrent.Future.get(), but only for classes
+    // under com.ning.http.client.ListenableFuture
+    String declaringClassName() default "";
     /**
      * | and * can be used for limited regular expressions. Full regular expressions can be used by
      * starting and ending methodName with /.
@@ -35,9 +42,9 @@ public @interface Pointcut {
     // static initializers ("<clinit>") are not supported
     String methodName();
     // methodParameterTypes has no default since it's not obvious if default should be {} or {".."}
-    String[] methodParameterTypes();
+    String[]methodParameterTypes();
     String methodReturnType() default "";
-    MethodModifier[] methodModifiers() default {};
+    MethodModifier[]methodModifiers() default {};
     // the default is false since it costs a thread local lookup to ignore self nested calls, and
     // timers already handle self nested calls, so it is only needed for trace entries
     boolean ignoreSelfNested() default false;

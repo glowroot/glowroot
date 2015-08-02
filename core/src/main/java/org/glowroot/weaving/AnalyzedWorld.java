@@ -342,23 +342,26 @@ public class AnalyzedWorld {
             throws ClassNotFoundException {
         Class<?> clazz = Class.forName(className, false, loader);
         AnalyzedClass analyzedClass = getAnalyzedClasses(clazz.getClassLoader()).get(className);
-        if (analyzedClass == null) {
-            // a class was loaded by Class.forName() above that was not previously loaded which
-            // means weaving was bypassed since ClassFileTransformer.transform() is not re-entrant
-            analyzedClass = createAnalyzedClassPlanC(clazz, advisors.get());
-            for (AnalyzedMethod analyzedMethod : analyzedClass.analyzedMethods()) {
-                if (!analyzedMethod.advisors().isEmpty()) {
-                    logger.warn("{} was not woven with requested advice (it was first encountered"
-                            + " during the weaving of one of its {} and the resource {}.class"
-                            + " could not be found in class loader {}, so {} had to be explicitly"
-                            + " loaded using Class.forName() in the middle of weaving the {},"
-                            + " which means it was not woven itself since weaving is not"
-                            + " re-entrant)", clazz.getName(),
-                            analyzedClass.isInterface() ? "implementations" : "subclasses",
-                            ClassNames.toInternalName(clazz.getName()), loader, clazz.getName(),
-                            analyzedClass.isInterface() ? "implementation" : "subclass");
-                    break;
-                }
+        if (analyzedClass != null) {
+            return analyzedClass;
+        }
+        // the class loaded by Class.forName() above was not previously loaded which means
+        // weaving was bypassed since ClassFileTransformer.transform() is not re-entrant
+        analyzedClass = createAnalyzedClassPlanC(clazz, advisors.get());
+        if (analyzedClass.isInterface()) {
+            return analyzedClass;
+        }
+        for (AnalyzedMethod analyzedMethod : analyzedClass.analyzedMethods()) {
+            if (!analyzedMethod.advisors().isEmpty()) {
+                logger.warn("{} was not woven with requested advice (it was first encountered"
+                        + " during the weaving of one of its {} and the resource {}.class could not"
+                        + " be found in class loader {}, so {} had to be explicitly loaded using"
+                        + " Class.forName() in the middle of weaving the {}, which means it was not"
+                        + " woven itself since weaving is not re-entrant)", clazz.getName(),
+                        analyzedClass.isInterface() ? "implementations" : "subclasses",
+                        ClassNames.toInternalName(clazz.getName()), loader, clazz.getName(),
+                        analyzedClass.isInterface() ? "implementation" : "subclass");
+                break;
             }
         }
         return analyzedClass;

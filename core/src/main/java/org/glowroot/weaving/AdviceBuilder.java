@@ -128,7 +128,17 @@ public class AdviceBuilder {
         checkNotNull(pointcut);
         builder.pointcut(pointcut);
         builder.adviceType(Type.getType(adviceClass));
-        builder.pointcutClassNamePattern(buildPattern(pointcut.className()));
+        if (pointcut.declaringClassName().equals("")) {
+            builder.pointcutDeclaringClassName(pointcut.className());
+            builder.pointcutDeclaringClassNamePattern(buildPattern(pointcut.className()));
+            builder.pointcutTargetClassName(null);
+            builder.pointcutTargetClassNamePattern(null);
+        } else {
+            builder.pointcutDeclaringClassName(pointcut.declaringClassName());
+            builder.pointcutDeclaringClassNamePattern(buildPattern(pointcut.declaringClassName()));
+            builder.pointcutTargetClassName(pointcut.className());
+            builder.pointcutTargetClassNamePattern(buildPattern(pointcut.className()));
+        }
         builder.pointcutMethodNamePattern(buildPattern(pointcut.methodName()));
         for (java.lang.reflect.Method method : adviceClass.getMethods()) {
             if (method.isAnnotationPresent(IsEnabled.class)) {

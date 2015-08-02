@@ -45,36 +45,42 @@ public class AdviceOrderingTest {
 
     private final Advice advicePriority1 = Advice.builder()
             .pointcut(pointcutPriority1)
+            .pointcutDeclaringClassName("dummy")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .build();
 
     private final Advice advicePriority2 = Advice.builder()
             .pointcut(pointcutPriority2)
+            .pointcutDeclaringClassName("dummy")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .build();
 
     private final Advice adviceTimerNameA = Advice.builder()
             .pointcut(pointcutTimerNameA)
+            .pointcutDeclaringClassName("dummy")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .build();
 
     private final Advice adviceTimerNameB = Advice.builder()
             .pointcut(pointcutTimerNameB)
+            .pointcutDeclaringClassName("dummy")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .build();
 
     private final Advice adviceTimerNameEmpty1 = Advice.builder()
             .pointcut(pointcutTimerNameEmpty1)
+            .pointcutDeclaringClassName("dummy")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .build();
 
     private final Advice adviceTimerNameEmpty2 = Advice.builder()
             .pointcut(pointcutTimerNameEmpty2)
+            .pointcutDeclaringClassName("dummy")
             .adviceType(Type.getType(AdviceOrderingTest.class))
             .reweavable(false)
             .build();

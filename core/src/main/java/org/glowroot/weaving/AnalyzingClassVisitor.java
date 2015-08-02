@@ -20,6 +20,7 @@ import java.security.CodeSource;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -56,6 +57,9 @@ class AnalyzingClassVisitor extends ClassVisitor {
 
     private @MonotonicNonNull AnalyzedClass analyzedClass;
 
+    private @MonotonicNonNull String className;
+    private @MonotonicNonNull Set<String> superClassNames;
+
     public AnalyzingClassVisitor(List<Advice> advisors, List<ShimType> shimTypes,
             List<MixinType> mixinTypes, @Nullable ClassLoader loader, AnalyzedWorld analyzedWorld,
             @Nullable CodeSource codeSource) {
@@ -88,7 +92,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
 
         ImmutableList<String> interfaceNames =
                 ClassNames.fromInternalNames(interfaceInternalNamesNullable);
-        String className = ClassNames.fromInternalName(internalName);
+        className = ClassNames.fromInternalName(internalName);
         String superClassName = ClassNames.fromInternalName(superInternalName);
         analyzedClassBuilder = AnalyzedClass.builder()
                 .modifiers(access)
@@ -272,12 +276,51 @@ class AnalyzingClassVisitor extends ClassVisitor {
         for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
             for (AnalyzedMethod analyzedMethod : superAnalyzedClass.analyzedMethods()) {
                 if (analyzedMethod.isOverriddenBy(methodName, parameterTypes)) {
-                    matchingAdvisors.addAll(analyzedMethod.advisors());
+                    addToMatchingAdvisors(matchingAdvisors, analyzedMethod.advisors());
                 }
             }
         }
         // sort since the order affects advice and timer nesting
         return sortAdvisors(matchingAdvisors);
+    }
+
+    void addToMatchingAdvisors(Set<Advice> matchingAdvisors, List<Advice> advisors) {
+        for (Advice advice : advisors) {
+            if (advice.pointcut().declaringClassName().equals("")) {
+                matchingAdvisors.add(advice);
+            } else {
+                if (isTargetClassNameMatch(advice)) {
+                    matchingAdvisors.add(advice);
+                }
+            }
+        }
+    }
+
+    private boolean isTargetClassNameMatch(Advice advice) {
+        if (superClassNames == null) {
+            superClassNames = buildSuperClassNames();
+        }
+        Pattern targetClassNamePattern = advice.pointcutTargetClassNamePattern();
+        if (targetClassNamePattern == null) {
+            return superClassNames.contains(advice.pointcutTargetClassName());
+        } else {
+            for (String superClassName : superClassNames) {
+                if (targetClassNamePattern.matcher(superClassName).matches()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    private Set<String> buildSuperClassNames() {
+        checkNotNull(className, "Call to visit() is required");
+        Set<String> superClassNames = Sets.newHashSet();
+        superClassNames.add(className);
+        for (AnalyzedClass analyzedClass : superAnalyzedClasses) {
+            superClassNames.add(analyzedClass.name());
+        }
+        return superClassNames;
     }
 
     private List<Advice> sortAdvisors(Set<Advice> matchingAdvisors) {

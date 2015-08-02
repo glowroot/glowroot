@@ -412,6 +412,7 @@ public class ConfigTest {
     private static InstrumentationConfig createInstrumentationConfig() {
         InstrumentationConfig config = new InstrumentationConfig();
         config.setClassName("java.util.Collections");
+        config.setDeclaringClassName("");
         config.setMethodName("yak");
         config.setMethodParameterTypes(Lists.newArrayList("java.lang.String", "java.util.List"));
         config.setMethodReturnType("void");
@@ -428,6 +429,7 @@ public class ConfigTest {
 
     private static void updateAllFields(InstrumentationConfig config) {
         config.setClassName(config.getClassName() + "a");
+        config.setDeclaringClassName(config.getDeclaringClassName() + "adeclaringclass");
         config.setMethodName(config.getMethodName() + "b");
         if (config.getMethodParameterTypes().size() == 0) {
             config.setMethodParameterTypes(ImmutableList.of("java.lang.String"));

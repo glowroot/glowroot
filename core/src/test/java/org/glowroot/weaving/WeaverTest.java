@@ -84,6 +84,7 @@ import org.glowroot.weaving.SomeAspect.PrimitiveWithWildcardAdvice;
 import org.glowroot.weaving.SomeAspect.Shimmy;
 import org.glowroot.weaving.SomeAspect.StaticAdvice;
 import org.glowroot.weaving.SomeAspect.SuperBasicAdvice;
+import org.glowroot.weaving.SomeAspect.TargetedAdvice;
 import org.glowroot.weaving.SomeAspect.TestBytecodeWithStackFramesAdvice;
 import org.glowroot.weaving.SomeAspect.TestBytecodeWithStackFramesAdvice2;
 import org.glowroot.weaving.SomeAspect.TestBytecodeWithStackFramesAdvice3;
@@ -666,6 +667,47 @@ public class WeaverTest {
         test.executeWithArgs("one", 2);
         // then
         assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+    }
+
+    // ===================== @Pointcut.classHierarchyRestriction =====================
+
+    @Test
+    public void shouldExecuteTargetedAdvice() throws Exception {
+        // given
+        Misc test = newWovenObject(BasicMisc.class, Misc.class, TargetedAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldExecuteSubTargetedAdvice() throws Exception {
+        // given
+        Misc test = newWovenObject(SubBasicMisc.class, Misc.class, TargetedAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldNotExecuteNotTargetedAdvice() throws Exception {
+        // given
+        Misc test = newWovenObject(NestingMisc.class, Misc.class, TargetedAdvice.class);
+        // when
+        test.execute1();
+        // then
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onThrowCount.get()).isEqualTo(0);
+        assertThat(SomeAspectThreadLocals.onAfterCount.get()).isEqualTo(0);
     }
 
     // ===================== throw in lower priority @OnBefore =====================

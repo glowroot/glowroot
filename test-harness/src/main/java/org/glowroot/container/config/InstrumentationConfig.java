@@ -35,6 +35,7 @@ import static org.glowroot.container.common.ObjectMappers.orEmpty;
 public class InstrumentationConfig {
 
     private @Nullable String className;
+    private @Nullable String declaringClassName;
     private @Nullable String methodName;
     private ImmutableList<String> methodParameterTypes;
     private @Nullable String methodReturnType;
@@ -81,6 +82,14 @@ public class InstrumentationConfig {
 
     public void setClassName(String className) {
         this.className = className;
+    }
+
+    public @Nullable String getDeclaringClassName() {
+        return declaringClassName;
+    }
+
+    public void setDeclaringClassName(String declaringClassName) {
+        this.declaringClassName = declaringClassName;
     }
 
     public @Nullable String getMethodName() {
@@ -224,6 +233,7 @@ public class InstrumentationConfig {
             // sending to the server, and represents the current version hash when receiving from
             // the server
             return Objects.equal(className, that.className)
+                    && Objects.equal(declaringClassName, that.declaringClassName)
                     && Objects.equal(methodName, that.methodName)
                     && Objects.equal(methodParameterTypes, that.methodParameterTypes)
                     && Objects.equal(methodReturnType, that.methodReturnType)
@@ -251,8 +261,8 @@ public class InstrumentationConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(className, methodName, methodParameterTypes, methodReturnType,
-                methodModifiers, captureKind, timerName, traceEntryTemplate,
+        return Objects.hashCode(className, declaringClassName, methodName, methodParameterTypes,
+                methodReturnType, methodModifiers, captureKind, timerName, traceEntryTemplate,
                 traceEntryStackThresholdMillis, traceEntryCaptureSelfNested, transactionType,
                 transactionNameTemplate, transactionUserTemplate,
                 transactionCustomAttributeTemplates, slowTraceThresholdMillis, enabledProperty,
@@ -263,6 +273,7 @@ public class InstrumentationConfig {
     public String toString() {
         return MoreObjects.toStringHelper(this)
                 .add("className", className)
+                .add("declaringClassName", declaringClassName)
                 .add("methodName", methodName)
                 .add("methodParameterTypes", methodParameterTypes)
                 .add("methodReturnType", methodReturnType)
@@ -286,6 +297,7 @@ public class InstrumentationConfig {
     @JsonCreator
     static InstrumentationConfig readValue(
             @JsonProperty("className") @Nullable String className,
+            @JsonProperty("declaringClassName") @Nullable String declaringClassName,
             @JsonProperty("methodName") @Nullable String methodName,
             @JsonProperty("methodParameterTypes") @Nullable List</*@Nullable*/String> uncheckedMethodParameterTypes,
             @JsonProperty("methodReturnType") @Nullable String methodReturnType,
@@ -313,6 +325,7 @@ public class InstrumentationConfig {
                 checkNotNullValuesForProperty(uncheckedTransactionCustomAttributeTemplates,
                         "transactionCustomAttributeTemplates");
         checkRequiredProperty(className, "className");
+        checkRequiredProperty(declaringClassName, "declaringClassName");
         checkRequiredProperty(methodName, "methodName");
         checkRequiredProperty(methodReturnType, "methodReturnType");
         checkRequiredProperty(captureKind, "captureKind");
@@ -329,6 +342,7 @@ public class InstrumentationConfig {
         checkRequiredProperty(version, "version");
         InstrumentationConfig config = new InstrumentationConfig(version);
         config.setClassName(className);
+        config.setDeclaringClassName(declaringClassName);
         config.setMethodName(methodName);
         config.setMethodParameterTypes(methodParameterTypes);
         config.setMethodReturnType(methodReturnType);

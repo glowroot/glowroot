@@ -38,7 +38,7 @@ abstract class AdviceMatcherBase {
     static ImmutableList<AdviceMatcher> getAdviceMatchers(String className, List<Advice> advisors) {
         List<AdviceMatcher> adviceMatchers = Lists.newArrayList();
         for (Advice advice : advisors) {
-            if (AdviceMatcherBase.isClassNameMatch(className, advice)) {
+            if (AdviceMatcherBase.isDeclaringClassNameMatch(className, advice)) {
                 adviceMatchers.add(AdviceMatcher.of(advice));
             }
         }
@@ -132,10 +132,10 @@ abstract class AdviceMatcherBase {
         }
     }
 
-    private static boolean isClassNameMatch(String className, Advice advice) {
-        Pattern pointcutClassNamePattern = advice.pointcutClassNamePattern();
+    private static boolean isDeclaringClassNameMatch(String className, Advice advice) {
+        Pattern pointcutClassNamePattern = advice.pointcutDeclaringClassNamePattern();
         if (pointcutClassNamePattern == null) {
-            return advice.pointcut().className().equals(className);
+            return advice.pointcutDeclaringClassName().equals(className);
         } else {
             return pointcutClassNamePattern.matcher(className).matches();
         }

@@ -623,7 +623,8 @@ class WeavingClassVisitor extends ClassVisitor {
                     matchingAdvisorSet = Sets.newHashSet();
                     matchingAdvisorSets.put(key, matchingAdvisorSet);
                 }
-                matchingAdvisorSet.addAll(superAnalyzedMethod.advisors());
+                analyzingClassVisitor.addToMatchingAdvisors(matchingAdvisorSet,
+                        superAnalyzedMethod.advisors());
             }
         }
         return matchingAdvisorSets;

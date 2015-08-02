@@ -39,6 +39,11 @@ public abstract class InstrumentationConfigBase {
 
     public abstract String className();
 
+    @Value.Default
+    public String declaringClassName() {
+        return "";
+    }
+
     public abstract String methodName();
 
     // empty methodParameterTypes means match no-arg methods only
