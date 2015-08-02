@@ -10,18 +10,6 @@ Glowroot &nbsp;&nbsp; [![Build Status](https://img.shields.io/travis/glowroot/gl
 
 Glowroot supports Java 6+.
 
-## Core plugins
-
-Included in this repo (under [plugins](plugins)) and included in the glowroot-0.8.3-dist.zip download:
-
- * Servlets
- * Jdbc
- * Loggers ([Slf4j](http://www.slf4j.org), [Log4j](http://logging.apache.org/log4j/1.2/), [Apache Commons Logging](http://commons.apache.org/proper/commons-logging/))
- * HTTP clients ([Apache HttpClient](https://hc.apache.org/httpcomponents-client-ga/), [AsyncHttpClient](https://github.com/AsyncHttpClient/async-http-client))
- * Cassandra ([DataStax CQL driver](http://datastax.github.io/java-driver/))
- * Quartz Scheduler
- * JMS
-
 ## Questions, bugs, feature requests, news
 
  * [GitHub issue tracker](https://github.com/glowroot/glowroot/issues)
