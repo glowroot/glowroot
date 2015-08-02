@@ -533,7 +533,8 @@ public class AdviceGenerator {
         String travelerType =
                 entryOrTimer ? "Ljava/lang/Object;" : "Lorg/glowroot/plugin/api/TraceEntry;";
         MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn",
-                "(Lorg/glowroot/plugin/api/OptionalReturn;" + travelerType + ")V", null, null);
+                "(Lorg/glowroot/plugin/api/weaving/OptionalReturn;" + travelerType + ")V", null,
+                null);
         mv.visitParameterAnnotation(0, "Lorg/glowroot/plugin/api/weaving/BindOptionalReturn;", true)
                 .visitEnd();
         mv.visitParameterAnnotation(1, "Lorg/glowroot/plugin/api/weaving/BindTraveler;", true)
@@ -559,8 +560,8 @@ public class AdviceGenerator {
         }
         mv.visitVarInsn(ALOAD, 1);
         mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/plugin/api/OptionalReturn", "isVoid",
-                "()Z", true);
+        mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/plugin/api/weaving/OptionalReturn",
+                "isVoid", "()Z", true);
         Label notVoidLabel = new Label();
         Label endIfLabel = new Label();
         mv.visitJumpInsn(IFEQ, notVoidLabel);
@@ -568,8 +569,8 @@ public class AdviceGenerator {
         mv.visitJumpInsn(GOTO, endIfLabel);
         mv.visitLabel(notVoidLabel);
         mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/plugin/api/OptionalReturn", "getValue",
-                "()Ljava/lang/Object;", true);
+        mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/plugin/api/weaving/OptionalReturn",
+                "getValue", "()Ljava/lang/Object;", true);
         mv.visitLabel(endIfLabel);
         mv.visitMethodInsn(INVOKESTATIC,
                 "org/glowroot/advicegen/GenericMessageSupplier",

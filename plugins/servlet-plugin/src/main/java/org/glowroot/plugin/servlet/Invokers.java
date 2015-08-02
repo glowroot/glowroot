@@ -19,8 +19,8 @@ import java.lang.reflect.Method;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.plugin.api.Logger;
-import org.glowroot.plugin.api.LoggerFactory;
+import org.glowroot.plugin.api.util.Logger;
+import org.glowroot.plugin.api.util.LoggerFactory;
 
 public class Invokers {
 

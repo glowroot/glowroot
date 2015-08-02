@@ -21,7 +21,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.Sets;
 
-import org.glowroot.plugin.api.FastThreadLocal;
+import org.glowroot.plugin.api.util.FastThreadLocal;
 import org.glowroot.transaction.model.Transaction;
 
 public class TransactionRegistry {

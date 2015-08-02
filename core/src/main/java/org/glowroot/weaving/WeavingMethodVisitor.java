@@ -492,11 +492,11 @@ class WeavingMethodVisitor extends AdviceAdapter {
         if (opcode == RETURN) {
             // void
             visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/VoidReturn",
-                    "getInstance", "()Lorg/glowroot/plugin/api/OptionalReturn;", false);
+                    "getInstance", "()Lorg/glowroot/plugin/api/weaving/OptionalReturn;", false);
         } else {
             loadReturnValue(opcode, dup, true);
             visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/NonVoidReturn", "create",
-                    "(Ljava/lang/Object;)Lorg/glowroot/plugin/api/OptionalReturn;", false);
+                    "(Ljava/lang/Object;)Lorg/glowroot/plugin/api/weaving/OptionalReturn;", false);
         }
     }
 

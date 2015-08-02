@@ -17,8 +17,8 @@ package org.glowroot.sandbox.ui;
 
 import java.lang.reflect.Method;
 
-import org.glowroot.plugin.api.Logger;
-import org.glowroot.plugin.api.LoggerFactory;
+import org.glowroot.plugin.api.util.Logger;
+import org.glowroot.plugin.api.util.LoggerFactory;
 
 public class ExpensiveCallInvoker {
 

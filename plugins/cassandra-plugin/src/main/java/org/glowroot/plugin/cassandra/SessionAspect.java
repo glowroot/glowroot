@@ -21,12 +21,12 @@ import java.util.Collection;
 import javax.annotation.Nullable;
 
 import org.glowroot.plugin.api.ErrorMessage;
-import org.glowroot.plugin.api.FastThreadLocal;
 import org.glowroot.plugin.api.MessageSupplier;
 import org.glowroot.plugin.api.PluginServices;
 import org.glowroot.plugin.api.PluginServices.ConfigListener;
 import org.glowroot.plugin.api.QueryEntry;
 import org.glowroot.plugin.api.TimerName;
+import org.glowroot.plugin.api.util.FastThreadLocal;
 import org.glowroot.plugin.api.weaving.BindParameter;
 import org.glowroot.plugin.api.weaving.BindReturn;
 import org.glowroot.plugin.api.weaving.BindThrowable;

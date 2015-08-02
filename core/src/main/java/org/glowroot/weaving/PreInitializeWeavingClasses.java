@@ -295,11 +295,11 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.common.Reflections");
         types.add("org.glowroot.common.Tickers");
         types.add("org.glowroot.common.Tickers$DummyTicker");
-        types.add("org.glowroot.plugin.api.FastThreadLocal");
-        types.add("org.glowroot.plugin.api.FastThreadLocal$1");
-        types.add("org.glowroot.plugin.api.Holder");
         types.add("org.glowroot.plugin.api.Timer");
         types.add("org.glowroot.plugin.api.TimerName");
+        types.add("org.glowroot.plugin.api.util.FastThreadLocal");
+        types.add("org.glowroot.plugin.api.util.FastThreadLocal$1");
+        types.add("org.glowroot.plugin.api.util.Holder");
         types.add("org.glowroot.plugin.api.weaving.BindParameter");
         types.add("org.glowroot.plugin.api.weaving.BindTraveler");
         types.add("org.glowroot.plugin.api.weaving.IsEnabled");

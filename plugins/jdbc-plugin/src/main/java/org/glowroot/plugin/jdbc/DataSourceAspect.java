@@ -21,8 +21,6 @@ import java.sql.SQLException;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.plugin.api.ErrorMessage;
-import org.glowroot.plugin.api.Logger;
-import org.glowroot.plugin.api.LoggerFactory;
 import org.glowroot.plugin.api.Message;
 import org.glowroot.plugin.api.MessageSupplier;
 import org.glowroot.plugin.api.PluginServices;
@@ -30,6 +28,8 @@ import org.glowroot.plugin.api.PluginServices.BooleanProperty;
 import org.glowroot.plugin.api.Timer;
 import org.glowroot.plugin.api.TimerName;
 import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.util.Logger;
+import org.glowroot.plugin.api.util.LoggerFactory;
 import org.glowroot.plugin.api.weaving.BindReturn;
 import org.glowroot.plugin.api.weaving.BindThrowable;
 import org.glowroot.plugin.api.weaving.BindTraveler;

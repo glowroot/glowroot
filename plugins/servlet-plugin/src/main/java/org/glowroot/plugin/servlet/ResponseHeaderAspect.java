@@ -22,8 +22,8 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
-import org.glowroot.plugin.api.FastThreadLocal;
 import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.util.FastThreadLocal;
 import org.glowroot.plugin.api.weaving.BindClassMeta;
 import org.glowroot.plugin.api.weaving.BindParameter;
 import org.glowroot.plugin.api.weaving.BindReceiver;

@@ -21,7 +21,7 @@ import java.util.Set;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import org.glowroot.plugin.api.OptionalReturn;
+import org.glowroot.plugin.api.weaving.OptionalReturn;
 import org.glowroot.weaving.SomeAspect.TestClassMeta;
 import org.glowroot.weaving.SomeAspect.TestMethodMeta;
 

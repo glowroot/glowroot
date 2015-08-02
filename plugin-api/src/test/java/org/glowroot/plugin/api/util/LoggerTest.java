@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.api;
+package org.glowroot.plugin.api.util;
 
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
-import org.glowroot.plugin.api.LoggerFactory.LoggerImpl;
+import org.glowroot.plugin.api.util.LoggerFactory.LoggerImpl;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

@@ -25,10 +25,10 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.plugin.api.ErrorMessage;
-import org.glowroot.plugin.api.FastThreadLocal;
 import org.glowroot.plugin.api.PluginServices;
 import org.glowroot.plugin.api.TimerName;
 import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.util.FastThreadLocal;
 import org.glowroot.plugin.api.weaving.BindParameter;
 import org.glowroot.plugin.api.weaving.BindReturn;
 import org.glowroot.plugin.api.weaving.BindThrowable;

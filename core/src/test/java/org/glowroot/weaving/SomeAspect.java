@@ -17,7 +17,6 @@ package org.glowroot.weaving;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.plugin.api.OptionalReturn;
 import org.glowroot.plugin.api.weaving.BindClassMeta;
 import org.glowroot.plugin.api.weaving.BindMethodMeta;
 import org.glowroot.plugin.api.weaving.BindMethodName;
@@ -36,6 +35,7 @@ import org.glowroot.plugin.api.weaving.OnAfter;
 import org.glowroot.plugin.api.weaving.OnBefore;
 import org.glowroot.plugin.api.weaving.OnReturn;
 import org.glowroot.plugin.api.weaving.OnThrow;
+import org.glowroot.plugin.api.weaving.OptionalReturn;
 import org.glowroot.plugin.api.weaving.Pointcut;
 import org.glowroot.plugin.api.weaving.Shim;
 
