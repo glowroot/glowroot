@@ -24,8 +24,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.PluginServices.ConfigListener;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.ConfigListener;
+import org.glowroot.plugin.api.config.ConfigService;
 
 class ServletPluginProperties {
 
@@ -37,7 +38,7 @@ class ServletPluginProperties {
     private static final String CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME =
             "captureSessionAttributes";
 
-    private static final PluginServices pluginServices = PluginServices.get("servlet");
+    private static final ConfigService configService = Agent.getConfigService("servlet");
 
     private static final Splitter splitter = Splitter.on(',').trimResults().omitEmptyStrings();
 
@@ -51,7 +52,7 @@ class ServletPluginProperties {
     private static volatile ImmutableSet<String> captureSessionAttributeNames = ImmutableSet.of();
 
     static {
-        pluginServices.registerConfigListener(new ConfigListener() {
+        configService.registerConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
                 updateCache();
@@ -97,9 +98,9 @@ class ServletPluginProperties {
         captureRequestHeaders = buildPatternList(CAPTURE_REQUEST_HEADER_PROPERTY_NAME);
         captureResponseHeaders = buildPatternList(CAPTURE_RESPONSE_HEADER_PROPERTY_NAME);
         sessionUserAttributePath =
-                pluginServices.getStringProperty(SESSION_USER_ATTRIBUTE_PROPERTY_NAME).value();
+                configService.getStringProperty(SESSION_USER_ATTRIBUTE_PROPERTY_NAME).value();
         String captureSessionAttributesText =
-                pluginServices.getStringProperty(CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME).value();
+                configService.getStringProperty(CAPTURE_SESSION_ATTRIBUTES_PROPERTY_NAME).value();
         captureSessionAttributePaths =
                 ImmutableSet.copyOf(splitter.split(captureSessionAttributesText));
         captureSessionAttributeNames = buildCaptureSessionAttributeNames();
@@ -107,7 +108,7 @@ class ServletPluginProperties {
 
     private static ImmutableList<Pattern> buildPatternList(String propertyName) {
         String captureRequestParametersText =
-                pluginServices.getStringProperty(propertyName).value();
+                configService.getStringProperty(propertyName).value();
         List<Pattern> captureParameters = Lists.newArrayList();
         for (String parameter : splitter.split(captureRequestParametersText)) {
             // converted to lower case for case-insensitive matching

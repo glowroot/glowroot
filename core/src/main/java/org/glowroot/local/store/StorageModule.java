@@ -41,7 +41,7 @@ import org.glowroot.config.StorageConfig;
 import org.glowroot.jvm.LazyPlatformMBeanServer;
 import org.glowroot.jvm.LazyPlatformMBeanServer.InitListener;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.plugin.api.PluginServices.ConfigListener;
+import org.glowroot.plugin.api.config.ConfigListener;
 import org.glowroot.weaving.PreInitializeStorageShutdownClasses;
 
 import static java.util.concurrent.TimeUnit.MINUTES;

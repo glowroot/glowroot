@@ -29,7 +29,8 @@ import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.impl.JavaagentContainer;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.transaction.TransactionService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -84,8 +85,7 @@ public class LogManagerTest {
     }
 
     public static class ShouldUseCustomLogManager implements AppUnderTest, TraceMarker {
-        private static final PluginServices pluginServices =
-                PluginServices.get("glowroot-integration-tests");
+        private static final TransactionService transactionService = Agent.getTransactionService();
         @Override
         public void executeApp() throws InterruptedException {
             traceMarker();
@@ -93,7 +93,7 @@ public class LogManagerTest {
         @Override
         public void traceMarker() throws InterruptedException {
             // this is just to pass the log manager back to the calling test
-            pluginServices.setTransactionUser(LogManager.getLogManager().getClass().getName());
+            transactionService.setTransactionUser(LogManager.getLogManager().getClass().getName());
         }
     }
 

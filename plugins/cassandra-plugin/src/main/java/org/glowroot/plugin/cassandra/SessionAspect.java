@@ -20,12 +20,14 @@ import java.util.Collection;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.plugin.api.ErrorMessage;
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.PluginServices.ConfigListener;
-import org.glowroot.plugin.api.QueryEntry;
-import org.glowroot.plugin.api.TimerName;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.ConfigListener;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.ErrorMessage;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.QueryEntry;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.util.FastThreadLocal;
 import org.glowroot.plugin.api.weaving.BindParameter;
 import org.glowroot.plugin.api.weaving.BindReturn;
@@ -47,7 +49,8 @@ public class SessionAspect {
 
     private static final String QUERY_TYPE = "CQL";
 
-    private static final PluginServices pluginServices = PluginServices.get("cassandra");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService = Agent.getConfigService("cassandra");
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private static final FastThreadLocal<Boolean> inAdvice = new FastThreadLocal<Boolean>() {
@@ -61,11 +64,11 @@ public class SessionAspect {
     private static int stackTraceThresholdMillis;
 
     static {
-        pluginServices.registerConfigListener(new ConfigListener() {
+        configService.registerConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
                 Double value =
-                        pluginServices.getDoubleProperty("stackTraceThresholdMillis").value();
+                        configService.getDoubleProperty("stackTraceThresholdMillis").value();
                 stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
             }
         });
@@ -108,10 +111,10 @@ public class SessionAspect {
             timerName = "cql execute")
     public static class ExecuteAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(ExecuteAdvice.class);
+                transactionService.getTimerName(ExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !inAdvice.get() && pluginServices.isEnabled();
+            return !inAdvice.get() && configService.isEnabled();
         }
         @OnBefore
         public static @Nullable QueryEntry onBefore(@BindParameter @Nullable Object arg) {
@@ -146,10 +149,10 @@ public class SessionAspect {
             timerName = "cql execute")
     public static class ExecuteAsyncAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(ExecuteAsyncAdvice.class);
+                transactionService.getTimerName(ExecuteAsyncAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !inAdvice.get() && pluginServices.isEnabled();
+            return !inAdvice.get() && configService.isEnabled();
         }
         @OnBefore
         public static @Nullable QueryEntry onBefore(@BindParameter @Nullable Object arg) {
@@ -207,7 +210,8 @@ public class SessionAspect {
         } else {
             return null;
         }
-        return pluginServices.startQueryEntry(QUERY_TYPE, queryText, messageSupplier, timerName);
+        return transactionService.startQueryEntry(QUERY_TYPE, queryText, messageSupplier,
+                timerName);
     }
 
     private static String nullToEmpty(@Nullable String string) {

@@ -22,7 +22,7 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import org.glowroot.plugin.api.QueryEntry;
+import org.glowroot.plugin.api.transaction.QueryEntry;
 
 // used to capture and mirror the state of statements since the underlying {@link Statement} values
 // cannot be inspected after they have been set

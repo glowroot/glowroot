@@ -23,12 +23,14 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import org.glowroot.plugin.api.ErrorMessage;
-import org.glowroot.plugin.api.Message;
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.ErrorMessage;
+import org.glowroot.plugin.api.transaction.Message;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TraceEntry;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.BindTraveler;
 import org.glowroot.plugin.api.weaving.IsEnabled;
 import org.glowroot.plugin.api.weaving.OnAfter;
@@ -41,17 +43,19 @@ public class NestableCallAspect {
 
     private static final AtomicInteger counter = new AtomicInteger();
 
-    private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-sandbox");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService =
+            Agent.getConfigService("glowroot-ui-sandbox");
 
     @Pointcut(className = "org.glowroot.sandbox.ui.NestableCall", methodName = "execute",
             methodParameterTypes = {}, timerName = "nestable", ignoreSelfNested = true)
     public static class NestableCallAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(NestableCallAdvice.class);
+                transactionService.getTimerName(NestableCallAdvice.class);
         private static final Random random = new Random();
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore() {
@@ -73,33 +77,36 @@ public class NestableCallAspect {
             }
             TraceEntry traceEntry;
             if (count % 10 == 0) {
-                traceEntry = pluginServices.startTransaction("Background", transactionName,
+                traceEntry = transactionService.startTransaction("Background", transactionName,
                         getRootMessageSupplier(headline), timerName);
             } else {
-                traceEntry = pluginServices.startTransaction("Sandbox", transactionName,
+                traceEntry = transactionService.startTransaction("Sandbox", transactionName,
                         getRootMessageSupplier(headline), timerName);
             }
             int index = count % (USERS.size() + 1);
             if (index < USERS.size()) {
-                pluginServices.setTransactionUser(USERS.get(index));
+                transactionService.setTransactionUser(USERS.get(index));
             } else {
-                pluginServices.setTransactionUser(null);
+                transactionService.setTransactionUser(null);
             }
             if (random.nextBoolean()) {
-                pluginServices.addTransactionCustomAttribute("My First Attribute", "hello world");
-                pluginServices.addTransactionCustomAttribute("My First Attribute", "hello world");
-                pluginServices.addTransactionCustomAttribute("My First Attribute",
+                transactionService.addTransactionCustomAttribute("My First Attribute",
+                        "hello world");
+                transactionService.addTransactionCustomAttribute("My First Attribute",
+                        "hello world");
+                transactionService.addTransactionCustomAttribute("My First Attribute",
                         "hello world " + random.nextInt(10));
             }
             if (random.nextBoolean()) {
-                pluginServices.addTransactionCustomAttribute("Second", "val " + random.nextInt(10));
+                transactionService.addTransactionCustomAttribute("Second",
+                        "val " + random.nextInt(10));
             }
             if (random.nextBoolean()) {
-                pluginServices.addTransactionCustomAttribute("A Very Long Attribute Value",
+                transactionService.addTransactionCustomAttribute("A Very Long Attribute Value",
                         Strings.repeat("abcdefghijklmnopqrstuvwxyz", 3));
             }
             if (random.nextBoolean()) {
-                pluginServices.addTransactionCustomAttribute("Another",
+                transactionService.addTransactionCustomAttribute("Another",
                         "a b c d e f g h i j k l m n o p q r s t u v w x y z"
                                 + " a b c d e f g h i j k l m n o p q r s t u v w x y z");
             }

@@ -18,13 +18,14 @@ package org.glowroot.plugin.jdbc;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMultimap;
 
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.PluginServices.ConfigListener;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.ConfigListener;
+import org.glowroot.plugin.api.config.ConfigService;
 
 // this is public so it can be called from other plugins
 public class JdbcPluginProperties {
 
-    private static final PluginServices pluginServices = PluginServices.get("jdbc");
+    private static final ConfigService configService = Agent.getConfigService("jdbc");
 
     // volatile is not needed here as it piggybacks on PluginServicesImpl.memoryBarrier
     private static int stackTraceThresholdMillis;
@@ -33,11 +34,10 @@ public class JdbcPluginProperties {
             ImmutableMultimap.of();
 
     static {
-        pluginServices.registerConfigListener(new ConfigListener() {
+        configService.registerConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
-                Double value =
-                        pluginServices.getDoubleProperty("stackTraceThresholdMillis").value();
+                Double value = configService.getDoubleProperty("stackTraceThresholdMillis").value();
                 stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
             }
         });

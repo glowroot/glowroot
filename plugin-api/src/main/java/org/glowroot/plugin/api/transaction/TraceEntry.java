@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.api;
+package org.glowroot.plugin.api.transaction;
 
 import java.util.concurrent.TimeUnit;
 
@@ -22,7 +22,7 @@ import javax.annotation.Nullable;
 import org.glowroot.plugin.api.weaving.OnReturn;
 
 /**
- * See {@link PluginServices#startTraceEntry(MessageSupplier, TimerName)} for how to create and use
+ * See {@link TransactionService#startTraceEntry(MessageSupplier, TimerName)} for how to create and use
  * {@code TraceEntry} instances.
  */
 public interface TraceEntry {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,78 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.api.util;
+package org.glowroot.plugin.api;
+
+import java.lang.reflect.Method;
 
 import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.slf4j.LoggerFactory;
 
-/**
- * Very thin wrapper around SLF4J so plugins don't have to worry about SLF4J shading.
- */
-public class LoggerFactory {
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.TransactionService;
 
-    private LoggerFactory() {}
+public class Agent {
+
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Agent.class);
+
+    private Agent() {}
+
+    /**
+     * Returns the {@code TransactionService} instance.
+     * 
+     * The return value can (and should) be cached by the plugin for the life of the jvm to avoid
+     * looking it up every time it is needed (which is often).
+     */
+    public static TransactionService getTransactionService() {
+        return getTransactionServiceImpl();
+    }
+
+    /**
+     * Returns the {@code ConfigService} instance for the specified {@code pluginId}.
+     * 
+     * The return value can (and should) be cached by the plugin for the life of the jvm to avoid
+     * looking it up every time it is needed (which is often).
+     */
+    public static ConfigService getConfigService(String pluginId) {
+        return getConfigServiceImpl(pluginId);
+    }
 
     public static Logger getLogger(Class<?> clazz) {
-        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(clazz.getName());
-        return new LoggerImpl(logger);
+        return new LoggerImpl(LoggerFactory.getLogger(clazz));
+    }
+
+    private static TransactionService getTransactionServiceImpl() {
+        try {
+            Class<?> handleClass = Class.forName("org.glowroot.transaction.PluginServicesRegistry");
+            Method handleMethod = handleClass.getMethod("getTransactionService");
+            TransactionService transactionService = (TransactionService) handleMethod.invoke(null);
+            if (transactionService == null) {
+                throw new AssertionError();
+            }
+            return transactionService;
+        } catch (Exception e) {
+            // this really really really shouldn't happen
+            logger.error(e.getMessage(), e);
+            throw new AssertionError(e);
+        }
+    }
+
+    private static ConfigService getConfigServiceImpl(String pluginId) {
+        try {
+            Class<?> handleClass = Class.forName("org.glowroot.transaction.PluginServicesRegistry");
+            Method handleMethod = handleClass.getMethod("getConfigService", String.class);
+            ConfigService configService = (ConfigService) handleMethod.invoke(null, pluginId);
+            if (configService == null) {
+                throw new AssertionError();
+            }
+            return configService;
+        } catch (Exception e) {
+            // this really really really shouldn't happen
+            logger.error(e.getMessage(), e);
+            throw new AssertionError(e);
+        }
     }
 
     @VisibleForTesting
@@ -37,7 +93,7 @@ public class LoggerFactory {
         private final org.slf4j.Logger logger;
 
         @VisibleForTesting
-        LoggerImpl(org.slf4j.Logger logger) {
+        public LoggerImpl(org.slf4j.Logger logger) {
             this.logger = logger;
         }
 

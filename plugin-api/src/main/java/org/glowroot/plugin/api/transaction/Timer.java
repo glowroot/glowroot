@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.api;
+package org.glowroot.plugin.api.transaction;
 
 /**
- * See {@link PluginServices#startTimer(TimerName)} for how to retrieve and use {@code Timer}
+ * See {@link TransactionService#startTimer(TimerName)} for how to retrieve and use {@code Timer}
  * instances.
  */
 public interface Timer {

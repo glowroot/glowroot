@@ -16,28 +16,26 @@
 package org.glowroot.transaction;
 
 import com.google.common.base.Ticker;
-import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.common.Clock;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.TransactionConfig;
 import org.glowroot.jvm.ThreadAllocatedBytes;
-import org.glowroot.plugin.api.ErrorMessage;
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.TimerName;
+import org.glowroot.plugin.api.transaction.ErrorMessage;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.TimerName;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class PluginServicesImplOutsideTxTest {
+public class TransactionServiceImplOutsideTxTest {
 
-    private PluginServicesImpl pluginServices;
+    private TransactionServiceImpl transactionService;
 
     @Before
     public void beforeEachTest() {
@@ -54,63 +52,63 @@ public class PluginServicesImplOutsideTxTest {
         UserProfileScheduler userProfileScheduler = mock(UserProfileScheduler.class);
         Ticker ticker = mock(Ticker.class);
         Clock clock = mock(Clock.class);
-        pluginServices = PluginServicesImpl.create(transactionRegistry, transactionCollector,
-                configService, timerNameCache, threadAllocatedBytes, userProfileScheduler, ticker,
-                clock, ImmutableList.<PluginDescriptor>of(), null);
+        transactionService = TransactionServiceImpl.create(transactionRegistry,
+                transactionCollector, configService, timerNameCache, threadAllocatedBytes,
+                userProfileScheduler, ticker, clock);
     }
 
     @Test
     public void testStartTraceEntry() {
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         TimerName timerName = mock(TimerName.class);
-        assertThat(pluginServices.startTraceEntry(messageSupplier, timerName)
+        assertThat(transactionService.startTraceEntry(messageSupplier, timerName)
                 .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
     }
 
     @Test
     public void testStartTimer() {
         TimerName timerName = mock(TimerName.class);
-        assertThat(pluginServices.startTimer(timerName).getClass().getSimpleName())
+        assertThat(transactionService.startTimer(timerName).getClass().getSimpleName())
                 .isEqualTo("NopTimer");
     }
 
     @Test
     public void testAddTraceEntry() {
-        pluginServices.addTraceEntry(ErrorMessage.from("z"));
+        transactionService.addTraceEntry(ErrorMessage.from("z"));
     }
 
     @Test
     public void testSetTransactionType() {
-        pluginServices.setTransactionType("tt");
+        transactionService.setTransactionType("tt");
     }
 
     @Test
     public void testSetTransactionName() {
-        pluginServices.setTransactionName("tn");
+        transactionService.setTransactionName("tn");
     }
 
     @Test
     public void testSetTransactionError() {
-        pluginServices.setTransactionError(ErrorMessage.from("te"));
+        transactionService.setTransactionError(ErrorMessage.from("te"));
     }
 
     @Test
     public void testSetTransactionUser() {
-        pluginServices.setTransactionUser("tu");
+        transactionService.setTransactionUser("tu");
     }
 
     @Test
     public void testAddTransactionCustomAttribute() {
-        pluginServices.addTransactionCustomAttribute("x", null);
+        transactionService.addTransactionCustomAttribute("x", null);
     }
 
     @Test
     public void testSetTraceStoreThreshold() {
-        pluginServices.setSlowTraceThreshold(1, SECONDS);
+        transactionService.setSlowTraceThreshold(1, SECONDS);
     }
 
     @Test
     public void testIsInTransaction() {
-        assertThat(pluginServices.isInTransaction()).isEqualTo(false);
+        assertThat(transactionService.isInTransaction()).isEqualTo(false);
     }
 }

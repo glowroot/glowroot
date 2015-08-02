@@ -27,8 +27,8 @@ import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
-import org.glowroot.plugin.api.Message;
-import org.glowroot.plugin.api.MessageSupplier;
+import org.glowroot.plugin.api.transaction.Message;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
 
 // similar thread safety issues as {@link JdbcMessageSupplier}, see documentation in that class for
 // more info

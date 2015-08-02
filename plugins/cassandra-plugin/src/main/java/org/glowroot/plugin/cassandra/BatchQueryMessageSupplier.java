@@ -21,8 +21,8 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.plugin.api.Message;
-import org.glowroot.plugin.api.MessageSupplier;
+import org.glowroot.plugin.api.transaction.Message;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.cassandra.SessionAspect.BatchStatement;
 import org.glowroot.plugin.cassandra.SessionAspect.BoundStatement;
 import org.glowroot.plugin.cassandra.SessionAspect.PreparedStatement;

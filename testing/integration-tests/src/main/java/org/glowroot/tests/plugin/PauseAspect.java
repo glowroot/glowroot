@@ -15,11 +15,13 @@
  */
 package org.glowroot.tests.plugin;
 
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.PluginServices.BooleanProperty;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.BooleanProperty;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TraceEntry;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.BindTraveler;
 import org.glowroot.plugin.api.weaving.IsEnabled;
 import org.glowroot.plugin.api.weaving.OnAfter;
@@ -31,27 +33,28 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class PauseAspect {
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("glowroot-integration-tests");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService =
+            Agent.getConfigService("glowroot-integration-tests");
 
     private static final BooleanProperty captureTraceEntryStackTraces =
-            pluginServices.getBooleanProperty("captureTraceEntryStackTraces");
+            configService.getBooleanProperty("captureTraceEntryStackTraces");
 
     @Pointcut(className = "org.glowroot.tests.Pause", methodName = "pause*",
             methodParameterTypes = {}, timerName = "pause")
     public static class PauseAdvice {
 
         private static final TimerName timerName =
-                pluginServices.getTimerName(LogErrorAdvice.class);
+                transactionService.getTimerName(LogErrorAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
 
         @OnBefore
         public static TraceEntry onBefore() {
-            return pluginServices.startTraceEntry(
+            return transactionService.startTraceEntry(
                     MessageSupplier.from("Pause.pauseOneMillisecond()"), timerName);
         }
 

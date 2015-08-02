@@ -20,13 +20,14 @@ import java.sql.SQLException;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.PluginServices.BooleanProperty;
-import org.glowroot.plugin.api.QueryEntry;
-import org.glowroot.plugin.api.Timer;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.util.Logger;
-import org.glowroot.plugin.api.util.LoggerFactory;
+import org.glowroot.plugin.api.Logger;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.BooleanProperty;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.QueryEntry;
+import org.glowroot.plugin.api.transaction.Timer;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.BindReceiver;
 import org.glowroot.plugin.api.weaving.BindReturn;
 import org.glowroot.plugin.api.weaving.BindTraveler;
@@ -39,21 +40,21 @@ import org.glowroot.plugin.jdbc.StatementAspect.HasStatementMirror;
 
 public class ResultSetAspect {
 
-    private static final Logger logger = LoggerFactory.getLogger(ResultSetAspect.class);
-
-    private static final PluginServices pluginServices = PluginServices.get("jdbc");
+    private static final Logger logger = Agent.getLogger(ResultSetAspect.class);
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService = Agent.getConfigService("jdbc");
 
     @Pointcut(className = "java.sql.ResultSet", methodName = "next", methodParameterTypes = {},
             timerName = "jdbc resultset navigate")
     public static class NextAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(NextAdvice.class);
+                transactionService.getTimerName(NextAdvice.class);
         private static final BooleanProperty timerEnabled =
-                pluginServices.getEnabledProperty("captureResultSetNavigate");
+                configService.getEnabledProperty("captureResultSetNavigate");
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return resultSet.glowroot$hasStatementMirror() && pluginServices.isEnabled();
+            return resultSet.glowroot$hasStatementMirror() && configService.isEnabled();
         }
         @OnBefore
         public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
@@ -98,13 +99,13 @@ public class ResultSetAspect {
             timerName = "jdbc resultset navigate")
     public static class NavigateAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(NavigateAdvice.class);
+                transactionService.getTimerName(NavigateAdvice.class);
         private static final BooleanProperty timerEnabled =
-                pluginServices.getEnabledProperty("captureResultSetNavigate");
+                configService.getEnabledProperty("captureResultSetNavigate");
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
-            return resultSet.glowroot$hasStatementMirror() && pluginServices.isEnabled();
+            return resultSet.glowroot$hasStatementMirror() && configService.isEnabled();
         }
         @OnBefore
         public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
@@ -145,9 +146,9 @@ public class ResultSetAspect {
             methodParameterTypes = {"int", ".."}, timerName = "jdbc resultset value")
     public static class ValueAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(ValueAdvice.class);
+                transactionService.getTimerName(ValueAdvice.class);
         private static final BooleanProperty timerEnabled =
-                pluginServices.getEnabledProperty("captureResultSetGet");
+                configService.getEnabledProperty("captureResultSetGet");
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -167,9 +168,9 @@ public class ResultSetAspect {
             methodParameterTypes = {"java.lang.String", ".."}, timerName = "jdbc resultset value")
     public static class ValueAdvice2 {
         private static final TimerName timerName =
-                pluginServices.getTimerName(ValueAdvice2.class);
+                transactionService.getTimerName(ValueAdvice2.class);
         private static final BooleanProperty timerEnabled =
-                pluginServices.getEnabledProperty("captureResultSetGet");
+                configService.getEnabledProperty("captureResultSetGet");
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
             // don't capture if implementation detail of a DatabaseMetaData method
@@ -190,12 +191,12 @@ public class ResultSetAspect {
         if (mirror == null) {
             // this shouldn't happen since just checked above in isEnabled(), unless some
             // bizarre concurrent mis-usage of ResultSet
-            return pluginServices.startTimer(timerName);
+            return transactionService.startTimer(timerName);
         }
         QueryEntry lastQueryEntry = mirror.getLastQueryEntry();
         if (lastQueryEntry == null) {
             // tracing must be disabled (e.g. exceeded trace entry limit)
-            return pluginServices.startTimer(timerName);
+            return transactionService.startTimer(timerName);
         }
         return lastQueryEntry.extend();
     }

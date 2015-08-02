@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.api;
+package org.glowroot.plugin.api.transaction;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
-public class PluginServicesTest {
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
-    @Test
-    public void testGetNull() {
-        thrown.expect(AssertionError.class);
-        Agent.getConfigService(null);
-    }
-}
+/**
+ * See {@link TransactionService#getTimerName(Class)} for how to retrieve and use {@code TimerName}
+ * instances.
+ */
+public interface TimerName {}

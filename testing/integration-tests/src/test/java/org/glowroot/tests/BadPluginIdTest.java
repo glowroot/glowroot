@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.Agent;
 
 public class BadPluginIdTest {
 
@@ -47,7 +47,7 @@ public class BadPluginIdTest {
     @Test
     public void shouldNotReadTrace() throws Exception {
         // given
-        container.addExpectedLogMessage("org.glowroot.transaction.PluginServicesImpl",
+        container.addExpectedLogMessage("org.glowroot.transaction.ConfigServiceImpl",
                 "unexpected plugin id: not-to-be-found (available plugin ids are"
                         + " glowroot-integration-tests, glowroot-test-container)");
         // when
@@ -58,7 +58,7 @@ public class BadPluginIdTest {
     public static class BadPluginId implements AppUnderTest {
         @Override
         public void executeApp() {
-            PluginServices.get("not-to-be-found");
+            Agent.getConfigService("not-to-be-found");
         }
     }
 }

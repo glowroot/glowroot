@@ -24,50 +24,54 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 
 import org.glowroot.markers.UsedByReflection;
-import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.TransactionService;
 
 @UsedByReflection
 public class PluginServicesRegistry {
 
     private static volatile @Nullable PluginServicesRegistry INSTANCE;
 
-    private final LoadingCache<String, PluginServices> pluginServices;
+    private final LoadingCache<String, ConfigService> configServices;
 
-    private final Supplier<PluginServices> pluginServicesWithoutPlugin;
+    private final Supplier<TransactionService> transactionService;
 
     private PluginServicesRegistry(final PluginServicesFactory pluginServicesFactory) {
-        pluginServices = CacheBuilder.newBuilder().build(new CacheLoader<String, PluginServices>() {
+        configServices =
+                CacheBuilder.newBuilder().build(new CacheLoader<String, ConfigService>() {
+                    @Override
+                    public ConfigService load(String pluginId) {
+                        return pluginServicesFactory.createConfigService(pluginId);
+                    }
+                });
+        transactionService = Suppliers.memoize(new Supplier<TransactionService>() {
             @Override
-            public PluginServices load(String pluginId) {
-                return pluginServicesFactory.create(pluginId);
-            }
-        });
-        pluginServicesWithoutPlugin = Suppliers.memoize(new Supplier<PluginServices>() {
-            @Override
-            public PluginServices get() {
-                return pluginServicesFactory.create(null);
+            public TransactionService get() {
+                return pluginServicesFactory.createTransactionService();
             }
         });
     }
 
-    private PluginServices getPluginServices(@Nullable String pluginId) {
-        if (pluginId == null) {
-            return pluginServicesWithoutPlugin.get();
-        }
-        return pluginServices.getUnchecked(pluginId);
-    }
-
-    // called via reflection from org.glowroot.plugin.api.PluginServices
+    // called via reflection from org.glowroot.plugin.api.Plugin
     // also called via reflection from generated pointcut config advice
-    //
-    // null return value indicates glowroot hasn't started yet
     @UsedByReflection
-    public static @Nullable PluginServices get(@Nullable String pluginId) {
+    public static TransactionService getTransactionService() {
         PluginServicesRegistry instanceLocal = INSTANCE;
         if (instanceLocal == null) {
-            return null;
+            throw new IllegalStateException("Glowroot has not started");
         }
-        return instanceLocal.getPluginServices(pluginId);
+        return instanceLocal.transactionService.get();
+    }
+
+    // called via reflection from org.glowroot.plugin.api.Plugin
+    // also called via reflection from generated pointcut config advice
+    @UsedByReflection
+    public static ConfigService getConfigService(String pluginId) {
+        PluginServicesRegistry instanceLocal = INSTANCE;
+        if (instanceLocal == null) {
+            throw new IllegalStateException("Glowroot has not started");
+        }
+        return instanceLocal.configServices.getUnchecked(pluginId);
     }
 
     static void initStaticState(PluginServicesFactory pluginServicesFactory) {
@@ -79,6 +83,7 @@ public class PluginServicesRegistry {
     }
 
     interface PluginServicesFactory {
-        PluginServices create(@Nullable String pluginId);
+        TransactionService createTransactionService();
+        ConfigService createConfigService(String pluginId);
     }
 }

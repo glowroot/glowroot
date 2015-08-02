@@ -48,7 +48,8 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
                 timerWrapperMethods);
         // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
         // loader, otherwise woven bootstrap classes will generate NoClassDefFoundError since
-        // the woven code will not be able to see glowroot classes (e.g. PluginServices)
+        // the woven code will not be able to see glowroot classes
+        // (e.g. woven code will not be able to see org.glowroot.plugin.api.Plugin)
         weaveBootstrapClassLoader = isInBootstrapClassLoader();
     }
 
@@ -82,7 +83,8 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
         if (loader == null && !weaveBootstrapClassLoader) {
             // can only weave classes in bootstrap class loader if glowroot is in bootstrap class
             // loader, otherwise woven bootstrap classes will generate NoClassDefFoundError since
-            // the woven code will not be able to see glowroot classes (e.g. PluginServices)
+            // the woven code will not be able to see glowroot classes
+            // (e.g. woven code will not be able to see org.glowroot.plugin.api.Plugin)
             return null;
         }
         logger.trace("transform(): className={}", className);

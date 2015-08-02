@@ -22,7 +22,7 @@ import org.mockito.stubbing.Answer;
 
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
-import org.glowroot.plugin.api.PluginServices.ConfigListener;
+import org.glowroot.plugin.api.config.ConfigListener;
 import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.Transaction;
 import org.glowroot.weaving.WeavingTimerService.WeavingTimer;

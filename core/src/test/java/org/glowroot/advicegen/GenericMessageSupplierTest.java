@@ -17,8 +17,8 @@ package org.glowroot.advicegen;
 
 import org.junit.Test;
 
-import org.glowroot.plugin.api.Message;
 import org.glowroot.plugin.api.internal.ReadableMessage;
+import org.glowroot.plugin.api.transaction.Message;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

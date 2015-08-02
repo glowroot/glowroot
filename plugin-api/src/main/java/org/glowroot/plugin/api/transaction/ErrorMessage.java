@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.api;
+package org.glowroot.plugin.api.transaction;
 
 import javax.annotation.Nullable;
 
@@ -26,7 +26,7 @@ import org.glowroot.plugin.api.internal.ThrowableInfo;
 
 /**
  * @see TraceEntry#endWithError(ErrorMessage)
- * @see PluginServices#addTraceEntry(ErrorMessage)
+ * @see TransactionService#addTraceEntry(ErrorMessage)
  */
 public abstract class ErrorMessage {
 

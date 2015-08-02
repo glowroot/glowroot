@@ -15,9 +15,11 @@
  */
 package org.glowroot.microbenchmarks.support;
 
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.Timer;
-import org.glowroot.plugin.api.TimerName;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.Timer;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.BindTraveler;
 import org.glowroot.plugin.api.weaving.IsEnabled;
 import org.glowroot.plugin.api.weaving.OnAfter;
@@ -26,8 +28,9 @@ import org.glowroot.plugin.api.weaving.Pointcut;
 
 public class TimerWorthyAspect {
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("glowroot-microbenchmarks");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService =
+            Agent.getConfigService("glowroot-microbenchmarks");
 
     @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TimerWorthy",
             methodName = "doSomethingTimerWorthy", methodParameterTypes = {},
@@ -35,16 +38,16 @@ public class TimerWorthyAspect {
     public static class TimerWorthyAdvice {
 
         private static final TimerName timerName =
-                pluginServices.getTimerName(TimerWorthyAdvice.class);
+                transactionService.getTimerName(TimerWorthyAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
 
         @OnBefore
         public static Timer onBefore() {
-            return pluginServices.startTimer(timerName);
+            return transactionService.startTimer(timerName);
         }
 
         @OnAfter
@@ -59,16 +62,16 @@ public class TimerWorthyAspect {
     public static class TimerWorthyAdviceB {
 
         private static final TimerName timerName =
-                pluginServices.getTimerName(TimerWorthyAdviceB.class);
+                transactionService.getTimerName(TimerWorthyAdviceB.class);
 
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
 
         @OnBefore
         public static Timer onBefore() {
-            return pluginServices.startTimer(timerName);
+            return transactionService.startTimer(timerName);
         }
 
         @OnAfter

@@ -713,7 +713,7 @@ public class WeaverTest {
     // ===================== throw in lower priority @OnBefore =====================
 
     // motivation for this test: any dangerous code in @OnBefore should occur before calling
-    // pluginServices.start..., since @OnAfter will not be called if an exception occurs
+    // transactionService.start..., since @OnAfter will not be called if an exception occurs
     // however, if there are multiple pointcuts for one method, the dangerous code in @OnBefore
     // of the lower priority pointcut occurs after the @OnBefore of the higher priority pointcut
     // and so if the dangerous code in the lower priority pointcut throws an exception, need to make

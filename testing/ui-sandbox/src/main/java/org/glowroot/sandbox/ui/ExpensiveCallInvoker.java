@@ -17,12 +17,12 @@ package org.glowroot.sandbox.ui;
 
 import java.lang.reflect.Method;
 
-import org.glowroot.plugin.api.util.Logger;
-import org.glowroot.plugin.api.util.LoggerFactory;
+import org.glowroot.plugin.api.Logger;
+import org.glowroot.plugin.api.Agent;
 
 public class ExpensiveCallInvoker {
 
-    private static final Logger logger = LoggerFactory.getLogger(ExpensiveCallInvoker.class);
+    private static final Logger logger = Agent.getLogger(ExpensiveCallInvoker.class);
 
     private final Method getTraceEntryMessageMethod;
 

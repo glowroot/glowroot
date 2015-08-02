@@ -36,7 +36,7 @@ import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.UserInterfaceConfig;
 import org.glowroot.jvm.HeapDumps;
 import org.glowroot.jvm.OptionalService;
-import org.glowroot.plugin.api.PluginServices.ConfigListener;
+import org.glowroot.plugin.api.config.ConfigListener;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 

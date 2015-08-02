@@ -28,7 +28,8 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.transaction.TransactionService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -71,8 +72,7 @@ public class DataSourceCompactTest {
 
     public static class GenerateLotsOfTraces implements AppUnderTest, TraceMarker {
 
-        private static final PluginServices pluginServices =
-                PluginServices.get("glowroot-integration-tests");
+        private static final TransactionService transactionService = Agent.getTransactionService();
 
         @Override
         public void executeApp() throws InterruptedException {
@@ -84,7 +84,7 @@ public class DataSourceCompactTest {
         @Override
         public void traceMarker() {
             // need to fill up h2 db enough or it won't compact
-            pluginServices.setTransactionName(Strings.repeat("a", 10000));
+            transactionService.setTransactionName(Strings.repeat("a", 10000));
         }
     }
 }

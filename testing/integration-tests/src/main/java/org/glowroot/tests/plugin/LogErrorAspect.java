@@ -15,11 +15,13 @@
  */
 package org.glowroot.tests.plugin;
 
-import org.glowroot.plugin.api.ErrorMessage;
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.ErrorMessage;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TraceEntry;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.BindParameter;
 import org.glowroot.plugin.api.weaving.BindTraveler;
 import org.glowroot.plugin.api.weaving.IsEnabled;
@@ -29,24 +31,25 @@ import org.glowroot.plugin.api.weaving.Pointcut;
 
 public class LogErrorAspect {
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("glowroot-integration-tests");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService =
+            Agent.getConfigService("glowroot-integration-tests");
 
     @Pointcut(className = "org.glowroot.tests.LogError", methodName = "log",
             methodParameterTypes = {"java.lang.String"}, timerName = "log error")
     public static class LogErrorAdvice {
 
         private static final TimerName timerName =
-                pluginServices.getTimerName(LogErrorAdvice.class);
+                transactionService.getTimerName(LogErrorAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
 
         @OnBefore
         public static TraceEntry onBefore(@BindParameter String message) {
-            return pluginServices.startTraceEntry(MessageSupplier.from("ERROR -- {}", message),
+            return transactionService.startTraceEntry(MessageSupplier.from("ERROR -- {}", message),
                     timerName);
         }
 
@@ -61,18 +64,19 @@ public class LogErrorAspect {
     public static class AddErrorEntryAdvice {
 
         private static final TimerName timerName =
-                pluginServices.getTimerName(AddErrorEntryAdvice.class);
+                transactionService.getTimerName(AddErrorEntryAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
 
         @OnBefore
         public static TraceEntry onBefore() {
-            TraceEntry traceEntry = pluginServices.startTraceEntry(
+            TraceEntry traceEntry = transactionService.startTraceEntry(
                     MessageSupplier.from("outer entry to test nesting level"), timerName);
-            pluginServices.addTraceEntry(ErrorMessage.from("test add nested error entry message"));
+            transactionService
+                    .addTraceEntry(ErrorMessage.from("test add nested error entry message"));
             return traceEntry;
         }
 

@@ -23,9 +23,9 @@ import org.glowroot.advicegen.MessageTemplate.Part;
 import org.glowroot.advicegen.MessageTemplate.PartType;
 import org.glowroot.advicegen.MessageTemplate.ValuePathPart;
 import org.glowroot.markers.UsedByGeneratedBytecode;
-import org.glowroot.plugin.api.Message;
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.transaction.Message;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.TraceEntry;
 
 @UsedByGeneratedBytecode
 public class GenericMessageSupplier extends MessageSupplier {

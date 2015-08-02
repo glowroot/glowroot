@@ -17,7 +17,8 @@ package org.glowroot.plugin.servlet;
 
 import java.util.Map;
 
-import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.ConfigService;
 import org.glowroot.plugin.api.weaving.BindReceiver;
 import org.glowroot.plugin.api.weaving.IsEnabled;
 import org.glowroot.plugin.api.weaving.OnAfter;
@@ -26,14 +27,14 @@ import org.glowroot.plugin.servlet.ServletAspect.HttpServletRequest;
 
 public class RequestParameterAspect {
 
-    private static final PluginServices pluginServices = PluginServices.get("servlet");
+    private static final ConfigService configService = Agent.getConfigService("servlet");
 
     @Pointcut(className = "javax.servlet.ServletRequest", methodName = "getParameter*",
             methodParameterTypes = {".."}, ignoreSelfNested = true)
     public static class GetParameterAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
         @OnAfter
         public static void onAfter(@BindReceiver Object req) {

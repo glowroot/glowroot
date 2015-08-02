@@ -19,11 +19,13 @@ import java.util.Locale;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.plugin.api.ErrorMessage;
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.ErrorMessage;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TraceEntry;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.BindMethodName;
 import org.glowroot.plugin.api.weaving.BindParameter;
 import org.glowroot.plugin.api.weaving.BindTraveler;
@@ -36,17 +38,18 @@ public class Log4jAspect {
 
     private static final String TIMER_NAME = "logging";
 
-    private static final PluginServices pluginServices = PluginServices.get("logger");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService = Agent.getConfigService("logger");
 
     @Pointcut(className = "org.apache.log4j.Category", methodName = "warn|error|fatal",
             methodParameterTypes = {"java.lang.Object"}, timerName = TIMER_NAME)
     public static class LogAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(LogAdvice.class);
+                transactionService.getTimerName(LogAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && configService.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter @Nullable Object message,
@@ -54,9 +57,9 @@ public class Log4jAspect {
             LoggerPlugin.inAdvice(true);
             String messageText = String.valueOf(message);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
-                pluginServices.setTransactionError(ErrorMessage.from(messageText));
+                transactionService.setTransactionError(ErrorMessage.from(messageText));
             }
-            return pluginServices.startTraceEntry(
+            return transactionService.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, messageText), timerName);
         }
         @OnAfter
@@ -72,11 +75,11 @@ public class Log4jAspect {
             timerName = TIMER_NAME)
     public static class LogWithThrowableAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(LogWithThrowableAdvice.class);
+                transactionService.getTimerName(LogWithThrowableAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && configService.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter @Nullable Object message,
@@ -85,9 +88,9 @@ public class Log4jAspect {
             LoggerPlugin.inAdvice(true);
             String messageText = String.valueOf(message);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), t != null)) {
-                pluginServices.setTransactionError(ErrorMessage.from(messageText, t));
+                transactionService.setTransactionError(ErrorMessage.from(messageText, t));
             }
-            return pluginServices.startTraceEntry(
+            return transactionService.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, messageText), timerName);
         }
         @OnAfter
@@ -108,7 +111,7 @@ public class Log4jAspect {
             timerName = TIMER_NAME)
     public static class LogWithPriorityAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(LogWithPriorityAdvice.class);
+                transactionService.getTimerName(LogWithPriorityAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindParameter @Nullable Object priority) {
@@ -116,7 +119,7 @@ public class Log4jAspect {
                 // seems nothing sensible to do here other than ignore
                 return false;
             }
-            if (LoggerPlugin.inAdvice() || !pluginServices.isEnabled()) {
+            if (LoggerPlugin.inAdvice() || !configService.isEnabled()) {
                 return false;
             }
             String level = priority.toString();
@@ -129,9 +132,9 @@ public class Log4jAspect {
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             String messageText = String.valueOf(message);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), false)) {
-                pluginServices.setTransactionError(ErrorMessage.from(messageText));
+                transactionService.setTransactionError(ErrorMessage.from(messageText));
             }
-            return pluginServices.startTraceEntry(
+            return transactionService.startTraceEntry(
                     MessageSupplier.from("log {}: {}", level, messageText), timerName);
         }
         @OnAfter
@@ -148,7 +151,7 @@ public class Log4jAspect {
             timerName = TIMER_NAME)
     public static class LogWithPriorityAndThrowableAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(LogWithPriorityAndThrowableAdvice.class);
+                transactionService.getTimerName(LogWithPriorityAndThrowableAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindParameter @Nullable Object priority) {
@@ -156,7 +159,7 @@ public class Log4jAspect {
                 // seems nothing sensible to do here other than ignore
                 return false;
             }
-            if (LoggerPlugin.inAdvice() || !pluginServices.isEnabled()) {
+            if (LoggerPlugin.inAdvice() || !configService.isEnabled()) {
                 return false;
             }
             String level = priority.toString();
@@ -170,9 +173,9 @@ public class Log4jAspect {
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             String messageText = String.valueOf(message);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), t != null)) {
-                pluginServices.setTransactionError(ErrorMessage.from(messageText, t));
+                transactionService.setTransactionError(ErrorMessage.from(messageText, t));
             }
-            return pluginServices.startTraceEntry(
+            return transactionService.startTraceEntry(
                     MessageSupplier.from("log {}: {}", level, messageText), timerName);
         }
         @OnAfter
@@ -195,7 +198,7 @@ public class Log4jAspect {
             timerName = TIMER_NAME)
     public static class LocalizedLogAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(LocalizedLogAdvice.class);
+                transactionService.getTimerName(LocalizedLogAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindParameter @Nullable Object priority) {
@@ -203,7 +206,7 @@ public class Log4jAspect {
                 // seems nothing sensible to do here other than ignore
                 return false;
             }
-            if (LoggerPlugin.inAdvice() || !pluginServices.isEnabled()) {
+            if (LoggerPlugin.inAdvice() || !configService.isEnabled()) {
                 return false;
             }
             String level = priority.toString();
@@ -216,9 +219,9 @@ public class Log4jAspect {
             LoggerPlugin.inAdvice(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), t != null)) {
-                pluginServices.setTransactionError(ErrorMessage.from(key, t));
+                transactionService.setTransactionError(ErrorMessage.from(key, t));
             }
-            return pluginServices.startTraceEntry(
+            return transactionService.startTraceEntry(
                     MessageSupplier.from("log {} (localized): {}", level, key), timerName);
         }
         @OnAfter
@@ -241,7 +244,7 @@ public class Log4jAspect {
             timerName = TIMER_NAME)
     public static class LocalizedLogWithParametersAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(LocalizedLogWithParametersAdvice.class);
+                transactionService.getTimerName(LocalizedLogWithParametersAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled(@BindParameter @Nullable Object priority) {
@@ -249,7 +252,7 @@ public class Log4jAspect {
                 // seems nothing sensible to do here other than ignore
                 return false;
             }
-            if (LoggerPlugin.inAdvice() || !pluginServices.isEnabled()) {
+            if (LoggerPlugin.inAdvice() || !configService.isEnabled()) {
                 return false;
             }
             String level = priority.toString();
@@ -263,7 +266,7 @@ public class Log4jAspect {
             LoggerPlugin.inAdvice(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), t != null)) {
-                pluginServices.setTransactionError(ErrorMessage.from(key, t));
+                transactionService.setTransactionError(ErrorMessage.from(key, t));
             }
             if (params != null && params.length > 0) {
                 StringBuilder sb = new StringBuilder();
@@ -273,12 +276,12 @@ public class Log4jAspect {
                     }
                     sb.append(params[i]);
                 }
-                return pluginServices.startTraceEntry(
+                return transactionService.startTraceEntry(
                         MessageSupplier.from("log {} (localized): {} [{}]", level, key,
                                 sb.toString()),
                         timerName);
             } else {
-                return pluginServices.startTraceEntry(
+                return transactionService.startTraceEntry(
                         MessageSupplier.from("log {} (localized): {}", level, key),
                         timerName);
             }

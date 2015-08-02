@@ -26,11 +26,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Tickers;
-import org.glowroot.plugin.api.ErrorMessage;
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.QueryEntry;
-import org.glowroot.plugin.api.Timer;
 import org.glowroot.plugin.api.internal.ReadableErrorMessage;
+import org.glowroot.plugin.api.transaction.ErrorMessage;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.QueryEntry;
+import org.glowroot.plugin.api.transaction.Timer;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

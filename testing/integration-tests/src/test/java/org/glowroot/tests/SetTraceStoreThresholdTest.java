@@ -26,7 +26,8 @@ import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.transaction.TransactionService;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -87,47 +88,44 @@ public class SetTraceStoreThresholdTest {
     }
 
     public static class SetLargeTraceStoreThreshold implements AppUnderTest, TraceMarker {
-        private static final PluginServices pluginServices =
-                PluginServices.get("glowroot-integration-tests");
+        private static final TransactionService transactionService = Agent.getTransactionService();
         @Override
         public void executeApp() {
             traceMarker();
         }
         @Override
         public void traceMarker() {
-            pluginServices.setSlowTraceThreshold(Long.MAX_VALUE, MILLISECONDS);
+            transactionService.setSlowTraceThreshold(Long.MAX_VALUE, MILLISECONDS);
             new LevelOne().call("a", "b");
         }
     }
 
-    public static class SetLargeAndThenSmallTraceStoreThreshold implements AppUnderTest,
-            TraceMarker {
-        private static final PluginServices pluginServices =
-                PluginServices.get("glowroot-integration-tests");
+    public static class SetLargeAndThenSmallTraceStoreThreshold
+            implements AppUnderTest, TraceMarker {
+        private static final TransactionService transactionService = Agent.getTransactionService();
         @Override
         public void executeApp() {
             traceMarker();
         }
         @Override
         public void traceMarker() {
-            pluginServices.setSlowTraceThreshold(Long.MAX_VALUE, MILLISECONDS);
-            pluginServices.setSlowTraceThreshold(0, MILLISECONDS);
+            transactionService.setSlowTraceThreshold(Long.MAX_VALUE, MILLISECONDS);
+            transactionService.setSlowTraceThreshold(0, MILLISECONDS);
             new LevelOne().call("a", "b");
         }
     }
 
-    public static class SetSmallAndThenLargeTraceStoreThreshold implements AppUnderTest,
-            TraceMarker {
-        private static final PluginServices pluginServices =
-                PluginServices.get("glowroot-integration-tests");
+    public static class SetSmallAndThenLargeTraceStoreThreshold
+            implements AppUnderTest, TraceMarker {
+        private static final TransactionService transactionService = Agent.getTransactionService();
         @Override
         public void executeApp() {
             traceMarker();
         }
         @Override
         public void traceMarker() {
-            pluginServices.setSlowTraceThreshold(0, MILLISECONDS);
-            pluginServices.setSlowTraceThreshold(Long.MAX_VALUE, MILLISECONDS);
+            transactionService.setSlowTraceThreshold(0, MILLISECONDS);
+            transactionService.setSlowTraceThreshold(Long.MAX_VALUE, MILLISECONDS);
             new LevelOne().call("a", "b");
         }
     }

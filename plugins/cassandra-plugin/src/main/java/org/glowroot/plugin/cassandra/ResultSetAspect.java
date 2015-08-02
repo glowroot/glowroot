@@ -17,12 +17,14 @@ package org.glowroot.plugin.cassandra;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.PluginServices.BooleanProperty;
-import org.glowroot.plugin.api.QueryEntry;
-import org.glowroot.plugin.api.Timer;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.BooleanProperty;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.QueryEntry;
+import org.glowroot.plugin.api.transaction.Timer;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TraceEntry;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.BindReceiver;
 import org.glowroot.plugin.api.weaving.BindReturn;
 import org.glowroot.plugin.api.weaving.BindTraveler;
@@ -35,7 +37,8 @@ import org.glowroot.plugin.api.weaving.Pointcut;
 
 public class ResultSetAspect {
 
-    private static final PluginServices pluginServices = PluginServices.get("cassandra");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService = Agent.getConfigService("cassandra");
 
     // the field and method names are verbose to avoid conflict since they will become fields
     // and methods in all classes that extend com.datastax.driver.core.ResultSet
@@ -114,9 +117,9 @@ public class ResultSetAspect {
     @Pointcut(className = "com.datastax.driver.core.ResultSet", methodName = "one",
             methodParameterTypes = {}, timerName = "cql resultset navigate")
     public static class OneAdvice {
-        private static final TimerName timerName = pluginServices.getTimerName(OneAdvice.class);
+        private static final TimerName timerName = transactionService.getTimerName(OneAdvice.class);
         private static final BooleanProperty timerEnabled =
-                pluginServices.getEnabledProperty("captureResultSetNavigate");
+                configService.getEnabledProperty("captureResultSetNavigate");
         @IsEnabled
         public static boolean isEnabled(@BindReceiver ResultSet resultSet) {
             return resultSet.glowroot$hasLastQueryEntry();
@@ -127,7 +130,7 @@ public class ResultSetAspect {
                 QueryEntry lastQueryEntry = resultSet.glowroot$getLastQueryEntry();
                 if (lastQueryEntry == null) {
                     // tracing must be disabled (e.g. exceeded trace entry limit)
-                    return pluginServices.startTimer(timerName);
+                    return transactionService.startTimer(timerName);
                 }
                 return lastQueryEntry.extend();
             } else {

@@ -15,8 +15,8 @@
  */
 package org.glowroot.plugin.cassandra;
 
-import org.glowroot.plugin.api.Message;
-import org.glowroot.plugin.api.MessageSupplier;
+import org.glowroot.plugin.api.transaction.Message;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
 
 class QueryMessageSupplier extends MessageSupplier {
 

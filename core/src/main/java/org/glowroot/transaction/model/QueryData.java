@@ -23,7 +23,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Ticker;
 
 import org.glowroot.common.Tickers;
-import org.glowroot.plugin.api.Timer;
+import org.glowroot.plugin.api.transaction.Timer;
 
 // TODO update this comment that was copied from TimerImpl
 //

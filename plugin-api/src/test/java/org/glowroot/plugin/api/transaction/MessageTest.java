@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.api;
+package org.glowroot.plugin.api.transaction;
 
 import com.google.common.base.Strings;
 import org.junit.Test;
 
 import org.glowroot.plugin.api.internal.ReadableMessage;
+import org.glowroot.plugin.api.transaction.Message;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

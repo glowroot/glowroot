@@ -21,14 +21,14 @@ import com.google.common.cache.LoadingCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.plugin.api.TimerName;
+import org.glowroot.plugin.api.transaction.TimerName;
 import org.glowroot.plugin.api.weaving.Pointcut;
 import org.glowroot.transaction.model.TimerNameImpl;
 
 // used to ensure one instance per name so that pointer equality can be used instead of String
 // equality
 //
-// also used to ensure @Pointcut timer name matches the timer name passed to PluginServices
+// also used to ensure @Pointcut timer name matches the timer name passed to TransactionService
 class TimerNameCache {
 
     private static final Logger logger = LoggerFactory.getLogger(TimerNameCache.class);

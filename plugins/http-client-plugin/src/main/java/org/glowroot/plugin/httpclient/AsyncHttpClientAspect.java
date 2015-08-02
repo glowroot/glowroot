@@ -19,13 +19,15 @@ import java.net.URI;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.plugin.api.ErrorMessage;
-import org.glowroot.plugin.api.Message;
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.Timer;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.ErrorMessage;
+import org.glowroot.plugin.api.transaction.Message;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.Timer;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TraceEntry;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.BindClassMeta;
 import org.glowroot.plugin.api.weaving.BindParameter;
 import org.glowroot.plugin.api.weaving.BindReceiver;
@@ -42,7 +44,8 @@ import org.glowroot.plugin.api.weaving.Pointcut;
 
 public class AsyncHttpClientAspect {
 
-    private static final PluginServices pluginServices = PluginServices.get("http-client");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService = Agent.getConfigService("http-client");
 
     // the field and method names are verbose to avoid conflict since they will become fields
     // and methods in all classes that extend com.ning.http.client.ListenableFuture
@@ -78,10 +81,10 @@ public class AsyncHttpClientAspect {
             timerName = "http client request")
     public static class ExecuteRequestAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(ExecuteRequestAdvice.class);
+                transactionService.getTimerName(ExecuteRequestAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter Object request,
@@ -90,8 +93,8 @@ public class AsyncHttpClientAspect {
             // executor" in which case will be over in @OnReturn
             String method = requestInvoker.getMethod(request);
             URI originalURI = requestInvoker.getOriginalURI(request);
-            return pluginServices.startTraceEntry(new RequestMessageSupplier(method, originalURI),
-                    timerName);
+            return transactionService.startTraceEntry(
+                    new RequestMessageSupplier(method, originalURI), timerName);
         }
         @OnReturn
         public static void onReturn(@BindReturn ListenableFuture future,

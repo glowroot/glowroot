@@ -15,22 +15,23 @@
  */
 package org.glowroot.plugin.logger;
 
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.PluginServices.BooleanProperty;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.BooleanProperty;
+import org.glowroot.plugin.api.config.ConfigService;
 import org.glowroot.plugin.api.util.FastThreadLocal;
 
 class LoggerPlugin {
 
-    private static final PluginServices pluginServices = PluginServices.get("logger");
+    private static final ConfigService configService = Agent.getConfigService("logger");
 
     private static final BooleanProperty traceErrorOnWarningWithThrowable =
-            pluginServices.getEnabledProperty("traceErrorOnWarningWithThrowable");
+            configService.getEnabledProperty("traceErrorOnWarningWithThrowable");
     private static final BooleanProperty traceErrorOnWarningWithoutThrowable =
-            pluginServices.getEnabledProperty("traceErrorOnWarningWithoutThrowable");
+            configService.getEnabledProperty("traceErrorOnWarningWithoutThrowable");
     private static final BooleanProperty traceErrorOnErrorWithThrowable =
-            pluginServices.getEnabledProperty("traceErrorOnErrorWithThrowable");
+            configService.getEnabledProperty("traceErrorOnErrorWithThrowable");
     private static final BooleanProperty traceErrorOnErrorWithoutThrowable =
-            pluginServices.getEnabledProperty("traceErrorOnErrorWithoutThrowable");
+            configService.getEnabledProperty("traceErrorOnErrorWithoutThrowable");
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private static final FastThreadLocal<Boolean> inAdvice = new FastThreadLocal<Boolean>() {

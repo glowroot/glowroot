@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.Encryption;
 import org.glowroot.common.ObjectMappers;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.plugin.api.PluginServices.ConfigListener;
+import org.glowroot.plugin.api.config.ConfigListener;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -69,8 +69,11 @@ public class ConfigService {
 
     private volatile Config config;
 
-    // volatile not needed as access is guarded by secretKeyFile
+    // volatile not needed as access is guarded by secretFile
     private @MonotonicNonNull SecretKey secretKey;
+
+    // memory barrier is used to ensure memory visibility of config values
+    private volatile boolean memoryBarrier;
 
     ConfigService(File baseDir, List<PluginDescriptor> pluginDescriptors) {
         configFile = new ConfigFile(new File(baseDir, "config.json"), pluginDescriptors);
@@ -495,6 +498,14 @@ public class ConfigService {
             }
             return secretKey;
         }
+    }
+
+    public boolean readMemoryBarrier() {
+        return memoryBarrier;
+    }
+
+    public void writeMemoryBarrier() {
+        memoryBarrier = true;
     }
 
     private void checkVersionsEqual(String version, String priorVersion)

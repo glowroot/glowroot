@@ -19,13 +19,15 @@ import java.sql.PreparedStatement;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.plugin.api.ErrorMessage;
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.PluginServices.BooleanProperty;
-import org.glowroot.plugin.api.QueryEntry;
-import org.glowroot.plugin.api.Timer;
-import org.glowroot.plugin.api.TimerName;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.BooleanProperty;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.ErrorMessage;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.QueryEntry;
+import org.glowroot.plugin.api.transaction.Timer;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.BindParameter;
 import org.glowroot.plugin.api.weaving.BindReceiver;
 import org.glowroot.plugin.api.weaving.BindReturn;
@@ -48,18 +50,19 @@ import org.glowroot.plugin.jdbc.message.StatementMessageSupplier;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-// many of the pointcuts are not restricted to pluginServices.isEnabled() because StatementMirrors
+// many of the pointcuts are not restricted to configService.isEnabled() because StatementMirrors
 // must be tracked for their entire life
 public class StatementAspect {
 
     private static final String QUERY_TYPE = "SQL";
 
-    private static final PluginServices pluginServices = PluginServices.get("jdbc");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService = Agent.getConfigService("jdbc");
 
     private static final BooleanProperty captureBindParameters =
-            pluginServices.getEnabledProperty("captureBindParameters");
+            configService.getEnabledProperty("captureBindParameters");
     private static final BooleanProperty captureStatementClose =
-            pluginServices.getEnabledProperty("captureStatementClose");
+            configService.getEnabledProperty("captureStatementClose");
 
     // ===================== Mixin =====================
 
@@ -280,7 +283,7 @@ public class StatementAspect {
             timerName = "jdbc execute")
     public static class StatementExecuteAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(StatementExecuteAdvice.class);
+                transactionService.getTimerName(StatementExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
             return statement.glowroot$hasStatementMirror();
@@ -297,10 +300,11 @@ public class StatementAspect {
                 // this shouldn't happen since just checked hasGlowrootStatementMirror() above
                 return null;
             }
-            if (pluginServices.isEnabled()) {
+            if (configService.isEnabled()) {
                 MessageSupplier messageSupplier = new StatementMessageSupplier(sql);
-                QueryEntry query = pluginServices.startQueryEntry(QUERY_TYPE, sql, messageSupplier,
-                        timerName);
+                QueryEntry query =
+                        transactionService.startQueryEntry(QUERY_TYPE, sql, messageSupplier,
+                                timerName);
                 mirror.setLastQuery(query);
                 return query;
             } else {
@@ -400,7 +404,7 @@ public class StatementAspect {
             methodParameterTypes = {}, ignoreSelfNested = true, timerName = "jdbc execute")
     public static class PreparedStatementExecuteAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(PreparedStatementExecuteAdvice.class);
+                transactionService.getTimerName(PreparedStatementExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror preparedStatement) {
             return preparedStatement.glowroot$hasStatementMirror();
@@ -414,7 +418,7 @@ public class StatementAspect {
                 // this shouldn't happen since just checked hasGlowrootStatementMirror() above
                 return null;
             }
-            if (pluginServices.isEnabled()) {
+            if (configService.isEnabled()) {
                 MessageSupplier messageSupplier;
                 String queryText = mirror.getSql();
                 if (captureBindParameters.value()) {
@@ -423,7 +427,7 @@ public class StatementAspect {
                 } else {
                     messageSupplier = new StatementMessageSupplier(queryText);
                 }
-                QueryEntry queryEntry = pluginServices.startQueryEntry(QUERY_TYPE, queryText,
+                QueryEntry queryEntry = transactionService.startQueryEntry(QUERY_TYPE, queryText,
                         messageSupplier, timerName);
                 mirror.setLastQuery(queryEntry);
                 return queryEntry;
@@ -524,7 +528,7 @@ public class StatementAspect {
             methodParameterTypes = {}, ignoreSelfNested = true, timerName = "jdbc execute")
     public static class StatementExecuteBatchAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(StatementExecuteBatchAdvice.class);
+                transactionService.getTimerName(StatementExecuteBatchAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
             return statement.glowroot$hasStatementMirror();
@@ -570,7 +574,7 @@ public class StatementAspect {
         }
         private static @Nullable QueryEntry onBeforePreparedStatement(
                 PreparedStatementMirror mirror) {
-            if (pluginServices.isEnabled()) {
+            if (configService.isEnabled()) {
                 MessageSupplier messageSupplier;
                 String queryText = mirror.getSql();
                 int batchSize = mirror.getBatchSize();
@@ -581,8 +585,9 @@ public class StatementAspect {
                     messageSupplier = new BatchPreparedStatementMessageSupplier2(queryText,
                             batchSize);
                 }
-                QueryEntry queryEntry = pluginServices.startQueryEntry(QUERY_TYPE, queryText,
-                        batchSize, messageSupplier, timerName);
+                QueryEntry queryEntry =
+                        transactionService.startQueryEntry(QUERY_TYPE, queryText, batchSize,
+                                messageSupplier, timerName);
                 mirror.setLastQuery(queryEntry);
                 mirror.clearBatch();
                 return queryEntry;
@@ -594,11 +599,12 @@ public class StatementAspect {
             }
         }
         private static @Nullable QueryEntry onBeforeStatement(StatementMirror mirror) {
-            if (pluginServices.isEnabled()) {
+            if (configService.isEnabled()) {
                 MessageSupplier messageSupplier =
                         new BatchStatementMessageSupplier(mirror.getBatchedSql());
-                QueryEntry queryEntry = pluginServices.startQueryEntry(QUERY_TYPE, "<batch sql>",
-                        messageSupplier, timerName);
+                QueryEntry queryEntry =
+                        transactionService.startQueryEntry(QUERY_TYPE, "<batch sql>",
+                                messageSupplier, timerName);
                 mirror.setLastQuery(queryEntry);
                 mirror.clearBatch();
                 return queryEntry;
@@ -634,10 +640,10 @@ public class StatementAspect {
             timerName = "jdbc statement close")
     public static class CloseAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(CloseAdvice.class);
+                transactionService.getTimerName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
-            return statement.glowroot$hasStatementMirror() && pluginServices.isEnabled();
+            return statement.glowroot$hasStatementMirror() && configService.isEnabled();
         }
         @OnBefore
         public static @Nullable Timer onBefore(
@@ -648,7 +654,7 @@ public class StatementAspect {
                 mirror.clearLastQuery();
             }
             if (captureStatementClose.value()) {
-                return pluginServices.startTimer(timerName);
+                return transactionService.startTimer(timerName);
             } else {
                 return null;
             }

@@ -15,10 +15,11 @@
  */
 package org.glowroot.tests.plugin;
 
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TraceEntry;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.BindTraveler;
 import org.glowroot.plugin.api.weaving.OnAfter;
 import org.glowroot.plugin.api.weaving.OnBefore;
@@ -26,19 +27,18 @@ import org.glowroot.plugin.api.weaving.Pointcut;
 
 public class MockDriverAspect {
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("glowroot-integration-tests");
+    private static final TransactionService transactionService = Agent.getTransactionService();
 
     @Pointcut(className = "org.glowroot.tests.MockDriver", methodName = "getMajorVersion",
             methodParameterTypes = {}, timerName = "get major version")
     public static class GetMajorVersionAdvice {
 
         private static final TimerName timerName =
-                pluginServices.getTimerName(GetMajorVersionAdvice.class);
+                transactionService.getTimerName(GetMajorVersionAdvice.class);
 
         @OnBefore
         public static TraceEntry onBefore() {
-            return pluginServices.startTraceEntry(MessageSupplier.from("major version"),
+            return transactionService.startTraceEntry(MessageSupplier.from("major version"),
                     timerName);
         }
 

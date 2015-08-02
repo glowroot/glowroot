@@ -17,11 +17,13 @@ package org.glowroot.tests.plugin;
 
 import com.google.common.collect.ImmutableMap;
 
-import org.glowroot.plugin.api.Message;
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.Message;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TraceEntry;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.BindParameter;
 import org.glowroot.plugin.api.weaving.BindTraveler;
 import org.glowroot.plugin.api.weaving.IsEnabled;
@@ -31,8 +33,9 @@ import org.glowroot.plugin.api.weaving.Pointcut;
 
 public class LevelTwoAspect {
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("glowroot-integration-tests");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService =
+            Agent.getConfigService("glowroot-integration-tests");
 
     @Pointcut(className = "org.glowroot.tests.LevelTwo", methodName = "call",
             methodParameterTypes = {"java.lang.String", "java.lang.String"},
@@ -40,17 +43,17 @@ public class LevelTwoAspect {
     public static class LevelTwoAdvice {
 
         private static final TimerName timerName =
-                pluginServices.getTimerName(LevelTwoAdvice.class);
+                transactionService.getTimerName(LevelTwoAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
 
         @OnBefore
         public static TraceEntry onBefore(@BindParameter final String arg1,
                 @BindParameter final String arg2) {
-            return pluginServices.startTraceEntry(new MessageSupplier() {
+            return transactionService.startTraceEntry(new MessageSupplier() {
                 @Override
                 public Message get() {
                     return Message.withDetail("Level Two",

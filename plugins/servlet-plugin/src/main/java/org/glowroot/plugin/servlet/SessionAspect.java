@@ -20,7 +20,9 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.BindParameter;
 import org.glowroot.plugin.api.weaving.BindReceiver;
 import org.glowroot.plugin.api.weaving.IsEnabled;
@@ -30,7 +32,8 @@ import org.glowroot.plugin.servlet.ServletAspect.HttpSession;
 
 public class SessionAspect {
 
-    private static final PluginServices pluginServices = PluginServices.get("servlet");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService = Agent.getConfigService("servlet");
 
     /*
      * ================== Http Session Attributes ==================
@@ -41,7 +44,7 @@ public class SessionAspect {
     public static class SetAttributeAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
         @OnAfter
         public static void onAfter(@BindReceiver HttpSession session,
@@ -65,7 +68,7 @@ public class SessionAspect {
     public static class RemoveAttributeAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
         @OnAfter
         public static void onAfter(@BindReceiver HttpSession session,
@@ -86,13 +89,13 @@ public class SessionAspect {
         if (!sessionUserAttributePath.isEmpty()) {
             // capture user now, don't use a lazy supplier
             if (sessionUserAttributePath.equals(name)) {
-                pluginServices.setTransactionUser(value.toString());
+                transactionService.setTransactionUser(value.toString());
             } else if (sessionUserAttributePath.startsWith(name + ".")) {
                 String user = HttpSessions.getSessionAttributeTextValue(session,
                         sessionUserAttributePath);
                 if (user != null) {
                     // if user is null, don't clear it by setting Suppliers.ofInstance(null)
-                    pluginServices.setTransactionUser(user);
+                    transactionService.setTransactionUser(user);
                 }
             }
         }

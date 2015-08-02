@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.config.ConfigService;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.plugin.api.PluginServices.ConfigListener;
+import org.glowroot.plugin.api.config.ConfigListener;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.transaction.model.Transaction;
 

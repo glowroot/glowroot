@@ -13,24 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.jdbc.message;
+package org.glowroot.plugin.api.transaction;
 
-import org.glowroot.plugin.api.transaction.Message;
-import org.glowroot.plugin.api.transaction.MessageSupplier;
+/**
+ * A {@link TraceEntry} that also captures query data for aggregation.
+ */
+public interface QueryEntry extends TraceEntry {
 
-public class StatementMessageSupplier extends MessageSupplier {
+    /**
+     * Call after successfully getting next row.
+     */
+    void incrementCurrRow();
 
-    private final String sql;
-
-    public StatementMessageSupplier(String sql) {
-        this.sql = sql;
-    }
-
-    @Override
-    public Message get() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("jdbc execution: ");
-        sb.append(sql);
-        return Message.from(sb.toString());
-    }
+    /**
+     * Row numbers start at 1 (not 0).
+     * 
+     * @param row
+     */
+    void setCurrRow(long row);
 }

@@ -19,12 +19,12 @@ import java.lang.reflect.Method;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.plugin.api.util.Logger;
-import org.glowroot.plugin.api.util.LoggerFactory;
+import org.glowroot.plugin.api.Logger;
+import org.glowroot.plugin.api.Agent;
 
 public class Invokers {
 
-    private static final Logger logger = LoggerFactory.getLogger(Invokers.class);
+    private static final Logger logger = Agent.getLogger(Invokers.class);
 
     private Invokers() {}
 

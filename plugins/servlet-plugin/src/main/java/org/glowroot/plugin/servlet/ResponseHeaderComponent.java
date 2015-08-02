@@ -29,12 +29,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-import org.glowroot.plugin.api.util.Logger;
-import org.glowroot.plugin.api.util.LoggerFactory;
+import org.glowroot.plugin.api.Logger;
+import org.glowroot.plugin.api.Agent;
 
 class ResponseHeaderComponent {
 
-    private static final Logger logger = LoggerFactory.getLogger(ServletMessageSupplier.class);
+    private static final Logger logger = Agent.getLogger(ServletMessageSupplier.class);
 
     // HTTP response header date format (RFC 1123)
     // also see org.apache.tomcat.util.http.FastHttpDateFormat

@@ -28,10 +28,11 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 
 import org.glowroot.microbenchmarks.support.TraceEntryWorthy;
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TraceEntry;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.Pointcut;
 
 @BenchmarkMode(Mode.AverageTime)
@@ -39,10 +40,9 @@ import org.glowroot.plugin.api.weaving.Pointcut;
 @State(Scope.Thread)
 public class TraceEntryBenchmark {
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("glowroot-microbenchmarks");
+    private static final TransactionService transactionService = Agent.getTransactionService();
     private static final TimerName timerName =
-            pluginServices.getTimerName(OnlyForTheTimerName.class);
+            transactionService.getTimerName(OnlyForTheTimerName.class);
 
     @Param
     private PointcutType pointcutType;
@@ -57,7 +57,7 @@ public class TraceEntryBenchmark {
     @Benchmark
     @OperationsPerInvocation(2000)
     public void execute() {
-        TraceEntry traceEntry = pluginServices.startTransaction("Microbenchmark",
+        TraceEntry traceEntry = transactionService.startTransaction("Microbenchmark",
                 "micro transaction", MessageSupplier.from("micro transaction"), timerName);
         switch (pointcutType) {
             case API:

@@ -24,10 +24,12 @@ import javax.annotation.Nullable;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 
-import org.glowroot.plugin.api.ErrorMessage;
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.ErrorMessage;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TraceEntry;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.util.FastThreadLocal;
 import org.glowroot.plugin.api.weaving.BindParameter;
 import org.glowroot.plugin.api.weaving.BindReturn;
@@ -46,7 +48,8 @@ import org.glowroot.plugin.api.weaving.Shim;
 // this plugin is careful not to rely on request or session objects being thread-safe
 public class ServletAspect {
 
-    private static final PluginServices pluginServices = PluginServices.get("servlet");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService = Agent.getConfigService("servlet");
 
     private static final FastThreadLocal</*@Nullable*/ServletMessageSupplier> topLevel =
             new FastThreadLocal</*@Nullable*/ServletMessageSupplier>();
@@ -102,11 +105,11 @@ public class ServletAspect {
             timerName = "http request")
     public static class ServiceAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(ServiceAdvice.class);
+                transactionService.getTimerName(ServiceAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             // only enabled if it is not contained in another servlet or filter
-            return topLevel.get() == null && pluginServices.isEnabled();
+            return topLevel.get() == null && configService.isEnabled();
         }
         @OnBefore
         public static @Nullable TraceEntry onBefore(@BindParameter @Nullable Object req) {
@@ -146,7 +149,7 @@ public class ServletAspect {
                             sessionUserAttributePath);
                 }
             }
-            TraceEntry traceEntry = pluginServices.startTransaction("Servlet", requestUri,
+            TraceEntry traceEntry = transactionService.startTransaction("Servlet", requestUri,
                     messageSupplier, timerName);
             // Glowroot-Transaction-Name header is useful for automated tests which want to send a
             // more specific name for the transaction
@@ -154,10 +157,10 @@ public class ServletAspect {
             if (transactionNameOverride != null) {
                 // using setTransactionName() instead of passing this into startTransaction() so
                 // that it will be the first override and other overrides won't replace it
-                pluginServices.setTransactionName(transactionNameOverride);
+                transactionService.setTransactionName(transactionNameOverride);
             }
             if (user != null) {
-                pluginServices.setTransactionUser(user);
+                transactionService.setTransactionUser(user);
             }
             return traceEntry;
         }
@@ -244,7 +247,7 @@ public class ServletAspect {
             if (statusCode >= 500 && topLevel.get() != null && sendError.get() == null) {
                 ErrorMessage errorMessage =
                         ErrorMessage.from("sendError, HTTP status code " + statusCode);
-                pluginServices.addTraceEntry(errorMessage);
+                transactionService.addTraceEntry(errorMessage);
                 sendError.set(errorMessage);
             }
         }
@@ -261,7 +264,7 @@ public class ServletAspect {
             if (statusCode >= 500 && topLevel.get() != null && sendError.get() == null) {
                 ErrorMessage errorMessage =
                         ErrorMessage.from("setStatus, HTTP status code " + statusCode);
-                pluginServices.addTraceEntry(errorMessage);
+                transactionService.addTraceEntry(errorMessage);
                 sendError.set(errorMessage);
             }
         }
@@ -273,7 +276,7 @@ public class ServletAspect {
         @OnReturn
         public static void onReturn(@BindReturn Principal principal) {
             if (principal != null) {
-                pluginServices.setTransactionUser(principal.getName());
+                transactionService.setTransactionUser(principal.getName());
             }
         }
     }

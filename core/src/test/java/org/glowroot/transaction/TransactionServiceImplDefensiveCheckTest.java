@@ -26,12 +26,11 @@ import org.junit.Test;
 import org.glowroot.common.Clock;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.TransactionConfig;
 import org.glowroot.jvm.ThreadAllocatedBytes;
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.PluginServices.ConfigListener;
-import org.glowroot.plugin.api.TimerName;
+import org.glowroot.plugin.api.config.ConfigListener;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.TimerName;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,9 +40,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class PluginServicesImplDefensiveCheckTest {
+public class TransactionServiceImplDefensiveCheckTest {
 
-    private PluginServicesImpl pluginServices;
+    private TransactionServiceImpl transactionService;
     private List<Object> mocks;
     private ConfigService mockConfigService;
 
@@ -62,9 +61,9 @@ public class PluginServicesImplDefensiveCheckTest {
         UserProfileScheduler userProfileScheduler = mock(UserProfileScheduler.class);
         Ticker ticker = mock(Ticker.class);
         Clock clock = mock(Clock.class);
-        pluginServices = PluginServicesImpl.create(transactionRegistry, transactionCollector,
-                configService, timerNameCache, threadAllocatedBytes, userProfileScheduler, ticker,
-                clock, ImmutableList.<PluginDescriptor>of(), null);
+        transactionService = TransactionServiceImpl.create(transactionRegistry,
+                transactionCollector, configService, timerNameCache, threadAllocatedBytes,
+                userProfileScheduler, ticker, clock);
         mocks = ImmutableList.of(transactionRegistry, transactionCollector, configService,
                 timerNameCache, threadAllocatedBytes, userProfileScheduler, ticker, clock);
         mockConfigService = configService;
@@ -77,31 +76,16 @@ public class PluginServicesImplDefensiveCheckTest {
     }
 
     @Test
-    public void testGetProperty() {
-        assertThat(pluginServices.getStringProperty(null).value()).isEqualTo("");
-        assertThat(pluginServices.getBooleanProperty(null).value()).isEqualTo(false);
-        assertThat(pluginServices.getDoubleProperty(null).value()).isEqualTo(null);
-        assertThat(pluginServices.getStringProperty("").value()).isEqualTo("");
-        assertThat(pluginServices.getBooleanProperty("").value()).isEqualTo(false);
-        assertThat(pluginServices.getDoubleProperty("").value()).isEqualTo(null);
-    }
-
-    @Test
-    public void testRegisterConfigListener() {
-        pluginServices.registerConfigListener(null);
-    }
-
-    @Test
     public void testStartTransaction() {
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         TimerName timerName = mock(TimerName.class);
-        assertThat(pluginServices.startTransaction("test", "test", messageSupplier, null)
+        assertThat(transactionService.startTransaction("test", "test", messageSupplier, null)
                 .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
-        assertThat(pluginServices.startTransaction("test", "test", null, timerName)
+        assertThat(transactionService.startTransaction("test", "test", null, timerName)
                 .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
-        assertThat(pluginServices.startTransaction("test", null, messageSupplier, timerName)
+        assertThat(transactionService.startTransaction("test", null, messageSupplier, timerName)
                 .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
-        assertThat(pluginServices.startTransaction(null, "test", messageSupplier, timerName)
+        assertThat(transactionService.startTransaction(null, "test", messageSupplier, timerName)
                 .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
     }
 
@@ -109,36 +93,31 @@ public class PluginServicesImplDefensiveCheckTest {
     public void testStartTraceEntry() {
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         TimerName timerName = mock(TimerName.class);
-        assertThat(pluginServices.startTraceEntry(messageSupplier, null)
+        assertThat(transactionService.startTraceEntry(messageSupplier, null)
                 .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
-        assertThat(pluginServices.startTraceEntry(null, timerName)
+        assertThat(transactionService.startTraceEntry(null, timerName)
                 .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
     }
 
     @Test
     public void testStartTimer() {
-        assertThat(pluginServices.startTimer(null).getClass().getSimpleName())
+        assertThat(transactionService.startTimer(null).getClass().getSimpleName())
                 .isEqualTo("NopTimer");
     }
 
     @Test
     public void testAddTraceEntry() {
-        pluginServices.addTraceEntry(null);
+        transactionService.addTraceEntry(null);
     }
 
     @Test
     public void testAddTransactionCustomAttribute() {
-        pluginServices.addTransactionCustomAttribute(null, null);
+        transactionService.addTransactionCustomAttribute(null, null);
     }
 
     @Test
     public void testSetTraceStoreThreshold() {
-        pluginServices.setSlowTraceThreshold(-1, SECONDS);
-        pluginServices.setSlowTraceThreshold(1, null);
-    }
-
-    @Test
-    public void testRegisterListener() {
-        pluginServices.registerConfigListener(null);
+        transactionService.setSlowTraceThreshold(-1, SECONDS);
+        transactionService.setSlowTraceThreshold(1, null);
     }
 }

@@ -31,12 +31,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Maps;
 
-import org.glowroot.plugin.api.util.Logger;
-import org.glowroot.plugin.api.util.LoggerFactory;
+import org.glowroot.plugin.api.Logger;
+import org.glowroot.plugin.api.Agent;
 
 public class Beans {
 
-    private static final Logger logger = LoggerFactory.getLogger(Beans.class);
+    private static final Logger logger = Agent.getLogger(Beans.class);
 
     // sentinel method is used to represent null value in the weak valued ConcurrentMap below
     // using guava's Optional would make the weakness on the Optional instance instead of on the

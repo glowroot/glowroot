@@ -17,13 +17,15 @@ package org.glowroot.plugin.jdbc;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.plugin.api.ErrorMessage;
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.PluginServices.BooleanProperty;
-import org.glowroot.plugin.api.Timer;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.BooleanProperty;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.ErrorMessage;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.Timer;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TraceEntry;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.BindParameter;
 import org.glowroot.plugin.api.weaving.BindReturn;
 import org.glowroot.plugin.api.weaving.BindThrowable;
@@ -40,16 +42,17 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class ConnectionAspect {
 
-    private static final PluginServices pluginServices = PluginServices.get("jdbc");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService = Agent.getConfigService("jdbc");
 
     private static final BooleanProperty capturePreparedStatementCreation =
-            pluginServices.getEnabledProperty("capturePreparedStatementCreation");
+            configService.getEnabledProperty("capturePreparedStatementCreation");
     private static final BooleanProperty captureConnectionClose =
-            pluginServices.getEnabledProperty("captureConnectionClose");
+            configService.getEnabledProperty("captureConnectionClose");
     private static final BooleanProperty captureConnectionLifecycleTraceEntries =
-            pluginServices.getEnabledProperty("captureConnectionLifecycleTraceEntries");
+            configService.getEnabledProperty("captureConnectionLifecycleTraceEntries");
     private static final BooleanProperty captureTransactionLifecycleTraceEntries =
-            pluginServices.getEnabledProperty("captureTransactionLifecycleTraceEntries");
+            configService.getEnabledProperty("captureTransactionLifecycleTraceEntries");
 
     // ===================== Statement Preparation =====================
 
@@ -57,11 +60,12 @@ public class ConnectionAspect {
     @Pointcut(className = "java.sql.Connection", methodName = "prepare*",
             methodParameterTypes = {"java.lang.String", ".."}, timerName = "jdbc prepare")
     public static class PrepareAdvice {
-        private static final TimerName timerName = pluginServices.getTimerName(PrepareAdvice.class);
+        private static final TimerName timerName =
+                transactionService.getTimerName(PrepareAdvice.class);
         @OnBefore
         public static @Nullable Timer onBefore() {
             if (capturePreparedStatementCreation.value()) {
-                return pluginServices.startTimer(timerName);
+                return transactionService.startTimer(timerName);
             } else {
                 return null;
             }
@@ -98,14 +102,15 @@ public class ConnectionAspect {
             timerName = "jdbc commit", ignoreSelfNested = true)
     public static class CommitAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(CommitAdvice.class);
+                transactionService.getTimerName(CommitAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore() {
-            return pluginServices.startTraceEntry(MessageSupplier.from("jdbc commit"), timerName);
+            return transactionService.startTraceEntry(MessageSupplier.from("jdbc commit"),
+                    timerName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {
@@ -123,14 +128,15 @@ public class ConnectionAspect {
             timerName = "jdbc rollback", ignoreSelfNested = true)
     public static class RollbackAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(RollbackAdvice.class);
+                transactionService.getTimerName(RollbackAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore() {
-            return pluginServices.startTraceEntry(MessageSupplier.from("jdbc rollback"), timerName);
+            return transactionService.startTraceEntry(MessageSupplier.from("jdbc rollback"),
+                    timerName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {
@@ -148,20 +154,20 @@ public class ConnectionAspect {
             timerName = "jdbc connection close", ignoreSelfNested = true)
     public static class CloseAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(CloseAdvice.class);
+                transactionService.getTimerName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled() && (captureConnectionClose.value()
+            return configService.isEnabled() && (captureConnectionClose.value()
                     || captureConnectionLifecycleTraceEntries.value());
         }
         @OnBefore
         public static Object onBefore() {
             if (captureConnectionLifecycleTraceEntries.value()) {
-                return pluginServices.startTraceEntry(
+                return transactionService.startTraceEntry(
                         MessageSupplier.from("jdbc connection close"),
                         timerName);
             } else {
-                return pluginServices.startTimer(timerName);
+                return transactionService.startTimer(timerName);
             }
         }
         @OnReturn
@@ -188,14 +194,14 @@ public class ConnectionAspect {
             ignoreSelfNested = true)
     public static class SetAutoCommitAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(CloseAdvice.class);
+                transactionService.getTimerName(CloseAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return captureTransactionLifecycleTraceEntries.value();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter boolean autoCommit) {
-            return pluginServices.startTraceEntry(
+            return transactionService.startTraceEntry(
                     MessageSupplier.from("jdbc set autocommit: {}", Boolean.toString(autoCommit)),
                     timerName);
         }

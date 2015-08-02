@@ -21,12 +21,12 @@ import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 
-import org.glowroot.plugin.api.util.Logger;
-import org.glowroot.plugin.api.util.LoggerFactory;
+import org.glowroot.plugin.api.Logger;
+import org.glowroot.plugin.api.Agent;
 
 public class ResponseInvoker {
 
-    private static final Logger logger = LoggerFactory.getLogger(ResponseInvoker.class);
+    private static final Logger logger = Agent.getLogger(ResponseInvoker.class);
 
     private final @Nullable Method getContentTypeMethod;
 

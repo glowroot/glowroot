@@ -13,24 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.jdbc.message;
+package org.glowroot.plugin.api.config;
 
-import org.glowroot.plugin.api.transaction.Message;
-import org.glowroot.plugin.api.transaction.MessageSupplier;
+public interface ConfigListener {
 
-public class StatementMessageSupplier extends MessageSupplier {
-
-    private final String sql;
-
-    public StatementMessageSupplier(String sql) {
-        this.sql = sql;
-    }
-
-    @Override
-    public Message get() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("jdbc execution: ");
-        sb.append(sql);
-        return Message.from(sb.toString());
-    }
+    // the new config is not passed to onChange so that the receiver has to get the latest,
+    // this avoids race condition worries that two updates may get sent to the receiver in the
+    // wrong order
+    void onChange();
 }

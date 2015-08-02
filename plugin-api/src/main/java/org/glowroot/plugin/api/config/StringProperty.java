@@ -13,22 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.api;
+package org.glowroot.plugin.api.config;
 
-/**
- * A {@link TraceEntry} that also captures query data for aggregation.
- */
-public interface QueryEntry extends TraceEntry {
+public interface StringProperty {
 
-    /**
-     * Call after successfully getting next row.
-     */
-    void incrementCurrRow();
-
-    /**
-     * Row numbers start at 1 (not 0).
-     * 
-     * @param row
-     */
-    void setCurrRow(long row);
+    String value();
 }

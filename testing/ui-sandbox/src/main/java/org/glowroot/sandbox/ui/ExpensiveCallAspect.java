@@ -21,13 +21,15 @@ import java.util.Random;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import org.glowroot.plugin.api.ErrorMessage;
-import org.glowroot.plugin.api.Message;
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.QueryEntry;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.ErrorMessage;
+import org.glowroot.plugin.api.transaction.Message;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.QueryEntry;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TraceEntry;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.BindClassMeta;
 import org.glowroot.plugin.api.weaving.BindReceiver;
 import org.glowroot.plugin.api.weaving.BindTraveler;
@@ -40,7 +42,9 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class ExpensiveCallAspect {
 
-    private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-sandbox");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService =
+            Agent.getConfigService("glowroot-ui-sandbox");
 
     private static final Random random = new Random();
     private static final Exception nestedCause = new IllegalArgumentException(
@@ -52,10 +56,10 @@ public class ExpensiveCallAspect {
             methodParameterTypes = {}, timerName = "expensive 0")
     public static class ExpensiveCallAdvice0 {
         private static final TimerName timerName =
-                pluginServices.getTimerName(ExpensiveCallAdvice0.class);
+                transactionService.getTimerName(ExpensiveCallAdvice0.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
         @OnBefore
         public static QueryEntry onBefore(@BindReceiver Object expensiveCall,
@@ -66,7 +70,7 @@ public class ExpensiveCallAspect {
                     getMessageSupplierWithDetail(expensiveCall, expensiveCallInvoker);
             char randomChar = (char) ('a' + random.nextInt(26));
             String queryText = "this is a query " + randomChar;
-            return pluginServices.startQueryEntry("EQL", queryText, messageSupplier, timerName);
+            return transactionService.startQueryEntry("EQL", queryText, messageSupplier, timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler QueryEntry query) {
@@ -88,10 +92,10 @@ public class ExpensiveCallAspect {
             methodParameterTypes = {}, timerName = "expensive 1")
     public static class ExpensiveCallAdvice1 {
         private static final TimerName timerName =
-                pluginServices.getTimerName(ExpensiveCallAdvice1.class);
+                transactionService.getTimerName(ExpensiveCallAdvice1.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
@@ -115,10 +119,10 @@ public class ExpensiveCallAspect {
             methodParameterTypes = {}, timerName = "expensive 2")
     public static class ExpensiveCallAdvice2 {
         private static final TimerName timerName =
-                pluginServices.getTimerName(ExpensiveCallAdvice2.class);
+                transactionService.getTimerName(ExpensiveCallAdvice2.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
@@ -142,10 +146,10 @@ public class ExpensiveCallAspect {
             methodParameterTypes = {}, timerName = "expensive 3")
     public static class ExpensiveCallAdvice3 {
         private static final TimerName timerName =
-                pluginServices.getTimerName(ExpensiveCallAdvice3.class);
+                transactionService.getTimerName(ExpensiveCallAdvice3.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
@@ -169,10 +173,10 @@ public class ExpensiveCallAspect {
             methodParameterTypes = {}, timerName = "expensive 4")
     public static class ExpensiveCallAdvice4 {
         private static final TimerName timerName =
-                pluginServices.getTimerName(ExpensiveCallAdvice4.class);
+                transactionService.getTimerName(ExpensiveCallAdvice4.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
@@ -196,10 +200,10 @@ public class ExpensiveCallAspect {
             methodParameterTypes = {}, timerName = "expensive 5")
     public static class ExpensiveCallAdvice5 {
         private static final TimerName timerName =
-                pluginServices.getTimerName(ExpensiveCallAdvice5.class);
+                transactionService.getTimerName(ExpensiveCallAdvice5.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
@@ -223,10 +227,10 @@ public class ExpensiveCallAspect {
             methodParameterTypes = {}, timerName = "expensive 6")
     public static class ExpensiveCallAdvice6 {
         private static final TimerName timerName =
-                pluginServices.getTimerName(ExpensiveCallAdvice6.class);
+                transactionService.getTimerName(ExpensiveCallAdvice6.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
@@ -250,10 +254,10 @@ public class ExpensiveCallAspect {
             methodParameterTypes = {}, timerName = "expensive 7")
     public static class ExpensiveCallAdvice7 {
         private static final TimerName timerName =
-                pluginServices.getTimerName(ExpensiveCallAdvice7.class);
+                transactionService.getTimerName(ExpensiveCallAdvice7.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
@@ -277,10 +281,10 @@ public class ExpensiveCallAspect {
             methodParameterTypes = {}, timerName = "expensive 8")
     public static class ExpensiveCallAdvice8 {
         private static final TimerName timerName =
-                pluginServices.getTimerName(ExpensiveCallAdvice8.class);
+                transactionService.getTimerName(ExpensiveCallAdvice8.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
@@ -304,10 +308,10 @@ public class ExpensiveCallAspect {
             methodParameterTypes = {}, timerName = "expensive 9 really long to test wrapping")
     public static class ExpensiveCallAdvice9 {
         private static final TimerName timerName =
-                pluginServices.getTimerName(ExpensiveCallAdvice9.class);
+                transactionService.getTimerName(ExpensiveCallAdvice9.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(@BindReceiver Object expensiveCall,
@@ -334,19 +338,19 @@ public class ExpensiveCallAspect {
         }
         MessageSupplier messageSupplier =
                 MessageSupplier.from(expensiveCallInvoker.getTraceEntryMessage(expensiveCall));
-        return pluginServices.startTraceEntry(messageSupplier, timerName);
+        return transactionService.startTraceEntry(messageSupplier, timerName);
     }
 
     private static void onAfterInternal(TraceEntry traceEntry, int num) {
         double value = random.nextDouble();
         if (traceEntry == null) {
             if (value < 0.5) {
-                pluginServices.addTraceEntry(ErrorMessage.from(
+                transactionService.addTraceEntry(ErrorMessage.from(
                         new IllegalStateException("Exception in execute" + num
                                 + "\nwith no trace entry text and no custom error message",
                                 getRandomCause())));
             } else {
-                pluginServices.addTraceEntry(ErrorMessage.from(
+                transactionService.addTraceEntry(ErrorMessage.from(
                         "randomized error\nwith no trace entry text",
                         new IllegalStateException("Exception in execute" + num
                                 + "\nwith no trace entry text", getRandomCause())));

@@ -34,10 +34,11 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TraceEntry;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.Pointcut;
 import org.glowroot.plugin.jdbc.support.MockConnection;
 
@@ -46,9 +47,10 @@ import org.glowroot.plugin.jdbc.support.MockConnection;
 @State(Scope.Thread)
 public class ResultSetBenchmark {
 
-    private static final PluginServices pluginServices = PluginServices.get("jdbc");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+
     private static final TimerName timerName =
-            pluginServices.getTimerName(OnlyForTheTimerName.class);
+            transactionService.getTimerName(OnlyForTheTimerName.class);
 
     @Param
     private Database database;
@@ -87,7 +89,7 @@ public class ResultSetBenchmark {
     @Benchmark
     @OperationsPerInvocation(10000)
     public void next() throws Exception {
-        TraceEntry traceEntry = pluginServices.startTransaction("Microbenchmark",
+        TraceEntry traceEntry = transactionService.startTransaction("Microbenchmark",
                 "micro transaction", MessageSupplier.from("micro transaction"), timerName);
         ResultSet resultSet = preparedStatement.executeQuery();
         for (int i = 0; i < 10000; i++) {

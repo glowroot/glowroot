@@ -34,7 +34,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.glowroot.Containers;
 import org.glowroot.container.Container;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.Agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -214,7 +214,7 @@ public class RequestHeaderTest {
         }
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-            PluginServices.get("servlet").setTransactionName("do not accept");
+            Agent.getTransactionService().setTransactionName("do not accept");
         }
     }
 

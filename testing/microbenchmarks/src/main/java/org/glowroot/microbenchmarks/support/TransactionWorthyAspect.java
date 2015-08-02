@@ -15,11 +15,13 @@
  */
 package org.glowroot.microbenchmarks.support;
 
-import org.glowroot.plugin.api.ErrorMessage;
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.ErrorMessage;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TraceEntry;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.BindThrowable;
 import org.glowroot.plugin.api.weaving.BindTraveler;
 import org.glowroot.plugin.api.weaving.IsEnabled;
@@ -30,8 +32,9 @@ import org.glowroot.plugin.api.weaving.Pointcut;
 
 public class TransactionWorthyAspect {
 
-    private static final PluginServices pluginServices =
-            PluginServices.get("glowroot-microbenchmarks");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService =
+            Agent.getConfigService("glowroot-microbenchmarks");
 
     @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TransactionWorthy",
             methodName = "doSomethingTransactionWorthy", methodParameterTypes = {},
@@ -39,16 +42,16 @@ public class TransactionWorthyAspect {
     public static class TransactionWorthyAdvice {
 
         private static final TimerName timerName =
-                pluginServices.getTimerName(TransactionWorthyAdvice.class);
+                transactionService.getTimerName(TransactionWorthyAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
 
         @OnBefore
         public static TraceEntry onBefore() {
-            return pluginServices.startTransaction("Microbenchmark", "transaction worthy",
+            return transactionService.startTransaction("Microbenchmark", "transaction worthy",
                     MessageSupplier.from("transaction worthy"), timerName);
         }
 

@@ -20,12 +20,12 @@ import java.net.URI;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.plugin.api.util.Logger;
-import org.glowroot.plugin.api.util.LoggerFactory;
+import org.glowroot.plugin.api.Logger;
+import org.glowroot.plugin.api.Agent;
 
 public class RequestInvoker {
 
-    private static final Logger logger = LoggerFactory.getLogger(RequestInvoker.class);
+    private static final Logger logger = Agent.getLogger(RequestInvoker.class);
 
     private final @Nullable Method getMethodMethod;
 

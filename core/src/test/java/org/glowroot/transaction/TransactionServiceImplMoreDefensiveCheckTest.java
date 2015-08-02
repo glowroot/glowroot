@@ -16,20 +16,18 @@
 package org.glowroot.transaction;
 
 import com.google.common.base.Ticker;
-import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.common.Clock;
 import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
-import org.glowroot.config.PluginDescriptor;
 import org.glowroot.config.TransactionConfig;
 import org.glowroot.jvm.ThreadAllocatedBytes;
-import org.glowroot.plugin.api.ErrorMessage;
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.transaction.ErrorMessage;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TraceEntry;
 import org.glowroot.transaction.model.TimerNameImpl;
 import org.glowroot.transaction.model.Transaction;
 
@@ -37,9 +35,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class PluginServicesImplMoreDefensiveCheckTest {
+public class TransactionServiceImplMoreDefensiveCheckTest {
 
-    private PluginServicesImpl pluginServices;
+    private TransactionServiceImpl transactionService;
     private Transaction mockTransaction;
 
     @Before
@@ -60,9 +58,9 @@ public class PluginServicesImplMoreDefensiveCheckTest {
         UserProfileScheduler userProfileScheduler = mock(UserProfileScheduler.class);
         Ticker ticker = mock(Ticker.class);
         Clock clock = mock(Clock.class);
-        pluginServices = PluginServicesImpl.create(transactionRegistry, transactionCollector,
-                configService, timerNameCache, threadAllocatedBytes, userProfileScheduler, ticker,
-                clock, ImmutableList.<PluginDescriptor>of(), null);
+        transactionService = TransactionServiceImpl.create(transactionRegistry,
+                transactionCollector, configService, timerNameCache, threadAllocatedBytes,
+                userProfileScheduler, ticker, clock);
     }
 
     @Test
@@ -70,7 +68,7 @@ public class PluginServicesImplMoreDefensiveCheckTest {
         when(mockTransaction.getEntryCount()).thenReturn(100);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         TimerName timerName = TimerNameImpl.builder().name("test").build();
-        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, timerName);
+        TraceEntry traceEntry = transactionService.startTraceEntry(messageSupplier, timerName);
         traceEntry.endWithStackTrace(-1, MILLISECONDS);
     }
 
@@ -79,7 +77,7 @@ public class PluginServicesImplMoreDefensiveCheckTest {
         when(mockTransaction.getEntryCount()).thenReturn(100);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         TimerName timerName = TimerNameImpl.builder().name("test").build();
-        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, timerName);
+        TraceEntry traceEntry = transactionService.startTraceEntry(messageSupplier, timerName);
         traceEntry.endWithError(null);
     }
 
@@ -88,7 +86,7 @@ public class PluginServicesImplMoreDefensiveCheckTest {
         when(mockTransaction.getEntryCount()).thenReturn(100);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         TimerName timerName = TimerNameImpl.builder().name("test").build();
-        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, timerName);
+        TraceEntry traceEntry = transactionService.startTraceEntry(messageSupplier, timerName);
         traceEntry.endWithStackTrace(1, MILLISECONDS);
     }
 
@@ -97,7 +95,7 @@ public class PluginServicesImplMoreDefensiveCheckTest {
         when(mockTransaction.getEntryCount()).thenReturn(100);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         TimerName timerName = TimerNameImpl.builder().name("test").build();
-        TraceEntry traceEntry = pluginServices.startTraceEntry(messageSupplier, timerName);
+        TraceEntry traceEntry = transactionService.startTraceEntry(messageSupplier, timerName);
         traceEntry.endWithError(mock(ErrorMessage.class));
     }
 }

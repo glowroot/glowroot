@@ -13,133 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.api;
+package org.glowroot.plugin.api.transaction;
 
-import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import org.glowroot.plugin.api.Agent;
 import org.glowroot.plugin.api.weaving.Pointcut;
 
 /**
- * This is the primary service exposed to plugins. Plugins acquire a {@code PluginServices} instance
- * from {@link #get(String)}, and they can (and should) cache the {@code PluginServices} instance
- * for the life of the jvm to avoid looking it up every time it is needed (which is often).
- * 
- * Here is a basic example of how to use {@code PluginServices} to create a plugin that captures
- * calls to Spring validators:
- * 
- * <pre>
- * &#064;Aspect
- * public class SpringAspect {
- * 
- *     private static final PluginServices pluginServices = PluginServices.get(&quot;spring&quot;);
- * 
- *     &#064;Pointcut(className = &quot;org.springframework.validation.Validator&quot;,
- *             methodName = &quot;validate&quot;, methodParameterTypes = {&quot;..&quot;},
- *             timerName = &quot;spring validator&quot;)
- *     public static class ValidatorAdvice {
- *         private static final TimerName timerName =
- *                 pluginServices.getTimerName(ValidatorAdvice.class);
- *         &#064;IsEnabled
- *         public static boolean isEnabled() {
- *             return pluginServices.isEnabled();
- *         }
- *         &#064;OnBefore
- *         public static TraceEntry onBefore(@BindReceiver Object validator) {
- *             return pluginServices.startTraceEntry(
- *                     MessageSupplier.from(&quot;spring validator: {}&quot;, validator.getClass().getName()),
- *                     timerName);
- *         }
- *         &#064;OnAfter
- *         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
- *             traceEntry.end();
- *         }
- *     }
- * }
- * </pre>
+ * This is the primary service exposed to plugins. Plugins acquire a {@code TransactionService}
+ * instance from {@link Agent#getTransactionService()}, and they can (and should) cache the
+ * {@code TransactionService} instance for the life of the jvm to avoid looking it up every time it
+ * is needed (which is often).
  */
-public abstract class PluginServices {
+public abstract class TransactionService {
 
-    private static final Logger logger = LoggerFactory.getLogger(PluginServices.class);
-
-    private static final String HANDLE_CLASS_NAME =
-            "org.glowroot.transaction.PluginServicesRegistry";
-    private static final String HANDLE_METHOD_NAME = "get";
-
-    /**
-     * Returns the {@code PluginServices} instance for the specified {@code pluginId}.
-     * 
-     * The return value can (and should) be cached by the plugin for the life of the jvm to avoid
-     * looking it up every time it is needed (which is often).
-     */
-    public static PluginServices get(String pluginId) {
-        if (pluginId == null) {
-            logger.error("get(): argument 'pluginId' must be non-null");
-            throw new AssertionError("Argument 'pluginId' must be non-null");
-        }
-        return getPluginServices(pluginId);
-    }
-
-    protected PluginServices() {}
-
-    /**
-     * Registers a listener that will receive a callback when the plugin's property values are
-     * changed, the plugin is enabled/disabled, or Glowroot is enabled/disabled.
-     * 
-     * This allows the useful plugin optimization of caching the results of {@link #isEnabled()},
-     * {@link #getStringProperty(String)}, {@link #getBooleanProperty(String)}, and
-     * {@link #getDoubleProperty(String)} as {@code volatile} fields, and updating the cached values
-     * anytime {@link ConfigListener#onChange()} is called.
-     */
-    public abstract void registerConfigListener(ConfigListener listener);
-
-    /**
-     * Returns whether the plugin is enabled. When Glowroot itself is disabled, this returns
-     * {@code false}.
-     * 
-     * Plugins can be individually disabled on the configuration page.
-     */
-    public abstract boolean isEnabled();
-
-    /**
-     * Returns the {@code String} plugin property value with the specified {@code name}.
-     * {@code null} is never returned. If there is no {@code String} plugin property with the
-     * specified {@code name} then the empty string {@code ""} is returned.
-     * 
-     * Plugin properties are scoped per plugin. The are defined in the plugin's
-     * META-INF/glowroot.plugin.json file, and can be modified (assuming they are not marked as
-     * hidden) on the configuration page under the plugin's configuration section.
-     */
-    public abstract StringProperty getStringProperty(String name);
-
-    /**
-     * Returns the {@code boolean} plugin property value with the specified {@code name}. If there
-     * is no {@code boolean} plugin property with the specified {@code name} then {@code false} is
-     * returned.
-     * 
-     * Plugin properties are scoped per plugin. The are defined in the plugin's
-     * META-INF/glowroot.plugin.json file, and can be modified (assuming they are not marked as
-     * hidden) on the configuration page under the plugin's configuration section.
-     */
-    public abstract BooleanProperty getBooleanProperty(String name);
-
-    /**
-     * Returns the {@code Double} plugin property value with the specified {@code name}. If there is
-     * no {@code Double} plugin property with the specified {@code name} then {@code null} is
-     * returned.
-     * 
-     * Plugin properties are scoped per plugin. The are defined in the plugin's
-     * META-INF/glowroot.plugin.json file, and can be modified (assuming they are not marked as
-     * hidden) on the configuration page under the plugin's configuration section.
-     */
-    public abstract DoubleProperty getDoubleProperty(String name);
-
-    public abstract BooleanProperty getEnabledProperty(String name);
+    protected TransactionService() {}
 
     /**
      * Returns the {@code TimerName} instance for the specified {@code adviceClass}.
@@ -326,44 +217,4 @@ public abstract class PluginServices {
      * transaction.
      */
     public abstract boolean isInTransaction();
-
-    private static PluginServices getPluginServices(String pluginId) {
-        try {
-            Class<?> handleClass = Class.forName(HANDLE_CLASS_NAME);
-            Method handleMethod = handleClass.getMethod(HANDLE_METHOD_NAME, String.class);
-            PluginServices pluginServices = (PluginServices) handleMethod.invoke(null, pluginId);
-            if (pluginServices == null) {
-                // null return value indicates that glowroot is still starting
-                logger.error("plugin services requested while glowroot is still starting",
-                        new IllegalStateException());
-                throw new AssertionError(
-                        "Plugin services requested while glowroot is still starting");
-            }
-            return pluginServices;
-        } catch (Exception e) {
-            // this really really really shouldn't happen
-            logger.error(e.getMessage(), e);
-            throw new AssertionError(e);
-        }
-    }
-
-    public interface StringProperty {
-        String value();
-    }
-
-    public interface BooleanProperty {
-        boolean value();
-    }
-
-    public interface DoubleProperty {
-        @Nullable
-        Double value();
-    }
-
-    public interface ConfigListener {
-        // the new config is not passed to onChange so that the receiver has to get the latest,
-        // this avoids race condition worries that two updates may get sent to the receiver in the
-        // wrong order
-        void onChange();
-    }
 }

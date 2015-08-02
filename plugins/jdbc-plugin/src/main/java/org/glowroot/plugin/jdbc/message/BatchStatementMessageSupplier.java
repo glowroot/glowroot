@@ -17,8 +17,8 @@ package org.glowroot.plugin.jdbc.message;
 
 import java.util.List;
 
-import org.glowroot.plugin.api.Message;
-import org.glowroot.plugin.api.MessageSupplier;
+import org.glowroot.plugin.api.transaction.Message;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
 
 public class BatchStatementMessageSupplier extends MessageSupplier {
 

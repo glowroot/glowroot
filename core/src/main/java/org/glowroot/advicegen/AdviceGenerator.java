@@ -71,10 +71,6 @@ public class AdviceGenerator {
 
     private static final Logger logger = LoggerFactory.getLogger(AdviceGenerator.class);
 
-    private static final String HANDLE_CLASS_NAME =
-            "org/glowroot/transaction/PluginServicesRegistry";
-    private static final String HANDLE_METHOD_NAME = "get";
-
     private static final AtomicInteger counter = new AtomicInteger();
 
     private final InstrumentationConfig config;
@@ -127,14 +123,16 @@ public class AdviceGenerator {
         String[] interfaces = null;
         if (!config.enabledProperty().isEmpty()
                 || !config.traceEntryEnabledProperty().isEmpty()) {
-            interfaces = new String[] {"org/glowroot/plugin/api/PluginServices$ConfigListener"};
+            interfaces = new String[] {"org/glowroot/plugin/api/config/ConfigListener"};
         }
         cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, adviceInternalName, null, "java/lang/Object",
                 interfaces);
         addClassAnnotation(cw);
         addStaticFields(cw);
         addStaticInitializer(cw);
-        addIsEnabledMethod(cw);
+        if (pluginId != null) {
+            addIsEnabledMethod(cw);
+        }
         if (config.isTraceEntryOrGreater()) {
             // methodMetaInternalName is non-null when entry or greater
             checkNotNull(methodMetaInternalName);
@@ -189,22 +187,27 @@ public class AdviceGenerator {
         cw.visitField(ACC_PUBLIC + ACC_FINAL + ACC_STATIC, "glowroot$advice$flow$outer$holder",
                 Type.getDescriptor(AdviceFlowOuterHolder.class), null, null)
                 .visitEnd();
-        cw.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "pluginServices",
-                "Lorg/glowroot/plugin/api/PluginServices;", null, null)
+        cw.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "transactionService",
+                "Lorg/glowroot/plugin/api/transaction/TransactionService;", null, null)
                 .visitEnd();
+        if (pluginId != null) {
+            cw.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "configService",
+                    "Lorg/glowroot/plugin/api/config/ConfigService;", null, null)
+                    .visitEnd();
+        }
         if (config.isTimerOrGreater()) {
             cw.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, "timerName",
-                    "Lorg/glowroot/plugin/api/TimerName;", null, null)
+                    "Lorg/glowroot/plugin/api/transaction/TimerName;", null, null)
                     .visitEnd();
         }
         if (!config.enabledProperty().isEmpty()) {
             cw.visitField(ACC_PRIVATE + ACC_STATIC + ACC_FINAL, "enabled",
-                    "Lorg/glowroot/plugin/api/PluginServices$BooleanProperty;", null, null)
+                    "Lorg/glowroot/plugin/api/config/BooleanProperty;", null, null)
                     .visitEnd();
         }
         if (!config.traceEntryEnabledProperty().isEmpty()) {
             cw.visitField(ACC_PRIVATE + ACC_STATIC + ACC_FINAL, "entryEnabled",
-                    "Lorg/glowroot/plugin/api/PluginServices$BooleanProperty;", null, null)
+                    "Lorg/glowroot/plugin/api/config/BooleanProperty;", null, null)
                     .visitEnd();
         }
     }
@@ -216,47 +219,55 @@ public class AdviceGenerator {
                 "create", "()" + Type.getDescriptor(AdviceFlowOuterHolder.class), false);
         mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "glowroot$advice$flow$outer$holder",
                 Type.getDescriptor(AdviceFlowOuterHolder.class));
-        if (pluginId == null) {
-            mv.visitInsn(ACONST_NULL);
-        } else {
+        mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/plugin/api/Agent",
+                "getTransactionService",
+                "()Lorg/glowroot/plugin/api/transaction/TransactionService;",
+                false);
+        mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "transactionService",
+                "Lorg/glowroot/plugin/api/transaction/TransactionService;");
+        if (pluginId != null) {
             mv.visitLdcInsn(pluginId);
+            mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/plugin/api/Agent",
+                    "getConfigService",
+                    "(Ljava/lang/String;)Lorg/glowroot/plugin/api/config/ConfigService;",
+                    false);
+            mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "configService",
+                    "Lorg/glowroot/plugin/api/config/ConfigService;");
         }
-        mv.visitMethodInsn(INVOKESTATIC, HANDLE_CLASS_NAME, HANDLE_METHOD_NAME,
-                "(Ljava/lang/String;)Lorg/glowroot/plugin/api/PluginServices;", false);
-        mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "pluginServices",
-                "Lorg/glowroot/plugin/api/PluginServices;");
         if (config.isTimerOrGreater()) {
-            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
-                    "Lorg/glowroot/plugin/api/PluginServices;");
+            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "transactionService",
+                    "Lorg/glowroot/plugin/api/transaction/TransactionService;");
             mv.visitLdcInsn(Type.getObjectType(adviceInternalName));
-            mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/plugin/api/PluginServices",
-                    "getTimerName", "(Ljava/lang/Class;)Lorg/glowroot/plugin/api/TimerName;",
+            mv.visitMethodInsn(INVOKEVIRTUAL,
+                    "org/glowroot/plugin/api/transaction/TransactionService",
+                    "getTimerName",
+                    "(Ljava/lang/Class;)Lorg/glowroot/plugin/api/transaction/TimerName;",
                     false);
             mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "timerName",
-                    "Lorg/glowroot/plugin/api/TimerName;");
+                    "Lorg/glowroot/plugin/api/transaction/TimerName;");
         }
-        if (!config.enabledProperty().isEmpty()) {
-            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
-                    "Lorg/glowroot/plugin/api/PluginServices;");
+        if (!config.enabledProperty().isEmpty() && pluginId != null) {
+            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "configService",
+                    "Lorg/glowroot/plugin/api/config/ConfigService;");
             mv.visitLdcInsn(config.enabledProperty());
-            mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/plugin/api/PluginServices",
+            mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/plugin/api/config/ConfigService",
                     "getEnabledProperty",
-                    "(Ljava/lang/String;)Lorg/glowroot/plugin/api/PluginServices$BooleanProperty;",
+                    "(Ljava/lang/String;)Lorg/glowroot/plugin/api/config/BooleanProperty;",
                     false);
             mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "enabled",
-                    "Lorg/glowroot/plugin/api/PluginServices$BooleanProperty;");
+                    "Lorg/glowroot/plugin/api/config/BooleanProperty;");
         }
-        if (!config.traceEntryEnabledProperty().isEmpty()) {
-            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
-                    "Lorg/glowroot/plugin/api/PluginServices;");
+        if (!config.traceEntryEnabledProperty().isEmpty() && pluginId != null) {
+            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "configService",
+                    "Lorg/glowroot/plugin/api/config/ConfigService;");
             mv.visitLdcInsn(config.traceEntryEnabledProperty());
             mv.visitMethodInsn(INVOKEVIRTUAL,
-                    "org/glowroot/plugin/api/PluginServices",
+                    "org/glowroot/plugin/api/config/ConfigService",
                     "getEnabledProperty",
-                    "(Ljava/lang/String;)Lorg/glowroot/plugin/api/PluginServices$BooleanProperty;",
+                    "(Ljava/lang/String;)Lorg/glowroot/plugin/api/config/BooleanProperty;",
                     false);
             mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "entryEnabled",
-                    "Lorg/glowroot/plugin/api/PluginServices$BooleanProperty;");
+                    "Lorg/glowroot/plugin/api/config/BooleanProperty;");
         }
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);
@@ -269,16 +280,16 @@ public class AdviceGenerator {
                 .visitEnd();
         mv.visitCode();
         if (config.enabledProperty().isEmpty()) {
-            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
-                    "Lorg/glowroot/plugin/api/PluginServices;");
-            mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/plugin/api/PluginServices", "isEnabled",
-                    "()Z", false);
+            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "configService",
+                    "Lorg/glowroot/plugin/api/config/ConfigService;");
+            mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/plugin/api/config/ConfigService",
+                    "isEnabled", "()Z", false);
             mv.visitInsn(IRETURN);
         } else {
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "enabled",
-                    "Lorg/glowroot/plugin/api/PluginServices$BooleanProperty;");
+                    "Lorg/glowroot/plugin/api/config/BooleanProperty;");
             mv.visitMethodInsn(INVOKEINTERFACE,
-                    "org/glowroot/plugin/api/PluginServices$BooleanProperty", "value", "()Z", true);
+                    "org/glowroot/plugin/api/config/BooleanProperty", "value", "()Z", true);
             mv.visitInsn(IRETURN);
         }
         mv.visitMaxs(0, 0);
@@ -287,30 +298,33 @@ public class AdviceGenerator {
 
     @RequiresNonNull("methodMetaInternalName")
     private void addOnBeforeMethod(ClassWriter cw) {
-        MethodVisitor mv = visitOnBeforeMethod(cw, "Lorg/glowroot/plugin/api/TraceEntry;");
+        MethodVisitor mv =
+                visitOnBeforeMethod(cw, "Lorg/glowroot/plugin/api/transaction/TraceEntry;");
         mv.visitCode();
-        if (!config.traceEntryEnabledProperty().isEmpty()) {
+        if (!config.traceEntryEnabledProperty().isEmpty() && pluginId != null) {
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "entryEnabled",
-                    "Lorg/glowroot/plugin/api/PluginServices$BooleanProperty;");
+                    "Lorg/glowroot/plugin/api/config/BooleanProperty;");
             mv.visitMethodInsn(INVOKEINTERFACE,
-                    "org/glowroot/plugin/api/PluginServices$BooleanProperty", "value", "()Z", true);
+                    "org/glowroot/plugin/api/config/BooleanProperty", "value", "()Z", true);
             Label label = new Label();
             mv.visitJumpInsn(IFNE, label);
             // entryEnabled is false, collect timer only
-            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
-                    "Lorg/glowroot/plugin/api/PluginServices;");
+            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "transactionService",
+                    "Lorg/glowroot/plugin/api/transaction/TransactionService;");
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "timerName",
-                    "Lorg/glowroot/plugin/api/TimerName;");
-            mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/plugin/api/PluginServices",
+                    "Lorg/glowroot/plugin/api/transaction/TimerName;");
+            mv.visitMethodInsn(INVOKEVIRTUAL,
+                    "org/glowroot/plugin/api/transaction/TransactionService",
                     "startTimer",
-                    "(Lorg/glowroot/plugin/api/TimerName;)Lorg/glowroot/plugin/api/Timer;",
+                    "(Lorg/glowroot/plugin/api/transaction/TimerName;)"
+                            + "Lorg/glowroot/plugin/api/transaction/Timer;",
                     false);
             mv.visitInsn(ARETURN);
             mv.visitLabel(label);
             mv.visitFrame(F_SAME, 0, null, 0, null);
         }
-        mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
-                "Lorg/glowroot/plugin/api/PluginServices;");
+        mv.visitFieldInsn(GETSTATIC, adviceInternalName, "transactionService",
+                "Lorg/glowroot/plugin/api/transaction/TransactionService;");
         if (config.isTransaction()) {
             String transactionType = config.transactionType();
             if (transactionType.isEmpty()) {
@@ -346,21 +360,23 @@ public class AdviceGenerator {
                         + "[Ljava/lang/Object;)Lorg/glowroot/advicegen/GenericMessageSupplier;",
                 false);
         mv.visitFieldInsn(GETSTATIC, adviceInternalName, "timerName",
-                "Lorg/glowroot/plugin/api/TimerName;");
+                "Lorg/glowroot/plugin/api/transaction/TimerName;");
         if (config.isTransaction()) {
             mv.visitMethodInsn(INVOKEVIRTUAL,
-                    "org/glowroot/plugin/api/PluginServices",
+                    "org/glowroot/plugin/api/transaction/TransactionService",
                     "startTransaction",
-                    "(Ljava/lang/String;Ljava/lang/String;Lorg/glowroot/plugin/api/MessageSupplier;"
-                            + "Lorg/glowroot/plugin/api/TimerName;)"
-                            + "Lorg/glowroot/plugin/api/TraceEntry;",
+                    "(Ljava/lang/String;Ljava/lang/String;"
+                            + "Lorg/glowroot/plugin/api/transaction/MessageSupplier;"
+                            + "Lorg/glowroot/plugin/api/transaction/TimerName;)"
+                            + "Lorg/glowroot/plugin/api/transaction/TraceEntry;",
                     false);
         } else {
             mv.visitMethodInsn(INVOKEVIRTUAL,
-                    "org/glowroot/plugin/api/PluginServices",
+                    "org/glowroot/plugin/api/transaction/TransactionService",
                     "startTraceEntry",
-                    "(Lorg/glowroot/plugin/api/MessageSupplier;Lorg/glowroot/plugin/api/TimerName;)"
-                            + "Lorg/glowroot/plugin/api/TraceEntry;",
+                    "(Lorg/glowroot/plugin/api/transaction/MessageSupplier;"
+                            + "Lorg/glowroot/plugin/api/transaction/TimerName;)"
+                            + "Lorg/glowroot/plugin/api/transaction/TraceEntry;",
                     false);
         }
         addCodeForOptionalTraceAttributes(mv);
@@ -370,14 +386,17 @@ public class AdviceGenerator {
     }
 
     private void addOnBeforeMethodTimerOnly(ClassWriter cw) {
-        MethodVisitor mv = visitOnBeforeMethod(cw, "Lorg/glowroot/plugin/api/Timer;");
+        MethodVisitor mv = visitOnBeforeMethod(cw, "Lorg/glowroot/plugin/api/transaction/Timer;");
         mv.visitCode();
-        mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
-                "Lorg/glowroot/plugin/api/PluginServices;");
+        mv.visitFieldInsn(GETSTATIC, adviceInternalName, "transactionService",
+                "Lorg/glowroot/plugin/api/transaction/TransactionService;");
         mv.visitFieldInsn(GETSTATIC, adviceInternalName, "timerName",
-                "Lorg/glowroot/plugin/api/TimerName;");
-        mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/plugin/api/PluginServices", "startTimer",
-                "(Lorg/glowroot/plugin/api/TimerName;)Lorg/glowroot/plugin/api/Timer;", false);
+                "Lorg/glowroot/plugin/api/transaction/TimerName;");
+        mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/plugin/api/transaction/TransactionService",
+                "startTimer",
+                "(Lorg/glowroot/plugin/api/transaction/TimerName;)"
+                        + "Lorg/glowroot/plugin/api/transaction/Timer;",
+                false);
         addCodeForOptionalTraceAttributes(mv);
         mv.visitInsn(ARETURN);
         mv.visitMaxs(0, 0);
@@ -419,15 +438,18 @@ public class AdviceGenerator {
 
     private void addCodeForOptionalTraceAttributes(MethodVisitor mv) {
         if (!config.transactionType().isEmpty() && !config.isTransaction()) {
-            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
-                    "Lorg/glowroot/plugin/api/PluginServices;");
+            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "transactionService",
+                    "Lorg/glowroot/plugin/api/transaction/TransactionService;");
             mv.visitLdcInsn(config.transactionType());
-            mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/plugin/api/PluginServices",
-                    "setTransactionType", "(Ljava/lang/String;)V", false);
+            mv.visitMethodInsn(INVOKEVIRTUAL,
+                    "org/glowroot/plugin/api/transaction/TransactionService",
+                    "setTransactionType",
+                    "(Ljava/lang/String;)V",
+                    false);
         }
         if (!config.transactionNameTemplate().isEmpty() && !config.isTransaction()) {
-            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
-                    "Lorg/glowroot/plugin/api/PluginServices;");
+            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "transactionService",
+                    "Lorg/glowroot/plugin/api/transaction/TransactionService;");
             mv.visitVarInsn(ALOAD, 3);
             // methodMetaInternalName is non-null when transactionNameTemplate is non-empty
             checkNotNull(methodMetaInternalName);
@@ -444,12 +466,15 @@ public class AdviceGenerator {
                     false);
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/advicegen/GenericMessageSupplier",
                     "getMessageText", "()Ljava/lang/String;", false);
-            mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/plugin/api/PluginServices",
-                    "setTransactionName", "(Ljava/lang/String;)V", false);
+            mv.visitMethodInsn(INVOKEVIRTUAL,
+                    "org/glowroot/plugin/api/transaction/TransactionService",
+                    "setTransactionName",
+                    "(Ljava/lang/String;)V",
+                    false);
         }
         if (!config.transactionUserTemplate().isEmpty()) {
-            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
-                    "Lorg/glowroot/plugin/api/PluginServices;");
+            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "transactionService",
+                    "Lorg/glowroot/plugin/api/transaction/TransactionService;");
             mv.visitVarInsn(ALOAD, 3);
             // methodMetaInternalName is non-null when transactionUserTemplate is non-empty
             checkNotNull(methodMetaInternalName);
@@ -466,13 +491,18 @@ public class AdviceGenerator {
                     false);
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/advicegen/GenericMessageSupplier",
                     "getMessageText", "()Ljava/lang/String;", false);
-            mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/plugin/api/PluginServices",
-                    "setTransactionUser", "(Ljava/lang/String;)V", false);
+            mv.visitMethodInsn(INVOKEVIRTUAL,
+                    "org/glowroot/plugin/api/transaction/TransactionService",
+                    "setTransactionUser",
+                    "(Ljava/lang/String;)V",
+                    false);
         }
         int i = 0;
         for (String attrName : config.transactionCustomAttributeTemplates().keySet()) {
-            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
-                    "Lorg/glowroot/plugin/api/PluginServices;");
+            mv.visitFieldInsn(GETSTATIC,
+                    adviceInternalName,
+                    "transactionService",
+                    "Lorg/glowroot/plugin/api/transaction/TransactionService;");
             mv.visitLdcInsn(attrName);
             mv.visitVarInsn(ALOAD, 3);
             // methodMetaInternalName is non-null when transactionCustomAttributeTemplates is
@@ -495,34 +525,38 @@ public class AdviceGenerator {
             mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/advicegen/GenericMessageSupplier",
                     "getMessageText", "()Ljava/lang/String;", false);
             mv.visitMethodInsn(INVOKEVIRTUAL,
-                    "org/glowroot/plugin/api/PluginServices",
+                    "org/glowroot/plugin/api/transaction/TransactionService",
                     "addTransactionCustomAttribute",
                     "(Ljava/lang/String;Ljava/lang/String;)V",
                     false);
         }
         Long slowTraceThresholdMillis = config.slowTraceThresholdMillis();
         if (slowTraceThresholdMillis != null) {
-            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "pluginServices",
-                    "Lorg/glowroot/plugin/api/PluginServices;");
+            mv.visitFieldInsn(GETSTATIC, adviceInternalName, "transactionService",
+                    "Lorg/glowroot/plugin/api/transaction/TransactionService;");
             mv.visitLdcInsn(slowTraceThresholdMillis);
             mv.visitFieldInsn(GETSTATIC, "java/util/concurrent/TimeUnit", "MILLISECONDS",
                     "Ljava/util/concurrent/TimeUnit;");
-            mv.visitMethodInsn(INVOKEVIRTUAL, "org/glowroot/plugin/api/PluginServices",
-                    "setSlowTraceThreshold", "(JLjava/util/concurrent/TimeUnit;)V", false);
+            mv.visitMethodInsn(INVOKEVIRTUAL,
+                    "org/glowroot/plugin/api/transaction/TransactionService",
+                    "setSlowTraceThreshold",
+                    "(JLjava/util/concurrent/TimeUnit;)V",
+                    false);
 
         }
     }
 
     private void addOnAfterMethodTimerOnly(ClassWriter cw) {
         MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onAfter",
-                "(Lorg/glowroot/plugin/api/Timer;)V", null, null);
+                "(Lorg/glowroot/plugin/api/transaction/Timer;)V", null, null);
         mv.visitAnnotation("Lorg/glowroot/plugin/api/weaving/OnAfter;", true)
                 .visitEnd();
         mv.visitParameterAnnotation(0, "Lorg/glowroot/plugin/api/weaving/BindTraveler;", true)
                 .visitEnd();
         mv.visitCode();
         mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/plugin/api/Timer", "stop", "()V", true);
+        mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/plugin/api/transaction/Timer", "stop",
+                "()V", true);
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
@@ -530,8 +564,8 @@ public class AdviceGenerator {
 
     private void addOnReturnMethod(ClassWriter cw) {
         boolean entryOrTimer = !config.traceEntryEnabledProperty().isEmpty();
-        String travelerType =
-                entryOrTimer ? "Ljava/lang/Object;" : "Lorg/glowroot/plugin/api/TraceEntry;";
+        String travelerType = entryOrTimer ? "Ljava/lang/Object;"
+                : "Lorg/glowroot/plugin/api/transaction/TraceEntry;";
         MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn",
                 "(Lorg/glowroot/plugin/api/weaving/OptionalReturn;" + travelerType + ")V", null,
                 null);
@@ -547,13 +581,13 @@ public class AdviceGenerator {
             mv.visitVarInsn(ALOAD, travelerParamIndex);
             // TraceEntryImpl implements both TraceEntry and Timer so cannot check instanceof Timer
             // to differentiate here (but can check isntanceof TraceEntry)
-            mv.visitTypeInsn(INSTANCEOF, "org/glowroot/plugin/api/TraceEntry");
+            mv.visitTypeInsn(INSTANCEOF, "org/glowroot/plugin/api/transaction/TraceEntry");
             Label label = new Label();
             mv.visitJumpInsn(IFNE, label);
             mv.visitVarInsn(ALOAD, travelerParamIndex);
-            mv.visitTypeInsn(CHECKCAST, "org/glowroot/plugin/api/Timer");
-            mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/plugin/api/Timer", "stop", "()V",
-                    true);
+            mv.visitTypeInsn(CHECKCAST, "org/glowroot/plugin/api/transaction/Timer");
+            mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/plugin/api/transaction/Timer", "stop",
+                    "()V", true);
             mv.visitInsn(RETURN);
             mv.visitLabel(label);
             mv.visitFrame(F_SAME, 0, null, 0, null);
@@ -575,18 +609,18 @@ public class AdviceGenerator {
         mv.visitMethodInsn(INVOKESTATIC,
                 "org/glowroot/advicegen/GenericMessageSupplier",
                 "updateWithReturnValue",
-                "(Lorg/glowroot/plugin/api/TraceEntry;Ljava/lang/Object;)V",
+                "(Lorg/glowroot/plugin/api/transaction/TraceEntry;Ljava/lang/Object;)V",
                 false);
         mv.visitVarInsn(ALOAD, travelerParamIndex);
         Long stackTraceThresholdMillis = config.traceEntryStackThresholdMillis();
         if (stackTraceThresholdMillis == null) {
-            mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/plugin/api/TraceEntry", "end", "()V",
-                    true);
+            mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/plugin/api/transaction/TraceEntry",
+                    "end", "()V", true);
         } else {
             mv.visitLdcInsn(stackTraceThresholdMillis);
             mv.visitFieldInsn(GETSTATIC, "java/util/concurrent/TimeUnit", "MILLISECONDS",
                     "Ljava/util/concurrent/TimeUnit;");
-            mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/plugin/api/TraceEntry",
+            mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/plugin/api/transaction/TraceEntry",
                     "endWithStackTrace", "(JLjava/util/concurrent/TimeUnit;)V", true);
         }
         mv.visitInsn(RETURN);
@@ -596,7 +630,8 @@ public class AdviceGenerator {
 
     private void addOnThrowMethod(ClassWriter cw) {
         MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onThrow",
-                "(Ljava/lang/Throwable;Lorg/glowroot/plugin/api/TraceEntry;)V", null, null);
+                "(Ljava/lang/Throwable;Lorg/glowroot/plugin/api/transaction/TraceEntry;)V", null,
+                null);
         mv.visitAnnotation("Lorg/glowroot/plugin/api/weaving/OnThrow;", true)
                 .visitEnd();
         mv.visitParameterAnnotation(0, "Lorg/glowroot/plugin/api/weaving/BindThrowable;", true)
@@ -614,10 +649,10 @@ public class AdviceGenerator {
         }
         mv.visitVarInsn(ALOAD, 1);
         mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/plugin/api/ErrorMessage", "from",
-                "(Ljava/lang/Throwable;)Lorg/glowroot/plugin/api/ErrorMessage;", false);
-        mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/plugin/api/TraceEntry", "endWithError",
-                "(Lorg/glowroot/plugin/api/ErrorMessage;)V", true);
+        mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/plugin/api/transaction/ErrorMessage", "from",
+                "(Ljava/lang/Throwable;)Lorg/glowroot/plugin/api/transaction/ErrorMessage;", false);
+        mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/plugin/api/transaction/TraceEntry",
+                "endWithError", "(Lorg/glowroot/plugin/api/transaction/ErrorMessage;)V", true);
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();

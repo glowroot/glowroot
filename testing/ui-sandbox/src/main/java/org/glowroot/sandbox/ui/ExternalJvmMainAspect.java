@@ -15,11 +15,13 @@
  */
 package org.glowroot.sandbox.ui;
 
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.Timer;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.Timer;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TraceEntry;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.BindTraveler;
 import org.glowroot.plugin.api.weaving.IsEnabled;
 import org.glowroot.plugin.api.weaving.OnAfter;
@@ -30,7 +32,9 @@ import org.glowroot.plugin.api.weaving.Pointcut;
 // test this unusual situation
 public class ExternalJvmMainAspect {
 
-    private static final PluginServices pluginServices = PluginServices.get("glowroot-ui-sandbox");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService =
+            Agent.getConfigService("glowroot-ui-sandbox");
 
     @Pointcut(className = "org.glowroot.container.impl.JavaagentMain",
             methodName = "main", methodParameterTypes = {"java.lang.String[]"},
@@ -38,16 +42,16 @@ public class ExternalJvmMainAspect {
     public static class MainAdvice {
 
         private static final TimerName timerName =
-                pluginServices.getTimerName(MainAdvice.class);
+                transactionService.getTimerName(MainAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
 
         @OnBefore
         public static TraceEntry onBefore() {
-            return pluginServices.startTransaction("Sandbox", "javaagent container main",
+            return transactionService.startTransaction("Sandbox", "javaagent container main",
                     MessageSupplier.from("org.glowroot.container.impl.JavaagentMain"
                             + ".main()"),
                     timerName);
@@ -64,16 +68,16 @@ public class ExternalJvmMainAspect {
     public static class TimerMarkerOneAdvice {
 
         private static final TimerName timerName =
-                pluginServices.getTimerName(TimerMarkerOneAdvice.class);
+                transactionService.getTimerName(TimerMarkerOneAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
 
         @OnBefore
         public static Timer onBefore() {
-            return pluginServices.startTimer(timerName);
+            return transactionService.startTimer(timerName);
         }
 
         @OnAfter
@@ -87,16 +91,16 @@ public class ExternalJvmMainAspect {
     public static class TimerMarkerTwoAdvice {
 
         private static final TimerName timerName =
-                pluginServices.getTimerName(TimerMarkerTwoAdvice.class);
+                transactionService.getTimerName(TimerMarkerTwoAdvice.class);
 
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return configService.isEnabled();
         }
 
         @OnBefore
         public static Timer onBefore() {
-            return pluginServices.startTimer(timerName);
+            return transactionService.startTimer(timerName);
         }
 
         @OnAfter

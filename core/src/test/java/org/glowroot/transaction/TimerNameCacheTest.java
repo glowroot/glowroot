@@ -17,7 +17,7 @@ package org.glowroot.transaction;
 
 import org.junit.Test;
 
-import org.glowroot.plugin.api.TimerName;
+import org.glowroot.plugin.api.transaction.TimerName;
 import org.glowroot.plugin.api.weaving.Pointcut;
 import org.glowroot.transaction.model.TimerNameImpl;
 

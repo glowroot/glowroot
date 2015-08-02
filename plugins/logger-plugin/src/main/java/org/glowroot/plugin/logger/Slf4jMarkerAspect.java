@@ -20,11 +20,13 @@ import javax.annotation.Nullable;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
-import org.glowroot.plugin.api.ErrorMessage;
-import org.glowroot.plugin.api.MessageSupplier;
-import org.glowroot.plugin.api.PluginServices;
-import org.glowroot.plugin.api.TimerName;
-import org.glowroot.plugin.api.TraceEntry;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.ErrorMessage;
+import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.TraceEntry;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.plugin.api.weaving.BindMethodName;
 import org.glowroot.plugin.api.weaving.BindParameter;
 import org.glowroot.plugin.api.weaving.BindTraveler;
@@ -37,16 +39,17 @@ public class Slf4jMarkerAspect {
 
     private static final String TIMER_NAME = "logging";
 
-    private static final PluginServices pluginServices = PluginServices.get("logger");
+    private static final TransactionService transactionService = Agent.getTransactionService();
+    private static final ConfigService configService = Agent.getConfigService("logger");
 
     private static LogAdviceTraveler onBefore(FormattingTuple formattingTuple, String methodName,
             TimerName timerName) {
         String formattedMessage = nullToEmpty(formattingTuple.getMessage());
         Throwable throwable = formattingTuple.getThrowable();
         if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), throwable != null)) {
-            pluginServices.setTransactionError(ErrorMessage.from(formattedMessage, throwable));
+            transactionService.setTransactionError(ErrorMessage.from(formattedMessage, throwable));
         }
-        TraceEntry traceEntry = pluginServices.startTraceEntry(
+        TraceEntry traceEntry = transactionService.startTraceEntry(
                 MessageSupplier.from("log {}: {}", methodName, formattedMessage),
                 timerName);
         return new LogAdviceTraveler(traceEntry, formattedMessage, throwable);
@@ -66,10 +69,10 @@ public class Slf4jMarkerAspect {
             timerName = TIMER_NAME)
     public static class LogNoArgAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(LogNoArgAdvice.class);
+                transactionService.getTimerName(LogNoArgAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && configService.isEnabled();
         }
         @OnBefore
         public static TraceEntry onBefore(
@@ -77,9 +80,9 @@ public class Slf4jMarkerAspect {
                 @BindParameter @Nullable String message, @BindMethodName String methodName) {
             LoggerPlugin.inAdvice(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
-                pluginServices.setTransactionError(ErrorMessage.from(message));
+                transactionService.setTransactionError(ErrorMessage.from(message));
             }
-            return pluginServices.startTraceEntry(
+            return transactionService.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, message),
                     timerName);
         }
@@ -97,10 +100,10 @@ public class Slf4jMarkerAspect {
             timerName = TIMER_NAME)
     public static class LogOneArgAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(LogOneArgAdvice.class);
+                transactionService.getTimerName(LogOneArgAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && configService.isEnabled();
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(
@@ -123,10 +126,10 @@ public class Slf4jMarkerAspect {
             timerName = TIMER_NAME)
     public static class LogOneArgThrowableAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(LogOneArgThrowableAdvice.class);
+                transactionService.getTimerName(LogOneArgThrowableAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && configService.isEnabled();
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(
@@ -150,10 +153,10 @@ public class Slf4jMarkerAspect {
             timerName = TIMER_NAME)
     public static class LogTwoArgsAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(LogTwoArgsAdvice.class);
+                transactionService.getTimerName(LogTwoArgsAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && configService.isEnabled();
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(
@@ -176,10 +179,10 @@ public class Slf4jMarkerAspect {
             timerName = TIMER_NAME)
     public static class LogAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(LogAdvice.class);
+                transactionService.getTimerName(LogAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return !LoggerPlugin.inAdvice() && pluginServices.isEnabled();
+            return !LoggerPlugin.inAdvice() && configService.isEnabled();
         }
         @OnBefore
         public static LogAdviceTraveler onBefore(

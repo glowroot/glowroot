@@ -30,7 +30,8 @@ import org.glowroot.container.config.UserRecordingConfig;
 import org.glowroot.container.trace.ProfileNode;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.Trace.Existence;
-import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.transaction.TransactionService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -137,10 +138,8 @@ public class ProfilingTest {
         }
     }
 
-    public static class ShouldGenerateTraceWithProfileForAble implements AppUnderTest,
-            TraceMarker {
-        private static final PluginServices pluginServices =
-                PluginServices.get("glowroot-integration-tests");
+    public static class ShouldGenerateTraceWithProfileForAble implements AppUnderTest, TraceMarker {
+        private static final TransactionService transactionService = Agent.getTransactionService();
         @Override
         public void executeApp() throws InterruptedException {
             traceMarker();
@@ -148,7 +147,7 @@ public class ProfilingTest {
         @Override
         public void traceMarker() throws InterruptedException {
             // normally the plugin/aspect should set the user, this is just a shortcut for test
-            pluginServices.setTransactionUser("Able");
+            transactionService.setTransactionUser("Able");
             Threads.moreAccurateSleep(200);
         }
     }

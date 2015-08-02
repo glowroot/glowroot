@@ -29,7 +29,7 @@ import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.plugin.api.PluginServices;
+import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.transaction.PluginServicesRegistry.PluginServicesFactory;
 import org.glowroot.weaving.AnalyzedWorld;
 import org.glowroot.weaving.ExtraBootResourceFinder;
@@ -77,8 +77,8 @@ public class TransactionModule {
         if (instrumentation != null) {
             ClassFileTransformer transformer = new WeavingClassFileTransformer(
                     adviceCache.getShimTypes(), adviceCache.getMixinTypes(),
-                    adviceCache.getAdvisorsSupplier(), analyzedWorld,
-                    weavingTimerService, timerWrapperMethods);
+                    adviceCache.getAdvisorsSupplier(), analyzedWorld, weavingTimerService,
+                    timerWrapperMethods);
             PreInitializeWeavingClasses.preInitializeClasses();
             if (instrumentation.isRetransformClassesSupported()) {
                 instrumentation.addTransformer(transformer, true);
@@ -103,11 +103,17 @@ public class TransactionModule {
         final TransactionRegistry transactionRegistry = this.transactionRegistry;
         pluginServicesFactory = new PluginServicesFactory() {
             @Override
-            public PluginServices create(@Nullable String pluginId) {
-                return PluginServicesImpl.create(transactionRegistry, transactionCollector,
+            public TransactionService createTransactionService() {
+                return TransactionServiceImpl.create(transactionRegistry, transactionCollector,
                         configModule.getConfigService(), timerNameCache, threadAllocatedBytes,
-                        userProfileScheduler, ticker, clock, configModule.getPluginDescriptors(),
-                        pluginId);
+                        userProfileScheduler, ticker, clock);
+            }
+
+            @Override
+            public org.glowroot.plugin.api.config.ConfigService createConfigService(
+                    String pluginId) {
+                return ConfigServiceImpl.create(configModule.getConfigService(),
+                        configModule.getPluginDescriptors(), pluginId);
             }
         };
         PluginServicesRegistry.initStaticState(pluginServicesFactory);
