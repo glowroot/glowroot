@@ -36,17 +36,9 @@
       "captureKind": "trace-entry",
       "timerName": "http client request",
       "traceEntryTemplate": "http client request: {{1.name}} {{1.URI}}"
-    },
-    {
-      "className": "com.ning.http.client.AsyncHttpClient",
-      "methodName": "executeRequest",
-      "methodParameterTypes": [
-        "com.ning.http.client.Request",
-        ".."
-      ],
-      "captureKind": "trace-entry",
-      "timerName": "http client request",
-      "traceEntryTemplate": "http client request: {{0.method}} {{0.originalURI}}"
     }
+  ],
+  "aspects": [
+    "org.glowroot.plugin.httpclient.AsyncHttpClientAspect"
   ]
 }

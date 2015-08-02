@@ -20,7 +20,6 @@
   ],
   "aspects": [
     "org.glowroot.plugin.cassandra.SessionAspect",
-    "org.glowroot.plugin.cassandra.ResultSetAspect",
-    "org.glowroot.plugin.cassandra.ResultSetFutureAspect"
+    "org.glowroot.plugin.cassandra.ResultSetAspect"
   ]
 }

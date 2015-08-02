@@ -18,7 +18,6 @@ package org.glowroot.plugin.httpclient;
 import java.util.List;
 
 import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.AsyncHttpClient.BoundRequestBuilder;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -80,8 +79,7 @@ public class AsyncHttpClientPluginTest {
         @Override
         public void traceMarker() throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            BoundRequestBuilder x = asyncHttpClient.prepareGet("http://www.example.com/hello1");
-            x.execute();
+            asyncHttpClient.prepareGet("http://www.example.com/hello1").execute().get();
             asyncHttpClient.close();
         }
     }
@@ -94,7 +92,7 @@ public class AsyncHttpClientPluginTest {
         @Override
         public void traceMarker() throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
-            asyncHttpClient.preparePost("http://www.example.com/hello2").execute();
+            asyncHttpClient.preparePost("http://www.example.com/hello2").execute().get();
             asyncHttpClient.close();
         }
     }

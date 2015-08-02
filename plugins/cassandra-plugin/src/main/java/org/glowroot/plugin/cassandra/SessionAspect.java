@@ -21,6 +21,7 @@ import java.util.Collection;
 import javax.annotation.Nullable;
 
 import org.glowroot.api.ErrorMessage;
+import org.glowroot.api.FastThreadLocal;
 import org.glowroot.api.MessageSupplier;
 import org.glowroot.api.PluginServices;
 import org.glowroot.api.PluginServices.ConfigListener;
@@ -31,12 +32,14 @@ import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindThrowable;
 import org.glowroot.api.weaving.BindTraveler;
 import org.glowroot.api.weaving.IsEnabled;
+import org.glowroot.api.weaving.OnAfter;
 import org.glowroot.api.weaving.OnBefore;
 import org.glowroot.api.weaving.OnReturn;
 import org.glowroot.api.weaving.OnThrow;
 import org.glowroot.api.weaving.Pointcut;
 import org.glowroot.api.weaving.Shim;
-import org.glowroot.plugin.cassandra.ResultSetAspect.HasLastQueryEntry;
+import org.glowroot.plugin.cassandra.ResultSetAspect.ResultSet;
+import org.glowroot.plugin.cassandra.ResultSetAspect.ResultSetFuture;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -45,6 +48,14 @@ public class SessionAspect {
     private static final String QUERY_TYPE = "CQL";
 
     private static final PluginServices pluginServices = PluginServices.get("cassandra");
+
+    @SuppressWarnings("nullness:type.argument.type.incompatible")
+    private static final FastThreadLocal<Boolean> inAdvice = new FastThreadLocal<Boolean>() {
+        @Override
+        protected Boolean initialValue() {
+            return false;
+        }
+    };
 
     // volatile is not needed here as it piggybacks on PluginServicesImpl.memoryBarrier
     private static int stackTraceThresholdMillis;
@@ -92,55 +103,27 @@ public class SessionAspect {
         String getQueryString();
     }
 
-    @Pointcut(className = "com.datastax.driver.core.Session", methodName = "execute|executeAsync",
+    @Pointcut(className = "com.datastax.driver.core.Session", methodName = "execute",
             methodParameterTypes = {"com.datastax.driver.core.Statement"},
-            ignoreSelfNested = true, timerName = "cql execute")
-    public static class ExecuteStatementAdvice {
+            timerName = "cql execute")
+    public static class ExecuteAdvice {
         private static final TimerName timerName =
-                pluginServices.getTimerName(ExecuteStatementAdvice.class);
+                pluginServices.getTimerName(ExecuteAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
-            return pluginServices.isEnabled();
+            return !inAdvice.get() && pluginServices.isEnabled();
         }
         @OnBefore
         public static @Nullable QueryEntry onBefore(@BindParameter @Nullable Object arg) {
-            if (arg == null) {
-                // seems nothing sensible to do here other than ignore
-                return null;
-            }
-            String queryText;
-            MessageSupplier messageSupplier;
-            if (arg instanceof String) {
-                queryText = (String) arg;
-                messageSupplier = new QueryMessageSupplier(queryText);
-            } else if (arg instanceof RegularStatement) {
-                queryText = nullToEmpty(((RegularStatement) arg).getQueryString());
-                messageSupplier = new QueryMessageSupplier(queryText);
-            } else if (arg instanceof BoundStatement) {
-                PreparedStatement preparedStatement = ((BoundStatement) arg).preparedStatement();
-                queryText = preparedStatement == null ? "" :
-                        nullToEmpty(preparedStatement.getQueryString());
-                messageSupplier = new QueryMessageSupplier(queryText);
-            } else if (arg instanceof BatchStatement) {
-                Collection<Statement> statements = ((BatchStatement) arg).getStatements();
-                if (statements == null) {
-                    statements = new ArrayList<Statement>();
-                }
-                queryText = "<batch cql>";
-                messageSupplier = BatchQueryMessageSupplier.from(statements);
-            } else {
-                return null;
-            }
-            return pluginServices.startQueryEntry(QUERY_TYPE, queryText, messageSupplier,
-                    timerName);
+            inAdvice.set(true);
+            return commonBefore(arg, timerName);
         }
         @OnReturn
-        public static void onReturn(
-                @BindReturn @Nullable HasLastQueryEntry resultSetOrResultSetFuture,
+        public static void onReturn(@BindReturn @Nullable ResultSet resultSet,
                 @BindTraveler @Nullable QueryEntry queryEntry) {
             if (queryEntry != null) {
-                if (resultSetOrResultSetFuture != null) {
-                    resultSetOrResultSetFuture.glowroot$setLastQueryEntry(queryEntry);
+                if (resultSet != null) {
+                    resultSet.glowroot$setLastQueryEntry(queryEntry);
                 }
                 queryEntry.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
             }
@@ -152,8 +135,82 @@ public class SessionAspect {
                 queryEntry.endWithError(ErrorMessage.from(t));
             }
         }
-        private static String nullToEmpty(@Nullable String string) {
-            return string == null ? "" : string;
+        @OnAfter
+        public static void onAfter() {
+            inAdvice.set(false);
         }
+    }
+
+    @Pointcut(className = "com.datastax.driver.core.Session", methodName = "executeAsync",
+            methodParameterTypes = {"com.datastax.driver.core.Statement"},
+            timerName = "cql execute")
+    public static class ExecuteAsyncAdvice {
+        private static final TimerName timerName =
+                pluginServices.getTimerName(ExecuteAsyncAdvice.class);
+        @IsEnabled
+        public static boolean isEnabled() {
+            return !inAdvice.get() && pluginServices.isEnabled();
+        }
+        @OnBefore
+        public static @Nullable QueryEntry onBefore(@BindParameter @Nullable Object arg) {
+            inAdvice.set(true);
+            return commonBefore(arg, timerName);
+        }
+        @OnReturn
+        public static void onReturn(@BindReturn @Nullable ResultSetFuture resultSetFuture,
+                @BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
+                if (resultSetFuture != null) {
+                    resultSetFuture.glowroot$setQueryEntry(queryEntry);
+                }
+                queryEntry.endWithStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+            }
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
+                queryEntry.endWithError(ErrorMessage.from(t));
+            }
+        }
+        @OnAfter
+        public static void onAfter() {
+            inAdvice.set(false);
+        }
+    }
+
+    private static @Nullable QueryEntry commonBefore(@Nullable Object arg, TimerName timerName) {
+        if (arg == null) {
+            // seems nothing sensible to do here other than ignore
+            return null;
+        }
+        String queryText;
+        MessageSupplier messageSupplier;
+        if (arg instanceof String) {
+            queryText = (String) arg;
+            messageSupplier = new QueryMessageSupplier(queryText);
+        } else if (arg instanceof RegularStatement) {
+            queryText = nullToEmpty(((RegularStatement) arg).getQueryString());
+            messageSupplier = new QueryMessageSupplier(queryText);
+        } else if (arg instanceof BoundStatement) {
+            PreparedStatement preparedStatement = ((BoundStatement) arg).preparedStatement();
+            queryText = preparedStatement == null ? ""
+                    : nullToEmpty(preparedStatement.getQueryString());
+            messageSupplier = new QueryMessageSupplier(queryText);
+        } else if (arg instanceof BatchStatement) {
+            Collection<Statement> statements = ((BatchStatement) arg).getStatements();
+            if (statements == null) {
+                statements = new ArrayList<Statement>();
+            }
+            queryText = "<batch cql>";
+            messageSupplier = BatchQueryMessageSupplier.from(statements);
+        } else {
+            return null;
+        }
+        return pluginServices.startQueryEntry(QUERY_TYPE, queryText, messageSupplier, timerName);
+    }
+
+    private static String nullToEmpty(@Nullable String string) {
+        return string == null ? "" : string;
     }
 }

@@ -139,7 +139,7 @@ public class CassandraAsyncTest {
         @Override
         public void traceMarker() throws Exception {
             ResultSet results =
-                    session.executeAsync("SELECT * FROM test.users").getUninterruptibly();
+                    session.executeAsync("SELECT * FROM test.users").get();
             for (Row row : results) {
                 row.getInt("id");
             }
@@ -161,7 +161,7 @@ public class CassandraAsyncTest {
         @Override
         public void traceMarker() throws Exception {
             ResultSet results =
-                    session.executeAsync("SELECT * FROM test.users").getUninterruptibly();
+                    session.executeAsync("SELECT * FROM test.users").get();
             results.one();
             results.one();
             results.one();
@@ -186,7 +186,7 @@ public class CassandraAsyncTest {
                     "INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
             BoundStatement boundStatement = new BoundStatement(preparedStatement);
             boundStatement.bind(100, "f100", "l100");
-            session.executeAsync(boundStatement).getUninterruptibly();
+            session.executeAsync(boundStatement).get();
         }
     }
 
@@ -217,7 +217,7 @@ public class CassandraAsyncTest {
             }
             batchStatement.add(new SimpleStatement(
                     "INSERT INTO test.users (id,  fname, lname) VALUES (300, 'f300', 'l300')"));
-            session.executeAsync(batchStatement).getUninterruptibly();
+            session.executeAsync(batchStatement).get();
         }
     }
 }

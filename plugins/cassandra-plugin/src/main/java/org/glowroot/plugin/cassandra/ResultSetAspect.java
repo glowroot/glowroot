@@ -22,6 +22,7 @@ import org.glowroot.api.PluginServices.BooleanProperty;
 import org.glowroot.api.QueryEntry;
 import org.glowroot.api.Timer;
 import org.glowroot.api.TimerName;
+import org.glowroot.api.TraceEntry;
 import org.glowroot.api.weaving.BindReceiver;
 import org.glowroot.api.weaving.BindReturn;
 import org.glowroot.api.weaving.BindTraveler;
@@ -36,37 +37,78 @@ public class ResultSetAspect {
 
     private static final PluginServices pluginServices = PluginServices.get("cassandra");
 
-    @Mixin({"com.datastax.driver.core.ResultSet", "com.datastax.driver.core.ResultSetFuture"})
-    public static class HasLastQueryMessageSupplierImpl implements HasLastQueryEntry {
-        // the field and method names are verbose to avoid conflict since they will become fields
-        // and methods in all classes that extend com.datastax.driver.core.ResultSet or
-        // com.datastax.driver.core.ResultSetFuture
-        //
-        // does not need to be volatile, app/framework must provide visibility of ResultSets and
-        // ResultSetFutures if used across threads and this can piggyback
+    // the field and method names are verbose to avoid conflict since they will become fields
+    // and methods in all classes that extend com.datastax.driver.core.ResultSet
+    @Mixin("com.datastax.driver.core.ResultSet")
+    public static class ResultSetImpl implements ResultSet {
+
+        // does not need to be volatile, app/framework must provide visibility of ResultSets if used
+        // across threads and this can piggyback
         private @Nullable QueryEntry glowroot$lastQueryEntry;
+
         @Override
         @Nullable
         public QueryEntry glowroot$getLastQueryEntry() {
             return glowroot$lastQueryEntry;
         }
+
         @Override
         public void glowroot$setLastQueryEntry(@Nullable QueryEntry lastQueryEntry) {
             this.glowroot$lastQueryEntry = lastQueryEntry;
         }
+
         @Override
         public boolean glowroot$hasLastQueryEntry() {
             return glowroot$lastQueryEntry != null;
         }
     }
 
+    // the field and method names are verbose to avoid conflict since they will become fields
+    // and methods in all classes that extend com.datastax.driver.core.ResultSetFuture
+    @Mixin("com.datastax.driver.core.ResultSetFuture")
+    public static class ResultSetFutureImpl implements ResultSetFuture {
+
+        private @Nullable QueryEntry glowroot$queryEntry;
+
+        @Override
+        @Nullable
+        public QueryEntry glowroot$getQueryEntry() {
+            return glowroot$queryEntry;
+        }
+
+        @Override
+        public void glowroot$setQueryEntry(@Nullable QueryEntry queryEntry) {
+            this.glowroot$queryEntry = queryEntry;
+        }
+
+        @Override
+        public boolean glowroot$hasQueryEntry() {
+            return glowroot$queryEntry != null;
+        }
+    }
+
     // the method names are verbose to avoid conflict since they will become methods in all classes
     // that extend com.datastax.driver.core.ResultSet
-    public interface HasLastQueryEntry {
+    public interface ResultSet {
+
         @Nullable
         QueryEntry glowroot$getLastQueryEntry();
+
         void glowroot$setLastQueryEntry(@Nullable QueryEntry lastQueryEntry);
+
         boolean glowroot$hasLastQueryEntry();
+    }
+
+    // the method names are verbose to avoid conflict since they will become methods in all classes
+    // that extend com.datastax.driver.core.ResultSetFuture
+    public interface ResultSetFuture {
+
+        @Nullable
+        QueryEntry glowroot$getQueryEntry();
+
+        void glowroot$setQueryEntry(@Nullable QueryEntry queryEntry);
+
+        boolean glowroot$hasQueryEntry();
     }
 
     @Pointcut(className = "com.datastax.driver.core.ResultSet", methodName = "one",
@@ -76,20 +118,25 @@ public class ResultSetAspect {
         private static final BooleanProperty timerEnabled =
                 pluginServices.getEnabledProperty("captureResultSetNavigate");
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasLastQueryEntry resultSet) {
+        public static boolean isEnabled(@BindReceiver ResultSet resultSet) {
             return resultSet.glowroot$hasLastQueryEntry();
         }
         @OnBefore
-        public static @Nullable Timer onBefore() {
+        public static @Nullable Timer onBefore(@BindReceiver ResultSet resultSet) {
             if (timerEnabled.value()) {
-                return pluginServices.startTimer(timerName);
+                QueryEntry lastQueryEntry = resultSet.glowroot$getLastQueryEntry();
+                if (lastQueryEntry == null) {
+                    // tracing must be disabled (e.g. exceeded trace entry limit)
+                    return pluginServices.startTimer(timerName);
+                }
+                return lastQueryEntry.extend();
             } else {
                 return null;
             }
         }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable Object row,
-                @BindReceiver HasLastQueryEntry resultSet) {
+                @BindReceiver ResultSet resultSet) {
             QueryEntry lastQueryEntry = resultSet.glowroot$getLastQueryEntry();
             if (lastQueryEntry == null) {
                 // tracing must be disabled (e.g. exceeded trace entry limit)
@@ -105,6 +152,51 @@ public class ResultSetAspect {
         public static void onAfter(@BindTraveler @Nullable Timer timer) {
             if (timer != null) {
                 timer.stop();
+            }
+        }
+    }
+
+    @Pointcut(className = "com.datastax.driver.core.ResultSetFuture",
+            declaringClassName = "java.util.concurrent.Future",
+            methodName = "get", methodParameterTypes = {".."})
+    public static class FutureGetAdvice {
+        @OnBefore
+        public static @Nullable Timer onBefore(@BindReceiver ResultSetFuture resultSetFuture) {
+            TraceEntry traceEntry = resultSetFuture.glowroot$getQueryEntry();
+            if (traceEntry != null) {
+                return traceEntry.extend();
+            }
+            return null;
+        }
+        @OnReturn
+        public static void onReturn(@BindReturn @Nullable ResultSet resultSet,
+                @BindReceiver ResultSetFuture resultSetFuture) {
+            QueryEntry queryEntry = resultSetFuture.glowroot$getQueryEntry();
+            if (resultSet != null) {
+                // pass the query entry to the return value so it can be used when iterating over
+                // the result set
+                resultSet.glowroot$setLastQueryEntry(queryEntry);
+            }
+        }
+        @OnAfter
+        public static void onAfter(@BindTraveler @Nullable Timer timer) {
+            if (timer != null) {
+                timer.stop();
+            }
+        }
+    }
+
+    @Pointcut(className = "com.datastax.driver.core.ResultSetFuture",
+            methodName = "getUninterruptibly", methodParameterTypes = {".."})
+    public static class GetAdvice {
+        @OnReturn
+        public static void onReturn(@BindReturn @Nullable ResultSet resultSet,
+                @BindReceiver ResultSetFuture resultSetFuture) {
+            QueryEntry lastQueryEntry = resultSetFuture.glowroot$getQueryEntry();
+            if (resultSet != null) {
+                // pass the query entry to the return value so it can be used when iterating over
+                // the result set
+                resultSet.glowroot$setLastQueryEntry(lastQueryEntry);
             }
         }
     }
