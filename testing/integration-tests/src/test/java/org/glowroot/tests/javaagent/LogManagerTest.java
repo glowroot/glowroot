@@ -47,8 +47,8 @@ public class LogManagerTest {
         Assume.assumeTrue(isShaded());
         // this test cannot use shared javaagent container since it needs to be first thing
         // that runs in JVM in order to test that java.util.logging.LogManager is not initialized
-        container = JavaagentContainer.createWithExtraJvmArgs(ImmutableList.of(
-                "-Djava.util.logging.manager=" + CustomLogManager.class.getName()));
+        container = JavaagentContainer.createWithExtraJvmArgs(ImmutableList
+                .of("-Djava.util.logging.manager=" + CustomLogManager.class.getName()));
     }
 
     @AfterClass

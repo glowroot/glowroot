@@ -47,8 +47,8 @@ public class Containers {
         } else if (value.equals("local")) {
             harness = Harness.LOCAL;
         } else {
-            throw new IllegalStateException("Unexpected " + TEST_HARNESS_PROPERTY_NAME + " value: "
-                    + value);
+            throw new IllegalStateException(
+                    "Unexpected " + TEST_HARNESS_PROPERTY_NAME + " value: " + value);
         }
     }
 

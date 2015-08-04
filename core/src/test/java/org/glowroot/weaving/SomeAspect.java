@@ -1025,13 +1025,11 @@ public class SomeAspect {
     public static class TestJSRMethodAdvice {}
 
     // test weaving against 1.7 bytecode with stack frames
-    @Pointcut(className = "org.xnio.Buffers", methodName = "*",
-            methodParameterTypes = {".."})
+    @Pointcut(className = "org.xnio.Buffers", methodName = "*", methodParameterTypes = {".."})
     public static class TestBytecodeWithStackFramesAdvice {}
 
     // test weaving against 1.7 bytecode with stack frames
-    @Pointcut(className = "org.xnio.Buffers", methodName = "*",
-            methodParameterTypes = {".."})
+    @Pointcut(className = "org.xnio.Buffers", methodName = "*", methodParameterTypes = {".."})
     public static class TestBytecodeWithStackFramesAdvice2 {
         @IsEnabled
         public static boolean isEnabled() {
@@ -1040,32 +1038,28 @@ public class SomeAspect {
     }
 
     // test weaving against 1.7 bytecode with stack frames
-    @Pointcut(className = "org.xnio.Buffers", methodName = "*",
-            methodParameterTypes = {".."})
+    @Pointcut(className = "org.xnio.Buffers", methodName = "*", methodParameterTypes = {".."})
     public static class TestBytecodeWithStackFramesAdvice3 {
         @OnBefore
         public static void onBefore() {}
     }
 
     // test weaving against 1.7 bytecode with stack frames
-    @Pointcut(className = "org.xnio.Buffers", methodName = "*",
-            methodParameterTypes = {".."})
+    @Pointcut(className = "org.xnio.Buffers", methodName = "*", methodParameterTypes = {".."})
     public static class TestBytecodeWithStackFramesAdvice4 {
         @OnReturn
         public static void onReturn() {}
     }
 
     // test weaving against 1.7 bytecode with stack frames
-    @Pointcut(className = "org.xnio.Buffers", methodName = "*",
-            methodParameterTypes = {".."})
+    @Pointcut(className = "org.xnio.Buffers", methodName = "*", methodParameterTypes = {".."})
     public static class TestBytecodeWithStackFramesAdvice5 {
         @OnThrow
         public static void onThrow() {}
     }
 
     // test weaving against 1.7 bytecode with stack frames
-    @Pointcut(className = "org.xnio.Buffers", methodName = "*",
-            methodParameterTypes = {".."})
+    @Pointcut(className = "org.xnio.Buffers", methodName = "*", methodParameterTypes = {".."})
     public static class TestBytecodeWithStackFramesAdvice6 {
         @OnAfter
         public static void onAfter() {}

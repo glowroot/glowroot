@@ -172,8 +172,8 @@ public class AdviceCache {
                     suffix = "-" + count;
                 }
                 File jarFile = new File(generatedJarDir, "config-pointcuts" + suffix + ".jar");
-                ClassLoaders.defineClassesInBootstrapClassLoader(advisors.values(),
-                        instrumentation, jarFile);
+                ClassLoaders.defineClassesInBootstrapClassLoader(advisors.values(), instrumentation,
+                        jarFile);
             }
         }
         reweavableAdvisors = advisors.keySet().asList();

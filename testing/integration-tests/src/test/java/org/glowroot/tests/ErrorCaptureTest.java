@@ -105,26 +105,26 @@ public class ErrorCaptureTest {
         ThrowableInfo throwable = entry.getError().getThrowable();
         assertThat(throwable.getDisplay()).isEqualTo(
                 "java.lang.IllegalStateException: java.lang.IllegalArgumentException: Cause 3");
-        assertThat(throwable.getStackTrace().get(0)).startsWith(
-                LogCauseAdvice.class.getName() + ".onAfter(");
+        assertThat(throwable.getStackTrace().get(0))
+                .startsWith(LogCauseAdvice.class.getName() + ".onAfter(");
         assertThat(throwable.getFramesInCommonWithCaused()).isZero();
         ThrowableInfo cause = throwable.getCause();
         assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalArgumentException: Cause 3");
-        assertThat(cause.getStackTrace().get(0)).startsWith(
-                LogCauseAdvice.class.getName() + ".onAfter(");
+        assertThat(cause.getStackTrace().get(0))
+                .startsWith(LogCauseAdvice.class.getName() + ".onAfter(");
         assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
         Set<Integer> causeLineNumbers = Sets.newHashSet();
         causeLineNumbers.add(getFirstLineNumber(cause));
         cause = cause.getCause();
         assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalStateException: Cause 2");
-        assertThat(cause.getStackTrace().get(0)).startsWith(
-                LogCauseAdvice.class.getName() + ".onAfter(");
+        assertThat(cause.getStackTrace().get(0))
+                .startsWith(LogCauseAdvice.class.getName() + ".onAfter(");
         assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
         causeLineNumbers.add(getFirstLineNumber(cause));
         cause = cause.getCause();
         assertThat(cause.getDisplay()).isEqualTo("java.lang.NullPointerException: Cause 1");
-        assertThat(cause.getStackTrace().get(0)).startsWith(
-                LogCauseAdvice.class.getName() + ".onAfter(");
+        assertThat(cause.getStackTrace().get(0))
+                .startsWith(LogCauseAdvice.class.getName() + ".onAfter(");
         assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
         causeLineNumbers.add(getFirstLineNumber(cause));
         // make sure they are all different line numbers
@@ -143,18 +143,16 @@ public class ErrorCaptureTest {
         assertThat(entries).hasSize(2);
         assertThat(entries.get(0).getMessage().getText())
                 .isEqualTo("outer entry to test nesting level");
-        assertThat(entries.get(0).getNestingLevel())
-                .isEqualTo(0);
+        assertThat(entries.get(0).getNestingLevel()).isEqualTo(0);
         assertThat(entries.get(1).getError().getMessage())
                 .isEqualTo("test add nested error entry message");
-        assertThat(entries.get(1).getNestingLevel())
-                .isEqualTo(1);
+        assertThat(entries.get(1).getNestingLevel()).isEqualTo(1);
     }
 
     private static int getFirstLineNumber(ThrowableInfo cause) {
         String element = cause.getStackTrace().get(0);
-        return Integer.parseInt(element.substring(element.lastIndexOf(':') + 1,
-                element.length() - 1));
+        return Integer
+                .parseInt(element.substring(element.lastIndexOf(':') + 1, element.length() - 1));
     }
 
     public static class ShouldCaptureError implements AppUnderTest {
@@ -172,8 +170,8 @@ public class ErrorCaptureTest {
         }
     }
 
-    public static class ShouldCaptureErrorWithTraceEntryStackTrace implements AppUnderTest,
-            TraceMarker {
+    public static class ShouldCaptureErrorWithTraceEntryStackTrace
+            implements AppUnderTest, TraceMarker {
         @Override
         public void executeApp() throws Exception {
             traceMarker();

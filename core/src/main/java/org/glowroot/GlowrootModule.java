@@ -110,8 +110,8 @@ public class GlowrootModule {
         ticker = Tickers.getTicker();
         clock = Clock.systemClock();
 
-        ExtraBootResourceFinder extraBootResourceFinder = createExtraBootResourceFinder(
-                instrumentation, configModule.getPluginJars());
+        ExtraBootResourceFinder extraBootResourceFinder =
+                createExtraBootResourceFinder(instrumentation, configModule.getPluginJars());
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
                 .setNameFormat("Glowroot-Background-%d").build();
         scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
@@ -134,9 +134,8 @@ public class GlowrootModule {
         // now inject the real TransactionCollector into the proxy
         transactionCollectorProxy.setInstance(collectorModule.getTransactionCollector());
         initPlugins(configModule.getPluginDescriptors());
-        uiModule = new LocalUiModule(ticker, clock, baseDir, jvmModule, configModule,
-                storageModule, collectorModule, transactionModule, instrumentation, properties,
-                version);
+        uiModule = new LocalUiModule(ticker, clock, baseDir, jvmModule, configModule, storageModule,
+                collectorModule, transactionModule, instrumentation, properties, version);
         this.baseDir = baseDir;
     }
 

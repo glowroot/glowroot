@@ -62,9 +62,8 @@ class AdminJsonService {
     AdminJsonService(AggregateDao aggregateDao, TraceDao traceDao, GaugePointDao gaugePointDao,
             @Nullable AggregateCollector aggregateCollector, ConfigService configService,
             AdviceCache adviceCache, AnalyzedWorld analyzedWorld,
-            @Nullable Instrumentation instrumentation,
-            TransactionCollector transactionCollector, DataSource dataSource,
-            TransactionRegistry transactionRegistry) {
+            @Nullable Instrumentation instrumentation, TransactionCollector transactionCollector,
+            DataSource dataSource, TransactionRegistry transactionRegistry) {
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
         this.gaugePointDao = gaugePointDao;

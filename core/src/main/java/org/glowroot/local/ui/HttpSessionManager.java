@@ -63,8 +63,7 @@ class HttpSessionManager {
     private final Map<String, Long> adminSessionExpirations = Maps.newConcurrentMap();
     private final Map<String, Long> readOnlySessionExpirations = Maps.newConcurrentMap();
 
-    HttpSessionManager(ConfigService configService, Clock clock,
-            LayoutService layoutJsonService) {
+    HttpSessionManager(ConfigService configService, Clock clock, LayoutService layoutJsonService) {
         this.configService = configService;
         this.clock = clock;
         this.layoutJsonService = layoutJsonService;

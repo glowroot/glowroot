@@ -86,8 +86,7 @@ public class AdviceGenerator {
                 continue;
             }
             try {
-                LazyDefinedClass lazyAdviceClass =
-                        new AdviceGenerator(config, pluginId).generate();
+                LazyDefinedClass lazyAdviceClass = new AdviceGenerator(config, pluginId).generate();
                 boolean reweavable = pluginId == null;
                 Advice advice = new AdviceBuilder(lazyAdviceClass, reweavable).build();
                 advisors.put(advice, lazyAdviceClass);
@@ -103,8 +102,7 @@ public class AdviceGenerator {
         this.pluginId = pluginId;
         int uniqueNum = counter.incrementAndGet();
         adviceInternalName = "org/glowroot/advicegen/GeneratedAdvice" + uniqueNum;
-        if (config.isTraceEntryOrGreater()
-                || !config.transactionNameTemplate().isEmpty()
+        if (config.isTraceEntryOrGreater() || !config.transactionNameTemplate().isEmpty()
                 || !config.transactionUserTemplate().isEmpty()
                 || !config.transactionCustomAttributeTemplates().isEmpty()) {
             // templates are used, so method meta is needed
@@ -121,8 +119,7 @@ public class AdviceGenerator {
         }
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS + ClassWriter.COMPUTE_FRAMES);
         String[] interfaces = null;
-        if (!config.enabledProperty().isEmpty()
-                || !config.traceEntryEnabledProperty().isEmpty()) {
+        if (!config.enabledProperty().isEmpty() || !config.traceEntryEnabledProperty().isEmpty()) {
             interfaces = new String[] {"org/glowroot/plugin/api/config/ConfigListener"};
         }
         cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, adviceInternalName, null, "java/lang/Object",

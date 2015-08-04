@@ -69,8 +69,8 @@ public class CassandraAsyncTest {
         assertThat(query.getTotalRows()).isEqualTo(10);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText()).isEqualTo(
-                "cql execution: SELECT * FROM test.users => 10 rows");
+        assertThat(entries.get(0).getMessage().getText())
+                .isEqualTo("cql execution: SELECT * FROM test.users => 10 rows");
     }
 
     @Test
@@ -85,8 +85,8 @@ public class CassandraAsyncTest {
         assertThat(query.getTotalRows()).isEqualTo(10);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText()).isEqualTo(
-                "cql execution: SELECT * FROM test.users => 10 rows");
+        assertThat(entries.get(0).getMessage().getText())
+                .isEqualTo("cql execution: SELECT * FROM test.users => 10 rows");
     }
 
     @Test
@@ -96,8 +96,8 @@ public class CassandraAsyncTest {
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
-        assertThat(query.getQueryText()).isEqualTo(
-                "INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
+        assertThat(query.getQueryText())
+                .isEqualTo("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
         assertThat(query.getExecutionCount()).isEqualTo(1);
         assertThat(query.getTotalRows()).isEqualTo(0);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
@@ -138,16 +138,14 @@ public class CassandraAsyncTest {
 
         @Override
         public void traceMarker() throws Exception {
-            ResultSet results =
-                    session.executeAsync("SELECT * FROM test.users").get();
+            ResultSet results = session.executeAsync("SELECT * FROM test.users").get();
             for (Row row : results) {
                 row.getInt("id");
             }
         }
     }
 
-    public static class AsyncIterateUsingOneAndAll implements AppUnderTest,
-            TraceMarker {
+    public static class AsyncIterateUsingOneAndAll implements AppUnderTest, TraceMarker {
 
         private Session session;
 
@@ -160,8 +158,7 @@ public class CassandraAsyncTest {
 
         @Override
         public void traceMarker() throws Exception {
-            ResultSet results =
-                    session.executeAsync("SELECT * FROM test.users").get();
+            ResultSet results = session.executeAsync("SELECT * FROM test.users").get();
             results.one();
             results.one();
             results.one();
@@ -182,8 +179,8 @@ public class CassandraAsyncTest {
 
         @Override
         public void traceMarker() throws Exception {
-            PreparedStatement preparedStatement = session.prepare(
-                    "INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
+            PreparedStatement preparedStatement =
+                    session.prepare("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
             BoundStatement boundStatement = new BoundStatement(preparedStatement);
             boundStatement.bind(100, "f100", "l100");
             session.executeAsync(boundStatement).get();
@@ -208,8 +205,8 @@ public class CassandraAsyncTest {
                     "INSERT INTO test.users (id,  fname, lname) VALUES (100, 'f100', 'l100')"));
             batchStatement.add(new SimpleStatement(
                     "INSERT INTO test.users (id,  fname, lname) VALUES (101, 'f101', 'l101')"));
-            PreparedStatement preparedStatement = session.prepare(
-                    "INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
+            PreparedStatement preparedStatement =
+                    session.prepare("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
             for (int i = 200; i < 210; i++) {
                 BoundStatement boundStatement = new BoundStatement(preparedStatement);
                 boundStatement.bind(i, "f" + i, "l" + i);

@@ -208,20 +208,19 @@ class WeavingMethodVisitor extends AdviceAdapter {
             Integer adviceFlowHolderLocalIndex = adviceFlowHolderLocals.get(advice);
             if (adviceFlowHolderLocalIndex != null) {
                 super.visitLocalVariable("glowroot$advice$flow$holder$" + i,
-                        adviceFlowHolderType.getDescriptor(), null, methodStartLabel,
-                        outerEndLabel, adviceFlowHolderLocalIndex);
+                        adviceFlowHolderType.getDescriptor(), null, methodStartLabel, outerEndLabel,
+                        adviceFlowHolderLocalIndex);
             }
             Integer adviceFlowLocalIndex = originalAdviceFlowLocals.get(advice);
             if (adviceFlowLocalIndex != null) {
                 super.visitLocalVariable("glowroot$advice$flow$" + i,
-                        Type.BOOLEAN_TYPE.getDescriptor(), null, methodStartLabel,
-                        outerEndLabel, adviceFlowLocalIndex);
+                        Type.BOOLEAN_TYPE.getDescriptor(), null, methodStartLabel, outerEndLabel,
+                        adviceFlowLocalIndex);
             }
             Integer enabledLocalIndex = enabledLocals.get(advice);
             if (enabledLocalIndex != null) {
-                super.visitLocalVariable("glowroot$enabled$" + i,
-                        Type.BOOLEAN_TYPE.getDescriptor(), null, methodStartLabel,
-                        outerEndLabel, enabledLocalIndex);
+                super.visitLocalVariable("glowroot$enabled$" + i, Type.BOOLEAN_TYPE.getDescriptor(),
+                        null, methodStartLabel, outerEndLabel, enabledLocalIndex);
             }
             Integer travelerLocalIndex = travelerLocals.get(advice);
             if (travelerLocalIndex != null) {
@@ -230,9 +229,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     logger.error("visitLocalVariable(): traveler local index is not null,"
                             + " but traveler type is null");
                 } else {
-                    super.visitLocalVariable("glowroot$traveler$" + i,
-                            travelerType.getDescriptor(), null, methodStartLabel,
-                            outerEndLabel, travelerLocalIndex);
+                    super.visitLocalVariable("glowroot$traveler$" + i, travelerType.getDescriptor(),
+                            null, methodStartLabel, outerEndLabel, travelerLocalIndex);
                 }
             }
         }
@@ -278,8 +276,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
         } else {
             for (CatchHandler catchHandler : Lists.reverse(catchHandlers)) {
                 Label catchHandlerLabel = new Label();
-                visitTryCatchBlock(catchHandler.catchStartLabel(), catchEndLabel,
-                        catchHandlerLabel, "java/lang/Throwable");
+                visitTryCatchBlock(catchHandler.catchStartLabel(), catchEndLabel, catchHandlerLabel,
+                        "java/lang/Throwable");
                 visitLabel(catchHandlerLabel);
                 for (Advice advice : Lists.reverse(catchHandler.advisors())) {
                     visitOnThrowAdvice(advice);
@@ -335,8 +333,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     "getInnerHolder", "()" + adviceFlowHolderType.getDescriptor(), false);
             visitInsn(DUP);
             storeLocal(adviceFlowHolderLocal);
-            visitMethodInsn(INVOKEVIRTUAL, adviceFlowHolderType.getInternalName(),
-                    "isTop", "()Z", false);
+            visitMethodInsn(INVOKEVIRTUAL, adviceFlowHolderType.getInternalName(), "isTop", "()Z",
+                    false);
             Label isTopBlockStart = new Label();
             visitInsn(DUP);
             storeLocal(originalAdviceFlowLocal);
@@ -351,8 +349,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
             visitInsn(ICONST_0);
             // note that setTop() is only called if enabled is true, so it only needs to be reset
             // at the end of the advice if enabled is true
-            visitMethodInsn(INVOKEVIRTUAL, adviceFlowHolderType.getInternalName(),
-                    "setTop", "(Z)V", false);
+            visitMethodInsn(INVOKEVIRTUAL, adviceFlowHolderType.getInternalName(), "setTop", "(Z)V",
+                    false);
             visitInsn(ICONST_1);
             storeLocal(enabledLocal);
             visitLabel(setAdviceFlowBlockEnd);
@@ -491,8 +489,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private void loadOptionalReturnValue(int opcode, boolean dup) {
         if (opcode == RETURN) {
             // void
-            visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/VoidReturn",
-                    "getInstance", "()Lorg/glowroot/plugin/api/weaving/OptionalReturn;", false);
+            visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/VoidReturn", "getInstance",
+                    "()Lorg/glowroot/plugin/api/weaving/OptionalReturn;", false);
         } else {
             loadReturnValue(opcode, dup, true);
             visitMethodInsn(INVOKESTATIC, "org/glowroot/weaving/NonVoidReturn", "create",
@@ -535,8 +533,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 visitInsn(DUP);
                 startIndex++;
             }
-            loadMethodParameters(advice.onThrowParameters(), startIndex,
-                    travelerLocals.get(advice), advice.adviceType(), OnThrow.class, true);
+            loadMethodParameters(advice.onThrowParameters(), startIndex, travelerLocals.get(advice),
+                    advice.adviceType(), OnThrow.class, true);
             visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
                     onThrowAdvice.getName(), onThrowAdvice.getDescriptor(), false);
         }
@@ -589,8 +587,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 // isTop was true at the beginning of the advice, need to reset it now
                 loadLocal(adviceFlowHolderLocal);
                 visitInsn(ICONST_1);
-                visitMethodInsn(INVOKEVIRTUAL, adviceFlowHolderType.getInternalName(),
-                        "setTop", "(Z)V", false);
+                visitMethodInsn(INVOKEVIRTUAL, adviceFlowHolderType.getInternalName(), "setTop",
+                        "(Z)V", false);
                 visitLabel(setAdviceFlowBlockEnd);
             }
         }

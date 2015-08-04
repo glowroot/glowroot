@@ -90,8 +90,7 @@ public class ProfileNode implements Iterable<ProfileNode> {
         return new ProfileNode(stackTraceElementObj, leafThreadState);
     }
 
-    private ProfileNode(@Nullable Object stackTraceElementObj,
-            @Nullable String leafThreadState) {
+    private ProfileNode(@Nullable Object stackTraceElementObj, @Nullable String leafThreadState) {
         this.stackTraceElementObj = stackTraceElementObj;
         this.leafThreadState = leafThreadState;
     }
@@ -315,12 +314,12 @@ public class ProfileNode implements Iterable<ProfileNode> {
             return false;
         }
         if (leftNode.stackTraceElementObj instanceof StackTraceElement) {
-            return rightNode.isSameStackTraceElement(
-                    (StackTraceElement) leftNode.stackTraceElementObj);
+            return rightNode
+                    .isSameStackTraceElement((StackTraceElement) leftNode.stackTraceElementObj);
         }
         if (rightNode.stackTraceElementObj instanceof StackTraceElement) {
-            return leftNode.isSameStackTraceElement(
-                    (StackTraceElement) rightNode.stackTraceElementObj);
+            return leftNode
+                    .isSameStackTraceElement((StackTraceElement) rightNode.stackTraceElementObj);
         }
         // both Strings/null
         return Objects.equal(leftNode.stackTraceElementObj, rightNode.stackTraceElementObj);
@@ -329,8 +328,8 @@ public class ProfileNode implements Iterable<ProfileNode> {
     // custom serializer to avoid StackOverflowError caused by default recursive algorithm
     static class Serializer extends JsonSerializer<ProfileNode> {
         @Override
-        public void serialize(ProfileNode value, JsonGenerator gen,
-                SerializerProvider serializers) throws IOException {
+        public void serialize(ProfileNode value, JsonGenerator gen, SerializerProvider serializers)
+                throws IOException {
             new ProfileWriter(value, gen).write();
         }
     }

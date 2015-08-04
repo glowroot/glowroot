@@ -53,18 +53,16 @@ public class InstrumentationConfigTest extends WebDriverTest {
                 .isEqualTo("org.glowroot.container.Container");
         assertThat(configPage.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeAppUnderTest");
-        assertThat(configPage.getCaptureKindTransactionRadioButton().isSelected())
-                .isTrue();
-        assertThat(configPage.getTimerNameTextField().getAttribute("value"))
-                .isEqualTo("a timer");
+        assertThat(configPage.getCaptureKindTransactionRadioButton().isSelected()).isTrue();
+        assertThat(configPage.getTimerNameTextField().getAttribute("value")).isEqualTo("a timer");
         assertThat(configPage.getTraceEntryTemplateTextField().getAttribute("value"))
                 .isEqualTo("a trace entry");
         assertThat(configPage.getTransactionTypeTextField().getAttribute("value"))
                 .isEqualTo("a type");
         assertThat(configPage.getTransactionNameTemplateTextField().getAttribute("value"))
                 .isEqualTo("a trace");
-        assertThat(configPage.getSlowTraceThresholdMillisTextField()
-                .getAttribute("value")).isEqualTo("123");
+        assertThat(configPage.getSlowTraceThresholdMillisTextField().getAttribute("value"))
+                .isEqualTo("123");
     }
 
     @Test
@@ -119,12 +117,11 @@ public class InstrumentationConfigTest extends WebDriverTest {
         assertThat(configPage.getMethodNameTextField().getAttribute("value"))
                 .isEqualTo("executeAppUnderTest");
         assertThat(configPage.getCaptureKindTraceEntryRadioButton().isSelected()).isTrue();
-        assertThat(configPage.getTimerNameTextField().getAttribute("value"))
-                .isEqualTo("a timer");
+        assertThat(configPage.getTimerNameTextField().getAttribute("value")).isEqualTo("a timer");
         assertThat(configPage.getTraceEntryTemplateTextField().getAttribute("value"))
                 .isEqualTo("a trace entry");
-        assertThat(configPage.getTraceEntryStackThresholdTextField()
-                .getAttribute("value")).isEqualTo("");
+        assertThat(configPage.getTraceEntryStackThresholdTextField().getAttribute("value"))
+                .isEqualTo("");
     }
 
     @Test

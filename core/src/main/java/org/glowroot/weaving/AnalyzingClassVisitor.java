@@ -199,8 +199,8 @@ class AnalyzingClassVisitor extends ClassVisitor {
             ParseContext parseContext) {
         List<AnalyzedClass> analyzedHierarchy = Lists.newArrayList();
         for (String className : classNames) {
-            analyzedHierarchy.addAll(analyzedWorld.getAnalyzedHierarchy(className, loader,
-                    parseContext));
+            analyzedHierarchy
+                    .addAll(analyzedWorld.getAnalyzedHierarchy(className, loader, parseContext));
         }
         return analyzedHierarchy;
     }

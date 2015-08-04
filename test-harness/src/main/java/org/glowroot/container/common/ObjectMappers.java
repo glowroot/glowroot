@@ -95,8 +95,8 @@ public class ObjectMappers {
         }
         for (T item : list) {
             if (item == null) {
-                throw new JsonMappingException("Null items are not allowed in array field: "
-                        + fieldName);
+                throw new JsonMappingException(
+                        "Null items are not allowed in array field: " + fieldName);
             }
         }
         return list;
@@ -111,8 +111,8 @@ public class ObjectMappers {
         }
         for (T item : list) {
             if (item == null) {
-                throw new JsonMappingException("Null items are not allowed in array field: "
-                        + fieldName);
+                throw new JsonMappingException(
+                        "Null items are not allowed in array field: " + fieldName);
             }
         }
         return list;
@@ -127,8 +127,8 @@ public class ObjectMappers {
         }
         for (Entry<K, V> entry : map.entrySet()) {
             if (entry.getValue() == null) {
-                throw new JsonMappingException("Null values are not allowed in object: "
-                        + fieldName);
+                throw new JsonMappingException(
+                        "Null values are not allowed in object: " + fieldName);
             }
         }
         return map;
@@ -185,8 +185,8 @@ public class ObjectMappers {
             if (value == null) {
                 jgen.writeNull();
             } else if (value instanceof Enum) {
-                jgen.writeString(((Enum<?>) value).name().replace('_', '-')
-                        .toLowerCase(Locale.ENGLISH));
+                jgen.writeString(
+                        ((Enum<?>) value).name().replace('_', '-').toLowerCase(Locale.ENGLISH));
             } else {
                 logger.error("unexpected value class: {}", value.getClass());
             }
@@ -207,8 +207,9 @@ public class ObjectMappers {
                     for (Object enumConstant : enumConstants) {
                         if (enumConstant instanceof Enum) {
                             Enum<?> constant = (Enum<?>) enumConstant;
-                            theEnumMap.put(constant.name().replace('_', '-')
-                                    .toLowerCase(Locale.ENGLISH), constant);
+                            theEnumMap.put(
+                                    constant.name().replace('_', '-').toLowerCase(Locale.ENGLISH),
+                                    constant);
                         } else {
                             logger.error("unexpected constant class: {}", enumConstant.getClass());
                         }

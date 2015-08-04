@@ -36,9 +36,8 @@ public class ComputeFramesClassWriterTest {
     public void beforeEachTest() {
         Supplier<List<Advice>> advisors =
                 Suppliers.<List<Advice>>ofInstance(ImmutableList.<Advice>of());
-        AnalyzedWorld analyzedWorld =
-                new AnalyzedWorld(advisors, ImmutableList.<ShimType>of(),
-                        ImmutableList.<MixinType>of(), null);
+        AnalyzedWorld analyzedWorld = new AnalyzedWorld(advisors, ImmutableList.<ShimType>of(),
+                ImmutableList.<MixinType>of(), null);
         cw = new ComputeFramesClassWriter(0, analyzedWorld, getClass().getClassLoader(), null,
                 ComputeFramesClassWriterTest.class.getName());
     }

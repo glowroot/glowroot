@@ -38,8 +38,8 @@ public abstract class ScheduledRunnable implements Runnable {
         future = scheduledExecutor.scheduleWithFixedDelay(this, initialDelay, period, unit);
     }
 
-    public void scheduleAtFixedRate(ScheduledExecutorService scheduledExecutor,
-            long initialDelay, long period, TimeUnit unit) {
+    public void scheduleAtFixedRate(ScheduledExecutorService scheduledExecutor, long initialDelay,
+            long period, TimeUnit unit) {
         if (future != null) {
             logger.error("command has already been scheduled: {}", this);
             return;

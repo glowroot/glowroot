@@ -50,8 +50,7 @@ public class Slf4jMarkerAspect {
             transactionService.setTransactionError(ErrorMessage.from(formattedMessage, throwable));
         }
         TraceEntry traceEntry = transactionService.startTraceEntry(
-                MessageSupplier.from("log {}: {}", methodName, formattedMessage),
-                timerName);
+                MessageSupplier.from("log {}: {}", methodName, formattedMessage), timerName);
         return new LogAdviceTraveler(traceEntry, formattedMessage, throwable);
     }
 
@@ -65,8 +64,7 @@ public class Slf4jMarkerAspect {
     }
 
     @Pointcut(className = "org.slf4j.Logger", methodName = "warn|error",
-            methodParameterTypes = {"org.slf4j.Marker", "java.lang.String"},
-            timerName = TIMER_NAME)
+            methodParameterTypes = {"org.slf4j.Marker", "java.lang.String"}, timerName = TIMER_NAME)
     public static class LogNoArgAdvice {
         private static final TimerName timerName =
                 transactionService.getTimerName(LogNoArgAdvice.class);
@@ -83,8 +81,7 @@ public class Slf4jMarkerAspect {
                 transactionService.setTransactionError(ErrorMessage.from(message));
             }
             return transactionService.startTraceEntry(
-                    MessageSupplier.from("log {}: {}", methodName, message),
-                    timerName);
+                    MessageSupplier.from("log {}: {}", methodName, message), timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry,
@@ -147,9 +144,9 @@ public class Slf4jMarkerAspect {
         }
     }
 
-    @Pointcut(className = "org.slf4j.Logger", methodName = "warn|error",
-            methodParameterTypes = {"org.slf4j.Marker", "java.lang.String", "java.lang.Object",
-                    "java.lang.Object"},
+    @Pointcut(className = "org.slf4j.Logger",
+            methodName = "warn|error", methodParameterTypes = {"org.slf4j.Marker",
+                    "java.lang.String", "java.lang.Object", "java.lang.Object"},
             timerName = TIMER_NAME)
     public static class LogTwoArgsAdvice {
         private static final TimerName timerName =
@@ -178,8 +175,7 @@ public class Slf4jMarkerAspect {
             methodParameterTypes = {"org.slf4j.Marker", "java.lang.String", "java.lang.Object[]"},
             timerName = TIMER_NAME)
     public static class LogAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(LogAdvice.class);
+        private static final TimerName timerName = transactionService.getTimerName(LogAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return !LoggerPlugin.inAdvice() && configService.isEnabled();

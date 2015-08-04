@@ -60,8 +60,8 @@ public class MessageTest {
     public void shouldTruncate() {
         String longString = Strings.repeat("a", 512 * 1024);
         ReadableMessage message = (ReadableMessage) Message.from("{}", longString + "a");
-        assertThat(message.getText()).isEqualTo(
-                longString + " [truncated to " + 512 * 1024 + " characters]");
+        assertThat(message.getText())
+                .isEqualTo(longString + " [truncated to " + 512 * 1024 + " characters]");
     }
 
     @Test

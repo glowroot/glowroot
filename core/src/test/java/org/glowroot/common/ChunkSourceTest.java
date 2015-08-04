@@ -39,8 +39,8 @@ public class ChunkSourceTest {
         ChunkSource eight = ChunkSource.wrap("8");
         ChunkSource nine = ChunkSource.wrap("9");
 
-        ChunkSource firstThree = ChunkSource.concat(ImmutableList.of(EmptyChunkSource.INSTANCE,
-                one, EmptyChunkSource.INSTANCE, two, three, EmptyChunkSource.INSTANCE));
+        ChunkSource firstThree = ChunkSource.concat(ImmutableList.of(EmptyChunkSource.INSTANCE, one,
+                EmptyChunkSource.INSTANCE, two, three, EmptyChunkSource.INSTANCE));
         ChunkSource secondThree = ChunkSource.concat(ImmutableList.of(EmptyChunkSource.INSTANCE,
                 EmptyChunkSource.INSTANCE, EmptyChunkSource.INSTANCE, four, five, six));
         ChunkSource lastThree = ChunkSource.concat(ImmutableList.of(seven, eight, nine));
@@ -69,8 +69,8 @@ public class ChunkSourceTest {
         ChunkSource eight = ChunkSource.wrap("8");
         ChunkSource nine = ChunkSource.wrap("9");
 
-        ChunkSource firstThree = ChunkSource.concat(ImmutableList.of(ChunkSource.wrap(""),
-                one, ChunkSource.wrap(""), two, three, ChunkSource.wrap("")));
+        ChunkSource firstThree = ChunkSource.concat(ImmutableList.of(ChunkSource.wrap(""), one,
+                ChunkSource.wrap(""), two, three, ChunkSource.wrap("")));
         ChunkSource secondThree = ChunkSource.concat(ImmutableList.of(ChunkSource.wrap(""),
                 ChunkSource.wrap(""), ChunkSource.wrap(""), four, five, six));
         ChunkSource lastThree = ChunkSource.concat(ImmutableList.of(seven, eight, nine));

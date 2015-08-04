@@ -35,8 +35,8 @@ public class ThrowableInfo {
     private final int framesInCommonWithCaused;
     private final @Nullable ThrowableInfo cause;
 
-    private ThrowableInfo(String display, List<String> stackTrace,
-            int framesInCommonWithCaused, @Nullable ThrowableInfo cause) {
+    private ThrowableInfo(String display, List<String> stackTrace, int framesInCommonWithCaused,
+            @Nullable ThrowableInfo cause) {
         this.display = display;
         this.stackTrace = ImmutableList.copyOf(stackTrace);
         this.framesInCommonWithCaused = framesInCommonWithCaused;

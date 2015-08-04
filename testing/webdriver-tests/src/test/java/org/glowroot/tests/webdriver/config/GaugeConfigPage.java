@@ -59,8 +59,8 @@ public class GaugeConfigPage {
         WebElement saveButton = withWait(xpath("//button[normalize-space()='Save changes']"));
         saveButton.click();
         // wait for save to complete
-        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
-                ExpectedConditions.elementToBeClickable(saveButton)));
+        new WebDriverWait(driver, 30)
+                .until(ExpectedConditions.not(ExpectedConditions.elementToBeClickable(saveButton)));
     }
 
     public WebElement getDeleteButton() {

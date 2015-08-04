@@ -42,9 +42,9 @@ public @interface Pointcut {
     // static initializers ("<clinit>") are not supported
     String methodName();
     // methodParameterTypes has no default since it's not obvious if default should be {} or {".."}
-    String[]methodParameterTypes();
+    String[] methodParameterTypes();
     String methodReturnType() default "";
-    MethodModifier[]methodModifiers() default {};
+    MethodModifier[] methodModifiers() default {};
     // the default is false since it costs a thread local lookup to ignore self nested calls, and
     // timers already handle self nested calls, so it is only needed for trace entries
     boolean ignoreSelfNested() default false;

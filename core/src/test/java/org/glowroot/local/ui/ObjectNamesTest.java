@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,15 +27,15 @@ public class ObjectNamesTest {
 
     @Test
     public void shouldHandleQuotes() throws Exception {
-        List<String> keyValuePairs = ObjectNames.getPropertyValues(
-                ObjectName.getInstance("Glowroot:a=x,b=y,c=\"z,z,z\""));
+        List<String> keyValuePairs = ObjectNames
+                .getPropertyValues(ObjectName.getInstance("Glowroot:a=x,b=y,c=\"z,z,z\""));
         assertThat(keyValuePairs).containsExactly("x", "y", "z,z,z");
     }
 
     @Test
     public void shouldHandleBackslashes() throws Exception {
-        List<String> keyValuePairs = ObjectNames.getPropertyValues(
-                ObjectName.getInstance("Glowroot:a=x,b=y\\y,c=\"z\\nz\\\"\""));
+        List<String> keyValuePairs = ObjectNames
+                .getPropertyValues(ObjectName.getInstance("Glowroot:a=x,b=y\\y,c=\"z\\nz\\\"\""));
         assertThat(keyValuePairs).containsExactly("x", "y\\y", "z\nz\"");
     }
 }

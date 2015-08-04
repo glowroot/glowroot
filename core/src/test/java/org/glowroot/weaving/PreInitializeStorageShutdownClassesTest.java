@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,10 +34,10 @@ public class PreInitializeStorageShutdownClassesTest {
         globalCollector.registerClass("org/h2/jdbc/JdbcConnection");
         // "call" DataSource$ShutdownHookThread.run() and CappedDatabase$ShutdownHookThread.run()
         // because class loading during jvm shutdown throws exception
-        globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
-                "org/glowroot/local/store/DataSource$ShutdownHookThread", "run", "()V"));
-        globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
-                "org/glowroot/local/store/CappedDatabase$ShutdownHookThread", "run", "()V"));
+        globalCollector.processMethodFailIfNotFound(ReferencedMethod
+                .from("org/glowroot/local/store/DataSource$ShutdownHookThread", "run", "()V"));
+        globalCollector.processMethodFailIfNotFound(ReferencedMethod
+                .from("org/glowroot/local/store/CappedDatabase$ShutdownHookThread", "run", "()V"));
         globalCollector.processOverrides();
         // these assertions just help for debugging, since it can be hard to see the differences in
         // the very large lists below in the "real" assertion
@@ -45,8 +45,7 @@ public class PreInitializeStorageShutdownClassesTest {
         globalCollectorUsedTypes.removeAll(PreInitializeStorageShutdownClasses.maybeUsedTypes());
         assertThat(Sets.difference(Sets.newHashSet(globalCollectorUsedTypes),
                 Sets.newHashSet(PreInitializeStorageShutdownClasses.usedTypes()))).isEmpty();
-        assertThat(Sets.difference(
-                Sets.newHashSet(PreInitializeStorageShutdownClasses.usedTypes()),
+        assertThat(Sets.difference(Sets.newHashSet(PreInitializeStorageShutdownClasses.usedTypes()),
                 Sets.newHashSet(globalCollectorUsedTypes))).isEmpty();
 
         // this is the real assertion

@@ -39,13 +39,14 @@ class TriggeredAlertDao {
     }
 
     void insert(String version, long endTime) throws SQLException {
-        dataSource.update("insert into triggered_alert (alert_config_version, end_time)"
-                + " values (?, ?)", version, endTime);
+        dataSource.update(
+                "insert into triggered_alert (alert_config_version, end_time) values (?, ?)",
+                version, endTime);
     }
 
     boolean exists(String version) throws SQLException {
-        return dataSource.queryForExists("select 1 from triggered_alert"
-                + " where alert_config_version = ?", version);
+        return dataSource.queryForExists(
+                "select 1 from triggered_alert where alert_config_version = ?", version);
     }
 
     void delete(String version) throws SQLException {

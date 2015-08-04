@@ -118,8 +118,8 @@ public class PreparedStatementTest {
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
         assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessage().getText()).isEqualTo(
-                "jdbc execution: update employee set name = ? ['nobody'] => 3 rows");
+        assertThat(entry.getMessage().getText())
+                .isEqualTo("jdbc execution: update employee set name = ? ['nobody'] => 3 rows");
     }
 
     @Test
@@ -138,8 +138,8 @@ public class PreparedStatementTest {
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
         assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessage().getText()).startsWith(
-                "jdbc execution: select * from employee where name like ?");
+        assertThat(entry.getMessage().getText())
+                .startsWith("jdbc execution: select * from employee where name like ?");
     }
 
     @Test
@@ -168,10 +168,10 @@ public class PreparedStatementTest {
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
         assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee where name like ? ['john%']");
-        assertThat(entry.getError().getMessage()).isEqualTo(
-                "java.sql.SQLException: An execute failure");
+        assertThat(entry.getMessage().getText())
+                .isEqualTo("jdbc execution: select * from employee where name like ? ['john%']");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.sql.SQLException: An execute failure");
     }
 
     @Test
@@ -222,8 +222,8 @@ public class PreparedStatementTest {
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
         assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee where name like ? => 1 row");
+        assertThat(entry.getMessage().getText())
+                .isEqualTo("jdbc execution: select * from employee where name like ? => 1 row");
     }
 
     @Test
@@ -392,8 +392,8 @@ public class PreparedStatementTest {
                 "jdbc execution: select * from employee where name like ? ['{}'] => 0 rows");
     }
 
-    public static class ExecutePreparedStatementAndIterateOverResults implements AppUnderTest,
-            TraceMarker {
+    public static class ExecutePreparedStatementAndIterateOverResults
+            implements AppUnderTest, TraceMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
@@ -421,8 +421,8 @@ public class PreparedStatementTest {
         }
     }
 
-    public static class ExecutePreparedStatementQueryAndIterateOverResults implements AppUnderTest,
-            TraceMarker {
+    public static class ExecutePreparedStatementQueryAndIterateOverResults
+            implements AppUnderTest, TraceMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
@@ -449,8 +449,7 @@ public class PreparedStatementTest {
         }
     }
 
-    public static class ExecutePreparedStatementUpdate implements AppUnderTest,
-            TraceMarker {
+    public static class ExecutePreparedStatementUpdate implements AppUnderTest, TraceMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
@@ -474,8 +473,8 @@ public class PreparedStatementTest {
         }
     }
 
-    public static class ExecutePreparedStatementLargeParamSetFirst implements AppUnderTest,
-            TraceMarker {
+    public static class ExecutePreparedStatementLargeParamSetFirst
+            implements AppUnderTest, TraceMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
@@ -556,8 +555,8 @@ public class PreparedStatementTest {
         }
         @Override
         public void traceMarker() throws Exception {
-            PreparedStatement preparedStatement = delegatingConnection.prepareStatement(
-                    "select * from employee where name like ?");
+            PreparedStatement preparedStatement = delegatingConnection
+                    .prepareStatement("select * from employee where name like ?");
             try {
                 preparedStatement.setString(1, "john%");
                 preparedStatement.execute();
@@ -650,8 +649,8 @@ public class PreparedStatementTest {
             }
             PreparedStatement preparedStatement =
                     connection.prepareStatement("insert into employee (name, misc) values (?, ?)");
-            PreparedStatement preparedStatement2 = connection.prepareStatement(
-                    "insert /**/ into employee (name, misc) values (?, ?)");
+            PreparedStatement preparedStatement2 = connection
+                    .prepareStatement("insert /**/ into employee (name, misc) values (?, ?)");
             try {
                 preparedStatement.setString(1, "jane");
                 preparedStatement.setBytes(2, bytes);
@@ -666,8 +665,8 @@ public class PreparedStatementTest {
         }
     }
 
-    public static class ExecutePreparedStatementWithBinaryUsingSetObject implements AppUnderTest,
-            TraceMarker {
+    public static class ExecutePreparedStatementWithBinaryUsingSetObject
+            implements AppUnderTest, TraceMarker {
         static {
             JdbcPluginProperties.setDisplayBinaryParameterAsHex(
                     "insert into employee (name, misc) values (?, ?)", 2);
@@ -690,8 +689,8 @@ public class PreparedStatementTest {
             }
             PreparedStatement preparedStatement =
                     connection.prepareStatement("insert into employee (name, misc) values (?, ?)");
-            PreparedStatement preparedStatement2 = connection.prepareStatement(
-                    "insert /**/ into employee (name, misc) values (?, ?)");
+            PreparedStatement preparedStatement2 = connection
+                    .prepareStatement("insert /**/ into employee (name, misc) values (?, ?)");
             try {
                 preparedStatement.setString(1, "jane");
                 preparedStatement.setObject(2, bytes);
@@ -706,8 +705,8 @@ public class PreparedStatementTest {
         }
     }
 
-    public static class ExecutePreparedStatementWithBinaryStream implements AppUnderTest,
-            TraceMarker {
+    public static class ExecutePreparedStatementWithBinaryStream
+            implements AppUnderTest, TraceMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
@@ -736,8 +735,8 @@ public class PreparedStatementTest {
         }
     }
 
-    public static class ExecutePreparedStatementWithCharacterStream implements AppUnderTest,
-            TraceMarker {
+    public static class ExecutePreparedStatementWithCharacterStream
+            implements AppUnderTest, TraceMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
@@ -792,8 +791,8 @@ public class PreparedStatementTest {
         }
     }
 
-    public static class ExecutePreparedStatementThatHasInternalGlowrootToken implements
-            AppUnderTest, TraceMarker {
+    public static class ExecutePreparedStatementThatHasInternalGlowrootToken
+            implements AppUnderTest, TraceMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
@@ -806,8 +805,8 @@ public class PreparedStatementTest {
         }
         @Override
         public void traceMarker() throws Exception {
-            PreparedStatement preparedStatement = connection.prepareStatement(
-                    "select * from employee where name like ?");
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement("select * from employee where name like ?");
             try {
                 preparedStatement.setString(1, "{}");
                 preparedStatement.execute();

@@ -38,9 +38,9 @@ public class TempDirs {
                 return tempDir;
             }
         }
-        throw new IOException("Failed to create directory within " + tempDirAttempts
-                + " attempts (tried " + baseName + "0 to " + baseName + (tempDirAttempts - 1)
-                + ')');
+        throw new IOException(
+                "Failed to create directory within " + tempDirAttempts + " attempts (tried "
+                        + baseName + "0 to " + baseName + (tempDirAttempts - 1) + ')');
     }
 
     public static void deleteRecursively(File file) throws IOException {

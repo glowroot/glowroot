@@ -51,8 +51,7 @@ class TimerNameCache {
             logger.warn("advice has no @Pointcut: {}", adviceClass.getName());
             return getUnknownName();
         } else if (pointcut.timerName().isEmpty()) {
-            logger.warn("advice @Pointcut has no timerName() attribute: {}",
-                    adviceClass.getName());
+            logger.warn("advice @Pointcut has no timerName() attribute: {}", adviceClass.getName());
             return getUnknownName();
         } else {
             return getName(pointcut.timerName());

@@ -59,8 +59,8 @@ public class ConnectionAndTxLifecycleTest {
     @Test
     public void testConnectionLifecycle() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureConnectionLifecycleTraceEntries", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
+                "captureConnectionLifecycleTraceEntries", true);
         // when
         container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
         // then
@@ -101,8 +101,8 @@ public class ConnectionAndTxLifecycleTest {
     @Test
     public void testConnectionLifecycleGetConnectionThrows() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureConnectionLifecycleTraceEntries", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
+                "captureConnectionLifecycleTraceEntries", true);
         // when
         container.executeAppUnderTest(ExecuteGetConnectionOnThrowingDataSource.class);
         // then
@@ -111,8 +111,8 @@ public class ConnectionAndTxLifecycleTest {
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
         assertThat(entry.getMessage().getText()).isEqualTo("jdbc get connection");
-        assertThat(entry.getError().getMessage()).isEqualTo(
-                "java.sql.SQLException: A getconnection failure");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.sql.SQLException: A getconnection failure");
     }
 
     @Test
@@ -136,16 +136,16 @@ public class ConnectionAndTxLifecycleTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getRootTimer().getNestedTimerNames()).contains("jdbc get connection");
-        assertThat(trace.getRootTimer().getNestedTimerNames()).doesNotContain(
-                "jdbc connection close");
+        assertThat(trace.getRootTimer().getNestedTimerNames())
+                .doesNotContain("jdbc connection close");
         assertThat(trace.getEntryCount()).isZero();
     }
 
     @Test
     public void testConnectionLifecycleCloseConnectionThrows() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureConnectionLifecycleTraceEntries", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
+                "captureConnectionLifecycleTraceEntries", true);
         // when
         container.executeAppUnderTest(ExecuteCloseConnectionOnThrowingDataSource.class);
         // then
@@ -156,8 +156,8 @@ public class ConnectionAndTxLifecycleTest {
         assertThat(entry1.getMessage().getText()).isEqualTo("jdbc get connection");
         TraceEntry entry2 = entries.get(1);
         assertThat(entry2.getMessage().getText()).isEqualTo("jdbc connection close");
-        assertThat(entry2.getError().getMessage()).isEqualTo(
-                "java.sql.SQLException: A close failure");
+        assertThat(entry2.getError().getMessage())
+                .isEqualTo("java.sql.SQLException: A close failure");
     }
 
     @Test
@@ -188,8 +188,8 @@ public class ConnectionAndTxLifecycleTest {
     @Test
     public void testTransactionLifecycle() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureTransactionLifecycleTraceEntries", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
+                "captureTransactionLifecycleTraceEntries", true);
         // when
         container.executeAppUnderTest(ExecuteSetAutoCommit.class);
         // then
@@ -209,8 +209,8 @@ public class ConnectionAndTxLifecycleTest {
     @Test
     public void testTransactionLifecycleThrowing() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureTransactionLifecycleTraceEntries", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
+                "captureTransactionLifecycleTraceEntries", true);
         // when
         container.executeAppUnderTest(ExecuteSetAutoCommitThrowing.class);
         // then
@@ -219,21 +219,21 @@ public class ConnectionAndTxLifecycleTest {
         assertThat(entries).hasSize(2);
         TraceEntry entry1 = entries.get(0);
         assertThat(entry1.getMessage().getText()).isEqualTo("jdbc set autocommit: false");
-        assertThat(entry1.getError().getMessage()).isEqualTo(
-                "java.sql.SQLException: A setautocommit failure");
+        assertThat(entry1.getError().getMessage())
+                .isEqualTo("java.sql.SQLException: A setautocommit failure");
         TraceEntry entry2 = entries.get(1);
         assertThat(entry2.getMessage().getText()).isEqualTo("jdbc set autocommit: true");
-        assertThat(entry2.getError().getMessage()).isEqualTo(
-                "java.sql.SQLException: A setautocommit failure");
+        assertThat(entry2.getError().getMessage())
+                .isEqualTo("java.sql.SQLException: A setautocommit failure");
     }
 
     @Test
     public void testConnectionLifecycleAndTransactionLifecycleTogether() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureConnectionLifecycleTraceEntries", true);
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureTransactionLifecycleTraceEntries", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
+                "captureConnectionLifecycleTraceEntries", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
+                "captureTransactionLifecycleTraceEntries", true);
         // when
         container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
         // then
@@ -245,8 +245,8 @@ public class ConnectionAndTxLifecycleTest {
                 .isEqualTo("jdbc get connection (autocommit: true)");
     }
 
-    public static class ExecuteGetConnectionAndConnectionClose implements AppUnderTest,
-            TraceMarker {
+    public static class ExecuteGetConnectionAndConnectionClose
+            implements AppUnderTest, TraceMarker {
         private BasicDataSource dataSource;
         @Override
         public void executeApp() throws Exception {
@@ -264,8 +264,8 @@ public class ConnectionAndTxLifecycleTest {
         }
     }
 
-    public static class ExecuteGetConnectionOnThrowingDataSource implements AppUnderTest,
-            TraceMarker {
+    public static class ExecuteGetConnectionOnThrowingDataSource
+            implements AppUnderTest, TraceMarker {
         private BasicDataSource dataSource;
         @Override
         public void executeApp() throws Exception {
@@ -288,8 +288,8 @@ public class ConnectionAndTxLifecycleTest {
         }
     }
 
-    public static class ExecuteCloseConnectionOnThrowingDataSource implements AppUnderTest,
-            TraceMarker {
+    public static class ExecuteCloseConnectionOnThrowingDataSource
+            implements AppUnderTest, TraceMarker {
         private BasicDataSource dataSource;
         @Override
         public void executeApp() throws Exception {

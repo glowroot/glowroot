@@ -373,8 +373,8 @@ public class MockHttpRequest implements HttpServletRequest {
     }
 
     @Override
-    public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException,
-            ServletException {
+    public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass)
+            throws IOException, ServletException {
         return null;
     }
 }

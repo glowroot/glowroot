@@ -22,8 +22,8 @@ import javax.annotation.Nullable;
 import org.glowroot.plugin.api.weaving.OnReturn;
 
 /**
- * See {@link TransactionService#startTraceEntry(MessageSupplier, TimerName)} for how to create and use
- * {@code TraceEntry} instances.
+ * See {@link TransactionService#startTraceEntry(MessageSupplier, TimerName)} for how to create and
+ * use {@code TraceEntry} instances.
  */
 public interface TraceEntry {
 

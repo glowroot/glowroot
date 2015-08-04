@@ -359,8 +359,7 @@ public class Slf4jTest {
         }
     }
 
-    public static class ShouldLogWithParametersAndThrowable implements AppUnderTest,
-            TraceMarker {
+    public static class ShouldLogWithParametersAndThrowable implements AppUnderTest, TraceMarker {
         private static final Logger logger =
                 LoggerFactory.getLogger(ShouldLogWithParametersAndThrowable.class);
         @Override

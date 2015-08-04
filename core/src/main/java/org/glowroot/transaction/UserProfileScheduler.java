@@ -46,8 +46,7 @@ class UserProfileScheduler {
         // schedule the first stack collection for configured interval after trace start (or
         // immediately, if trace duration already exceeds configured collection interval)
         int intervalMillis = userRecordingConfig.profileIntervalMillis();
-        ScheduledRunnable userProfileRunnable =
-                new UserProfileRunnable(transaction, configService);
+        ScheduledRunnable userProfileRunnable = new UserProfileRunnable(transaction, configService);
         long initialDelay =
                 Math.max(0, intervalMillis - NANOSECONDS.toMillis(transaction.getDuration()));
         userProfileRunnable.scheduleWithFixedDelay(scheduledExecutor, initialDelay, intervalMillis,

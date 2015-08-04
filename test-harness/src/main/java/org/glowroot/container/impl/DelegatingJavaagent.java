@@ -37,12 +37,12 @@ public class DelegatingJavaagent {
     public static void premain(String agentArgs, Instrumentation instrumentation) throws Exception {
         String delegateJavaagent = System.getProperty(DELEGATE_JAVA_AGENT_PROPERTY);
         if (delegateJavaagent == null) {
-            throw new IllegalStateException("System property '" + DELEGATE_JAVA_AGENT_PROPERTY
-                    + "' is not set");
+            throw new IllegalStateException(
+                    "System property '" + DELEGATE_JAVA_AGENT_PROPERTY + "' is not set");
         }
         Class<?> delegateClass = Class.forName(delegateJavaagent);
-        Method delegateMethod = delegateClass.getMethod("premain", String.class,
-                Instrumentation.class);
+        Method delegateMethod =
+                delegateClass.getMethod("premain", String.class, Instrumentation.class);
         delegateMethod.invoke(null, agentArgs, instrumentation);
     }
 

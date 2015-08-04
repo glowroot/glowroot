@@ -507,8 +507,8 @@ public class WeaverTest {
     @Test
     public void shouldBindPrimitiveReturn() throws Exception {
         // given
-        Misc test = newWovenObject(PrimitiveMisc.class, Misc.class,
-                BindPrimitiveReturnAdvice.class);
+        Misc test =
+                newWovenObject(PrimitiveMisc.class, Misc.class, BindPrimitiveReturnAdvice.class);
         // when
         test.execute1();
         // then
@@ -518,8 +518,8 @@ public class WeaverTest {
     @Test
     public void shouldBindAutoboxedReturn() throws Exception {
         // given
-        Misc test = newWovenObject(PrimitiveMisc.class, Misc.class,
-                BindAutoboxedReturnAdvice.class);
+        Misc test =
+                newWovenObject(PrimitiveMisc.class, Misc.class, BindAutoboxedReturnAdvice.class);
         // when
         test.execute1();
         // then
@@ -628,8 +628,8 @@ public class WeaverTest {
     @Test
     public void shouldMatchMethodParametersDotDot1() throws Exception {
         // given
-        Misc test = newWovenObject(BasicMisc.class, Misc.class,
-                MethodParametersDotDotAdvice1.class);
+        Misc test =
+                newWovenObject(BasicMisc.class, Misc.class, MethodParametersDotDotAdvice1.class);
         // when
         test.executeWithArgs("one", 2);
         // then
@@ -639,8 +639,8 @@ public class WeaverTest {
     @Test
     public void shouldNotMatchMethodParametersBadDotDot1() throws Exception {
         // given
-        Misc test = newWovenObject(BasicMisc.class, Misc.class,
-                MethodParametersBadDotDotAdvice1.class);
+        Misc test =
+                newWovenObject(BasicMisc.class, Misc.class, MethodParametersBadDotDotAdvice1.class);
         // when
         test.executeWithArgs("one", 2);
         // then
@@ -650,8 +650,8 @@ public class WeaverTest {
     @Test
     public void shouldMatchMethodParametersDotDot2() throws Exception {
         // given
-        Misc test = newWovenObject(BasicMisc.class, Misc.class,
-                MethodParametersDotDotAdvice2.class);
+        Misc test =
+                newWovenObject(BasicMisc.class, Misc.class, MethodParametersDotDotAdvice2.class);
         // when
         test.executeWithArgs("one", 2);
         // then
@@ -661,8 +661,8 @@ public class WeaverTest {
     @Test
     public void shouldMatchMethodParametersDotDot3() throws Exception {
         // given
-        Misc test = newWovenObject(BasicMisc.class, Misc.class,
-                MethodParametersDotDotAdvice3.class);
+        Misc test =
+                newWovenObject(BasicMisc.class, Misc.class, MethodParametersDotDotAdvice3.class);
         // when
         test.executeWithArgs("one", 2);
         // then
@@ -928,8 +928,8 @@ public class WeaverTest {
     @Test
     public void shouldWeaveMethodWithWildcardArgs() throws Exception {
         // given
-        Misc test = newWovenObject(PrimitiveMisc.class, Misc.class,
-                PrimitiveWithWildcardAdvice.class);
+        Misc test =
+                newWovenObject(PrimitiveMisc.class, Misc.class, PrimitiveWithWildcardAdvice.class);
         // when
         test.execute1();
         // then
@@ -966,8 +966,8 @@ public class WeaverTest {
     @Test
     public void shouldWeaveMethodWithAutoboxArgs() throws Exception {
         // given
-        Misc test = newWovenObject(PrimitiveMisc.class, Misc.class,
-                PrimitiveWithAutoboxAdvice.class);
+        Misc test =
+                newWovenObject(PrimitiveMisc.class, Misc.class, PrimitiveWithAutoboxAdvice.class);
         // when
         test.execute1();
         // then
@@ -990,8 +990,8 @@ public class WeaverTest {
     @Test
     public void shouldMatchMethodReturningCharSequence() throws Exception {
         // given
-        Misc test = newWovenObject(BasicMisc.class, Misc.class,
-                MethodReturnCharSequenceAdvice.class);
+        Misc test =
+                newWovenObject(BasicMisc.class, Misc.class, MethodReturnCharSequenceAdvice.class);
         // when
         test.executeWithReturn();
         // then
@@ -1013,8 +1013,8 @@ public class WeaverTest {
     @Test
     public void shouldNotMatchMethodBasedOnReturnType() throws Exception {
         // given
-        Misc test = newWovenObject(BasicMisc.class, Misc.class,
-                NonMatchingMethodReturnAdvice.class);
+        Misc test =
+                newWovenObject(BasicMisc.class, Misc.class, NonMatchingMethodReturnAdvice.class);
         // when
         test.execute1();
         // then
@@ -1025,8 +1025,8 @@ public class WeaverTest {
     @Test
     public void shouldNotMatchMethodBasedOnReturnType2() throws Exception {
         // given
-        Misc test = newWovenObject(BasicMisc.class, Misc.class,
-                NonMatchingMethodReturnAdvice2.class);
+        Misc test =
+                newWovenObject(BasicMisc.class, Misc.class, NonMatchingMethodReturnAdvice2.class);
         // when
         test.executeWithReturn();
         // then
@@ -1058,8 +1058,8 @@ public class WeaverTest {
     @Test
     public void shouldVerifyConstructorPointcutsAreNotNested() throws Exception {
         // given
-        Misc test = newWovenObject(BasicMisc.class, Misc.class,
-                BasicMiscAllConstructorAdvice.class);
+        Misc test =
+                newWovenObject(BasicMisc.class, Misc.class, BasicMiscAllConstructorAdvice.class);
         // reset thread locals after instantiated BasicMisc, to avoid counting that constructor call
         SomeAspectThreadLocals.resetThreadLocals();
         // when
@@ -1129,8 +1129,8 @@ public class WeaverTest {
     @Test
     public void shouldHandleSubInheritedFromClassInBootstrapClassLoader() throws Exception {
         // given
-        Exception test = newWovenObject(SubException.class, Exception.class,
-                ThrowableToStringAdvice.class);
+        Exception test =
+                newWovenObject(SubException.class, Exception.class, ThrowableToStringAdvice.class);
         // when
         test.toString();
         // then
@@ -1227,8 +1227,8 @@ public class WeaverTest {
     @Test
     public void shouldPayAttentionToPublicAndNonStaticModifierMatching() throws Exception {
         // given
-        Misc test = newWovenObject(BasicMisc.class, Misc.class,
-                MatchingPublicNonStaticAdvice.class);
+        Misc test =
+                newWovenObject(BasicMisc.class, Misc.class, MatchingPublicNonStaticAdvice.class);
         // when
         test.execute1();
         // then
@@ -1367,8 +1367,8 @@ public class WeaverTest {
 
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         if (adviceOrShimOrMixinClass.isAnnotationPresent(Pointcut.class)) {
-            loader.setAdvisors(ImmutableList.of(
-                    new AdviceBuilder(adviceOrShimOrMixinClass, false).build()));
+            loader.setAdvisors(
+                    ImmutableList.of(new AdviceBuilder(adviceOrShimOrMixinClass, false).build()));
         }
         Mixin mixin = adviceOrShimOrMixinClass.getAnnotation(Mixin.class);
         if (mixin != null) {

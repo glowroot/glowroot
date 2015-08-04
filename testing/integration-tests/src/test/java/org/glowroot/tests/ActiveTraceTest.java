@@ -135,8 +135,8 @@ public class ActiveTraceTest {
         return trace;
     }
 
-    public static class ShouldGenerateActiveTraceStuckOnRootTimer implements AppUnderTest,
-            TraceMarker {
+    public static class ShouldGenerateActiveTraceStuckOnRootTimer
+            implements AppUnderTest, TraceMarker {
         @Override
         public void executeApp() {
             traceMarker();
@@ -150,8 +150,8 @@ public class ActiveTraceTest {
         }
     }
 
-    public static class ShouldGenerateActiveTraceStuckOnNonRootTimer implements AppUnderTest,
-            TraceMarker {
+    public static class ShouldGenerateActiveTraceStuckOnNonRootTimer
+            implements AppUnderTest, TraceMarker {
         @Override
         public void executeApp() throws InterruptedException {
             traceMarker();

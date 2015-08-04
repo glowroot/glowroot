@@ -66,8 +66,8 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 3 rows");
+        assertThat(entry.getMessage().getText())
+                .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 
     @Test
@@ -80,8 +80,8 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 3 rows");
+        assertThat(entry.getMessage().getText())
+                .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 
     @Test
@@ -94,8 +94,8 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText()).isEqualTo(
-                "jdbc execution: update employee set name = 'nobody' => 3 rows");
+        assertThat(entry.getMessage().getText())
+                .isEqualTo("jdbc execution: update employee set name = 'nobody' => 3 rows");
     }
 
     @Test
@@ -118,10 +118,10 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee");
-        assertThat(entry.getError().getMessage()).isEqualTo(
-                "java.sql.SQLException: An execute failure");
+        assertThat(entry.getMessage().getText())
+                .isEqualTo("jdbc execution: select * from employee");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.sql.SQLException: An execute failure");
     }
 
     @Test
@@ -134,8 +134,8 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 3 rows");
+        assertThat(entry.getMessage().getText())
+                .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 
     @Test
@@ -148,8 +148,8 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 3 rows");
+        assertThat(entry.getMessage().getText())
+                .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 
     @Test
@@ -162,8 +162,8 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 3 rows");
+        assertThat(entry.getMessage().getText())
+                .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 
     @Test
@@ -176,8 +176,8 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 2 rows");
+        assertThat(entry.getMessage().getText())
+                .isEqualTo("jdbc execution: select * from employee => 2 rows");
     }
 
     @Test
@@ -190,8 +190,8 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 1 row");
+        assertThat(entry.getMessage().getText())
+                .isEqualTo("jdbc execution: select * from employee => 1 row");
     }
 
     @Test
@@ -204,8 +204,8 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 3 rows");
+        assertThat(entry.getMessage().getText())
+                .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 
     public static class ExecuteStatementAndIterateOverResults implements AppUnderTest, TraceMarker {
@@ -234,8 +234,8 @@ public class StatementTest {
         }
     }
 
-    public static class ExecuteStatementQueryAndIterateOverResults implements AppUnderTest,
-            TraceMarker {
+    public static class ExecuteStatementQueryAndIterateOverResults
+            implements AppUnderTest, TraceMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
@@ -408,8 +408,8 @@ public class StatementTest {
         }
     }
 
-    public static class ExecuteStatementAndUseRelativeBackward implements AppUnderTest,
-            TraceMarker {
+    public static class ExecuteStatementAndUseRelativeBackward
+            implements AppUnderTest, TraceMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {

@@ -52,16 +52,16 @@ public class ThreadAllocatedBytes {
             return OptionalService.unavailable("Cannot find class com.sun.management.ThreadMXBean"
                     + " (introduced in Oracle Java SE 6u25)");
         }
-        Method isSupportedMethod = Reflections.getMethod(sunThreadMXBeanClass,
-                "isThreadAllocatedMemorySupported");
+        Method isSupportedMethod =
+                Reflections.getMethod(sunThreadMXBeanClass, "isThreadAllocatedMemorySupported");
         Boolean supported = (Boolean) Reflections.invoke(isSupportedMethod,
                 ManagementFactory.getThreadMXBean());
         return createInternal(supported, sunThreadMXBeanClass);
     }
 
     @VisibleForTesting
-    static OptionalService<ThreadAllocatedBytes> createInternal(
-            @Nullable Boolean supported, Class<?> sunThreadMXBeanClass) throws Exception {
+    static OptionalService<ThreadAllocatedBytes> createInternal(@Nullable Boolean supported,
+            Class<?> sunThreadMXBeanClass) throws Exception {
         if (supported == null) {
             return OptionalService.unavailable(
                     "ThreadMXBean.isThreadAllocatedMemorySupported() unexpectedly returned null");
@@ -70,8 +70,8 @@ public class ThreadAllocatedBytes {
             return OptionalService.unavailable("Method com.sun.management.ThreadMXBean"
                     + ".isThreadAllocatedMemorySupported() returned false");
         }
-        Method getThreadAllocatedBytesMethod = Reflections.getMethod(sunThreadMXBeanClass,
-                "getThreadAllocatedBytes", long.class);
+        Method getThreadAllocatedBytesMethod =
+                Reflections.getMethod(sunThreadMXBeanClass, "getThreadAllocatedBytes", long.class);
         return OptionalService.available(new ThreadAllocatedBytes(getThreadAllocatedBytesMethod));
     }
 

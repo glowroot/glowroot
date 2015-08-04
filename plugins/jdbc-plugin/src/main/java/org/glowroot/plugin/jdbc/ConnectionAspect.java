@@ -163,9 +163,8 @@ public class ConnectionAspect {
         @OnBefore
         public static Object onBefore() {
             if (captureConnectionLifecycleTraceEntries.value()) {
-                return transactionService.startTraceEntry(
-                        MessageSupplier.from("jdbc connection close"),
-                        timerName);
+                return transactionService
+                        .startTraceEntry(MessageSupplier.from("jdbc connection close"), timerName);
             } else {
                 return transactionService.startTimer(timerName);
             }

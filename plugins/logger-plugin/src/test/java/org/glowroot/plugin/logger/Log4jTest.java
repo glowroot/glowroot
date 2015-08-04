@@ -93,15 +93,13 @@ public class Log4jTest {
 
         TraceEntry errorEntry = entries.get(1);
         assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_");
-        assertThat(errorEntry.getError().getMessage())
-                .isEqualTo("567");
+        assertThat(errorEntry.getError().getMessage()).isEqualTo("567");
         assertThat(errorEntry.getError().getThrowable().getStackTrace().get(0))
                 .contains("traceMarker");
 
         TraceEntry fatalEntry = entries.get(2);
         assertThat(fatalEntry.getMessage().getText()).isEqualTo("log fatal: fgh_");
-        assertThat(fatalEntry.getError().getMessage())
-                .isEqualTo("678");
+        assertThat(fatalEntry.getError().getMessage()).isEqualTo("678");
         assertThat(fatalEntry.getError().getThrowable().getStackTrace().get(0))
                 .contains("traceMarker");
     }
@@ -160,22 +158,19 @@ public class Log4jTest {
 
         TraceEntry warnEntry = entries.get(0);
         assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn: def___");
-        assertThat(warnEntry.getError().getMessage())
-                .isEqualTo("456_");
+        assertThat(warnEntry.getError().getMessage()).isEqualTo("456_");
         assertThat(warnEntry.getError().getThrowable().getStackTrace().get(0))
                 .contains("traceMarker");
 
         TraceEntry errorEntry = entries.get(1);
         assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg___");
-        assertThat(errorEntry.getError().getMessage())
-                .isEqualTo("567_");
+        assertThat(errorEntry.getError().getMessage()).isEqualTo("567_");
         assertThat(errorEntry.getError().getThrowable().getStackTrace().get(0))
                 .contains("traceMarker");
 
         TraceEntry fatalEntry = entries.get(2);
         assertThat(fatalEntry.getMessage().getText()).isEqualTo("log fatal: fgh___");
-        assertThat(fatalEntry.getError().getMessage())
-                .isEqualTo("678_");
+        assertThat(fatalEntry.getError().getMessage()).isEqualTo("678_");
         assertThat(fatalEntry.getError().getThrowable().getStackTrace().get(0))
                 .contains("traceMarker");
     }
@@ -217,22 +212,19 @@ public class Log4jTest {
 
         TraceEntry warnEntry = entries.get(0);
         assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn (localized): def____");
-        assertThat(warnEntry.getError().getMessage())
-                .isEqualTo("456__");
+        assertThat(warnEntry.getError().getMessage()).isEqualTo("456__");
         assertThat(warnEntry.getError().getThrowable().getStackTrace().get(0))
                 .contains("traceMarker");
 
         TraceEntry errorEntry = entries.get(1);
         assertThat(errorEntry.getMessage().getText()).isEqualTo("log error (localized): efg____");
-        assertThat(errorEntry.getError().getMessage())
-                .isEqualTo("567__");
+        assertThat(errorEntry.getError().getMessage()).isEqualTo("567__");
         assertThat(errorEntry.getError().getThrowable().getStackTrace().get(0))
                 .contains("traceMarker");
 
         TraceEntry fatalEntry = entries.get(2);
         assertThat(fatalEntry.getMessage().getText()).isEqualTo("log fatal (localized): fgh____");
-        assertThat(fatalEntry.getError().getMessage())
-                .isEqualTo("678__");
+        assertThat(fatalEntry.getError().getMessage()).isEqualTo("678__");
         assertThat(fatalEntry.getError().getThrowable().getStackTrace().get(0))
                 .contains("traceMarker");
     }
@@ -635,8 +627,8 @@ public class Log4jTest {
         }
     }
 
-    public static class ShouldLocalizedLogWithParametersAndNullThrowable implements AppUnderTest,
-            TraceMarker {
+    public static class ShouldLocalizedLogWithParametersAndNullThrowable
+            implements AppUnderTest, TraceMarker {
         private static final Logger logger =
                 Logger.getLogger(ShouldLocalizedLogWithParametersAndNullThrowable.class);
         @Override

@@ -277,8 +277,7 @@ public class MockPreparedStatement implements PreparedStatement {
     public void setTimestamp(int parameterIndex, Timestamp x) throws SQLException {}
 
     @Override
-    public void setAsciiStream(int parameterIndex, InputStream x, int length)
-            throws SQLException {}
+    public void setAsciiStream(int parameterIndex, InputStream x, int length) throws SQLException {}
 
     @Override
     public void setUnicodeStream(int parameterIndex, InputStream x, int length)

@@ -36,8 +36,8 @@ class PropertyValueSerializer extends JsonSerializer<PropertyValue> {
         } else if (value instanceof Double) {
             jgen.writeNumber((Double) value);
         } else {
-            throw new AssertionError("Unexpected property value type: "
-                    + value.getClass().getName());
+            throw new AssertionError(
+                    "Unexpected property value type: " + value.getClass().getName());
         }
     }
 }

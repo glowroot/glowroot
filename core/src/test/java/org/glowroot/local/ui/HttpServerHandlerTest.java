@@ -59,9 +59,9 @@ public class HttpServerHandlerTest {
     @Test
     public void shouldCreateJsonServiceExceptionResponseFromInvocationTargetException() {
         // given
-        Exception e = new InvocationTargetException(new JsonServiceException(
-                HttpResponseStatus.PRECONDITION_FAILED,
-                new IllegalStateException("An ignored message")));
+        Exception e = new InvocationTargetException(
+                new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED,
+                        new IllegalStateException("An ignored message")));
         // when
         FullHttpResponse httpResponse = HttpServerHandler.newHttpResponseFromException(e);
         // then
@@ -73,8 +73,8 @@ public class HttpServerHandlerTest {
     @Test
     public void shouldCreateJsonServiceExceptionResponseWithMessageFromInvocationTargetException() {
         // given
-        Exception e = new InvocationTargetException(new JsonServiceException(
-                HttpResponseStatus.PRECONDITION_FAILED, "A message"));
+        Exception e = new InvocationTargetException(
+                new JsonServiceException(HttpResponseStatus.PRECONDITION_FAILED, "A message"));
         // when
         FullHttpResponse httpResponse = HttpServerHandler.newHttpResponseFromException(e);
         // then

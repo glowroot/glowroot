@@ -152,9 +152,9 @@ public class AggregateCollector {
             if (pendingTransaction.captureTime() > activeIntervalCollector.getEndTime()) {
                 // flush in separate thread to avoid pending transactions from piling up quickly
                 scheduledExecutor.execute(new IntervalFlusher(activeIntervalCollector));
-                activeIntervalCollector = new AggregateIntervalCollector(
-                        pendingTransaction.captureTime(), fixedAggregateIntervalMillis,
-                        configService);
+                activeIntervalCollector =
+                        new AggregateIntervalCollector(pendingTransaction.captureTime(),
+                                fixedAggregateIntervalMillis, configService);
             }
             // the synchronized block is to ensure visibility of updates to this particular
             // activeIntervalCollector

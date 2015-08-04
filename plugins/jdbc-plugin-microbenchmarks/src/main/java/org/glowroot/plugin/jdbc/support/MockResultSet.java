@@ -731,8 +731,7 @@ public class MockResultSet implements ResultSet {
             throws SQLException {}
 
     @Override
-    public void updateCharacterStream(int columnIndex, Reader x, long length)
-            throws SQLException {}
+    public void updateCharacterStream(int columnIndex, Reader x, long length) throws SQLException {}
 
     @Override
     public void updateAsciiStream(String columnLabel, InputStream x, long length)

@@ -137,8 +137,8 @@ class InstrumentationJsonService {
     @GET("/backend/config/matching-class-names")
     String getMatchingClassNames(String queryString) throws Exception {
         ClassNamesRequest request = QueryStrings.decode(queryString, ClassNamesRequest.class);
-        List<String> matchingClassNames = getClasspathCache().getMatchingClassNames(
-                request.partialClassName(), request.limit());
+        List<String> matchingClassNames = getClasspathCache()
+                .getMatchingClassNames(request.partialClassName(), request.limit());
         return mapper.writeValueAsString(matchingClassNames);
     }
 
@@ -197,8 +197,8 @@ class InstrumentationJsonService {
     }
 
     // returns the first <limit> matching method names, ordered alphabetically (case-insensitive)
-    private ImmutableList<String> getMatchingMethodNames(String className,
-            String partialMethodName, int limit) {
+    private ImmutableList<String> getMatchingMethodNames(String className, String partialMethodName,
+            int limit) {
         String partialMethodNameUpper = partialMethodName.toUpperCase(Locale.ENGLISH);
         Set<String> methodNames = Sets.newHashSet();
         for (UiAnalyzedMethod analyzedMethod : getClasspathCache().getAnalyzedMethods(className)) {

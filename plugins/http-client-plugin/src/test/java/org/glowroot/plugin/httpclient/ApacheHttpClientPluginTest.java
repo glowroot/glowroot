@@ -61,8 +61,8 @@ public class ApacheHttpClientPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText()).isEqualTo(
-                "http client request: GET http://www.example.com/hello1");
+        assertThat(entries.get(0).getMessage().getText())
+                .isEqualTo("http client request: GET http://www.example.com/hello1");
     }
 
     @Test
@@ -71,8 +71,8 @@ public class ApacheHttpClientPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText()).isEqualTo(
-                "http client request: GET http://www.example.com/hello2");
+        assertThat(entries.get(0).getMessage().getText())
+                .isEqualTo("http client request: GET http://www.example.com/hello2");
     }
 
     @Test
@@ -81,8 +81,8 @@ public class ApacheHttpClientPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText()).isEqualTo(
-                "http client request: POST http://www.example.com/hello3");
+        assertThat(entries.get(0).getMessage().getText())
+                .isEqualTo("http client request: POST http://www.example.com/hello3");
     }
 
     @Test
@@ -91,8 +91,8 @@ public class ApacheHttpClientPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText()).isEqualTo(
-                "http client request: POST http://www.example.com/hello4");
+        assertThat(entries.get(0).getMessage().getText())
+                .isEqualTo("http client request: POST http://www.example.com/hello4");
     }
 
     public static class ExecuteHttpGet implements AppUnderTest, TraceMarker {

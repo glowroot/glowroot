@@ -51,8 +51,8 @@ public class HttpServicesTest {
     @Test
     public void shouldNotLogBrowserDisconnectMessageException() {
         // given
-        Exception e = new IOException(
-                "An existing connection was forcibly closed by the remote host");
+        Exception e =
+                new IOException("An existing connection was forcibly closed by the remote host");
         // when
         assertThat(HttpServices.shouldLogException(e)).isFalse();
     }

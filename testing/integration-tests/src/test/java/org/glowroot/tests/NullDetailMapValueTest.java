@@ -61,9 +61,9 @@ public class NullDetailMapValueTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getHeadline()).isEqualTo("Level One");
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
-        assertThat(trace.getCustomDetail()).isEqualTo(mapOf("arg1", "a", "arg2", null,
-                "nested1", mapOf("nestedkey11", "a", "nestedkey12", null,
-                        "subnested1", mapOf("subnestedkey1", "a", "subnestedkey2", null)),
+        assertThat(trace.getCustomDetail()).isEqualTo(mapOf("arg1", "a", "arg2", null, "nested1",
+                mapOf("nestedkey11", "a", "nestedkey12", null, "subnested1",
+                        mapOf("subnestedkey1", "a", "subnestedkey2", null)),
                 "nested2", mapOf("nestedkey21", "a", "nestedkey22", null)));
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(3);

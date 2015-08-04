@@ -44,8 +44,7 @@ public class Log4jAspect {
     @Pointcut(className = "org.apache.log4j.Category", methodName = "warn|error|fatal",
             methodParameterTypes = {"java.lang.Object"}, timerName = TIMER_NAME)
     public static class LogAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(LogAdvice.class);
+        private static final TimerName timerName = transactionService.getTimerName(LogAdvice.class);
         @IsEnabled
         @SuppressWarnings("unboxing.of.nullable")
         public static boolean isEnabled() {
@@ -83,8 +82,7 @@ public class Log4jAspect {
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter @Nullable Object message,
-                @BindParameter @Nullable Throwable t,
-                @BindMethodName String methodName) {
+                @BindParameter @Nullable Throwable t, @BindMethodName String methodName) {
             LoggerPlugin.inAdvice(true);
             String messageText = String.valueOf(message);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), t != null)) {
@@ -95,8 +93,7 @@ public class Log4jAspect {
         }
         @OnAfter
         public static void onAfter(@BindParameter @Nullable Object message,
-                @BindParameter @Nullable Throwable t,
-                @BindTraveler TraceEntry traceEntry) {
+                @BindParameter @Nullable Throwable t, @BindTraveler TraceEntry traceEntry) {
             LoggerPlugin.inAdvice(false);
             if (t == null) {
                 traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
@@ -167,8 +164,7 @@ public class Log4jAspect {
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter Object priority,
-                @BindParameter @Nullable Object message,
-                @BindParameter @Nullable Throwable t) {
+                @BindParameter @Nullable Object message, @BindParameter @Nullable Throwable t) {
             LoggerPlugin.inAdvice(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             String messageText = String.valueOf(message);
@@ -179,8 +175,7 @@ public class Log4jAspect {
                     MessageSupplier.from("log {}: {}", level, messageText), timerName);
         }
         @OnAfter
-        public static void onAfter(
-                @SuppressWarnings("unused") @BindParameter Object priority,
+        public static void onAfter(@SuppressWarnings("unused") @BindParameter Object priority,
                 @BindParameter @Nullable Object message, @BindParameter @Nullable Throwable t,
                 @BindTraveler TraceEntry traceEntry) {
             LoggerPlugin.inAdvice(false);
@@ -214,8 +209,7 @@ public class Log4jAspect {
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter Object priority,
-                @BindParameter @Nullable String key,
-                @BindParameter @Nullable Throwable t) {
+                @BindParameter @Nullable String key, @BindParameter @Nullable Throwable t) {
             LoggerPlugin.inAdvice(true);
             String level = priority.toString().toLowerCase(Locale.ENGLISH);
             if (LoggerPlugin.markTraceAsError(level.equals("warn"), t != null)) {
@@ -225,8 +219,7 @@ public class Log4jAspect {
                     MessageSupplier.from("log {} (localized): {}", level, key), timerName);
         }
         @OnAfter
-        public static void onAfter(
-                @SuppressWarnings("unused") @BindParameter Object priority,
+        public static void onAfter(@SuppressWarnings("unused") @BindParameter Object priority,
                 @BindParameter @Nullable String key, @BindParameter @Nullable Throwable t,
                 @BindTraveler TraceEntry traceEntry) {
             LoggerPlugin.inAdvice(false);
@@ -238,9 +231,9 @@ public class Log4jAspect {
         }
     }
 
-    @Pointcut(className = "org.apache.log4j.Category", methodName = "l7dlog",
-            methodParameterTypes = {"org.apache.log4j.Priority", "java.lang.String",
-                    "java.lang.Object[]", "java.lang.Throwable"},
+    @Pointcut(className = "org.apache.log4j.Category",
+            methodName = "l7dlog", methodParameterTypes = {"org.apache.log4j.Priority",
+                    "java.lang.String", "java.lang.Object[]", "java.lang.Throwable"},
             timerName = TIMER_NAME)
     public static class LocalizedLogWithParametersAdvice {
         private static final TimerName timerName =
@@ -276,19 +269,15 @@ public class Log4jAspect {
                     }
                     sb.append(params[i]);
                 }
-                return transactionService.startTraceEntry(
-                        MessageSupplier.from("log {} (localized): {} [{}]", level, key,
-                                sb.toString()),
-                        timerName);
+                return transactionService.startTraceEntry(MessageSupplier
+                        .from("log {} (localized): {} [{}]", level, key, sb.toString()), timerName);
             } else {
                 return transactionService.startTraceEntry(
-                        MessageSupplier.from("log {} (localized): {}", level, key),
-                        timerName);
+                        MessageSupplier.from("log {} (localized): {}", level, key), timerName);
             }
         }
         @OnAfter
-        public static void onAfter(
-                @SuppressWarnings("unused") @BindParameter Object priority,
+        public static void onAfter(@SuppressWarnings("unused") @BindParameter Object priority,
                 @BindParameter @Nullable String key,
                 @BindParameter @Nullable Object/*@Nullable*/[] params,
                 @BindParameter @Nullable Throwable t, @BindTraveler TraceEntry traceEntry) {

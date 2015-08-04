@@ -82,9 +82,9 @@ class ErrorJsonService {
         // so that transactionCountMap.get(traceErrorPoint.captureTime()) will work
         long liveCaptureTime = clock.currentTimeMillis();
         QueryResult<ErrorMessageCount> queryResult = traceDao.readErrorMessageCounts(query);
-        List<ErrorPoint> unfilteredErrorPoints = errorCommonService.readErrorPoints(
-                query.transactionType(), query.transactionName(), query.from(), query.to(),
-                liveCaptureTime);
+        List<ErrorPoint> unfilteredErrorPoints =
+                errorCommonService.readErrorPoints(query.transactionType(), query.transactionName(),
+                        query.from(), query.to(), liveCaptureTime);
         DataSeries dataSeries = new DataSeries(null);
         Map<Long, Long[]> dataSeriesExtra = Maps.newHashMap();
         if (query.includes().isEmpty() && query.excludes().isEmpty()) {
@@ -182,8 +182,8 @@ class ErrorJsonService {
         for (ErrorPoint errorPoint : errorPoints) {
             if (lastErrorPoint == null) {
                 // first aggregate
-                dataSeriesHelper.addInitialUpslopeIfNeeded(request.from(),
-                        errorPoint.captureTime(), dataSeries);
+                dataSeriesHelper.addInitialUpslopeIfNeeded(request.from(), errorPoint.captureTime(),
+                        dataSeries);
             } else {
                 dataSeriesHelper.addGapIfNeeded(lastErrorPoint.captureTime(),
                         errorPoint.captureTime(), dataSeries);

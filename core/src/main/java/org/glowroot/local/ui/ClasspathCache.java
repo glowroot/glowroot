@@ -355,9 +355,8 @@ class ClasspathCache {
         }
     }
 
-    private static void loadClassNamesFromDirectory(File dir, String prefix,
-            File location, Multimap<String, File> newClassNameLocations)
-                    throws MalformedURLException {
+    private static void loadClassNamesFromDirectory(File dir, String prefix, File location,
+            Multimap<String, File> newClassNameLocations) throws MalformedURLException {
         File[] files = dir.listFiles();
         if (files == null) {
             return;

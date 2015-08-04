@@ -54,8 +54,8 @@ abstract class PluginCacheBase {
             List<File> pluginJars = getPluginJars(glowrootJarFile);
             builder.addAllPluginJars(pluginJars);
             for (File pluginJar : pluginJars) {
-                descriptorURLs.add(new URL("jar:" + pluginJar.toURI()
-                        + "!/META-INF/glowroot.plugin.json"));
+                descriptorURLs.add(
+                        new URL("jar:" + pluginJar.toURI() + "!/META-INF/glowroot.plugin.json"));
             }
             for (File file : getStandaloneDescriptors(glowrootJarFile)) {
                 descriptorURLs.add(file.toURI().toURL());
@@ -109,8 +109,8 @@ abstract class PluginCacheBase {
         return ImmutableList.copyOf(pluginDescriptorFiles);
     }
 
-    private static @Nullable File getPluginsDir(File glowrootJarFile) throws IOException,
-            URISyntaxException {
+    private static @Nullable File getPluginsDir(File glowrootJarFile)
+            throws IOException, URISyntaxException {
         File pluginsDir = new File(glowrootJarFile.getParentFile(), "plugins");
         if (!pluginsDir.exists()) {
             // it is ok to run without any plugins
@@ -122,8 +122,8 @@ abstract class PluginCacheBase {
     private static ImmutableList<URL> getResources(String resourceName) throws IOException {
         ClassLoader loader = PluginCache.class.getClassLoader();
         if (loader == null) {
-            return ImmutableList.copyOf(Iterators.forEnumeration(
-                    ClassLoader.getSystemResources(resourceName)));
+            return ImmutableList.copyOf(
+                    Iterators.forEnumeration(ClassLoader.getSystemResources(resourceName)));
         }
         return ImmutableList.copyOf(Iterators.forEnumeration(loader.getResources(resourceName)));
     }

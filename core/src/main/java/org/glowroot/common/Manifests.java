@@ -42,8 +42,8 @@ public class Manifests {
         if (!externalForm.startsWith("jar:")) {
             return null;
         }
-        URL manifestURL = new URL(externalForm.substring(0, externalForm.lastIndexOf('!')) +
-                "!/META-INF/MANIFEST.MF");
+        URL manifestURL = new URL(externalForm.substring(0, externalForm.lastIndexOf('!'))
+                + "!/META-INF/MANIFEST.MF");
         // Closer is used to simulate Java 7 try-with-resources
         Closer closer = Closer.create();
         InputStream manifestIn = closer.register(manifestURL.openStream());

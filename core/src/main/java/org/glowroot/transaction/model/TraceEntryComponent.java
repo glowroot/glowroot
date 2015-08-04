@@ -120,8 +120,7 @@ class TraceEntryComponent implements Iterable<TraceEntryImpl> {
         }
     }
 
-    TraceEntryImpl addEntry(long startTick, long endTick,
-            @Nullable MessageSupplier messageSupplier,
+    TraceEntryImpl addEntry(long startTick, long endTick, @Nullable MessageSupplier messageSupplier,
             @Nullable ErrorMessage errorMessage, boolean limitBypassed) {
         TraceEntryImpl entry =
                 createEntry(startTick, messageSupplier, null, 1, errorMessage, null, limitBypassed);

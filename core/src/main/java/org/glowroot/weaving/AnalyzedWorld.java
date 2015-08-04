@@ -319,8 +319,8 @@ public class AnalyzedWorld {
             }
             // comparing results of URL.toExternalForm() since using URL.equals() directly
             // performs name resolution and is a blocking operation (from the javadoc)
-            if (parentLoaderUrl != null &&
-                    parentLoaderUrl.toExternalForm().equals(url.toExternalForm())) {
+            if (parentLoaderUrl != null
+                    && parentLoaderUrl.toExternalForm().equals(url.toExternalForm())) {
                 // reuse parent loader's AnalyzedClass if available
                 // this saves time here, and reduces memory footprint of AnalyzedWorld
                 // which can be very noticeable when lots of ClassLoaders, e.g. groovy

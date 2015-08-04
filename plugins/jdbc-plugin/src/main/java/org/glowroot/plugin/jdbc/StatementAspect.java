@@ -99,9 +99,10 @@ public class StatementAspect {
 
     // ================= Parameter Binding =================
 
-    @Pointcut(className = "java.sql.PreparedStatement", methodName = "setArray|setBigDecimal"
-            + "|setBoolean|setByte|setDate|setDouble|setFloat|setInt|setLong|setNString"
-            + "|setRef|setRowId|setShort|setString|setTime|setTimestamp|setURL",
+    @Pointcut(className = "java.sql.PreparedStatement",
+            methodName = "setArray|setBigDecimal"
+                    + "|setBoolean|setByte|setDate|setDouble|setFloat|setInt|setLong|setNString"
+                    + "|setRef|setRowId|setShort|setString|setTime|setTimestamp|setURL",
             methodParameterTypes = {"int", "*", ".."})
     public static class SetXAdvice {
         @IsEnabled
@@ -119,9 +120,9 @@ public class StatementAspect {
         }
     }
 
-    @Pointcut(className = "java.sql.PreparedStatement", methodName = "setAsciiStream"
-            + "|setBinaryStream|setBlob|setCharacterStream|setClob|setNCharacterStream|setNClob"
-            + "|setSQLXML|setUnicodeStream",
+    @Pointcut(className = "java.sql.PreparedStatement",
+            methodName = "setAsciiStream|setBinaryStream|setBlob|setCharacterStream|setClob"
+                    + "|setNCharacterStream|setNClob|setSQLXML|setUnicodeStream",
             methodParameterTypes = {"int", "*", ".."})
     public static class SetStreamAdvice {
         @IsEnabled
@@ -165,8 +166,8 @@ public class StatementAspect {
             }
         }
         private static void setBytes(PreparedStatementMirror mirror, int parameterIndex, byte[] x) {
-            boolean displayAsHex = JdbcPluginProperties.displayBinaryParameterAsHex(
-                    mirror.getSql(), parameterIndex);
+            boolean displayAsHex = JdbcPluginProperties.displayBinaryParameterAsHex(mirror.getSql(),
+                    parameterIndex);
             mirror.setParameterValue(parameterIndex, new ByteArrayParameterValue(x, displayAsHex));
         }
     }
@@ -302,9 +303,8 @@ public class StatementAspect {
             }
             if (configService.isEnabled()) {
                 MessageSupplier messageSupplier = new StatementMessageSupplier(sql);
-                QueryEntry query =
-                        transactionService.startQueryEntry(QUERY_TYPE, sql, messageSupplier,
-                                timerName);
+                QueryEntry query = transactionService.startQueryEntry(QUERY_TYPE, sql,
+                        messageSupplier, timerName);
                 mirror.setLastQuery(query);
                 return query;
             } else {
@@ -582,12 +582,11 @@ public class StatementAspect {
                     messageSupplier = new BatchPreparedStatementMessageSupplier(queryText,
                             mirror.getBatchedParameters());
                 } else {
-                    messageSupplier = new BatchPreparedStatementMessageSupplier2(queryText,
-                            batchSize);
+                    messageSupplier =
+                            new BatchPreparedStatementMessageSupplier2(queryText, batchSize);
                 }
-                QueryEntry queryEntry =
-                        transactionService.startQueryEntry(QUERY_TYPE, queryText, batchSize,
-                                messageSupplier, timerName);
+                QueryEntry queryEntry = transactionService.startQueryEntry(QUERY_TYPE, queryText,
+                        batchSize, messageSupplier, timerName);
                 mirror.setLastQuery(queryEntry);
                 mirror.clearBatch();
                 return queryEntry;
@@ -602,9 +601,8 @@ public class StatementAspect {
             if (configService.isEnabled()) {
                 MessageSupplier messageSupplier =
                         new BatchStatementMessageSupplier(mirror.getBatchedSql());
-                QueryEntry queryEntry =
-                        transactionService.startQueryEntry(QUERY_TYPE, "<batch sql>",
-                                messageSupplier, timerName);
+                QueryEntry queryEntry = transactionService.startQueryEntry(QUERY_TYPE,
+                        "<batch sql>", messageSupplier, timerName);
                 mirror.setLastQuery(queryEntry);
                 mirror.clearBatch();
                 return queryEntry;
@@ -646,8 +644,7 @@ public class StatementAspect {
             return statement.glowroot$hasStatementMirror() && configService.isEnabled();
         }
         @OnBefore
-        public static @Nullable Timer onBefore(
-                @BindReceiver HasStatementMirror statement) {
+        public static @Nullable Timer onBefore(@BindReceiver HasStatementMirror statement) {
             StatementMirror mirror = statement.glowroot$getStatementMirror();
             if (mirror != null) {
                 // this should always be true since just checked hasGlowrootStatementMirror() above

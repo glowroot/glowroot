@@ -75,8 +75,8 @@ public class JdbcPluginTest {
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
-        assertThat(query.getQueryText()).isEqualTo(
-                "insert into employee (name, misc) values (?, ?)");
+        assertThat(query.getQueryText())
+                .isEqualTo("insert into employee (name, misc) values (?, ?)");
         assertThat(query.getExecutionCount()).isEqualTo(1);
         assertThat(query.getTotalRows()).isEqualTo(0);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
@@ -182,8 +182,8 @@ public class JdbcPluginTest {
     @Test
     public void testWithoutResultSetNavigateTimerUnderSeparateTraceEntry() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureResultSetNavigate", false);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResultSetNavigate",
+                false);
         // when
         container.executeAppUnderTest(IterateOverResultsUnderSeparateTraceEntry.class);
         // then
@@ -230,8 +230,8 @@ public class JdbcPluginTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry jdbcEntry = entries.get(0);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 3 rows");
+        assertThat(jdbcEntry.getMessage().getText())
+                .isEqualTo("jdbc execution: select * from employee => 3 rows");
         assertThat(jdbcEntry.getStackTrace()).isNull();
     }
 
@@ -246,16 +246,16 @@ public class JdbcPluginTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry jdbcEntry = entries.get(0);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 3 rows");
+        assertThat(jdbcEntry.getMessage().getText())
+                .isEqualTo("jdbc execution: select * from employee => 3 rows");
         assertThat(jdbcEntry.getStackTrace()).isNotNull();
     }
 
     @Test
     public void testNullStackTraceThreshold() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "stackTraceThresholdMillis", null);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "stackTraceThresholdMillis",
+                null);
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
@@ -263,8 +263,8 @@ public class JdbcPluginTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry jdbcEntry = entries.get(0);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
-                "jdbc execution: select * from employee => 3 rows");
+        assertThat(jdbcEntry.getMessage().getText())
+                .isEqualTo("jdbc execution: select * from employee => 3 rows");
         assertThat(jdbcEntry.getStackTrace()).isNull();
     }
 
@@ -342,8 +342,8 @@ public class JdbcPluginTest {
         }
     }
 
-    public static class ExecuteLotsOfStatementAndIterateOverResults implements AppUnderTest,
-            TraceMarker {
+    public static class ExecuteLotsOfStatementAndIterateOverResults
+            implements AppUnderTest, TraceMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
@@ -371,8 +371,8 @@ public class JdbcPluginTest {
         }
     }
 
-    public static class IterateOverResultsUnderSeparateTraceEntry implements AppUnderTest,
-            TraceMarker, TraceEntryMarker {
+    public static class IterateOverResultsUnderSeparateTraceEntry
+            implements AppUnderTest, TraceMarker, TraceEntryMarker {
         private Connection connection;
         private Statement statement;
         @Override
@@ -403,8 +403,8 @@ public class JdbcPluginTest {
         }
     }
 
-    public static class GetResultSetValueUnderSeparateTraceEntry implements AppUnderTest,
-            TraceMarker, TraceEntryMarker {
+    public static class GetResultSetValueUnderSeparateTraceEntry
+            implements AppUnderTest, TraceMarker, TraceEntryMarker {
         private Connection connection;
         private ResultSet rs;
         @Override
@@ -435,8 +435,8 @@ public class JdbcPluginTest {
         }
     }
 
-    public static class ExecuteStatementAndIterateOverResultsUsingColumnName implements
-            AppUnderTest, TraceMarker {
+    public static class ExecuteStatementAndIterateOverResultsUsingColumnName
+            implements AppUnderTest, TraceMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
@@ -537,8 +537,8 @@ public class JdbcPluginTest {
         }
     }
 
-    public static class ExecuteStatementDisableReEnableMidIterating implements AppUnderTest,
-            TraceMarker {
+    public static class ExecuteStatementDisableReEnableMidIterating
+            implements AppUnderTest, TraceMarker {
         private static final AppUnderTestServices services = AppUnderTestServices.get();
         private Connection connection;
         @Override

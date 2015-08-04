@@ -111,8 +111,8 @@ public class ConfigTest extends WebDriverTest {
         app.open();
         globalNavbar.getConfigurationLink().click();
         // user recording config is not accessible via config sidebar currently
-        String userRecordingUrl = driver.getCurrentUrl().replace("/config/transaction",
-                "/config/user-recording");
+        String userRecordingUrl =
+                driver.getCurrentUrl().replace("/config/transaction", "/config/user-recording");
         driver.navigate().to(userRecordingUrl);
 
         // when

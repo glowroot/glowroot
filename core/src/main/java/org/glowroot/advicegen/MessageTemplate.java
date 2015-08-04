@@ -84,8 +84,8 @@ public class MessageTemplate {
                     allParts.add(part);
                     argPathParts.add(part);
                 } else {
-                    allParts.add(new ConstantPart("<requested arg index out of bounds: "
-                            + argNumber + ">"));
+                    allParts.add(new ConstantPart(
+                            "<requested arg index out of bounds: " + argNumber + ">"));
                 }
             } else if (base.equals("_")) {
                 ValuePathPart part = new ValuePathPart(PartType.RETURN_PATH, returnType, remaining);

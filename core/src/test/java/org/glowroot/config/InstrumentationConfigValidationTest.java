@@ -48,13 +48,11 @@ public class InstrumentationConfigValidationTest {
     @Test
     public void testInvalidClassNameAndMethodName() {
         // given
-        InstrumentationConfig config = baseConfig
-                .withClassName("")
-                .withMethodName("");
+        InstrumentationConfig config = baseConfig.withClassName("").withMethodName("");
         // when
         // then
-        assertThat(config.validationErrors())
-                .containsExactly("className is empty", "methodName is empty");
+        assertThat(config.validationErrors()).containsExactly("className is empty",
+                "methodName is empty");
     }
 
     @Test
@@ -79,9 +77,8 @@ public class InstrumentationConfigValidationTest {
     @Test
     public void testValidEmptyTimerName() {
         // given
-        InstrumentationConfig config = baseConfig
-                .withCaptureKind(CaptureKind.OTHER)
-                .withTimerName("");
+        InstrumentationConfig config =
+                baseConfig.withCaptureKind(CaptureKind.OTHER).withTimerName("");
         // when
         // then
         assertThat(config.validationErrors()).isEmpty();
@@ -102,7 +99,7 @@ public class InstrumentationConfigValidationTest {
         InstrumentationConfig config = baseConfig.withCaptureKind(CaptureKind.TRANSACTION);
         // when
         // then
-        assertThat(config.validationErrors())
-                .containsExactly("transactionType is empty", "transactionNameTemplate is empty");
+        assertThat(config.validationErrors()).containsExactly("transactionType is empty",
+                "transactionNameTemplate is empty");
     }
 }

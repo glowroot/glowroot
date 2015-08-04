@@ -139,8 +139,9 @@ class ErrorCommonService {
         long currErrorCount = 0;
         long currTransactionCount = 0;
         for (ErrorPoint errorPoint : orderedNonRolledUpErrorPoints) {
-            long rollupTime = (long) Math.ceil(errorPoint.captureTime()
-                    / (double) fixedIntervalMillis) * fixedIntervalMillis;
+            long rollupTime =
+                    (long) Math.ceil(errorPoint.captureTime() / (double) fixedIntervalMillis)
+                            * fixedIntervalMillis;
             if (rollupTime != currRollupTime && currTransactionCount != 0) {
                 rolledUpErrorPoints.add(ErrorPoint.of(Math.min(currRollupTime, liveCaptureTime),
                         currErrorCount, currTransactionCount));
@@ -194,8 +195,8 @@ class ErrorCommonService {
         return errorPoints;
     }
 
-    private static ErrorSummary combineErrorSummaries(
-            @Nullable String transactionName, ErrorSummary summary1, ErrorSummary summary2) {
+    private static ErrorSummary combineErrorSummaries(@Nullable String transactionName,
+            ErrorSummary summary1, ErrorSummary summary2) {
         return ErrorSummary.builder()
                 .transactionName(transactionName)
                 .errorCount(summary1.errorCount() + summary2.errorCount())
@@ -249,11 +250,9 @@ class ErrorCommonService {
             ErrorSummarySortOrder sortOrder) {
         switch (sortOrder) {
             case ERROR_COUNT:
-                return ErrorSummary.orderingByErrorCountDesc.immutableSortedCopy(
-                        errorSummaries);
+                return ErrorSummary.orderingByErrorCountDesc.immutableSortedCopy(errorSummaries);
             case ERROR_RATE:
-                return ErrorSummary.orderingByErrorRateDesc.immutableSortedCopy(
-                        errorSummaries);
+                return ErrorSummary.orderingByErrorRateDesc.immutableSortedCopy(errorSummaries);
             default:
                 throw new AssertionError("Unexpected sort order: " + sortOrder);
         }

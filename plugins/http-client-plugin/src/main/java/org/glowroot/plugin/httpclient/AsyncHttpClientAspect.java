@@ -93,8 +93,8 @@ public class AsyncHttpClientAspect {
             // executor" in which case will be over in @OnReturn
             String method = requestInvoker.getMethod(request);
             URI originalURI = requestInvoker.getOriginalURI(request);
-            return transactionService.startTraceEntry(
-                    new RequestMessageSupplier(method, originalURI), timerName);
+            return transactionService
+                    .startTraceEntry(new RequestMessageSupplier(method, originalURI), timerName);
         }
         @OnReturn
         public static void onReturn(@BindReturn ListenableFuture future,

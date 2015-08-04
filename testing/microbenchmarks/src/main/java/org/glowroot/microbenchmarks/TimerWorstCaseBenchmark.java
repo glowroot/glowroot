@@ -50,8 +50,7 @@ public class TimerWorstCaseBenchmark {
 
     @Setup
     public void setup() {
-        TimerName timerName =
-                transactionService.getTimerName(OnlyForTheTimerName.class);
+        TimerName timerName = transactionService.getTimerName(OnlyForTheTimerName.class);
         rootTraceEntry = transactionService.startTransaction("Microbenchmark", "micro transaction",
                 MessageSupplier.from("micro transaction"), timerName);
         timerWorthy = new TimerWorthy();

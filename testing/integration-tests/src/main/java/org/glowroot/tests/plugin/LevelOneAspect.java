@@ -92,13 +92,14 @@ public class LevelOneAspect {
                         return Message.withDetail(headlineFinal, detail);
                     }
                     Optional<Object> optionalArg2 = Optional.fromNullable(arg2);
-                    Map<String, ?> detail = ImmutableMap.of("arg1", arg1, "arg2", optionalArg2,
-                            "nested1",
-                            ImmutableMap.of("nestedkey11", arg1, "nestedkey12", optionalArg2,
-                                    "subnested1", ImmutableMap.of("subnestedkey1", arg1,
-                                            "subnestedkey2", optionalArg2)),
-                            "nested2", ImmutableMap.of("nestedkey21", arg1,
-                                    "nestedkey22", optionalArg2));
+                    Map<String, ?> detail =
+                            ImmutableMap.of("arg1", arg1, "arg2", optionalArg2, "nested1",
+                                    ImmutableMap.of("nestedkey11", arg1, "nestedkey12",
+                                            optionalArg2, "subnested1",
+                                            ImmutableMap.of("subnestedkey1", arg1, "subnestedkey2",
+                                                    optionalArg2)),
+                                    "nested2", ImmutableMap.of("nestedkey21", arg1, "nestedkey22",
+                                            optionalArg2));
                     return Message.withDetail(headlineFinal, detail);
                 }
             };

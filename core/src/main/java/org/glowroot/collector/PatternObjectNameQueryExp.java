@@ -29,8 +29,8 @@ public class PatternObjectNameQueryExp implements QueryExp {
     private final Pattern pattern;
 
     public PatternObjectNameQueryExp(String text) {
-        this.pattern = Pattern.compile(AdviceBuilder.buildSimplePattern(text),
-                Pattern.CASE_INSENSITIVE);
+        this.pattern =
+                Pattern.compile(AdviceBuilder.buildSimplePattern(text), Pattern.CASE_INSENSITIVE);
     }
 
     @Override

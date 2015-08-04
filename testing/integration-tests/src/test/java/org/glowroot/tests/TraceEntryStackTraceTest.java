@@ -69,8 +69,8 @@ public class TraceEntryStackTraceTest {
         assertThat(entries).hasSize(1);
         List<String> stackTrace = entries.get(0).getStackTrace();
         assertThat(stackTrace).isNotEmpty();
-        assertThat(stackTrace.get(0)).startsWith(Pause.class.getName()
-                + ".pauseOneMillisecond(" + Pause.class.getSimpleName() + ".java:");
+        assertThat(stackTrace.get(0)).startsWith(Pause.class.getName() + ".pauseOneMillisecond("
+                + Pause.class.getSimpleName() + ".java:");
         for (String element : stackTrace) {
             assertThat(element).doesNotContain("$glowroot$");
             // assert that element contains line number (or is a native method
@@ -78,8 +78,8 @@ public class TraceEntryStackTraceTest {
         }
     }
 
-    public static class ShouldGenerateTraceWithTraceEntryStackTrace implements AppUnderTest,
-            TraceMarker {
+    public static class ShouldGenerateTraceWithTraceEntryStackTrace
+            implements AppUnderTest, TraceMarker {
         @Override
         public void executeApp() throws InterruptedException {
             traceMarker();

@@ -253,9 +253,8 @@ class WeavingClassVisitor extends ClassVisitor {
         for (MethodMetaGroup methodMetaGroup : methodMetaGroups) {
             for (Type methodMetaType : methodMetaGroup.methodMetaTypes()) {
                 String methodMetaInternalName = methodMetaType.getInternalName();
-                String methodMetaFieldName = "glowroot$method$meta$"
-                        + methodMetaGroup.uniqueNum() + '$'
-                        + methodMetaInternalName.replace('/', '$');
+                String methodMetaFieldName = "glowroot$method$meta$" + methodMetaGroup.uniqueNum()
+                        + '$' + methodMetaInternalName.replace('/', '$');
                 BootstrapMetaHolders.createMethodMetaHolder(metaHolderInternalName,
                         methodMetaFieldName, methodMetaType, type, methodMetaGroup.returnType(),
                         methodMetaGroup.parameterTypes());
@@ -278,25 +277,24 @@ class WeavingClassVisitor extends ClassVisitor {
         mv.visitLabel(l0);
         for (Type classMetaType : classMetaTypes) {
             String classMetaInternalName = classMetaType.getInternalName();
-            String classMetaFieldName = "glowroot$class$meta$"
-                    + classMetaInternalName.replace('/', '$');
-            FieldVisitor fv = cw.visitField(ACC_PUBLIC + ACC_FINAL + ACC_STATIC,
-                    classMetaFieldName, "L" + classMetaInternalName + ";", null, null);
+            String classMetaFieldName =
+                    "glowroot$class$meta$" + classMetaInternalName.replace('/', '$');
+            FieldVisitor fv = cw.visitField(ACC_PUBLIC + ACC_FINAL + ACC_STATIC, classMetaFieldName,
+                    "L" + classMetaInternalName + ";", null, null);
             fv.visitEnd();
             mv.visitTypeInsn(NEW, classMetaInternalName);
             mv.visitInsn(DUP);
             loadType(mv, type, metaHolderType);
-            mv.visitMethodInsn(INVOKESPECIAL, classMetaInternalName,
-                    "<init>", "(Ljava/lang/Class;)V", false);
+            mv.visitMethodInsn(INVOKESPECIAL, classMetaInternalName, "<init>",
+                    "(Ljava/lang/Class;)V", false);
             mv.visitFieldInsn(PUTSTATIC, metaHolderInternalName, classMetaFieldName,
                     "L" + classMetaInternalName + ";");
         }
         for (MethodMetaGroup methodMetaGroup : methodMetaGroups) {
             for (Type methodMetaType : methodMetaGroup.methodMetaTypes()) {
                 String methodMetaInternalName = methodMetaType.getInternalName();
-                String methodMetaFieldName = "glowroot$method$meta$"
-                        + methodMetaGroup.uniqueNum() + '$'
-                        + methodMetaInternalName.replace('/', '$');
+                String methodMetaFieldName = "glowroot$method$meta$" + methodMetaGroup.uniqueNum()
+                        + '$' + methodMetaInternalName.replace('/', '$');
                 FieldVisitor fv = cw.visitField(ACC_PUBLIC + ACC_FINAL + ACC_STATIC,
                         methodMetaFieldName, "L" + methodMetaInternalName + ";", null, null);
                 fv.visitEnd();
@@ -658,9 +656,9 @@ class WeavingClassVisitor extends ClassVisitor {
         for (int i = 0; i < inheritedMethod.exceptions().size(); i++) {
             exceptions[i] = ClassNames.toInternalName(inheritedMethod.exceptions().get(i));
         }
-        MethodVisitor mv = visitMethodWithAdvice(ACC_PUBLIC, inheritedMethod.name(),
-                inheritedMethod.getDesc(), inheritedMethod.signature(), exceptions,
-                matchingAdvisors);
+        MethodVisitor mv =
+                visitMethodWithAdvice(ACC_PUBLIC, inheritedMethod.name(), inheritedMethod.getDesc(),
+                        inheritedMethod.signature(), exceptions, matchingAdvisors);
         checkNotNull(mv);
         GeneratorAdapter mg = new GeneratorAdapter(mv, ACC_PUBLIC, inheritedMethod.name(),
                 inheritedMethod.getDesc());

@@ -125,8 +125,8 @@ class LayoutService {
         // add default transaction type first
         orderedTransactionTypes.add(defaultDisplayedTransactionType);
         // add the rest alphabetical
-        orderedTransactionTypes.addAll(
-                Ordering.from(String.CASE_INSENSITIVE_ORDER).sortedCopy(transactionTypes));
+        orderedTransactionTypes
+                .addAll(Ordering.from(String.CASE_INSENSITIVE_ORDER).sortedCopy(transactionTypes));
         Set<String> transactionCustomAttributes = Sets.newTreeSet();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             transactionCustomAttributes.addAll(pluginDescriptor.transactionCustomAttributes());

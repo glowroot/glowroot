@@ -107,8 +107,7 @@ class ServletPluginProperties {
     }
 
     private static ImmutableList<Pattern> buildPatternList(String propertyName) {
-        String captureRequestParametersText =
-                configService.getStringProperty(propertyName).value();
+        String captureRequestParametersText = configService.getStringProperty(propertyName).value();
         List<Pattern> captureParameters = Lists.newArrayList();
         for (String parameter : splitter.split(captureRequestParametersText)) {
             // converted to lower case for case-insensitive matching

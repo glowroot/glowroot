@@ -40,8 +40,8 @@ public class TraceCreatorTest {
         // using a 1mb thread stack size so testing with 10,000 here just to be sure
         StackTraceElement[] stackTrace = new StackTraceElement[10000];
         for (int i = 0; i < stackTrace.length; i++) {
-            stackTrace[i] = new StackTraceElement(TraceCreatorTest.class.getName(),
-                    "method" + i, TraceCreatorTest.class.getName() + ".java", 100 + 10 * i);
+            stackTrace[i] = new StackTraceElement(TraceCreatorTest.class.getName(), "method" + i,
+                    TraceCreatorTest.class.getName() + ".java", 100 + 10 * i);
         }
         profile.addToStackTree(Profile.stripSyntheticTimerMethods(Arrays.asList(stackTrace)),
                 State.RUNNABLE.name());
@@ -58,8 +58,8 @@ public class TraceCreatorTest {
         Profile profile = new Profile(false);
         StackTraceElement[] stackTrace = new StackTraceElement[10000];
         for (int i = 0; i < stackTrace.length; i++) {
-            stackTrace[i] = new StackTraceElement(TraceCreatorTest.class.getName(),
-                    "method" + i, TraceCreatorTest.class.getName() + ".java", 100 + 10 * i);
+            stackTrace[i] = new StackTraceElement(TraceCreatorTest.class.getName(), "method" + i,
+                    TraceCreatorTest.class.getName() + ".java", 100 + 10 * i);
         }
         profile.addToStackTree(Profile.stripSyntheticTimerMethods(Arrays.asList(stackTrace)),
                 State.RUNNABLE.name());

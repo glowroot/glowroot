@@ -160,8 +160,8 @@ public class ResultSetAspect {
     }
 
     @Pointcut(className = "com.datastax.driver.core.ResultSetFuture",
-            declaringClassName = "java.util.concurrent.Future",
-            methodName = "get", methodParameterTypes = {".."})
+            declaringClassName = "java.util.concurrent.Future", methodName = "get",
+            methodParameterTypes = {".."})
     public static class FutureGetAdvice {
         @OnBefore
         public static @Nullable Timer onBefore(@BindReceiver ResultSetFuture resultSetFuture) {

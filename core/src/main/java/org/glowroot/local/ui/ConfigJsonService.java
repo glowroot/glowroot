@@ -84,10 +84,10 @@ class ConfigJsonService {
 
     private volatile @MonotonicNonNull HttpServer httpServer;
 
-    ConfigJsonService(ConfigService configService,
-            List<CappedDatabase> rollupCappedDatabases, CappedDatabase traceCappedDatabase,
-            List<PluginDescriptor> pluginDescriptors, HttpSessionManager httpSessionManager,
-            TransactionModule transactionModule, MailService mailService) {
+    ConfigJsonService(ConfigService configService, List<CappedDatabase> rollupCappedDatabases,
+            CappedDatabase traceCappedDatabase, List<PluginDescriptor> pluginDescriptors,
+            HttpSessionManager httpSessionManager, TransactionModule transactionModule,
+            MailService mailService) {
         this.configService = configService;
         this.rollupCappedDatabases = rollupCappedDatabases;
         this.traceCappedDatabase = traceCappedDatabase;
@@ -354,9 +354,9 @@ class ConfigJsonService {
                 .sessionTimeoutMinutes(configDto.sessionTimeoutMinutes());
         if (configDto.currentAdminPassword().length() > 0
                 || configDto.newAdminPassword().length() > 0) {
-            AdminPasswordHelper adminPasswordHelper = new AdminPasswordHelper(
-                    configDto.currentAdminPassword(), configDto.newAdminPassword(),
-                    priorConfig.adminPasswordHash());
+            AdminPasswordHelper adminPasswordHelper =
+                    new AdminPasswordHelper(configDto.currentAdminPassword(),
+                            configDto.newAdminPassword(), priorConfig.adminPasswordHash());
             builder.adminPasswordHash(adminPasswordHelper.verifyAndGenerateNewPasswordHash());
         } else {
             builder.adminPasswordHash(priorConfig.adminPasswordHash());
@@ -397,8 +397,8 @@ class ConfigJsonService {
             builder.encryptedPassword("");
         } else if (configDto.passwordExists() && !configDto.newPassword().isEmpty()) {
             // change password
-            String newEncryptedPassword = Encryption.encrypt(configDto.newPassword(),
-                    configService.getSecretKey());
+            String newEncryptedPassword =
+                    Encryption.encrypt(configDto.newPassword(), configService.getSecretKey());
             builder.encryptedPassword(newEncryptedPassword);
         } else {
             // keep existing password
@@ -560,8 +560,8 @@ class ConfigJsonService {
                     checkState(adminPasswordEnabled());
                     break;
                 default:
-                    throw new IllegalStateException("Unexpected anonymous access: "
-                            + anonymousAccess());
+                    throw new IllegalStateException(
+                            "Unexpected anonymous access: " + anonymousAccess());
             }
         }
     }

@@ -68,8 +68,7 @@ class GaugeJsonService {
     private final ConfigService configService;
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
 
-    GaugeJsonService(ConfigService configService,
-            LazyPlatformMBeanServer lazyPlatformMBeanServer) {
+    GaugeJsonService(ConfigService configService, LazyPlatformMBeanServer lazyPlatformMBeanServer) {
         this.configService = configService;
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
     }
@@ -192,8 +191,8 @@ class GaugeJsonService {
 
     private Set<ObjectName> getObjectNames(String objectName) throws Exception {
         if (objectName.contains("*")) {
-            return lazyPlatformMBeanServer.queryNames(null, new PatternObjectNameQueryExp(
-                    objectName));
+            return lazyPlatformMBeanServer.queryNames(null,
+                    new PatternObjectNameQueryExp(objectName));
         } else {
             return ImmutableSet.of(ObjectName.getInstance(objectName));
         }
@@ -218,8 +217,8 @@ class GaugeJsonService {
         for (MBeanAttributeInfo attribute : mbeanInfo.getAttributes()) {
             if (attribute.isReadable()) {
                 try {
-                    Object value = lazyPlatformMBeanServer.getAttribute(objectName,
-                            attribute.getName());
+                    Object value =
+                            lazyPlatformMBeanServer.getAttribute(objectName, attribute.getName());
                     addNumericAttributes(attribute, value, attributeNames);
                 } catch (Exception e) {
                     // log exception at debug level
@@ -248,8 +247,8 @@ class GaugeJsonService {
             Object descriptorFieldValue = descriptor.getFieldValue("openType");
             if (descriptorFieldValue instanceof CompositeType) {
                 CompositeType compositeType = (CompositeType) descriptorFieldValue;
-                attributeNames.addAll(getCompositeTypeAttributeNames(attribute, value,
-                        compositeType));
+                attributeNames.addAll(
+                        getCompositeTypeAttributeNames(attribute, value, compositeType));
             }
         }
     }

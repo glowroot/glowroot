@@ -87,8 +87,8 @@ public class ObjectMappers {
         }
         for (T item : list) {
             if (item == null) {
-                throw new JsonMappingException("Null items are not allowed in array field: "
-                        + fieldName);
+                throw new JsonMappingException(
+                        "Null items are not allowed in array field: " + fieldName);
             }
         }
         return list;
@@ -117,8 +117,8 @@ public class ObjectMappers {
                 public Enum<?> deserialize(JsonParser jp, DeserializationContext ctxt)
                         throws IOException {
                     Class<? extends Enum> rawClass = (Class<Enum>) type.getRawClass();
-                    return Enum.valueOf(rawClass, jp.getValueAsString().replace('-', '_')
-                            .toUpperCase(Locale.ENGLISH));
+                    return Enum.valueOf(rawClass,
+                            jp.getValueAsString().replace('-', '_').toUpperCase(Locale.ENGLISH));
                 }
             };
         }

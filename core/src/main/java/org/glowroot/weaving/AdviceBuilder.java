@@ -164,9 +164,8 @@ public class AdviceBuilder {
         checkState(asmMethod.getReturnType().getSort() == Type.BOOLEAN,
                 "@IsEnabled method must return boolean");
         builder.isEnabledAdvice(asmMethod);
-        List<AdviceParameter> parameters = getAdviceParameters(
-                method.getParameterAnnotations(), method.getParameterTypes(),
-                isEnabledBindAnnotationTypes, IsEnabled.class);
+        List<AdviceParameter> parameters = getAdviceParameters(method.getParameterAnnotations(),
+                method.getParameterTypes(), isEnabledBindAnnotationTypes, IsEnabled.class);
         builder.addAllIsEnabledParameters(parameters);
         hasIsEnabledAdvice = true;
     }
@@ -177,9 +176,8 @@ public class AdviceBuilder {
                 "@Pointcut '" + adviceClass.getName() + "' has more than one @OnBefore method");
         Method onBeforeAdvice = Method.getMethod(method);
         builder.onBeforeAdvice(onBeforeAdvice);
-        List<AdviceParameter> parameters = getAdviceParameters(
-                method.getParameterAnnotations(), method.getParameterTypes(),
-                onBeforeBindAnnotationTypes, OnBefore.class);
+        List<AdviceParameter> parameters = getAdviceParameters(method.getParameterAnnotations(),
+                method.getParameterTypes(), onBeforeBindAnnotationTypes, OnBefore.class);
         builder.addAllOnBeforeParameters(parameters);
         if (onBeforeAdvice.getReturnType().getSort() != Type.VOID) {
             builder.travelerType(onBeforeAdvice.getReturnType());
@@ -191,9 +189,8 @@ public class AdviceBuilder {
             throws AdviceConstructionException {
         checkState(!hasOnReturnAdvice,
                 "@Pointcut '" + adviceClass.getName() + "' has more than one @OnReturn method");
-        List<AdviceParameter> parameters = getAdviceParameters(
-                method.getParameterAnnotations(), method.getParameterTypes(),
-                onReturnBindAnnotationTypes, OnReturn.class);
+        List<AdviceParameter> parameters = getAdviceParameters(method.getParameterAnnotations(),
+                method.getParameterTypes(), onReturnBindAnnotationTypes, OnReturn.class);
         for (int i = 1; i < parameters.size(); i++) {
             checkState(parameters.get(i).kind() != ParameterKind.RETURN,
                     "@BindReturn must be the first argument to @OnReturn");
@@ -209,9 +206,8 @@ public class AdviceBuilder {
             throws AdviceConstructionException {
         checkState(!hasOnThrowAdvice,
                 "@Pointcut '" + adviceClass.getName() + "' has more than one @OnThrow method");
-        List<AdviceParameter> parameters = getAdviceParameters(
-                method.getParameterAnnotations(), method.getParameterTypes(),
-                onThrowBindAnnotationTypes, OnThrow.class);
+        List<AdviceParameter> parameters = getAdviceParameters(method.getParameterAnnotations(),
+                method.getParameterTypes(), onThrowBindAnnotationTypes, OnThrow.class);
         for (int i = 1; i < parameters.size(); i++) {
             checkState(parameters.get(i).kind() != ParameterKind.THROWABLE,
                     "@BindThrowable must be the first argument to @OnThrow");
@@ -232,9 +228,8 @@ public class AdviceBuilder {
         checkState(asmMethod.getReturnType().getSort() == Type.VOID,
                 "@OnAfter method must return void");
         builder.onAfterAdvice(asmMethod);
-        List<AdviceParameter> parameters = getAdviceParameters(
-                method.getParameterAnnotations(), method.getParameterTypes(),
-                onAfterBindAnnotationTypes, OnAfter.class);
+        List<AdviceParameter> parameters = getAdviceParameters(method.getParameterAnnotations(),
+                method.getParameterTypes(), onAfterBindAnnotationTypes, OnAfter.class);
         builder.addAllOnAfterParameters(parameters);
         hasOnAfterAdvice = true;
     }
@@ -273,16 +268,15 @@ public class AdviceBuilder {
         return pattern.replace("\\Q\\E", "");
     }
 
-    private static List<AdviceParameter> getAdviceParameters(
-            Annotation[][] parameterAnnotations, Class<?>[] parameterTypes,
+    private static List<AdviceParameter> getAdviceParameters(Annotation[][] parameterAnnotations,
+            Class<?>[] parameterTypes,
             ImmutableList<Class<? extends Annotation>> validBindAnnotationTypes,
-            Class<? extends Annotation> adviceAnnotationType)
-                    throws AdviceConstructionException {
+            Class<? extends Annotation> adviceAnnotationType) throws AdviceConstructionException {
 
         List<AdviceParameter> parameters = Lists.newArrayList();
         for (int i = 0; i < parameterAnnotations.length; i++) {
-            Class<? extends Annotation> validBindAnnotationType = getValidBindAnnotationType(
-                    parameterAnnotations[i], validBindAnnotationTypes);
+            Class<? extends Annotation> validBindAnnotationType =
+                    getValidBindAnnotationType(parameterAnnotations[i], validBindAnnotationTypes);
             if (validBindAnnotationType == null) {
                 // no valid bind annotations found, provide a good error message
                 List<String> validBindAnnotationNames = Lists.newArrayList();
@@ -319,22 +313,24 @@ public class AdviceBuilder {
     }
 
     private static AdviceParameter getAdviceParameter(
-            Class<? extends Annotation> validBindAnnotationType,
-            Class<?> parameterType) throws AdviceConstructionException {
+            Class<? extends Annotation> validBindAnnotationType, Class<?> parameterType)
+                    throws AdviceConstructionException {
 
-        checkState(validBindAnnotationType != BindMethodName.class
-                || parameterType.isAssignableFrom(String.class),
+        checkState(
+                validBindAnnotationType != BindMethodName.class
+                        || parameterType.isAssignableFrom(String.class),
                 "@BindMethodName parameter type must be"
                         + " java.lang.String (or super type of java.lang.String)");
-        checkState(validBindAnnotationType != BindThrowable.class
-                || parameterType.isAssignableFrom(Throwable.class),
+        checkState(
+                validBindAnnotationType != BindThrowable.class
+                        || parameterType.isAssignableFrom(Throwable.class),
                 "@BindMethodName parameter type must be"
                         + " java.lang.Throwable (or super type of java.lang.Throwable)");
         ParameterKind parameterKind = parameterKindMap.get(validBindAnnotationType);
         // parameterKind should never be null since all bind annotations have a mapping in
         // parameterKindMap
-        checkNotNull(parameterKind, "Annotation not found in parameterKindMap: "
-                + validBindAnnotationType.getName());
+        checkNotNull(parameterKind,
+                "Annotation not found in parameterKindMap: " + validBindAnnotationType.getName());
         return AdviceParameter.builder()
                 .kind(parameterKind)
                 .type(Type.getType(parameterType))

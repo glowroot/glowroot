@@ -65,13 +65,12 @@ public class InstrumentationConfigEnabledPropertyTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getHeadline()).isEqualTo("Level One");
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
-        assertThat(trace.getCustomDetail()).isEqualTo(mapOf("arg1", "a", "arg2", "b",
-                "nested1", mapOf("nestedkey11", "a", "nestedkey12", "b",
-                        "subnested1", mapOf("subnestedkey1", "a", "subnestedkey2", "b")),
+        assertThat(trace.getCustomDetail()).isEqualTo(mapOf("arg1", "a", "arg2", "b", "nested1",
+                mapOf("nestedkey11", "a", "nestedkey12", "b", "subnested1",
+                        mapOf("subnestedkey1", "a", "subnestedkey2", "b")),
                 "nested2", mapOf("nestedkey21", "a", "nestedkey22", "b")));
         assertThat(trace.getRootTimer().getName()).isEqualTo("level one");
-        assertThat(trace.getRootTimer().getNestedTimerNames())
-                .containsOnly("level two");
+        assertThat(trace.getRootTimer().getNestedTimerNames()).containsOnly("level two");
         Timer levelTwoTimer = trace.getRootTimer().getNestedTimers().get(0);
         assertThat(levelTwoTimer.getNestedTimerNames()).containsOnly("level three");
         Timer levelThreeTimer = levelTwoTimer.getNestedTimers().get(0);
@@ -105,9 +104,9 @@ public class InstrumentationConfigEnabledPropertyTest {
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getHeadline()).isEqualTo("Level One");
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
-        assertThat(trace.getCustomDetail()).isEqualTo(mapOf("arg1", "a", "arg2", "b",
-                "nested1", mapOf("nestedkey11", "a", "nestedkey12", "b",
-                        "subnested1", mapOf("subnestedkey1", "a", "subnestedkey2", "b")),
+        assertThat(trace.getCustomDetail()).isEqualTo(mapOf("arg1", "a", "arg2", "b", "nested1",
+                mapOf("nestedkey11", "a", "nestedkey12", "b", "subnested1",
+                        mapOf("subnestedkey1", "a", "subnestedkey2", "b")),
                 "nested2", mapOf("nestedkey21", "a", "nestedkey22", "b")));
         assertThat(trace.getRootTimer().getName()).isEqualTo("level one");
         assertThat(trace.getRootTimer().getNestedTimerNames()).containsOnly("level two");

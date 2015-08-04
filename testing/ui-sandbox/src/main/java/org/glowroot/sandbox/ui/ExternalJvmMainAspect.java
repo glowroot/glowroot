@@ -36,9 +36,8 @@ public class ExternalJvmMainAspect {
     private static final ConfigService configService =
             Agent.getConfigService("glowroot-ui-sandbox");
 
-    @Pointcut(className = "org.glowroot.container.impl.JavaagentMain",
-            methodName = "main", methodParameterTypes = {"java.lang.String[]"},
-            timerName = "external jvm main")
+    @Pointcut(className = "org.glowroot.container.impl.JavaagentMain", methodName = "main",
+            methodParameterTypes = {"java.lang.String[]"}, timerName = "external jvm main")
     public static class MainAdvice {
 
         private static final TimerName timerName =
@@ -52,8 +51,7 @@ public class ExternalJvmMainAspect {
         @OnBefore
         public static TraceEntry onBefore() {
             return transactionService.startTransaction("Sandbox", "javaagent container main",
-                    MessageSupplier.from("org.glowroot.container.impl.JavaagentMain"
-                            + ".main()"),
+                    MessageSupplier.from("org.glowroot.container.impl.JavaagentMain.main()"),
                     timerName);
         }
 

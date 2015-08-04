@@ -67,8 +67,7 @@ public class SessionAspect {
         configService.registerConfigListener(new ConfigListener() {
             @Override
             public void onChange() {
-                Double value =
-                        configService.getDoubleProperty("stackTraceThresholdMillis").value();
+                Double value = configService.getDoubleProperty("stackTraceThresholdMillis").value();
                 stackTraceThresholdMillis = value == null ? Integer.MAX_VALUE : value.intValue();
             }
         });

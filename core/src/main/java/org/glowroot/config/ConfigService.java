@@ -213,8 +213,7 @@ public class ConfigService {
             String priorVersion) throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(config.userInterfaceConfig().version(), priorVersion);
-            Config updatedConfig =
-                    config.withUserInterfaceConfig(userInterfaceConfig);
+            Config updatedConfig = config.withUserInterfaceConfig(userInterfaceConfig);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
@@ -249,8 +248,7 @@ public class ConfigService {
             String priorVersion) throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(config.userRecordingConfig().version(), priorVersion);
-            Config updatedConfig =
-                    config.withUserRecordingConfig(userRecordingConfig);
+            Config updatedConfig = config.withUserRecordingConfig(userRecordingConfig);
             configFile.write(updatedConfig);
             config = updatedConfig;
         }
@@ -367,8 +365,7 @@ public class ConfigService {
         return gaugeConfig.version();
     }
 
-    public String updateGaugeConfig(GaugeConfig gaugeConfig, String priorVersion)
-            throws Exception {
+    public String updateGaugeConfig(GaugeConfig gaugeConfig, String priorVersion) throws Exception {
         synchronized (writeLock) {
             List<GaugeConfig> gaugeConfigs = Lists.newArrayList(config.gaugeConfigs());
             boolean found = false;
@@ -536,8 +533,7 @@ public class ConfigService {
 
     private void notifyAllPluginConfigListeners() {
         // make copy first to avoid possible ConcurrentModificationException while iterating
-        Collection<ConfigListener> listeners =
-                ImmutableList.copyOf(pluginConfigListeners.values());
+        Collection<ConfigListener> listeners = ImmutableList.copyOf(pluginConfigListeners.values());
         for (ConfigListener configListener : listeners) {
             configListener.onChange();
         }

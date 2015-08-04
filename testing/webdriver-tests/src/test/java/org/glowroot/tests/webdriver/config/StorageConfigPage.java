@@ -34,8 +34,7 @@ public class StorageConfigPage {
     }
 
     public WebElement getRollupExpirationTextField(int i) {
-        return withWait(xpath(
-                "//div[@gt-model='page.rollupExpirationDays[" + i + "]']//input"));
+        return withWait(xpath("//div[@gt-model='page.rollupExpirationDays[" + i + "]']//input"));
     }
 
     public WebElement getTraceExpirationTextField() {
@@ -43,8 +42,8 @@ public class StorageConfigPage {
     }
 
     public WebElement getRollupCappedDatabaseSizeTextField(int i) {
-        return withWait(xpath(
-                "//div[@gt-model='config.rollupCappedDatabaseSizesMb[" + i + "]']//input"));
+        return withWait(
+                xpath("//div[@gt-model='config.rollupCappedDatabaseSizesMb[" + i + "]']//input"));
     }
 
     public WebElement getTraceCappedDatabaseSizeTextField() {
@@ -55,8 +54,8 @@ public class StorageConfigPage {
         WebElement saveButton = withWait(xpath("//button[normalize-space()='Save changes']"));
         saveButton.click();
         // wait for save to complete
-        new WebDriverWait(driver, 30).until(ExpectedConditions.not(
-                ExpectedConditions.elementToBeClickable(saveButton)));
+        new WebDriverWait(driver, 30)
+                .until(ExpectedConditions.not(ExpectedConditions.elementToBeClickable(saveButton)));
     }
 
     private WebElement withWait(By by) {

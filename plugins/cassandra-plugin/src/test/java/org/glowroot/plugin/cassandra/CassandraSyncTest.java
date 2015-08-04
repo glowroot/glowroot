@@ -69,8 +69,8 @@ public class CassandraSyncTest {
         assertThat(query.getTotalRows()).isEqualTo(10);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText()).isEqualTo(
-                "cql execution: SELECT * FROM test.users => 10 rows");
+        assertThat(entries.get(0).getMessage().getText())
+                .isEqualTo("cql execution: SELECT * FROM test.users => 10 rows");
     }
 
     @Test
@@ -85,8 +85,8 @@ public class CassandraSyncTest {
         assertThat(query.getTotalRows()).isEqualTo(10);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText()).isEqualTo(
-                "cql execution: SELECT * FROM test.users => 10 rows");
+        assertThat(entries.get(0).getMessage().getText())
+                .isEqualTo("cql execution: SELECT * FROM test.users => 10 rows");
     }
 
     @Test
@@ -96,8 +96,8 @@ public class CassandraSyncTest {
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
-        assertThat(query.getQueryText()).isEqualTo(
-                "INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
+        assertThat(query.getQueryText())
+                .isEqualTo("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
         assertThat(query.getExecutionCount()).isEqualTo(1);
         assertThat(query.getTotalRows()).isEqualTo(0);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
@@ -145,8 +145,7 @@ public class CassandraSyncTest {
         }
     }
 
-    public static class IterateUsingOneAndAll implements AppUnderTest,
-            TraceMarker {
+    public static class IterateUsingOneAndAll implements AppUnderTest, TraceMarker {
 
         private Session session;
 
@@ -182,8 +181,8 @@ public class CassandraSyncTest {
         public void traceMarker() throws Exception {
             // cql comment is to avoid "re-preparing already prepared query" warning message
             // from com.datastax.driver.core.Cluster
-            PreparedStatement preparedStatement = session.prepare(
-                    "INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
+            PreparedStatement preparedStatement =
+                    session.prepare("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
             BoundStatement boundStatement = new BoundStatement(preparedStatement);
             boundStatement.bind(100, "f100", "l100");
             session.execute(boundStatement);
@@ -208,8 +207,8 @@ public class CassandraSyncTest {
                     "INSERT INTO test.users (id,  fname, lname) VALUES (100, 'f100', 'l100')"));
             batchStatement.add(new SimpleStatement(
                     "INSERT INTO test.users (id,  fname, lname) VALUES (101, 'f101', 'l101')"));
-            PreparedStatement preparedStatement = session.prepare(
-                    "INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
+            PreparedStatement preparedStatement =
+                    session.prepare("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
             for (int i = 200; i < 210; i++) {
                 BoundStatement boundStatement = new BoundStatement(preparedStatement);
                 boundStatement.bind(i, "f" + i, "l" + i);

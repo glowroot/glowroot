@@ -119,15 +119,14 @@ class TraceExportHttpService implements HttpService {
         int curr = 0;
         List<ChunkSource> chunkSources = Lists.newArrayList();
         while (matcher.find()) {
-            chunkSources.add(ChunkSource.wrap(
-                    templateContent.substring(curr, matcher.start())));
+            chunkSources.add(ChunkSource.wrap(templateContent.substring(curr, matcher.start())));
             curr = matcher.end();
             String match = matcher.group();
             if (match.equals(htmlStartTag)) {
                 // Need to add "Mark of the Web" for IE, otherwise IE won't run javascript
                 // see http://msdn.microsoft.com/en-us/library/ms537628(v=vs.85).aspx
-                chunkSources.add(ChunkSource.wrap(
-                        "<!-- saved from url=(0014)about:internet -->\r\n<html>"));
+                chunkSources.add(
+                        ChunkSource.wrap("<!-- saved from url=(0014)about:internet -->\r\n<html>"));
             } else if (match.equals(exportCssPlaceholder)) {
                 chunkSources.add(ChunkSource.wrap("<style>"));
                 chunkSources.add(asChunkSource("styles/export.css"));

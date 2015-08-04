@@ -54,24 +54,23 @@ class ImmediateTraceStoreWatcher extends ScheduledRunnable {
     protected void runInternal() {
         int immediatePartialStoreThresholdSeconds =
                 configService.getAdvancedConfig().immediatePartialStoreThresholdSeconds();
-        long immediatePartialStoreTick = ticker.read()
-                - SECONDS.toNanos(immediatePartialStoreThresholdSeconds)
-                + MILLISECONDS.toNanos(PERIOD_MILLIS);
+        long immediatePartialStoreTick =
+                ticker.read() - SECONDS.toNanos(immediatePartialStoreThresholdSeconds)
+                        + MILLISECONDS.toNanos(PERIOD_MILLIS);
         for (Transaction transaction : transactionRegistry.getTransactions()) {
             // if the transaction is within PERIOD_MILLIS from hitting the partial trace store
             // threshold and the partial trace store hasn't already been scheduled then schedule it
             if (Tickers.lessThanOrEqual(transaction.getStartTick(), immediatePartialStoreTick)
                     && transaction.getImmedateTraceStoreRunnable() == null) {
                 // schedule partial trace storage
-                long initialDelayMillis = Math.max(0,
-                        SECONDS.toMillis(immediatePartialStoreThresholdSeconds)
+                long initialDelayMillis =
+                        Math.max(0, SECONDS.toMillis(immediatePartialStoreThresholdSeconds)
                                 - NANOSECONDS.toMillis(transaction.getDuration()));
                 ScheduledRunnable immediateTraceStoreRunnable =
                         new ImmediateTraceStoreRunnable(transaction, transactionCollector);
                 // repeat at minimum every 60 seconds (in case partial store threshold is set very
                 // small)
-                long repeatingIntervalSeconds =
-                        Math.max(60, immediatePartialStoreThresholdSeconds);
+                long repeatingIntervalSeconds = Math.max(60, immediatePartialStoreThresholdSeconds);
                 immediateTraceStoreRunnable.scheduleAtFixedRate(scheduledExecutor,
                         initialDelayMillis, SECONDS.toMillis(repeatingIntervalSeconds),
                         MILLISECONDS);

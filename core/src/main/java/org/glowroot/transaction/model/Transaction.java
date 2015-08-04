@@ -146,11 +146,11 @@ public class Transaction {
         TimerImpl rootTimer = TimerImpl.createRootTimer(this, (TimerNameImpl) timerName);
         this.rootTimer = rootTimer;
         rootTimer.start(startTick);
-        traceEntryComponent = new TraceEntryComponent(messageSupplier, rootTimer, startTick,
-                ticker);
+        traceEntryComponent =
+                new TraceEntryComponent(messageSupplier, rootTimer, startTick, ticker);
         threadId = Thread.currentThread().getId();
-        threadInfoComponent = captureThreadInfo ? new ThreadInfoComponent(threadAllocatedBytes)
-                : null;
+        threadInfoComponent =
+                captureThreadInfo ? new ThreadInfoComponent(threadAllocatedBytes) : null;
         gcInfoComponent = captureGcInfo ? new GcInfoComponent() : null;
         this.maxAggregateQueriesPerQueryType = maxAggregateQueriesPerQueryType;
         this.completionCallback = completionCallback;
@@ -205,8 +205,8 @@ public class Transaction {
         if (customAttributes == null) {
             return ImmutableSetMultimap.of();
         }
-        SetMultimap<String, String> orderedCustomAttributes = TreeMultimap
-                .create(String.CASE_INSENSITIVE_ORDER, String.CASE_INSENSITIVE_ORDER);
+        SetMultimap<String, String> orderedCustomAttributes =
+                TreeMultimap.create(String.CASE_INSENSITIVE_ORDER, String.CASE_INSENSITIVE_ORDER);
         synchronized (customAttributes) {
             orderedCustomAttributes.putAll(customAttributes);
         }
@@ -377,8 +377,8 @@ public class Transaction {
             this.slowTraceThresholdMillisOverride = slowTraceThresholdMillisOverride;
         } else {
             // use the minimum threshold passed to this method
-            this.slowTraceThresholdMillisOverride = Math.min(
-                    this.slowTraceThresholdMillisOverride, slowTraceThresholdMillisOverride);
+            this.slowTraceThresholdMillisOverride = Math.min(this.slowTraceThresholdMillisOverride,
+                    slowTraceThresholdMillisOverride);
         }
     }
 

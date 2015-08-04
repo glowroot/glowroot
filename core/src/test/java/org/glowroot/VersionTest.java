@@ -67,8 +67,8 @@ public class VersionTest {
         Attributes attributes = mock(Attributes.class);
         when(manifest.getMainAttributes()).thenReturn(attributes);
         when(attributes.getValue("Implementation-Version")).thenReturn("0.1.2-SNAPSHOT");
-        when(attributes.getValue("Build-Commit")).thenReturn(
-                "0123456789abcdeabcde0123456789abcdeabcde");
+        when(attributes.getValue("Build-Commit"))
+                .thenReturn("0123456789abcdeabcde0123456789abcdeabcde");
         when(attributes.getValue("Build-Time")).thenReturn("xyz");
         // when
         String version = Version.getVersion(manifest);

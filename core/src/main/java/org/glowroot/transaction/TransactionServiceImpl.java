@@ -77,9 +77,9 @@ class TransactionServiceImpl extends TransactionService implements ConfigListene
             TransactionCollector transactionCollector, ConfigService configService,
             TimerNameCache timerNameCache, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             UserProfileScheduler userProfileScheduler, Ticker ticker, Clock clock) {
-        TransactionServiceImpl transactionServiceImpl = new TransactionServiceImpl(
-                transactionRegistry, transactionCollector, configService, timerNameCache,
-                threadAllocatedBytes, userProfileScheduler, ticker, clock);
+        TransactionServiceImpl transactionServiceImpl =
+                new TransactionServiceImpl(transactionRegistry, transactionCollector, configService,
+                        timerNameCache, threadAllocatedBytes, userProfileScheduler, ticker, clock);
         configService.addConfigListener(transactionServiceImpl);
         return transactionServiceImpl;
     }
@@ -305,8 +305,8 @@ class TransactionServiceImpl extends TransactionService implements ConfigListene
     }
 
     private QueryEntry startTraceEntryInternal(Transaction transaction,
-            MessageSupplier messageSupplier, @Nullable String queryType,
-            @Nullable String queryText, long queryExecutionCount, TimerName timerName) {
+            MessageSupplier messageSupplier, @Nullable String queryType, @Nullable String queryText,
+            long queryExecutionCount, TimerName timerName) {
         long startTick = ticker.read();
         if (transaction.getEntryCount() < maxTraceEntriesPerTransaction) {
             TimerImpl timer = startTimer(timerName, startTick, transaction);
@@ -319,8 +319,8 @@ class TransactionServiceImpl extends TransactionService implements ConfigListene
     }
 
     private QueryEntry startDummyTraceEntry(Transaction transaction, TimerName timerName,
-            MessageSupplier messageSupplier, @Nullable String queryType,
-            @Nullable String queryText, long queryExecutionCount, long startTick) {
+            MessageSupplier messageSupplier, @Nullable String queryType, @Nullable String queryText,
+            long queryExecutionCount, long startTick) {
         // the entry limit has been exceeded for this trace
         QueryData queryData = null;
         if (queryType != null && queryText != null) {
@@ -328,8 +328,8 @@ class TransactionServiceImpl extends TransactionService implements ConfigListene
         }
         transaction.addEntryLimitExceededMarkerIfNeeded();
         TimerImpl timer = startTimer(timerName, startTick, transaction);
-        return new DummyTraceEntryOrQuery(timer, startTick, transaction, messageSupplier,
-                queryData, queryExecutionCount);
+        return new DummyTraceEntryOrQuery(timer, startTick, transaction, messageSupplier, queryData,
+                queryExecutionCount);
     }
 
     private TimerImpl startTimer(TimerName timerName, long startTick, Transaction transaction) {

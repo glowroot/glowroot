@@ -189,8 +189,7 @@ public class StorageModule {
             }
             lazyPlatformMBeanServer.unregisterMBean(
                     new ObjectName("org.glowroot:type=TraceCappedDatabase"));
-            lazyPlatformMBeanServer.unregisterMBean(
-                    new ObjectName("org.glowroot:type=H2Database"));
+            lazyPlatformMBeanServer.unregisterMBean(new ObjectName("org.glowroot:type=H2Database"));
         }
         if (reaperRunnable != null) {
             reaperRunnable.cancel();

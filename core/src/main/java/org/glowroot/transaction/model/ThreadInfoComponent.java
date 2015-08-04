@@ -125,13 +125,13 @@ class ThreadInfoComponent {
         // disabled (which is different than whether or not it is supported)
         long threadBlockedTimeMillis = threadInfo.getBlockedTime();
         if (startingSnapshot.threadBlockedTimeMillis() != -1 && threadBlockedTimeMillis != -1) {
-            builder.threadBlockedTime(MILLISECONDS.toNanos(threadBlockedTimeMillis
-                    - startingSnapshot.threadBlockedTimeMillis()));
+            builder.threadBlockedTime(MILLISECONDS
+                    .toNanos(threadBlockedTimeMillis - startingSnapshot.threadBlockedTimeMillis()));
         }
         long threadWaitedTimeMillis = threadInfo.getWaitedTime();
         if (startingSnapshot.threadWaitedTimeMillis() != -1 && threadWaitedTimeMillis != -1) {
-            builder.threadWaitedTime(MILLISECONDS.toNanos(threadWaitedTimeMillis
-                    - startingSnapshot.threadWaitedTimeMillis()));
+            builder.threadWaitedTime(MILLISECONDS
+                    .toNanos(threadWaitedTimeMillis - startingSnapshot.threadWaitedTimeMillis()));
         }
     }
 
@@ -139,8 +139,7 @@ class ThreadInfoComponent {
     private void addThreadAllocatedBytes(ThreadInfoData.Builder builder) {
         long allocatedBytes = threadAllocatedBytes.getThreadAllocatedBytesSafely(threadId);
         if (startingSnapshot.threadAllocatedBytes() != -1 && allocatedBytes != -1) {
-            builder.threadAllocatedBytes(
-                    allocatedBytes - startingSnapshot.threadAllocatedBytes());
+            builder.threadAllocatedBytes(allocatedBytes - startingSnapshot.threadAllocatedBytes());
         }
     }
 

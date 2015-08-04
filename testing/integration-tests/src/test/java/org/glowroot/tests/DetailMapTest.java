@@ -62,15 +62,14 @@ public class DetailMapTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getHeadline()).isEqualTo("Level One");
-        assertThat(trace.getCustomDetail()).isEqualTo(
-                ImmutableMap.of("arg1", "a", "arg2", "b", "nested1",
+        assertThat(trace.getCustomDetail())
+                .isEqualTo(ImmutableMap.of("arg1", "a", "arg2", "b", "nested1",
                         ImmutableMap.of("nestedkey11", "a", "nestedkey12", "b", "subnested1",
                                 ImmutableMap.of("subnestedkey1", "a", "subnestedkey2", "b")),
-                        "nested2", ImmutableMap.of("nestedkey21", "a", "nestedkey22", "b")));
+                "nested2", ImmutableMap.of("nestedkey21", "a", "nestedkey22", "b")));
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
         assertThat(trace.getRootTimer().getName()).isEqualTo("level one");
-        assertThat(trace.getRootTimer().getNestedTimerNames())
-                .containsOnly("level two");
+        assertThat(trace.getRootTimer().getNestedTimerNames()).containsOnly("level two");
         Timer levelTwoTimer = trace.getRootTimer().getNestedTimers().get(0);
         assertThat(levelTwoTimer.getNestedTimerNames()).containsOnly("level three");
         Timer levelThreeTimer = levelTwoTimer.getNestedTimers().get(0);
@@ -79,12 +78,12 @@ public class DetailMapTest {
         assertThat(entries).hasSize(3);
         TraceEntry entry1 = entries.get(0);
         assertThat(entry1.getMessage().getText()).isEqualTo("Level Two");
-        assertThat(entry1.getMessage().getDetail()).isEqualTo(
-                ImmutableMap.of("arg1", "ax", "arg2", "bx"));
+        assertThat(entry1.getMessage().getDetail())
+                .isEqualTo(ImmutableMap.of("arg1", "ax", "arg2", "bx"));
         TraceEntry entry2 = entries.get(1);
         assertThat(entry2.getMessage().getText()).isEqualTo("Level Three");
-        assertThat(entry2.getMessage().getDetail()).isEqualTo(
-                ImmutableMap.of("arg1", "axy", "arg2", "bxy"));
+        assertThat(entry2.getMessage().getDetail())
+                .isEqualTo(ImmutableMap.of("arg1", "axy", "arg2", "bxy"));
         // offset is measured in nanoseconds so there's no way this should be 0
         assertThat(entry2.getOffset()).isGreaterThan(0);
         TraceEntry entry3 = entries.get(2);
@@ -99,11 +98,11 @@ public class DetailMapTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getHeadline()).isEqualTo("Level One");
-        assertThat(trace.getCustomDetail()).isEqualTo(
-                ImmutableMap.of("arg1", false, "arg2", true, "nested1",
+        assertThat(trace.getCustomDetail())
+                .isEqualTo(ImmutableMap.of("arg1", false, "arg2", true, "nested1",
                         ImmutableMap.of("nestedkey11", false, "nestedkey12", true, "subnested1",
                                 ImmutableMap.of("subnestedkey1", false, "subnestedkey2", true)),
-                        "nested2", ImmutableMap.of("nestedkey21", false, "nestedkey22", true)));
+                "nested2", ImmutableMap.of("nestedkey21", false, "nestedkey22", true)));
     }
 
     @Test
@@ -114,11 +113,11 @@ public class DetailMapTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getHeadline()).isEqualTo("Level One");
-        assertThat(trace.getCustomDetail()).isEqualTo(
-                ImmutableMap.of("arg1", 5.0, "arg2", 5.5, "nested1",
+        assertThat(trace.getCustomDetail())
+                .isEqualTo(ImmutableMap.of("arg1", 5.0, "arg2", 5.5, "nested1",
                         ImmutableMap.of("nestedkey11", 5.0, "nestedkey12", 5.5, "subnested1",
                                 ImmutableMap.of("subnestedkey1", 5.0, "subnestedkey2", 5.5)),
-                        "nested2", ImmutableMap.of("nestedkey21", 5.0, "nestedkey22", 5.5)));
+                "nested2", ImmutableMap.of("nestedkey21", 5.0, "nestedkey22", 5.5)));
     }
 
     @Test
@@ -159,11 +158,11 @@ public class DetailMapTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getHeadline()).isEqualTo("Level One");
-        assertThat(trace.getCustomDetail()).isEqualTo(
-                ImmutableMap.of("arg1", "a", "arg2", "x", "nested1",
+        assertThat(trace.getCustomDetail())
+                .isEqualTo(ImmutableMap.of("arg1", "a", "arg2", "x", "nested1",
                         ImmutableMap.of("nestedkey11", "a", "nestedkey12", "x", "subnested1",
                                 ImmutableMap.of("subnestedkey1", "a", "subnestedkey2", "x")),
-                        "nested2", ImmutableMap.of("nestedkey21", "a", "nestedkey22", "x")));
+                "nested2", ImmutableMap.of("nestedkey21", "a", "nestedkey22", "x")));
     }
 
     @Test
@@ -202,8 +201,8 @@ public class DetailMapTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getHeadline()).isEqualTo("Level One");
-        assertThat(trace.getCustomDetail()).isEqualTo(
-                ImmutableMap.of("arg1", "useArg2AsKeyAndValue", "x", "x", "nested1",
+        assertThat(trace.getCustomDetail())
+                .isEqualTo(ImmutableMap.of("arg1", "useArg2AsKeyAndValue", "x", "x", "nested1",
                         ImmutableMap.of("nestedkey11", "useArg2AsKeyAndValue", "x", "x")));
     }
 

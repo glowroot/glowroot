@@ -215,8 +215,8 @@ public class GaugePointDao implements GaugePointRepository {
                 captureTimeFrom, captureTimeTo);
     }
 
-    public List<GaugePoint> readManuallyRolledUpGaugePoints(long from, long to,
-            String gaugeName, int rollupLevel, long liveCaptureTime) throws SQLException {
+    public List<GaugePoint> readManuallyRolledUpGaugePoints(long from, long to, String gaugeName,
+            int rollupLevel, long liveCaptureTime) throws SQLException {
         long fixedIntervalMillis;
         if (rollupLevel == 1) {
             fixedIntervalMillis = fixedIntervalMillis1;
@@ -234,8 +234,8 @@ public class GaugePointDao implements GaugePointRepository {
         }
         String aggregateFunction = gaugeMeta.everIncreasing() ? "max" : "avg";
         // need ".0" to force double result
-        String captureTimeSql = castUntainted("ceil(capture_time / " + fixedIntervalMillis
-                + ".0) * " + fixedIntervalMillis);
+        String captureTimeSql = castUntainted(
+                "ceil(capture_time / " + fixedIntervalMillis + ".0) * " + fixedIntervalMillis);
         ImmutableList<GaugePoint> gaugePoints = dataSource.query("select " + captureTimeSql
                 + " ceil_capture_time, " + aggregateFunction + "(value) from gauge_point_rollup_0"
                 + " where gauge_meta_id = ? and capture_time > ? and capture_time <= ?"
@@ -289,8 +289,8 @@ public class GaugePointDao implements GaugePointRepository {
     private void rollup(long lastRollupTime, long safeRollupTime, long fixedIntervalMillis,
             int toRollupLevel, int fromRollupLevel) throws SQLException {
         // need ".0" to force double result
-        String captureTimeSql = castUntainted("ceil(capture_time / " + fixedIntervalMillis
-                + ".0) * " + fixedIntervalMillis);
+        String captureTimeSql = castUntainted(
+                "ceil(capture_time / " + fixedIntervalMillis + ".0) * " + fixedIntervalMillis);
         rollup(lastRollupTime, safeRollupTime, captureTimeSql, false, toRollupLevel,
                 fromRollupLevel);
         rollup(lastRollupTime, safeRollupTime, captureTimeSql, true, toRollupLevel,

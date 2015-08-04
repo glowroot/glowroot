@@ -318,8 +318,8 @@ public class SessionAttributeTest {
     @Test
     public void testHasMissingSessionAttribute2() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "missingtestattr.*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "missingtestattr.*");
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
@@ -331,8 +331,8 @@ public class SessionAttributeTest {
     @Test
     public void testHasMissingNestedSessionAttributePath2() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "one.missingtwo.*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                "one.missingtwo.*");
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then

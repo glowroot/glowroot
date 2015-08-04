@@ -96,8 +96,8 @@ public class AggregateCollectorTest {
         private volatile long totalMicros;
 
         @Override
-        public void store(List<Aggregate> overallAggregates,
-                List<Aggregate> transactionAggregates, long captureTime) {
+        public void store(List<Aggregate> overallAggregates, List<Aggregate> transactionAggregates,
+                long captureTime) {
             // only capture first non-zero value
             if (totalMicros == 0 && !overallAggregates.isEmpty()) {
                 totalMicros = overallAggregates.get(0).totalMicros();

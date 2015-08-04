@@ -76,8 +76,8 @@ public class UserTest {
     @Test
     public void testHasSessionUserAttribute() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "userattr");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
+                "userattr");
         // when
         container.executeAppUnderTest(HasSessionUserAttribute.class);
         // then
@@ -88,8 +88,8 @@ public class UserTest {
     @Test
     public void testSetSessionUserAttribute() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "userattr");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
+                "userattr");
         // when
         container.executeAppUnderTest(SetSessionUserAttribute.class);
         // then
@@ -100,8 +100,8 @@ public class UserTest {
     @Test
     public void testSetSessionUserAttributeNull() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "userattr");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
+                "userattr");
         // when
         container.executeAppUnderTest(SetSessionUserAttributeNull.class);
         // then
@@ -114,8 +114,8 @@ public class UserTest {
     @Test
     public void testHasNestedSessionUserAttributePath() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "userone.two");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
+                "userone.two");
         // when
         container.executeAppUnderTest(HasNestedSessionUserAttribute.class);
         // then
@@ -126,8 +126,8 @@ public class UserTest {
     @Test
     public void testSetNestedSessionUserAttributePath() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "userone.two");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
+                "userone.two");
         // when
         container.executeAppUnderTest(SetNestedSessionUserAttribute.class);
         // then
@@ -138,8 +138,8 @@ public class UserTest {
     @Test
     public void testHasMissingSessionUserAttribute() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "missinguserattr");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
+                "missinguserattr");
         // when
         container.executeAppUnderTest(HasSessionUserAttribute.class);
         // then
@@ -150,8 +150,8 @@ public class UserTest {
     @Test
     public void testHasMissingNestedSessionUserAttributePath() throws Exception {
         // given
-        container.getConfigService()
-                .setPluginProperty(PLUGIN_ID, "sessionUserAttribute", "userone.missingtwo");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
+                "userone.missingtwo");
         // when
         container.executeAppUnderTest(HasNestedSessionUserAttribute.class);
         // then

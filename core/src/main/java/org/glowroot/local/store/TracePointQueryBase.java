@@ -62,8 +62,8 @@ public abstract class TracePointQueryBase {
     // inclusive on upper bound)
     ParameterizedSql getParameterizedSql() {
         ParameterizedSqlBuilder builder = new ParameterizedSqlBuilder();
-        builder.appendText("select trace.id, trace.capture_time, trace.duration, trace.error"
-                + " from trace");
+        builder.appendText(
+                "select trace.id, trace.capture_time, trace.duration, trace.error from trace");
         ParameterizedSql criteria = getCustomAttributeCriteria();
         if (criteria == null) {
             builder.appendText(" where");
@@ -162,8 +162,8 @@ public abstract class TracePointQueryBase {
         StringComparator headlineComparator = headlineComparator();
         String headline = headline();
         if (headlineComparator != null && !Strings.isNullOrEmpty(headline)) {
-            builder.appendText(" and upper(trace.headline) " + headlineComparator.getComparator()
-                    + " ?");
+            builder.appendText(
+                    " and upper(trace.headline) " + headlineComparator.getComparator() + " ?");
             builder.addArg(headlineComparator.formatParameter(headline));
         }
     }
@@ -172,8 +172,8 @@ public abstract class TracePointQueryBase {
         StringComparator errorComparator = errorComparator();
         String error = error();
         if (errorComparator != null && !Strings.isNullOrEmpty(error)) {
-            builder.appendText(" and upper(trace.error_message) " + errorComparator.getComparator()
-                    + " ?");
+            builder.appendText(
+                    " and upper(trace.error_message) " + errorComparator.getComparator() + " ?");
             builder.addArg(errorComparator.formatParameter(error));
         }
     }

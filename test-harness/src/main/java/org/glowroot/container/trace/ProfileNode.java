@@ -88,7 +88,7 @@ public class ProfileNode {
         List<String> timerNames = orEmpty(uncheckedTimerNames, "timerNames");
         List<ProfileNode> childNodes = orEmpty(uncheckedChildNodes, "childNodes");
         checkRequiredProperty(sampleCount, "sampleCount");
-        return new ProfileNode(stackTraceElement, leafThreadState,
-                sampleCount, timerNames, childNodes);
+        return new ProfileNode(stackTraceElement, leafThreadState, sampleCount, timerNames,
+                childNodes);
     }
 }

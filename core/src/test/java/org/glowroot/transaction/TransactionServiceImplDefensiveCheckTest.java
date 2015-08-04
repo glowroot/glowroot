@@ -81,8 +81,8 @@ public class TransactionServiceImplDefensiveCheckTest {
         TimerName timerName = mock(TimerName.class);
         assertThat(transactionService.startTransaction("test", "test", messageSupplier, null)
                 .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
-        assertThat(transactionService.startTransaction("test", "test", null, timerName)
-                .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
+        assertThat(transactionService.startTransaction("test", "test", null, timerName).getClass()
+                .getSimpleName()).isEqualTo("NopTraceEntry");
         assertThat(transactionService.startTransaction("test", null, messageSupplier, timerName)
                 .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
         assertThat(transactionService.startTransaction(null, "test", messageSupplier, timerName)
@@ -93,10 +93,10 @@ public class TransactionServiceImplDefensiveCheckTest {
     public void testStartTraceEntry() {
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         TimerName timerName = mock(TimerName.class);
-        assertThat(transactionService.startTraceEntry(messageSupplier, null)
-                .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
-        assertThat(transactionService.startTraceEntry(null, timerName)
-                .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
+        assertThat(transactionService.startTraceEntry(messageSupplier, null).getClass()
+                .getSimpleName()).isEqualTo("NopTraceEntry");
+        assertThat(transactionService.startTraceEntry(null, timerName).getClass().getSimpleName())
+                .isEqualTo("NopTraceEntry");
     }
 
     @Test

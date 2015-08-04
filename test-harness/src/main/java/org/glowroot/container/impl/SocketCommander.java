@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,8 +170,8 @@ class SocketCommander {
                     if (!value.equals(SocketHeartbeat.PING_COMMAND)) {
                         ResponseWrapper responseWrapper = (ResponseWrapper) value;
                         logger.debug("response received from external jvm: {}", responseWrapper);
-                        ResponseHolder responseHolder = responseHolders.get(responseWrapper
-                                .getCommandNum());
+                        ResponseHolder responseHolder =
+                                responseHolders.get(responseWrapper.getCommandNum());
                         if (responseHolder == null) {
                             logger.error("respond received for unknown command number: "
                                     + responseWrapper.getCommandNum());

@@ -113,9 +113,8 @@ public class TimerTest {
         }
     }
 
-    public static class ShouldGenerateTraceWithRootAndSelfNestedTimer implements
-            AppUnderTest,
-            TraceMarker {
+    public static class ShouldGenerateTraceWithRootAndSelfNestedTimer
+            implements AppUnderTest, TraceMarker {
         private int nestingLevel = 0;
         @Override
         public void executeApp() throws InterruptedException {
@@ -131,8 +130,7 @@ public class TimerTest {
         }
     }
 
-    public static class ShouldGenerateActiveTraceWithTimers implements AppUnderTest,
-            TraceMarker {
+    public static class ShouldGenerateActiveTraceWithTimers implements AppUnderTest, TraceMarker {
         @Override
         public void executeApp() {
             traceMarker();

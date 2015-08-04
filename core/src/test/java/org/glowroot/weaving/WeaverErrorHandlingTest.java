@@ -34,8 +34,8 @@ public class WeaverErrorHandlingTest {
     public void shouldHandleVoidPrimitiveTravelerGracefully() throws Exception {
         // given
         SomeAspectThreadLocals.resetThreadLocals();
-        Misc test = newWovenObject(BasicMisc.class, Misc.class,
-                BindPrimitiveTravelerBadAdvice.class);
+        Misc test =
+                newWovenObject(BasicMisc.class, Misc.class, BindPrimitiveTravelerBadAdvice.class);
         // when
         test.execute1();
         // then

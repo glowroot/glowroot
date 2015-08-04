@@ -102,8 +102,8 @@ class TransactionCommonService {
         if (transactionName == null) {
             return aggregateDao.shouldHaveOverallQueries(transactionType, from, to);
         } else {
-            return aggregateDao.shouldHaveTransactionQueries(transactionType, transactionName,
-                    from, to);
+            return aggregateDao.shouldHaveTransactionQueries(transactionType, transactionName, from,
+                    to);
         }
     }
 
@@ -113,8 +113,8 @@ class TransactionCommonService {
         if (transactionName == null) {
             return aggregateDao.shouldHaveOverallProfile(transactionType, from, to);
         } else {
-            return aggregateDao.shouldHaveTransactionProfile(transactionType, transactionName,
-                    from, to);
+            return aggregateDao.shouldHaveTransactionProfile(transactionType, transactionName, from,
+                    to);
         }
     }
 
@@ -307,18 +307,19 @@ class TransactionCommonService {
         MergedAggregate currMergedAggregate = null;
         long currRollupTime = Long.MIN_VALUE;
         for (Aggregate nonRolledUpAggregate : orderedNonRolledUpAggregates) {
-            long rollupTime = (long) Math.ceil(nonRolledUpAggregate.captureTime()
-                    / (double) fixedIntervalMillis) * fixedIntervalMillis;
+            long rollupTime = (long) Math
+                    .ceil(nonRolledUpAggregate.captureTime() / (double) fixedIntervalMillis)
+                    * fixedIntervalMillis;
             if (rollupTime != currRollupTime && currMergedAggregate != null) {
                 rolledUpAggregates.add(currMergedAggregate.toAggregate(scratchBuffer));
                 currMergedAggregate = new MergedAggregate(Math.min(rollupTime, liveCaptureTime),
-                        transactionType, transactionName, configService.getAdvancedConfig()
-                                .maxAggregateQueriesPerQueryType());
+                        transactionType, transactionName,
+                        configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
             }
             if (currMergedAggregate == null) {
                 currMergedAggregate = new MergedAggregate(Math.min(rollupTime, liveCaptureTime),
-                        transactionType, transactionName, configService.getAdvancedConfig()
-                                .maxAggregateQueriesPerQueryType());
+                        transactionType, transactionName,
+                        configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
             }
             currRollupTime = rollupTime;
             currMergedAggregate.addTotalMicros(nonRolledUpAggregate.totalMicros());
@@ -327,8 +328,8 @@ class TransactionCommonService {
             currMergedAggregate.addTotalCpuMicros(nonRolledUpAggregate.totalCpuMicros());
             currMergedAggregate.addTotalBlockedMicros(nonRolledUpAggregate.totalBlockedMicros());
             currMergedAggregate.addTotalWaitedMicros(nonRolledUpAggregate.totalWaitedMicros());
-            currMergedAggregate.addTotalAllocatedKBytes(
-                    nonRolledUpAggregate.totalAllocatedKBytes());
+            currMergedAggregate
+                    .addTotalAllocatedKBytes(nonRolledUpAggregate.totalAllocatedKBytes());
             currMergedAggregate.addTimers(nonRolledUpAggregate.timers());
             currMergedAggregate.addHistogram(nonRolledUpAggregate.histogram());
         }
@@ -386,9 +387,8 @@ class TransactionCommonService {
                 if (transactionSummary == null) {
                     transactionSummaryMap.put(transactionName, liveTransactionSummary);
                 } else {
-                    transactionSummaryMap.put(transactionName,
-                            combineTransactionSummaries(transactionName, transactionSummary,
-                                    liveTransactionSummary));
+                    transactionSummaryMap.put(transactionName, combineTransactionSummaries(
+                            transactionName, transactionSummary, liveTransactionSummary));
                 }
             }
         }
@@ -500,14 +500,14 @@ class TransactionCommonService {
             TransactionSummarySortOrder sortOrder) {
         switch (sortOrder) {
             case TOTAL_TIME:
-                return TransactionSummary.orderingByTotalTimeDesc.immutableSortedCopy(
-                        transactionSummaries);
+                return TransactionSummary.orderingByTotalTimeDesc
+                        .immutableSortedCopy(transactionSummaries);
             case AVERAGE_TIME:
-                return TransactionSummary.orderingByAverageTimeDesc.immutableSortedCopy(
-                        transactionSummaries);
+                return TransactionSummary.orderingByAverageTimeDesc
+                        .immutableSortedCopy(transactionSummaries);
             case THROUGHPUT:
-                return TransactionSummary.orderingByTransactionCountDesc.immutableSortedCopy(
-                        transactionSummaries);
+                return TransactionSummary.orderingByTransactionCountDesc
+                        .immutableSortedCopy(transactionSummaries);
             default:
                 throw new AssertionError("Unexpected sort order: " + sortOrder);
         }

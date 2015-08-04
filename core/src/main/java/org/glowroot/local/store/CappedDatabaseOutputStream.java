@@ -169,8 +169,8 @@ class CappedDatabaseOutputStream extends OutputStream {
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
         if (currIndex + len - blockStartIndex > sizeBytes) {
-            throw new IOException("A single block cannot have more bytes than size of the capped"
-                    + " database");
+            throw new IOException(
+                    "A single block cannot have more bytes than size of the capped database");
         }
         long currPosition = (currIndex - lastResizeBaseIndex) % sizeBytes;
         out.seek(HEADER_SKIP_BYTES + currPosition);

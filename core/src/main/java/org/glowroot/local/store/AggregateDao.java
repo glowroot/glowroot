@@ -344,8 +344,8 @@ public class AggregateDao {
     // captureTimeFrom is non-inclusive
     public boolean shouldHaveTransactionQueries(String transactionType, String transactionName,
             long captureTimeFrom, long captureTimeTo) throws SQLException {
-        return shouldHaveTransactionSomething("queries_capped_id", transactionType,
-                transactionName, captureTimeFrom, captureTimeTo);
+        return shouldHaveTransactionSomething("queries_capped_id", transactionType, transactionName,
+                captureTimeFrom, captureTimeTo);
     }
 
     // captureTimeFrom is non-inclusive
@@ -358,8 +358,8 @@ public class AggregateDao {
     // captureTimeFrom is non-inclusive
     public boolean shouldHaveTransactionProfile(String transactionType, String transactionName,
             long captureTimeFrom, long captureTimeTo) throws SQLException {
-        return shouldHaveTransactionSomething("profile_capped_id", transactionType,
-                transactionName, captureTimeFrom, captureTimeTo);
+        return shouldHaveTransactionSomething("profile_capped_id", transactionType, transactionName,
+                captureTimeFrom, captureTimeTo);
     }
 
     public long getDataPointIntervalMillis(long captureTimeFrom, long captureTimeTo) {
@@ -412,8 +412,8 @@ public class AggregateDao {
     private void rollup(long lastRollupTime, long curentRollupTime, long fixedIntervalMillis,
             int toRollupLevel, int fromRollupLevel) throws Exception {
         // need ".0" to force double result
-        String captureTimeSql = castUntainted("ceil(capture_time / " + fixedIntervalMillis
-                + ".0) * " + fixedIntervalMillis);
+        String captureTimeSql = castUntainted(
+                "ceil(capture_time / " + fixedIntervalMillis + ".0) * " + fixedIntervalMillis);
         List<Long> rollupTimes = dataSource.query("select distinct " + captureTimeSql
                 + " from overall_aggregate_rollup_" + castUntainted(fromRollupLevel)
                 + " where capture_time > ? and capture_time <= ?", new LongRowMapper(),
@@ -471,8 +471,7 @@ public class AggregateDao {
 
     // captureTimeFrom is non-inclusive
     private TransactionSummary readOverallSummaryInternal(String transactionType,
-            long captureTimeFrom, long captureTimeTo, int rollupLevel)
-                    throws SQLException {
+            long captureTimeFrom, long captureTimeTo, int rollupLevel) throws SQLException {
         // it's important that all these columns are in a single index so h2 can return the
         // result set directly from the index without having to reference the table for each row
         TransactionSummary summary = dataSource.query("select sum(total_micros),"
@@ -492,8 +491,8 @@ public class AggregateDao {
             TransactionSummary overallSummary2) {
         return TransactionSummary.builder()
                 .totalMicros(overallSummary1.totalMicros() + overallSummary2.totalMicros())
-                .transactionCount(overallSummary1.transactionCount()
-                        + overallSummary2.transactionCount())
+                .transactionCount(
+                        overallSummary1.transactionCount() + overallSummary2.transactionCount())
                 .build();
     }
 
@@ -671,8 +670,8 @@ public class AggregateDao {
         }
     }
 
-    private static class OverallSummaryResultSetExtractor implements
-            ResultSetExtractor<TransactionSummary> {
+    private static class OverallSummaryResultSetExtractor
+            implements ResultSetExtractor<TransactionSummary> {
         @Override
         public TransactionSummary extractData(ResultSet resultSet) throws SQLException {
             if (!resultSet.next()) {
@@ -702,8 +701,8 @@ public class AggregateDao {
         }
     }
 
-    private static class OverallErrorSummaryResultSetExtractor implements
-            ResultSetExtractor<ErrorSummary> {
+    private static class OverallErrorSummaryResultSetExtractor
+            implements ResultSetExtractor<ErrorSummary> {
         @Override
         public ErrorSummary extractData(ResultSet resultSet) throws SQLException {
             if (!resultSet.next()) {
@@ -913,8 +912,8 @@ public class AggregateDao {
                 MergedAggregate mergedAggregate = mergedAggregateMap.get(transactionName);
                 if (mergedAggregate == null) {
                     mergedAggregate = new MergedAggregate(rollupCaptureTime, transactionType,
-                            transactionName, configService.getAdvancedConfig()
-                                    .maxAggregateQueriesPerQueryType());
+                            transactionName,
+                            configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
                     mergedAggregateMap.put(transactionName, mergedAggregate);
                 }
                 merge(mergedAggregate, resultSet, 3, fromRollupLevel);
@@ -984,8 +983,8 @@ public class AggregateDao {
         }
 
         public void addTotalAllocatedKBytes(@Nullable Long totalAllocatedKBytes) {
-            this.totalAllocatedKBytes = nullAwareAdd(this.totalAllocatedKBytes,
-                    totalAllocatedKBytes);
+            this.totalAllocatedKBytes =
+                    nullAwareAdd(this.totalAllocatedKBytes, totalAllocatedKBytes);
         }
 
         public void addHistogram(byte[] histogram) throws DataFormatException {

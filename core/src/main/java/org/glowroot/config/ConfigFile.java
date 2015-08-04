@@ -127,8 +127,7 @@ class ConfigFile {
             content = content.replace("\"defaultTransactionType\"",
                     "\"defaultDisplayedTransactionType\"");
             // handling upgrade from 0.8.3 to 0.8.4
-            content = content.replace("\"cappedDatabaseSizeMb\"",
-                    "\"traceCappedDatabaseSizeMb\"");
+            content = content.replace("\"cappedDatabaseSizeMb\"", "\"traceCappedDatabaseSizeMb\"");
             content = content.replace("\"traceStoreThresholdMillis\"",
                     "\"slowTraceThresholdMillis\"");
             config = readValue(content);

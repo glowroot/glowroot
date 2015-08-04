@@ -45,8 +45,8 @@ public abstract class ThrowableInfo {
         ImmutableList<StackTraceElement> stackTrace = ImmutableList.copyOf(t.getStackTrace());
         if (causedStackTrace != null) {
             ListIterator<StackTraceElement> i = stackTrace.listIterator(stackTrace.size());
-            ListIterator<StackTraceElement> j = causedStackTrace.listIterator(causedStackTrace
-                    .size());
+            ListIterator<StackTraceElement> j =
+                    causedStackTrace.listIterator(causedStackTrace.size());
             while (i.hasPrevious() && j.hasPrevious()) {
                 StackTraceElement element = i.previous();
                 StackTraceElement causedElement = j.previous();

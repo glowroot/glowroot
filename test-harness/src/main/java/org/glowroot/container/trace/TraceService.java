@@ -49,8 +49,8 @@ public class TraceService {
     }
 
     public @Nullable Trace getLastTrace() throws Exception {
-        String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
-                + "&duration-low=0&limit=1000");
+        String content = httpClient.get(
+                "/backend/trace/points?from=0&to=" + Long.MAX_VALUE + "&duration-low=0&limit=1000");
         TracePointResponse response =
                 ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
         List<RawPoint> points = Lists.newArrayList();
@@ -169,8 +169,8 @@ public class TraceService {
         // if interruptAppUnderTest() was used to terminate an active transaction, it may take a few
         // milliseconds to interrupt the thread and end the active transaction
         while (stopwatch.elapsed(SECONDS) < 2) {
-            int numActiveTransactions = Integer.parseInt(httpClient
-                    .get("/backend/admin/num-active-transactions"));
+            int numActiveTransactions =
+                    Integer.parseInt(httpClient.get("/backend/admin/num-active-transactions"));
             if (numActiveTransactions == 0) {
                 return;
             }
@@ -179,8 +179,8 @@ public class TraceService {
     }
 
     private @Nullable Trace getActiveTrace() throws Exception {
-        String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
-                + "&duration-low=0&limit=1000");
+        String content = httpClient.get(
+                "/backend/trace/points?from=0&to=" + Long.MAX_VALUE + "&duration-low=0&limit=1000");
         TracePointResponse response =
                 ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
         if (response.getActivePoints().isEmpty()) {

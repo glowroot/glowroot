@@ -89,8 +89,7 @@ public class ClassLoaders {
     private static void generate(Collection<LazyDefinedClass> lazyDefinedClasses,
             JarOutputStream jarOut) throws IOException {
         for (LazyDefinedClass lazyDefinedClass : lazyDefinedClasses) {
-            JarEntry jarEntry =
-                    new JarEntry(lazyDefinedClass.type().getInternalName() + ".class");
+            JarEntry jarEntry = new JarEntry(lazyDefinedClass.type().getInternalName() + ".class");
             jarOut.putNextEntry(jarEntry);
             jarOut.write(lazyDefinedClass.bytes());
             jarOut.closeEntry();
@@ -108,8 +107,7 @@ public class ClassLoaders {
         File[] files = dir.listFiles();
         if (files == null) {
             // strangely, listFiles() returns null if an I/O error occurs
-            throw new IOException("Could not get listing for directory: "
-                    + dir.getAbsolutePath());
+            throw new IOException("Could not get listing for directory: " + dir.getAbsolutePath());
         }
         for (File file : files) {
             if (file.getName().startsWith(prefix) && !file.delete()) {

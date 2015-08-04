@@ -83,10 +83,9 @@ public class ConfiguredInstrumentationTest {
         assertThat(trace.getTransactionType()).isEqualTo("test override type");
         assertThat(trace.getTransactionName()).isEqualTo("test override name");
         assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTimer().getNestedTimerNames())
-                .containsOnly("execute one");
-        assertThat(trace.getRootTimer().getNestedTimers().get(0)
-                .getNestedTimerNames()).containsOnly("execute one timer only");
+        assertThat(trace.getRootTimer().getNestedTimerNames()).containsOnly("execute one");
+        assertThat(trace.getRootTimer().getNestedTimers().get(0).getNestedTimerNames())
+                .containsOnly("execute one timer only");
         TraceEntry entry = entries.get(0);
         assertThat(entry.getMessage().getText()).isEqualTo("execute1() => void");
         assertThat(entry.getStackTrace()).isNotNull();
@@ -100,8 +99,7 @@ public class ConfiguredInstrumentationTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTimer().getNestedTimerNames())
-                .containsOnly("execute with return");
+        assertThat(trace.getRootTimer().getNestedTimerNames()).containsOnly("execute with return");
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).getMessage().getText()).isEqualTo("executeWithReturn() => xyz");

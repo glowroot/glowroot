@@ -51,8 +51,8 @@ public class UpgradeTest {
             Resources.asByteSource(Resources.getResource("for-upgrade-test/data/" + filename))
                     .copyTo(Files.asByteSink(new File(dataDir, filename)));
         }
-        Resources.asByteSource(
-                Resources.getResource("for-upgrade-test/data/trace-detail.capped.db"))
+        Resources
+                .asByteSource(Resources.getResource("for-upgrade-test/data/trace-detail.capped.db"))
                 .copyTo(Files.asByteSink(new File(dataDir, "trace-detail.capped.db")));
         Container container = Containers.createWithFileDb(baseDir);
         // when
@@ -94,12 +94,12 @@ public class UpgradeTest {
         File dataDir = new File(baseDir, "data");
         Files.copy(new File(dataDir, "data.h2.db"),
                 new File("src/test/resources/for-upgrade-test/data/data.h2.db"));
-        Files.copy(new File(dataDir, "rollup-0-detail.capped.db"), new File(
-                "src/test/resources/for-upgrade-test/data/rollup-0-detail.capped.db"));
-        Files.copy(new File(dataDir, "rollup-1-detail.capped.db"), new File(
-                "src/test/resources/for-upgrade-test/data/rollup-1-detail.capped.db"));
-        Files.copy(new File(dataDir, "rollup-2-detail.capped.db"), new File(
-                "src/test/resources/for-upgrade-test/data/rollup-2-detail.capped.db"));
+        Files.copy(new File(dataDir, "rollup-0-detail.capped.db"),
+                new File("src/test/resources/for-upgrade-test/data/rollup-0-detail.capped.db"));
+        Files.copy(new File(dataDir, "rollup-1-detail.capped.db"),
+                new File("src/test/resources/for-upgrade-test/data/rollup-1-detail.capped.db"));
+        Files.copy(new File(dataDir, "rollup-2-detail.capped.db"),
+                new File("src/test/resources/for-upgrade-test/data/rollup-2-detail.capped.db"));
         Files.copy(new File(dataDir, "trace-detail.capped.db"),
                 new File("src/test/resources/for-upgrade-test/data/trace-detail.capped.db"));
         TempDirs.deleteRecursively(baseDir);

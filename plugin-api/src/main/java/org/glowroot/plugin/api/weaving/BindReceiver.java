@@ -29,5 +29,4 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 // for non-static methods, binds "this"
 @Target(PARAMETER)
 @Retention(RUNTIME)
-public @interface BindReceiver {
-}
+public @interface BindReceiver {}

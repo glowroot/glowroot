@@ -184,8 +184,9 @@ public class CappedDatabase {
             // it's important to wrap CappedBlockInputStream in a BufferedInputStream to prevent
             // lots of small reads from the underlying RandomAccessFile
             final int bufferSize = 32768;
-            return new InputStreamReader(new LZFInputStream(new BufferedInputStream(
-                    new CappedBlockInputStream(cappedId), bufferSize)), Charsets.UTF_8);
+            return new InputStreamReader(new LZFInputStream(
+                    new BufferedInputStream(new CappedBlockInputStream(cappedId), bufferSize)),
+                    Charsets.UTF_8);
         }
     }
 
@@ -213,8 +214,8 @@ public class CappedDatabase {
                     inFile.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + filePosition);
                     blockLength = inFile.readLong();
                 }
-                long filePosition = out.convertToFilePosition(cappedId
-                        + CappedDatabaseOutputStream.BLOCK_HEADER_SKIP_BYTES + blockIndex);
+                long filePosition = out.convertToFilePosition(
+                        cappedId + CappedDatabaseOutputStream.BLOCK_HEADER_SKIP_BYTES + blockIndex);
                 inFile.seek(CappedDatabaseOutputStream.HEADER_SKIP_BYTES + filePosition);
                 long blockRemaining = blockLength - blockIndex;
                 long fileRemaining = out.getSizeKb() * 1024L - filePosition;

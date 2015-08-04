@@ -77,8 +77,8 @@ public class MainEntryPoint {
         File baseDir = BaseDir.getBaseDir(properties, glowrootJarFile);
         String version = Version.getVersion();
         try {
-            glowrootModule = new GlowrootModule(baseDir, properties, null, glowrootJarFile,
-                    version, true, false);
+            glowrootModule = new GlowrootModule(baseDir, properties, null, glowrootJarFile, version,
+                    true, false);
         } catch (BaseDirLockedException e) {
             logBaseDirLockedException(baseDir);
             return;

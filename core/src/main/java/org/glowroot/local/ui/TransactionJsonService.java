@@ -88,9 +88,9 @@ class TransactionJsonService {
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
 
         long liveCaptureTime = clock.currentTimeMillis();
-        List<Aggregate> aggregates = transactionCommonService.getAggregates(
-                request.transactionType(), request.transactionName(), request.from(), request.to(),
-                liveCaptureTime);
+        List<Aggregate> aggregates =
+                transactionCommonService.getAggregates(request.transactionType(),
+                        request.transactionName(), request.from(), request.to(), liveCaptureTime);
         List<DataSeries> dataSeriesList = getDataSeriesForTimersChart(request, aggregates);
         Map<Long, Long> transactionCounts = getTransactionCounts(aggregates);
         if (!aggregates.isEmpty() && aggregates.get(0).captureTime() == request.from()) {
@@ -123,9 +123,9 @@ class TransactionJsonService {
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
 
         long liveCaptureTime = clock.currentTimeMillis();
-        List<Aggregate> aggregates = transactionCommonService.getAggregates(
-                request.transactionType(), request.transactionName(), request.from(), request.to(),
-                liveCaptureTime);
+        List<Aggregate> aggregates =
+                transactionCommonService.getAggregates(request.transactionType(),
+                        request.transactionName(), request.from(), request.to(), liveCaptureTime);
         List<DataSeries> dataSeriesList =
                 getDataSeriesForPercentileChart(request, aggregates, request.percentile());
         Map<Long, Long> transactionCounts = getTransactionCounts(aggregates);
@@ -221,8 +221,8 @@ class TransactionJsonService {
         TransactionSummaryRequest request =
                 QueryStrings.decode(queryString, TransactionSummaryRequest.class);
 
-        TransactionSummary overallSummary = transactionCommonService.readOverallSummary(
-                request.transactionType(), request.from(), request.to());
+        TransactionSummary overallSummary = transactionCommonService
+                .readOverallSummary(request.transactionType(), request.from(), request.to());
 
         TransactionSummaryQuery query = TransactionSummaryQuery.builder()
                 .transactionType(request.transactionType())
@@ -318,8 +318,8 @@ class TransactionJsonService {
                 aggregateDao.getDataPointIntervalMillis(request.from(), request.to()));
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         for (double percentile : percentiles) {
-            dataSeriesList.add(new DataSeries(AlertingService.getPercentileWithSuffix(percentile)
-                    + " percentile"));
+            dataSeriesList.add(new DataSeries(
+                    AlertingService.getPercentileWithSuffix(percentile) + " percentile"));
         }
         Aggregate lastAggregate = null;
         for (Aggregate aggregate : aggregates) {
@@ -424,8 +424,8 @@ class TransactionJsonService {
                 timerTotals.add(entry.getKey(), entry.getValue().longValue());
             }
         }
-        Ordering<Entry<String, MutableLong>> valueOrdering = Ordering.natural().onResultOf(
-                new Function<Entry<String, MutableLong>, Long>() {
+        Ordering<Entry<String, MutableLong>> valueOrdering =
+                Ordering.natural().onResultOf(new Function<Entry<String, MutableLong>, Long>() {
                     @Override
                     public Long apply(@Nullable Entry<String, MutableLong> entry) {
                         checkNotNull(entry);

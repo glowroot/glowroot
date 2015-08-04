@@ -69,10 +69,6 @@ public abstract class TraceQueryBase {
     }
 
     public enum StringComparator {
-        BEGINS,
-        EQUALS,
-        ENDS,
-        CONTAINS,
-        NOT_CONTAINS
+        BEGINS, EQUALS, ENDS, CONTAINS, NOT_CONTAINS
     }
 }

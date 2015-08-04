@@ -47,10 +47,10 @@ public class ExpensiveCallAspect {
             Agent.getConfigService("glowroot-ui-sandbox");
 
     private static final Random random = new Random();
-    private static final Exception nestedCause = new IllegalArgumentException(
-            "a cause with a different stack trace");
-    private static final Exception cause = new IllegalStateException(
-            "a cause with a different stack trace", nestedCause);
+    private static final Exception nestedCause =
+            new IllegalArgumentException("A cause with a different stack trace");
+    private static final Exception cause =
+            new IllegalStateException("A cause with a different stack trace", nestedCause);
 
     @Pointcut(className = "org.glowroot.sandbox.ui.ExpensiveCall", methodName = "execute0",
             methodParameterTypes = {}, timerName = "expensive 0")
@@ -345,10 +345,10 @@ public class ExpensiveCallAspect {
         double value = random.nextDouble();
         if (traceEntry == null) {
             if (value < 0.5) {
-                transactionService.addTraceEntry(ErrorMessage.from(
-                        new IllegalStateException("Exception in execute" + num
+                transactionService.addTraceEntry(ErrorMessage.from(new IllegalStateException(
+                        "Exception in execute" + num
                                 + "\nwith no trace entry text and no custom error message",
-                                getRandomCause())));
+                        getRandomCause())));
             } else {
                 transactionService.addTraceEntry(ErrorMessage.from(
                         "randomized error\nwith no trace entry text",
@@ -360,9 +360,9 @@ public class ExpensiveCallAspect {
         if (value < 0.94) {
             traceEntry.end();
         } else if (value < 0.96) {
-            traceEntry.endWithError(ErrorMessage.from(
-                    new IllegalStateException("Exception in execute" + num
-                            + "\nwith no custom error message", getRandomCause())));
+            traceEntry.endWithError(ErrorMessage.from(new IllegalStateException(
+                    "Exception in execute" + num + "\nwith no custom error message",
+                    getRandomCause())));
         } else {
             traceEntry.endWithError(ErrorMessage.from("randomized error",
                     new IllegalStateException("Exception in execute" + num, getRandomCause())));
@@ -374,10 +374,12 @@ public class ExpensiveCallAspect {
         return new MessageSupplier() {
             @Override
             public Message get() {
-                Map<String, ?> detail = ImmutableMap.of("attr1", "value1\nwith newline", "attr2",
-                        "value2", "attr3", ImmutableMap.of("attr31",
-                                ImmutableMap.of("attr311", ImmutableList.of("v311aa", "v311bb")),
-                                "attr32", "value32\nwith newline", "attr33", "value33"));
+                Map<String, ?> detail =
+                        ImmutableMap.of("attr1", "value1\nwith newline", "attr2", "value2", "attr3",
+                                ImmutableMap.of("attr31",
+                                        ImmutableMap.of("attr311",
+                                                ImmutableList.of("v311aa", "v311bb")),
+                                        "attr32", "value32\nwith newline", "attr33", "value33"));
                 String traceEntryMessage = expensiveCallInvoker.getTraceEntryMessage(expensiveCall);
                 return Message.withDetail(traceEntryMessage, detail);
             }

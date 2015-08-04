@@ -38,21 +38,21 @@ public class PreInitializeWeavingClassesTest {
         globalCollector.registerClass("org/glowroot/weaving/ImmutableAdvice");
         // "call" AnalyzedWorld constructor to capture types used by LoadingCache
         // (so these types will be in the list of possible subtypes later on)
-        globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
-                "org/glowroot/weaving/AnalyzedWorld", "<init>",
-                "(Lcom/google/common/base/Supplier;Ljava/util/List;Ljava/util/List;"
-                        + "Lorg/glowroot/weaving/ExtraBootResourceFinder;)V"));
+        globalCollector.processMethodFailIfNotFound(
+                ReferencedMethod.from("org/glowroot/weaving/AnalyzedWorld", "<init>",
+                        "(Lcom/google/common/base/Supplier;Ljava/util/List;Ljava/util/List;"
+                                + "Lorg/glowroot/weaving/ExtraBootResourceFinder;)V"));
         // "call" WeavingClassFileTransformer constructor
-        globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
-                "org/glowroot/weaving/WeavingClassFileTransformer", "<init>",
-                "(Ljava/util/List;Ljava/util/List;Lcom/google/common/base/Supplier;"
-                        + "Lorg/glowroot/weaving/AnalyzedWorld;"
-                        + "Lorg/glowroot/weaving/WeavingTimerService;Z)V"));
+        globalCollector.processMethodFailIfNotFound(
+                ReferencedMethod.from("org/glowroot/weaving/WeavingClassFileTransformer", "<init>",
+                        "(Ljava/util/List;Ljava/util/List;Lcom/google/common/base/Supplier;"
+                                + "Lorg/glowroot/weaving/AnalyzedWorld;"
+                                + "Lorg/glowroot/weaving/WeavingTimerService;Z)V"));
         // "call" WeavingClassFileTransformer.transform()
-        globalCollector.processMethodFailIfNotFound(ReferencedMethod.from(
-                "org/glowroot/weaving/WeavingClassFileTransformer", "transform",
-                "(Ljava/lang/ClassLoader;Ljava/lang/String;Ljava/lang/Class;"
-                        + "Ljava/security/ProtectionDomain;[B)[B"));
+        globalCollector.processMethodFailIfNotFound(
+                ReferencedMethod.from("org/glowroot/weaving/WeavingClassFileTransformer",
+                        "transform", "(Ljava/lang/ClassLoader;Ljava/lang/String;Ljava/lang/Class;"
+                                + "Ljava/security/ProtectionDomain;[B)[B"));
         globalCollector.processOverrides();
         // these assertions just help for debugging, since it can be hard to see the differences in
         // the very large lists below in the "real" assertion

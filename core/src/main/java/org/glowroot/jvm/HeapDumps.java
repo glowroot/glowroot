@@ -61,14 +61,14 @@ public class HeapDumps {
                 } catch (InstanceNotFoundException e) {
                     // log exception at debug level
                     logger.debug(e.getMessage(), e);
-                    return OptionalService.unavailable("No such MBean " + MBEAN_NAME
-                            + " (introduced in Oracle Java SE 6)");
+                    return OptionalService.unavailable(
+                            "No such MBean " + MBEAN_NAME + " (introduced in Oracle Java SE 6)");
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                     return OptionalService.unavailable("<see error log for detail>");
                 }
-                return OptionalService.available(new HeapDumps(lazyPlatformMBeanServer,
-                        objectName));
+                return OptionalService.available(
+                        new HeapDumps(lazyPlatformMBeanServer, objectName));
             }
         });
 

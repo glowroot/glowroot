@@ -40,8 +40,8 @@ public class ScheduledRunnableTest {
         scheduledExecutorService = mock(ScheduledExecutorService.class);
         when(scheduledExecutorService.scheduleWithFixedDelay(any(Runnable.class), anyLong(),
                 anyLong(), any(TimeUnit.class))).thenReturn(mock(ScheduledFuture.class));
-        when(scheduledExecutorService.scheduleAtFixedRate(any(Runnable.class), anyLong(),
-                anyLong(), any(TimeUnit.class))).thenReturn(mock(ScheduledFuture.class));
+        when(scheduledExecutorService.scheduleAtFixedRate(any(Runnable.class), anyLong(), anyLong(),
+                any(TimeUnit.class))).thenReturn(mock(ScheduledFuture.class));
     }
 
     @Test

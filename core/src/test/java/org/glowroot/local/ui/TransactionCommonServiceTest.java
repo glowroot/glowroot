@@ -70,8 +70,8 @@ public class TransactionCommonServiceTest {
         TransactionCommonService transactionCommonService =
                 new TransactionCommonService(aggregateDao, null, configService);
         // when
-        List<Aggregate> aggregates = transactionCommonService.getAggregates("a type", null, 0,
-                3600001, Long.MAX_VALUE);
+        List<Aggregate> aggregates =
+                transactionCommonService.getAggregates("a type", null, 0, 3600001, Long.MAX_VALUE);
         // then
         assertThat(aggregates).hasSize(2);
         Aggregate aggregate1 = aggregates.get(0);

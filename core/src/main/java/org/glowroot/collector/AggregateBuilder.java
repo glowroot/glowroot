@@ -80,8 +80,8 @@ class AggregateBuilder {
             totalCpuTime = nullAwareAdd(totalCpuTime, threadInfo.threadCpuTime());
             totalBlockedTime = nullAwareAdd(totalBlockedTime, threadInfo.threadBlockedTime());
             totalWaitedTime = nullAwareAdd(totalWaitedTime, threadInfo.threadWaitedTime());
-            totalAllocatedBytes = nullAwareAdd(totalAllocatedBytes,
-                    threadInfo.threadAllocatedBytes());
+            totalAllocatedBytes =
+                    nullAwareAdd(totalAllocatedBytes, threadInfo.threadAllocatedBytes());
         }
         lazyHistogram.add(durationMicros);
     }

@@ -196,8 +196,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             }
         } catch (Exception f) {
             logger.error(f.getMessage(), f);
-            FullHttpResponse response = newHttpResponseWithStackTrace(f, INTERNAL_SERVER_ERROR,
-                    null);
+            FullHttpResponse response =
+                    newHttpResponseWithStackTrace(f, INTERNAL_SERVER_ERROR, null);
             sendFullResponse(ctx, request, response);
         } finally {
             currentChannel.remove();

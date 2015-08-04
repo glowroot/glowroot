@@ -61,8 +61,8 @@ public class TransactionServiceImplOutsideTxTest {
     public void testStartTraceEntry() {
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         TimerName timerName = mock(TimerName.class);
-        assertThat(transactionService.startTraceEntry(messageSupplier, timerName)
-                .getClass().getSimpleName()).isEqualTo("NopTraceEntry");
+        assertThat(transactionService.startTraceEntry(messageSupplier, timerName).getClass()
+                .getSimpleName()).isEqualTo("NopTraceEntry");
     }
 
     @Test

@@ -97,8 +97,9 @@ class GaugeMetaDao {
     }
 
     private @Nullable GaugeMeta readGaugeMeta(String gaugeName) throws SQLException {
-        List<GaugeMeta> gaugeMetas = dataSource.query("select id, ever_increasing from gauge_meta"
-                + " where name = ?", new GaugeMetaRowMapper(), gaugeName);
+        List<GaugeMeta> gaugeMetas =
+                dataSource.query("select id, ever_increasing from gauge_meta where name = ?",
+                        new GaugeMetaRowMapper(), gaugeName);
         if (gaugeMetas.isEmpty()) {
             return null;
         }

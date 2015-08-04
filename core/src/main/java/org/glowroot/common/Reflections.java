@@ -117,13 +117,12 @@ public class Reflections {
         return method.invoke(null, args);
     }
 
-    public static <T> /*@NonNull*/T invoke(Constructor<T> constructor,
-            @Nullable Object... args) throws Exception {
+    public static <T> /*@NonNull*/T invoke(Constructor<T> constructor, @Nullable Object... args)
+            throws Exception {
         return constructor.newInstance(args);
     }
 
-    public static @Nullable Object getFieldValue(Field field, Object obj)
-            throws Exception {
+    public static @Nullable Object getFieldValue(Field field, Object obj) throws Exception {
         return field.get(obj);
     }
 }

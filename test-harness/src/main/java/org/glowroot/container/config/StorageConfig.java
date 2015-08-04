@@ -98,8 +98,7 @@ public class StorageConfig {
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(rollupExpirationHours, traceExpirationHours,
-                rollupCappedDatabaseSizesMb,
-                traceCappedDatabaseSizeMb);
+                rollupCappedDatabaseSizesMb, traceCappedDatabaseSizeMb);
     }
 
     @Override

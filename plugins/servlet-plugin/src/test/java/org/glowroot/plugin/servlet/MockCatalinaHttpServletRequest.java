@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,8 +58,8 @@ public class MockCatalinaHttpServletRequest extends MockHttpServletRequest {
         @Override
         public V put(K key, V value) {
             if (locked) {
-                throw new IllegalStateException("Cannot modify locked ParameterMap,"
-                        + " check isLocked() first");
+                throw new IllegalStateException(
+                        "Cannot modify locked ParameterMap," + " check isLocked() first");
             }
             return super.put(key, value);
         }

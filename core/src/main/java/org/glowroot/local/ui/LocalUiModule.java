@@ -51,10 +51,9 @@ public class LocalUiModule {
     private final LazyHttpServer lazyHttpServer;
 
     public LocalUiModule(Ticker ticker, Clock clock, File baseDir, JvmModule jvmModule,
-            ConfigModule configModule, StorageModule storageModule,
-            CollectorModule collectorModule, TransactionModule transactionModule,
-            @Nullable Instrumentation instrumentation, Map<String, String> properties,
-            String version) throws InterruptedException {
+            ConfigModule configModule, StorageModule storageModule, CollectorModule collectorModule,
+            TransactionModule transactionModule, @Nullable Instrumentation instrumentation,
+            Map<String, String> properties, String version) throws InterruptedException {
 
         ConfigService configService = configModule.getConfigService();
 
@@ -80,9 +79,9 @@ public class LocalUiModule {
                 aggregateDao, collectorModule.getAggregateCollector(), configService);
         TraceCommonService traceCommonService = new TraceCommonService(traceDao,
                 transactionRegistry, transactionCollector, clock, ticker);
-        TransactionJsonService transactionJsonService = new TransactionJsonService(
-                transactionCommonService, traceDao, transactionRegistry, transactionCollector,
-                aggregateDao, clock);
+        TransactionJsonService transactionJsonService =
+                new TransactionJsonService(transactionCommonService, traceDao, transactionRegistry,
+                        transactionCollector, aggregateDao, clock);
         TracePointJsonService tracePointJsonService = new TracePointJsonService(traceDao,
                 transactionRegistry, transactionCollector, configService, ticker, clock);
         TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);
@@ -91,23 +90,22 @@ public class LocalUiModule {
         TraceExportHttpService traceExportHttpService =
                 new TraceExportHttpService(traceCommonService, version);
         GlowrootLogHttpService glowrootLogHttpService = new GlowrootLogHttpService(baseDir);
-        ErrorCommonService errorCommonService = new ErrorCommonService(
-                aggregateDao, collectorModule.getAggregateCollector(),
-                configService.getRollupConfigs());
-        ErrorJsonService errorJsonService = new ErrorJsonService(errorCommonService, traceDao,
-                aggregateDao, clock);
+        ErrorCommonService errorCommonService = new ErrorCommonService(aggregateDao,
+                collectorModule.getAggregateCollector(), configService.getRollupConfigs());
+        ErrorJsonService errorJsonService =
+                new ErrorJsonService(errorCommonService, traceDao, aggregateDao, clock);
         JvmJsonService jvmJsonService = new JvmJsonService(jvmModule.getLazyPlatformMBeanServer(),
                 gaugePointDao, configService, transactionRegistry, transactionCollector,
                 jvmModule.getThreadAllocatedBytes(), jvmModule.getHeapDumps(),
                 jvmModule.getProcessId(), collectorModule.getGaugeCollectionIntervalMillis(),
                 clock);
-        ConfigJsonService configJsonService = new ConfigJsonService(configService,
-                storageModule.getRollupCappedDatabases(), storageModule.getTraceCappedDatabase(),
-                configModule.getPluginDescriptors(), httpSessionManager, transactionModule,
-                new MailService());
-        InstrumentationJsonService instrumentationJsonService = new InstrumentationJsonService(
-                configService, transactionModule.getAdviceCache(), transactionModule,
-                analyzedWorld, instrumentation);
+        ConfigJsonService configJsonService =
+                new ConfigJsonService(configService, storageModule.getRollupCappedDatabases(),
+                        storageModule.getTraceCappedDatabase(), configModule.getPluginDescriptors(),
+                        httpSessionManager, transactionModule, new MailService());
+        InstrumentationJsonService instrumentationJsonService =
+                new InstrumentationJsonService(configService, transactionModule.getAdviceCache(),
+                        transactionModule, analyzedWorld, instrumentation);
         GaugeJsonService gaugeJsonService =
                 new GaugeJsonService(configService, jvmModule.getLazyPlatformMBeanServer());
         AlertJsonService alertJsonService = new AlertJsonService(configService);

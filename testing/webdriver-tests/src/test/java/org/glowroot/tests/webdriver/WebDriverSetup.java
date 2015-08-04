@@ -134,13 +134,12 @@ public class WebDriverSetup {
         String sauceAccessKey = System.getenv("SAUCE_ACCESS_KEY");
         SauceOnDemandAuthentication authentication =
                 new SauceOnDemandAuthentication(sauceUsername, sauceAccessKey);
-        SauceOnDemandSessionIdProvider sessionIdProvider =
-                new SauceOnDemandSessionIdProvider() {
-                    @Override
-                    public String getSessionId() {
-                        return remoteWebDriverSessionId;
-                    }
-                };
+        SauceOnDemandSessionIdProvider sessionIdProvider = new SauceOnDemandSessionIdProvider() {
+            @Override
+            public String getSessionId() {
+                return remoteWebDriverSessionId;
+            }
+        };
         return new SauceOnDemandTestWatcher(sessionIdProvider, authentication);
     }
 

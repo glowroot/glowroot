@@ -174,8 +174,7 @@ class ServletMessageSupplier extends MessageSupplier {
         sessionAttributeInitialValuePlusMap.putAll(sessionAttributeInitialValueMap);
         // add empty values into initial values for any updated attributes that are not
         // already present in initial values nested detail map
-        for (Entry<String, Optional<String>> entry : sessionAttributeUpdatedValueMap
-                .entrySet()) {
+        for (Entry<String, Optional<String>> entry : sessionAttributeUpdatedValueMap.entrySet()) {
             if (!sessionAttributeInitialValueMap.containsKey(entry.getKey())) {
                 sessionAttributeInitialValuePlusMap.put(entry.getKey(), null);
             }

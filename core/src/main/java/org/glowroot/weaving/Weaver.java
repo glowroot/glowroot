@@ -61,8 +61,8 @@ class Weaver {
         this.timerWrapperMethods = timerWrapperMethods;
     }
 
-    byte /*@Nullable*/[] weave(byte[] classBytes, String className,
-            @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
+    byte /*@Nullable*/[] weave(byte[] classBytes, String className, @Nullable CodeSource codeSource,
+            @Nullable ClassLoader loader) {
         if (timerWrapperMethods) {
             return weave$glowroot$timer$glowroot$weaving$0(classBytes, className, codeSource,
                     loader);
@@ -231,16 +231,16 @@ class Weaver {
                 } catch (ClassNotFoundException e) {
                     // log at debug level only since this code must not be getting used anyways, as
                     // it would fail on execution since the type doesn't exist
-                    logger.debug("type {} not found while parsing type {}", superName,
-                            parseContext, e);
+                    logger.debug("type {} not found while parsing type {}", superName, parseContext,
+                            e);
                     return "java/lang/Object";
                 }
             }
             return "java/lang/Object";
         }
 
-        private boolean isAssignableFrom(String possibleSuperClassName,
-                AnalyzedClass analyzedClass) throws IOException {
+        private boolean isAssignableFrom(String possibleSuperClassName, AnalyzedClass analyzedClass)
+                throws IOException {
             if (analyzedClass.name().equals(possibleSuperClassName)) {
                 return true;
             }
@@ -273,8 +273,8 @@ class Weaver {
             return false;
         }
 
-        private boolean isAssignableFromSuperClass(String possibleSuperClassName,
-                String superName) throws IOException {
+        private boolean isAssignableFromSuperClass(String possibleSuperClassName, String superName)
+                throws IOException {
             try {
                 AnalyzedClass superAnalyzedClass =
                         analyzedWorld.getAnalyzedClass(superName, loader);

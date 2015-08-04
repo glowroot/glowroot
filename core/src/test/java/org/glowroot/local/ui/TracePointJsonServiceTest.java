@@ -101,8 +101,8 @@ public class TracePointJsonServiceTest {
         pendingTransactions.add(mockPendingTransaction("id1", 500));
         List<TracePoint> points = Lists.newArrayList();
         points.add(mockPoint("id1", 10001, 500));
-        TracePointJsonService tracePointJsonService = buildTracePointJsonService(
-                activeTransactions, pendingTransactions, points, 10000, DEFAULT_CURRENT_TICK);
+        TracePointJsonService tracePointJsonService = buildTracePointJsonService(activeTransactions,
+                pendingTransactions, points, 10000, DEFAULT_CURRENT_TICK);
         // when
         String content = tracePointJsonService.getPoints("from=0&to=0&duration-low=0&limit=100");
         // then
@@ -148,11 +148,11 @@ public class TracePointJsonServiceTest {
         }
         List<Transaction> pendingTransactions = Lists.newArrayList();
         List<TracePoint> points = Lists.newArrayList();
-        TracePointJsonService tracePointJsonService = buildTracePointJsonService(
-                activeTransactions, pendingTransactions, points);
+        TracePointJsonService tracePointJsonService =
+                buildTracePointJsonService(activeTransactions, pendingTransactions, points);
         // when
-        String content = tracePointJsonService.getPoints("from=0&to=" + Long.MAX_VALUE
-                + "&duration-low=0&limit=100");
+        String content = tracePointJsonService
+                .getPoints("from=0&to=" + Long.MAX_VALUE + "&duration-low=0&limit=100");
         // then
         TracePointResponse response = mapper.readValue(content, TracePointResponse.class);
         assertThat(response.activePoints().size()).isEqualTo(100);
@@ -169,11 +169,10 @@ public class TracePointJsonServiceTest {
 
     private static TracePointJsonService buildTracePointJsonService(
             List<Transaction> activeTransactions, List<Transaction> pendingTransactions,
-            List<TracePoint> points, long currentTimeMillis,
-            long currentTick) throws SQLException {
+            List<TracePoint> points, long currentTimeMillis, long currentTick) throws SQLException {
 
-        Ordering<TracePoint> durationDescOrdering = Ordering.natural().reverse()
-                .onResultOf(new Function<TracePoint, Double>() {
+        Ordering<TracePoint> durationDescOrdering =
+                Ordering.natural().reverse().onResultOf(new Function<TracePoint, Double>() {
                     @Override
                     public Double apply(TracePoint trace) {
                         return trace.duration();
@@ -206,8 +205,8 @@ public class TracePointJsonServiceTest {
     private static Transaction mockActiveTransaction(String id, long durationMillis) {
         Transaction transaction = mock(Transaction.class);
         when(transaction.getId()).thenReturn(id);
-        when(transaction.getStartTick()).thenReturn(
-                DEFAULT_CURRENT_TICK - MILLISECONDS.toNanos(durationMillis));
+        when(transaction.getStartTick())
+                .thenReturn(DEFAULT_CURRENT_TICK - MILLISECONDS.toNanos(durationMillis));
         when(transaction.getCustomAttributes())
                 .thenReturn(ImmutableSetMultimap.<String, String>of());
         return transaction;

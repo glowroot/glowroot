@@ -37,8 +37,8 @@ public class ClasspathCacheTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        ClassLoader badUrlsClassLoader = new URLClassLoader(
-                new URL[] {new URL("file://a/b c"), new URL("http://a/b/c")});
+        ClassLoader badUrlsClassLoader =
+                new URLClassLoader(new URL[] {new URL("file://a/b c"), new URL("http://a/b/c")});
         AnalyzedWorld analyzedWorld = mock(AnalyzedWorld.class);
         when(analyzedWorld.getClassLoaders()).thenReturn(
                 ImmutableList.of(badUrlsClassLoader, ClassLoader.getSystemClassLoader()));
@@ -51,8 +51,7 @@ public class ClasspathCacheTest {
     public void shouldRead() {
         // given
         // when
-        List<String> classNames = classpathCache
-                .getMatchingClassNames("google.common.base.str", 5);
+        List<String> classNames = classpathCache.getMatchingClassNames("google.common.base.str", 5);
         // then
         assertThat(classNames).contains("com.google.common.base.Strings");
     }
@@ -89,8 +88,8 @@ public class ClasspathCacheTest {
     public void shouldReadFullFullInnerClass() {
         // given
         // when
-        List<String> classNames = classpathCache.getMatchingClassNames(
-                "com.google.common.collect.Lists$OnePlusArrayList", 5);
+        List<String> classNames = classpathCache
+                .getMatchingClassNames("com.google.common.collect.Lists$OnePlusArrayList", 5);
         // then
         assertThat(classNames).contains("com.google.common.collect.Lists$OnePlusArrayList");
     }

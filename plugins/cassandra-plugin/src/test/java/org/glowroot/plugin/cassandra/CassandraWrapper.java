@@ -103,8 +103,8 @@ class CassandraWrapper {
         command.add("-Dlog4j.defaultInitOverride=true");
         command.add("-Dcassandra.jmx.local.port=7199");
         command.add("-Dcassandra-foreground=yes");
-        command.add("-Dcassandra.data_file_directories=" + cassandraDir.getAbsolutePath()
-                + "/data");
+        command.add(
+                "-Dcassandra.data_file_directories=" + cassandraDir.getAbsolutePath() + "/data");
         // command.add("-Dcassandra.");
         // command.add("-Dcassandra.");
         // this is used inside low-entropy docker containers

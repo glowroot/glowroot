@@ -216,8 +216,7 @@ class JvmJsonService {
             if (request.expanded().contains(name)) {
                 Map<String, /*@Nullable*/Object> sortedAttributeMap =
                         getMBeanSortedAttributeMap(objectName);
-                node.addLeafNode(
-                        new MBeanTreeLeafNode(value, name, true, sortedAttributeMap));
+                node.addLeafNode(new MBeanTreeLeafNode(value, name, true, sortedAttributeMap));
             } else {
                 node.addLeafNode(new MBeanTreeLeafNode(value, name, false, null));
             }
@@ -314,8 +313,8 @@ class JvmJsonService {
     String getHeapDumpDefaults() throws Exception {
         String heapDumpPath = getHeapDumpPathFromCommandLine();
         if (Strings.isNullOrEmpty(heapDumpPath)) {
-            String javaTempDir = MoreObjects.firstNonNull(
-                    StandardSystemProperty.JAVA_IO_TMPDIR.value(), ".");
+            String javaTempDir =
+                    MoreObjects.firstNonNull(StandardSystemProperty.JAVA_IO_TMPDIR.value(), ".");
             heapDumpPath = new File(javaTempDir).getAbsolutePath();
         }
         StringBuilder sb = new StringBuilder();
@@ -383,8 +382,8 @@ class JvmJsonService {
             int index = command.indexOf(' ');
             if (index > 0) {
                 mainClass = command.substring(0, index);
-                arguments = Lists.newArrayList(
-                        Splitter.on(' ').split(command.substring(index + 1)));
+                arguments =
+                        Lists.newArrayList(Splitter.on(' ').split(command.substring(index + 1)));
             }
         }
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
@@ -490,14 +489,14 @@ class JvmJsonService {
                 new PatternObjectNameQueryExp(mbeanObjectName));
         List<String> mbeanObjectNames = Lists.newArrayList();
         for (ObjectName objectName : objectNames) {
-            mbeanObjectNames.add(
-                    objectName.getDomain() + ":" + objectName.getKeyPropertyListString());
+            mbeanObjectNames
+                    .add(objectName.getDomain() + ":" + objectName.getKeyPropertyListString());
         }
         return mbeanObjectNames;
     }
 
-    private void writeThreadInfo(ThreadInfo threadInfo,
-            @Nullable Transaction matchedTransaction, JsonGenerator jg) throws IOException {
+    private void writeThreadInfo(ThreadInfo threadInfo, @Nullable Transaction matchedTransaction,
+            JsonGenerator jg) throws IOException {
         jg.writeStartObject();
         if (matchedTransaction != null) {
             jg.writeStringField("transactionType", matchedTransaction.getTransactionType());

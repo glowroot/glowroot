@@ -69,9 +69,8 @@ public class QueryComponent {
     // not using static ObjectMapper because ObjectMapper caches keys, and in this particular case
     // the keys are (often very large) sql queries and have seen it retain 26mb worth of memory
     public void mergeQueries(String queriesContent) throws IOException {
-        Map<String, List<AggregateQuery>> toBeMergedQueries =
-                ObjectMappers.readRequiredValue(mapper, queriesContent,
-                        new TypeReference<Map<String, List<AggregateQuery>>>() {});
+        Map<String, List<AggregateQuery>> toBeMergedQueries = ObjectMappers.readRequiredValue(
+                mapper, queriesContent, new TypeReference<Map<String, List<AggregateQuery>>>() {});
         for (Entry<String, List<AggregateQuery>> entry : toBeMergedQueries.entrySet()) {
             String queryType = entry.getKey();
             Map<String, AggregateQuery> queriesForQueryType = queries.get(queryType);
@@ -80,8 +79,8 @@ public class QueryComponent {
                 queries.put(queryType, queriesForQueryType);
             }
             for (AggregateQuery query : entry.getValue()) {
-                mergeQuery(query.getQueryText(), query.getTotalMicros(),
-                        query.getExecutionCount(), query.getTotalRows(), queriesForQueryType);
+                mergeQuery(query.getQueryText(), query.getTotalMicros(), query.getExecutionCount(),
+                        query.getTotalRows(), queriesForQueryType);
             }
         }
     }
@@ -96,13 +95,12 @@ public class QueryComponent {
                 queryData.getExecutionCount(), queryData.getTotalRows(), queriesForQueryType);
     }
 
-    private void mergeQuery(String queryText, long totalMicros, long executionCount,
-            long totalRows, Map<String, AggregateQuery> queriesForQueryType) {
+    private void mergeQuery(String queryText, long totalMicros, long executionCount, long totalRows,
+            Map<String, AggregateQuery> queriesForQueryType) {
         AggregateQuery aggregateQuery = queriesForQueryType.get(queryText);
         if (aggregateQuery == null) {
-            if (maxMultiplierWhileBuilding != 0
-                    && queriesForQueryType.size() >= hardLimitMultiplierWhileBuilding
-                            * maxMultiplierWhileBuilding) {
+            if (maxMultiplierWhileBuilding != 0 && queriesForQueryType
+                    .size() >= hardLimitMultiplierWhileBuilding * maxMultiplierWhileBuilding) {
                 return;
             }
             aggregateQuery = new AggregateQuery(queryText);

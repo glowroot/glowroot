@@ -93,15 +93,13 @@ public class CommonsLoggingTest {
 
         TraceEntry errorEntry = entries.get(1);
         assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_");
-        assertThat(errorEntry.getError().getMessage())
-                .isEqualTo("567");
+        assertThat(errorEntry.getError().getMessage()).isEqualTo("567");
         assertThat(errorEntry.getError().getThrowable().getStackTrace().get(0))
                 .contains("traceMarker");
 
         TraceEntry fatalEntry = entries.get(2);
         assertThat(fatalEntry.getMessage().getText()).isEqualTo("log fatal: fgh_");
-        assertThat(fatalEntry.getError().getMessage())
-                .isEqualTo("678");
+        assertThat(fatalEntry.getError().getMessage()).isEqualTo("678");
         assertThat(fatalEntry.getError().getThrowable().getStackTrace().get(0))
                 .contains("traceMarker");
     }

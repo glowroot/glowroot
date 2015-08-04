@@ -32,8 +32,7 @@ class DataSeriesHelper {
     }
 
     void addInitialUpslopeIfNeeded(long requestFrom, long captureTime,
-            List<DataSeries> dataSeriesList,
-            @Nullable DataSeries otherDataSeries) {
+            List<DataSeries> dataSeriesList, @Nullable DataSeries otherDataSeries) {
         if (captureTime == requestFrom) {
             return;
         }

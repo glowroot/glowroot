@@ -65,8 +65,7 @@ public class ConfigService {
 
     // throws CurrentPasswordIncorrectException
     public void updateUserInterfaceConfig(UserInterfaceConfig config) throws Exception {
-        String response = httpClient.post("/backend/config/ui",
-                mapper.writeValueAsString(config));
+        String response = httpClient.post("/backend/config/ui", mapper.writeValueAsString(config));
         JsonNode node = mapper.readTree(response);
         JsonNode currentPasswordIncorrectNode = node.get("currentPasswordIncorrect");
         if (currentPasswordIncorrectNode != null && currentPasswordIncorrectNode.asBoolean()) {
@@ -181,16 +180,16 @@ public class ConfigService {
 
     // returns new version
     public GaugeConfig addGaugeConfig(GaugeConfig config) throws Exception {
-        String response = httpClient.post("/backend/config/gauges/add",
-                mapper.writeValueAsString(config));
+        String response =
+                httpClient.post("/backend/config/gauges/add", mapper.writeValueAsString(config));
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
         ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
         return mapper.readValue(mapper.treeAsTokens(configNode), GaugeConfig.class);
     }
 
     public GaugeConfig updateGaugeConfig(GaugeConfig config) throws Exception {
-        String response = httpClient.post("/backend/config/gauges/update",
-                mapper.writeValueAsString(config));
+        String response =
+                httpClient.post("/backend/config/gauges/update", mapper.writeValueAsString(config));
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
         ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
         return mapper.readValue(mapper.treeAsTokens(configNode), GaugeConfig.class);
@@ -211,23 +210,20 @@ public class ConfigService {
     }
 
     // returns new version
-    public AlertConfig addAlertConfig(AlertConfig config)
-            throws Exception {
-        String response = httpClient.post("/backend/config/alerts/add",
-                mapper.writeValueAsString(config));
+    public AlertConfig addAlertConfig(AlertConfig config) throws Exception {
+        String response =
+                httpClient.post("/backend/config/alerts/add", mapper.writeValueAsString(config));
         return ObjectMappers.readRequiredValue(mapper, response, AlertConfig.class);
     }
 
-    public AlertConfig updateAlertConfig(AlertConfig config)
-            throws Exception {
-        String response = httpClient.post("/backend/config/alerts/update",
-                mapper.writeValueAsString(config));
+    public AlertConfig updateAlertConfig(AlertConfig config) throws Exception {
+        String response =
+                httpClient.post("/backend/config/alerts/update", mapper.writeValueAsString(config));
         return ObjectMappers.readRequiredValue(mapper, response, AlertConfig.class);
     }
 
     public void removeAlertConfig(String version) throws Exception {
-        httpClient.post("/backend/config/alerts/remove",
-                mapper.writeValueAsString(version));
+        httpClient.post("/backend/config/alerts/remove", mapper.writeValueAsString(version));
     }
 
     public int reweave() throws Exception {

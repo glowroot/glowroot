@@ -37,13 +37,12 @@ public class PluginServicesRegistry {
     private final Supplier<TransactionService> transactionService;
 
     private PluginServicesRegistry(final PluginServicesFactory pluginServicesFactory) {
-        configServices =
-                CacheBuilder.newBuilder().build(new CacheLoader<String, ConfigService>() {
-                    @Override
-                    public ConfigService load(String pluginId) {
-                        return pluginServicesFactory.createConfigService(pluginId);
-                    }
-                });
+        configServices = CacheBuilder.newBuilder().build(new CacheLoader<String, ConfigService>() {
+            @Override
+            public ConfigService load(String pluginId) {
+                return pluginServicesFactory.createConfigService(pluginId);
+            }
+        });
         transactionService = Suppliers.memoize(new Supplier<TransactionService>() {
             @Override
             public TransactionService get() {

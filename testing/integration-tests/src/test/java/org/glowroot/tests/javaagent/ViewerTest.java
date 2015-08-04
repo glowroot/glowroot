@@ -48,8 +48,8 @@ public class ViewerTest {
             Resources.asByteSource(Resources.getResource("for-upgrade-test/data/" + filename))
                     .copyTo(Files.asByteSink(new File(dataDir, filename)));
         }
-        Resources.asByteSource(
-                Resources.getResource("for-upgrade-test/data/trace-detail.capped.db"))
+        Resources
+                .asByteSource(Resources.getResource("for-upgrade-test/data/trace-detail.capped.db"))
                 .copyTo(Files.asByteSink(new File(dataDir, "trace-detail.capped.db")));
         Container container = new JavaagentContainer(baseDir, true, 0, false, false, true,
                 ImmutableList.<String>of());

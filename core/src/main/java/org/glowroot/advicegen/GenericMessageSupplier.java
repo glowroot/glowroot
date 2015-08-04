@@ -55,8 +55,8 @@ public class GenericMessageSupplier extends MessageSupplier {
                 resolvedArgPathParts[i++] = part.evaluatePart(args[part.getArgNumber()]);
             }
         }
-        return new GenericMessageSupplier(template, resolvedReceiverPathParts,
-                resolvedArgPathParts, methodName);
+        return new GenericMessageSupplier(template, resolvedReceiverPathParts, resolvedArgPathParts,
+                methodName);
     }
 
     private GenericMessageSupplier(MessageTemplate template, String[] resolvedReceiverPathParts,

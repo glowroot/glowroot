@@ -37,8 +37,8 @@ class RowMappers {
         }
     }
 
-    static void setLong(PreparedStatement preparedStatement, int columnIndex,
-            @Nullable Long value) throws SQLException {
+    static void setLong(PreparedStatement preparedStatement, int columnIndex, @Nullable Long value)
+            throws SQLException {
         if (value == null) {
             preparedStatement.setNull(columnIndex, Types.BIGINT);
         } else {

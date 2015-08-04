@@ -28,28 +28,28 @@ public class GenericMessageSupplierTest {
     public void shouldRenderConstant() {
         MessageTemplate template = MessageTemplate.create("abc", TestReceiver.class, void.class,
                 new Class<?>[] {HasName.class});
-        Message message = GenericMessageSupplier.create(template, new HasName(), "execute",
-                new HasName()).get();
+        Message message = GenericMessageSupplier
+                .create(template, new HasName(), "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
         assertThat(text).isEqualTo("abc");
     }
 
     @Test
     public void shouldRenderNormal() {
-        MessageTemplate template = MessageTemplate.create(
-                "{{this.class.name}}.{{methodName}}(): {{0.name}} => {{_}}", TestReceiver.class,
-                void.class, new Class<?>[] {HasName.class});
-        Message message = GenericMessageSupplier.create(template, new TestReceiver(), "execute",
-                new HasName()).get();
+        MessageTemplate template =
+                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{0.name}} => {{_}}",
+                        TestReceiver.class, void.class, new Class<?>[] {HasName.class});
+        Message message = GenericMessageSupplier
+                .create(template, new TestReceiver(), "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
         assertThat(text).isEqualTo(TestReceiver.class.getName() + ".execute(): the name => ");
     }
 
     @Test
     public void shouldRenderNullPart() {
-        MessageTemplate template = MessageTemplate.create(
-                "{{this.class.name}}.{{methodName}}(): {{0.name}} => {{_}}", TestReceiver.class,
-                void.class, new Class<?>[] {HasName.class});
+        MessageTemplate template =
+                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{0.name}} => {{_}}",
+                        TestReceiver.class, void.class, new Class<?>[] {HasName.class});
         Message message =
                 GenericMessageSupplier.create(template, null, "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
@@ -61,8 +61,8 @@ public class GenericMessageSupplierTest {
         MessageTemplate template = MessageTemplate.create(
                 "{{this.class.name}}.{{methodName}}(): {{0.name}}, {{1.oops}} => {{_}}",
                 TestReceiver.class, void.class, new Class<?>[] {HasName.class});
-        Message message = GenericMessageSupplier.create(template, new TestReceiver(), "execute",
-                new HasName()).get();
+        Message message = GenericMessageSupplier
+                .create(template, new TestReceiver(), "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
         assertThat(text).isEqualTo(TestReceiver.class.getName()
                 + ".execute(): the name, <requested arg index out of bounds: 1> => ");
@@ -70,22 +70,22 @@ public class GenericMessageSupplierTest {
 
     @Test
     public void shouldRenderTrailingText() {
-        MessageTemplate template = MessageTemplate.create(
-                "{{this.class.name}}.{{methodName}}(): {{0.name}} trailing", TestReceiver.class,
-                void.class, new Class<?>[] {HasName.class});
-        Message message = GenericMessageSupplier.create(template, new TestReceiver(), "execute",
-                new HasName()).get();
+        MessageTemplate template =
+                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{0.name}} trailing",
+                        TestReceiver.class, void.class, new Class<?>[] {HasName.class});
+        Message message = GenericMessageSupplier
+                .create(template, new TestReceiver(), "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
         assertThat(text).isEqualTo(TestReceiver.class.getName() + ".execute(): the name trailing");
     }
 
     @Test
     public void shouldRenderBadTemplate() {
-        MessageTemplate template = MessageTemplate.create(
-                "{{this.class.name}}.{{methodName}}(): {{1.name}} trailing", TestReceiver.class,
-                void.class, new Class<?>[] {HasName.class});
-        Message message = GenericMessageSupplier.create(template, new TestReceiver(), "execute",
-                new HasName()).get();
+        MessageTemplate template =
+                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{1.name}} trailing",
+                        TestReceiver.class, void.class, new Class<?>[] {HasName.class});
+        Message message = GenericMessageSupplier
+                .create(template, new TestReceiver(), "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
         assertThat(text).isEqualTo(TestReceiver.class.getName()
                 + ".execute(): <requested arg index out of bounds: 1> trailing");
@@ -93,21 +93,21 @@ public class GenericMessageSupplierTest {
 
     @Test
     public void shouldRenderBadTemplate2() {
-        MessageTemplate template = MessageTemplate.create(
-                "{{this.class.name}}.{{methodName}}(): {{x.name}} trailing", TestReceiver.class,
-                void.class, new Class<?>[] {HasName.class});
+        MessageTemplate template =
+                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{x.name}} trailing",
+                        TestReceiver.class, void.class, new Class<?>[] {HasName.class});
         Message message =
                 GenericMessageSupplier.create(template, new TestReceiver(), "execute").get();
         String text = ((ReadableMessage) message).getText();
-        assertThat(text).isEqualTo(TestReceiver.class.getName()
-                + ".execute(): {{x.name}} trailing");
+        assertThat(text)
+                .isEqualTo(TestReceiver.class.getName() + ".execute(): {{x.name}} trailing");
     }
 
     @Test
     public void shouldRenderBadMessage() {
-        MessageTemplate template = MessageTemplate.create(
-                "{{this.class.name}}.{{methodName}}(): {{0.name}} trailing", TestReceiver.class,
-                void.class, new Class<?>[] {HasName.class});
+        MessageTemplate template =
+                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{0.name}} trailing",
+                        TestReceiver.class, void.class, new Class<?>[] {HasName.class});
         Message message =
                 GenericMessageSupplier.create(template, new TestReceiver(), "execute").get();
         String text = ((ReadableMessage) message).getText();
@@ -120,8 +120,8 @@ public class GenericMessageSupplierTest {
         MessageTemplate template = MessageTemplate.create(
                 "{{this.class.name}}.{{methodName}}(): {{0.throwingName}} trailing",
                 TestReceiver.class, void.class, new Class<?>[] {HasName.class});
-        Message message = GenericMessageSupplier.create(template, new TestReceiver(), "execute",
-                new HasName()).get();
+        Message message = GenericMessageSupplier
+                .create(template, new TestReceiver(), "execute", new HasName()).get();
         String text = ((ReadableMessage) message).getText();
         assertThat(text).isEqualTo(TestReceiver.class.getName()
                 + ".execute(): <error evaluating: java.lang.RuntimeException: Abc Xyz> trailing");
@@ -129,52 +129,48 @@ public class GenericMessageSupplierTest {
 
     @Test
     public void shouldRenderArray() {
-        MessageTemplate template = MessageTemplate.create(
-                "{{this.class.name}}.{{methodName}}(): {{0.names}}", TestReceiver.class,
-                void.class, new Class<?>[] {HasArray.class});
-        Message message = GenericMessageSupplier.create(template, new TestReceiver(), "execute",
-                new HasArray()).get();
+        MessageTemplate template =
+                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{0.names}}",
+                        TestReceiver.class, void.class, new Class<?>[] {HasArray.class});
+        Message message = GenericMessageSupplier
+                .create(template, new TestReceiver(), "execute", new HasArray()).get();
         String text = ((ReadableMessage) message).getText();
-        assertThat(text).isEqualTo(
-                TestReceiver.class.getName() + ".execute(): [the name, two]");
+        assertThat(text).isEqualTo(TestReceiver.class.getName() + ".execute(): [the name, two]");
     }
 
     @Test
     public void shouldRenderArray1() {
-        MessageTemplate template = MessageTemplate.create(
-                "{{this.class.name}}.{{methodName}}(): {{0.names.name}}",
-                TestReceiver.class,
-                void.class, new Class<?>[] {HasArray1.class});
-        Message message = GenericMessageSupplier.create(template, new TestReceiver(), "execute",
-                new HasArray1()).get();
+        MessageTemplate template =
+                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{0.names.name}}",
+                        TestReceiver.class, void.class, new Class<?>[] {HasArray1.class});
+        Message message = GenericMessageSupplier
+                .create(template, new TestReceiver(), "execute", new HasArray1()).get();
         String text = ((ReadableMessage) message).getText();
-        assertThat(text).isEqualTo(
-                TestReceiver.class.getName() + ".execute(): [the name, the name]");
+        assertThat(text)
+                .isEqualTo(TestReceiver.class.getName() + ".execute(): [the name, the name]");
     }
 
     @Test
     public void shouldRenderArray2() {
-        MessageTemplate template = MessageTemplate.create(
-                "{{this.class.name}}.{{methodName}}(): {{0.names.name}}",
-                TestReceiver.class,
-                void.class, new Class<?>[] {HasArray2.class});
-        Message message = GenericMessageSupplier.create(template, new TestReceiver(), "execute",
-                new HasArray2()).get();
+        MessageTemplate template =
+                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{0.names.name}}",
+                        TestReceiver.class, void.class, new Class<?>[] {HasArray2.class});
+        Message message = GenericMessageSupplier
+                .create(template, new TestReceiver(), "execute", new HasArray2()).get();
         String text = ((ReadableMessage) message).getText();
-        assertThat(text).isEqualTo(
-                TestReceiver.class.getName() + ".execute(): [[the name, the name]]");
+        assertThat(text)
+                .isEqualTo(TestReceiver.class.getName() + ".execute(): [[the name, the name]]");
     }
 
     @Test
     public void shouldRenderArrayLength() {
-        MessageTemplate template = MessageTemplate.create(
-                "{{this.class.name}}.{{methodName}}(): {{0.names.length}}", TestReceiver.class,
-                void.class, new Class<?>[] {HasArray.class});
-        Message message = GenericMessageSupplier.create(template, new TestReceiver(), "execute",
-                new HasArray()).get();
+        MessageTemplate template =
+                MessageTemplate.create("{{this.class.name}}.{{methodName}}(): {{0.names.length}}",
+                        TestReceiver.class, void.class, new Class<?>[] {HasArray.class});
+        Message message = GenericMessageSupplier
+                .create(template, new TestReceiver(), "execute", new HasArray()).get();
         String text = ((ReadableMessage) message).getText();
-        assertThat(text).isEqualTo(
-                TestReceiver.class.getName() + ".execute(): 2");
+        assertThat(text).isEqualTo(TestReceiver.class.getName() + ".execute(): 2");
     }
 
     public static class HasName {

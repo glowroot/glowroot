@@ -171,8 +171,7 @@ public class ThreadInfoTest {
     public static class ThreadCpuTimeDisabled implements AppUnderTest {
         @Override
         public void executeApp() {
-            boolean original =
-                    ManagementFactory.getThreadMXBean().isThreadCpuTimeEnabled();
+            boolean original = ManagementFactory.getThreadMXBean().isThreadCpuTimeEnabled();
             ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(false);
             try {
                 new LevelOne().call("a", "b");
@@ -185,8 +184,7 @@ public class ThreadInfoTest {
     public static class ThreadCpuTimeDisabledMid implements AppUnderTest, TraceMarker {
         @Override
         public void executeApp() {
-            boolean original =
-                    ManagementFactory.getThreadMXBean().isThreadCpuTimeEnabled();
+            boolean original = ManagementFactory.getThreadMXBean().isThreadCpuTimeEnabled();
             try {
                 traceMarker();
             } finally {
@@ -202,8 +200,7 @@ public class ThreadInfoTest {
     public static class ThreadCpuTimeEnabledMid implements AppUnderTest, TraceMarker {
         @Override
         public void executeApp() {
-            boolean original =
-                    ManagementFactory.getThreadMXBean().isThreadCpuTimeEnabled();
+            boolean original = ManagementFactory.getThreadMXBean().isThreadCpuTimeEnabled();
             ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(false);
             try {
                 traceMarker();

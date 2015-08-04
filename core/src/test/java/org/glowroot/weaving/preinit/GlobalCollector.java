@@ -225,8 +225,8 @@ public class GlobalCollector {
                 continue;
             }
             for (String superInternalName : classCollector.getAllSuperInternalNames()) {
-                if (referencedMethods.contains(
-                        ReferencedMethod.from(superInternalName, methodId))) {
+                if (referencedMethods
+                        .contains(ReferencedMethod.from(superInternalName, methodId))) {
                     addOverrideMethod(internalName, methodId);
                     // break inner loop
                     break;
@@ -251,8 +251,8 @@ public class GlobalCollector {
             }
             for (String superInternalName : classCollector.getAllSuperInternalNames()) {
                 if (InternalNames.inBootstrapClassLoader(superInternalName)) {
-                    ClassCollector superClassCollector = classCollectors.get(superInternalName)
-                            .get();
+                    ClassCollector superClassCollector =
+                            classCollectors.get(superInternalName).get();
                     if (superClassCollector.getMethodCollector(methodId) != null) {
                         addOverrideMethod(internalName, methodId);
                     }

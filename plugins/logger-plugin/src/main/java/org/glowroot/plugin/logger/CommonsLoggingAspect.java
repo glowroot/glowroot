@@ -42,8 +42,7 @@ public class CommonsLoggingAspect {
     @Pointcut(className = "org.apache.commons.logging.Log", methodName = "warn|error|fatal",
             methodParameterTypes = {"java.lang.Object"}, timerName = TIMER_NAME)
     public static class LogAdvice {
-        private static final TimerName timerName =
-                transactionService.getTimerName(LogAdvice.class);
+        private static final TimerName timerName = transactionService.getTimerName(LogAdvice.class);
         @IsEnabled
         public static boolean isEnabled() {
             return !LoggerPlugin.inAdvice() && configService.isEnabled();
@@ -79,8 +78,7 @@ public class CommonsLoggingAspect {
         }
         @OnBefore
         public static TraceEntry onBefore(@BindParameter @Nullable Object message,
-                @BindParameter @Nullable Throwable t,
-                @BindMethodName String methodName) {
+                @BindParameter @Nullable Throwable t, @BindMethodName String methodName) {
             LoggerPlugin.inAdvice(true);
             String messageText = String.valueOf(message);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), t != null)) {

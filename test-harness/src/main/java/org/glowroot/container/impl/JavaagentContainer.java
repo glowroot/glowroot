@@ -225,8 +225,8 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
         MessageCount logMessageCount = (MessageCount) socketCommander
                 .sendCommand(SocketCommandProcessor.CLEAR_LOG_MESSAGES);
         if (logMessageCount == null) {
-            throw new AssertionError("Command returned null: "
-                    + SocketCommandProcessor.CLEAR_LOG_MESSAGES);
+            throw new AssertionError(
+                    "Command returned null: " + SocketCommandProcessor.CLEAR_LOG_MESSAGES);
         }
         if (logMessageCount.expectedCount() > 0) {
             throw new AssertionError("One or more expected messages were not logged");

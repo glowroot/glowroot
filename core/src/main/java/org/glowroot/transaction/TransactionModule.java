@@ -61,9 +61,9 @@ public class TransactionModule {
             ScheduledExecutorService scheduledExecutor) throws Exception {
         ConfigService configService = configModule.getConfigService();
         transactionRegistry = new TransactionRegistry();
-        adviceCache = new AdviceCache(configModule.getPluginDescriptors(),
-                configModule.getPluginJars(), configService.getInstrumentationConfigs(),
-                instrumentation, baseDir);
+        adviceCache =
+                new AdviceCache(configModule.getPluginDescriptors(), configModule.getPluginJars(),
+                        configService.getInstrumentationConfigs(), instrumentation, baseDir);
         analyzedWorld = new AnalyzedWorld(adviceCache.getAdvisorsSupplier(),
                 adviceCache.getShimTypes(), adviceCache.getMixinTypes(), extraBootResourceFinder);
         final TimerNameCache timerNameCache = new TimerNameCache();
@@ -75,10 +75,10 @@ public class TransactionModule {
         // instrumentation is null when debugging with IsolatedWeavingClassLoader
         // instead of javaagent
         if (instrumentation != null) {
-            ClassFileTransformer transformer = new WeavingClassFileTransformer(
-                    adviceCache.getShimTypes(), adviceCache.getMixinTypes(),
-                    adviceCache.getAdvisorsSupplier(), analyzedWorld, weavingTimerService,
-                    timerWrapperMethods);
+            ClassFileTransformer transformer =
+                    new WeavingClassFileTransformer(adviceCache.getShimTypes(),
+                            adviceCache.getMixinTypes(), adviceCache.getAdvisorsSupplier(),
+                            analyzedWorld, weavingTimerService, timerWrapperMethods);
             PreInitializeWeavingClasses.preInitializeClasses();
             if (instrumentation.isRetransformClassesSupported()) {
                 instrumentation.addTransformer(transformer, true);

@@ -26,8 +26,7 @@ public class ErrorMessageTest {
 
     @Test
     public void testNullMessage() {
-        ReadableErrorMessage errorMessage =
-                (ReadableErrorMessage) ErrorMessage.from((String) null);
+        ReadableErrorMessage errorMessage = (ReadableErrorMessage) ErrorMessage.from((String) null);
         assertThat(errorMessage.getMessage()).isEqualTo("");
         assertThat(errorMessage.getThrowable()).isNull();
     }

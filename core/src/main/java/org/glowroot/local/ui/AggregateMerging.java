@@ -63,8 +63,8 @@ public class AggregateMerging {
         return timerMergedAggregate.build();
     }
 
-    public static PercentileMergedAggregate getPercentileMergedAggregate(
-            List<Aggregate> aggregates, List<Double> percentiles) throws Exception {
+    public static PercentileMergedAggregate getPercentileMergedAggregate(List<Aggregate> aggregates,
+            List<Double> percentiles) throws Exception {
         long transactionCount = 0;
         long totalMicros = 0;
         LazyHistogram histogram = new LazyHistogram();
@@ -96,8 +96,8 @@ public class AggregateMerging {
             totalCpuMicros = nullAwareAdd(totalCpuMicros, aggregate.totalCpuMicros());
             totalBlockedMicros = nullAwareAdd(totalBlockedMicros, aggregate.totalBlockedMicros());
             totalWaitedMicros = nullAwareAdd(totalWaitedMicros, aggregate.totalWaitedMicros());
-            totalAllocatedKBytes = nullAwareAdd(totalAllocatedKBytes,
-                    aggregate.totalAllocatedKBytes());
+            totalAllocatedKBytes =
+                    nullAwareAdd(totalAllocatedKBytes, aggregate.totalAllocatedKBytes());
         }
         return ThreadInfoAggregate.builder()
                 .totalCpuMicros(totalCpuMicros)
