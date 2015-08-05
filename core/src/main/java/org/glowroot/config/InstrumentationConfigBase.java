@@ -95,12 +95,17 @@ public abstract class InstrumentationConfigBase {
 
     public abstract @Nullable Long slowTraceThresholdMillis();
 
-    // enabledProperty and traceEntryEnabledProperty are for plugin authors
+    // this property only for plugin authors (to be used in glowroot.plugin.json),
+    // so it is ignored when written to config.json
+    @JsonIgnore
     @Value.Default
     public String enabledProperty() {
         return "";
     }
 
+    // this property only for plugin authors (to be used in glowroot.plugin.json),
+    // so it is ignored when written to config.json
+    @JsonIgnore
     @Value.Default
     public String traceEntryEnabledProperty() {
         return "";
