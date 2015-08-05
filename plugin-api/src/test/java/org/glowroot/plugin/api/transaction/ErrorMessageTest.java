@@ -17,8 +17,8 @@ package org.glowroot.plugin.api.transaction;
 
 import org.junit.Test;
 
-import org.glowroot.plugin.api.internal.ReadableErrorMessage;
 import org.glowroot.plugin.api.transaction.ErrorMessage;
+import org.glowroot.plugin.api.transaction.internal.ReadableErrorMessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

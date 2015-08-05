@@ -28,9 +28,7 @@ import org.glowroot.plugin.api.weaving.Pointcut;
  * {@code TransactionService} instance for the life of the jvm to avoid looking it up every time it
  * is needed (which is often).
  */
-public abstract class TransactionService {
-
-    protected TransactionService() {}
+public interface TransactionService {
 
     /**
      * Returns the {@code TimerName} instance for the specified {@code adviceClass}.
@@ -43,7 +41,7 @@ public abstract class TransactionService {
      * The return value can (and should) be cached by the plugin for the life of the jvm to avoid
      * looking it up every time it is needed (which is often).
      */
-    public abstract TimerName getTimerName(Class<?> adviceClass);
+    TimerName getTimerName(Class<?> adviceClass);
 
     /**
      * If there is no active transaction, a new transaction is started.
@@ -52,7 +50,7 @@ public abstract class TransactionService {
      * {@link #startTraceEntry(MessageSupplier, TimerName)} (the transaction name and type are not
      * modified on the existing transaction).
      */
-    public abstract TraceEntry startTransaction(String transactionType, String transactionName,
+    TraceEntry startTransaction(String transactionType, String transactionName,
             MessageSupplier messageSupplier, TimerName timerName);
 
     /**
@@ -81,22 +79,21 @@ public abstract class TransactionService {
      * If there is no current transaction, this method does nothing, and returns a no-op instance of
      * {@link TraceEntry}.
      */
-    public abstract TraceEntry startTraceEntry(MessageSupplier messageSupplier,
+    TraceEntry startTraceEntry(MessageSupplier messageSupplier, TimerName timerName);
+
+    /**
+     * {@link QueryEntry} is a specialized type of {@link TraceEntry} that is aggregated by its
+     * query text.
+     */
+    QueryEntry startQueryEntry(String queryType, String queryText, MessageSupplier messageSupplier,
             TimerName timerName);
 
     /**
      * {@link QueryEntry} is a specialized type of {@link TraceEntry} that is aggregated by its
      * query text.
      */
-    public abstract QueryEntry startQueryEntry(String queryType, String queryText,
+    QueryEntry startQueryEntry(String queryType, String queryText, long queryExecutionCount,
             MessageSupplier messageSupplier, TimerName timerName);
-
-    /**
-     * {@link QueryEntry} is a specialized type of {@link TraceEntry} that is aggregated by its
-     * query text.
-     */
-    public abstract QueryEntry startQueryEntry(String queryType, String queryText,
-            long queryExecutionCount, MessageSupplier messageSupplier, TimerName timerName);
 
     /**
      * Starts a timer for the specified timer name. If a timer is already running for the specified
@@ -106,7 +103,7 @@ public abstract class TransactionService {
      * If there is no current transaction, this method does nothing, and returns a no-op instance of
      * {@link Timer}.
      */
-    public abstract Timer startTimer(TimerName timerName);
+    Timer startTimer(TimerName timerName);
 
     /**
      * Adds a trace entry with duration zero. It does not set the error attribute on the trace,
@@ -122,21 +119,21 @@ public abstract class TransactionService {
      * 
      * If there is no current transaction, this method does nothing.
      */
-    public abstract void addTraceEntry(ErrorMessage errorMessage);
+    void addTraceEntry(ErrorMessage errorMessage);
 
     /**
      * Set the transaction type that is used for aggregation.
      * 
      * If there is no current transaction, this method does nothing.
      */
-    public abstract void setTransactionType(@Nullable String transactionType);
+    void setTransactionType(@Nullable String transactionType);
 
     /**
      * Set the transaction name that is used for aggregation.
      * 
      * If there is no current transaction, this method does nothing.
      */
-    public abstract void setTransactionName(@Nullable String transactionName);
+    void setTransactionName(@Nullable String transactionName);
 
     /**
      * Marks the transaction as an error with the given message. Normally transactions are only
@@ -156,7 +153,7 @@ public abstract class TransactionService {
      * 
      * If there is no current transaction, this method does nothing.
      */
-    public abstract void setTransactionError(ErrorMessage errorMessage);
+    void setTransactionError(ErrorMessage errorMessage);
 
     /**
      * Sets the user attribute on the transaction. This attribute is shared across all plugins, and
@@ -180,7 +177,7 @@ public abstract class TransactionService {
      * 
      * If there is no current transaction, this method does nothing.
      */
-    public abstract void setTransactionUser(@Nullable String user);
+    void setTransactionUser(@Nullable String user);
 
     /**
      * Adds an attribute on the current transaction with the specified {@code name} and
@@ -195,7 +192,7 @@ public abstract class TransactionService {
      * 
      * {@code null} values are normalized to the empty string.
      */
-    public abstract void addTransactionCustomAttribute(String name, @Nullable String value);
+    void addTransactionCustomAttribute(String name, @Nullable String value);
 
     /**
      * Overrides the default slow trace threshold (Configuration &gt; General &gt; Slow trace
@@ -207,7 +204,7 @@ public abstract class TransactionService {
      * 
      * If there is no current transaction, this method does nothing.
      */
-    public abstract void setSlowTraceThreshold(long threshold, TimeUnit unit);
+    void setSlowTraceThreshold(long threshold, TimeUnit unit);
 
     /**
      * Returns whether a transaction is already being captured.
@@ -216,5 +213,5 @@ public abstract class TransactionService {
      * transaction, and that do not want to create a entry if they are already inside of an existing
      * transaction.
      */
-    public abstract boolean isInTransaction();
+    boolean isInTransaction();
 }

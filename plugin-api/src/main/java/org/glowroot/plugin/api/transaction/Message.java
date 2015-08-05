@@ -24,7 +24,7 @@ import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.plugin.api.internal.ReadableMessage;
+import org.glowroot.plugin.api.transaction.internal.ReadableMessage;
 
 /**
  * The detail map can contain only {@link String}, {@link Number}, {@link Boolean} and null values.

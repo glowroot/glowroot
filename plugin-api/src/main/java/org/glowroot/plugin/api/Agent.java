@@ -23,11 +23,36 @@ import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.internal.NopConfigService;
+import org.glowroot.plugin.api.internal.PluginServiceRegistry;
+import org.glowroot.plugin.api.internal.NopTransactionService;
 import org.glowroot.plugin.api.transaction.TransactionService;
 
 public class Agent {
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Agent.class);
+
+    private static final TransactionService transactionService;
+
+    private static final @Nullable PluginServiceRegistry pluginServiceRegistry;
+
+    static {
+        try {
+            Class<?> pluginServicesClass =
+                    Class.forName("org.glowroot.transaction.PluginServiceRegistryImpl");
+            Method getInstanceMethod = pluginServicesClass.getMethod("getInstance");
+            pluginServiceRegistry = (PluginServiceRegistry) getInstanceMethod.invoke(null);
+            if (pluginServiceRegistry == null) {
+                transactionService = NopTransactionService.INSTANCE;
+            } else {
+                transactionService = pluginServiceRegistry.getTransactionService();
+            }
+        } catch (Exception e) {
+            // this really really really shouldn't happen
+            logger.error(e.getMessage(), e);
+            throw new AssertionError(e);
+        }
+    }
 
     private Agent() {}
 
@@ -38,7 +63,7 @@ public class Agent {
      * looking it up every time it is needed (which is often).
      */
     public static TransactionService getTransactionService() {
-        return getTransactionServiceImpl();
+        return transactionService;
     }
 
     /**
@@ -48,43 +73,12 @@ public class Agent {
      * looking it up every time it is needed (which is often).
      */
     public static ConfigService getConfigService(String pluginId) {
-        return getConfigServiceImpl(pluginId);
+        return pluginServiceRegistry == null ? NopConfigService.INSTANCE
+                : pluginServiceRegistry.getConfigService(pluginId);
     }
 
     public static Logger getLogger(Class<?> clazz) {
         return new LoggerImpl(LoggerFactory.getLogger(clazz));
-    }
-
-    private static TransactionService getTransactionServiceImpl() {
-        try {
-            Class<?> handleClass = Class.forName("org.glowroot.transaction.PluginServicesRegistry");
-            Method handleMethod = handleClass.getMethod("getTransactionService");
-            TransactionService transactionService = (TransactionService) handleMethod.invoke(null);
-            if (transactionService == null) {
-                throw new AssertionError();
-            }
-            return transactionService;
-        } catch (Exception e) {
-            // this really really really shouldn't happen
-            logger.error(e.getMessage(), e);
-            throw new AssertionError(e);
-        }
-    }
-
-    private static ConfigService getConfigServiceImpl(String pluginId) {
-        try {
-            Class<?> handleClass = Class.forName("org.glowroot.transaction.PluginServicesRegistry");
-            Method handleMethod = handleClass.getMethod("getConfigService", String.class);
-            ConfigService configService = (ConfigService) handleMethod.invoke(null, pluginId);
-            if (configService == null) {
-                throw new AssertionError();
-            }
-            return configService;
-        } catch (Exception e) {
-            // this really really really shouldn't happen
-            logger.error(e.getMessage(), e);
-            throw new AssertionError(e);
-        }
     }
 
     @VisibleForTesting

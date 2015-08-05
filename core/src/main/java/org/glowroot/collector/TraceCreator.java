@@ -30,8 +30,8 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.io.CharStreams;
 
 import org.glowroot.common.ObjectMappers;
-import org.glowroot.plugin.api.internal.ReadableErrorMessage;
-import org.glowroot.plugin.api.internal.ThrowableInfo;
+import org.glowroot.plugin.api.transaction.internal.ReadableErrorMessage;
+import org.glowroot.plugin.api.transaction.internal.ThrowableInfo;
 import org.glowroot.transaction.model.GcInfo;
 import org.glowroot.transaction.model.ThreadInfoData;
 import org.glowroot.transaction.model.TimerImpl;

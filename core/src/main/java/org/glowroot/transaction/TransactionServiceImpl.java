@@ -33,7 +33,9 @@ import org.glowroot.config.ConfigService;
 import org.glowroot.config.PluginConfig;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.plugin.api.config.ConfigListener;
-import org.glowroot.plugin.api.internal.ReadableErrorMessage;
+import org.glowroot.plugin.api.internal.NopTransactionService.NopQueryEntry;
+import org.glowroot.plugin.api.internal.NopTransactionService.NopTimer;
+import org.glowroot.plugin.api.internal.NopTransactionService.NopTraceEntry;
 import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.QueryEntry;
@@ -41,6 +43,7 @@ import org.glowroot.plugin.api.transaction.Timer;
 import org.glowroot.plugin.api.transaction.TimerName;
 import org.glowroot.plugin.api.transaction.TraceEntry;
 import org.glowroot.plugin.api.transaction.TransactionService;
+import org.glowroot.plugin.api.transaction.internal.ReadableErrorMessage;
 import org.glowroot.transaction.model.QueryData;
 import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.TimerNameImpl;
@@ -49,7 +52,7 @@ import org.glowroot.transaction.model.Transaction.CompletionCallback;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-class TransactionServiceImpl extends TransactionService implements ConfigListener {
+class TransactionServiceImpl implements TransactionService, ConfigListener {
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionServiceImpl.class);
 
@@ -156,23 +159,23 @@ class TransactionServiceImpl extends TransactionService implements ConfigListene
             MessageSupplier messageSupplier, TimerName timerName) {
         if (queryType == null) {
             logger.error("startQuery(): argument 'queryType' must be non-null");
-            return NopQuery.INSTANCE;
+            return NopQueryEntry.INSTANCE;
         }
         if (queryText == null) {
             logger.error("startQuery(): argument 'queryText' must be non-null");
-            return NopQuery.INSTANCE;
+            return NopQueryEntry.INSTANCE;
         }
         if (messageSupplier == null) {
             logger.error("startQuery(): argument 'messageSupplier' must be non-null");
-            return NopQuery.INSTANCE;
+            return NopQueryEntry.INSTANCE;
         }
         if (timerName == null) {
             logger.error("startQuery(): argument 'timerName' must be non-null");
-            return NopQuery.INSTANCE;
+            return NopQueryEntry.INSTANCE;
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction == null) {
-            return NopQuery.INSTANCE;
+            return NopQueryEntry.INSTANCE;
         }
         return startTraceEntryInternal(transaction, messageSupplier, queryType, queryText,
                 queryExecutionCount, timerName);
@@ -500,40 +503,5 @@ class TransactionServiceImpl extends TransactionService implements ConfigListene
             }
             currRow = row;
         }
-    }
-
-    // TODO remove this class so TraceEntry can't go megamorphic
-    private static class NopTraceEntry implements TraceEntry {
-        private static final NopTraceEntry INSTANCE = new NopTraceEntry();
-        private NopTraceEntry() {}
-        @Override
-        public void end() {}
-        @Override
-        public void endWithStackTrace(long threshold, TimeUnit unit) {}
-        @Override
-        public void endWithError(ErrorMessage errorMessage) {}
-        @Override
-        public Timer extend() {
-            return NopTimer.INSTANCE;
-        }
-        @Override
-        public @Nullable MessageSupplier getMessageSupplier() {
-            return null;
-        }
-    }
-
-    private static class NopQuery extends NopTraceEntry implements QueryEntry {
-        private static final NopQuery INSTANCE = new NopQuery();
-        private NopQuery() {}
-        @Override
-        public void incrementCurrRow() {}
-        @Override
-        public void setCurrRow(long row) {}
-    }
-
-    private static class NopTimer implements Timer {
-        private static final NopTimer INSTANCE = new NopTimer();
-        @Override
-        public void stop() {}
     }
 }

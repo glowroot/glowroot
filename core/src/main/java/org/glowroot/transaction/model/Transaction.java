@@ -40,11 +40,11 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.ScheduledRunnable;
 import org.glowroot.config.AdvancedConfigBase;
 import org.glowroot.jvm.ThreadAllocatedBytes;
-import org.glowroot.plugin.api.internal.ReadableErrorMessage;
-import org.glowroot.plugin.api.internal.ReadableMessage;
 import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.plugin.api.transaction.internal.ReadableErrorMessage;
+import org.glowroot.plugin.api.transaction.internal.ReadableMessage;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

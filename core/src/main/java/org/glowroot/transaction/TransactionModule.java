@@ -29,8 +29,9 @@ import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.plugin.api.internal.PluginServiceRegistry;
 import org.glowroot.plugin.api.transaction.TransactionService;
-import org.glowroot.transaction.PluginServicesRegistry.PluginServicesFactory;
+import org.glowroot.transaction.PluginServiceRegistryImpl.ConfigServiceFactory;
 import org.glowroot.weaving.AnalyzedWorld;
 import org.glowroot.weaving.ExtraBootResourceFinder;
 import org.glowroot.weaving.PreInitializeWeavingClasses;
@@ -51,7 +52,7 @@ public class TransactionModule {
     private final boolean timerWrapperMethods;
     private final boolean jvmRetransformClassesSupported;
 
-    private final PluginServicesFactory pluginServicesFactory;
+    private final PluginServiceRegistry pluginServiceRegistry;
 
     public TransactionModule(final Clock clock, final Ticker ticker,
             final ConfigModule configModule, final TransactionCollector transactionCollector,
@@ -95,28 +96,20 @@ public class TransactionModule {
                 transactionRegistry, transactionCollector, configService, ticker);
         immedateTraceStoreWatcher.scheduleWithFixedDelay(scheduledExecutor, 0,
                 ImmediateTraceStoreWatcher.PERIOD_MILLIS, MILLISECONDS);
-        final UserProfileScheduler userProfileScheduler =
+        UserProfileScheduler userProfileScheduler =
                 new UserProfileScheduler(scheduledExecutor, configService);
-        // this assignment to local variable is just to make checker framework happy
-        // instead of directly accessing the field from inside the anonymous inner class below
-        // (in which case checker framework thinks the field may still be null)
-        final TransactionRegistry transactionRegistry = this.transactionRegistry;
-        pluginServicesFactory = new PluginServicesFactory() {
+        TransactionService transactionService = TransactionServiceImpl.create(transactionRegistry,
+                transactionCollector, configModule.getConfigService(), timerNameCache,
+                threadAllocatedBytes, userProfileScheduler, ticker, clock);
+        ConfigServiceFactory configServiceFactory = new ConfigServiceFactory() {
             @Override
-            public TransactionService createTransactionService() {
-                return TransactionServiceImpl.create(transactionRegistry, transactionCollector,
-                        configModule.getConfigService(), timerNameCache, threadAllocatedBytes,
-                        userProfileScheduler, ticker, clock);
-            }
-
-            @Override
-            public org.glowroot.plugin.api.config.ConfigService createConfigService(
-                    String pluginId) {
+            public org.glowroot.plugin.api.config.ConfigService create(String pluginId) {
                 return ConfigServiceImpl.create(configModule.getConfigService(),
                         configModule.getPluginDescriptors(), pluginId);
             }
         };
-        PluginServicesRegistry.initStaticState(pluginServicesFactory);
+        pluginServiceRegistry =
+                PluginServiceRegistryImpl.init(transactionService, configServiceFactory);
     }
 
     public AnalyzedWorld getAnalyzedWorld() {
@@ -144,13 +137,12 @@ public class TransactionModule {
     }
 
     @OnlyUsedByTests
-    public void reopen() {
-        PluginServicesRegistry.initStaticState(pluginServicesFactory);
+    public void reopen() throws Exception {
+        PluginServiceRegistryImpl.reopen(pluginServiceRegistry);
     }
 
     @OnlyUsedByTests
     public void close() {
         immedateTraceStoreWatcher.cancel();
-        PluginServicesRegistry.clearStaticState();
     }
 }

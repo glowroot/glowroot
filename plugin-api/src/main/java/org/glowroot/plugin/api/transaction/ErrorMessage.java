@@ -21,8 +21,8 @@ import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.plugin.api.internal.ReadableErrorMessage;
-import org.glowroot.plugin.api.internal.ThrowableInfo;
+import org.glowroot.plugin.api.transaction.internal.ReadableErrorMessage;
+import org.glowroot.plugin.api.transaction.internal.ThrowableInfo;
 
 /**
  * @see TraceEntry#endWithError(ErrorMessage)

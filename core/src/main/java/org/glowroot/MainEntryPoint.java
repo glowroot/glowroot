@@ -182,7 +182,7 @@ public class MainEntryPoint {
 
     // this is used to re-open a shared container after a non-shared container was used
     @OnlyUsedByTests
-    public static void reopen(GlowrootModule glowrootModule) {
+    public static void reopen(GlowrootModule glowrootModule) throws Exception {
         glowrootModule.reopen();
         MainEntryPoint.glowrootModule = glowrootModule;
     }

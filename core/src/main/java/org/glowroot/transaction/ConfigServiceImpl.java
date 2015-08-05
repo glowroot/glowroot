@@ -37,8 +37,7 @@ import org.glowroot.plugin.api.config.StringProperty;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-class ConfigServiceImpl extends org.glowroot.plugin.api.config.ConfigService
-        implements ConfigListener {
+class ConfigServiceImpl implements org.glowroot.plugin.api.config.ConfigService, ConfigListener {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigServiceImpl.class);
 

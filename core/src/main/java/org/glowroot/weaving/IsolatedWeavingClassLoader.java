@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
@@ -38,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ClassNames;
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.plugin.api.Agent;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -67,11 +70,11 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         return new Builder();
     }
 
-    private IsolatedWeavingClassLoader(List<Advice> advisors, List<ShimType> shimTypes,
-            List<MixinType> mixinTypes, WeavingTimerService weavingTimerService,
-            List<Class<?>> bridgeClasses, List<String> excludePackages,
-            boolean timerWrapperMethods) {
-        super(IsolatedWeavingClassLoader.class.getClassLoader());
+    private IsolatedWeavingClassLoader(@Nullable ClassLoader parentClassLoader,
+            List<Advice> advisors, List<ShimType> shimTypes, List<MixinType> mixinTypes,
+            WeavingTimerService weavingTimerService, List<Class<?>> bridgeClasses,
+            List<String> excludePackages, boolean timerWrapperMethods) {
+        super(parentClassLoader);
         this.bridgeClasses = ImmutableList.<Class<?>>builder()
                 .addAll(bridgeClasses)
                 .add(IsolatedWeavingClassLoader.class)
@@ -170,6 +173,9 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
     }
 
     private boolean loadWithParentClassLoader(String name) {
+        if (name.startsWith(Agent.class.getName())) {
+            return false;
+        }
         if (isInBootstrapClassLoader(name)) {
             return true;
         }
@@ -198,6 +204,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
 
     public static class Builder {
 
+        private @Nullable ClassLoader parentClassLoader = Builder.class.getClassLoader();
         private List<ShimType> shimTypes = Lists.newArrayList();
         private List<MixinType> mixinTypes = Lists.newArrayList();
         private List<Advice> advisors = Lists.newArrayList();
@@ -207,6 +214,10 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         private final List<String> excludePackages = Lists.newArrayList();
 
         private Builder() {}
+
+        public void setParentClassLoader(ClassLoader parentClassLoader) {
+            this.parentClassLoader = parentClassLoader;
+        }
 
         public void setShimTypes(List<ShimType> shimTypes) {
             this.shimTypes = shimTypes;
@@ -229,8 +240,16 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             this.timerWrapperMethods = timerWrapperMethods;
         }
 
+        public void addBridgeClasses(List<Class<?>> bridgeClasses) {
+            this.bridgeClasses.addAll(bridgeClasses);
+        }
+
         public void addBridgeClasses(Class<?>... bridgeClasses) {
             this.bridgeClasses.addAll(Arrays.asList(bridgeClasses));
+        }
+
+        public void addExcludePackages(List<String> excludePackages) {
+            this.excludePackages.addAll(excludePackages);
         }
 
         public void addExcludePackages(String... excludePackages) {
@@ -247,9 +266,9 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                             // is
                             // @MonotonicNonNull, so it must be non-null here
                             checkNotNull(weavingTimerService);
-                            return new IsolatedWeavingClassLoader(advisors, shimTypes, mixinTypes,
-                                    weavingTimerService, bridgeClasses, excludePackages,
-                                    timerWrapperMethods);
+                            return new IsolatedWeavingClassLoader(parentClassLoader, advisors,
+                                    shimTypes, mixinTypes, weavingTimerService, bridgeClasses,
+                                    excludePackages, timerWrapperMethods);
                         }
                     });
         }

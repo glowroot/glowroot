@@ -133,7 +133,12 @@ public class GlowrootModule {
                 scheduledExecutor, viewerModeEnabled);
         // now inject the real TransactionCollector into the proxy
         transactionCollectorProxy.setInstance(collectorModule.getTransactionCollector());
-        initPlugins(configModule.getPluginDescriptors());
+        // using context class loader in LocalContainer tests so that the plugins are instantiated
+        // inside org.glowroot.container.impl.IsolatedClassLoader
+        ClassLoader initPluginClassLoader =
+                instrumentation == null ? Thread.currentThread().getContextClassLoader()
+                        : GlowrootModule.class.getClassLoader();
+        initPlugins(configModule.getPluginDescriptors(), initPluginClassLoader);
         uiModule = new LocalUiModule(ticker, clock, baseDir, jvmModule, configModule, storageModule,
                 collectorModule, transactionModule, instrumentation, properties, version);
         this.baseDir = baseDir;
@@ -161,11 +166,12 @@ public class GlowrootModule {
 
     // now init plugins to give them a chance to do something in their static initializer
     // e.g. append their package to jboss.modules.system.pkgs
-    private static void initPlugins(List<PluginDescriptor> pluginDescriptors) {
+    private static void initPlugins(List<PluginDescriptor> pluginDescriptors,
+            @Nullable ClassLoader loader) {
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             for (String aspect : pluginDescriptor.aspects()) {
                 try {
-                    Class.forName(aspect, true, GlowrootModule.class.getClassLoader());
+                    Class.forName(aspect, true, loader);
                 } catch (ClassNotFoundException e) {
                     // this would have already been logged as a warning during advice construction
                     logger.debug(e.getMessage(), e);
@@ -225,7 +231,7 @@ public class GlowrootModule {
     }
 
     @OnlyUsedByTests
-    public void reopen() {
+    public void reopen() throws Exception {
         initStaticLoggerState(baseDir, loggingSpy);
         transactionModule.reopen();
     }

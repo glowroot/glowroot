@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -55,7 +56,7 @@ public class LocalContainer implements Container {
     private final boolean deleteBaseDirOnClose;
     private final boolean shared;
 
-    private final IsolatedWeavingClassLoader isolatedWeavingClassLoader;
+    private volatile @Nullable IsolatedWeavingClassLoader isolatedWeavingClassLoader;
     private final HttpClient httpClient;
     private final ConfigService configService;
     private final TraceService traceService;
@@ -89,27 +90,10 @@ public class LocalContainer implements Container {
             properties.put("internal.h2.memdb", "true");
         }
         properties.putAll(extraProperties);
-        try {
-            MainEntryPoint.start(properties);
-        } catch (org.glowroot.GlowrootModule.StartupFailedException e) {
-            throw new StartupFailedException(e);
-        }
-        JavaagentMain.setSlowTraceThresholdMillisToZero();
-        final GlowrootModule glowrootModule = MainEntryPoint.getGlowrootModule();
-        checkNotNull(glowrootModule);
-        IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
-        AdviceCache adviceCache = glowrootModule.getTransactionModule().getAdviceCache();
-        loader.setShimTypes(adviceCache.getShimTypes());
-        loader.setMixinTypes(adviceCache.getMixinTypes());
-        List<Advice> advisors = Lists.newArrayList();
-        advisors.addAll(adviceCache.getAdvisors());
-        loader.setAdvisors(advisors);
-        loader.setWeavingTimerService(
-                glowrootModule.getTransactionModule().getWeavingTimerService());
-        loader.setTimerWrapperMethods(glowrootModule.getConfigModule().getConfigService()
-                .getAdvancedConfig().timerWrapperMethods());
-        loader.addBridgeClasses(AppUnderTest.class, AppUnderTestServices.class);
-        loader.addExcludePackages("org.glowroot.plugin.api",
+        List<Class<?>> bridgeClasses =
+                ImmutableList.of(AppUnderTest.class, AppUnderTestServices.class);
+        List<String> excludePackages = ImmutableList.of(
+                "org.glowroot.plugin.api",
                 "org.glowroot.advicegen",
                 "org.glowroot.collector",
                 "org.glowroot.common",
@@ -120,6 +104,33 @@ public class LocalContainer implements Container {
                 "org.glowroot.transaction",
                 "org.glowroot.weaving",
                 "com.google.common");
+        IsolatedClassLoader midLoader = new IsolatedClassLoader(bridgeClasses, excludePackages);
+        ClassLoader priorContextClassLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(midLoader);
+            MainEntryPoint.start(properties);
+        } catch (org.glowroot.GlowrootModule.StartupFailedException e) {
+            throw new StartupFailedException(e);
+        } finally {
+            Thread.currentThread().setContextClassLoader(priorContextClassLoader);
+        }
+        JavaagentMain.setSlowTraceThresholdMillisToZero();
+        final GlowrootModule glowrootModule = MainEntryPoint.getGlowrootModule();
+        checkNotNull(glowrootModule);
+        IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
+        loader.setParentClassLoader(midLoader);
+        AdviceCache adviceCache = glowrootModule.getTransactionModule().getAdviceCache();
+        loader.setShimTypes(adviceCache.getShimTypes());
+        loader.setMixinTypes(adviceCache.getMixinTypes());
+        List<Advice> advisors = Lists.newArrayList();
+        advisors.addAll(adviceCache.getAdvisors());
+        loader.setAdvisors(advisors);
+        loader.setWeavingTimerService(
+                glowrootModule.getTransactionModule().getWeavingTimerService());
+        loader.setTimerWrapperMethods(glowrootModule.getConfigModule().getConfigService()
+                .getAdvancedConfig().timerWrapperMethods());
+        loader.addBridgeClasses(bridgeClasses);
+        loader.addExcludePackages(excludePackages);
         isolatedWeavingClassLoader = loader.build();
         httpClient = new HttpClient(glowrootModule.getUiModule().getPort());
         configService = new ConfigService(httpClient, new GetUiPortCommand() {
@@ -149,6 +160,10 @@ public class LocalContainer implements Container {
 
     @Override
     public void executeAppUnderTest(Class<? extends AppUnderTest> appClass) throws Exception {
+        IsolatedWeavingClassLoader isolatedWeavingClassLoader = this.isolatedWeavingClassLoader;
+        if (isolatedWeavingClassLoader == null) {
+            throw new AssertionError("LocalContainer has already been stopped");
+        }
         ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
         executingAppThreads.add(Thread.currentThread());
@@ -232,10 +247,12 @@ public class LocalContainer implements Container {
         if (deleteBaseDirOnClose) {
             TempDirs.deleteRecursively(baseDir);
         }
+        // release class loader to prevent OOM Perm Gen
+        isolatedWeavingClassLoader = null;
     }
 
     // this is used to re-open a shared container after a non-shared container was used
-    public void reopen() {
+    public void reopen() throws Exception {
         MainEntryPoint.reopen(glowrootModule);
     }
 }

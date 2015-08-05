@@ -15,9 +15,7 @@
  */
 package org.glowroot.plugin.api.config;
 
-public abstract class ConfigService {
-
-    protected ConfigService() {}
+public interface ConfigService {
 
     /**
      * Registers a listener that will receive a callback when the plugin's property values are
@@ -28,7 +26,7 @@ public abstract class ConfigService {
      * {@link #getDoubleProperty(String)} as {@code volatile} fields, and updating the cached values
      * anytime {@link ConfigListener#onChange()} is called.
      */
-    public abstract void registerConfigListener(ConfigListener listener);
+    void registerConfigListener(ConfigListener listener);
 
     /**
      * Returns whether the plugin is enabled. When Glowroot itself is disabled, this returns
@@ -36,7 +34,7 @@ public abstract class ConfigService {
      * 
      * Plugins can be individually disabled on the configuration page.
      */
-    public abstract boolean isEnabled();
+    boolean isEnabled();
 
     /**
      * Returns the {@code String} plugin property value with the specified {@code name}.
@@ -47,7 +45,7 @@ public abstract class ConfigService {
      * META-INF/glowroot.plugin.json file, and can be modified (assuming they are not marked as
      * hidden) on the configuration page under the plugin's configuration section.
      */
-    public abstract StringProperty getStringProperty(String name);
+    StringProperty getStringProperty(String name);
 
     /**
      * Returns the {@code boolean} plugin property value with the specified {@code name}. If there
@@ -58,7 +56,7 @@ public abstract class ConfigService {
      * META-INF/glowroot.plugin.json file, and can be modified (assuming they are not marked as
      * hidden) on the configuration page under the plugin's configuration section.
      */
-    public abstract BooleanProperty getBooleanProperty(String name);
+    BooleanProperty getBooleanProperty(String name);
 
     /**
      * Returns the {@code Double} plugin property value with the specified {@code name}. If there is
@@ -69,7 +67,7 @@ public abstract class ConfigService {
      * META-INF/glowroot.plugin.json file, and can be modified (assuming they are not marked as
      * hidden) on the configuration page under the plugin's configuration section.
      */
-    public abstract DoubleProperty getDoubleProperty(String name);
+    DoubleProperty getDoubleProperty(String name);
 
-    public abstract BooleanProperty getEnabledProperty(String name);
+    BooleanProperty getEnabledProperty(String name);
 }

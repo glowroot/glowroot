@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.immutables.value.Value;
 
 import org.glowroot.plugin.api.transaction.TimerName;
+import org.glowroot.transaction.model.TimerNameImpl;
 
 @Value.Immutable
 public abstract class TimerNameImplBase implements TimerName {

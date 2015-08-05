@@ -13,20 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.api;
+package org.glowroot.plugin.api.internal;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.glowroot.plugin.api.config.ConfigService;
+import org.glowroot.plugin.api.transaction.TransactionService;
 
-public class PluginServicesTest {
+public interface PluginServiceRegistry {
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
-    @Test
-    public void testGetNull() {
-        thrown.expect(AssertionError.class);
-        Agent.getConfigService(null);
-    }
+    TransactionService getTransactionService();
+    ConfigService getConfigService(String pluginId);
 }
