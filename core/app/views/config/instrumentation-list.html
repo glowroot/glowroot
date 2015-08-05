@@ -31,8 +31,14 @@
           {{display(config)}}
         </a>
       </div>
+      <div style="margin: 20px 60px 0 0;" ng-if="dirty">
+        <strong>Restart the JVM to apply changes.</strong>
+        <span style="font-style: italic;" ng-if="jvmRetransformClassesSupported">
+          Feeling lucky? Try the red button.
+        </span>
+      </div>
       <!-- ng-show="loaded" is used to prevent jitter of seeing this section very briefly
-           before it gets pushed down by existing gauge sections -->
+           before it gets pushed down by existing instrumentation -->
       <div ng-show="loaded"
            style="font-size: 16px; margin-top: 30px;">
         <!-- using gt-button-group even though only a single gt-button because otherwise the success message will be
@@ -47,32 +53,16 @@
                   style="margin-left: 8px;">
             Import
           </button>
-        </div>
-      </div>
-      <div style="margin-top: 20px;" ng-if="dirty">
-        <div ng-if="jvmRetransformClassesSupported"
-             class="clearfix">
-          <div style="float: left; margin: 10px 60px 0 0;">
-            <strong>Restart the JVM to apply changes.</strong>
+          <div gt-button
+               gt-btn-class="btn-danger"
+               gt-label="Apply changes to running JVM"
+               gt-click="retransformClasses(deferred)"
+               gt-confirm-header="Apply changes to running JVM?"
+               gt-confirm-body="Important: Do not use this in production as it has chance of crashing the JVM."
+               ng-if="dirty && jvmRetransformClassesSupported"
+               class="pull-left"
+               style="margin-left: 8px;">
           </div>
-          <div style="float: left; margin-top: 5px;">
-            <div style="float: left; margin: 5px 6px 0 0;">
-              In non-production environments try
-            </div>
-            <div gt-button
-                 gt-btn-class="btn-danger"
-                 gt-label="Apply changes to running JVM"
-                 gt-click="retransformClasses(deferred)"
-                 gt-confirm-header="Apply changes to running JVM?"
-                 gt-confirm-body="Important: Do not use this in production as it has chance of crashing the JVM."
-                 class="gt-reweave-btn"
-                 style="float: left; margin-top: 2px;">
-            </div>
-          </div>
-        </div>
-        <div ng-if="!jvmRetransformClassesSupported"
-             style="margin-top: 30px;">
-          <strong>Restart the JVM to apply changes.</strong>
         </div>
       </div>
     </div>
