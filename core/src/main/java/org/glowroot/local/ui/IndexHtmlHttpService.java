@@ -69,8 +69,8 @@ class IndexHtmlHttpService implements UnauthenticatedHttpService {
             layout = layoutJsonService.getNeedsAuthenticationLayout();
         }
         String authenticatedUser = httpSessionManager.getAuthenticatedUser(request);
-        String layoutScript =
-                "var layout=" + layout + ";var authenticatedUser = " + authenticatedUser;
+        String layoutScript = "var layout=" + layout + ";var authenticatedUser = '"
+                + Strings.nullToEmpty(authenticatedUser) + "'";
         indexHtml = indexHtml.replaceFirst("<base href=\"/\">",
                 "<base href=\"" + BASE_HREF + "\"><script>" + layoutScript + "</script>");
         // this is to work around an issue with IE10-11 (IE9 is OK)
