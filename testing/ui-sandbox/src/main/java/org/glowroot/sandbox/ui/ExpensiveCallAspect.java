@@ -381,7 +381,7 @@ public class ExpensiveCallAspect {
                                                 ImmutableList.of("v311aa", "v311bb")),
                                         "attr32", "value32\nwith newline", "attr33", "value33"));
                 String traceEntryMessage = expensiveCallInvoker.getTraceEntryMessage(expensiveCall);
-                return Message.withDetail(traceEntryMessage, detail);
+                return Message.from(traceEntryMessage, detail);
             }
         };
     }

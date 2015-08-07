@@ -139,7 +139,7 @@ public class NestableCallAspect {
                                                 ImmutableList.of("v311a", "v311b")),
                                         "attr32", getLongDetailValue(true), "attr33",
                                         getLongDetailValue(false)));
-                return Message.withDetail(traceEntryMessage, detail);
+                return Message.from(traceEntryMessage, detail);
             }
         };
     }

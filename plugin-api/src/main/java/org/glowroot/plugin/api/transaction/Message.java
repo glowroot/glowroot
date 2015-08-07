@@ -48,6 +48,7 @@ public abstract class Message {
 
     private static final int MESSAGE_CHAR_LIMIT;
 
+    private static final String[] EMPTY_ARGS = new String[0];
     private static final ImmutableMap<String, Object> EMPTY_DETAIL = ImmutableMap.of();
 
     static {
@@ -57,7 +58,7 @@ public abstract class Message {
 
     // accepts null message so callers don't have to check if passing it in from elsewhere
     public static Message from(@Nullable String message) {
-        return new MessageImpl(message, new String[0], EMPTY_DETAIL);
+        return new MessageImpl(message, EMPTY_ARGS, EMPTY_DETAIL);
     }
 
     // does not copy args
@@ -66,9 +67,9 @@ public abstract class Message {
     }
 
     // accepts null message so callers don't have to check if passing it in from elsewhere
-    public static Message withDetail(@Nullable String message,
+    public static Message from(@Nullable String message,
             Map<String, ? extends /*@Nullable*/Object> detail) {
-        return new MessageImpl(message, new String[0], detail);
+        return new MessageImpl(message, EMPTY_ARGS, detail);
     }
 
     private Message() {}

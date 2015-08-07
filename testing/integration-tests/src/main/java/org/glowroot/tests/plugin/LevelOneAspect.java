@@ -89,7 +89,7 @@ public class LevelOneAspect {
                         // intentionally doing a very bad thing here
                         @SuppressWarnings("unchecked")
                         Map<String, ?> detail = (Map<String, ?>) (Map<?, ?>) map;
-                        return Message.withDetail(headlineFinal, detail);
+                        return Message.from(headlineFinal, detail);
                     }
                     Optional<Object> optionalArg2 = Optional.fromNullable(arg2);
                     Map<String, ?> detail =
@@ -100,7 +100,7 @@ public class LevelOneAspect {
                                                     optionalArg2)),
                                     "nested2", ImmutableMap.of("nestedkey21", arg1, "nestedkey22",
                                             optionalArg2));
-                    return Message.withDetail(headlineFinal, detail);
+                    return Message.from(headlineFinal, detail);
                 }
             };
             TraceEntry traceEntry = transactionService.startTransaction("Integration test",

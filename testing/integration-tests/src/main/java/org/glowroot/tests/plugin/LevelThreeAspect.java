@@ -56,7 +56,7 @@ public class LevelThreeAspect {
             return transactionService.startTraceEntry(new MessageSupplier() {
                 @Override
                 public Message get() {
-                    return Message.withDetail("Level Three",
+                    return Message.from("Level Three",
                             ImmutableMap.of("arg1", arg1, "arg2", arg2));
                 }
             }, timerName);
