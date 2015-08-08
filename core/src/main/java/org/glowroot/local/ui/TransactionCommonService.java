@@ -307,9 +307,8 @@ class TransactionCommonService {
         MergedAggregate currMergedAggregate = null;
         long currRollupTime = Long.MIN_VALUE;
         for (Aggregate nonRolledUpAggregate : orderedNonRolledUpAggregates) {
-            long rollupTime = (long) Math
-                    .ceil(nonRolledUpAggregate.captureTime() / (double) fixedIntervalMillis)
-                    * fixedIntervalMillis;
+            long rollupTime = AggregateDao.getNextRollupTime(
+                    nonRolledUpAggregate.captureTime(), fixedIntervalMillis);
             if (rollupTime != currRollupTime && currMergedAggregate != null) {
                 rolledUpAggregates.add(currMergedAggregate.toAggregate(scratchBuffer));
                 currMergedAggregate = new MergedAggregate(Math.min(rollupTime, liveCaptureTime),

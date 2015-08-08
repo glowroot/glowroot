@@ -251,7 +251,7 @@ public class DataSource {
         } while (deleted != 0);
     }
 
-    void syncTable(@Untainted String tableName, ImmutableList<Column> columns) throws SQLException {
+    void syncTable(@Untainted String tableName, List<Column> columns) throws SQLException {
         synchronized (lock) {
             if (closing) {
                 return;

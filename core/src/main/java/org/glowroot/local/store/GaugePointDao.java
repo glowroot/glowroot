@@ -20,9 +20,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
+import java.util.TimeZone;
+import java.util.concurrent.atomic.AtomicLongArray;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.primitives.Longs;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.collector.GaugePoint;
@@ -45,7 +49,7 @@ public class GaugePointDao implements GaugePointRepository {
             Column.of("capture_time", Types.BIGINT),
             Column.of("value", Types.DOUBLE));
 
-    private static final ImmutableList<Column> gaugePointRollupXColumns = ImmutableList.<Column>of(
+    private static final ImmutableList<Column> gaugePointRollupColumns = ImmutableList.<Column>of(
             Column.of("gauge_meta_id", Types.BIGINT),
             Column.of("capture_time", Types.BIGINT),
             Column.of("value", Types.DOUBLE),
@@ -55,38 +59,14 @@ public class GaugePointDao implements GaugePointRepository {
             ImmutableList.<Index>of(Index.of("gauge_point_rollup_0_idx",
                     ImmutableList.of("gauge_meta_id", "capture_time", "value")));
 
-    private static final ImmutableList<Index> gaugePointRollup1Indexes =
-            ImmutableList.<Index>of(Index.of("gauge_point_rollup_1_idx",
-                    ImmutableList.of("gauge_meta_id", "capture_time", "value")));
-
-    private static final ImmutableList<Index> gaugePointRollup2Indexes =
-            ImmutableList.<Index>of(Index.of("gauge_point_rollup_2_idx",
-                    ImmutableList.of("gauge_meta_id", "capture_time", "value")));
-
-    private static final ImmutableList<Index> gaugePointRollup3Indexes =
-            ImmutableList.<Index>of(Index.of("gauge_point_rollup_3_idx",
-                    ImmutableList.of("gauge_meta_id", "capture_time", "value")));
-
-    private static final ImmutableList<Column> gaugePointLastRollupTimesColumns =
-            ImmutableList.<Column>of(
-                    Column.of("last_rollup_1_time", Types.BIGINT),
-                    Column.of("last_rollup_2_time", Types.BIGINT),
-                    Column.of("last_rollup_3_time", Types.BIGINT));
-
     private final GaugeMetaDao gaugeMetaDao;
     private final DataSource dataSource;
     private final ConfigService configService;
     private final Clock clock;
-    private final long fixedIntervalMillis1;
-    private final long fixedIntervalMillis2;
-    private final long fixedIntervalMillis3;
-    private final long viewThresholdMillis1;
-    private final long viewThresholdMillis2;
-    private final long viewThresholdMillis3;
+    private final ImmutableList<RollupConfig> rollupConfigs;
 
-    private volatile long lastRollupTime1;
-    private volatile long lastRollupTime2;
-    private volatile long lastRollupTime3;
+    // AtomicLongArray used for visibility
+    private final AtomicLongArray lastRollupTimes;
 
     private final Object rollupLock = new Object();
 
@@ -96,37 +76,39 @@ public class GaugePointDao implements GaugePointRepository {
         this.dataSource = dataSource;
         this.configService = configService;
         this.clock = clock;
-        ImmutableList<RollupConfig> rollupConfigs = configService.getRollupConfigs();
-        fixedIntervalMillis1 = rollupConfigs.get(0).intervalMillis();
-        fixedIntervalMillis2 = rollupConfigs.get(1).intervalMillis();
-        fixedIntervalMillis3 = rollupConfigs.get(2).intervalMillis();
-        viewThresholdMillis1 = rollupConfigs.get(0).viewThresholdMillis();
-        viewThresholdMillis2 = rollupConfigs.get(1).viewThresholdMillis();
-        viewThresholdMillis3 = rollupConfigs.get(2).viewThresholdMillis();
+        this.rollupConfigs = configService.getRollupConfigs();
 
         dataSource.syncTable("gauge_point_rollup_0", gaugePointRollup0Columns);
         dataSource.syncIndexes("gauge_point_rollup_0", gaugePointRollup0Indexes);
-        dataSource.syncTable("gauge_point_rollup_1", gaugePointRollupXColumns);
-        dataSource.syncIndexes("gauge_point_rollup_1", gaugePointRollup1Indexes);
-        dataSource.syncTable("gauge_point_rollup_2", gaugePointRollupXColumns);
-        dataSource.syncIndexes("gauge_point_rollup_2", gaugePointRollup2Indexes);
-        dataSource.syncTable("gauge_point_rollup_3", gaugePointRollupXColumns);
-        dataSource.syncIndexes("gauge_point_rollup_3", gaugePointRollup3Indexes);
-        dataSource.syncTable("gauge_point_last_rollup_times", gaugePointLastRollupTimesColumns);
+        for (int i = 1; i <= rollupConfigs.size(); i++) {
+            dataSource.syncTable("gauge_point_rollup_" + castUntainted(i), gaugePointRollupColumns);
+            dataSource.syncIndexes("gauge_point_rollup_" + castUntainted(i), ImmutableList.of(
+                    Index.of("gauge_point_rollup_" + castUntainted(i) + "_idx",
+                            ImmutableList.of("gauge_meta_id", "capture_time", "value"))));
+        }
+        List<Column> columns = Lists.newArrayList();
+        for (int i = 1; i <= rollupConfigs.size(); i++) {
+            columns.add(Column.of("last_rollup_" + i + "_time", Types.BIGINT));
+        }
+        dataSource.syncTable("gauge_point_last_rollup_times", columns);
 
-        Long[] lastRollupTimes = dataSource.query("select last_rollup_1_time, last_rollup_2_time,"
-                + " last_rollup_3_time from gauge_point_last_rollup_times",
-                new LastRollupTimesExtractor());
+        List<String> columnNames = Lists.newArrayList();
+        for (int i = 1; i <= rollupConfigs.size(); i++) {
+            columnNames.add("last_rollup_" + i + "_time");
+        }
+        Joiner joiner = Joiner.on(", ");
+        String selectClause = castUntainted(joiner.join(columnNames));
+        long[] lastRollupTimes =
+                dataSource.query("select " + selectClause + " from gauge_point_last_rollup_times",
+                        new LastRollupTimesExtractor());
         if (lastRollupTimes == null) {
-            dataSource.update("insert into gauge_point_last_rollup_times (last_rollup_1_time, "
-                    + "last_rollup_2_time, last_rollup_3_time) values (0, 0, 0)");
-            lastRollupTime1 = 0;
-            lastRollupTime2 = 0;
-            lastRollupTime3 = 0;
+            long[] values = new long[rollupConfigs.size()];
+            String valueClause = castUntainted(joiner.join(Longs.asList(values)));
+            dataSource.update("insert into gauge_point_last_rollup_times (" + selectClause
+                    + ") values (" + valueClause + ")");
+            this.lastRollupTimes = new AtomicLongArray(values);
         } else {
-            lastRollupTime1 = lastRollupTimes[0];
-            lastRollupTime2 = lastRollupTimes[1];
-            lastRollupTime3 = lastRollupTimes[2];
+            this.lastRollupTimes = new AtomicLongArray(lastRollupTimes);
         }
 
         // TODO initial rollup in case store is not called in a reasonable time
@@ -161,39 +143,21 @@ public class GaugePointDao implements GaugePointRepository {
             // invocations of GaugeCollector will wait until prior invocations complete
             //
             // TODO this clock logic will fail if remote collectors are introduced
-            long safeRollupTime = clock.currentTimeMillis() - 1;
-            long safeRollup1Time = (long) Math.floor(safeRollupTime / (double) fixedIntervalMillis1)
-                    * fixedIntervalMillis1;
-            if (safeRollup1Time > lastRollupTime1) {
-                rollup(lastRollupTime1, safeRollup1Time, fixedIntervalMillis1, 1, 0);
-                // JVM termination here will cause last_rollup_1_time to be out of sync, which will
-                // cause a re-rollup of this time after the next startup, but this possible
-                // duplicate is filtered out by the distinct clause in readGaugePoints()
-                dataSource.update("update gauge_point_last_rollup_times set last_rollup_1_time = ?",
-                        safeRollup1Time);
-                lastRollupTime1 = safeRollup1Time;
-            }
-            long safeRollup2Time = (long) Math.floor(safeRollupTime / (double) fixedIntervalMillis2)
-                    * fixedIntervalMillis2;
-            if (safeRollup2Time > lastRollupTime2) {
-                rollup(lastRollupTime2, safeRollup2Time, fixedIntervalMillis2, 2, 1);
-                // JVM termination here will cause last_rollup_2_time to be out of sync, which will
-                // cause a re-rollup of this time after the next startup, but this possible
-                // duplicate is filtered out by the distinct clause in readGaugePoints()
-                dataSource.update("update gauge_point_last_rollup_times set last_rollup_2_time = ?",
-                        safeRollup2Time);
-                lastRollupTime2 = safeRollup2Time;
-            }
-            long safeRollup3Time = (long) Math.floor(safeRollupTime / (double) fixedIntervalMillis3)
-                    * fixedIntervalMillis3;
-            if (safeRollup3Time > lastRollupTime3) {
-                rollup(lastRollupTime3, safeRollup3Time, fixedIntervalMillis3, 3, 2);
-                // JVM termination here will cause last_rollup_3_time to be out of sync, which will
-                // cause a re-rollup of this time after the next startup, but this possible
-                // duplicate is filtered out by the distinct clause in readGaugePoints()
-                dataSource.update("update gauge_point_last_rollup_times set last_rollup_3_time = ?",
-                        safeRollup3Time);
-                lastRollupTime3 = safeRollup3Time;
+            long safeCurrentTime = clock.currentTimeMillis() - 1;
+            for (int i = 0; i < rollupConfigs.size(); i++) {
+                long intervalMillis = rollupConfigs.get(i).intervalMillis();
+                long safeRollupTime = AggregateDao.getSafeRollupTime(safeCurrentTime,
+                        intervalMillis);
+                long lastRollupTime = lastRollupTimes.get(i);
+                if (safeRollupTime > lastRollupTime) {
+                    rollup(lastRollupTime, safeRollupTime, intervalMillis, i + 1, i);
+                    // JVM termination here will cause last_rollup_*_time to be out of sync, which
+                    // will cause a re-rollup of this time after the next startup, but this possible
+                    // duplicate is filtered out by the distinct clause in readGaugePoints()
+                    dataSource.update("update gauge_point_last_rollup_times set last_rollup_"
+                            + castUntainted(i + 1) + "_time = ?", safeRollupTime);
+                    lastRollupTimes.set(i, safeRollupTime);
+                }
             }
         }
     }
@@ -217,16 +181,7 @@ public class GaugePointDao implements GaugePointRepository {
 
     public List<GaugePoint> readManuallyRolledUpGaugePoints(long from, long to, String gaugeName,
             int rollupLevel, long liveCaptureTime) throws SQLException {
-        long fixedIntervalMillis;
-        if (rollupLevel == 1) {
-            fixedIntervalMillis = fixedIntervalMillis1;
-        } else if (rollupLevel == 2) {
-            fixedIntervalMillis = fixedIntervalMillis2;
-        } else if (rollupLevel == 3) {
-            fixedIntervalMillis = fixedIntervalMillis3;
-        } else {
-            throw new IllegalArgumentException("Unexpected rollupLevel: " + rollupLevel);
-        }
+        long fixedIntervalMillis = rollupConfigs.get(rollupLevel - 1).intervalMillis();
         GaugeMeta gaugeMeta = gaugeMetaDao.getGaugeMetaId(gaugeName);
         if (gaugeMeta == null) {
             // not necessarily an error, gauge id not created until first store
@@ -259,27 +214,25 @@ public class GaugePointDao implements GaugePointRepository {
         long timeAgoMillis = clock.currentTimeMillis() - from;
         ImmutableList<Integer> rollupExpirationHours =
                 configService.getStorageConfig().rollupExpirationHours();
-        // gauge point rollup level 0 and rollup level 1 both share the same expiration
-        Integer rollupZeroAndOneExpirationHours = rollupExpirationHours.get(0);
-        if (millis < viewThresholdMillis1
-                && HOURS.toMillis(rollupZeroAndOneExpirationHours) > timeAgoMillis) {
+        // gauge point rollup level 0 shares rollup level 1's expiration
+        if (millis < rollupConfigs.get(0).viewThresholdMillis()
+                && HOURS.toMillis(rollupExpirationHours.get(0)) > timeAgoMillis) {
             return 0;
-        } else if (millis < viewThresholdMillis2
-                && HOURS.toMillis(rollupZeroAndOneExpirationHours) > timeAgoMillis) {
-            return 1;
-        } else if (millis < viewThresholdMillis3
-                && HOURS.toMillis(rollupExpirationHours.get(1)) > timeAgoMillis) {
-            return 2;
-        } else {
-            return 3;
         }
+        for (int i = 0; i < rollupConfigs.size() - 1; i++) {
+            if (millis < rollupConfigs.get(i + 1).viewThresholdMillis()
+                    && HOURS.toMillis(rollupExpirationHours.get(i)) > timeAgoMillis) {
+                return i + 1;
+            }
+        }
+        return rollupConfigs.size();
     }
 
     public void deleteAll() throws SQLException {
         dataSource.execute("truncate table gauge_point_rollup_0");
-        dataSource.execute("truncate table gauge_point_rollup_1");
-        dataSource.execute("truncate table gauge_point_rollup_2");
-        dataSource.execute("truncate table gauge_point_rollup_3");
+        for (int i = 1; i <= configService.getRollupConfigs().size(); i++) {
+            dataSource.execute("truncate table gauge_point_rollup_" + castUntainted(i));
+        }
     }
 
     void deleteBefore(long captureTime, int rollupLevel) throws SQLException {
@@ -288,9 +241,11 @@ public class GaugePointDao implements GaugePointRepository {
 
     private void rollup(long lastRollupTime, long safeRollupTime, long fixedIntervalMillis,
             int toRollupLevel, int fromRollupLevel) throws SQLException {
+        // TODO handle when offset is different for lastRollupTime and safeRollupTime?
+        int offsetMillis = TimeZone.getDefault().getOffset(safeRollupTime);
         // need ".0" to force double result
-        String captureTimeSql = castUntainted(
-                "ceil(capture_time / " + fixedIntervalMillis + ".0) * " + fixedIntervalMillis);
+        String captureTimeSql = castUntainted("ceil((capture_time + " + offsetMillis + ") / "
+                + fixedIntervalMillis + ".0) * " + fixedIntervalMillis + " - " + offsetMillis);
         rollup(lastRollupTime, safeRollupTime, captureTimeSql, false, toRollupLevel,
                 fromRollupLevel);
         rollup(lastRollupTime, safeRollupTime, captureTimeSql, true, toRollupLevel,
@@ -311,14 +266,18 @@ public class GaugePointDao implements GaugePointRepository {
     }
 
     private static class LastRollupTimesExtractor
-            implements ResultSetExtractor<Long/*@Nullable*/[]> {
+            implements ResultSetExtractor<long/*@Nullable*/[]> {
         @Override
-        public Long/*@Nullable*/[] extractData(ResultSet resultSet) throws Exception {
-            if (resultSet.next()) {
-                return new Long[] {resultSet.getLong(1), resultSet.getLong(2),
-                        resultSet.getLong(3)};
+        public long/*@Nullable*/[] extractData(ResultSet resultSet) throws Exception {
+            if (!resultSet.next()) {
+                return null;
             }
-            return null;
+            int columns = resultSet.getMetaData().getColumnCount();
+            long[] values = new long[columns];
+            for (int i = 0; i < columns; i++) {
+                values[i] = resultSet.getLong(i + 1);
+            }
+            return values;
         }
     }
 

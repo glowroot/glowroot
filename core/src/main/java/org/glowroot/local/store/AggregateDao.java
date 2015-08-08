@@ -166,13 +166,12 @@ public class AggregateDao {
             ImmutableList<RollupConfig> rollupConfigs = configService.getRollupConfigs();
             for (int i = 1; i < rollupConfigs.size(); i++) {
                 RollupConfig rollupConfig = rollupConfigs.get(i);
-                long currentRollupTime =
-                        (long) Math.floor(captureTime / (double) rollupConfig.intervalMillis())
-                                * rollupConfig.intervalMillis();
-                if (currentRollupTime > lastRollupTimes.get(i)) {
-                    rollup(lastRollupTimes.get(i), currentRollupTime, rollupConfig.intervalMillis(),
+                long safeRollupTime =
+                        getSafeRollupTime(captureTime, rollupConfig.intervalMillis());
+                if (safeRollupTime > lastRollupTimes.get(i)) {
+                    rollup(lastRollupTimes.get(i), safeRollupTime, rollupConfig.intervalMillis(),
                             i, i - 1);
-                    lastRollupTimes.set(i, currentRollupTime);
+                    lastRollupTimes.set(i, safeRollupTime);
                 }
             }
         }
@@ -575,6 +574,14 @@ public class AggregateDao {
         RowMappers.setLong(preparedStatement, i++, profileCappedId);
         preparedStatement.setBytes(i++, overallAggregate.histogram());
         preparedStatement.setString(i++, overallAggregate.timers());
+    }
+
+    public static long getNextRollupTime(long captureTime, long intervalMillis) {
+        return (long) Math.ceil(captureTime / (double) intervalMillis) * intervalMillis;
+    }
+
+    static long getSafeRollupTime(long captureTime, long intervalMillis) {
+        return (long) Math.floor(captureTime / (double) intervalMillis) * intervalMillis;
     }
 
     private static @Untainted String getSortClause(TransactionSummarySortOrder sortOrder) {

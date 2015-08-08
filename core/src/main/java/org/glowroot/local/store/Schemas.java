@@ -63,8 +63,8 @@ class Schemas {
 
     private Schemas() {}
 
-    static void syncTable(@Untainted String tableName, ImmutableList<Column> columns,
-            Connection connection) throws SQLException {
+    static void syncTable(@Untainted String tableName, List<Column> columns, Connection connection)
+            throws SQLException {
         if (!tableExists(tableName, connection)) {
             createTable(tableName, columns, connection);
         } else if (tableNeedsUpgrade(tableName, columns, connection)) {
@@ -141,7 +141,7 @@ class Schemas {
         return ImmutableList.copyOf(columns);
     }
 
-    private static void createTable(@Untainted String tableName, ImmutableList<Column> columns,
+    private static void createTable(@Untainted String tableName, List<Column> columns,
             Connection connection) throws SQLException {
         StringBuilder sql = new StringBuilder();
         sql.append("create table ");
@@ -170,7 +170,7 @@ class Schemas {
         }
     }
 
-    private static boolean tableNeedsUpgrade(String tableName, ImmutableList<Column> columns,
+    private static boolean tableNeedsUpgrade(String tableName, List<Column> columns,
             Connection connection) throws SQLException {
         // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
         // see https://code.google.com/p/guava-libraries/issues/detail?id=635

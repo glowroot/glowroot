@@ -20,6 +20,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import org.glowroot.common.Clock;
+import org.glowroot.local.store.AggregateDao;
 
 class DataSeriesHelper {
 
@@ -143,7 +144,6 @@ class DataSeriesHelper {
 
     // captureTime may be for active point which doesn't line up on data point interval
     private long getCurrentCaptureTime(long captureTime) {
-        return (long) Math.ceil(captureTime / (double) dataPointIntervalMillis)
-                * dataPointIntervalMillis;
+        return AggregateDao.getNextRollupTime(captureTime, dataPointIntervalMillis);
     }
 }

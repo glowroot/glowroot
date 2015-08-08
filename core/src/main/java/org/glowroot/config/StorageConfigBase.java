@@ -28,14 +28,20 @@ import org.immutables.value.Value;
 @JsonIgnoreProperties({"aggregateExpirationHours", "gaugeExpirationHours"})
 public abstract class StorageConfigBase {
 
+    // 2 days, 2 weeks, 2 months
+    private static final ImmutableList<Integer> DEFAULT_ROLLUP_EXPIRATION_HOURS =
+            ImmutableList.of(24 * 2, 24 * 7 * 2, 24 * 30 * 2);
+
+    private static final ImmutableList<Integer> DEFAULT_CAPPED_DATABASE_SIZES_MB =
+            ImmutableList.of(500, 500, 500);
+
     // TODO revisit this comment
     //
     // currently aggregate expiration should be at least as big as trace expiration
     // errors/messages page depends on this for calculating error percentage when using the filter
     @Value.Default
     public ImmutableList<Integer> rollupExpirationHours() {
-        // 2 days, 2 weeks, 2 months
-        return ImmutableList.of(24 * 2, 24 * 14, 24 * 60);
+        return DEFAULT_ROLLUP_EXPIRATION_HOURS;
     }
 
     @Value.Default
@@ -45,7 +51,7 @@ public abstract class StorageConfigBase {
 
     @Value.Default
     public ImmutableList<Integer> rollupCappedDatabaseSizesMb() {
-        return ImmutableList.of(500, 500, 500);
+        return DEFAULT_CAPPED_DATABASE_SIZES_MB;
     }
 
     @Value.Default
@@ -60,7 +66,8 @@ public abstract class StorageConfigBase {
     }
 
     boolean hasListIssues() {
-        return rollupExpirationHours().size() != 3 || rollupCappedDatabaseSizesMb().size() != 3;
+        return rollupExpirationHours().size() != DEFAULT_ROLLUP_EXPIRATION_HOURS.size()
+                || rollupCappedDatabaseSizesMb().size() != DEFAULT_CAPPED_DATABASE_SIZES_MB.size();
     }
 
     StorageConfig withCorrectedLists() {

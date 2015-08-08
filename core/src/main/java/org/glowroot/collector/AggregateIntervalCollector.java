@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ScratchBuffer;
 import org.glowroot.config.ConfigService;
+import org.glowroot.local.store.AggregateDao;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.Transaction;
 
@@ -48,8 +49,8 @@ public class AggregateIntervalCollector {
 
     AggregateIntervalCollector(long currentTime, long fixedAggregateIntervalMillis,
             ConfigService configService) {
-        endTime = (long) Math.ceil(currentTime / (double) fixedAggregateIntervalMillis)
-                * fixedAggregateIntervalMillis;
+        endTime = AggregateDao.getNextRollupTime(currentTime,
+                fixedAggregateIntervalMillis);
         this.maxAggregateTransactionsPerTransactionType =
                 configService.getAdvancedConfig().maxAggregateTransactionsPerTransactionType();
         this.maxAggregateQueriesPerQueryType =

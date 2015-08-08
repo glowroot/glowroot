@@ -139,9 +139,8 @@ class ErrorCommonService {
         long currErrorCount = 0;
         long currTransactionCount = 0;
         for (ErrorPoint errorPoint : orderedNonRolledUpErrorPoints) {
-            long rollupTime =
-                    (long) Math.ceil(errorPoint.captureTime() / (double) fixedIntervalMillis)
-                            * fixedIntervalMillis;
+            long rollupTime = AggregateDao.getNextRollupTime(
+                    errorPoint.captureTime(), fixedIntervalMillis);
             if (rollupTime != currRollupTime && currTransactionCount != 0) {
                 rolledUpErrorPoints.add(ErrorPoint.of(Math.min(currRollupTime, liveCaptureTime),
                         currErrorCount, currTransactionCount));

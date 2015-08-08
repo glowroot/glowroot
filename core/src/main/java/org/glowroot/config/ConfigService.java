@@ -47,10 +47,13 @@ import static com.google.common.base.Preconditions.checkState;
 
 public class ConfigService {
 
+    // 1 minute
     private static final long ROLLUP_0_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.0.intervalMillis", 60 * 1000);
+    // 5 minutes
     private static final long ROLLUP_1_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.1.intervalMillis", 5 * 60 * 1000);
+    // 30 minutes
     private static final long ROLLUP_2_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.2.intervalMillis", 30 * 60 * 1000);
 
