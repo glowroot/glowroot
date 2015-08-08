@@ -639,7 +639,7 @@ HandlebarsRendering = (function () {
       initNodeId(rootNode);
     }
 
-    function filter(includes) {
+    function filter(includes, underMatchingNode) {
       var includeUppers = [];
       var i;
       for (i = 0; i < includes.length; i++) {
@@ -770,10 +770,15 @@ HandlebarsRendering = (function () {
       }
 
       // 2nd arg, starts automatically "underMatchingNode" when no includes
-      filterNode(rootNode, !includes.length);
+      filterNode(rootNode, underMatchingNode || !includes.length);
     }
 
     function generateHtml(timer) {
+
+      if (!rootNode.childNodes) {
+        // special case of empty result
+        return '';
+      }
 
       function curr(node, level) {
         var nodeSampleCount;
@@ -890,7 +895,7 @@ HandlebarsRendering = (function () {
     var filterText = $profileTextFilter.val();
     var parseResult = gtParseIncludesExcludes(filterText);
     if (!parseResult.error && (parseResult.includes.length || parseResult.excludes.length)) {
-      filter(parseResult.includes);
+      filter(parseResult.includes, true);
       $selector.data('gtTextFilterOverride', true);
     }
     var $profileDropdownFilter = $selector.find('.gt-profile-filter');
