@@ -174,14 +174,14 @@ public class TraceDao implements TraceRepository {
     public long readOverallSlowCount(String transactionType, long captureTimeFrom,
             long captureTimeTo) throws SQLException {
         return dataSource.queryForLong("select count(*) from trace where transaction_type = ?"
-                + " and capture_time >= ? and capture_time <= ? and slow = ?", transactionType,
+                + " and capture_time > ? and capture_time <= ? and slow = ?", transactionType,
                 captureTimeFrom, captureTimeTo, true);
     }
 
     public long readTransactionSlowCount(String transactionType, String transactionName,
             long captureTimeFrom, long captureTimeTo) throws SQLException {
         return dataSource.queryForLong("select count(*) from trace where transaction_type = ?"
-                + " and transaction_name = ? and capture_time >= ? and capture_time <= ?"
+                + " and transaction_name = ? and capture_time > ? and capture_time <= ?"
                 + " and slow = ?", transactionType, transactionName, captureTimeFrom, captureTimeTo,
                 true);
     }
@@ -189,14 +189,14 @@ public class TraceDao implements TraceRepository {
     public long readOverallErrorCount(String transactionType, long captureTimeFrom,
             long captureTimeTo) throws SQLException {
         return dataSource.queryForLong("select count(*) from trace where transaction_type = ?"
-                + " and capture_time >= ? and capture_time <= ? and error = ?", transactionType,
+                + " and capture_time > ? and capture_time <= ? and error = ?", transactionType,
                 captureTimeFrom, captureTimeTo, true);
     }
 
     public long readTransactionErrorCount(String transactionType, String transactionName,
             long captureTimeFrom, long captureTimeTo) throws SQLException {
         return dataSource.queryForLong("select count(*) from trace where transaction_type = ?"
-                + " and transaction_name = ? and capture_time >= ? and capture_time <= ? and"
+                + " and transaction_name = ? and capture_time > ? and capture_time <= ? and"
                 + " error = ?", transactionType, transactionName, captureTimeFrom, captureTimeTo,
                 true);
     }
@@ -283,7 +283,7 @@ public class TraceDao implements TraceRepository {
             sql += " and transaction_name = ?";
             args.add(transactionName);
         }
-        sql += " and capture_time >= ? and capture_time <= ?";
+        sql += " and capture_time > ? and capture_time <= ?";
         args.add(query.from());
         args.add(query.to());
         for (String include : query.includes()) {
