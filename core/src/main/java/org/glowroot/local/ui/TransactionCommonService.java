@@ -209,31 +209,28 @@ class TransactionCommonService {
     // from is non-inclusive
     private List<QueryAggregate> getQueryAggregates(String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
-        int rollupLevel = aggregateDao.getRollupLevelForView(from, to);
+        int initialRollupLevel = aggregateDao.getRollupLevelForView(from, to);
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(from, to);
         long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
-        List<QueryAggregate> queryAggregates = getQueryAggregatesFromDao(transactionType,
-                transactionName, from, revisedTo, rollupLevel);
-        if (rollupLevel == 0) {
-            queryAggregates = Lists.newArrayList(queryAggregates);
-            queryAggregates.addAll(getLiveQueryAggregates(transactionType, transactionName,
-                    orderedIntervalCollectors));
-            return queryAggregates;
+        long revisedFrom = from;
+        List<QueryAggregate> orderedQueryAggregates = Lists.newArrayList();
+        for (int rollupLevel = initialRollupLevel; rollupLevel >= 0; rollupLevel--) {
+            List<QueryAggregate> queryAggregates = getQueryAggregatesFromDao(transactionType,
+                    transactionName, from, revisedTo, rollupLevel);
+            if (!queryAggregates.isEmpty()) {
+                long lastRolledUpTime =
+                        queryAggregates.get(queryAggregates.size() - 1).captureTime();
+                revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
+            }
+            orderedQueryAggregates.addAll(queryAggregates);
+            if (revisedFrom > revisedTo) {
+                break;
+            }
         }
-        long nonRolledUpFrom = from;
-        if (!queryAggregates.isEmpty()) {
-            long lastRolledUpTime = queryAggregates.get(queryAggregates.size() - 1).captureTime();
-            nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
-        }
-        List<QueryAggregate> orderedNonRolledUpQueryAggregates = Lists.newArrayList();
-        orderedNonRolledUpQueryAggregates.addAll(getQueryAggregatesFromDao(transactionType,
-                transactionName, nonRolledUpFrom, revisedTo, 0));
-        orderedNonRolledUpQueryAggregates.addAll(getLiveQueryAggregates(transactionType,
-                transactionName, orderedIntervalCollectors));
-        queryAggregates = Lists.newArrayList(queryAggregates);
-        queryAggregates.addAll(orderedNonRolledUpQueryAggregates);
-        return queryAggregates;
+        orderedQueryAggregates.addAll(getLiveQueryAggregates(transactionType, transactionName,
+                orderedIntervalCollectors));
+        return orderedQueryAggregates;
     }
 
     // from is non-inclusive
@@ -256,32 +253,28 @@ class TransactionCommonService {
     // from is non-inclusive
     private List<ProfileAggregate> getProfileAggregates(String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
-        int rollupLevel = aggregateDao.getRollupLevelForView(from, to);
+        int initialRollupLevel = aggregateDao.getRollupLevelForView(from, to);
         List<AggregateIntervalCollector> orderedIntervalCollectors =
                 getOrderedIntervalCollectorsInRange(from, to);
         long revisedTo = getRevisedTo(to, orderedIntervalCollectors);
-        List<ProfileAggregate> profileAggregates = getProfileAggregatesFromDao(transactionType,
-                transactionName, from, revisedTo, rollupLevel);
-        if (rollupLevel == 0) {
-            profileAggregates = Lists.newArrayList(profileAggregates);
-            profileAggregates.addAll(getLiveProfileAggregates(transactionType, transactionName,
-                    orderedIntervalCollectors));
-            return profileAggregates;
+        long revisedFrom = from;
+        List<ProfileAggregate> orderedProfileAggregates = Lists.newArrayList();
+        for (int rollupLevel = initialRollupLevel; rollupLevel >= 0; rollupLevel--) {
+            List<ProfileAggregate> profileAggregates = getProfileAggregatesFromDao(transactionType,
+                    transactionName, revisedFrom, revisedTo, rollupLevel);
+            if (!profileAggregates.isEmpty()) {
+                long lastRolledUpTime =
+                        profileAggregates.get(profileAggregates.size() - 1).captureTime();
+                revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
+            }
+            orderedProfileAggregates.addAll(profileAggregates);
+            if (revisedFrom > revisedTo) {
+                break;
+            }
         }
-        long nonRolledUpFrom = from;
-        if (!profileAggregates.isEmpty()) {
-            long lastRolledUpTime =
-                    profileAggregates.get(profileAggregates.size() - 1).captureTime();
-            nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
-        }
-        List<ProfileAggregate> orderedNonRolledUpProfileAggregates = Lists.newArrayList();
-        orderedNonRolledUpProfileAggregates.addAll(getProfileAggregatesFromDao(transactionType,
-                transactionName, nonRolledUpFrom, revisedTo, 0));
-        orderedNonRolledUpProfileAggregates.addAll(getLiveProfileAggregates(transactionType,
-                transactionName, orderedIntervalCollectors));
-        profileAggregates = Lists.newArrayList(profileAggregates);
-        profileAggregates.addAll(orderedNonRolledUpProfileAggregates);
-        return profileAggregates;
+        orderedProfileAggregates.addAll(getLiveProfileAggregates(transactionType, transactionName,
+                orderedIntervalCollectors));
+        return orderedProfileAggregates;
     }
 
     // from is non-inclusive

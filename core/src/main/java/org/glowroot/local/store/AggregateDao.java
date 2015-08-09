@@ -272,9 +272,9 @@ public class AggregateDao {
         return dataSource.query("select capture_time, queries_capped_id"
                 + " from overall_aggregate_rollup_" + castUntainted(rollupLevel)
                 + " where transaction_type = ? and capture_time > ? and capture_time <= ?"
-                + " and queries_capped_id >= ?", new QueryAggregateRowMapper(rollupLevel),
-                transactionType, captureTimeFrom, captureTimeTo,
-                rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
+                + " and queries_capped_id >= ?  order by capture_time",
+                new QueryAggregateRowMapper(rollupLevel), transactionType, captureTimeFrom,
+                captureTimeTo, rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
     }
 
     // captureTimeFrom is non-inclusive
@@ -284,7 +284,7 @@ public class AggregateDao {
         return dataSource.query("select capture_time, queries_capped_id"
                 + " from transaction_aggregate_rollup_" + castUntainted(rollupLevel)
                 + " where transaction_type = ? and transaction_name = ? and capture_time > ?"
-                + " and capture_time <= ? and queries_capped_id >= ?",
+                + " and capture_time <= ? and queries_capped_id >= ? order by capture_time",
                 new QueryAggregateRowMapper(rollupLevel), transactionType, transactionName,
                 captureTimeFrom, captureTimeTo,
                 rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
@@ -296,9 +296,9 @@ public class AggregateDao {
         return dataSource.query("select capture_time, profile_capped_id"
                 + " from overall_aggregate_rollup_" + castUntainted(rollupLevel)
                 + " where transaction_type = ? and capture_time > ? and capture_time <= ?"
-                + " and profile_capped_id >= ?", new ProfileAggregateRowMapper(rollupLevel),
-                transactionType, captureTimeFrom, captureTimeTo,
-                rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
+                + " and profile_capped_id >= ? order by capture_time",
+                new ProfileAggregateRowMapper(rollupLevel), transactionType, captureTimeFrom,
+                captureTimeTo, rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
     }
 
     // captureTimeFrom is non-inclusive
@@ -308,7 +308,7 @@ public class AggregateDao {
         return dataSource.query("select capture_time, profile_capped_id"
                 + " from transaction_aggregate_rollup_" + castUntainted(rollupLevel)
                 + " where transaction_type = ? and transaction_name = ? and capture_time > ?"
-                + " and capture_time <= ? and profile_capped_id >= ?",
+                + " and capture_time <= ? and profile_capped_id >= ? order by capture_time",
                 new ProfileAggregateRowMapper(rollupLevel), transactionType, transactionName,
                 captureTimeFrom, captureTimeTo,
                 rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
@@ -329,8 +329,9 @@ public class AggregateDao {
         return dataSource.query("select capture_time, error_count, transaction_count from"
                 + " transaction_aggregate_rollup_" + castUntainted(rollupLevel)
                 + " where transaction_type = ? and transaction_name = ? and capture_time >= ?"
-                + " and capture_time <= ? and error_count > 0", new ErrorPointRowMapper(),
-                transactionType, transactionName, captureTimeFrom, captureTimeTo);
+                + " and capture_time <= ? and error_count > 0 order by capture_time",
+                new ErrorPointRowMapper(), transactionType, transactionName, captureTimeFrom,
+                captureTimeTo);
     }
 
     // captureTimeFrom is non-inclusive

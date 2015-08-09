@@ -86,24 +86,21 @@ public class TraceDao implements TraceRepository {
                     Column.of("capture_time", Types.BIGINT));
 
     private static final ImmutableList<Index> traceIndexes = ImmutableList.<Index>of(
-            // trace_idx is for the default trace point query
-            //
-            // capture_time is listed first (instead of transaction_type) in order to handle both
-            // the case where transaction_type is a filter and where it is not
-            //
             // duration, id and error columns are included so h2 can return the result set directly
             // from the index without having to reference the table for each row
-            Index.of("trace_idx", ImmutableList.of("capture_time", "transaction_type", "duration",
-                    "id", "error")),
-            // trace_error_message_idx is for readErrorMessageCounts()
-            Index.of("trace_error_message_idx", ImmutableList.of("error", "capture_time",
-                    "transaction_type", "transaction_name", "error_message")),
-            // trace_transaction_count_idx is for readTransactionCount()
-            Index.of("trace_transaction_count_idx",
-                    ImmutableList.of("transaction_type", "transaction_name", "capture_time")),
-            // trace_overall_count_idx is for readOverallCount()
-            Index.of("trace_overall_count_idx",
-                    ImmutableList.of("transaction_type", "capture_time")));
+            //
+            // trace_slow_idx is for slow trace point query and for readOverallSlowCount()
+            Index.of("trace_slow_idx", ImmutableList.of("transaction_type", "slow", "capture_time",
+                    "duration", "error", "id")),
+            // trace_slow_idx is for slow trace point query and for readTransactionSlowCount()
+            Index.of("trace_transaction_slow_idx", ImmutableList.of("transaction_type",
+                    "transaction_name", "slow", "capture_time", "duration", "error", "id")),
+            // trace_error_idx is for error trace point query and for readOverallErrorCount()
+            Index.of("trace_error_idx", ImmutableList.of("transaction_type", "error",
+                    "capture_time", "duration", "error", "id")),
+            // trace_error_idx is for error trace point query and for readTransactionErrorCount()
+            Index.of("trace_transaction_error_idx", ImmutableList.of("transaction_type",
+                    "transaction_name", "error", "capture_time", "duration", "id")));
 
     private final DataSource dataSource;
     private final CappedDatabase traceCappedDatabase;
