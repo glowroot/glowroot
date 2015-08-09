@@ -219,8 +219,11 @@ glowroot.controller('JvmGaugesCtrl', [
           if (dataSeries.data.length > 0) {
             lastPoint = dataSeries.data[0];
             // 2x the rollup interval prior to chartFrom is returned from server, so if the first datapoint is
-            // even visible, that means there was significant gap prior and makes sense to diff delta with 0
-            deltas[0] = dataSeries.data[0];
+            // visible, that means there was significant gap prior and makes sense to diff delta with 0
+            // (but if first datapoint is not visible then don't want to include it as it will mess up the scale)
+            if (lastPoint[0] >= $scope.chartFrom) {
+              deltas[0] = lastPoint;
+            }
           }
           for (j = 1; j < dataSeries.data.length; j++) {
             point = dataSeries.data[j];
