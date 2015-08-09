@@ -67,7 +67,7 @@ glowroot.factory('keyedColorPools', [
           colors = preservedColors;
           angular.forEach(keys, function (key) {
             if (key === 'Other') {
-              colors[key] = '#bbb';
+              colors[key] = '#888';
             } else if (!colors[key]) {
               var color = nextAvailable();
               colors[key] = color;
