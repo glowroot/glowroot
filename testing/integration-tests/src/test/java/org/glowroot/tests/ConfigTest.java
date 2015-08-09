@@ -337,7 +337,7 @@ public class ConfigTest {
     }
 
     private static void updateAllFields(TransactionConfig config) {
-        config.setSlowTraceThresholdMillis(config.getSlowTraceThresholdMillis() + 1);
+        config.setSlowThresholdMillis(config.getSlowThresholdMillis() + 1);
         config.setProfilingIntervalMillis(config.getProfilingIntervalMillis() + 1);
         config.setDefaultDisplayedTransactionType(
                 config.getDefaultDisplayedTransactionType() + "a");
@@ -454,11 +454,11 @@ public class ConfigTest {
         }
         config.setTransactionType(config.getTransactionType() + "g");
         config.setTransactionNameTemplate(config.getTransactionNameTemplate() + "h");
-        Long slowTraceThresholdOverrideMillis = config.getSlowTraceThresholdMillis();
-        if (slowTraceThresholdOverrideMillis == null) {
-            config.setSlowTraceThresholdMillis(1000L);
+        Long transactionSlowThresholdMillis = config.getTransactionSlowThresholdMillis();
+        if (transactionSlowThresholdMillis == null) {
+            config.setTransactionSlowThresholdMillis(1000L);
         } else {
-            config.setSlowTraceThresholdMillis(slowTraceThresholdOverrideMillis + 10);
+            config.setTransactionSlowThresholdMillis(transactionSlowThresholdMillis + 10);
         }
         config.setTransactionUserTemplate(config.getTransactionUserTemplate() + "i");
         Map<String, String> transactionCustomAttributeTemplates =

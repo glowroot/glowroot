@@ -492,7 +492,7 @@ class ConfigJsonService {
     @Value.Immutable
     abstract static class TransactionConfigDtoBase {
 
-        abstract int slowTraceThresholdMillis();
+        abstract int slowThresholdMillis();
         abstract int profilingIntervalMillis();
         abstract String defaultDisplayedTransactionType();
         abstract ImmutableList<Double> defaultDisplayedPercentiles();
@@ -500,7 +500,7 @@ class ConfigJsonService {
 
         TransactionConfig toConfig() {
             return TransactionConfig.builder()
-                    .slowTraceThresholdMillis(slowTraceThresholdMillis())
+                    .slowThresholdMillis(slowThresholdMillis())
                     .profilingIntervalMillis(profilingIntervalMillis())
                     .defaultDisplayedTransactionType(defaultDisplayedTransactionType())
                     .defaultDisplayedPercentiles(
@@ -509,7 +509,7 @@ class ConfigJsonService {
         }
         private static TransactionConfigDto fromConfig(TransactionConfig config) {
             return TransactionConfigDto.builder()
-                    .slowTraceThresholdMillis(config.slowTraceThresholdMillis())
+                    .slowThresholdMillis(config.slowThresholdMillis())
                     .profilingIntervalMillis(config.profilingIntervalMillis())
                     .defaultDisplayedTransactionType(config.defaultDisplayedTransactionType())
                     .addAllDefaultDisplayedPercentiles(config.defaultDisplayedPercentiles())

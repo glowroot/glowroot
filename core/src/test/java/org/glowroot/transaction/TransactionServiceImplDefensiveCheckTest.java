@@ -117,7 +117,7 @@ public class TransactionServiceImplDefensiveCheckTest {
 
     @Test
     public void testSetTraceStoreThreshold() {
-        transactionService.setSlowTraceThreshold(-1, SECONDS);
-        transactionService.setSlowTraceThreshold(1, null);
+        transactionService.setTransactionSlowThreshold(-1, SECONDS);
+        transactionService.setTransactionSlowThreshold(1, null);
     }
 }

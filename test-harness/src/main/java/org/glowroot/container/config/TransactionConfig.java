@@ -30,7 +30,7 @@ import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class TransactionConfig {
 
-    private int slowTraceThresholdMillis;
+    private int slowThresholdMillis;
     private int profilingIntervalMillis;
     private String defaultDisplayedTransactionType = "";
     private List<Double> defaultDisplayedPercentiles = Lists.newArrayList();
@@ -41,12 +41,12 @@ public class TransactionConfig {
         this.version = version;
     }
 
-    public int getSlowTraceThresholdMillis() {
-        return slowTraceThresholdMillis;
+    public int getSlowThresholdMillis() {
+        return slowThresholdMillis;
     }
 
-    public void setSlowTraceThresholdMillis(int slowTraceThresholdMillis) {
-        this.slowTraceThresholdMillis = slowTraceThresholdMillis;
+    public void setSlowThresholdMillis(int slowThresholdMillis) {
+        this.slowThresholdMillis = slowThresholdMillis;
     }
 
     public int getProfilingIntervalMillis() {
@@ -84,7 +84,7 @@ public class TransactionConfig {
             // intentionally leaving off version since it represents the prior version hash when
             // sending to the server, and represents the current version hash when receiving from
             // the server
-            return Objects.equal(slowTraceThresholdMillis, that.slowTraceThresholdMillis)
+            return Objects.equal(slowThresholdMillis, that.slowThresholdMillis)
                     && Objects.equal(profilingIntervalMillis, that.profilingIntervalMillis)
                     && Objects.equal(defaultDisplayedTransactionType,
                             that.defaultDisplayedTransactionType)
@@ -98,14 +98,14 @@ public class TransactionConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(slowTraceThresholdMillis, profilingIntervalMillis,
+        return Objects.hashCode(slowThresholdMillis, profilingIntervalMillis,
                 defaultDisplayedTransactionType, defaultDisplayedPercentiles);
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("slowTraceThresholdMillis", slowTraceThresholdMillis)
+                .add("slowThresholdMillis", slowThresholdMillis)
                 .add("profilingIntervalMillis", profilingIntervalMillis)
                 .add("defaultDisplayedTransactionType", defaultDisplayedTransactionType)
                 .add("defaultDisplayedPercentiles", defaultDisplayedPercentiles)
@@ -115,18 +115,18 @@ public class TransactionConfig {
 
     @JsonCreator
     static TransactionConfig readValue(
-            @JsonProperty("slowTraceThresholdMillis") @Nullable Integer slowTraceThresholdMillis,
+            @JsonProperty("slowThresholdMillis") @Nullable Integer slowThresholdMillis,
             @JsonProperty("profilingIntervalMillis") @Nullable Integer profilingIntervalMillis,
             @JsonProperty("defaultDisplayedTransactionType") @Nullable String defaultDisplayedTransactionType,
             @JsonProperty("defaultDisplayedPercentiles") @Nullable List<Double> defaultDisplayedPercentiles,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(slowTraceThresholdMillis, "slowTraceThresholdMillis");
+        checkRequiredProperty(slowThresholdMillis, "slowThresholdMillis");
         checkRequiredProperty(profilingIntervalMillis, "profilingIntervalMillis");
         checkRequiredProperty(defaultDisplayedTransactionType, "defaultDisplayedTransactionType");
         checkRequiredProperty(defaultDisplayedPercentiles, "defaultDisplayedPercentiles");
         checkRequiredProperty(version, "version");
         TransactionConfig config = new TransactionConfig(version);
-        config.setSlowTraceThresholdMillis(slowTraceThresholdMillis);
+        config.setSlowThresholdMillis(slowThresholdMillis);
         config.setProfilingIntervalMillis(profilingIntervalMillis);
         config.setDefaultDisplayedTransactionType(defaultDisplayedTransactionType);
         config.setDefaultDisplayedPercentiles(defaultDisplayedPercentiles);

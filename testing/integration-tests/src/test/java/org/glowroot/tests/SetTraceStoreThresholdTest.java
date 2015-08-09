@@ -65,7 +65,7 @@ public class SetTraceStoreThresholdTest {
     public void shouldReadTrace() throws Exception {
         // given
         TransactionConfig config = container.getConfigService().getTransactionConfig();
-        config.setSlowTraceThresholdMillis(Integer.MAX_VALUE);
+        config.setSlowThresholdMillis(Integer.MAX_VALUE);
         container.getConfigService().updateTransactionConfig(config);
         // when
         container.executeAppUnderTest(SetLargeAndThenSmallTraceStoreThreshold.class);
@@ -78,7 +78,7 @@ public class SetTraceStoreThresholdTest {
     public void shouldReadTrace2() throws Exception {
         // given
         TransactionConfig config = container.getConfigService().getTransactionConfig();
-        config.setSlowTraceThresholdMillis(Integer.MAX_VALUE);
+        config.setSlowThresholdMillis(Integer.MAX_VALUE);
         container.getConfigService().updateTransactionConfig(config);
         // when
         container.executeAppUnderTest(SetSmallAndThenLargeTraceStoreThreshold.class);
@@ -95,7 +95,7 @@ public class SetTraceStoreThresholdTest {
         }
         @Override
         public void traceMarker() {
-            transactionService.setSlowTraceThreshold(Long.MAX_VALUE, MILLISECONDS);
+            transactionService.setTransactionSlowThreshold(Long.MAX_VALUE, MILLISECONDS);
             new LevelOne().call("a", "b");
         }
     }
@@ -109,8 +109,8 @@ public class SetTraceStoreThresholdTest {
         }
         @Override
         public void traceMarker() {
-            transactionService.setSlowTraceThreshold(Long.MAX_VALUE, MILLISECONDS);
-            transactionService.setSlowTraceThreshold(0, MILLISECONDS);
+            transactionService.setTransactionSlowThreshold(Long.MAX_VALUE, MILLISECONDS);
+            transactionService.setTransactionSlowThreshold(0, MILLISECONDS);
             new LevelOne().call("a", "b");
         }
     }
@@ -124,8 +124,8 @@ public class SetTraceStoreThresholdTest {
         }
         @Override
         public void traceMarker() {
-            transactionService.setSlowTraceThreshold(0, MILLISECONDS);
-            transactionService.setSlowTraceThreshold(Long.MAX_VALUE, MILLISECONDS);
+            transactionService.setTransactionSlowThreshold(0, MILLISECONDS);
+            transactionService.setTransactionSlowThreshold(Long.MAX_VALUE, MILLISECONDS);
             new LevelOne().call("a", "b");
         }
     }

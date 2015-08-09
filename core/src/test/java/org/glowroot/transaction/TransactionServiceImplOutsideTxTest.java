@@ -104,7 +104,7 @@ public class TransactionServiceImplOutsideTxTest {
 
     @Test
     public void testSetTraceStoreThreshold() {
-        transactionService.setSlowTraceThreshold(1, SECONDS);
+        transactionService.setTransactionSlowThreshold(1, SECONDS);
     }
 
     @Test

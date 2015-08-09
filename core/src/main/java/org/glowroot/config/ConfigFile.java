@@ -128,8 +128,11 @@ class ConfigFile {
                     "\"defaultDisplayedTransactionType\"");
             // handling upgrade from 0.8.3 to 0.8.4
             content = content.replace("\"cappedDatabaseSizeMb\"", "\"traceCappedDatabaseSizeMb\"");
+            // this will rename "general/traceStoreThresholdMillis" in addition to intended
+            // "instrumentation/traceStoreThresholdMillis", but general config is lost in upgrade
+            // to 0.8.4 anyways with rename to transaction
             content = content.replace("\"traceStoreThresholdMillis\"",
-                    "\"slowTraceThresholdMillis\"");
+                    "\"transactionSlowThresholdMillis\"");
             config = readValue(content);
         } catch (Exception e) {
             // immutables json processing wraps IOExceptions inside RuntimeExceptions so can't rely

@@ -28,9 +28,9 @@ public abstract class TransactionConfigBase {
         return 1000;
     }
 
-    // 0 means store all traces
+    // 0 means mark all transactions as slow
     @Value.Default
-    public int slowTraceThresholdMillis() {
+    public int slowThresholdMillis() {
         return 2000;
     }
 

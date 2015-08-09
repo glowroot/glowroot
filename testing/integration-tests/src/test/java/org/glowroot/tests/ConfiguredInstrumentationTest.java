@@ -72,7 +72,7 @@ public class ConfiguredInstrumentationTest {
     public void shouldExecute1() throws Exception {
         // given
         TransactionConfig config = container.getConfigService().getTransactionConfig();
-        config.setSlowTraceThresholdMillis(Integer.MAX_VALUE);
+        config.setSlowThresholdMillis(Integer.MAX_VALUE);
         container.getConfigService().updateTransactionConfig(config);
         // when
         container.executeAppUnderTest(ShouldExecute1.class);
@@ -133,7 +133,7 @@ public class ConfiguredInstrumentationTest {
         config.setTraceEntryStackThresholdMillis(0L);
         config.setTransactionType("test override type");
         config.setTransactionNameTemplate("test override name");
-        config.setSlowTraceThresholdMillis(0L);
+        config.setTransactionSlowThresholdMillis(0L);
         container.getConfigService().addInstrumentationConfig(config);
     }
 

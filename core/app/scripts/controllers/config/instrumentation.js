@@ -294,8 +294,8 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       if (!data.transactionNameTemplate) {
         delete data.transactionNameTemplate;
       }
-      if (!data.slowTraceThresholdMillis) {
-        delete data.slowTraceThresholdMillis;
+      if (!data.transactionSlowThresholdMillis) {
+        delete data.transactionSlowThresholdMillis;
       }
       if (!data.transactionUserTemplate) {
         delete data.transactionUserTemplate;

@@ -114,7 +114,7 @@ public class LocalContainer implements Container {
         } finally {
             Thread.currentThread().setContextClassLoader(priorContextClassLoader);
         }
-        JavaagentMain.setSlowTraceThresholdMillisToZero();
+        JavaagentMain.setTransactionSlowThresholdMillisToZero();
         final GlowrootModule glowrootModule = MainEntryPoint.getGlowrootModule();
         checkNotNull(glowrootModule);
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
@@ -219,8 +219,8 @@ public class LocalContainer implements Container {
     @Override
     public void checkAndResetConfigOnly() throws Exception {
         configService.resetAllConfig();
-        // slowTraceThresholdMillis=0 is the default for testing
-        configService.setSlowTraceThresholdMillis(0);
+        // setTransactionSlowThresholdMillis=0 is the default for testing
+        configService.setTransactionSlowThresholdMillis(0);
         // check and reset log messages
         MessageCount logMessageCount = SpyingLogbackFilter.clearMessages();
         if (logMessageCount.expectedCount() > 0) {

@@ -204,7 +204,7 @@ public interface TransactionService {
      * 
      * If there is no current transaction, this method does nothing.
      */
-    void setSlowTraceThreshold(long threshold, TimeUnit unit);
+    void setTransactionSlowThreshold(long threshold, TimeUnit unit);
 
     /**
      * Returns whether a transaction is already being captured.

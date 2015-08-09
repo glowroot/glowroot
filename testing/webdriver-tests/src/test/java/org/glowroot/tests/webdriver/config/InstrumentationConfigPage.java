@@ -95,8 +95,8 @@ public class InstrumentationConfigPage {
         return withWait(xpath("//div[@gt-model='config.transactionNameTemplate']//input"));
     }
 
-    public WebElement getSlowTraceThresholdMillisTextField() {
-        return withWait(xpath("//div[@gt-model='config.slowTraceThresholdMillis']//input"));
+    public WebElement getTransactionSlowThresholdMillisTextField() {
+        return withWait(xpath("//div[@gt-model='config.transactionSlowThresholdMillis']//input"));
     }
 
     public void clickAddButton() {

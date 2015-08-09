@@ -33,12 +33,12 @@ public class TransactionConfigPage {
         this.driver = driver;
     }
 
-    public WebElement getSlowTraceThresholdTextField() {
-        return withWait(xpath("//div[@gt-label='Slow trace threshold']//input"));
-    }
-
     public WebElement getProfilingIntervalTextField() {
         return withWait(xpath("//div[@gt-label='Profiling interval']//input"));
+    }
+
+    public WebElement getSlowThresholdTextField() {
+        return withWait(xpath("//div[@gt-label='Slow threshold']//input"));
     }
 
     public WebElement getDefaultDisplayedPercentilesTextField() {

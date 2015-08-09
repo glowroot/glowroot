@@ -53,7 +53,7 @@ public class InstrumentationConfig {
     private @Nullable String transactionUserTemplate;
     private @Nullable Map<String, String> transactionCustomAttributeTemplates;
 
-    private @Nullable Long slowTraceThresholdMillis;
+    private @Nullable Long transactionSlowThresholdMillis;
 
     private @Nullable String enabledProperty;
     private @Nullable String traceEntryEnabledProperty;
@@ -197,12 +197,12 @@ public class InstrumentationConfig {
         this.transactionCustomAttributeTemplates = transactionCustomAttributeTemplates;
     }
 
-    public @Nullable Long getSlowTraceThresholdMillis() {
-        return slowTraceThresholdMillis;
+    public @Nullable Long getTransactionSlowThresholdMillis() {
+        return transactionSlowThresholdMillis;
     }
 
-    public void setSlowTraceThresholdMillis(@Nullable Long slowTraceThresholdMillis) {
-        this.slowTraceThresholdMillis = slowTraceThresholdMillis;
+    public void setTransactionSlowThresholdMillis(@Nullable Long transactionSlowThresholdMillis) {
+        this.transactionSlowThresholdMillis = transactionSlowThresholdMillis;
     }
 
     public @Nullable String getEnabledProperty() {
@@ -249,7 +249,8 @@ public class InstrumentationConfig {
                     && Objects.equal(transactionUserTemplate, that.transactionUserTemplate)
                     && Objects.equal(transactionCustomAttributeTemplates,
                             that.transactionCustomAttributeTemplates)
-                    && Objects.equal(slowTraceThresholdMillis, that.slowTraceThresholdMillis)
+                    && Objects.equal(transactionSlowThresholdMillis,
+                            that.transactionSlowThresholdMillis)
                     && Objects.equal(enabledProperty, that.enabledProperty)
                     && Objects.equal(traceEntryEnabledProperty, that.traceEntryEnabledProperty);
         }
@@ -265,7 +266,8 @@ public class InstrumentationConfig {
                 methodReturnType, methodModifiers, captureKind, timerName, traceEntryTemplate,
                 traceEntryStackThresholdMillis, traceEntryCaptureSelfNested, transactionType,
                 transactionNameTemplate, transactionUserTemplate,
-                transactionCustomAttributeTemplates, slowTraceThresholdMillis, enabledProperty,
+                transactionCustomAttributeTemplates, transactionSlowThresholdMillis,
+                enabledProperty,
                 traceEntryEnabledProperty);
     }
 
@@ -287,7 +289,7 @@ public class InstrumentationConfig {
                 .add("transactionNameTemplate", transactionNameTemplate)
                 .add("transactionUserTemplate", transactionUserTemplate)
                 .add("transactionCustomAttributeTemplates", transactionCustomAttributeTemplates)
-                .add("slowTraceThresholdMillis", slowTraceThresholdMillis)
+                .add("transactionSlowThresholdMillis", transactionSlowThresholdMillis)
                 .add("enabledProperty", enabledProperty)
                 .add("traceEntryEnabledProperty", traceEntryEnabledProperty)
                 .add("version", version)
@@ -311,7 +313,7 @@ public class InstrumentationConfig {
             @JsonProperty("transactionNameTemplate") @Nullable String transactionNameTemplate,
             @JsonProperty("transactionUserTemplate") @Nullable String transactionUserTemplate,
             @JsonProperty("transactionCustomAttributeTemplates") @Nullable Map<String, /*@Nullable*/String> uncheckedTransactionCustomAttributeTemplates,
-            @JsonProperty("slowTraceThresholdMillis") @Nullable Long slowTraceThresholdMillis,
+            @JsonProperty("transactionSlowThresholdMillis") @Nullable Long transactionSlowThresholdMillis,
             @JsonProperty("enabledProperty") @Nullable String enabledProperty,
             @JsonProperty("traceEntryEnabledProperty") @Nullable String traceEntryEnabledProperty,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
@@ -356,7 +358,7 @@ public class InstrumentationConfig {
         config.setTransactionNameTemplate(transactionNameTemplate);
         config.setTransactionUserTemplate(transactionUserTemplate);
         config.setTransactionCustomAttributeTemplates(transactionCustomAttributeTemplates);
-        config.setSlowTraceThresholdMillis(slowTraceThresholdMillis);
+        config.setTransactionSlowThresholdMillis(transactionSlowThresholdMillis);
         config.setEnabledProperty(enabledProperty);
         config.setTraceEntryEnabledProperty(traceEntryEnabledProperty);
         return config;

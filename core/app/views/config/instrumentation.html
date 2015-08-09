@@ -351,16 +351,16 @@
         </div>
         <div gt-form-group
              gt-label="Slow trace threshold"
-             gt-model="config.slowTraceThresholdMillis"
+             gt-model="config.transactionSlowThresholdMillis"
              gt-number="true"
              gt-pattern="pattern.integer"
              gt-width="7em"
              gt-addon="milliseconds">
           <div class="help-block">
-            This will override the general slow trace threshold for the containing transaction.
-            The value can be smaller than the general threshold to force slow transaction traces to be stored more
+            This will override the slow threshold for the containing transaction.
+            The value can be smaller than the global slow threshold to force slow transaction traces to be stored more
             often, or larger to force slow transaction traces to be stored less often.
-            If the slow trace threshold is overridden more than once for a given transaction,
+            If the slow threshold is overridden more than once for a given transaction,
             the smallest override value will be used.
           </div>
         </div>

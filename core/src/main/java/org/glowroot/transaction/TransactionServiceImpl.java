@@ -270,19 +270,20 @@ class TransactionServiceImpl implements TransactionService, ConfigListener {
     }
 
     @Override
-    public void setSlowTraceThreshold(long threshold, TimeUnit unit) {
+    public void setTransactionSlowThreshold(long threshold, TimeUnit unit) {
         if (threshold < 0) {
-            logger.error("setTraceStoreThreshold(): argument 'threshold' must be non-negative");
+            logger.error(
+                    "setTransactionSlowThreshold(): argument 'threshold' must be non-negative");
             return;
         }
         if (unit == null) {
-            logger.error("setTraceStoreThreshold(): argument 'unit' must be non-null");
+            logger.error("setTransactionSlowThreshold(): argument 'unit' must be non-null");
             return;
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
             int thresholdMillis = Ints.saturatedCast(unit.toMillis(threshold));
-            transaction.setSlowTraceThresholdMillisOverride(thresholdMillis);
+            transaction.setSlowThresholdMillisOverride(thresholdMillis);
         }
     }
 

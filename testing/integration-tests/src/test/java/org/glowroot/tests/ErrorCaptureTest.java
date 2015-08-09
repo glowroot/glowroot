@@ -59,7 +59,7 @@ public class ErrorCaptureTest {
     public void shouldCaptureError() throws Exception {
         // given
         TransactionConfig transactionConfig = container.getConfigService().getTransactionConfig();
-        transactionConfig.setSlowTraceThresholdMillis(10000);
+        transactionConfig.setSlowThresholdMillis(10000);
         container.getConfigService().updateTransactionConfig(transactionConfig);
         // when
         container.executeAppUnderTest(ShouldCaptureError.class);

@@ -528,16 +528,16 @@ public class AdviceGenerator {
                     "(Ljava/lang/String;Ljava/lang/String;)V",
                     true);
         }
-        Long slowTraceThresholdMillis = config.slowTraceThresholdMillis();
-        if (slowTraceThresholdMillis != null) {
+        Long slowThresholdMillis = config.transactionSlowThresholdMillis();
+        if (slowThresholdMillis != null) {
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "transactionService",
                     "Lorg/glowroot/plugin/api/transaction/TransactionService;");
-            mv.visitLdcInsn(slowTraceThresholdMillis);
+            mv.visitLdcInsn(slowThresholdMillis);
             mv.visitFieldInsn(GETSTATIC, "java/util/concurrent/TimeUnit", "MILLISECONDS",
                     "Ljava/util/concurrent/TimeUnit;");
             mv.visitMethodInsn(INVOKEINTERFACE,
                     "org/glowroot/plugin/api/transaction/TransactionService",
-                    "setSlowTraceThreshold",
+                    "setTransactionSlowThreshold",
                     "(JLjava/util/concurrent/TimeUnit;)V",
                     true);
 

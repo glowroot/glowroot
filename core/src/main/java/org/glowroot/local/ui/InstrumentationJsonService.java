@@ -320,7 +320,7 @@ class InstrumentationJsonService {
         abstract Optional<String> transactionNameTemplate();
         abstract Optional<String> transactionUserTemplate();
         abstract Map<String, String> transactionCustomAttributeTemplates();
-        abstract @Nullable Long slowTraceThresholdMillis();
+        abstract @Nullable Long transactionSlowThresholdMillis();
         abstract Optional<String> enabledProperty();
         abstract Optional<String> traceEntryEnabledProperty();
         abstract @Nullable String version(); // null for insert operations
@@ -343,7 +343,7 @@ class InstrumentationJsonService {
                     .transactionUserTemplate(config.transactionUserTemplate())
                     .putAllTransactionCustomAttributeTemplates(
                             config.transactionCustomAttributeTemplates())
-                    .slowTraceThresholdMillis(config.slowTraceThresholdMillis())
+                    .transactionSlowThresholdMillis(config.transactionSlowThresholdMillis())
                     .enabledProperty(config.enabledProperty())
                     .traceEntryEnabledProperty(config.traceEntryEnabledProperty())
                     .version(config.version())
@@ -368,7 +368,7 @@ class InstrumentationJsonService {
                     .transactionUserTemplate(transactionUserTemplate().or(""))
                     .putAllTransactionCustomAttributeTemplates(
                             transactionCustomAttributeTemplates())
-                    .slowTraceThresholdMillis(slowTraceThresholdMillis())
+                    .transactionSlowThresholdMillis(transactionSlowThresholdMillis())
                     .enabledProperty(enabledProperty().or(""))
                     .traceEntryEnabledProperty(traceEntryEnabledProperty().or(""))
                     .build();

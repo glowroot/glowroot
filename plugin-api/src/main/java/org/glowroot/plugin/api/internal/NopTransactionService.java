@@ -83,7 +83,7 @@ public class NopTransactionService implements TransactionService {
     public void addTransactionCustomAttribute(String name, @Nullable String value) {}
 
     @Override
-    public void setSlowTraceThreshold(long threshold, TimeUnit unit) {}
+    public void setTransactionSlowThreshold(long threshold, TimeUnit unit) {}
 
     @Override
     public boolean isInTransaction() {

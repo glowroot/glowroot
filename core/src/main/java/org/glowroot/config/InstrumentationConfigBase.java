@@ -93,7 +93,7 @@ public abstract class InstrumentationConfigBase {
 
     public abstract Map<String, String> transactionCustomAttributeTemplates();
 
-    public abstract @Nullable Long slowTraceThresholdMillis();
+    public abstract @Nullable Long transactionSlowThresholdMillis();
 
     // this property only for plugin authors (to be used in glowroot.plugin.json),
     // so it is ignored when written to config.json
