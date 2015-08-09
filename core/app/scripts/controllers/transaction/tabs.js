@@ -31,7 +31,10 @@ glowroot.controller('TransactionTabCtrl', [
 
     $scope.$watchGroup(['chartFrom', 'chartTo', 'transactionName', 'chartRefresh'], function (newValues, oldValues) {
       if (newValues !== oldValues) {
-        updateTabBarData();
+        $timeout(function () {
+          // slight delay to de-prioritize tab bar data request
+          updateTabBarData();
+        }, 100);
       }
     });
 

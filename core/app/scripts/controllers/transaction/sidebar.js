@@ -66,7 +66,10 @@ glowroot.controller('TransactionSidebarCtrl', [
 
     $scope.$watchGroup(['chartFrom', 'chartTo', 'summarySortOrder', 'chartRefresh'], function (newValues, oldValues) {
       if (newValues !== oldValues) {
-        updateSummaries();
+        $timeout(function () {
+          // slight delay to de-prioritize summaries data request
+          updateSummaries();
+        }, 100);
       }
     });
 
@@ -129,6 +132,9 @@ glowroot.controller('TransactionSidebarCtrl', [
           });
     }
 
-    updateSummaries(true);
+    $timeout(function () {
+      // slight delay to de-prioritize summaries data request
+      updateSummaries(true);
+    }, 100);
   }
 ]);
