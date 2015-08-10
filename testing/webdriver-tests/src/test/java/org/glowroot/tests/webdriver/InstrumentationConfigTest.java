@@ -93,7 +93,7 @@ public class InstrumentationConfigTest extends WebDriverTest {
     }
 
     @Test
-    public void shouldAddTraceEntryInstrumentation() throws Exception {
+    public void shouldAddErrorEntryInstrumentation() throws Exception {
         // given
         App app = new App(driver, "http://localhost:" + container.getUiPort());
         GlobalNavbar globalNavbar = new GlobalNavbar(driver);

@@ -21,7 +21,6 @@ import javax.annotation.Nullable;
 
 import org.glowroot.plugin.api.Agent;
 import org.glowroot.plugin.api.config.ConfigService;
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.Message;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.Timer;
@@ -105,7 +104,7 @@ public class AsyncHttpClientAspect {
         @OnThrow
         public static void onThrow(@BindThrowable Throwable throwable,
                 @BindTraveler TraceEntry traceEntry) {
-            traceEntry.endWithError(ErrorMessage.from(throwable));
+            traceEntry.endWithError(throwable);
         }
     }
 

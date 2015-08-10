@@ -43,7 +43,7 @@ import org.glowroot.local.store.StringComparator;
 import org.glowroot.local.store.TraceDao;
 import org.glowroot.local.store.TracePoint;
 import org.glowroot.local.store.TracePointQuery;
-import org.glowroot.plugin.api.transaction.internal.ReadableErrorMessage;
+import org.glowroot.transaction.ErrorMessage;
 import org.glowroot.transaction.TransactionCollector;
 import org.glowroot.transaction.TransactionRegistry;
 import org.glowroot.transaction.model.Transaction;
@@ -225,8 +225,8 @@ class TracePointJsonService {
         }
 
         private boolean matchesError(Transaction transaction) {
-            ReadableErrorMessage errorMessage = transaction.getErrorMessage();
-            String text = errorMessage == null ? null : errorMessage.getMessage();
+            ErrorMessage errorMessage = transaction.getErrorMessage();
+            String text = errorMessage == null ? null : errorMessage.message();
             return matchesUsingStringComparator(query.errorComparator(), query.error(), text);
         }
 

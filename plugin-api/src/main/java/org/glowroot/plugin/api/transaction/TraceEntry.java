@@ -44,17 +44,50 @@ public interface TraceEntry {
     void endWithStackTrace(long threshold, TimeUnit unit);
 
     /**
-     * End the entry and add the specified {@code errorMessage} to the entry.
+     * End the entry and mark the trace entry as an error with the specified throwable.
      * 
-     * If this is the root entry, then the error flag on the trace is set. Traces can be filtered by
-     * their error flag on the trace explorer page.
+     * The error message text is captured from {@code Throwable#getMessage()}.
      * 
-     * In case the trace has accumulated {@code maxTraceEntriesPerTransaction} entries and this is a
-     * dummy entry, then this dummy entry is escalated into a real entry. A hard cap (
+     * If this is the root entry, then the error flag on the transaction is set.
+     * 
+     * In case the transaction has accumulated {@code maxTraceEntriesPerTransaction} entries and
+     * this is a dummy entry, then this dummy entry is escalated into a real entry. A hard cap (
      * {@code maxTraceEntriesPerTransaction * 2}) on the total number of (real) entries is applied
      * when escalating dummy entries to real entries.
      */
-    void endWithError(ErrorMessage errorMessage);
+    void endWithError(Throwable t);
+
+    /**
+     * End the entry and mark the trace entry as an error with the specified throwable.
+     * 
+     * A stack trace is captured and displayed in the UI as a location stack trace (as opposed to an
+     * exception stack trace), similar to {@link #endWithStackTrace(long, TimeUnit)}. Unless this is
+     * the root trace entry in which case no location stack trace is captured / displayed (since
+     * location stack trace is typically not mysterious for root trace entries).
+     * 
+     * If this is the root entry, then the error flag on the transaction is set.
+     * 
+     * In case the transaction has accumulated {@code maxTraceEntriesPerTransaction} entries and
+     * this is a dummy entry, then this dummy entry is escalated into a real entry. A hard cap (
+     * {@code maxTraceEntriesPerTransaction * 2}) on the total number of (real) entries is applied
+     * when escalating dummy entries to real entries.
+     */
+    void endWithError(@Nullable String message);
+
+    /**
+     * End the entry and add the specified {@code errorMessage} to the entry.
+     * 
+     * If {@code message} is empty or null, then the error message text is captured from
+     * {@code Throwable#getMessage()}.
+     * 
+     * If this is the root entry, then the error flag on the transaction is set.
+     * 
+     * In case the transaction has accumulated {@code maxTraceEntriesPerTransaction} entries and
+     * this is a dummy entry, then this dummy entry is escalated into a real entry. A hard cap (
+     * {@code maxTraceEntriesPerTransaction * 2}) on the total number of (real) entries is applied
+     * when escalating dummy entries to real entries.
+     */
+    void endWithError(@Nullable String message, Throwable t);
 
     /**
      * Example of query and subsequent iterating over results which goes back to database and pulls

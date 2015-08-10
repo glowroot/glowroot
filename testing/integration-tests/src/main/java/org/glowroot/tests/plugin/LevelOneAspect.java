@@ -25,7 +25,6 @@ import org.glowroot.plugin.api.Agent;
 import org.glowroot.plugin.api.config.BooleanProperty;
 import org.glowroot.plugin.api.config.ConfigService;
 import org.glowroot.plugin.api.config.StringProperty;
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.Message;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.TimerName;
@@ -122,7 +121,7 @@ public class LevelOneAspect {
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler TraceEntry traceEntry) {
-            traceEntry.endWithError(ErrorMessage.from(t));
+            traceEntry.endWithError(t);
         }
     }
 }

@@ -17,7 +17,6 @@ package org.glowroot.tests.plugin;
 
 import org.glowroot.plugin.api.Agent;
 import org.glowroot.plugin.api.config.ConfigService;
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.TimerName;
 import org.glowroot.plugin.api.transaction.TraceEntry;
@@ -55,7 +54,7 @@ public class LogErrorAspect {
 
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
-            traceEntry.endWithError(ErrorMessage.from("test error message"));
+            traceEntry.endWithError("test error message");
         }
     }
 
@@ -75,8 +74,7 @@ public class LogErrorAspect {
         public static TraceEntry onBefore() {
             TraceEntry traceEntry = transactionService.startTraceEntry(
                     MessageSupplier.from("outer entry to test nesting level"), timerName);
-            transactionService
-                    .addTraceEntry(ErrorMessage.from("test add nested error entry message"));
+            transactionService.addErrorEntry("test add nested error entry message");
             return traceEntry;
         }
 

@@ -170,8 +170,7 @@ public class PreparedStatementTest {
         assertThat(entry.isActive()).isFalse();
         assertThat(entry.getMessage().getText())
                 .isEqualTo("jdbc execution: select * from employee where name like ? ['john%']");
-        assertThat(entry.getError().getMessage())
-                .isEqualTo("java.sql.SQLException: An execute failure");
+        assertThat(entry.getError().getMessage()).isEqualTo("An execute failure");
     }
 
     @Test

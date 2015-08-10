@@ -20,7 +20,6 @@ import javax.annotation.Nullable;
 import org.glowroot.plugin.api.Agent;
 import org.glowroot.plugin.api.config.BooleanProperty;
 import org.glowroot.plugin.api.config.ConfigService;
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.Timer;
 import org.glowroot.plugin.api.transaction.TimerName;
@@ -120,7 +119,7 @@ public class ConnectionAspect {
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler TraceEntry traceEntry) {
-            traceEntry.endWithError(ErrorMessage.from(t));
+            traceEntry.endWithError(t);
         }
     }
 
@@ -146,7 +145,7 @@ public class ConnectionAspect {
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler TraceEntry traceEntry) {
-            traceEntry.endWithError(ErrorMessage.from(t));
+            traceEntry.endWithError(t);
         }
     }
 
@@ -181,7 +180,7 @@ public class ConnectionAspect {
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t, @BindTraveler Object entryOrTimer) {
             if (entryOrTimer instanceof TraceEntry) {
-                ((TraceEntry) entryOrTimer).endWithError(ErrorMessage.from(t));
+                ((TraceEntry) entryOrTimer).endWithError(t);
             } else {
                 ((Timer) entryOrTimer).stop();
             }
@@ -212,7 +211,7 @@ public class ConnectionAspect {
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler TraceEntry traceEntry) {
-            traceEntry.endWithError(ErrorMessage.from(t));
+            traceEntry.endWithError(t);
         }
     }
 }

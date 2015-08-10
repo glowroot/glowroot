@@ -90,8 +90,7 @@ public class CommitRollbackTest {
                 .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
         TraceEntry jdbcCommitEntry = entries.get(1);
         assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc commit");
-        assertThat(jdbcCommitEntry.getError().getMessage())
-                .isEqualTo("java.sql.SQLException: A commit failure");
+        assertThat(jdbcCommitEntry.getError().getMessage()).isEqualTo("A commit failure");
         assertThat(trace.getRootTimer().getNestedTimers()).hasSize(2);
         // ordering is by total desc, so not fixed (though root timer will be first since it
         // encompasses all other timings)
@@ -136,8 +135,7 @@ public class CommitRollbackTest {
                 .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
         TraceEntry jdbcCommitEntry = entries.get(1);
         assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc rollback");
-        assertThat(jdbcCommitEntry.getError().getMessage())
-                .isEqualTo("java.sql.SQLException: A rollback failure");
+        assertThat(jdbcCommitEntry.getError().getMessage()).isEqualTo("A rollback failure");
         assertThat(trace.getRootTimer().getNestedTimers()).hasSize(2);
         // ordering is by total desc, so not fixed (though root timer will be first since it
         // encompasses all other timings)

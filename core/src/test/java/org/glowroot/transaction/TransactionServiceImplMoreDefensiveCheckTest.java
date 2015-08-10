@@ -24,7 +24,6 @@ import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.TransactionConfig;
 import org.glowroot.jvm.ThreadAllocatedBytes;
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.TimerName;
 import org.glowroot.plugin.api.transaction.TraceEntry;
@@ -73,15 +72,6 @@ public class TransactionServiceImplMoreDefensiveCheckTest {
     }
 
     @Test
-    public void testEndDummyWithError() {
-        when(mockTransaction.getEntryCount()).thenReturn(100);
-        MessageSupplier messageSupplier = mock(MessageSupplier.class);
-        TimerName timerName = TimerNameImpl.builder().name("test").build();
-        TraceEntry traceEntry = transactionService.startTraceEntry(messageSupplier, timerName);
-        traceEntry.endWithError(null);
-    }
-
-    @Test
     public void testEndDummyWithStackTraceGood() {
         when(mockTransaction.getEntryCount()).thenReturn(100);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
@@ -96,6 +86,6 @@ public class TransactionServiceImplMoreDefensiveCheckTest {
         MessageSupplier messageSupplier = mock(MessageSupplier.class);
         TimerName timerName = TimerNameImpl.builder().name("test").build();
         TraceEntry traceEntry = transactionService.startTraceEntry(messageSupplier, timerName);
-        traceEntry.endWithError(mock(ErrorMessage.class));
+        traceEntry.endWithError("");
     }
 }

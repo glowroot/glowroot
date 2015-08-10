@@ -647,10 +647,8 @@ public class AdviceGenerator {
         }
         mv.visitVarInsn(ALOAD, 1);
         mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/plugin/api/transaction/ErrorMessage", "from",
-                "(Ljava/lang/Throwable;)Lorg/glowroot/plugin/api/transaction/ErrorMessage;", false);
         mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/plugin/api/transaction/TraceEntry",
-                "endWithError", "(Lorg/glowroot/plugin/api/transaction/ErrorMessage;)V", true);
+                "endWithError", "(Ljava/lang/Throwable;)V", true);
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();

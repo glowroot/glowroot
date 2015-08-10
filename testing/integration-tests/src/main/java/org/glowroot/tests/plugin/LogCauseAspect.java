@@ -17,7 +17,6 @@ package org.glowroot.tests.plugin;
 
 import org.glowroot.plugin.api.Agent;
 import org.glowroot.plugin.api.config.ConfigService;
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.TimerName;
 import org.glowroot.plugin.api.transaction.TraceEntry;
@@ -58,7 +57,7 @@ public class LogCauseAspect {
             Exception cause1 = new NullPointerException("Cause 1");
             Exception cause2 = new IllegalStateException("Cause 2", cause1);
             Exception cause3 = new IllegalArgumentException("Cause 3", cause2);
-            traceEntry.endWithError(ErrorMessage.from(new IllegalStateException(cause3)));
+            traceEntry.endWithError(new IllegalStateException(cause3));
         }
     }
 }

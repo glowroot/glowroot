@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.api.transaction.internal;
+package org.glowroot.tests;
 
-import javax.annotation.Nullable;
+class ExceptionalClass {
 
-// this interface exists to provide access to ErrorMessageImpl from glowroot without making
-// ErrorMessageImpl accessible to plugins (at least not through the org.glowroot.plugin.api package)
-public interface ReadableErrorMessage {
-
-    String getMessage();
-
-    @Nullable
-    ThrowableInfo getThrowable();
+    // this method corresponds to pointcut defined in glowroot.plugin.json
+    void aMethodThatThrowsAnException() {
+        throw new RuntimeException("This is exceptional");
+    }
 }

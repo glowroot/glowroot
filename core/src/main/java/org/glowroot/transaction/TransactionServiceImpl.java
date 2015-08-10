@@ -36,14 +36,12 @@ import org.glowroot.plugin.api.config.ConfigListener;
 import org.glowroot.plugin.api.internal.NopTransactionService.NopQueryEntry;
 import org.glowroot.plugin.api.internal.NopTransactionService.NopTimer;
 import org.glowroot.plugin.api.internal.NopTransactionService.NopTraceEntry;
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.QueryEntry;
 import org.glowroot.plugin.api.transaction.Timer;
 import org.glowroot.plugin.api.transaction.TimerName;
 import org.glowroot.plugin.api.transaction.TraceEntry;
 import org.glowroot.plugin.api.transaction.TransactionService;
-import org.glowroot.plugin.api.transaction.internal.ReadableErrorMessage;
 import org.glowroot.transaction.model.QueryData;
 import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.TimerNameImpl;
@@ -199,11 +197,21 @@ class TransactionServiceImpl implements TransactionService, ConfigListener {
     }
 
     @Override
-    public void addTraceEntry(ErrorMessage errorMessage) {
-        if (errorMessage == null) {
-            logger.error("addTraceEntry(): argument 'errorMessage' must be non-null");
-            return;
-        }
+    public void addErrorEntry(Throwable t) {
+        addErrorEntryInternal(ErrorMessageBase.from(t));
+    }
+
+    @Override
+    public void addErrorEntry(@Nullable String message) {
+        addErrorEntryInternal(ErrorMessageBase.from(message));
+    }
+
+    @Override
+    public void addErrorEntry(@Nullable String message, Throwable t) {
+        addErrorEntryInternal(ErrorMessageBase.from(message, t));
+    }
+
+    private void addErrorEntryInternal(ErrorMessage errorMessage) {
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         // use higher entry limit when adding errors, but still need some kind of cap
         if (transaction != null
@@ -211,19 +219,23 @@ class TransactionServiceImpl implements TransactionService, ConfigListener {
             long currTick = ticker.read();
             org.glowroot.transaction.model.TraceEntryImpl entry =
                     transaction.addEntry(currTick, currTick, null, errorMessage, true);
-            if (((ReadableErrorMessage) errorMessage).getThrowable() == null) {
+            if (errorMessage.throwable() == null) {
                 StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
                 // need to strip back a few stack calls:
                 // skip i=0 which is "java.lang.Thread.getStackTrace()"
-                // skip i=1 which is "...TransactionServiceImpl.addTraceEntry()"
-                // skip i=2 which is the plugin advice
-                entry.setStackTrace(ImmutableList.copyOf(stackTrace).subList(3, stackTrace.length));
+                // skip i=1 which is "...TransactionServiceImpl.addErrorEntryInternal()"
+                // skip i=2 which is "...TransactionServiceImpl.addErrorEntry()"
+                // skip i=3 which is the plugin advice
+                entry.setStackTrace(ImmutableList.copyOf(stackTrace).subList(4, stackTrace.length));
             }
         }
     }
 
     @Override
     public void setTransactionType(@Nullable String transactionType) {
+        if (Strings.isNullOrEmpty(transactionType)) {
+            return;
+        }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
             transaction.setTransactionType(transactionType);
@@ -232,6 +244,9 @@ class TransactionServiceImpl implements TransactionService, ConfigListener {
 
     @Override
     public void setTransactionName(@Nullable String transactionName) {
+        if (Strings.isNullOrEmpty(transactionName)) {
+            return;
+        }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
             transaction.setTransactionName(transactionName);
@@ -239,17 +254,45 @@ class TransactionServiceImpl implements TransactionService, ConfigListener {
     }
 
     @Override
-    public void setTransactionError(ErrorMessage errorMessage) {
+    public void setTransactionError(@Nullable Throwable t) {
+        if (t == null) {
+            return;
+        }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
-            transaction.setError(errorMessage);
+            transaction.setError(ErrorMessageBase.from(t));
+        }
+    }
+
+    @Override
+    public void setTransactionError(@Nullable String message) {
+        if (Strings.isNullOrEmpty(message)) {
+            return;
+        }
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction != null) {
+            transaction.setError(ErrorMessageBase.from(message));
+        }
+    }
+
+    @Override
+    public void setTransactionError(@Nullable String message, @Nullable Throwable t) {
+        if (Strings.isNullOrEmpty(message) && t == null) {
+            return;
+        }
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction != null) {
+            transaction.setError(ErrorMessageBase.from(message, t));
         }
     }
 
     @Override
     public void setTransactionUser(@Nullable String user) {
+        if (Strings.isNullOrEmpty(user)) {
+            return;
+        }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
-        if (transaction != null && !Strings.isNullOrEmpty(user)) {
+        if (transaction != null) {
             transaction.setUser(user);
             if (transaction.getUserProfileRunnable() == null) {
                 userProfileScheduler.maybeScheduleUserProfiling(transaction, user);
@@ -415,19 +458,38 @@ class TransactionServiceImpl implements TransactionService, ConfigListener {
         }
 
         @Override
-        public void endWithError(ErrorMessage errorMessage) {
-            if (errorMessage == null) {
-                logger.error("endWithError(): argument 'errorMessage' must be non-null");
-                // fallback to end() without error
-                end();
-                return;
-            }
+        public void endWithError(Throwable t) {
+            endWithErrorInternal(ErrorMessage.from(t));
+        }
+
+        @Override
+        public void endWithError(@Nullable String message) {
+            endWithErrorInternal(ErrorMessage.from(message));
+        }
+
+        @Override
+        public void endWithError(@Nullable String message, Throwable t) {
+            endWithErrorInternal(ErrorMessage.from(message, t));
+        }
+
+        private void endWithErrorInternal(ErrorMessage errorMessage) {
             long endTick = ticker.read();
             endInternal(endTick);
             // use higher entry limit when adding errors, but still need some kind of cap
             if (transaction.getEntryCount() < 2 * maxTraceEntriesPerTransaction) {
                 // entry won't be nested properly, but at least the error will get captured
-                transaction.addEntry(startTick, endTick, messageSupplier, errorMessage, true);
+                org.glowroot.transaction.model.TraceEntryImpl entry = transaction
+                        .addEntry(startTick, endTick, messageSupplier, errorMessage, true);
+                if (errorMessage.throwable() == null) {
+                    StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+                    // need to strip back a few stack calls:
+                    // skip i=0 which is "java.lang.Thread.getStackTrace()"
+                    // skip i=1 which is "...DummyTraceEntryOrQuery.endWithErrorInternal()"
+                    // skip i=2 which is "...DummyTraceEntryOrQuery.endWithError()"
+                    // skip i=3 which is the plugin advice
+                    entry.setStackTrace(
+                            ImmutableList.copyOf(stackTrace).subList(4, stackTrace.length));
+                }
             }
         }
 

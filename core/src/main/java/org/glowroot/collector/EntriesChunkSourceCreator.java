@@ -31,9 +31,9 @@ import org.glowroot.common.ChunkSource;
 import org.glowroot.common.ChunkSource.ChunkCopier;
 import org.glowroot.common.Tickers;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
-import org.glowroot.plugin.api.transaction.internal.ReadableErrorMessage;
 import org.glowroot.plugin.api.transaction.internal.ReadableMessage;
-import org.glowroot.plugin.api.transaction.internal.ThrowableInfo;
+import org.glowroot.transaction.ErrorMessage;
+import org.glowroot.transaction.ThrowableInfo;
 import org.glowroot.transaction.model.Profile;
 import org.glowroot.transaction.model.StackTraceElementPlus;
 import org.glowroot.transaction.model.TraceEntryImpl;
@@ -53,13 +53,13 @@ public class EntriesChunkSourceCreator {
         return new EntriesChunkSource(entriesIterator, transactionStartTick, captureTick);
     }
 
-    static void writeThrowable(ThrowableInfo exception, JsonGenerator jg) throws IOException {
+    static void writeThrowable(ThrowableInfo throwable, JsonGenerator jg) throws IOException {
         jg.writeStartObject();
-        jg.writeStringField("display", exception.display());
+        jg.writeStringField("display", throwable.display());
         jg.writeFieldName("stackTrace");
-        writeStackTrace(exception.stackTrace(), jg);
-        jg.writeNumberField("framesInCommonWithCaused", exception.framesInCommonWithCaused());
-        ThrowableInfo cause = exception.cause();
+        writeStackTrace(throwable.stackTrace(), jg);
+        jg.writeNumberField("framesInCommonWithCaused", throwable.framesInCommonWithCaused());
+        ThrowableInfo cause = throwable.cause();
         if (cause != null) {
             jg.writeFieldName("cause");
             writeThrowable(cause, jg);
@@ -178,7 +178,7 @@ public class EntriesChunkSourceCreator {
                 writeMessage((ReadableMessage) messageSupplier.get(),
                         getRowCountSuffix(traceEntry));
             }
-            ReadableErrorMessage errorMessage = traceEntry.getErrorMessage();
+            ErrorMessage errorMessage = traceEntry.getErrorMessage();
             if (errorMessage != null) {
                 jg.writeFieldName("error");
                 writeErrorMessage(errorMessage);
@@ -215,10 +215,10 @@ public class EntriesChunkSourceCreator {
             jg.writeEndObject();
         }
 
-        private void writeErrorMessage(ReadableErrorMessage errorMessage) throws IOException {
+        private void writeErrorMessage(ErrorMessage errorMessage) throws IOException {
             jg.writeStartObject();
-            jg.writeStringField("message", errorMessage.getMessage());
-            ThrowableInfo throwable = errorMessage.getThrowable();
+            jg.writeStringField("message", errorMessage.message());
+            ThrowableInfo throwable = errorMessage.throwable();
             if (throwable != null) {
                 jg.writeFieldName("throwable");
                 writeThrowable(throwable, jg);

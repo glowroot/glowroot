@@ -24,8 +24,8 @@ import com.google.common.base.Ticker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
+import org.glowroot.transaction.ErrorMessage;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -144,7 +144,8 @@ class TraceEntryComponent implements Iterable<TraceEntryImpl> {
 
     private TraceEntryImpl createEntry(long startTick, @Nullable MessageSupplier messageSupplier,
             @Nullable QueryData queryData, long queryExecutionCount,
-            @Nullable ErrorMessage errorMessage, @Nullable TimerImpl timer, boolean limitBypassed) {
+            @Nullable ErrorMessage errorMessage, @Nullable TimerImpl timer,
+            boolean limitBypassed) {
         if (entryLimitExceeded && !limitBypassed) {
             // just in case the entryLimit property is changed in the middle of a trace this resets
             // the flag so that it can be triggered again (and possibly then a second limit marker)

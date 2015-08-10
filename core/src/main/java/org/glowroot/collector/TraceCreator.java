@@ -30,8 +30,8 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.io.CharStreams;
 
 import org.glowroot.common.ObjectMappers;
-import org.glowroot.plugin.api.transaction.internal.ReadableErrorMessage;
-import org.glowroot.plugin.api.transaction.internal.ThrowableInfo;
+import org.glowroot.transaction.ErrorMessage;
+import org.glowroot.transaction.ThrowableInfo;
 import org.glowroot.transaction.model.GcInfo;
 import org.glowroot.transaction.model.ThreadInfoData;
 import org.glowroot.transaction.model.TimerImpl;
@@ -70,7 +70,7 @@ public class TraceCreator {
         builder.id(transaction.getId());
         builder.active(active);
         builder.partial(partial);
-        ReadableErrorMessage errorMessage = transaction.getErrorMessage();
+        ErrorMessage errorMessage = transaction.getErrorMessage();
         builder.error(errorMessage != null);
         builder.startTime(transaction.getStartTime());
         builder.captureTime(captureTime);
@@ -84,8 +84,8 @@ public class TraceCreator {
         builder.putAllCustomAttributesForIndexing(customAttributes);
         builder.customDetail(writeCustomDetailAsString(transaction.getCustomDetail()));
         if (errorMessage != null) {
-            builder.errorMessage(errorMessage.getMessage());
-            builder.errorThrowable(writeExceptionAsString(errorMessage.getThrowable()));
+            builder.errorMessage(errorMessage.message());
+            builder.errorThrowable(writeThrowableAsString(errorMessage.throwable()));
         }
         builder.timers(writeTimersAsString(transaction.getRootTimer()));
         ThreadInfoData threadInfo = transaction.getThreadInfo();
@@ -148,14 +148,14 @@ public class TraceCreator {
         return sb.toString();
     }
 
-    private static @Nullable String writeExceptionAsString(@Nullable ThrowableInfo exception)
+    private static @Nullable String writeThrowableAsString(@Nullable ThrowableInfo throwable)
             throws IOException {
-        if (exception == null) {
+        if (throwable == null) {
             return null;
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
-        EntriesChunkSourceCreator.writeThrowable(exception, jg);
+        EntriesChunkSourceCreator.writeThrowable(throwable, jg);
         jg.close();
         return sb.toString();
     }

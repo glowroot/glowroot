@@ -22,7 +22,6 @@ import org.slf4j.helpers.MessageFormatter;
 
 import org.glowroot.plugin.api.Agent;
 import org.glowroot.plugin.api.config.ConfigService;
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.TimerName;
 import org.glowroot.plugin.api.transaction.TraceEntry;
@@ -47,7 +46,7 @@ public class Slf4jAspect {
         String formattedMessage = nullToEmpty(formattingTuple.getMessage());
         Throwable throwable = formattingTuple.getThrowable();
         if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), throwable != null)) {
-            transactionService.setTransactionError(ErrorMessage.from(formattedMessage, throwable));
+            transactionService.setTransactionError(formattedMessage, throwable);
         }
         TraceEntry traceEntry = transactionService.startTraceEntry(
                 MessageSupplier.from("log {}: {}", methodName, formattedMessage), timerName);
@@ -57,9 +56,11 @@ public class Slf4jAspect {
     private static void onAfter(LogAdviceTraveler traveler) {
         Throwable t = traveler.throwable;
         if (t == null) {
-            traveler.traceEntry.endWithError(ErrorMessage.from(traveler.formattedMessage));
+            traveler.traceEntry.endWithError(traveler.formattedMessage);
         } else {
-            traveler.traceEntry.endWithError(ErrorMessage.from(t.getMessage(), t));
+            // intentionally not passing message since it is already the trace entry message
+            // and this way it will also capture/display Throwable's root cause message
+            traveler.traceEntry.endWithError(t);
         }
     }
 
@@ -77,7 +78,7 @@ public class Slf4jAspect {
                 @BindMethodName String methodName) {
             LoggerPlugin.inAdvice(true);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
-                transactionService.setTransactionError(ErrorMessage.from(message));
+                transactionService.setTransactionError(message);
             }
             return transactionService.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, message), timerName);
@@ -86,7 +87,7 @@ public class Slf4jAspect {
         public static void onAfter(@BindTraveler TraceEntry traceEntry,
                 @BindParameter @Nullable String message) {
             LoggerPlugin.inAdvice(false);
-            traceEntry.endWithError(ErrorMessage.from(message));
+            traceEntry.endWithError(message);
         }
     }
 

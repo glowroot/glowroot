@@ -106,11 +106,6 @@ public class TransactionServiceImplDefensiveCheckTest {
     }
 
     @Test
-    public void testAddTraceEntry() {
-        transactionService.addTraceEntry(null);
-    }
-
-    @Test
     public void testAddTransactionCustomAttribute() {
         transactionService.addTransactionCustomAttribute(null, null);
     }

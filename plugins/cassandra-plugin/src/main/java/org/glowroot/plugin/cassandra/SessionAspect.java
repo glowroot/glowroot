@@ -23,7 +23,6 @@ import javax.annotation.Nullable;
 import org.glowroot.plugin.api.Agent;
 import org.glowroot.plugin.api.config.ConfigListener;
 import org.glowroot.plugin.api.config.ConfigService;
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.QueryEntry;
 import org.glowroot.plugin.api.transaction.TimerName;
@@ -134,7 +133,7 @@ public class SessionAspect {
         public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler @Nullable QueryEntry queryEntry) {
             if (queryEntry != null) {
-                queryEntry.endWithError(ErrorMessage.from(t));
+                queryEntry.endWithError(t);
             }
         }
         @OnAfter
@@ -172,7 +171,7 @@ public class SessionAspect {
         public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler @Nullable QueryEntry queryEntry) {
             if (queryEntry != null) {
-                queryEntry.endWithError(ErrorMessage.from(t));
+                queryEntry.endWithError(t);
             }
         }
         @OnAfter

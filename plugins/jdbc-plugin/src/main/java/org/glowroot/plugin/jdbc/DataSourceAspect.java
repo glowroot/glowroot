@@ -20,11 +20,10 @@ import java.sql.SQLException;
 
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-import org.glowroot.plugin.api.Logger;
 import org.glowroot.plugin.api.Agent;
+import org.glowroot.plugin.api.Logger;
 import org.glowroot.plugin.api.config.BooleanProperty;
 import org.glowroot.plugin.api.config.ConfigService;
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.Message;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.Timer;
@@ -89,7 +88,7 @@ public class DataSourceAspect {
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t, @BindTraveler Object entryOrTimer) {
             if (entryOrTimer instanceof TraceEntry) {
-                ((TraceEntry) entryOrTimer).endWithError(ErrorMessage.from(t));
+                ((TraceEntry) entryOrTimer).endWithError(t);
             } else {
                 ((Timer) entryOrTimer).stop();
             }

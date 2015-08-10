@@ -66,15 +66,13 @@ public interface TransactionService {
      * specified timer name is still started, since timers are very cheap, even in great quantities.
      * The dummy entry adheres to the {@link TraceEntry} contract and returns the specified
      * {@link MessageSupplier} in response to {@link TraceEntry#getMessageSupplier()}. Calling
-     * {@link TraceEntry#end()} on the dummy entry ends the timer. If
-     * {@link TraceEntry#endWithError(ErrorMessage)} is called on the dummy entry, then the dummy
-     * entry will be escalated to a real entry. If
+     * {@link TraceEntry#end()} on the dummy entry ends the timer. If {@code endWithError} is called
+     * on the dummy entry, then the dummy entry will be escalated to a real entry. If
      * {@link TraceEntry#endWithStackTrace(long, TimeUnit)} is called on the dummy entry and the
      * dummy entry duration exceeds the specified threshold, then the dummy entry will be escalated
-     * to a real entry. If {@link TraceEntry#endWithError(ErrorMessage)} is called on the dummy
-     * entry, then the dummy entry will be escalated to a real entry. A hard cap (
-     * {@code maxTraceEntriesPerTransaction * 2}) on the total number of (real) entries is applied
-     * when escalating dummy entries to real entries.
+     * to a real entry. If {@code endWithError} is called on the dummy entry, then the dummy entry
+     * will be escalated to a real entry. A hard cap ( {@code maxTraceEntriesPerTransaction * 2}) on
+     * the total number of (real) entries is applied when escalating dummy entries to real entries.
      * 
      * If there is no current transaction, this method does nothing, and returns a no-op instance of
      * {@link TraceEntry}.
@@ -106,11 +104,12 @@ public interface TransactionService {
     Timer startTimer(TimerName timerName);
 
     /**
-     * Adds a trace entry with duration zero. It does not set the error attribute on the trace,
-     * which must be done with {@link TraceEntry#endWithError(ErrorMessage)} on the root entry.
-     * 
-     * If the error message has no throwable, a stack trace is captured and attached to the trace
+     * Adds a trace entry with the specified error message and duration zero. It does not set the
+     * error attribute on the transaction, which must be done with
+     * {@link TransactionService#setTransactionError} or with {@code endWithError} on the root
      * entry.
+     * 
+     * The error message text is captured from {@code Throwable#getMessage()}.
      * 
      * This method bypasses the regular {@code maxTraceEntriesPerTransaction} check so that errors
      * after {@code maxTraceEntriesPerTransaction} will still be included in the trace. A hard cap (
@@ -119,7 +118,44 @@ public interface TransactionService {
      * 
      * If there is no current transaction, this method does nothing.
      */
-    void addTraceEntry(ErrorMessage errorMessage);
+    void addErrorEntry(Throwable t);
+
+    /**
+     * Adds a trace entry with the specified error message and duration zero. It does not set the
+     * error attribute on the transaction, which must be done with
+     * {@link TransactionService#setTransactionError} or with {@code endWithError} on the root
+     * entry.
+     * 
+     * Since there is no throwable passed to this variant, a stack trace is captured and displayed
+     * in the UI as a location stack trace (as opposed to an exception stack trace), similar to
+     * {@link TraceEntry#endWithStackTrace(long, TimeUnit)}.
+     * 
+     * This method bypasses the regular {@code maxTraceEntriesPerTransaction} check so that errors
+     * after {@code maxTraceEntriesPerTransaction} will still be included in the trace. A hard cap (
+     * {@code maxTraceEntriesPerTransaction * 2}) on the total number of entries is still applied,
+     * after which this method does nothing.
+     * 
+     * If there is no current transaction, this method does nothing.
+     */
+    void addErrorEntry(@Nullable String message);
+
+    /**
+     * Adds a trace entry with the specified error message and duration zero. It does not set the
+     * error attribute on the transaction, which must be done with
+     * {@link TransactionService#setTransactionError} or with {@code endWithError} on the root
+     * entry.
+     * 
+     * If {@code message} is null, then the error message is captured from
+     * {@code Throwable#getMessage()}.
+     * 
+     * This method bypasses the regular {@code maxTraceEntriesPerTransaction} check so that errors
+     * after {@code maxTraceEntriesPerTransaction} will still be included in the trace. A hard cap (
+     * {@code maxTraceEntriesPerTransaction * 2}) on the total number of entries is still applied,
+     * after which this method does nothing.
+     * 
+     * If there is no current transaction, this method does nothing.
+     */
+    void addErrorEntry(@Nullable String message, Throwable t);
 
     /**
      * Set the transaction type that is used for aggregation.
@@ -137,13 +173,14 @@ public interface TransactionService {
 
     /**
      * Marks the transaction as an error with the given message. Normally transactions are only
-     * marked as an error if {@link TraceEntry#endWithError(ErrorMessage)} is called on the root
-     * entry. This method can be used to mark the entire transaction as an error from a nested
-     * entry.
+     * marked as an error if {@code endWithError} is called on the root entry. This method can be
+     * used to mark the entire transaction as an error from a nested entry.
+     * 
+     * The error message text is captured from {@code Throwable#getMessage()}.
      * 
      * This should be used sparingly. Normally, entries should only mark themselves (using
-     * {@link TraceEntry#endWithError(ErrorMessage)}), and let the root entry determine if the
-     * transaction as a whole should be marked as an error.
+     * {@code endWithError}), and let the root entry determine if the transaction as a whole should
+     * be marked as an error.
      * 
      * E.g., this method is called from the logger plugin, to mark the entire transaction as an
      * error if an error is logged through one of the supported logger APIs.
@@ -153,7 +190,48 @@ public interface TransactionService {
      * 
      * If there is no current transaction, this method does nothing.
      */
-    void setTransactionError(ErrorMessage errorMessage);
+    void setTransactionError(@Nullable Throwable t);
+
+    /**
+     * Marks the transaction as an error with the given message. Normally transactions are only
+     * marked as an error if {@code endWithError} is called on the root entry. This method can be
+     * used to mark the entire transaction as an error from a nested entry.
+     * 
+     * This should be used sparingly. Normally, entries should only mark themselves (using
+     * {@code endWithError}), and let the root entry determine if the transaction as a whole should
+     * be marked as an error.
+     * 
+     * E.g., this method is called from the logger plugin, to mark the entire transaction as an
+     * error if an error is logged through one of the supported logger APIs.
+     * 
+     * If this is called multiple times within a single transaction, only the first call has any
+     * effect, and subsequent calls are ignored.
+     * 
+     * If there is no current transaction, this method does nothing.
+     */
+    void setTransactionError(@Nullable String message);
+
+    /**
+     * Marks the transaction as an error with the given message. Normally transactions are only
+     * marked as an error if {@code endWithError} is called on the root entry. This method can be
+     * used to mark the entire transaction as an error from a nested entry.
+     * 
+     * If {@code message} is empty or null, then the error message text is captured from
+     * {@code Throwable#getMessage()}.
+     * 
+     * This should be used sparingly. Normally, entries should only mark themselves (using
+     * {@code endWithError}), and let the root entry determine if the transaction as a whole should
+     * be marked as an error.
+     * 
+     * E.g., this method is called from the logger plugin, to mark the entire transaction as an
+     * error if an error is logged through one of the supported logger APIs.
+     * 
+     * If this is called multiple times within a single transaction, only the first call has any
+     * effect, and subsequent calls are ignored.
+     * 
+     * If there is no current transaction, this method does nothing.
+     */
+    void setTransactionError(@Nullable String message, @Nullable Throwable t);
 
     /**
      * Sets the user attribute on the transaction. This attribute is shared across all plugins, and

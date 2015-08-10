@@ -17,7 +17,6 @@ package org.glowroot.microbenchmarks.support;
 
 import org.glowroot.plugin.api.Agent;
 import org.glowroot.plugin.api.config.ConfigService;
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.TimerName;
 import org.glowroot.plugin.api.transaction.TraceEntry;
@@ -63,7 +62,7 @@ public class TransactionWorthyAspect {
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
                 @BindTraveler TraceEntry traceEntry) {
-            traceEntry.endWithError(ErrorMessage.from(t));
+            traceEntry.endWithError(t);
         }
     }
 }

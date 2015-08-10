@@ -120,8 +120,7 @@ public class StatementTest {
         TraceEntry entry = entries.get(0);
         assertThat(entry.getMessage().getText())
                 .isEqualTo("jdbc execution: select * from employee");
-        assertThat(entry.getError().getMessage())
-                .isEqualTo("java.sql.SQLException: An execute failure");
+        assertThat(entry.getError().getMessage()).isEqualTo("An execute failure");
     }
 
     @Test

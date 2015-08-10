@@ -34,7 +34,7 @@ public class TraceEntry {
     private final long duration;
     private final boolean active;
     private final int nestingLevel;
-    // message is null for entries created via TransactionService.addTraceEntry(ErrorMessage)
+    // message is null for entries created via TransactionService.addErrorEntry(ErrorMessage)
     private final @Nullable Message message;
     private final @Nullable ErrorMessage error;
     private final @Nullable ImmutableList<String> stackTrace;

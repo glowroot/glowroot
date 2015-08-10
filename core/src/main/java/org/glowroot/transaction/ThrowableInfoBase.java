@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.plugin.api.transaction.internal;
+package org.glowroot.transaction;
 
 import java.util.Arrays;
 import java.util.List;
@@ -26,7 +26,7 @@ import org.immutables.value.Value;
 
 // this class primarily exists because Throwables are not thread safe
 @Value.Immutable
-public abstract class ThrowableInfo {
+public abstract class ThrowableInfoBase {
 
     public abstract String display();
     // for inner cause throwable, stackTrace only includes frames not in common with caused
@@ -60,7 +60,7 @@ public abstract class ThrowableInfo {
                 stackTrace = stackTrace.subList(0, stackTrace.size() - framesInCommon);
             }
         }
-        ImmutableThrowableInfo.Builder builder = ImmutableThrowableInfo.builder()
+        ThrowableInfo.Builder builder = ThrowableInfo.builder()
                 .display(t.toString())
                 .addAllStackTrace(stackTrace)
                 .framesInCommonWithCaused(framesInCommon);

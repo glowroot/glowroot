@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.QueryEntry;
 import org.glowroot.plugin.api.transaction.Timer;
@@ -65,7 +64,13 @@ public class NopTransactionService implements TransactionService {
     }
 
     @Override
-    public void addTraceEntry(ErrorMessage errorMessage) {}
+    public void addErrorEntry(Throwable t) {}
+
+    @Override
+    public void addErrorEntry(@Nullable String message) {}
+
+    @Override
+    public void addErrorEntry(@Nullable String message, Throwable t) {}
 
     @Override
     public void setTransactionType(@Nullable String transactionType) {}
@@ -74,7 +79,13 @@ public class NopTransactionService implements TransactionService {
     public void setTransactionName(@Nullable String transactionName) {}
 
     @Override
-    public void setTransactionError(ErrorMessage errorMessage) {}
+    public void setTransactionError(@Nullable Throwable t) {}
+
+    @Override
+    public void setTransactionError(@Nullable String message) {}
+
+    @Override
+    public void setTransactionError(@Nullable String message, @Nullable Throwable t) {}
 
     @Override
     public void setTransactionUser(@Nullable String user) {}
@@ -103,7 +114,13 @@ public class NopTransactionService implements TransactionService {
         public void endWithStackTrace(long threshold, TimeUnit unit) {}
 
         @Override
-        public void endWithError(ErrorMessage errorMessage) {}
+        public void endWithError(Throwable t) {}
+
+        @Override
+        public void endWithError(@Nullable String message) {}
+
+        @Override
+        public void endWithError(@Nullable String message, Throwable t) {}
 
         @Override
         public Timer extend() {

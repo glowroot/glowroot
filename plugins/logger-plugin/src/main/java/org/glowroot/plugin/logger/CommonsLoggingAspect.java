@@ -19,7 +19,6 @@ import javax.annotation.Nullable;
 
 import org.glowroot.plugin.api.Agent;
 import org.glowroot.plugin.api.config.ConfigService;
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.TimerName;
 import org.glowroot.plugin.api.transaction.TraceEntry;
@@ -53,7 +52,7 @@ public class CommonsLoggingAspect {
             LoggerPlugin.inAdvice(true);
             String messageText = String.valueOf(message);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), false)) {
-                transactionService.setTransactionError(ErrorMessage.from(messageText));
+                transactionService.setTransactionError(messageText);
             }
             return transactionService.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, messageText), timerName);
@@ -62,7 +61,7 @@ public class CommonsLoggingAspect {
         public static void onAfter(@BindTraveler TraceEntry traceEntry,
                 @BindParameter @Nullable Object message) {
             LoggerPlugin.inAdvice(false);
-            traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
+            traceEntry.endWithError(String.valueOf(message));
         }
     }
 
@@ -82,7 +81,7 @@ public class CommonsLoggingAspect {
             LoggerPlugin.inAdvice(true);
             String messageText = String.valueOf(message);
             if (LoggerPlugin.markTraceAsError(methodName.equals("warn"), t != null)) {
-                transactionService.setTransactionError(ErrorMessage.from(messageText, t));
+                transactionService.setTransactionError(messageText, t);
             }
             return transactionService.startTraceEntry(
                     MessageSupplier.from("log {}: {}", methodName, messageText), timerName);
@@ -92,9 +91,11 @@ public class CommonsLoggingAspect {
                 @BindParameter @Nullable Throwable t, @BindTraveler TraceEntry traceEntry) {
             LoggerPlugin.inAdvice(false);
             if (t == null) {
-                traceEntry.endWithError(ErrorMessage.from(String.valueOf(message)));
+                traceEntry.endWithError(String.valueOf(message));
             } else {
-                traceEntry.endWithError(ErrorMessage.from(t.getMessage(), t));
+                // intentionally not passing message since it is already the trace entry message
+                // and this way it will also capture/display Throwable's root cause message
+                traceEntry.endWithError(t);
             }
         }
     }

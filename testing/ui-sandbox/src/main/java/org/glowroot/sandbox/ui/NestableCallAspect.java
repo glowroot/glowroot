@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.plugin.api.Agent;
 import org.glowroot.plugin.api.config.ConfigService;
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.Message;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.TimerName;
@@ -118,12 +117,10 @@ public class NestableCallAspect {
             if (value < 0.8) {
                 traceEntry.end();
             } else if (value < 0.9) {
-                traceEntry.endWithError(ErrorMessage.from("root entry randomized error",
-                        new IllegalStateException()));
+                traceEntry.endWithError("root entry randomized error", new IllegalStateException());
             } else {
                 String reallyLongErrorMessage = Strings.repeat("abcdefghijklmnopqrstuvwxyz ", 100);
-                traceEntry.endWithError(
-                        ErrorMessage.from(reallyLongErrorMessage, new IllegalStateException()));
+                traceEntry.endWithError(reallyLongErrorMessage, new IllegalStateException());
             }
         }
     }

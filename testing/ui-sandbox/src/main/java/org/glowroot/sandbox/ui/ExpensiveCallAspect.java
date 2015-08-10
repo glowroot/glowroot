@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.plugin.api.Agent;
 import org.glowroot.plugin.api.config.ConfigService;
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.Message;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.QueryEntry;
@@ -345,27 +344,27 @@ public class ExpensiveCallAspect {
         double value = random.nextDouble();
         if (traceEntry == null) {
             if (value < 0.5) {
-                transactionService.addTraceEntry(ErrorMessage.from(new IllegalStateException(
+                transactionService.addErrorEntry(new IllegalStateException(
                         "Exception in execute" + num
                                 + "\nwith no trace entry text and no custom error message",
-                        getRandomCause())));
+                        getRandomCause()));
             } else {
-                transactionService.addTraceEntry(ErrorMessage.from(
-                        "randomized error\nwith no trace entry text",
-                        new IllegalStateException("Exception in execute" + num
-                                + "\nwith no trace entry text", getRandomCause())));
+                transactionService.addErrorEntry("randomized error\nwith no trace entry text",
+                        new IllegalStateException(
+                                "Exception in execute" + num + "\nwith no trace entry text",
+                                getRandomCause()));
             }
             return;
         }
         if (value < 0.94) {
             traceEntry.end();
         } else if (value < 0.96) {
-            traceEntry.endWithError(ErrorMessage.from(new IllegalStateException(
+            traceEntry.endWithError(new IllegalStateException(
                     "Exception in execute" + num + "\nwith no custom error message",
-                    getRandomCause())));
+                    getRandomCause()));
         } else {
-            traceEntry.endWithError(ErrorMessage.from("randomized error",
-                    new IllegalStateException("Exception in execute" + num, getRandomCause())));
+            traceEntry.endWithError("randomized error",
+                    new IllegalStateException("Exception in execute" + num, getRandomCause()));
         }
     }
 

@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableMap;
 
 import org.glowroot.plugin.api.Agent;
 import org.glowroot.plugin.api.config.ConfigService;
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.TimerName;
 import org.glowroot.plugin.api.transaction.TraceEntry;
 import org.glowroot.plugin.api.transaction.TransactionService;
@@ -57,8 +56,8 @@ public class ServletAspect {
     // the life of this thread local is tied to the life of the topLevel thread local
     // it is only created if the topLevel thread local exists, and it is cleared when topLevel
     // thread local is cleared
-    private static final FastThreadLocal</*@Nullable*/ErrorMessage> sendError =
-            new FastThreadLocal</*@Nullable*/ErrorMessage>();
+    private static final FastThreadLocal</*@Nullable*/String> sendError =
+            new FastThreadLocal</*@Nullable*/String>();
 
     @Shim("javax.servlet.http.HttpServletRequest")
     public interface HttpServletRequest {
@@ -169,7 +168,7 @@ public class ServletAspect {
             if (traceEntry == null) {
                 return;
             }
-            ErrorMessage errorMessage = sendError.get();
+            String errorMessage = sendError.get();
             if (errorMessage != null) {
                 traceEntry.endWithError(errorMessage);
                 sendError.set(null);
@@ -186,7 +185,7 @@ public class ServletAspect {
             }
             // ignoring potential sendError since this seems worse
             sendError.set(null);
-            traceEntry.endWithError(ErrorMessage.from(t));
+            traceEntry.endWithError(t);
             topLevel.set(null);
         }
     }
@@ -246,10 +245,8 @@ public class ServletAspect {
         public static void onAfter(@BindParameter Integer statusCode) {
             // only capture 5xx server errors
             if (statusCode >= 500 && topLevel.get() != null && sendError.get() == null) {
-                ErrorMessage errorMessage =
-                        ErrorMessage.from("sendError, HTTP status code " + statusCode);
-                transactionService.addTraceEntry(errorMessage);
-                sendError.set(errorMessage);
+                transactionService.addErrorEntry("sendError, HTTP status code " + statusCode);
+                sendError.set("sendError, HTTP status code " + statusCode);
             }
         }
     }
@@ -263,10 +260,8 @@ public class ServletAspect {
         public static void onAfter(@BindParameter Integer statusCode) {
             // only capture 5xx server errors
             if (statusCode >= 500 && topLevel.get() != null && sendError.get() == null) {
-                ErrorMessage errorMessage =
-                        ErrorMessage.from("setStatus, HTTP status code " + statusCode);
-                transactionService.addTraceEntry(errorMessage);
-                sendError.set(errorMessage);
+                transactionService.addErrorEntry("setStatus, HTTP status code " + statusCode);
+                sendError.set("setStatus, HTTP status code " + statusCode);
             }
         }
     }

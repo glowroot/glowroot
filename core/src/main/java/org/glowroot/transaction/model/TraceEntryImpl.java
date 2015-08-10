@@ -26,11 +26,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.Tickers;
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.QueryEntry;
 import org.glowroot.plugin.api.transaction.Timer;
-import org.glowroot.plugin.api.transaction.internal.ReadableErrorMessage;
+import org.glowroot.transaction.ErrorMessage;
+import org.glowroot.transaction.ErrorMessageBase;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -95,8 +95,8 @@ public class TraceEntryImpl implements QueryEntry, Timer {
         return messageSupplier;
     }
 
-    public @Nullable ReadableErrorMessage getErrorMessage() {
-        return (ReadableErrorMessage) errorMessage;
+    public @Nullable ErrorMessage getErrorMessage() {
+        return errorMessage;
     }
 
     public long getStartTick() {
@@ -161,14 +161,18 @@ public class TraceEntryImpl implements QueryEntry, Timer {
     }
 
     @Override
-    public void endWithError(ErrorMessage errorMessage) {
-        if (errorMessage == null) {
-            logger.error("endWithError(): argument 'errorMessage' must be non-null");
-            // fallback to end() without error
-            end();
-            return;
-        }
-        endInternal(ticker.read(), errorMessage);
+    public void endWithError(Throwable t) {
+        endWithErrorInternal(ErrorMessageBase.from(t));
+    }
+
+    @Override
+    public void endWithError(@Nullable String message) {
+        endWithErrorInternal(ErrorMessageBase.from(message));
+    }
+
+    @Override
+    public void endWithError(@Nullable String message, Throwable t) {
+        endWithErrorInternal(ErrorMessageBase.from(message, t));
     }
 
     @Override
@@ -285,6 +289,19 @@ public class TraceEntryImpl implements QueryEntry, Timer {
     void setEndTick(long endTick) {
         this.endTick = endTick;
         this.selfNestingLevel--;
+    }
+
+    private void endWithErrorInternal(ErrorMessage errorMessage) {
+        endInternal(ticker.read(), errorMessage);
+        if (errorMessage.throwable() == null) {
+            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            // need to strip back a few stack calls:
+            // skip i=0 which is "java.lang.Thread.getStackTrace()"
+            // skip i=1 which is "...TraceEntryImpl.endWithErrorInternal()"
+            // skip i=2 which is "...TraceEntryImpl.endWithError()"
+            // skip i=3 which is the plugin advice
+            setStackTrace(ImmutableList.copyOf(stackTrace).subList(4, stackTrace.length));
+        }
     }
 
     private void endInternal(long endTick, @Nullable ErrorMessage errorMessage) {

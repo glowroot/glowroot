@@ -24,7 +24,6 @@ import org.glowroot.config.AdvancedConfig;
 import org.glowroot.config.ConfigService;
 import org.glowroot.config.TransactionConfig;
 import org.glowroot.jvm.ThreadAllocatedBytes;
-import org.glowroot.plugin.api.transaction.ErrorMessage;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.TimerName;
 
@@ -73,8 +72,8 @@ public class TransactionServiceImplOutsideTxTest {
     }
 
     @Test
-    public void testAddTraceEntry() {
-        transactionService.addTraceEntry(ErrorMessage.from("z"));
+    public void testAddErrorEntry() {
+        transactionService.addErrorEntry("z");
     }
 
     @Test
@@ -89,7 +88,7 @@ public class TransactionServiceImplOutsideTxTest {
 
     @Test
     public void testSetTransactionError() {
-        transactionService.setTransactionError(ErrorMessage.from("te"));
+        transactionService.setTransactionError("te");
     }
 
     @Test

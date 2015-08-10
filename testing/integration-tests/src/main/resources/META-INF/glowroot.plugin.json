@@ -92,6 +92,15 @@
       "traceEntryEnabledProperty": "levelFiveEntryEnabled"
     },
     {
+      "className": "org.glowroot.tests.ExceptionalClass",
+      "methodName": "aMethodThatThrowsAnException",
+      "methodParameterTypes": [
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "exceptional",
+      "traceEntryTemplate": "Exceptional entry"
+    },
+    {
       "className": "org.glowroot.tests.AAA",
       "methodName": "execute",
       "methodParameterTypes": [
