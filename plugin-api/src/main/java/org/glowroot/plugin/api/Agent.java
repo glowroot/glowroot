@@ -24,8 +24,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.plugin.api.config.ConfigService;
 import org.glowroot.plugin.api.internal.NopConfigService;
-import org.glowroot.plugin.api.internal.PluginServiceRegistry;
 import org.glowroot.plugin.api.internal.NopTransactionService;
+import org.glowroot.plugin.api.internal.ServiceRegistry;
 import org.glowroot.plugin.api.transaction.TransactionService;
 
 public class Agent {
@@ -34,18 +34,17 @@ public class Agent {
 
     private static final TransactionService transactionService;
 
-    private static final @Nullable PluginServiceRegistry pluginServiceRegistry;
+    private static final @Nullable ServiceRegistry serviceRegistry;
 
     static {
         try {
-            Class<?> pluginServicesClass =
-                    Class.forName("org.glowroot.transaction.PluginServiceRegistryImpl");
-            Method getInstanceMethod = pluginServicesClass.getMethod("getInstance");
-            pluginServiceRegistry = (PluginServiceRegistry) getInstanceMethod.invoke(null);
-            if (pluginServiceRegistry == null) {
+            Class<?> registryClass = Class.forName("org.glowroot.transaction.ServiceRegistryImpl");
+            Method getInstanceMethod = registryClass.getMethod("getInstance");
+            serviceRegistry = (ServiceRegistry) getInstanceMethod.invoke(null);
+            if (serviceRegistry == null) {
                 transactionService = NopTransactionService.INSTANCE;
             } else {
-                transactionService = pluginServiceRegistry.getTransactionService();
+                transactionService = serviceRegistry.getTransactionService();
             }
         } catch (Exception e) {
             // this really really really shouldn't happen
@@ -73,8 +72,8 @@ public class Agent {
      * looking it up every time it is needed (which is often).
      */
     public static ConfigService getConfigService(String pluginId) {
-        return pluginServiceRegistry == null ? NopConfigService.INSTANCE
-                : pluginServiceRegistry.getConfigService(pluginId);
+        return serviceRegistry == null ? NopConfigService.INSTANCE
+                : serviceRegistry.getConfigService(pluginId);
     }
 
     public static Logger getLogger(Class<?> clazz) {

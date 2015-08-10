@@ -48,7 +48,7 @@ class ConfigServiceImpl implements org.glowroot.plugin.api.config.ConfigService,
     private final @Nullable String pluginId;
 
     // cache for fast read access
-    // visibility is provided by memoryBarrier below
+    // visibility is provided by memoryBarrier in org.glowroot.config.ConfigService
     private boolean enabled;
     private @MonotonicNonNull PluginConfig pluginConfig;
 

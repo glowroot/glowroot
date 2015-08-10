@@ -60,7 +60,7 @@ public class SessionAspect {
         }
     };
 
-    // volatile is not needed here as it piggybacks on PluginServicesImpl.memoryBarrier
+    // visibility is provided by memoryBarrier in org.glowroot.config.ConfigService
     private static int stackTraceThresholdMillis;
 
     static {

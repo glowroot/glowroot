@@ -29,9 +29,9 @@ import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.plugin.api.internal.PluginServiceRegistry;
+import org.glowroot.plugin.api.internal.ServiceRegistry;
 import org.glowroot.plugin.api.transaction.TransactionService;
-import org.glowroot.transaction.PluginServiceRegistryImpl.ConfigServiceFactory;
+import org.glowroot.transaction.ServiceRegistryImpl.ConfigServiceFactory;
 import org.glowroot.weaving.AnalyzedWorld;
 import org.glowroot.weaving.ExtraBootResourceFinder;
 import org.glowroot.weaving.PreInitializeWeavingClasses;
@@ -52,7 +52,7 @@ public class TransactionModule {
     private final boolean timerWrapperMethods;
     private final boolean jvmRetransformClassesSupported;
 
-    private final PluginServiceRegistry pluginServiceRegistry;
+    private final ServiceRegistry serviceRegistry;
 
     public TransactionModule(final Clock clock, final Ticker ticker,
             final ConfigModule configModule, final TransactionCollector transactionCollector,
@@ -108,8 +108,7 @@ public class TransactionModule {
                         configModule.getPluginDescriptors(), pluginId);
             }
         };
-        pluginServiceRegistry =
-                PluginServiceRegistryImpl.init(transactionService, configServiceFactory);
+        serviceRegistry = ServiceRegistryImpl.init(transactionService, configServiceFactory);
     }
 
     public AnalyzedWorld getAnalyzedWorld() {
@@ -138,7 +137,7 @@ public class TransactionModule {
 
     @OnlyUsedByTests
     public void reopen() throws Exception {
-        PluginServiceRegistryImpl.reopen(pluginServiceRegistry);
+        ServiceRegistryImpl.reopen(serviceRegistry);
     }
 
     @OnlyUsedByTests

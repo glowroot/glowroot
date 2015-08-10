@@ -215,7 +215,7 @@ class TransactionServiceImpl implements TransactionService, ConfigListener {
                 StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
                 // need to strip back a few stack calls:
                 // skip i=0 which is "java.lang.Thread.getStackTrace()"
-                // skip i=1 which is "...PluginServicesImpl.addTraceEntry()"
+                // skip i=1 which is "...TransactionServiceImpl.addTraceEntry()"
                 // skip i=2 which is the plugin advice
                 entry.setStackTrace(ImmutableList.copyOf(stackTrace).subList(3, stackTrace.length));
             }

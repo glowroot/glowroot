@@ -22,22 +22,21 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.UsedByReflection;
 import org.glowroot.plugin.api.config.ConfigService;
-import org.glowroot.plugin.api.internal.PluginServiceRegistry;
+import org.glowroot.plugin.api.internal.ServiceRegistry;
 import org.glowroot.plugin.api.transaction.TransactionService;
 
 @UsedByReflection
-public class PluginServiceRegistryImpl implements PluginServiceRegistry {
+public class ServiceRegistryImpl implements ServiceRegistry {
 
-    private static volatile @MonotonicNonNull PluginServiceRegistry INSTANCE;
+    private static volatile @MonotonicNonNull ServiceRegistry INSTANCE;
 
     private final TransactionService transactionService;
 
     private final LoadingCache<String, ConfigService> configServices;
 
-    PluginServiceRegistryImpl(TransactionService transactionService,
+    ServiceRegistryImpl(TransactionService transactionService,
             final ConfigServiceFactory configServiceFactory) {
         this.transactionService = transactionService;
         configServices = CacheBuilder.newBuilder().build(new CacheLoader<String, ConfigService>() {
@@ -61,19 +60,18 @@ public class PluginServiceRegistryImpl implements PluginServiceRegistry {
     // called via reflection from org.glowroot.plugin.api.Agent
     // also called via reflection from generated pointcut config advice
     @UsedByReflection
-    public static @Nullable PluginServiceRegistry getInstance() {
+    public static @Nullable ServiceRegistry getInstance() {
         return INSTANCE;
     }
 
-    static PluginServiceRegistry init(TransactionService transactionService,
+    static ServiceRegistry init(TransactionService transactionService,
             ConfigServiceFactory configServiceFactory) throws Exception {
-        INSTANCE = new PluginServiceRegistryImpl(transactionService, configServiceFactory);
+        INSTANCE = new ServiceRegistryImpl(transactionService, configServiceFactory);
         return INSTANCE;
     }
 
-    @OnlyUsedByTests
-    static void reopen(PluginServiceRegistry pluginServiceRegistry) throws Exception {
-        INSTANCE = pluginServiceRegistry;
+    static void reopen(ServiceRegistry serviceRegistry) throws Exception {
+        INSTANCE = serviceRegistry;
     }
 
     interface ConfigServiceFactory {

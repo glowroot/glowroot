@@ -18,7 +18,7 @@ package org.glowroot.plugin.api.internal;
 import org.glowroot.plugin.api.config.ConfigService;
 import org.glowroot.plugin.api.transaction.TransactionService;
 
-public interface PluginServiceRegistry {
+public interface ServiceRegistry {
 
     TransactionService getTransactionService();
     ConfigService getConfigService(String pluginId);
