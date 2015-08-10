@@ -44,19 +44,19 @@ import static org.glowroot.common.Checkers.castUntainted;
 
 public class GaugePointDao implements GaugePointRepository {
 
-    private static final ImmutableList<Column> gaugePointRollup0Columns = ImmutableList.<Column>of(
+    private static final ImmutableList<Column> gaugePointRollup0Columns = ImmutableList.of(
             Column.of("gauge_meta_id", Types.BIGINT),
             Column.of("capture_time", Types.BIGINT),
             Column.of("value", Types.DOUBLE));
 
-    private static final ImmutableList<Column> gaugePointRollupColumns = ImmutableList.<Column>of(
+    private static final ImmutableList<Column> gaugePointRollupColumns = ImmutableList.of(
             Column.of("gauge_meta_id", Types.BIGINT),
             Column.of("capture_time", Types.BIGINT),
             Column.of("value", Types.DOUBLE),
             Column.of("count", Types.DOUBLE)); // count is needed for further rollups
 
     private static final ImmutableList<Index> gaugePointRollup0Indexes =
-            ImmutableList.<Index>of(Index.of("gauge_point_rollup_0_idx",
+            ImmutableList.of(Index.of("gauge_point_rollup_0_idx",
                     ImmutableList.of("gauge_meta_id", "capture_time", "value")));
 
     private final GaugeMetaDao gaugeMetaDao;

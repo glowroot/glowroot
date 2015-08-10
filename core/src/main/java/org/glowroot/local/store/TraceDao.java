@@ -49,7 +49,7 @@ public class TraceDao implements TraceRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceDao.class);
 
-    private static final ImmutableList<Column> traceColumns = ImmutableList.<Column>of(
+    private static final ImmutableList<Column> traceColumns = ImmutableList.of(
             Column.of("id", Types.VARCHAR).withPrimaryKey(true),
             Column.of("partial", Types.BIGINT),
             Column.of("slow", Types.BOOLEAN),
@@ -78,14 +78,13 @@ public class TraceDao implements TraceRepository {
             Column.of("profile_capped_id", Types.VARCHAR)); // capped database id
 
     // capture_time column is used for expiring records without using FK with on delete cascade
-    private static final ImmutableList<Column> transactionCustomAttributeColumns =
-            ImmutableList.<Column>of(
-                    Column.of("trace_id", Types.VARCHAR),
-                    Column.of("name", Types.VARCHAR),
-                    Column.of("value", Types.VARCHAR),
-                    Column.of("capture_time", Types.BIGINT));
+    private static final ImmutableList<Column> transactionCustomAttributeColumns = ImmutableList.of(
+            Column.of("trace_id", Types.VARCHAR),
+            Column.of("name", Types.VARCHAR),
+            Column.of("value", Types.VARCHAR),
+            Column.of("capture_time", Types.BIGINT));
 
-    private static final ImmutableList<Index> traceIndexes = ImmutableList.<Index>of(
+    private static final ImmutableList<Index> traceIndexes = ImmutableList.of(
             // duration, id and error columns are included so h2 can return the result set directly
             // from the index without having to reference the table for each row
             //

@@ -22,13 +22,12 @@ import com.google.common.collect.ImmutableList;
 
 class TriggeredAlertDao {
 
-    private static final ImmutableList<Column> triggeredAlertColumns = ImmutableList.<Column>of(
+    private static final ImmutableList<Column> triggeredAlertColumns = ImmutableList.of(
             Column.of("alert_config_version", Types.VARCHAR),
             Column.of("end_time", Types.BIGINT));
 
-    private static final ImmutableList<Index> triggeredAlertIndexes =
-            ImmutableList.<Index>of(Index.of("triggered_alert_idx",
-                    ImmutableList.of("alert_config_version")));
+    private static final ImmutableList<Index> triggeredAlertIndexes = ImmutableList
+            .of(Index.of("triggered_alert_idx", ImmutableList.of("alert_config_version")));
 
     private final DataSource dataSource;
 

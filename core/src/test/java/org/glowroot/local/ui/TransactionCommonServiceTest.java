@@ -58,10 +58,7 @@ public class TransactionCommonServiceTest {
         ConfigService configService = mock(ConfigService.class);
         when(configService.getStorageConfig()).thenReturn(
                 StorageConfig.builder().rollupExpirationHours(
-                        ImmutableList.<Integer>of(
-                                Integer.MAX_VALUE,
-                                Integer.MAX_VALUE,
-                                Integer.MAX_VALUE))
+                        ImmutableList.of(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE))
                         .build());
         when(configService.getAdvancedConfig()).thenReturn(AdvancedConfig.builder().build());
         ImmutableList<RollupConfig> rollupConfigs = ImmutableList.of(RollupConfig.of(1000, 0),

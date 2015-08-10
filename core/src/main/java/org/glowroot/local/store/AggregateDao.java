@@ -66,42 +66,40 @@ public class AggregateDao {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final ImmutableList<Column> overallAggregatePointColumns =
-            ImmutableList.<Column>of(
-                    Column.of("transaction_type", Types.VARCHAR),
-                    Column.of("capture_time", Types.BIGINT),
-                    Column.of("total_micros", Types.BIGINT),
-                    Column.of("error_count", Types.BIGINT),
-                    Column.of("transaction_count", Types.BIGINT),
-                    Column.of("total_cpu_micros", Types.BIGINT),
-                    Column.of("total_blocked_micros", Types.BIGINT),
-                    Column.of("total_waited_micros", Types.BIGINT),
-                    Column.of("total_allocated_kbytes", Types.BIGINT),
-                    Column.of("queries_capped_id", Types.BIGINT), // capped database id
-                    // profile json is always from "synthetic root"
-                    Column.of("profile_capped_id", Types.BIGINT), // capped database id
-                    Column.of("histogram", Types.BLOB),
-                    // timers json is always from "synthetic root"
-                    Column.of("timers", Types.VARCHAR)); // json data
+    private static final ImmutableList<Column> overallAggregatePointColumns = ImmutableList.of(
+            Column.of("transaction_type", Types.VARCHAR),
+            Column.of("capture_time", Types.BIGINT),
+            Column.of("total_micros", Types.BIGINT),
+            Column.of("error_count", Types.BIGINT),
+            Column.of("transaction_count", Types.BIGINT),
+            Column.of("total_cpu_micros", Types.BIGINT),
+            Column.of("total_blocked_micros", Types.BIGINT),
+            Column.of("total_waited_micros", Types.BIGINT),
+            Column.of("total_allocated_kbytes", Types.BIGINT),
+            Column.of("queries_capped_id", Types.BIGINT), // capped database id
+            // profile json is always from "synthetic root"
+            Column.of("profile_capped_id", Types.BIGINT), // capped database id
+            Column.of("histogram", Types.BLOB),
+            // timers json is always from "synthetic root"
+            Column.of("timers", Types.VARCHAR)); // json data
 
-    private static final ImmutableList<Column> transactionAggregateColumns =
-            ImmutableList.<Column>of(
-                    Column.of("transaction_type", Types.VARCHAR),
-                    Column.of("transaction_name", Types.VARCHAR),
-                    Column.of("capture_time", Types.BIGINT),
-                    Column.of("total_micros", Types.BIGINT),
-                    Column.of("error_count", Types.BIGINT),
-                    Column.of("transaction_count", Types.BIGINT),
-                    Column.of("total_cpu_micros", Types.BIGINT),
-                    Column.of("total_blocked_micros", Types.BIGINT),
-                    Column.of("total_waited_micros", Types.BIGINT),
-                    Column.of("total_allocated_kbytes", Types.BIGINT),
-                    Column.of("queries_capped_id", Types.BIGINT), // capped database id
-                    // profile json is always from "synthetic root"
-                    Column.of("profile_capped_id", Types.BIGINT), // capped database id
-                    Column.of("histogram", Types.BLOB),
-                    // timers json is always from "synthetic root"
-                    Column.of("timers", Types.VARCHAR)); // json data
+    private static final ImmutableList<Column> transactionAggregateColumns = ImmutableList.of(
+            Column.of("transaction_type", Types.VARCHAR),
+            Column.of("transaction_name", Types.VARCHAR),
+            Column.of("capture_time", Types.BIGINT),
+            Column.of("total_micros", Types.BIGINT),
+            Column.of("error_count", Types.BIGINT),
+            Column.of("transaction_count", Types.BIGINT),
+            Column.of("total_cpu_micros", Types.BIGINT),
+            Column.of("total_blocked_micros", Types.BIGINT),
+            Column.of("total_waited_micros", Types.BIGINT),
+            Column.of("total_allocated_kbytes", Types.BIGINT),
+            Column.of("queries_capped_id", Types.BIGINT), // capped database id
+            // profile json is always from "synthetic root"
+            Column.of("profile_capped_id", Types.BIGINT), // capped database id
+            Column.of("histogram", Types.BLOB),
+            // timers json is always from "synthetic root"
+            Column.of("timers", Types.VARCHAR)); // json data
 
     // this index includes all columns needed for the overall aggregate query so h2 can return
     // the result set directly from the index without having to reference the table for each row
@@ -137,11 +135,11 @@ public class AggregateDao {
         for (int i = 0; i < rollupConfigs.size(); i++) {
             String overallTableName = "overall_aggregate_rollup_" + castUntainted(i);
             dataSource.syncTable(overallTableName, overallAggregatePointColumns);
-            dataSource.syncIndexes(overallTableName, ImmutableList.<Index>of(
+            dataSource.syncIndexes(overallTableName, ImmutableList.of(
                     Index.of(overallTableName + "_idx", overallAggregateIndexColumns)));
             String transactionTableName = "transaction_aggregate_rollup_" + castUntainted(i);
             dataSource.syncTable(transactionTableName, transactionAggregateColumns);
-            dataSource.syncIndexes(transactionTableName, ImmutableList.<Index>of(
+            dataSource.syncIndexes(transactionTableName, ImmutableList.of(
                     Index.of(transactionTableName + "_idx", transactionAggregateIndexColumns)));
         }
 

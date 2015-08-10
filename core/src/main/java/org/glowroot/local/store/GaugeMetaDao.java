@@ -36,13 +36,13 @@ import static java.util.concurrent.TimeUnit.HOURS;
 
 class GaugeMetaDao {
 
-    private static final ImmutableList<Column> gaugeColumns = ImmutableList.<Column>of(
+    private static final ImmutableList<Column> gaugeColumns = ImmutableList.of(
             Column.of("id", Types.BIGINT).withIdentity(true),
             Column.of("name", Types.VARCHAR),
             Column.of("ever_increasing", Types.BOOLEAN)); // used by gauge point rollup
 
     private static final ImmutableList<Index> gaugeIndexes =
-            ImmutableList.<Index>of(Index.of("gauge_meta_idx", ImmutableList.of("name")));
+            ImmutableList.of(Index.of("gauge_meta_idx", ImmutableList.of("name")));
 
     // expire after 1 hour to avoid retaining deleted gauge configs indefinitely
     private final Cache<String, GaugeMeta> gaugeMetas =
