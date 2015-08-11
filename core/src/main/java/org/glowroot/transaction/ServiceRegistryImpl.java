@@ -22,6 +22,8 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
+import org.glowroot.api.internal.GlowrootService;
+import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.UsedByReflection;
 import org.glowroot.plugin.api.config.ConfigService;
 import org.glowroot.plugin.api.internal.ServiceRegistry;
@@ -30,14 +32,16 @@ import org.glowroot.plugin.api.transaction.TransactionService;
 @UsedByReflection
 public class ServiceRegistryImpl implements ServiceRegistry {
 
-    private static volatile @MonotonicNonNull ServiceRegistry INSTANCE;
+    private static volatile @MonotonicNonNull ServiceRegistryImpl INSTANCE;
 
+    private final GlowrootService glowrootService;
     private final TransactionService transactionService;
 
     private final LoadingCache<String, ConfigService> configServices;
 
-    ServiceRegistryImpl(TransactionService transactionService,
+    ServiceRegistryImpl(GlowrootService glowrootService, TransactionService transactionService,
             final ConfigServiceFactory configServiceFactory) {
+        this.glowrootService = glowrootService;
         this.transactionService = transactionService;
         configServices = CacheBuilder.newBuilder().build(new CacheLoader<String, ConfigService>() {
             @Override
@@ -64,14 +68,24 @@ public class ServiceRegistryImpl implements ServiceRegistry {
         return INSTANCE;
     }
 
-    static ServiceRegistry init(TransactionService transactionService,
-            ConfigServiceFactory configServiceFactory) throws Exception {
-        INSTANCE = new ServiceRegistryImpl(transactionService, configServiceFactory);
+    // called via reflection from org.glowroot.api.Glowroot
+    // also called via reflection from generated pointcut config advice
+    @UsedByReflection
+    public static @Nullable GlowrootService getGlowrootService() {
+        return INSTANCE == null ? null : INSTANCE.glowrootService;
+    }
+
+    static ServiceRegistryImpl init(GlowrootService glowrootService,
+            TransactionService transactionService, ConfigServiceFactory configServiceFactory)
+                    throws Exception {
+        INSTANCE = new ServiceRegistryImpl(glowrootService, transactionService,
+                configServiceFactory);
         return INSTANCE;
     }
 
-    static void reopen(ServiceRegistry serviceRegistry) throws Exception {
-        INSTANCE = serviceRegistry;
+    @OnlyUsedByTests
+    static void reopen(ServiceRegistryImpl pluginServiceRegistry) throws Exception {
+        INSTANCE = pluginServiceRegistry;
     }
 
     interface ConfigServiceFactory {

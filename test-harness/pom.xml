@@ -20,11 +20,12 @@
       <artifactId>glowroot-core</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <!-- do not include glowroot-plugin-api since want to either get it transitively from
-      glowroot-core or get it as part of shaded glowroot-core (note: including it with provided
-      scope here will override the glowroot-plugin-api that is included via
-      promoteTransitiveDependencies when glowroot-core itself is not shaded, and then
-      glowroot-plugin-api won't be passed along to dependents, e.g. glowroot-webdriver-tests) -->
+    <!-- do not include glowroot-api or glowroot-plugin-api since want to either get them
+      transitively from glowroot-core or get it as part of shaded glowroot-core
+      (note: including them with provided scope here will override the glowroot-api and
+      glowroot-plugin-api that are included via promoteTransitiveDependencies when glowroot-core
+      itself is not shaded, and then glowroot-api and glowroot-plugin-api won't be passed along to
+      dependents, e.g. glowroot-webdriver-tests) -->
     <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>value</artifactId>

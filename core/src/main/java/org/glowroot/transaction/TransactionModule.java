@@ -24,12 +24,12 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Ticker;
 
+import org.glowroot.api.internal.GlowrootService;
 import org.glowroot.common.Clock;
 import org.glowroot.config.ConfigModule;
 import org.glowroot.config.ConfigService;
 import org.glowroot.jvm.ThreadAllocatedBytes;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.plugin.api.internal.ServiceRegistry;
 import org.glowroot.plugin.api.transaction.TransactionService;
 import org.glowroot.transaction.ServiceRegistryImpl.ConfigServiceFactory;
 import org.glowroot.weaving.AnalyzedWorld;
@@ -52,7 +52,7 @@ public class TransactionModule {
     private final boolean timerWrapperMethods;
     private final boolean jvmRetransformClassesSupported;
 
-    private final ServiceRegistry serviceRegistry;
+    private final ServiceRegistryImpl serviceRegistry;
 
     public TransactionModule(final Clock clock, final Ticker ticker,
             final ConfigModule configModule, final TransactionCollector transactionCollector,
@@ -98,6 +98,8 @@ public class TransactionModule {
                 ImmediateTraceStoreWatcher.PERIOD_MILLIS, MILLISECONDS);
         UserProfileScheduler userProfileScheduler =
                 new UserProfileScheduler(scheduledExecutor, configService);
+        GlowrootService glowrootService =
+                new GlowrootServiceImpl(transactionRegistry, userProfileScheduler);
         TransactionService transactionService = TransactionServiceImpl.create(transactionRegistry,
                 transactionCollector, configModule.getConfigService(), timerNameCache,
                 threadAllocatedBytes, userProfileScheduler, ticker, clock);
@@ -108,7 +110,8 @@ public class TransactionModule {
                         configModule.getPluginDescriptors(), pluginId);
             }
         };
-        serviceRegistry = ServiceRegistryImpl.init(transactionService, configServiceFactory);
+        serviceRegistry =
+                ServiceRegistryImpl.init(glowrootService, transactionService, configServiceFactory);
     }
 
     public AnalyzedWorld getAnalyzedWorld() {

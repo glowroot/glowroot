@@ -47,6 +47,7 @@ import org.glowroot.transaction.model.TimerImpl;
 import org.glowroot.transaction.model.TimerNameImpl;
 import org.glowroot.transaction.model.Transaction;
 import org.glowroot.transaction.model.Transaction.CompletionCallback;
+import org.glowroot.transaction.model.Transaction.OverrideSource;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -238,7 +239,7 @@ class TransactionServiceImpl implements TransactionService, ConfigListener {
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
-            transaction.setTransactionType(transactionType);
+            transaction.setTransactionType(transactionType, OverrideSource.PLUGIN_API);
         }
     }
 
@@ -249,7 +250,7 @@ class TransactionServiceImpl implements TransactionService, ConfigListener {
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
-            transaction.setTransactionName(transactionName);
+            transaction.setTransactionName(transactionName, OverrideSource.PLUGIN_API);
         }
     }
 
@@ -260,7 +261,7 @@ class TransactionServiceImpl implements TransactionService, ConfigListener {
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
-            transaction.setError(ErrorMessageBase.from(t));
+            transaction.setError(ErrorMessageBase.from(t), OverrideSource.PLUGIN_API);
         }
     }
 
@@ -271,7 +272,7 @@ class TransactionServiceImpl implements TransactionService, ConfigListener {
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
-            transaction.setError(ErrorMessageBase.from(message));
+            transaction.setError(ErrorMessageBase.from(message), OverrideSource.PLUGIN_API);
         }
     }
 
@@ -282,7 +283,7 @@ class TransactionServiceImpl implements TransactionService, ConfigListener {
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
-            transaction.setError(ErrorMessageBase.from(message, t));
+            transaction.setError(ErrorMessageBase.from(message, t), OverrideSource.PLUGIN_API);
         }
     }
 
@@ -293,7 +294,7 @@ class TransactionServiceImpl implements TransactionService, ConfigListener {
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
-            transaction.setUser(user);
+            transaction.setUser(user, OverrideSource.PLUGIN_API);
             if (transaction.getUserProfileRunnable() == null) {
                 userProfileScheduler.maybeScheduleUserProfiling(transaction, user);
             }
@@ -326,7 +327,7 @@ class TransactionServiceImpl implements TransactionService, ConfigListener {
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
             int thresholdMillis = Ints.saturatedCast(unit.toMillis(threshold));
-            transaction.setSlowThresholdMillisOverride(thresholdMillis);
+            transaction.setSlowThresholdMillis(thresholdMillis, OverrideSource.PLUGIN_API);
         }
     }
 

@@ -71,12 +71,13 @@ public class Transaction {
     private final long startTime;
 
     private volatile String transactionType;
-    private volatile boolean explicitSetTransactionType;
+    private volatile @Nullable OverrideSource transactionTypeOverrideSource;
 
     private volatile String transactionName;
-    private volatile boolean explicitSetTransactionName;
+    private volatile @Nullable OverrideSource transactionNameOverrideSource;
 
     private volatile @Nullable String user;
+    private volatile @Nullable OverrideSource userOverrideSource;
 
     // lazy loaded to reduce memory when custom attributes are not used
     @GuardedBy("customAttributes")
@@ -84,6 +85,7 @@ public class Transaction {
 
     // trace-level error
     private volatile @Nullable ErrorMessage errorMessage;
+    private volatile @Nullable OverrideSource errorMessageOverrideSource;
 
     private final TimerImpl rootTimer;
     // currentTimer doesn't need to be thread safe as it is only accessed by transaction thread
@@ -109,7 +111,8 @@ public class Transaction {
 
     // overrides general store threshold
     // -1 means don't override the general store threshold
-    private volatile int slowThresholdMillisOverride = USE_GENERAL_STORE_THRESHOLD;
+    private volatile int slowThresholdMillis = USE_GENERAL_STORE_THRESHOLD;
+    private volatile @Nullable OverrideSource slowThresholdMillisOverrideSource;
 
     // these are stored in the trace so they are only scheduled a single time, and also so they can
     // be canceled at trace completion
@@ -307,7 +310,7 @@ public class Transaction {
     }
 
     public int getSlowThresholdMillisOverride() {
-        return slowThresholdMillisOverride;
+        return slowThresholdMillis;
     }
 
     public @Nullable ScheduledRunnable getUserProfileRunnable() {
@@ -326,26 +329,26 @@ public class Transaction {
         return threadId;
     }
 
-    public void setTransactionType(@Nullable String transactionType) {
-        // use the first explicit, non-null/non-empty call to setTransactionType()
-        if (!explicitSetTransactionType && transactionType != null && !transactionType.isEmpty()) {
+    public void setTransactionType(String transactionType, OverrideSource overrideSource) {
+        if (transactionTypeOverrideSource == null
+                || transactionTypeOverrideSource.priority < overrideSource.priority) {
             this.transactionType = transactionType;
-            explicitSetTransactionType = true;
+            transactionTypeOverrideSource = overrideSource;
         }
     }
 
-    public void setTransactionName(@Nullable String transactionName) {
-        // use the first explicit, non-null/non-empty call to setTransactionName()
-        if (!explicitSetTransactionName && transactionName != null && !transactionName.isEmpty()) {
+    public void setTransactionName(String transactionName, OverrideSource overrideSource) {
+        if (transactionNameOverrideSource == null
+                || transactionNameOverrideSource.priority < overrideSource.priority) {
             this.transactionName = transactionName;
-            explicitSetTransactionName = true;
+            transactionNameOverrideSource = overrideSource;
         }
     }
 
-    public void setUser(String user) {
-        // use the first non-null/non-empty user
-        if (this.user == null) {
+    public void setUser(String user, OverrideSource overrideSource) {
+        if (userOverrideSource == null || userOverrideSource.priority < overrideSource.priority) {
             this.user = user;
+            userOverrideSource = overrideSource;
         }
     }
 
@@ -363,21 +366,22 @@ public class Transaction {
         }
     }
 
-    public void setError(ErrorMessage errorMessage) {
-        if (this.errorMessage == null) {
-            // first call to this method for this trace
+    public void setError(ErrorMessage errorMessage, OverrideSource overrideSource) {
+        if (errorMessageOverrideSource == null
+                || errorMessageOverrideSource.priority < overrideSource.priority) {
             this.errorMessage = errorMessage;
+            errorMessageOverrideSource = overrideSource;
         }
     }
 
-    public void setSlowThresholdMillisOverride(int slowThresholdMillisOverride) {
-        if (this.slowThresholdMillisOverride == -1) {
-            // first call to this method for this trace, this is normal case
-            this.slowThresholdMillisOverride = slowThresholdMillisOverride;
-        } else {
-            // use the minimum threshold passed to this method
-            this.slowThresholdMillisOverride = Math.min(this.slowThresholdMillisOverride,
-                    slowThresholdMillisOverride);
+    public void setSlowThresholdMillis(int slowThresholdMillis, OverrideSource overrideSource) {
+        if (slowThresholdMillisOverrideSource == null
+                || slowThresholdMillisOverrideSource.priority < overrideSource.priority) {
+            this.slowThresholdMillis = slowThresholdMillis;
+            slowThresholdMillisOverrideSource = overrideSource;
+        } else if (slowThresholdMillisOverrideSource.priority == overrideSource.priority) {
+            // use the minimum threshold from the same override source
+            this.slowThresholdMillis = Math.min(this.slowThresholdMillis, slowThresholdMillis);
         }
     }
 
@@ -542,5 +546,17 @@ public class Transaction {
 
     public static interface CompletionCallback {
         void completed(Transaction transaction);
+    }
+
+    public static enum OverrideSource {
+
+        // higher priority wins
+        PLUGIN_API(1), USER_API(2);
+
+        private final int priority;
+
+        private OverrideSource(int priority) {
+            this.priority = priority;
+        }
     }
 }

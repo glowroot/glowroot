@@ -93,6 +93,7 @@ public class LocalContainer implements Container {
         List<Class<?>> bridgeClasses =
                 ImmutableList.of(AppUnderTest.class, AppUnderTestServices.class);
         List<String> excludePackages = ImmutableList.of(
+                "org.glowroot.api",
                 "org.glowroot.plugin.api",
                 "org.glowroot.advicegen",
                 "org.glowroot.collector",

@@ -37,6 +37,7 @@
   <modules>
     <module>misc/license-resource-bundle</module>
     <module>misc/checker-qual-jdk6</module>
+    <module>api</module>
     <module>plugin-api</module>
     <module>core</module>
     <module>test-harness</module>
