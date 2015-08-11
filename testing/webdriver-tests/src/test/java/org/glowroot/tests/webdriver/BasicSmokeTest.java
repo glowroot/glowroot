@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -128,7 +129,13 @@ public class BasicSmokeTest extends WebDriverTest {
         Utils.withWait(driver, By.xpath("//button[@ng-click='refreshButtonClick()']")).click();
         Utils.withWait(driver, By.partialLinkText("Error traces")).click();
         globalNavbar.getErrorsLink().click();
-        Utils.withWait(driver, By.partialLinkText("/errorservlet")).click();
+        try {
+            Utils.withWait(driver, By.partialLinkText("/errorservlet")).click();
+        } catch (StaleElementReferenceException e) {
+            // this happens occassionally during travis-ci builds now that sidebar refresh is
+            // delayed by 100 ms
+            Utils.withWait(driver, By.partialLinkText("/errorservlet")).click();
+        }
         Utils.withWait(driver, By.partialLinkText("Error traces")).click();
     }
 
