@@ -51,6 +51,8 @@ public class Glowroot {
         glowrootService = service;
     }
 
+    private Glowroot() {}
+
     /**
      * Set the transaction type that is used for aggregation.
      * 
@@ -111,24 +113,7 @@ public class Glowroot {
     }
 
     /**
-     * Sets the user attribute on the transaction. This attribute is shared across all plugins, and
-     * is generally set by the plugin that initiated the trace, but can be set by other plugins if
-     * needed.
-     * 
-     * The user is used in a few ways:
-     * <ul>
-     * <li>The user is displayed when viewing a trace on the trace explorer page
-     * <li>Traces can be filtered by their user on the trace explorer page
-     * <li>Glowroot can be configured (using the configuration page) to capture traces for a
-     * specific user using a lower threshold than normal (e.g. threshold=0 to capture all requests
-     * for a specific user)
-     * <li>Glowroot can be configured (using the configuration page) to perform profiling on all
-     * transactions for a specific user
-     * </ul>
-     * 
-     * If profiling is enabled for a specific user, this is activated (if the {@code user} matches)
-     * at the time that this method is called, so it is best to call this method early in the
-     * transaction.
+     * Sets the user attribute on the transaction.
      * 
      * If there is no current transaction, this method does nothing.
      */
