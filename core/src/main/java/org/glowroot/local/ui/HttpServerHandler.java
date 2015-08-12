@@ -391,7 +391,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             throws IOException {
         URL url = getSecureUrlForPath(RESOURCE_BASE + path);
         if (url == null) {
-            logger.warn("unexpected path: {}", path);
+            // log at debug only since this is typically just exploit bot spam
+            logger.debug("unexpected path: {}", path);
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         Date expires = getExpiresForPath(path);
