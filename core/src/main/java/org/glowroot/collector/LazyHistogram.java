@@ -15,42 +15,19 @@
  */
 package org.glowroot.collector;
 
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.zip.DataFormatException;
-
-import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.HdrHistogram.Histogram;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class LazyHistogram {
 
-    private static final Logger logger = LoggerFactory.getLogger(LazyHistogram.class);
-
     private static final int HISTOGRAM_SIGNIFICANT_DIGITS = 2;
     private static final int MAX_VALUES = 1024;
-
-    // this is temporary workaround until next HdrHistogram release
-    // see https://github.com/HdrHistogram/HdrHistogram/pull/59
-    private static final @Nullable Field hdrHistogramInternalField;
-
-    static {
-        Field field = null;
-        try {
-            Class<?> clazz = Class.forName("org.HdrHistogram.AbstractHistogramBase");
-            field = clazz.getDeclaredField("intermediateUncompressedByteBuffer");
-            field.setAccessible(true);
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-        }
-        hdrHistogramInternalField = field;
-    }
 
     private long[] values = new long[8];
     private int size;
@@ -121,17 +98,6 @@ public class LazyHistogram {
             }
         } else {
             tempBuffer.putInt(1);
-            if (hdrHistogramInternalField != null) {
-                // this is temporary workaround until next HdrHistogram release
-                // see https://github.com/HdrHistogram/HdrHistogram/pull/59
-                try {
-                    hdrHistogramInternalField.set(histogram, null);
-                } catch (IllegalArgumentException e) {
-                    logger.error(e.getMessage(), e);
-                } catch (IllegalAccessException e) {
-                    logger.error(e.getMessage(), e);
-                }
-            }
             histogram.encodeIntoCompressedByteBuffer(tempBuffer);
         }
         int size = tempBuffer.position();

@@ -29,7 +29,7 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
-      <version>4.1.7.RELEASE</version>
+      <version>4.2.0.RELEASE</version>
     </dependency>
     <dependency>
       <!-- optional dependency of spring-web, included since it would typically be present along

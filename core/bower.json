@@ -1,21 +1,21 @@
 {
   "name": "glowroot",
   "dependencies": {
-    "angular": "1.4.2",
-    "angular-ui-bootstrap": "0.13.0",
+    "angular": "1.4.3",
+    "angular-ui-bootstrap": "0.13.3",
     "angular-ui-router": "0.2.15",
     "bootstrap": "3.3.5",
     "bootstrap-select": "1.7.3",
     "d3": "2.10.3",
-    "eonasdan-bootstrap-datetimepicker": "4.14.30",
+    "eonasdan-bootstrap-datetimepicker": "4.15.35",
     "flot": "trask/flot#glowroot-0.8.1",
     "flot.tooltip": "0.8.5",
-    "fontawesome": "4.3.0",
+    "fontawesome": "4.4.0",
     "handlebars": "3.0.3",
     "jquery": "2.1.4",
-    "moment": "2.10.3",
+    "moment": "2.10.6",
     "sequeljs": "trask/sequeljs#glowroot-0.8",
-    "spinjs": "2.3.1",
+    "spinjs": "2.3.2",
     "stackvis": "trask/node-stackvis#glowroot-0.8",
     "zeroclipboard": "2.1.6"
   }
