@@ -107,25 +107,25 @@ public class ErrorCaptureTest {
                 "java.lang.IllegalStateException: java.lang.IllegalArgumentException: Cause 3");
         assertThat(throwable.getStackTrace().get(0))
                 .startsWith(LogCauseAdvice.class.getName() + ".onAfter(");
-        assertThat(throwable.getFramesInCommonWithCaused()).isZero();
+        assertThat(throwable.getFramesInCommonWithCause()).isZero();
         ThrowableInfo cause = throwable.getCause();
         assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalArgumentException: Cause 3");
         assertThat(cause.getStackTrace().get(0))
                 .startsWith(LogCauseAdvice.class.getName() + ".onAfter(");
-        assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
+        assertThat(cause.getFramesInCommonWithCause()).isGreaterThan(0);
         Set<Integer> causeLineNumbers = Sets.newHashSet();
         causeLineNumbers.add(getFirstLineNumber(cause));
         cause = cause.getCause();
         assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalStateException: Cause 2");
         assertThat(cause.getStackTrace().get(0))
                 .startsWith(LogCauseAdvice.class.getName() + ".onAfter(");
-        assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
+        assertThat(cause.getFramesInCommonWithCause()).isGreaterThan(0);
         causeLineNumbers.add(getFirstLineNumber(cause));
         cause = cause.getCause();
         assertThat(cause.getDisplay()).isEqualTo("java.lang.NullPointerException: Cause 1");
         assertThat(cause.getStackTrace().get(0))
                 .startsWith(LogCauseAdvice.class.getName() + ".onAfter(");
-        assertThat(cause.getFramesInCommonWithCaused()).isGreaterThan(0);
+        assertThat(cause.getFramesInCommonWithCause()).isGreaterThan(0);
         causeLineNumbers.add(getFirstLineNumber(cause));
         // make sure they are all different line numbers
         assertThat(causeLineNumbers).hasSize(3);

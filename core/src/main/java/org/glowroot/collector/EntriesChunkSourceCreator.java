@@ -58,7 +58,7 @@ public class EntriesChunkSourceCreator {
         jg.writeStringField("display", throwable.display());
         jg.writeFieldName("stackTrace");
         writeStackTrace(throwable.stackTrace(), jg);
-        jg.writeNumberField("framesInCommonWithCaused", throwable.framesInCommonWithCaused());
+        jg.writeNumberField("framesInCommonWithCause", throwable.framesInCommonWithCause());
         ThrowableInfo cause = throwable.cause();
         if (cause != null) {
             jg.writeFieldName("cause");

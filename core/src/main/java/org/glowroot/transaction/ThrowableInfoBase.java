@@ -32,7 +32,7 @@ public abstract class ThrowableInfoBase {
     // for inner cause throwable, stackTrace only includes frames not in common with caused
     public abstract List<StackTraceElement> stackTrace();
     // this is for printing '... 18 more' at end of cause instead of entire stack trace
-    public abstract int framesInCommonWithCaused();
+    public abstract int framesInCommonWithCause();
     public abstract @Nullable ThrowableInfo cause();
 
     public static ThrowableInfo from(Throwable t) {
@@ -63,7 +63,7 @@ public abstract class ThrowableInfoBase {
         ThrowableInfo.Builder builder = ThrowableInfo.builder()
                 .display(t.toString())
                 .addAllStackTrace(stackTrace)
-                .framesInCommonWithCaused(framesInCommon);
+                .framesInCommonWithCause(framesInCommon);
         Throwable cause = t.getCause();
         if (cause != null) {
             // pass t's original stack trace to construct the nested cause

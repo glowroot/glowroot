@@ -32,14 +32,14 @@ public class ThrowableInfo {
 
     private final String display;
     private final ImmutableList<String> stackTrace;
-    private final int framesInCommonWithCaused;
+    private final int framesInCommonWithCause;
     private final @Nullable ThrowableInfo cause;
 
-    private ThrowableInfo(String display, List<String> stackTrace, int framesInCommonWithCaused,
+    private ThrowableInfo(String display, List<String> stackTrace, int framesInCommonWithCause,
             @Nullable ThrowableInfo cause) {
         this.display = display;
         this.stackTrace = ImmutableList.copyOf(stackTrace);
-        this.framesInCommonWithCaused = framesInCommonWithCaused;
+        this.framesInCommonWithCause = framesInCommonWithCause;
         this.cause = cause;
     }
 
@@ -51,8 +51,8 @@ public class ThrowableInfo {
         return stackTrace;
     }
 
-    public int getFramesInCommonWithCaused() {
-        return framesInCommonWithCaused;
+    public int getFramesInCommonWithCause() {
+        return framesInCommonWithCause;
     }
 
     public @Nullable ThrowableInfo getCause() {
@@ -64,7 +64,7 @@ public class ThrowableInfo {
         return MoreObjects.toStringHelper(this)
                 .add("display", display)
                 .add("stackTrace", stackTrace)
-                .add("framesInCommonWithCaused", framesInCommonWithCaused)
+                .add("framesInCommonWithCause", framesInCommonWithCause)
                 .add("cause", cause)
                 .toString();
     }
@@ -73,12 +73,12 @@ public class ThrowableInfo {
     static ThrowableInfo readValue(
             @JsonProperty("display") @Nullable String display,
             @JsonProperty("stackTrace") @Nullable List</*@Nullable*/String> uncheckedStackTrace,
-            @JsonProperty("framesInCommonWithCaused") @Nullable Integer framesInCommonWithCaused,
+            @JsonProperty("framesInCommonWithCause") @Nullable Integer framesInCommonWithCause,
             @JsonProperty("cause") @Nullable ThrowableInfo cause)
                     throws JsonMappingException {
         List<String> stackTrace = orEmpty(uncheckedStackTrace, "stackTrace");
         checkRequiredProperty(display, "display");
-        checkRequiredProperty(framesInCommonWithCaused, "framesInCommonWithCaused");
-        return new ThrowableInfo(display, stackTrace, framesInCommonWithCaused, cause);
+        checkRequiredProperty(framesInCommonWithCause, "framesInCommonWithCause");
+        return new ThrowableInfo(display, stackTrace, framesInCommonWithCause, cause);
     }
 }

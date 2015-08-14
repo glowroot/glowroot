@@ -278,8 +278,8 @@ HandlebarsRendering = (function () {
       for (i = 0; i < throwable.stackTrace.length; i++) {
         html += 'at ' + escapeHtml(throwable.stackTrace[i]) + '\n';
       }
-      if (throwable.framesInCommon) {
-        html += '... ' + throwable.framesInCommon + ' more\n';
+      if (throwable.framesInCommonWithCause) {
+        html += '... ' + throwable.framesInCommonWithCause + ' more\n';
       }
       throwable = throwable.cause;
       if (throwable) {
