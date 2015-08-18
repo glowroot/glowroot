@@ -81,11 +81,16 @@
       <plugins>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <configuration>
-            <!-- java 7 is needed for running cassandra during tests -->
-            <source>1.7</source>
-            <target>1.7</target>
-          </configuration>
+          <executions>
+            <execution>
+              <id>default-testCompile</id>
+              <configuration>
+                <!-- java 7 is needed for running cassandra during tests -->
+                <source>1.7</source>
+                <target>1.7</target>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
