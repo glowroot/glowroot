@@ -59,7 +59,7 @@ public class WeavingTest {
         assertThat(trace.getHeadline()).isEqualTo("Level One");
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText()).isEqualTo("Level Two");
+        assertThat(entry.getMessageText()).isEqualTo("Level Two");
     }
 
     public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest {

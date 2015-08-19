@@ -368,7 +368,7 @@ public class InstrumentationConfig {
         PUBLIC, PRIVATE, PROTECTED, PACKAGE_PRIVATE, STATIC, NOT_STATIC, ABSTRACT;
     }
 
-    public static enum CaptureKind {
+    public enum CaptureKind {
         TIMER, TRACE_ENTRY, TRANSACTION, OTHER
     }
 }

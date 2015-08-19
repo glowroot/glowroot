@@ -18,25 +18,20 @@ package org.glowroot;
 import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.lang.management.ManagementFactory;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.GlowrootModule.BaseDirLockedException;
-import org.glowroot.common.JavaVersion;
-import org.glowroot.config.PluginDescriptor;
 import org.glowroot.markers.OnlyUsedByTests;
 
 public class MainEntryPoint {
@@ -79,6 +74,7 @@ public class MainEntryPoint {
         try {
             glowrootModule = new GlowrootModule(baseDir, properties, null, glowrootJarFile, version,
                     true, false);
+            glowrootModule.initUi();
         } catch (BaseDirLockedException e) {
             logBaseDirLockedException(baseDir);
             return;
@@ -102,21 +98,12 @@ public class MainEntryPoint {
         String version = Version.getVersion();
         glowrootModule = new GlowrootModule(baseDir, properties, instrumentation, glowrootJarFile,
                 version, false, jbossModules);
+        if (instrumentation == null) {
+            glowrootModule.initUi();
+        } else {
+            glowrootModule.initUiLazy(instrumentation);
+        }
         startupLogger.info("Glowroot started (version {})", version);
-        List<PluginDescriptor> pluginDescriptors =
-                glowrootModule.getConfigModule().getPluginDescriptors();
-        List<String> pluginNames = Lists.newArrayList();
-        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            pluginNames.add(pluginDescriptor.name());
-        }
-        if (!pluginNames.isEmpty()) {
-            startupLogger.info("Glowroot plugins loaded: {}", Joiner.on(", ").join(pluginNames));
-        }
-        if (instrumentation == null || JavaVersion.isJava6()) {
-            // otherwise http server is lazy instantiated, see LocalUiModule
-            startupLogger.info("Glowroot listening at http://localhost:{}",
-                    glowrootModule.getUiModule().getNonLazyPort());
-        }
     }
 
     private static ImmutableMap<String, String> getGlowrootProperties() {

@@ -38,7 +38,7 @@ public class Agent {
 
     static {
         try {
-            Class<?> registryClass = Class.forName("org.glowroot.transaction.ServiceRegistryImpl");
+            Class<?> registryClass = Class.forName("org.glowroot.agent.impl.ServiceRegistryImpl");
             Method getInstanceMethod = registryClass.getMethod("getInstance");
             serviceRegistry = (ServiceRegistry) getInstanceMethod.invoke(null);
             if (serviceRegistry == null) {

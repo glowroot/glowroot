@@ -33,7 +33,7 @@
         <div class="col-lg-9">
           <input type="text"
                  class="form-control"
-                 ng-model="data.directory"
+                 ng-model="directory"
                  id="directory"
                  name="directory">
         </div>
@@ -63,13 +63,13 @@
         </div>
       </div>
       <div class="form-group gt-form-buttons"
-           ng-show="checkDiskSpaceResponse">
+           ng-show="availableDiskSpace">
         <div class="col-lg-offset-2 col-lg-9">
           <div class="well">
             <table class="gt-heap-dump-response">
               <tr>
                 <td>Free disk space</td>
-                <td><strong>{{checkDiskSpaceResponse | gtBytes}}</strong></td>
+                <td><strong>{{availableDiskSpace | gtBytes}}</strong></td>
               </tr>
             </table>
           </div>

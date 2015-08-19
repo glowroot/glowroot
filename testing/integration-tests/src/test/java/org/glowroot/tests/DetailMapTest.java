@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.trace.Timer;
+import org.glowroot.container.trace.TimerNode;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 
@@ -66,28 +66,28 @@ public class DetailMapTest {
                 .isEqualTo(ImmutableMap.of("arg1", "a", "arg2", "b", "nested1",
                         ImmutableMap.of("nestedkey11", "a", "nestedkey12", "b", "subnested1",
                                 ImmutableMap.of("subnestedkey1", "a", "subnestedkey2", "b")),
-                "nested2", ImmutableMap.of("nestedkey21", "a", "nestedkey22", "b")));
+                        "nested2", ImmutableMap.of("nestedkey21", "a", "nestedkey22", "b")));
         assertThat(trace.getTransactionName()).isEqualTo("basic test");
         assertThat(trace.getRootTimer().getName()).isEqualTo("level one");
-        assertThat(trace.getRootTimer().getNestedTimerNames()).containsOnly("level two");
-        Timer levelTwoTimer = trace.getRootTimer().getNestedTimers().get(0);
-        assertThat(levelTwoTimer.getNestedTimerNames()).containsOnly("level three");
-        Timer levelThreeTimer = levelTwoTimer.getNestedTimers().get(0);
-        assertThat(levelThreeTimer.getNestedTimerNames()).containsOnly("level four");
+        assertThat(trace.getRootTimer().getChildTimerNames()).containsOnly("level two");
+        TimerNode levelTwoTimer = trace.getRootTimer().getChildNodes().get(0);
+        assertThat(levelTwoTimer.getChildTimerNames()).containsOnly("level three");
+        TimerNode levelThreeTimer = levelTwoTimer.getChildNodes().get(0);
+        assertThat(levelThreeTimer.getChildTimerNames()).containsOnly("level four");
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(3);
         TraceEntry entry1 = entries.get(0);
-        assertThat(entry1.getMessage().getText()).isEqualTo("Level Two");
-        assertThat(entry1.getMessage().getDetail())
+        assertThat(entry1.getMessageText()).isEqualTo("Level Two");
+        assertThat(entry1.getMessageDetail())
                 .isEqualTo(ImmutableMap.of("arg1", "ax", "arg2", "bx"));
         TraceEntry entry2 = entries.get(1);
-        assertThat(entry2.getMessage().getText()).isEqualTo("Level Three");
-        assertThat(entry2.getMessage().getDetail())
+        assertThat(entry2.getMessageText()).isEqualTo("Level Three");
+        assertThat(entry2.getMessageDetail())
                 .isEqualTo(ImmutableMap.of("arg1", "axy", "arg2", "bxy"));
         // offset is measured in nanoseconds so there's no way this should be 0
         assertThat(entry2.getOffset()).isGreaterThan(0);
         TraceEntry entry3 = entries.get(2);
-        assertThat(entry3.getMessage().getText()).isEqualTo("Level Four: axy, bxy");
+        assertThat(entry3.getMessageText()).isEqualTo("Level Four: axy, bxy");
     }
 
     @Test
@@ -102,7 +102,7 @@ public class DetailMapTest {
                 .isEqualTo(ImmutableMap.of("arg1", false, "arg2", true, "nested1",
                         ImmutableMap.of("nestedkey11", false, "nestedkey12", true, "subnested1",
                                 ImmutableMap.of("subnestedkey1", false, "subnestedkey2", true)),
-                "nested2", ImmutableMap.of("nestedkey21", false, "nestedkey22", true)));
+                        "nested2", ImmutableMap.of("nestedkey21", false, "nestedkey22", true)));
     }
 
     @Test
@@ -117,7 +117,7 @@ public class DetailMapTest {
                 .isEqualTo(ImmutableMap.of("arg1", 5.0, "arg2", 5.5, "nested1",
                         ImmutableMap.of("nestedkey11", 5.0, "nestedkey12", 5.5, "subnested1",
                                 ImmutableMap.of("subnestedkey1", 5.0, "subnestedkey2", 5.5)),
-                "nested2", ImmutableMap.of("nestedkey21", 5.0, "nestedkey22", 5.5)));
+                        "nested2", ImmutableMap.of("nestedkey21", 5.0, "nestedkey22", 5.5)));
     }
 
     @Test
@@ -150,7 +150,7 @@ public class DetailMapTest {
     public void shouldReadDetailMapWithBadType() throws Exception {
         // given
         for (int i = 0; i < 4; i++) {
-            container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
+            container.addExpectedLogMessage("org.glowroot.common.repo.helper.DetailMapWriter",
                     "detail map has unexpected value type: java.io.File");
         }
         // when
@@ -162,15 +162,15 @@ public class DetailMapTest {
                 .isEqualTo(ImmutableMap.of("arg1", "a", "arg2", "x", "nested1",
                         ImmutableMap.of("nestedkey11", "a", "nestedkey12", "x", "subnested1",
                                 ImmutableMap.of("subnestedkey1", "a", "subnestedkey2", "x")),
-                "nested2", ImmutableMap.of("nestedkey21", "a", "nestedkey22", "x")));
+                        "nested2", ImmutableMap.of("nestedkey21", "a", "nestedkey22", "x")));
     }
 
     @Test
     public void shouldReadDetailMapWithNullKey() throws Exception {
         // given
-        container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
+        container.addExpectedLogMessage("org.glowroot.common.repo.helper.DetailMapWriter",
                 "detail map has null key");
-        container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
+        container.addExpectedLogMessage("org.glowroot.common.repo.helper.DetailMapWriter",
                 "detail map has null key");
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNullKey.class);
@@ -191,9 +191,9 @@ public class DetailMapTest {
     public void shouldReadDetailMapWithBadKeyType() throws Exception {
         // given
         for (int i = 0; i < 2; i++) {
-            container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
+            container.addExpectedLogMessage("org.glowroot.common.repo.helper.DetailMapWriter",
                     "detail map has unexpected key type: java.io.File");
-            container.addExpectedLogMessage("org.glowroot.collector.DetailMapWriter",
+            container.addExpectedLogMessage("org.glowroot.common.repo.helper.DetailMapWriter",
                     "detail map has unexpected value type: java.io.File");
         }
         // when

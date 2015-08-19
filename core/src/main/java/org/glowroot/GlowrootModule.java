@@ -20,13 +20,10 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.instrument.Instrumentation;
 import java.nio.channels.FileLock;
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
-import java.util.jar.JarFile;
 
 import javax.annotation.Nullable;
 
@@ -35,8 +32,9 @@ import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Stopwatch;
+import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
-import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -44,20 +42,24 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.CollectorModule;
-import org.glowroot.common.Clock;
-import org.glowroot.common.SpyingLogbackFilter;
-import org.glowroot.common.Tickers;
-import org.glowroot.config.ConfigModule;
-import org.glowroot.config.PluginDescriptor;
-import org.glowroot.jvm.JvmModule;
-import org.glowroot.local.store.StorageModule;
-import org.glowroot.local.ui.LocalUiModule;
+import org.glowroot.agent.AgentModule;
+import org.glowroot.agent.ViewerAgentModule;
+import org.glowroot.agent.util.SpyingLogbackFilter;
+import org.glowroot.collector.spi.Aggregate;
+import org.glowroot.collector.spi.Collector;
+import org.glowroot.collector.spi.GaugeValue;
+import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
+import org.glowroot.common.live.LiveThreadDumpService.LiveThreadDumpServiceNop;
+import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
+import org.glowroot.common.live.LiveWeavingService.LiveWeavingServiceNop;
+import org.glowroot.common.util.Clock;
+import org.glowroot.common.util.Tickers;
+import org.glowroot.local.LocalModule;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.transaction.TransactionCollector;
-import org.glowroot.transaction.TransactionModule;
-import org.glowroot.transaction.model.Transaction;
-import org.glowroot.weaving.ExtraBootResourceFinder;
+import org.glowroot.ui.UiModule;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 @VisibleForTesting
 public class GlowrootModule {
@@ -66,12 +68,11 @@ public class GlowrootModule {
 
     private final Ticker ticker;
     private final Clock clock;
-    private final ScheduledExecutorService scheduledExecutor;
-    private final ConfigModule configModule;
-    private final StorageModule storageModule;
-    private final CollectorModule collectorModule;
-    private final TransactionModule transactionModule;
-    private final LocalUiModule uiModule;
+    // only null in viewer mode
+    private final @Nullable ScheduledExecutorService scheduledExecutor;
+    private final LocalModule localModule;
+    private final @Nullable AgentModule agentModule;
+    private final @Nullable ViewerAgentModule viewerAgentModule;
     private final File baseDir;
 
     private final RandomAccessFile baseDirLockFile;
@@ -79,6 +80,11 @@ public class GlowrootModule {
 
     // this is used by tests to check that no warnings/errors are logged during tests
     private final boolean loggingSpy;
+
+    private final String bindAddress;
+    private final String version;
+
+    private volatile @MonotonicNonNull UiModule uiModule;
 
     GlowrootModule(File baseDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
@@ -104,44 +110,111 @@ public class GlowrootModule {
         this.baseDirFileLock = baseDirFileLock;
         lockFile.deleteOnExit();
 
-        // init config module
-        configModule = new ConfigModule(baseDir, glowrootJarFile, viewerModeEnabled);
-
         ticker = Tickers.getTicker();
         clock = Clock.systemClock();
 
-        ExtraBootResourceFinder extraBootResourceFinder =
-                createExtraBootResourceFinder(instrumentation, configModule.getPluginJars());
-        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
-                .setNameFormat("Glowroot-Background-%d").build();
-        scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
-        JvmModule jvmModule = new JvmModule(jbossModules);
-        // trace module needs to be started as early as possible, so that weaving will be applied to
-        // as many classes as possible
-        // in particular, it needs to be started before StorageModule which uses shaded H2, which
-        // loads java.sql.DriverManager, which loads 3rd party jdbc drivers found via
-        // services/java.sql.Driver, and those drivers need to be woven
-        TransactionCollectorProxy transactionCollectorProxy = new TransactionCollectorProxy();
-        transactionModule = new TransactionModule(clock, ticker, configModule,
-                transactionCollectorProxy, jvmModule.getThreadAllocatedBytes().getService(),
-                instrumentation, baseDir, extraBootResourceFinder, scheduledExecutor);
-        storageModule = new StorageModule(baseDir, properties, clock, ticker, configModule,
-                scheduledExecutor, jvmModule.getLazyPlatformMBeanServer(), viewerModeEnabled);
-        collectorModule = new CollectorModule(clock, ticker, jvmModule, configModule,
-                storageModule.getTraceRepository(), storageModule.getAggregateRepository(),
-                storageModule.getGaugePointDao(), transactionModule.getTransactionRegistry(),
-                scheduledExecutor, viewerModeEnabled);
-        // now inject the real TransactionCollector into the proxy
-        transactionCollectorProxy.setInstance(collectorModule.getTransactionCollector());
-        // using context class loader in LocalContainer tests so that the plugins are instantiated
-        // inside org.glowroot.container.impl.IsolatedClassLoader
-        ClassLoader initPluginClassLoader =
-                instrumentation == null ? Thread.currentThread().getContextClassLoader()
-                        : GlowrootModule.class.getClassLoader();
-        initPlugins(configModule.getPluginDescriptors(), initPluginClassLoader);
-        uiModule = new LocalUiModule(ticker, clock, baseDir, jvmModule, configModule, storageModule,
-                collectorModule, transactionModule, instrumentation, properties, version);
+        if (viewerModeEnabled) {
+            viewerAgentModule = new ViewerAgentModule(baseDir, glowrootJarFile);
+            scheduledExecutor = null;
+            agentModule = null;
+            localModule = new LocalModule(baseDir, properties, clock, ticker,
+                    viewerAgentModule.getConfigService(), null,
+                    viewerAgentModule.getLazyPlatformMBeanServer(), viewerModeEnabled);
+        } else {
+            ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
+                    .setNameFormat("Glowroot-Background-%d").build();
+            scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
+            // trace module needs to be started as early as possible, so that weaving will be
+            // applied to
+            // as many classes as possible
+            // in particular, it needs to be started before StorageModule which uses shaded H2,
+            // which
+            // loads java.sql.DriverManager, which loads 3rd party jdbc drivers found via
+            // services/java.sql.Driver, and those drivers need to be woven
+            CollectorProxy collectorProxy = new CollectorProxy();
+            agentModule = new AgentModule(clock, ticker, collectorProxy, instrumentation, baseDir,
+                    glowrootJarFile, scheduledExecutor, jbossModules);
+            localModule = new LocalModule(baseDir, properties, clock, ticker,
+                    agentModule.getConfigService(), scheduledExecutor,
+                    agentModule.getLazyPlatformMBeanServer(), viewerModeEnabled);
+            // now inject the real repositories into the proxies
+            collectorProxy.setInstance(localModule.getCollector());
+            viewerAgentModule = null;
+        }
+
+        bindAddress = getBindAddress(properties);
         this.baseDir = baseDir;
+        this.version = version;
+    }
+
+    void initUiLazy(final Instrumentation instrumentation) {
+        // cannot start netty in premain otherwise can crash JVM
+        // see https://github.com/netty/netty/issues/3233
+        // and https://bugs.openjdk.java.net/browse/JDK-8041920
+        Executors.newSingleThreadExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    waitForMain(instrumentation);
+                    initUi();
+                } catch (Throwable t) {
+                    logger.error(t.getMessage(), t);
+                }
+            }
+        });
+    }
+
+    void initUi() {
+        if (agentModule != null) {
+            uiModule = UiModule.create(ticker,
+                    clock,
+                    baseDir,
+                    agentModule.getLiveJvmService(),
+                    localModule.getConfigRepository(),
+                    localModule.getTraceRepository(),
+                    localModule.getAggregateRepository(),
+                    localModule.getGaugeValueRepository(),
+                    localModule.getRepoAdmin(),
+                    agentModule.getLiveTraceRepository(),
+                    agentModule.getLiveThreadDumpService(),
+                    agentModule.getLiveAggregateRepository(),
+                    agentModule.getLiveWeavingService(),
+                    bindAddress,
+                    version,
+                    agentModule.getPluginDescriptors());
+        } else {
+            checkNotNull(viewerAgentModule);
+            uiModule = UiModule.create(ticker,
+                    clock,
+                    baseDir,
+                    viewerAgentModule.getLiveJvmService(),
+                    localModule.getConfigRepository(),
+                    localModule.getTraceRepository(),
+                    localModule.getAggregateRepository(),
+                    localModule.getGaugeValueRepository(),
+                    localModule.getRepoAdmin(),
+                    new LiveTraceRepositoryNop(),
+                    new LiveThreadDumpServiceNop(),
+                    new LiveAggregateRepositoryNop(),
+                    new LiveWeavingServiceNop(),
+                    bindAddress,
+                    version,
+                    viewerAgentModule.getPluginDescriptors());
+        }
+    }
+
+    private static void waitForMain(Instrumentation instrumentation) throws InterruptedException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (stopwatch.elapsed(SECONDS) < 60) {
+            Thread.sleep(100);
+            for (Class<?> clazz : instrumentation.getInitiatedClasses(null)) {
+                if (clazz.getName().equals("sun.misc.Launcher")) {
+                    return;
+                }
+            }
+        }
+        // something has gone wrong
+        logger.error("sun.misc.Launcher was never loaded");
     }
 
     private static void initStaticLoggerState(File baseDir, boolean loggingSpy) {
@@ -150,33 +223,6 @@ public class GlowrootModule {
         }
         if (loggingSpy) {
             SpyingLogbackFilter.init();
-        }
-    }
-
-    private static @Nullable ExtraBootResourceFinder createExtraBootResourceFinder(
-            @Nullable Instrumentation instrumentation, List<File> pluginJars) throws IOException {
-        if (instrumentation == null) {
-            return null;
-        }
-        for (File pluginJar : pluginJars) {
-            instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(pluginJar));
-        }
-        return new ExtraBootResourceFinder(pluginJars);
-    }
-
-    // now init plugins to give them a chance to do something in their static initializer
-    // e.g. append their package to jboss.modules.system.pkgs
-    private static void initPlugins(List<PluginDescriptor> pluginDescriptors,
-            @Nullable ClassLoader loader) {
-        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            for (String aspect : pluginDescriptor.aspects()) {
-                try {
-                    Class.forName(aspect, true, loader);
-                } catch (ClassNotFoundException e) {
-                    // this would have already been logged as a warning during advice construction
-                    logger.debug(e.getMessage(), e);
-                }
-            }
         }
     }
 
@@ -204,6 +250,16 @@ public class GlowrootModule {
         StatusPrinter.printInCaseOfErrorsOrWarnings(context);
     }
 
+    private static String getBindAddress(Map<String, String> properties) {
+        // empty check to support parameterized script, e.g. -Dglowroot.ui.bind.address=${somevar}
+        String bindAddress = properties.get("ui.bind.address");
+        if (Strings.isNullOrEmpty(bindAddress)) {
+            return "0.0.0.0";
+        } else {
+            return bindAddress;
+        }
+    }
+
     private static boolean isShaded() {
         try {
             Class.forName("org.glowroot.shaded.slf4j.Logger");
@@ -216,35 +272,49 @@ public class GlowrootModule {
     }
 
     @OnlyUsedByTests
-    public ConfigModule getConfigModule() {
-        return configModule;
+    public LocalModule getLocalModule() {
+        return localModule;
     }
 
     @OnlyUsedByTests
-    public TransactionModule getTransactionModule() {
-        return transactionModule;
+    public @Nullable AgentModule getAgentModule() {
+        return agentModule;
     }
 
     @OnlyUsedByTests
-    public LocalUiModule getUiModule() {
-        return uiModule;
+    public UiModule getUiModule() throws InterruptedException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        while (stopwatch.elapsed(SECONDS) < 60) {
+            if (uiModule != null) {
+                return uiModule;
+            }
+            Thread.sleep(10);
+        }
+        throw new IllegalStateException("UI Module failed to start");
     }
 
     @OnlyUsedByTests
     public void reopen() throws Exception {
         initStaticLoggerState(baseDir, loggingSpy);
-        transactionModule.reopen();
+        // this is not called by viewer
+        checkNotNull(agentModule);
+        agentModule.reopen();
     }
 
     @OnlyUsedByTests
     public void close() throws Exception {
-        uiModule.close();
-        collectorModule.close();
-        transactionModule.close();
-        storageModule.close();
-        // close scheduled executor last to prevent exceptions due to above modules attempting to
-        // use a shutdown executor
-        scheduledExecutor.shutdownNow();
+        if (uiModule != null) {
+            uiModule.close();
+        }
+        if (agentModule != null) {
+            agentModule.close();
+        }
+        localModule.close();
+        if (scheduledExecutor != null) {
+            // close scheduled executor last to prevent exceptions due to above modules attempting
+            // to use a shutdown executor
+            scheduledExecutor.shutdownNow();
+        }
         // finally, close logger
         if (shouldOverrideLogging()) {
             ((LoggerContext) LoggerFactory.getILoggerFactory()).reset();
@@ -279,42 +349,37 @@ public class GlowrootModule {
     }
 
     @VisibleForTesting
-    static class TransactionCollectorProxy implements TransactionCollector {
+    static class CollectorProxy implements Collector {
 
-        private volatile @MonotonicNonNull TransactionCollector instance;
+        private volatile @MonotonicNonNull Collector instance;
 
         @Override
-        public void onCompletedTransaction(Transaction transaction) {
+        public void collectTrace(org.glowroot.collector.spi.Trace trace) throws Exception {
             if (instance != null) {
-                instance.onCompletedTransaction(transaction);
+                instance.collectTrace(trace);
             }
         }
 
         @Override
-        public void storePartialTrace(Transaction transaction) {
+        public void collectAggregates(Map<String, ? extends Aggregate> overallAggregates,
+                Map<String, ? extends Map<String, ? extends Aggregate>> transactionAggregates,
+                long captureTime) throws Exception {
             if (instance != null) {
-                instance.storePartialTrace(transaction);
+                instance.collectAggregates(overallAggregates, transactionAggregates, captureTime);
+            }
+        }
+
+        @Override
+        public void collectGaugeValues(Map<String, ? extends GaugeValue> gaugeValues)
+                throws Exception {
+            if (instance != null) {
+                instance.collectGaugeValues(gaugeValues);
             }
         }
 
         @VisibleForTesting
-        void setInstance(TransactionCollector instance) {
+        void setInstance(Collector instance) {
             this.instance = instance;
-        }
-
-        @Override
-        public Collection<Transaction> getPendingTransactions() {
-            return ImmutableList.of();
-        }
-
-        @Override
-        public boolean shouldStoreSlow(Transaction transaction) {
-            return false;
-        }
-
-        @Override
-        public boolean shouldStoreError(Transaction transaction) {
-            return false;
         }
     }
 }

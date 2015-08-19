@@ -17,7 +17,6 @@ package org.glowroot.container.trace;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
@@ -25,12 +24,11 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.MoreObjects;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSetMultimap;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 import static org.glowroot.container.common.ObjectMappers.orEmpty;
+import static org.glowroot.container.common.ObjectMappers.orEmpty2;
 
 public class Trace {
 
@@ -45,16 +43,16 @@ public class Trace {
     private final String transactionName;
     private final String headline;
     private final @Nullable String user;
-    private final ImmutableSetMultimap<String, String> customAttributes;
+    private final Map<String, List<String>> customAttributes;
     private final Map<String, /*@Nullable*/Object> customDetail;
     private final @Nullable String errorMessage;
     private final @Nullable ThrowableInfo errorThrowable;
-    private final Timer rootTimer;
-    private final @Nullable Long threadCpuTime;
-    private final @Nullable Long threadBlockedTime;
-    private final @Nullable Long threadWaitedTime;
-    private final @Nullable Long threadAllocatedBytes;
-    private final ImmutableList<TraceGcInfo> gcInfos;
+    private final TimerNode rootTimer;
+    private final long threadCpuTime;
+    private final long threadBlockedTime;
+    private final long threadWaitedTime;
+    private final long threadAllocatedBytes;
+    private final Map<String, GarbageCollectionActivity> gcActivity;
     private final long entryCount;
     private final long profileSampleCount;
     private final Existence entriesExistence;
@@ -62,12 +60,11 @@ public class Trace {
 
     private Trace(String id, boolean active, boolean partial, boolean error, long startTime,
             long captureTime, long duration, String transactionType, String transactionName,
-            String headline, @Nullable String user,
-            ImmutableSetMultimap<String, String> customAttributes,
+            String headline, @Nullable String user, Map<String, List<String>> customAttributes,
             Map<String, /*@Nullable*/Object> customDetail, @Nullable String errorMessage,
-            @Nullable ThrowableInfo errorThrowable, Timer rootTimer, @Nullable Long threadCpuTime,
-            @Nullable Long threadBlockedTime, @Nullable Long threadWaitedTime,
-            @Nullable Long threadAllocatedBytes, List<TraceGcInfo> gcInfos, long entryCount,
+            @Nullable ThrowableInfo errorThrowable, TimerNode rootTimer, long threadCpuTime,
+            long threadBlockedTime, long threadWaitedTime, long threadAllocatedBytes,
+            Map<String, GarbageCollectionActivity> gcActivity, long entryCount,
             long profileSampleCount, Existence entriesExistence, Existence profileExistence) {
         this.id = id;
         this.active = active;
@@ -89,7 +86,7 @@ public class Trace {
         this.threadBlockedTime = threadBlockedTime;
         this.threadWaitedTime = threadWaitedTime;
         this.threadAllocatedBytes = threadAllocatedBytes;
-        this.gcInfos = ImmutableList.copyOf(gcInfos);
+        this.gcActivity = gcActivity;
         this.entryCount = entryCount;
         this.profileSampleCount = profileSampleCount;
         this.entriesExistence = entriesExistence;
@@ -140,7 +137,7 @@ public class Trace {
         return user;
     }
 
-    public ImmutableSetMultimap<String, String> getCustomAttributes() {
+    public Map<String, List<String>> getCustomAttributes() {
         return customAttributes;
     }
 
@@ -156,28 +153,28 @@ public class Trace {
         return errorThrowable;
     }
 
-    public Timer getRootTimer() {
+    public TimerNode getRootTimer() {
         return rootTimer;
     }
 
-    public @Nullable Long getThreadCpuTime() {
+    public long getThreadCpuTime() {
         return threadCpuTime;
     }
 
-    public @Nullable Long getThreadBlockedTime() {
+    public long getThreadBlockedTime() {
         return threadBlockedTime;
     }
 
-    public @Nullable Long getThreadWaitedTime() {
+    public long getThreadWaitedTime() {
         return threadWaitedTime;
     }
 
-    public @Nullable Long getThreadAllocatedBytes() {
+    public long getThreadAllocatedBytes() {
         return threadAllocatedBytes;
     }
 
-    public ImmutableList<TraceGcInfo> getGcInfos() {
-        return gcInfos;
+    public Map<String, GarbageCollectionActivity> getGcActivity() {
+        return gcActivity;
     }
 
     public long getEntryCount() {
@@ -219,7 +216,7 @@ public class Trace {
                 .add("threadBlockedTime", threadBlockedTime)
                 .add("threadWaitedTime", threadWaitedTime)
                 .add("threadAllocatedBytes", threadAllocatedBytes)
-                .add("gcInfos", gcInfos)
+                .add("gcActivity", gcActivity)
                 .add("entryCount", entryCount)
                 .add("profileSampleCount", profileSampleCount)
                 .add("entriesExistence", entriesExistence)
@@ -240,22 +237,25 @@ public class Trace {
             @JsonProperty("transactionName") @Nullable String transactionName,
             @JsonProperty("headline") @Nullable String headline,
             @JsonProperty("user") @Nullable String user,
-            @JsonProperty("customAttributes") @Nullable Map<String, /*@Nullable*/List</*@Nullable*/String>> customAttributes,
+            @JsonProperty("customAttributes") @Nullable Map<String, /*@Nullable*/List</*@Nullable*/String>> customAttributesUnchecked,
             @JsonProperty("customDetail") @Nullable Map<String, /*@Nullable*/Object> customDetail,
             @JsonProperty("errorMessage") @Nullable String errorMessage,
             @JsonProperty("errorThrowable") @Nullable ThrowableInfo errorThrowable,
-            @JsonProperty("timers") @Nullable Timer rootTimer,
+            @JsonProperty("rootTimer") @Nullable TimerNode rootTimer,
             @JsonProperty("threadCpuTime") @Nullable Long threadCpuTime,
             @JsonProperty("threadBlockedTime") @Nullable Long threadBlockedTime,
             @JsonProperty("threadWaitedTime") @Nullable Long threadWaitedTime,
             @JsonProperty("threadAllocatedBytes") @Nullable Long threadAllocatedBytes,
-            @JsonProperty("gcInfos") @Nullable List</*@Nullable*/TraceGcInfo> gcInfosUnchecked,
+            @JsonProperty("gcActivity") @Nullable Map<String, /*@Nullable*/GarbageCollectionActivity> gcActivityUnchecked,
             @JsonProperty("entryCount") @Nullable Long entryCount,
             @JsonProperty("profileSampleCount") @Nullable Long profileSampleCount,
             @JsonProperty("entriesExistence") @Nullable Existence entriesExistence,
             @JsonProperty("profileExistence") @Nullable Existence profileExistence)
                     throws JsonMappingException {
-        List<TraceGcInfo> gcInfos = orEmpty(gcInfosUnchecked, "gcInfos");
+        Map<String, GarbageCollectionActivity> gcActivity =
+                orEmpty(gcActivityUnchecked, "gcActivity");
+        Map<String, List<String>> customAttributes =
+                orEmpty2(customAttributesUnchecked, "customAttributes");
         checkRequiredProperty(id, "id");
         checkRequiredProperty(active, "active");
         checkRequiredProperty(partial, "partial");
@@ -266,29 +266,19 @@ public class Trace {
         checkRequiredProperty(transactionType, "transactionType");
         checkRequiredProperty(transactionName, "transactionName");
         checkRequiredProperty(headline, "headline");
-        checkRequiredProperty(rootTimer, "timers");
+        checkRequiredProperty(rootTimer, "rootTimer");
+        checkRequiredProperty(threadCpuTime, "threadCpuTime");
+        checkRequiredProperty(threadBlockedTime, "threadBlockedTime");
+        checkRequiredProperty(threadWaitedTime, "threadWaitedTime");
+        checkRequiredProperty(threadAllocatedBytes, "threadAllocatedBytes");
         checkRequiredProperty(entryCount, "entryCount");
         checkRequiredProperty(profileSampleCount, "profileSampleCount");
         checkRequiredProperty(entriesExistence, "entriesExistence");
         checkRequiredProperty(profileExistence, "profileExistence");
-        ImmutableSetMultimap.Builder<String, String> theCustomAttributes =
-                ImmutableSetMultimap.builder();
-        if (customAttributes != null) {
-            for (Entry<String, /*@Nullable*/List</*@Nullable*/String>> entry : customAttributes
-                    .entrySet()) {
-                List</*@Nullable*/String> uncheckedValues = entry.getValue();
-                if (uncheckedValues == null) {
-                    throw new JsonMappingException(
-                            "Null value not allowed for custom attribute map value");
-                }
-                List<String> values = orEmpty(uncheckedValues, "customAttributes");
-                theCustomAttributes.putAll(entry.getKey(), values);
-            }
-        }
         return new Trace(id, active, partial, error, startTime, captureTime, duration,
-                transactionType, transactionName, headline, user, theCustomAttributes.build(),
+                transactionType, transactionName, headline, user, customAttributes,
                 nullToEmpty(customDetail), errorMessage, errorThrowable, rootTimer, threadCpuTime,
-                threadBlockedTime, threadWaitedTime, threadAllocatedBytes, gcInfos, entryCount,
+                threadBlockedTime, threadWaitedTime, threadAllocatedBytes, gcActivity, entryCount,
                 profileSampleCount, entriesExistence, profileExistence);
     }
 

@@ -1,8 +1,7 @@
 {
-  "general": {
-    "enabled": true,
-    "traceStoreThresholdMillis": 0,
+  "transaction": {
     "profilingIntervalMillis": 1000,
+    "slowThresholdMillis": 0,
     "defaultDisplayedTransactionType": "Integration test",
     "defaultDisplayedPercentiles": [
       50.0,
@@ -55,7 +54,7 @@
     "maxTraceEntriesPerTransaction": 2000,
     "maxStackTraceSamplesPerTransaction": 10000,
     "captureThreadInfo": true,
-    "captureGcInfo": true,
+    "captureGcActivity": true,
     "mbeanGaugeNotFoundDelaySeconds": 60,
     "internalQueryTimeoutSeconds": 60
   },
@@ -88,7 +87,7 @@
       "mbeanAttributes": [
         {
           "name": "HeapMemoryUsage/used",
-          "everIncreasing": false
+          "counter": false
         }
       ]
     },
@@ -97,11 +96,11 @@
       "mbeanAttributes": [
         {
           "name": "CollectionCount",
-          "everIncreasing": true
+          "counter": true
         },
         {
           "name": "CollectionTime",
-          "everIncreasing": true
+          "counter": true
         }
       ]
     },
@@ -110,7 +109,7 @@
       "mbeanAttributes": [
         {
           "name": "Usage/used",
-          "everIncreasing": false
+          "counter": false
         }
       ]
     },
@@ -119,7 +118,7 @@
       "mbeanAttributes": [
         {
           "name": "FreePhysicalMemorySize",
-          "everIncreasing": false
+          "counter": false
         }
       ]
     }

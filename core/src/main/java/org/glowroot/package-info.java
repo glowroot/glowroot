@@ -17,4 +17,4 @@
 @Styles.Standard
 package org.glowroot;
 
-import org.glowroot.common.Styles;
+import org.glowroot.common.util.Styles;

@@ -53,8 +53,8 @@ public class AdvancedConfigPage {
         return withWait(xpath("//div[@gt-label='Thread info']//input"));
     }
 
-    public WebElement getGcInfoCheckBox() {
-        return withWait(xpath("//div[@gt-label='GC info']//input"));
+    public WebElement getGcActivityCheckBox() {
+        return withWait(xpath("//div[@gt-label='GC activity']//input"));
     }
 
     public void clickSaveButton() {

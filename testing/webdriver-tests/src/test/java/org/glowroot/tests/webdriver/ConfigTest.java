@@ -201,7 +201,7 @@ public class ConfigTest extends WebDriverTest {
         page.getMaxStackTraceSamplesPerTransactionTextField().clear();
         page.getMaxStackTraceSamplesPerTransactionTextField().sendKeys("3456");
         page.getThreadInfoCheckBox().click();
-        page.getGcInfoCheckBox().click();
+        page.getGcActivityCheckBox().click();
         page.clickSaveButton();
 
         // then
@@ -217,7 +217,7 @@ public class ConfigTest extends WebDriverTest {
         assertThat(page.getMaxStackTraceSamplesPerTransactionTextField().getAttribute("value"))
                 .isEqualTo("3456");
         assertThat(page.getThreadInfoCheckBox().isSelected()).isFalse();
-        assertThat(page.getGcInfoCheckBox().isSelected()).isFalse();
+        assertThat(page.getGcActivityCheckBox().isSelected()).isFalse();
     }
 
     // TODO test servlet, jdbc and logger plugin config pages

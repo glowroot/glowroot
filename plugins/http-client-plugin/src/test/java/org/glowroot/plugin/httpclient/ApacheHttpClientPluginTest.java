@@ -61,7 +61,7 @@ public class ApacheHttpClientPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText())
+        assertThat(entries.get(0).getMessageText())
                 .isEqualTo("http client request: GET http://www.example.com/hello1");
     }
 
@@ -71,7 +71,7 @@ public class ApacheHttpClientPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText())
+        assertThat(entries.get(0).getMessageText())
                 .isEqualTo("http client request: GET http://www.example.com/hello2");
     }
 
@@ -81,7 +81,7 @@ public class ApacheHttpClientPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText())
+        assertThat(entries.get(0).getMessageText())
                 .isEqualTo("http client request: POST http://www.example.com/hello3");
     }
 
@@ -91,7 +91,7 @@ public class ApacheHttpClientPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText())
+        assertThat(entries.get(0).getMessageText())
                 .isEqualTo("http client request: POST http://www.example.com/hello4");
     }
 

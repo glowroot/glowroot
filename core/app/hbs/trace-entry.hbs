@@ -19,14 +19,14 @@
         </span>
       </div>
       <div style="overflow: hidden; padding-left: 0.5em;">
-        {{#if message}}
-          {{#ifLongMessage message.text}}
+        {{#ifNotNull messageText}}
+          {{#ifLongMessage messageText}}
             {{! surrounding div is needed as common parent for toggling unexpanded/expanded content }}
             <div>
               <div class="gt-inline-block gt-unexpanded-content">
-                {{firstPart message.text}}
+                {{firstPart messageText}}
                 <span class="gt-link-color"><strong>...</strong></span>
-                {{lastPart message.text}}
+                {{lastPart messageText}}
               </div>
               <!-- only convert newlines to <br>s for long messages -->
               <div class="gt-expanded-content gt-with-clip hide"
@@ -34,7 +34,7 @@
                 <i class="fa fa-clipboard gt-clip"></i>
                 <div class="gt-break-word gt-pre-wrap"><!--
                   lack of space here is significant because of gt-pre-wrap
-               -->{{message.text}}<!--
+               -->{{messageText}}<!--
              --></div>
               </div>
             </div>
@@ -42,27 +42,27 @@
             {{! surrounding div is needed as common parent for toggling unexpanded/expanded content }}
             <div>
               <div class="gt-inline-block gt-unexpanded-content">
-                {{message.text}}
+                {{messageText}}
               </div>
               <div class="gt-expanded-content gt-with-clip hide"
                    style="position: relative; display: inline-block;">
                 <i class="fa fa-clipboard gt-clip"></i>
                 <div class="gt-break-word gt-pre-wrap"><!--
                   lack of space here is significant because of gt-pre-wrap
-               -->{{message.text}}<!--
+               -->{{messageText}}<!--
              --></div>
               </div>
             </div>
           {{/ifLongMessage}}
-          {{#if message.detail}}
+          {{#ifNonEmptyObject messageDetail}}
             <div class="gt-content-detail">
               <span class="gt-inline-block gt-unexpanded-content gt-link-color">detail</span>
               <span class="gt-inline-block gt-expanded-content hide">
-                {{{messageDetailHtml message.detail}}}
+                {{{messageDetailHtml messageDetail}}}
               </span>
             </div>
-          {{/if}}
-        {{/if}}
+          {{/ifNonEmptyObject}}
+        {{/ifNotNull}}
         {{#if error}}
           <div class="{{{errorIndentClass message}}}">
             <div>

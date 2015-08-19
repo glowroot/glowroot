@@ -45,28 +45,28 @@ HandlebarsRendering = (function () {
     return buffer;
   });
 
-  Handlebars.registerHelper('eachTimerOrdered', function (timers, options) {
+  Handlebars.registerHelper('eachTimerOrdered', function (rootTimer, options) {
     var buffer = '';
 
     function traverse(timer, nestingLevel) {
       timer.nestingLevel = nestingLevel;
       buffer += options.fn(timer);
-      if (timer.nestedTimers) {
-        timer.nestedTimers.sort(function (a, b) {
+      if (timer.childNodes) {
+        timer.childNodes.sort(function (a, b) {
           return b.total - a.total;
         });
-        $.each(timer.nestedTimers, function (index, nestedTimer) {
+        $.each(timer.childNodes, function (index, nestedTimer) {
           traverse(nestedTimer, nestingLevel + 1);
         });
       }
     }
 
     // add the root node
-    traverse(timers, 0);
+    traverse(rootTimer, 0);
     return buffer;
   });
 
-  Handlebars.registerHelper('eachTimerFlattenedOrdered', function (timers, options) {
+  Handlebars.registerHelper('eachTimerFlattenedOrdered', function (rootTimer, options) {
     var flattenedTimerMap = {};
     var flattenedTimers = [];
 
@@ -88,15 +88,15 @@ HandlebarsRendering = (function () {
         flattenedTimer.active = flattenedTimer.active || timer.active;
         flattenedTimer.count += timer.count;
       }
-      if (timer.nestedTimers) {
-        $.each(timer.nestedTimers, function (index, nestedTimer) {
+      if (timer.childNodes) {
+        $.each(timer.childNodes, function (index, nestedTimer) {
           traverse(nestedTimer, parentTimerNames.concat(timer));
         });
       }
     }
 
     // add the root node
-    traverse(timers, []);
+    traverse(rootTimer, []);
 
     flattenedTimers.sort(function (a, b) {
       return b.total - a.total;
@@ -108,8 +108,23 @@ HandlebarsRendering = (function () {
     return buffer;
   });
 
-  Handlebars.registerHelper('ifExists', function (value, options) {
-    if (value !== undefined) {
+  Handlebars.registerHelper('ifNonEmptyObject', function (value, options) {
+    if (value && !$.isEmptyObject(value)) {
+      return options.fn(this);
+    }
+    return options.inverse(this);
+  });
+
+  // allows empty string ""
+  Handlebars.registerHelper('ifNotNull', function (value, options) {
+    if (value !== null && value !== undefined) {
+      return options.fn(this);
+    }
+    return options.inverse(this);
+  });
+
+  Handlebars.registerHelper('ifNotNA', function (value, options) {
+    if (value !== -1) {
       return options.fn(this);
     }
     return options.inverse(this);
@@ -119,14 +134,19 @@ HandlebarsRendering = (function () {
     return formatBytes(bytes);
   });
 
-  Handlebars.registerHelper('eachGcInfoOrdered', function (gcInfos, options) {
+  Handlebars.registerHelper('eachGcActivityOrdered', function (gcActivity, options) {
     // mutating original list seems fine here
-    gcInfos.sort(function (a, b) {
+    var list = [];
+    $.each(gcActivity, function (key, value) {
+      value.key = key;
+      list.push(value);
+    });
+    list.sort(function (a, b) {
       return b.collectionTime - a.collectionTime;
     });
     var buffer = '';
-    $.each(gcInfos, function (index, gcInfo) {
-      buffer += options.fn(gcInfo);
+    $.each(list, function (index, item) {
+      buffer += options.fn(item);
     });
     return buffer;
   });
@@ -295,11 +315,30 @@ HandlebarsRendering = (function () {
     var html = '<div style="white-space: pre;">';
     var i;
     for (i = 0; i < stackTrace.length; i++) {
-      html += escapeHtml(stackTrace[i]) + '\n';
+      html += escapeHtml(stackTraceElementText(stackTrace[i])) + '\n';
     }
     html += '</div>';
     return html;
   });
+
+  function stackTraceElementText(stackTraceElement) {
+    var className = stackTraceElement[0];
+    var methodName = stackTraceElement[1];
+    var fileName = stackTraceElement[2];
+    var lineNumber = stackTraceElement[3];
+    // this string construction matches java.lang.StackTraceElement.toString()
+    var str = className + '.' + methodName;
+    if (lineNumber === -2) {
+      str += '(Native Method)';
+    } else if (fileName && lineNumber >= 0) {
+      str += '(' + fileName + ':' + lineNumber + ')';
+    } else if (fileName) {
+      str += '(' + fileName + ')';
+    } else {
+      str += '(Unknown Source)';
+    }
+    return str;
+  }
 
   var mousedownPageX, mousedownPageY;
 
@@ -695,7 +734,10 @@ HandlebarsRendering = (function () {
         var currMatchingNode = false;
         var stackTraceElement;
         for (i = 0; i < nodes.length; i++) {
-          stackTraceElement = nodes[i].stackTraceElement;
+          if (!nodes[i].stackTraceElementText) {
+            nodes[i].stackTraceElementText = stackTraceElementText(nodes[i].stackTraceElement);
+          }
+          stackTraceElement = nodes[i].stackTraceElementText;
           // don't match any part of "<multiple root nodes>"
           if (stackTraceElement !== MULTIPLE_ROOT_NODES && matchIncludes(stackTraceElement)) {
             currMatchingNode = true;
@@ -742,7 +784,7 @@ HandlebarsRendering = (function () {
           return 0;
         }
         for (i = 0; i < nodes.length; i++) {
-          var highlighted = highlightAndEscapeHtml(nodes[i].stackTraceElement);
+          var highlighted = highlightAndEscapeHtml(nodes[i].stackTraceElementText);
           $('#gtProfileNodeText' + nodes[i].id).html(highlighted);
           if (nodes.length > 1 && i === nodes.length - 1) {
             $('#gtProfileNodeTextUnexpanded' + lastNode.id).html(highlighted);
@@ -791,8 +833,14 @@ HandlebarsRendering = (function () {
           return '';
         }
         var nodes = [node];
+        if (!node.stackTraceElementText) {
+          node.stackTraceElementText = stackTraceElementText(node.stackTraceElement);
+        }
         while (node.childNodes && node.childNodes.length === 1 && !node.leafThreadState && !node.ellipsedSampleCount) {
           node = node.childNodes[0];
+          if (!node.stackTraceElementText) {
+            node.stackTraceElementText = stackTraceElementText(node.stackTraceElement);
+          }
           nodes.push(node);
         }
         var ret = '<span id="gtProfileNode' + node.id + '">';
@@ -808,18 +856,19 @@ HandlebarsRendering = (function () {
         if (nodes.length === 1) {
           ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
           ret += '<span class="gt-inline-block" style="padding: 1px 1em;">';
-          ret += '<span id="gtProfileNodeText' + node.id + '">' + escapeHtml(node.stackTraceElement);
+          ret += '<span id="gtProfileNodeText' + node.id + '">' + escapeHtml(node.stackTraceElementText);
           ret += '</span></span><br>';
         } else {
           ret += '<span>';
           ret += '<span class="gt-inline-block gt-unexpanded-content" style="vertical-align: top;">';
           ret += '<span class="gt-link-color"><strong>...</strong> </span>';
           ret += '<span id="gtProfileNodeTextUnexpanded' + nodes[nodes.length - 1].id + '">';
-          ret += escapeHtml(nodes[nodes.length - 1].stackTraceElement) + '</span><br></span>';
+          ret += escapeHtml(nodes[nodes.length - 1].stackTraceElementText) + '</span><br></span>';
           ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
           ret += '<span class="gt-inline-block gt-expanded-content hide" style="vertical-align: top;">';
           $.each(nodes, function (index, node) {
-            ret += '<span id="gtProfileNodeText' + node.id + '">' + escapeHtml(node.stackTraceElement) + '</span><br>';
+            ret += '<span id="gtProfileNodeText' + node.id + '">' + escapeHtml(node.stackTraceElementText)
+                + '</span><br>';
           });
           ret += '</span></span><br>';
         }
@@ -1023,6 +1072,7 @@ HandlebarsRendering = (function () {
       });
     }
     var mergedCounts = {};
+
     function addToMergedCounts(sampleCount) {
       var partial = '';
       $.each(timerNameStack, function (i, timerName) {
@@ -1036,6 +1086,7 @@ HandlebarsRendering = (function () {
         mergedCounts[partial + ' / other'] = sampleCount;
       }
     }
+
     if (node.leafThreadState && timerNameStack.length) {
       addToMergedCounts(node.sampleCount);
     }

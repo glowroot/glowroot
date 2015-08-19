@@ -122,7 +122,7 @@ public class Containers {
         }
     }
 
-    private static enum Harness {
+    private enum Harness {
         JAVAAGENT, LOCAL;
     }
 }

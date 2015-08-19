@@ -16,16 +16,17 @@
 package org.glowroot;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.io.Closer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.glowroot.common.Manifests;
 
 class Version {
 
@@ -36,12 +37,37 @@ class Version {
     static String getVersion() {
         Manifest manifest;
         try {
-            manifest = Manifests.getManifest(Version.class);
+            manifest = getManifest(Version.class);
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
             return "unknown";
         }
         return getVersion(manifest);
+    }
+
+    @VisibleForTesting
+    static @Nullable Manifest getManifest(Class<?> clazz) throws IOException {
+        URL classURL = clazz.getResource(clazz.getSimpleName() + ".class");
+        if (classURL == null) {
+            logger.warn("url for class is unexpectedly null: {}", clazz);
+            return null;
+        }
+        String externalForm = classURL.toExternalForm();
+        if (!externalForm.startsWith("jar:")) {
+            return null;
+        }
+        URL manifestURL = new URL(externalForm.substring(0, externalForm.lastIndexOf('!'))
+                + "!/META-INF/MANIFEST.MF");
+        // Closer is used to simulate Java 7 try-with-resources
+        Closer closer = Closer.create();
+        InputStream manifestIn = closer.register(manifestURL.openStream());
+        try {
+            return new Manifest(manifestIn);
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
+        } finally {
+            closer.close();
+        }
     }
 
     @VisibleForTesting

@@ -15,14 +15,19 @@
  */
 package org.glowroot.container.trace;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 
@@ -37,6 +42,23 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class TraceService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
+
+    static {
+        SimpleModule module = new SimpleModule();
+        module.addDeserializer(StackTraceElement.class, new JsonDeserializer<StackTraceElement>() {
+            @Override
+            public StackTraceElement deserialize(JsonParser p, DeserializationContext ctxt)
+                    throws IOException {
+                String className = p.nextTextValue();
+                String methodName = p.nextTextValue();
+                String fileName = p.nextTextValue();
+                int lineNumber = p.nextIntValue(0);
+                p.nextValue();
+                return new StackTraceElement(className, methodName, fileName, lineNumber);
+            }
+        });
+        mapper.registerModule(module);
+    }
 
     private final HttpClient httpClient;
 

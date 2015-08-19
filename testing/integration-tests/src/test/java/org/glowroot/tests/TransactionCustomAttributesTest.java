@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.glowroot.tests;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 
 import org.junit.After;
@@ -56,25 +57,19 @@ public class TransactionCustomAttributesTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        Iterator<Entry<String, String>> i = trace.getCustomAttributes().entries().iterator();
-        Entry<String, String> entry = i.next();
+        Iterator<Entry<String, List<String>>> i = trace.getCustomAttributes().entrySet().iterator();
+        Entry<String, List<String>> entry = i.next();
         assertThat(entry.getKey()).isEqualTo("Wee Four");
-        assertThat(entry.getValue()).isEqualTo("ww");
+        assertThat(entry.getValue()).containsExactly("ww");
         entry = i.next();
         assertThat(entry.getKey()).isEqualTo("Xee Three");
-        assertThat(entry.getValue()).isEqualTo("xx");
+        assertThat(entry.getValue()).containsExactly("xx");
         entry = i.next();
         assertThat(entry.getKey()).isEqualTo("Yee Two");
-        assertThat(entry.getValue()).isEqualTo("yy");
-        entry = i.next();
-        assertThat(entry.getKey()).isEqualTo("Yee Two");
-        assertThat(entry.getValue()).isEqualTo("Yy2");
-        entry = i.next();
-        assertThat(entry.getKey()).isEqualTo("Yee Two");
-        assertThat(entry.getValue()).isEqualTo("yy3");
+        assertThat(entry.getValue()).containsExactly("yy", "Yy2", "yy3");
         entry = i.next();
         assertThat(entry.getKey()).isEqualTo("Zee One");
-        assertThat(entry.getValue()).isEqualTo("bx");
+        assertThat(entry.getValue()).containsExactly("bx");
     }
 
     public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest {

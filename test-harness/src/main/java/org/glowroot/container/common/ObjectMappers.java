@@ -102,6 +102,43 @@ public class ObjectMappers {
         return list;
     }
 
+    @SuppressWarnings("return.type.incompatible")
+    public static <T> Map<String, /*@NonNull*/T> orEmpty(@Nullable Map<String, T> map,
+            String fieldName) throws JsonMappingException {
+        if (map == null) {
+            return ImmutableMap.of();
+        }
+        for (T item : map.values()) {
+            if (item == null) {
+                throw new JsonMappingException(
+                        "Null values are not allowed in map field: " + fieldName);
+            }
+        }
+        return map;
+    }
+
+    @SuppressWarnings("return.type.incompatible")
+    public static <T> Map<String, List</*@NonNull*/T>> orEmpty2(
+            @Nullable Map<String, /*@Nullable*/List<T>> map, String fieldName)
+                    throws JsonMappingException {
+        if (map == null) {
+            return ImmutableMap.of();
+        }
+        for (List<T> list : map.values()) {
+            if (list == null) {
+                throw new JsonMappingException(
+                        "Null values are not allowed in map field: " + fieldName);
+            }
+            for (T item : list) {
+                if (item == null) {
+                    throw new JsonMappingException(
+                            "Null values are not allowed in map field: " + fieldName);
+                }
+            }
+        }
+        return map;
+    }
+
     @PolyNull
     @SuppressWarnings("return.type.incompatible")
     public static <T> List</*@NonNull*/T> checkNotNullItems(@PolyNull List<T> list,

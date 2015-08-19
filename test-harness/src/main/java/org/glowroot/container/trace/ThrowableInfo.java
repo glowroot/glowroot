@@ -31,12 +31,12 @@ import static org.glowroot.container.common.ObjectMappers.orEmpty;
 public class ThrowableInfo {
 
     private final String display;
-    private final ImmutableList<String> stackTrace;
+    private final ImmutableList<StackTraceElement> stackTrace;
     private final int framesInCommonWithCause;
     private final @Nullable ThrowableInfo cause;
 
-    private ThrowableInfo(String display, List<String> stackTrace, int framesInCommonWithCause,
-            @Nullable ThrowableInfo cause) {
+    private ThrowableInfo(String display, List<StackTraceElement> stackTrace,
+            int framesInCommonWithCause, @Nullable ThrowableInfo cause) {
         this.display = display;
         this.stackTrace = ImmutableList.copyOf(stackTrace);
         this.framesInCommonWithCause = framesInCommonWithCause;
@@ -47,7 +47,7 @@ public class ThrowableInfo {
         return display;
     }
 
-    public ImmutableList<String> getStackTrace() {
+    public ImmutableList<StackTraceElement> getStackTrace() {
         return stackTrace;
     }
 
@@ -72,11 +72,11 @@ public class ThrowableInfo {
     @JsonCreator
     static ThrowableInfo readValue(
             @JsonProperty("display") @Nullable String display,
-            @JsonProperty("stackTrace") @Nullable List</*@Nullable*/String> uncheckedStackTrace,
+            @JsonProperty("stackTrace") @Nullable List</*@Nullable*/StackTraceElement> uncheckedStackTrace,
             @JsonProperty("framesInCommonWithCause") @Nullable Integer framesInCommonWithCause,
             @JsonProperty("cause") @Nullable ThrowableInfo cause)
                     throws JsonMappingException {
-        List<String> stackTrace = orEmpty(uncheckedStackTrace, "stackTrace");
+        List<StackTraceElement> stackTrace = orEmpty(uncheckedStackTrace, "stackTrace");
         checkRequiredProperty(display, "display");
         checkRequiredProperty(framesInCommonWithCause, "framesInCommonWithCause");
         return new ThrowableInfo(display, stackTrace, framesInCommonWithCause, cause);

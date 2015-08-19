@@ -75,8 +75,8 @@ public class Slf4jMarkerTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getErrorMessage()).isEqualTo("efg");
         assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage().getText()).isEqualTo("log warn: def");
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo("log error: efg");
+        assertThat(entries.get(0).getMessageText()).isEqualTo("log warn: def");
+        assertThat(entries.get(1).getMessageText()).isEqualTo("log error: efg");
     }
 
     @Test
@@ -93,16 +93,16 @@ public class Slf4jMarkerTest {
         assertThat(entries).hasSize(2);
 
         TraceEntry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn: def_t");
-        assertThat(warnEntry.getError().getMessage()).isEqualTo("456");
-        assertThat(warnEntry.getError().getThrowable().getStackTrace().get(0))
-                .contains("traceMarker");
+        assertThat(warnEntry.getMessageText()).isEqualTo("log warn: def_t");
+        assertThat(warnEntry.getErrorMessage()).isEqualTo("456");
+        assertThat(warnEntry.getErrorThrowable().getStackTrace().get(0).getMethodName())
+                .isEqualTo("traceMarker");
 
         TraceEntry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_t");
-        assertThat(errorEntry.getError().getMessage()).isEqualTo("567");
-        assertThat(errorEntry.getError().getThrowable().getStackTrace().get(0))
-                .contains("traceMarker");
+        assertThat(errorEntry.getMessageText()).isEqualTo("log error: efg_t");
+        assertThat(errorEntry.getErrorMessage()).isEqualTo("567");
+        assertThat(errorEntry.getErrorThrowable().getStackTrace().get(0).getMethodName())
+                .isEqualTo("traceMarker");
     }
 
     @Test
@@ -119,11 +119,11 @@ public class Slf4jMarkerTest {
         assertThat(entries).hasSize(2);
 
         TraceEntry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn: def_tnull");
-        assertThat(warnEntry.getError().getMessage()).isEqualTo("def_tnull");
+        assertThat(warnEntry.getMessageText()).isEqualTo("log warn: def_tnull");
+        assertThat(warnEntry.getErrorMessage()).isEqualTo("def_tnull");
         TraceEntry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_tnull");
-        assertThat(errorEntry.getError().getMessage()).isEqualTo("efg_tnull");
+        assertThat(errorEntry.getMessageText()).isEqualTo("log error: efg_tnull");
+        assertThat(errorEntry.getErrorMessage()).isEqualTo("efg_tnull");
     }
 
     @Test
@@ -137,9 +137,9 @@ public class Slf4jMarkerTest {
         assertThat(entries).hasSize(2);
 
         TraceEntry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn: def_1 d");
+        assertThat(warnEntry.getMessageText()).isEqualTo("log warn: def_1 d");
         TraceEntry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_1 e");
+        assertThat(errorEntry.getMessageText()).isEqualTo("log error: efg_1 e");
     }
 
     @Test
@@ -154,16 +154,16 @@ public class Slf4jMarkerTest {
         assertThat(entries).hasSize(2);
 
         TraceEntry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn: def_1_t d");
-        assertThat(warnEntry.getError().getMessage()).isEqualTo("456");
-        assertThat(warnEntry.getError().getThrowable().getStackTrace().get(0))
-                .contains("traceMarker");
+        assertThat(warnEntry.getMessageText()).isEqualTo("log warn: def_1_t d");
+        assertThat(warnEntry.getErrorMessage()).isEqualTo("456");
+        assertThat(warnEntry.getErrorThrowable().getStackTrace().get(0).getMethodName())
+                .isEqualTo("traceMarker");
 
         TraceEntry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_1_t e");
-        assertThat(errorEntry.getError().getMessage()).isEqualTo("567");
-        assertThat(errorEntry.getError().getThrowable().getStackTrace().get(0))
-                .contains("traceMarker");
+        assertThat(errorEntry.getMessageText()).isEqualTo("log error: efg_1_t e");
+        assertThat(errorEntry.getErrorMessage()).isEqualTo("567");
+        assertThat(errorEntry.getErrorThrowable().getStackTrace().get(0).getMethodName())
+                .isEqualTo("traceMarker");
     }
 
     @Test
@@ -177,9 +177,9 @@ public class Slf4jMarkerTest {
         assertThat(entries).hasSize(2);
 
         TraceEntry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn: def_2 d e");
+        assertThat(warnEntry.getMessageText()).isEqualTo("log warn: def_2 d e");
         TraceEntry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_2 e f");
+        assertThat(errorEntry.getMessageText()).isEqualTo("log error: efg_2 e f");
     }
 
     @Test
@@ -193,9 +193,9 @@ public class Slf4jMarkerTest {
         assertThat(entries).hasSize(2);
 
         TraceEntry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn: def_3 d e f");
+        assertThat(warnEntry.getMessageText()).isEqualTo("log warn: def_3 d e f");
         TraceEntry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_3 e f g");
+        assertThat(errorEntry.getMessageText()).isEqualTo("log error: efg_3 e f g");
     }
 
     @Test
@@ -209,16 +209,16 @@ public class Slf4jMarkerTest {
         assertThat(entries).hasSize(2);
 
         TraceEntry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessage().getText()).isEqualTo("log warn: def_3_t d e f");
-        assertThat(warnEntry.getError().getMessage()).isEqualTo("456");
-        assertThat(warnEntry.getError().getThrowable().getStackTrace().get(0))
-                .contains("traceMarker");
+        assertThat(warnEntry.getMessageText()).isEqualTo("log warn: def_3_t d e f");
+        assertThat(warnEntry.getErrorMessage()).isEqualTo("456");
+        assertThat(warnEntry.getErrorThrowable().getStackTrace().get(0).getMethodName())
+                .isEqualTo("traceMarker");
 
         TraceEntry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessage().getText()).isEqualTo("log error: efg_3_t e f g");
-        assertThat(errorEntry.getError().getMessage()).isEqualTo("567");
-        assertThat(errorEntry.getError().getThrowable().getStackTrace().get(0))
-                .contains("traceMarker");
+        assertThat(errorEntry.getMessageText()).isEqualTo("log error: efg_3_t e f g");
+        assertThat(errorEntry.getErrorMessage()).isEqualTo("567");
+        assertThat(errorEntry.getErrorThrowable().getStackTrace().get(0).getMethodName())
+                .isEqualTo("traceMarker");
     }
 
     @Test

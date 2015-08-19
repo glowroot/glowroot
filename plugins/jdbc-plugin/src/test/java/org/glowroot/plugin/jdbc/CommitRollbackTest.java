@@ -64,15 +64,15 @@ public class CommitRollbackTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(2);
         TraceEntry jdbcInsertEntry = entries.get(0);
-        assertThat(jdbcInsertEntry.getMessage().getText())
+        assertThat(jdbcInsertEntry.getMessageText())
                 .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
         TraceEntry jdbcCommitEntry = entries.get(1);
-        assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc commit");
-        assertThat(trace.getRootTimer().getNestedTimers()).hasSize(2);
+        assertThat(jdbcCommitEntry.getMessageText()).isEqualTo("jdbc commit");
+        assertThat(trace.getRootTimer().getChildNodes()).hasSize(2);
         // ordering is by total desc, so not fixed (though root timer will be first since it
         // encompasses all other timings)
         assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTimer().getNestedTimerNames()).containsOnly("jdbc execute",
+        assertThat(trace.getRootTimer().getChildTimerNames()).containsOnly("jdbc execute",
                 "jdbc commit");
     }
 
@@ -86,16 +86,16 @@ public class CommitRollbackTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(2);
         TraceEntry jdbcInsertEntry = entries.get(0);
-        assertThat(jdbcInsertEntry.getMessage().getText())
+        assertThat(jdbcInsertEntry.getMessageText())
                 .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
         TraceEntry jdbcCommitEntry = entries.get(1);
-        assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc commit");
-        assertThat(jdbcCommitEntry.getError().getMessage()).isEqualTo("A commit failure");
-        assertThat(trace.getRootTimer().getNestedTimers()).hasSize(2);
+        assertThat(jdbcCommitEntry.getMessageText()).isEqualTo("jdbc commit");
+        assertThat(jdbcCommitEntry.getErrorMessage()).isEqualTo("A commit failure");
+        assertThat(trace.getRootTimer().getChildNodes()).hasSize(2);
         // ordering is by total desc, so not fixed (though root timer will be first since it
         // encompasses all other timings)
         assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTimer().getNestedTimerNames()).containsOnly("jdbc execute",
+        assertThat(trace.getRootTimer().getChildTimerNames()).containsOnly("jdbc execute",
                 "jdbc commit");
     }
 
@@ -109,15 +109,15 @@ public class CommitRollbackTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(2);
         TraceEntry jdbcInsertEntry = entries.get(0);
-        assertThat(jdbcInsertEntry.getMessage().getText())
+        assertThat(jdbcInsertEntry.getMessageText())
                 .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
         TraceEntry jdbcCommitEntry = entries.get(1);
-        assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc rollback");
-        assertThat(trace.getRootTimer().getNestedTimers()).hasSize(2);
+        assertThat(jdbcCommitEntry.getMessageText()).isEqualTo("jdbc rollback");
+        assertThat(trace.getRootTimer().getChildNodes()).hasSize(2);
         // ordering is by total desc, so not fixed (though root timer will be first since it
         // encompasses all other timings)
         assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTimer().getNestedTimerNames()).containsOnly("jdbc execute",
+        assertThat(trace.getRootTimer().getChildTimerNames()).containsOnly("jdbc execute",
                 "jdbc rollback");
     }
 
@@ -131,16 +131,16 @@ public class CommitRollbackTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(2);
         TraceEntry jdbcInsertEntry = entries.get(0);
-        assertThat(jdbcInsertEntry.getMessage().getText())
+        assertThat(jdbcInsertEntry.getMessageText())
                 .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
         TraceEntry jdbcCommitEntry = entries.get(1);
-        assertThat(jdbcCommitEntry.getMessage().getText()).isEqualTo("jdbc rollback");
-        assertThat(jdbcCommitEntry.getError().getMessage()).isEqualTo("A rollback failure");
-        assertThat(trace.getRootTimer().getNestedTimers()).hasSize(2);
+        assertThat(jdbcCommitEntry.getMessageText()).isEqualTo("jdbc rollback");
+        assertThat(jdbcCommitEntry.getErrorMessage()).isEqualTo("A rollback failure");
+        assertThat(trace.getRootTimer().getChildNodes()).hasSize(2);
         // ordering is by total desc, so not fixed (though root timer will be first since it
         // encompasses all other timings)
         assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTimer().getNestedTimerNames()).containsOnly("jdbc execute",
+        assertThat(trace.getRootTimer().getChildTimerNames()).containsOnly("jdbc execute",
                 "jdbc rollback");
     }
 

@@ -51,7 +51,7 @@ glowroot.controller('ConfigGaugeCtrl', [
         angular.forEach(data.mbeanAvailableAttributeNames, function (mbeanAttributeName) {
           allMBeanAttributes[mbeanAttributeName] = {
             checked: false,
-            everIncreasing: false,
+            counter: false,
             available: true
           };
         });
@@ -59,11 +59,11 @@ glowroot.controller('ConfigGaugeCtrl', [
           var mbeanAttribute = allMBeanAttributes[mbeanAttr.name];
           if (mbeanAttribute) {
             mbeanAttribute.checked = true;
-            mbeanAttribute.everIncreasing = mbeanAttr.everIncreasing;
+            mbeanAttribute.counter = mbeanAttr.counter;
           } else {
             allMBeanAttributes[mbeanAttr.name] = {
               checked: true,
-              everIncreasing: mbeanAttr.everIncreasing,
+              counter: mbeanAttr.counter,
               available: false
             };
           }
@@ -74,7 +74,7 @@ glowroot.controller('ConfigGaugeCtrl', [
           $scope.allMBeanAttributes.push({
             name: key,
             checked: value.checked,
-            everIncreasing: value.everIncreasing,
+            counter: value.counter,
             available: value.available
           });
         });
@@ -108,7 +108,7 @@ glowroot.controller('ConfigGaugeCtrl', [
           if (mbeanAttribute.checked) {
             $scope.config.mbeanAttributes.push({
               name: mbeanAttribute.name,
-              everIncreasing: mbeanAttribute.everIncreasing
+              counter: mbeanAttribute.counter
             });
           }
         });
@@ -183,7 +183,7 @@ glowroot.controller('ConfigGaugeCtrl', [
               $scope.allMBeanAttributes.push({
                 name: mbeanAttribute,
                 checked: false,
-                everIncreasing: false,
+                counter: false,
                 available: true
               });
             });

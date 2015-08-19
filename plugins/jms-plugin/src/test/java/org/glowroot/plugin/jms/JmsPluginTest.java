@@ -73,7 +73,7 @@ public class JmsPluginTest {
     public void shouldSendMessage() throws Exception {
         container.executeAppUnderTest(SendMessage.class);
         Trace trace = container.getTraceService().getLastTrace();
-        List<String> nestedTimerNames = trace.getRootTimer().getNestedTimerNames();
+        List<String> nestedTimerNames = trace.getRootTimer().getChildTimerNames();
         assertThat(nestedTimerNames).hasSize(1);
         assertThat(nestedTimerNames.get(0)).isEqualTo("jms send message");
     }

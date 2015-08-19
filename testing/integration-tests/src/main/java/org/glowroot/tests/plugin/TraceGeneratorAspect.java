@@ -29,7 +29,7 @@ import org.glowroot.plugin.api.weaving.IsEnabled;
 import org.glowroot.plugin.api.weaving.OnAfter;
 import org.glowroot.plugin.api.weaving.OnBefore;
 import org.glowroot.plugin.api.weaving.Pointcut;
-import org.glowroot.tests.TraceGeneratorBase;
+import org.glowroot.tests.TraceGenerator;
 
 public class TraceGeneratorAspect {
 
@@ -37,7 +37,7 @@ public class TraceGeneratorAspect {
     private static final ConfigService configService =
             Agent.getConfigService("glowroot-integration-tests");
 
-    @Pointcut(className = "org.glowroot.tests.TraceGeneratorBase", methodName = "call",
+    @Pointcut(className = "org.glowroot.tests.TraceGenerator", methodName = "call",
             methodParameterTypes = {"boolean"}, timerName = "trace generator")
     public static class LevelOneAdvice {
 
@@ -50,7 +50,7 @@ public class TraceGeneratorAspect {
         }
 
         @OnBefore
-        public static TraceEntry onBefore(@BindReceiver TraceGeneratorBase traceGenerator) {
+        public static TraceEntry onBefore(@BindReceiver TraceGenerator traceGenerator) {
             TraceEntry traceEntry = transactionService.startTransaction(
                     traceGenerator.transactionType(), traceGenerator.transactionName(),
                     MessageSupplier.from(traceGenerator.headline()), timerName);

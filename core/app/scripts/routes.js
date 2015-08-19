@@ -253,8 +253,8 @@ glowroot.config([
     });
     $stateProvider.state('jvm.gauges', {
       url: '/gauges',
-      templateUrl: 'views/jvm/gauges.html',
-      controller: 'JvmGaugesCtrl',
+      templateUrl: 'views/jvm/gauge-values.html',
+      controller: 'JvmGaugeValuesCtrl',
       // gauges controller needs to wait for layout when running under grunt serve
       resolve: {
         waitForLayout: waitForLayout

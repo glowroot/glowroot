@@ -37,7 +37,7 @@ import org.glowroot.container.TraceEntryMarker;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.aggregate.Query;
 import org.glowroot.container.config.PluginConfig;
-import org.glowroot.container.trace.Timer;
+import org.glowroot.container.trace.TimerNode;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 
@@ -82,7 +82,7 @@ public class JdbcPluginTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry jdbcEntry = entries.get(0);
-        assertThat(jdbcEntry.getMessage().getText()).isEqualTo(
+        assertThat(jdbcEntry.getMessageText()).isEqualTo(
                 "jdbc execution: insert into employee (name, misc) values (?, ?) ['jane', NULL]");
     }
 
@@ -210,7 +210,7 @@ public class JdbcPluginTest {
         assertThat(query.getTotalRows()).isEqualTo(0);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText()).isEqualTo(
+        assertThat(entries.get(0).getMessageText()).isEqualTo(
                 "jdbc execution: select * from employee where name like ? ['nomatch%'] => 0 rows");
     }
 
@@ -230,7 +230,7 @@ public class JdbcPluginTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry jdbcEntry = entries.get(0);
-        assertThat(jdbcEntry.getMessage().getText())
+        assertThat(jdbcEntry.getMessageText())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
         assertThat(jdbcEntry.getStackTrace()).isNull();
     }
@@ -246,7 +246,7 @@ public class JdbcPluginTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry jdbcEntry = entries.get(0);
-        assertThat(jdbcEntry.getMessage().getText())
+        assertThat(jdbcEntry.getMessageText())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
         assertThat(jdbcEntry.getStackTrace()).isNotNull();
     }
@@ -263,7 +263,7 @@ public class JdbcPluginTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry jdbcEntry = entries.get(0);
-        assertThat(jdbcEntry.getMessage().getText())
+        assertThat(jdbcEntry.getMessageText())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
         assertThat(jdbcEntry.getStackTrace()).isNull();
     }
@@ -288,8 +288,8 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(ExecuteLotsOfStatementAndIterateOverResults.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        Timer jdbcExecuteTimer = null;
-        for (Timer nestedTimer : trace.getRootTimer().getNestedTimers()) {
+        TimerNode jdbcExecuteTimer = null;
+        for (TimerNode nestedTimer : trace.getRootTimer().getChildNodes()) {
             if (nestedTimer.getName().equals("jdbc execute")) {
                 jdbcExecuteTimer = nestedTimer;
                 break;
@@ -304,11 +304,11 @@ public class JdbcPluginTest {
         assertThat(query.getTotalRows()).isEqualTo(12000);
     }
 
-    private boolean findExtendedTimerName(Timer timer, String timerName) {
+    private boolean findExtendedTimerName(TimerNode timer, String timerName) {
         if (timer.getName().equals(timerName) && timer.isExtended()) {
             return true;
         }
-        for (Timer nestedTimer : timer.getNestedTimers()) {
+        for (TimerNode nestedTimer : timer.getChildNodes()) {
             if (findExtendedTimerName(nestedTimer, timerName)) {
                 return true;
             }

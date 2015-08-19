@@ -89,7 +89,7 @@ public class ChangePortTest {
     @Test
     public void shouldFailIfPortNotFree() throws Exception {
         // given
-        container.addExpectedLogMessage("org.glowroot.local.ui.ConfigJsonService",
+        container.addExpectedLogMessage("org.glowroot.ui.ConfigJsonService",
                 "Address already in use");
         UserInterfaceConfig config = container.getConfigService().getUserInterfaceConfig();
         ServerSocket serverSocket = new ServerSocket(0);

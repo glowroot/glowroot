@@ -29,9 +29,9 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
+import org.glowroot.container.trace.ImmutableTraceQuery;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceQuery;
-import org.glowroot.container.trace.TraceQueryBase.StringComparator;
+import org.glowroot.container.trace.TraceQuery.StringComparator;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -107,25 +107,25 @@ public class TracePointQueryTest {
     }
 
     private static void verifyOnce(Container container, boolean active) throws Exception {
-        List<Trace> traces = container.getTraceService().getTraces(TraceQuery.builder()
+        List<Trace> traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("nomatch")
                 .build());
         assertThat(traces).isEmpty();
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .build());
         assertThat(traces).hasSize(2);
         verifyActiveStatus(traces, active);
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("nomatch")
                 .transactionNameComparator(StringComparator.BEGINS)
                 .build());
         assertThat(traces).isEmpty();
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -133,7 +133,7 @@ public class TracePointQueryTest {
         assertThat(traces).hasSize(2);
         verifyActiveStatus(traces, active);
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -142,7 +142,7 @@ public class TracePointQueryTest {
                 .build());
         assertThat(traces).isEmpty();
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -152,7 +152,7 @@ public class TracePointQueryTest {
         assertThat(traces).hasSize(2);
         verifyActiveStatus(traces, active);
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -163,7 +163,7 @@ public class TracePointQueryTest {
                 .build());
         assertThat(traces).isEmpty();
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -175,7 +175,7 @@ public class TracePointQueryTest {
         assertThat(traces).hasSize(2);
         verifyActiveStatus(traces, active);
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -187,7 +187,7 @@ public class TracePointQueryTest {
                 .build());
         assertThat(traces).isEmpty();
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -200,7 +200,7 @@ public class TracePointQueryTest {
         assertThat(traces).hasSize(2);
         verifyActiveStatus(traces, active);
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -214,7 +214,7 @@ public class TracePointQueryTest {
                 .build());
         assertThat(traces).isEmpty();
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -231,14 +231,14 @@ public class TracePointQueryTest {
 
         // check different comparators
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx")
                 .transactionNameComparator(StringComparator.EQUALS)
                 .build());
         assertThat(traces).isEmpty();
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.EQUALS)
@@ -246,14 +246,14 @@ public class TracePointQueryTest {
         assertThat(traces).hasSize(2);
         verifyActiveStatus(traces, active);
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx")
                 .transactionNameComparator(StringComparator.ENDS)
                 .build());
         assertThat(traces).isEmpty();
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("nx1")
                 .transactionNameComparator(StringComparator.ENDS)
@@ -261,7 +261,7 @@ public class TracePointQueryTest {
         assertThat(traces).hasSize(2);
         verifyActiveStatus(traces, active);
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("nx")
                 .transactionNameComparator(StringComparator.CONTAINS)
@@ -269,14 +269,14 @@ public class TracePointQueryTest {
         assertThat(traces).hasSize(2);
         verifyActiveStatus(traces, active);
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("nomatch")
                 .transactionNameComparator(StringComparator.CONTAINS)
                 .build());
         assertThat(traces).isEmpty();
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("nomatch")
                 .transactionNameComparator(StringComparator.NOT_CONTAINS)
@@ -284,7 +284,7 @@ public class TracePointQueryTest {
         assertThat(traces).hasSize(2);
         verifyActiveStatus(traces, active);
 
-        traces = container.getTraceService().getTraces(TraceQuery.builder()
+        traces = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("nx")
                 .transactionNameComparator(StringComparator.NOT_CONTAINS)
@@ -299,7 +299,7 @@ public class TracePointQueryTest {
     }
 
     private static void trace1(boolean active) throws InterruptedException {
-        TraceGenerator.builder()
+        ImmutableTraceGenerator.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .headline("h1")
@@ -311,7 +311,7 @@ public class TracePointQueryTest {
     }
 
     private static void trace2(boolean active) throws InterruptedException {
-        TraceGenerator.builder()
+        ImmutableTraceGenerator.builder()
                 .transactionType("tt2")
                 .transactionName("tnx2")
                 .headline("h2")
@@ -323,7 +323,7 @@ public class TracePointQueryTest {
     }
 
     private static void trace3(boolean active) throws InterruptedException {
-        TraceGenerator.builder()
+        ImmutableTraceGenerator.builder()
                 .transactionType("tt3")
                 .transactionName("tnx3")
                 .headline("h3")

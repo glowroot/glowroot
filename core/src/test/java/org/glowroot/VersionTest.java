@@ -15,6 +15,7 @@
  */
 package org.glowroot;
 
+import java.io.IOException;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
@@ -117,5 +118,10 @@ public class VersionTest {
         String version = Version.getVersion(manifest);
         // then
         assertThat(version).isEqualTo("0.1.2-SNAPSHOT");
+    }
+
+    @Test
+    public void testClassWithNoClassFile() throws IOException {
+        assertThat(Version.getManifest(long.class)).isNull();
     }
 }

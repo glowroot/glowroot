@@ -66,7 +66,7 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText())
+        assertThat(entry.getMessageText())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 
@@ -80,7 +80,7 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText())
+        assertThat(entry.getMessageText())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 
@@ -94,7 +94,7 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText())
+        assertThat(entry.getMessageText())
                 .isEqualTo("jdbc execution: update employee set name = 'nobody' => 3 rows");
     }
 
@@ -118,9 +118,8 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText())
-                .isEqualTo("jdbc execution: select * from employee");
-        assertThat(entry.getError().getMessage()).isEqualTo("An execute failure");
+        assertThat(entry.getMessageText()).isEqualTo("jdbc execution: select * from employee");
+        assertThat(entry.getErrorMessage()).isEqualTo("An execute failure");
     }
 
     @Test
@@ -133,7 +132,7 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText())
+        assertThat(entry.getMessageText())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 
@@ -147,7 +146,7 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText())
+        assertThat(entry.getMessageText())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 
@@ -161,7 +160,7 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText())
+        assertThat(entry.getMessageText())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 
@@ -175,7 +174,7 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText())
+        assertThat(entry.getMessageText())
                 .isEqualTo("jdbc execution: select * from employee => 2 rows");
     }
 
@@ -189,7 +188,7 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText())
+        assertThat(entry.getMessageText())
                 .isEqualTo("jdbc execution: select * from employee => 1 row");
     }
 
@@ -203,7 +202,7 @@ public class StatementTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText())
+        assertThat(entry.getMessageText())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 

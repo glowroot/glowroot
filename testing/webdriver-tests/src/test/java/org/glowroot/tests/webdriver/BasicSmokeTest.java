@@ -169,7 +169,7 @@ public class BasicSmokeTest extends WebDriverTest {
         Utils.withWait(driver, By.xpath("//button[normalize-space()='Dump heap']")).click();
         Utils.withWait(driver, By.xpath("//div[@ng-show='heapDumpResponse']"));
         Utils.withWait(driver, By.xpath("//button[normalize-space()='Check disk space']")).click();
-        Utils.withWait(driver, By.xpath("//div[@ng-show='checkDiskSpaceResponse']"));
+        Utils.withWait(driver, By.xpath("//div[@ng-show='availableDiskSpace']"));
         jvmSidebar.getProcessInfoLink().click();
         jvmSidebar.getSystemPropertiesLink().click();
         // jvm capabilities is not accessible via config sidebar currently

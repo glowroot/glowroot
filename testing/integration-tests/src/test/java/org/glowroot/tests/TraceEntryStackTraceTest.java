@@ -67,14 +67,14 @@ public class TraceEntryStackTraceTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        List<String> stackTrace = entries.get(0).getStackTrace();
+        List<StackTraceElement> stackTrace = entries.get(0).getStackTrace();
         assertThat(stackTrace).isNotEmpty();
-        assertThat(stackTrace.get(0)).startsWith(Pause.class.getName() + ".pauseOneMillisecond("
-                + Pause.class.getSimpleName() + ".java:");
-        for (String element : stackTrace) {
-            assertThat(element).doesNotContain("$glowroot$");
-            // assert that element contains line number (or is a native method
-            assertThat(element).matches(".*\\.java:[0-9]+\\)|.*Native Method\\)");
+        assertThat(stackTrace.get(0).getClassName()).isEqualTo(Pause.class.getName());
+        assertThat(stackTrace.get(0).getMethodName()).isEqualTo("pauseOneMillisecond");
+        assertThat(stackTrace.get(0).getFileName())
+                .isEqualTo(Pause.class.getSimpleName() + ".java");
+        for (StackTraceElement element : stackTrace) {
+            assertThat(element.getMethodName()).doesNotContain("$glowroot$");
         }
     }
 

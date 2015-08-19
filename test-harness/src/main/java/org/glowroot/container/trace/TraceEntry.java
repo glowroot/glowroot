@@ -16,6 +16,7 @@
 package org.glowroot.container.trace;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -26,6 +27,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 
 import static org.glowroot.container.common.ObjectMappers.checkNotNullItems;
+import static org.glowroot.container.common.ObjectMappers.nullToEmpty;
 import static org.glowroot.container.common.ObjectMappers.nullToFalse;
 
 public class TraceEntry {
@@ -34,94 +36,62 @@ public class TraceEntry {
     private final long duration;
     private final boolean active;
     private final int nestingLevel;
-    // message is null for entries created via TransactionService.addErrorEntry(ErrorMessage)
-    private final @Nullable Message message;
-    private final @Nullable ErrorMessage error;
-    private final @Nullable ImmutableList<String> stackTrace;
-    private final boolean limitExceededMarker;
-    private final boolean limitExtendedMarker;
+    // messageText is null for entries created via TransactionService.addErrorEntry(ErrorMessage)
+    private final @Nullable String messageText;
+    private final Map<String, /*@Nullable*/Object> messageDetail;
+    private final @Nullable String errorMessage;
+    private final @Nullable ThrowableInfo errorThrowable;
+    private final @Nullable ImmutableList<StackTraceElement> stackTrace;
 
     private TraceEntry(long offset, long duration, boolean active, int nestingLevel,
-            @Nullable Message message, @Nullable ErrorMessage error,
-            @Nullable List<String> stackTrace, boolean limitExceededMarker,
-            boolean limitExtendedMarker) {
+            @Nullable String messageText, Map<String, /*@Nullable*/Object> messageDetail,
+            @Nullable String errorMessage, @Nullable ThrowableInfo errorThrowable,
+            @Nullable List<StackTraceElement> stackTrace) {
         this.offset = offset;
         this.duration = duration;
         this.active = active;
         this.nestingLevel = nestingLevel;
-        this.message = message;
-        this.error = error;
+        this.messageText = messageText;
+        this.messageDetail = messageDetail;
+        this.errorMessage = errorMessage;
+        this.errorThrowable = errorThrowable;
         this.stackTrace = stackTrace == null ? null : ImmutableList.copyOf(stackTrace);
-        this.limitExceededMarker = limitExceededMarker;
-        this.limitExtendedMarker = limitExtendedMarker;
     }
 
     public long getOffset() {
-        if (limitExceededMarker) {
-            throw new IllegalStateException("Limit exceeded marker has no offset,"
-                    + " check isLimitExceededMarker() first");
-        }
-        if (limitExtendedMarker) {
-            throw new IllegalStateException("Limit extended marker has no offset,"
-                    + " check isLimitExtendedMarker() first");
-        }
         return offset;
     }
 
     public long getDuration() {
-        if (limitExceededMarker) {
-            throw new IllegalStateException("Limit exceeded marker has no duration,"
-                    + " check isLimitExceededMarker() first");
-        }
-        if (limitExtendedMarker) {
-            throw new IllegalStateException("Limit extended marker has no duration,"
-                    + " check isLimitExtendedMarker() first");
-        }
         return duration;
     }
 
     public boolean isActive() {
-        if (limitExceededMarker) {
-            throw new IllegalStateException("Limit exceeded marker is neither active nor inactive,"
-                    + " check isLimitExceededMarker() first");
-        }
-        if (limitExtendedMarker) {
-            throw new IllegalStateException("Limit extended marker is neither active nor inactive,"
-                    + " check isLimitExtendedMarker() first");
-        }
         return active;
     }
 
     public int getNestingLevel() {
-        if (limitExceededMarker) {
-            throw new IllegalStateException("Limit exceeded marker has no nesting level,"
-                    + " check isLimitExceededMarker() first");
-        }
-        if (limitExtendedMarker) {
-            throw new IllegalStateException("Limit extended marker has no nesting level,"
-                    + " check isLimitExtendedMarker() first");
-        }
         return nestingLevel;
     }
 
-    public @Nullable Message getMessage() {
-        return message;
+    public @Nullable String getMessageText() {
+        return messageText;
     }
 
-    public @Nullable ErrorMessage getError() {
-        return error;
+    public Map<String, /*@Nullable*/ Object> getMessageDetail() {
+        return messageDetail;
     }
 
-    public @Nullable ImmutableList<String> getStackTrace() {
+    public @Nullable String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public @Nullable ThrowableInfo getErrorThrowable() {
+        return errorThrowable;
+    }
+
+    public @Nullable ImmutableList<StackTraceElement> getStackTrace() {
         return stackTrace;
-    }
-
-    public boolean isLimitExceededMarker() {
-        return limitExceededMarker;
-    }
-
-    public boolean isLimitExtendedMarker() {
-        return limitExtendedMarker;
     }
 
     @Override
@@ -131,11 +101,11 @@ public class TraceEntry {
                 .add("duration", duration)
                 .add("active", active)
                 .add("nestingLevel", nestingLevel)
-                .add("message", message)
-                .add("error", error)
+                .add("messageText", messageText)
+                .add("messageDetail", messageDetail)
+                .add("errorMessage", errorMessage)
+                .add("errorThrowable", errorThrowable)
                 .add("stackTrace", stackTrace)
-                .add("limitExceededMarker", limitExceededMarker)
-                .add("limitExtendedMarker", limitExtendedMarker)
                 .toString();
     }
 
@@ -145,16 +115,16 @@ public class TraceEntry {
             @JsonProperty("duration") @Nullable Long duration,
             @JsonProperty("active") @Nullable Boolean active,
             @JsonProperty("nestingLevel") @Nullable Integer nestingLevel,
-            @JsonProperty("message") @Nullable Message message,
-            @JsonProperty("error") @Nullable ErrorMessage error,
-            @JsonProperty("stackTrace") @Nullable List</*@Nullable*/String> uncheckedStackTrace,
-            @JsonProperty("limitExceededMarker") @Nullable Boolean limitExceededMarker,
-            @JsonProperty("limitExtendedMarker") @Nullable Boolean limitExtendedMarker)
+            @JsonProperty("messageText") @Nullable String messageText,
+            @JsonProperty("messageDetail") @Nullable Map<String, /*@Nullable*/Object> messageDetail,
+            @JsonProperty("errorMessage") @Nullable String errorMessage,
+            @JsonProperty("errorThrowable") @Nullable ThrowableInfo errorThrowable,
+            @JsonProperty("stackTrace") @Nullable List</*@Nullable*/StackTraceElement> uncheckedStackTrace)
                     throws JsonMappingException {
-        List<String> stackTrace = checkNotNullItems(uncheckedStackTrace, "stackTrace");
+        List<StackTraceElement> stackTrace = checkNotNullItems(uncheckedStackTrace, "stackTrace");
         return new TraceEntry(nullToZero(offset), nullToZero(duration), nullToFalse(active),
-                nullToZero(nestingLevel), message, error, stackTrace,
-                nullToFalse(limitExceededMarker), nullToFalse(limitExtendedMarker));
+                nullToZero(nestingLevel), messageText, nullToEmpty(messageDetail), errorMessage,
+                errorThrowable, stackTrace);
     }
 
     private static long nullToZero(@Nullable Long value) {

@@ -121,7 +121,7 @@ public class GaugeConfig {
     public static class MBeanAttribute {
 
         private @Nullable String name;
-        private boolean everIncreasing;
+        private boolean counter;
 
         public @Nullable String getName() {
             return name;
@@ -131,12 +131,12 @@ public class GaugeConfig {
             this.name = name;
         }
 
-        public boolean isEverIncreasing() {
-            return everIncreasing;
+        public boolean isCounter() {
+            return counter;
         }
 
-        public void setEverIncreasing(boolean everIncreasing) {
-            this.everIncreasing = everIncreasing;
+        public void setCounter(boolean counter) {
+            this.counter = counter;
         }
 
         @Override
@@ -144,33 +144,33 @@ public class GaugeConfig {
             if (obj instanceof MBeanAttribute) {
                 MBeanAttribute that = (MBeanAttribute) obj;
                 return Objects.equal(name, that.name)
-                        && Objects.equal(everIncreasing, that.everIncreasing);
+                        && Objects.equal(counter, that.counter);
             }
             return false;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hashCode(name, everIncreasing);
+            return Objects.hashCode(name, counter);
         }
 
         @Override
         public String toString() {
             return MoreObjects.toStringHelper(this)
                     .add("name", name)
-                    .add("everIncreasing", everIncreasing)
+                    .add("counter", counter)
                     .toString();
         }
 
         @JsonCreator
         static MBeanAttribute readValue(@JsonProperty("name") @Nullable String name,
-                @JsonProperty("everIncreasing") @Nullable Boolean everIncreasing)
+                @JsonProperty("counter") @Nullable Boolean counter)
                         throws JsonMappingException {
             checkRequiredProperty(name, "name");
-            checkRequiredProperty(everIncreasing, "everIncreasing");
+            checkRequiredProperty(counter, "counter");
             MBeanAttribute mbeanAttribute = new MBeanAttribute();
             mbeanAttribute.setName(name);
-            mbeanAttribute.setEverIncreasing(everIncreasing);
+            mbeanAttribute.setCounter(counter);
             return mbeanAttribute;
         }
     }

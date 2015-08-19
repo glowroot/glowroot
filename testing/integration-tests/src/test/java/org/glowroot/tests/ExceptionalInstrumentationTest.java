@@ -59,7 +59,7 @@ public class ExceptionalInstrumentationTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries.size()).isEqualTo(1);
-        assertThat(entries.get(0).getError().getMessage()).isEqualTo("This is exceptional");
+        assertThat(entries.get(0).getErrorMessage()).isEqualTo("This is exceptional");
     }
 
     public static class ShouldGenerateTraceWithErrorEntry implements AppUnderTest, TraceMarker {

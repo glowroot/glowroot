@@ -58,10 +58,10 @@ glowroot.controller('TransactionAverageCtrl', [
 
     function onRefreshData(data, query) {
       // mergedAggregate.timers is always synthetic root timer
-      var syntheticRootTimer = data.mergedAggregate.timers;
-      if (syntheticRootTimer.nestedTimers.length === 1) {
+      var syntheticRootTimer = data.mergedAggregate.syntheticRootTimer;
+      if (syntheticRootTimer.childNodes.length === 1) {
         // strip off synthetic root node
-        data.mergedAggregate.timers = syntheticRootTimer.nestedTimers[0];
+        data.mergedAggregate.rootTimer = syntheticRootTimer.childNodes[0];
       } else {
         syntheticRootTimer.name = '<multiple root nodes>';
       }
@@ -81,17 +81,17 @@ glowroot.controller('TransactionAverageCtrl', [
       function traverse(timer, nestingLevel) {
         timer.nestingLevel = nestingLevel;
         treeTimers.push(timer);
-        if (timer.nestedTimers) {
-          timer.nestedTimers.sort(function (a, b) {
+        if (timer.childNodes) {
+          timer.childNodes.sort(function (a, b) {
             return b.totalMicros - a.totalMicros;
           });
-          $.each(timer.nestedTimers, function (index, nestedTimer) {
+          $.each(timer.childNodes, function (index, nestedTimer) {
             traverse(nestedTimer, nestingLevel + 1);
           });
         }
       }
 
-      traverse($scope.mergedAggregate.timers, 0);
+      traverse($scope.mergedAggregate.rootTimer, 0);
 
       $scope.treeTimers = treeTimers;
     }
@@ -116,14 +116,14 @@ glowroot.controller('TransactionAverageCtrl', [
           flattenedTimer.totalMicros += timer.totalMicros;
           flattenedTimer.count += timer.count;
         }
-        if (timer.nestedTimers) {
-          $.each(timer.nestedTimers, function (index, nestedTimer) {
+        if (timer.childNodes) {
+          $.each(timer.childNodes, function (index, nestedTimer) {
             traverse(nestedTimer, parentTimerNames.concat(timer));
           });
         }
       }
 
-      traverse($scope.mergedAggregate.timers, []);
+      traverse($scope.mergedAggregate.rootTimer, []);
 
       flattenedTimers.sort(function (a, b) {
         return b.totalMicros - a.totalMicros;

@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
-import org.glowroot.common.SpyingLogbackFilter;
+import org.glowroot.agent.util.SpyingLogbackFilter;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Threads;
 import org.glowroot.container.impl.SocketCommander.CommandWrapper;

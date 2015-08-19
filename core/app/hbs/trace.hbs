@@ -81,7 +81,7 @@
     </tr>
     </thead>
     <tbody>
-    {{#eachTimerFlattenedOrdered timers}}
+    {{#eachTimerFlattenedOrdered rootTimer}}
       <tr class="align-top">
         <td style="text-align: left;">
           <div style="margin-left: {{timerIndent .}}em;">
@@ -110,7 +110,7 @@
     </tr>
     </thead>
     <tbody>
-    {{#eachTimerOrdered timers}}
+    {{#eachTimerOrdered rootTimer}}
       <tr class="align-top">
         <td style="text-align: left;">
           <div style="margin-left: {{timerIndent .}}em;">
@@ -131,42 +131,42 @@
   <div class="gt-bold">
     JVM thread metrics
   </div>
-  {{#ifExists threadCpuTime}}
+  {{#ifNotNA threadCpuTime}}
     <div class="gt-indent2">
       <span>CPU time:</span>
       {{nanosToMillis threadCpuTime}} milliseconds
     </div>
-  {{/ifExists}}
-  {{#ifExists threadBlockedTime}}
+  {{/ifNotNA}}
+  {{#ifNotNA threadBlockedTime}}
     <div class="gt-indent2">
       <span>Blocked time:</span>
       {{nanosToMillis threadBlockedTime}} milliseconds
     </div>
-  {{/ifExists}}
-  {{#ifExists threadWaitedTime}}
+  {{/ifNotNA}}
+  {{#ifNotNA threadWaitedTime}}
     <div class="gt-indent2">
       <span>Waited time:</span>
       {{nanosToMillis threadWaitedTime}} milliseconds
     </div>
-  {{/ifExists}}
-  {{#ifExists threadAllocatedBytes}}
+  {{/ifNotNA}}
+  {{#ifNotNA threadAllocatedBytes}}
     <div class="gt-indent2">
       <span>Allocated memory:</span>
       {{formatAllocatedBytes threadAllocatedBytes}}
     </div>
-  {{/ifExists}}
+  {{/ifNotNA}}
 {{/ifAnyThreadInfo}}
-{{#if gcInfos}}
+{{#ifNonEmptyObject gcActivity}}
   <div class="gt-bold">
-    GC info
+    GC activity
   </div>
-  {{#eachGcInfoOrdered gcInfos}}
+  {{#eachGcActivityOrdered gcActivity}}
     <div class="gt-indent2">
-      <span>{{name}}:</span>
+      <span>{{key}}:</span>
       {{collectionTime}} milliseconds ({{collectionCount}} collection{{#ifNotOne collectionCount}}s{{/ifNotOne}})
     </div>
-  {{/eachGcInfoOrdered}}
-{{/if}}
+  {{/eachGcActivityOrdered}}
+{{/ifNonEmptyObject}}
 <br>
 {{#ifExistenceYes entriesExistence}}
   <div>

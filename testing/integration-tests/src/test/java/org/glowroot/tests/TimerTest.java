@@ -60,7 +60,7 @@ public class TimerTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithTimers.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getRootTimer().getNestedTimers()).isEmpty();
+        assertThat(trace.getRootTimer().getChildNodes()).isEmpty();
         assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
     }
 
@@ -71,7 +71,7 @@ public class TimerTest {
         container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSelfNestedTimer.class);
         // then
         Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getRootTimer().getNestedTimers()).isEmpty();
+        assertThat(trace.getRootTimer().getChildNodes()).isEmpty();
         assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
         assertThat(trace.getRootTimer().getCount()).isEqualTo(1);
     }
@@ -91,7 +91,7 @@ public class TimerTest {
         // then
         Trace trace = container.getTraceService().getActiveTrace(5, SECONDS);
         assertThat(trace).isNotNull();
-        assertThat(trace.getRootTimer().getNestedTimers()).isEmpty();
+        assertThat(trace.getRootTimer().getChildNodes()).isEmpty();
         assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
         assertThat(trace.getRootTimer().getCount()).isEqualTo(1);
         assertThat(trace.getRootTimer().isActive()).isTrue();

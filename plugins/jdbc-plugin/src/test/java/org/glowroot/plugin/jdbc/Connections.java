@@ -38,7 +38,7 @@ public class Connections {
         }
     }
 
-    static enum ConnectionType {
+    enum ConnectionType {
         HSQLDB, H2, COMMONS_DBCP_WRAPPED, TOMCAT_JDBC_POOL_WRAPPED, POSTGRES, ORACLE, SQLSERVER
     }
 

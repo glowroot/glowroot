@@ -46,7 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.Agent;
-import org.glowroot.common.MessageCount;
+import org.glowroot.agent.util.SpyingLogbackFilter.MessageCount;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;

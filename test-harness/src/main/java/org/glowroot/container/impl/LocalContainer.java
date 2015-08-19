@@ -31,8 +31,12 @@ import com.google.common.io.Files;
 
 import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
-import org.glowroot.common.MessageCount;
-import org.glowroot.common.SpyingLogbackFilter;
+import org.glowroot.agent.AgentModule;
+import org.glowroot.agent.impl.AdviceCache;
+import org.glowroot.agent.util.SpyingLogbackFilter;
+import org.glowroot.agent.util.SpyingLogbackFilter.MessageCount;
+import org.glowroot.agent.weaving.Advice;
+import org.glowroot.agent.weaving.IsolatedWeavingClassLoader;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.AppUnderTestServices;
 import org.glowroot.container.Container;
@@ -43,9 +47,6 @@ import org.glowroot.container.common.HttpClient;
 import org.glowroot.container.config.ConfigService;
 import org.glowroot.container.config.ConfigService.GetUiPortCommand;
 import org.glowroot.container.trace.TraceService;
-import org.glowroot.transaction.AdviceCache;
-import org.glowroot.weaving.Advice;
-import org.glowroot.weaving.IsolatedWeavingClassLoader;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -95,15 +96,10 @@ public class LocalContainer implements Container {
         List<String> excludePackages = ImmutableList.of(
                 "org.glowroot.api",
                 "org.glowroot.plugin.api",
-                "org.glowroot.advicegen",
-                "org.glowroot.collector",
+                "org.glowroot.agent",
                 "org.glowroot.common",
-                "org.glowroot.config",
-                "org.glowroot.jvm",
                 "org.glowroot.local",
                 "org.glowroot.shaded",
-                "org.glowroot.transaction",
-                "org.glowroot.weaving",
                 "com.google.common");
         IsolatedClassLoader midLoader = new IsolatedClassLoader(bridgeClasses, excludePackages);
         ClassLoader priorContextClassLoader = Thread.currentThread().getContextClassLoader();
@@ -120,16 +116,17 @@ public class LocalContainer implements Container {
         checkNotNull(glowrootModule);
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         loader.setParentClassLoader(midLoader);
-        AdviceCache adviceCache = glowrootModule.getTransactionModule().getAdviceCache();
+        AgentModule agentModule = glowrootModule.getAgentModule();
+        checkNotNull(agentModule);
+        AdviceCache adviceCache = agentModule.getAdviceCache();
         loader.setShimTypes(adviceCache.getShimTypes());
         loader.setMixinTypes(adviceCache.getMixinTypes());
         List<Advice> advisors = Lists.newArrayList();
         advisors.addAll(adviceCache.getAdvisors());
         loader.setAdvisors(advisors);
-        loader.setWeavingTimerService(
-                glowrootModule.getTransactionModule().getWeavingTimerService());
-        loader.setTimerWrapperMethods(glowrootModule.getConfigModule().getConfigService()
-                .getAdvancedConfig().timerWrapperMethods());
+        loader.setWeavingTimerService(agentModule.getWeavingTimerService());
+        loader.setTimerWrapperMethods(
+                agentModule.getConfigService().getAdvancedConfig().timerWrapperMethods());
         loader.addBridgeClasses(bridgeClasses);
         loader.addExcludePackages(excludePackages);
         isolatedWeavingClassLoader = loader.build();

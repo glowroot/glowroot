@@ -74,10 +74,10 @@ public class BatchTest {
         assertThat(query.getTotalRows()).isEqualTo(5);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage().getText()).isEqualTo("jdbc execution: 3 x"
+        assertThat(entries.get(0).getMessageText()).isEqualTo("jdbc execution: 3 x"
                 + " insert into employee (name) values (?) ['huckle'] ['sally'] ['sally']"
                 + " => 3 rows");
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
+        assertThat(entries.get(1).getMessageText()).isEqualTo("jdbc execution: 2 x"
                 + " insert into employee (name) values (?) ['lowly'] ['pig will'] => 2 rows");
     }
 
@@ -97,9 +97,9 @@ public class BatchTest {
         assertThat(query.getTotalRows()).isEqualTo(5);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage().getText()).isEqualTo(
+        assertThat(entries.get(0).getMessageText()).isEqualTo(
                 "jdbc execution: 3 x" + " insert into employee (name) values (?) => 3 rows");
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo(
+        assertThat(entries.get(1).getMessageText()).isEqualTo(
                 "jdbc execution: 2 x" + " insert into employee (name) values (?) => 2 rows");
     }
 
@@ -118,9 +118,9 @@ public class BatchTest {
         assertThat(query.getTotalRows()).isEqualTo(4);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
+        assertThat(entries.get(0).getMessageText()).isEqualTo("jdbc execution: 2 x"
                 + " insert into employee (name) values (?) ['huckle'] ['sally'] => 2 rows");
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo("jdbc execution: 2 x"
+        assertThat(entries.get(1).getMessageText()).isEqualTo("jdbc execution: 2 x"
                 + " insert into employee (name) values (?) ['lowly'] ['pig will'] => 2 rows");
     }
 
@@ -140,9 +140,9 @@ public class BatchTest {
         assertThat(query.getTotalRows()).isEqualTo(4);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage().getText()).isEqualTo(
+        assertThat(entries.get(0).getMessageText()).isEqualTo(
                 "jdbc execution: 2 x" + " insert into employee (name) values (?) => 2 rows");
-        assertThat(entries.get(1).getMessage().getText()).isEqualTo(
+        assertThat(entries.get(1).getMessageText()).isEqualTo(
                 "jdbc execution: 2 x" + " insert into employee (name) values (?) => 2 rows");
     }
 
@@ -161,10 +161,10 @@ public class BatchTest {
         assertThat(query.getTotalRows()).isEqualTo(4);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage().getText())
+        assertThat(entries.get(0).getMessageText())
                 .isEqualTo("jdbc execution:" + " insert into employee (name) values ('huckle'),"
                         + " insert into employee (name) values ('sally') => 2 rows");
-        assertThat(entries.get(1).getMessage().getText())
+        assertThat(entries.get(1).getMessageText())
                 .isEqualTo("jdbc execution:" + " insert into employee (name) values ('lowly'),"
                         + " insert into employee (name) values ('pig will') => 2 rows");
     }
@@ -184,7 +184,7 @@ public class BatchTest {
         assertThat(query.getTotalRows()).isEqualTo(1);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText())
+        assertThat(entries.get(0).getMessageText())
                 .isEqualTo("jdbc execution: insert into employee (name) values ('1') => 1 row");
     }
 
@@ -203,7 +203,7 @@ public class BatchTest {
         assertThat(query.getTotalRows()).isEqualTo(0);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText())
+        assertThat(entries.get(0).getMessageText())
                 .isEqualTo("jdbc execution: (empty batch) => 0 rows");
     }
 
@@ -222,10 +222,10 @@ public class BatchTest {
         assertThat(query.getTotalRows()).isEqualTo(4);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage().getText())
+        assertThat(entries.get(0).getMessageText())
                 .isEqualTo("jdbc execution:" + " insert into employee (name) values ('huckle'),"
                         + " insert into employee (name) values ('sally') => 2 rows");
-        assertThat(entries.get(1).getMessage().getText())
+        assertThat(entries.get(1).getMessageText())
                 .isEqualTo("jdbc execution:" + " insert into employee (name) values ('lowly'),"
                         + " insert into employee (name) values ('pig will') => 2 rows");
     }

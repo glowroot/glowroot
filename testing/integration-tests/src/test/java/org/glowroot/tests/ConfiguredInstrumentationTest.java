@@ -83,11 +83,11 @@ public class ConfiguredInstrumentationTest {
         assertThat(trace.getTransactionType()).isEqualTo("test override type");
         assertThat(trace.getTransactionName()).isEqualTo("test override name");
         assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTimer().getNestedTimerNames()).containsOnly("execute one");
-        assertThat(trace.getRootTimer().getNestedTimers().get(0).getNestedTimerNames())
+        assertThat(trace.getRootTimer().getChildTimerNames()).containsOnly("execute one");
+        assertThat(trace.getRootTimer().getChildNodes().get(0).getChildTimerNames())
                 .containsOnly("execute one timer only");
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessage().getText()).isEqualTo("execute1() => void");
+        assertThat(entry.getMessageText()).isEqualTo("execute1() => void");
         assertThat(entry.getStackTrace()).isNotNull();
     }
 
@@ -99,10 +99,10 @@ public class ConfiguredInstrumentationTest {
         // then
         Trace trace = container.getTraceService().getLastTrace();
         assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTimer().getNestedTimerNames()).containsOnly("execute with return");
+        assertThat(trace.getRootTimer().getChildTimerNames()).containsOnly("execute with return");
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText()).isEqualTo("executeWithReturn() => xyz");
+        assertThat(entries.get(0).getMessageText()).isEqualTo("executeWithReturn() => xyz");
     }
 
     @Test
@@ -116,7 +116,7 @@ public class ConfiguredInstrumentationTest {
         assertThat(trace.getTransactionType()).isEqualTo("Pointcut config test");
         assertThat(trace.getTransactionName()).isEqualTo("Misc / executeWithArgs");
         assertThat(trace.getRootTimer().getName()).isEqualTo("execute with args");
-        assertThat(trace.getRootTimer().getNestedTimers()).isEmpty();
+        assertThat(trace.getRootTimer().getChildNodes()).isEmpty();
         assertThat(trace.getEntryCount()).isZero();
     }
 

@@ -17,9 +17,10 @@ package org.glowroot.container;
 
 import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
-import org.glowroot.config.ConfigModule;
-import org.glowroot.config.ConfigService;
-import org.glowroot.config.PluginConfig;
+import org.glowroot.common.config.ImmutablePluginConfig;
+import org.glowroot.common.config.PluginConfig;
+import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.local.LocalModule;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -32,19 +33,20 @@ public class AppUnderTestServices {
     private AppUnderTestServices() {}
 
     public void setPluginEnabled(String pluginId, boolean enabled) throws Exception {
-        ConfigService configService = getConfigService();
-        PluginConfig config = configService.getPluginConfig(pluginId);
+        ConfigRepository configRepository = getConfigRepository();
+        PluginConfig config = configRepository.getPluginConfig(pluginId);
         if (config == null) {
             throw new IllegalStateException("Plugin not found for pluginId: " + pluginId);
         }
-        PluginConfig updatedConfig = config.withEnabled(enabled);
-        configService.updatePluginConfig(updatedConfig, config.version());
+        PluginConfig updatedConfig =
+                ImmutablePluginConfig.builder().copyFrom(config).enabled(enabled).build();
+        configRepository.updatePluginConfig(updatedConfig, config.version());
     }
 
-    private static ConfigService getConfigService() {
+    private static ConfigRepository getConfigRepository() {
         GlowrootModule glowrootModule = MainEntryPoint.getGlowrootModule();
         checkNotNull(glowrootModule);
-        ConfigModule configModule = glowrootModule.getConfigModule();
-        return configModule.getConfigService();
+        LocalModule storageModule = glowrootModule.getLocalModule();
+        return storageModule.getConfigRepository();
     }
 }

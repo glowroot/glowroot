@@ -47,7 +47,7 @@ public class BadPluginIdTest {
     @Test
     public void shouldNotReadTrace() throws Exception {
         // given
-        container.addExpectedLogMessage("org.glowroot.transaction.ConfigServiceImpl",
+        container.addExpectedLogMessage("org.glowroot.agent.impl.ConfigServiceImpl",
                 "unexpected plugin id: not-to-be-found (available plugin ids are"
                         + " glowroot-integration-tests, glowroot-test-container)");
         // when

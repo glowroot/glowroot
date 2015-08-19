@@ -30,14 +30,15 @@ import static org.glowroot.container.common.ObjectMappers.orEmpty;
 
 public class ProfileNode {
 
-    private final @Nullable String stackTraceElement;
+    private final @Nullable StackTraceElement stackTraceElement;
     private final @Nullable String leafThreadState;
     private final int sampleCount;
     private final ImmutableList<String> timerNames;
     private final ImmutableList<ProfileNode> childNodes;
 
-    private ProfileNode(@Nullable String stackTraceElement, @Nullable String leafThreadState,
-            int sampleCount, List<String> timerNames, List<ProfileNode> childNodes) {
+    private ProfileNode(@Nullable StackTraceElement stackTraceElement,
+            @Nullable String leafThreadState, int sampleCount, List<String> timerNames,
+            List<ProfileNode> childNodes) {
         this.stackTraceElement = stackTraceElement;
         this.leafThreadState = leafThreadState;
         this.sampleCount = sampleCount;
@@ -46,7 +47,7 @@ public class ProfileNode {
     }
 
     // null for synthetic root only
-    public @Nullable String getStackTraceElement() {
+    public @Nullable StackTraceElement getStackTraceElement() {
         return stackTraceElement;
     }
 
@@ -79,7 +80,7 @@ public class ProfileNode {
 
     @JsonCreator
     static ProfileNode readValue(
-            @JsonProperty("stackTraceElement") @Nullable String stackTraceElement,
+            @JsonProperty("stackTraceElement") @Nullable StackTraceElement stackTraceElement,
             @JsonProperty("leafThreadState") @Nullable String leafThreadState,
             @JsonProperty("sampleCount") @Nullable Integer sampleCount,
             @JsonProperty("timerNames") @Nullable List</*@Nullable*/String> uncheckedTimerNames,

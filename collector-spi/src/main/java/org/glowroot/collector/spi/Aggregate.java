@@ -26,9 +26,9 @@ public interface Aggregate {
 
     long totalMicros();
 
-    long errorCount();
-
     long transactionCount();
+
+    long errorCount();
 
     long totalCpuMicros(); // -1 means N/A
 

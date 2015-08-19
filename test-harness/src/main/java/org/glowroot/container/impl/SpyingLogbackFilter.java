@@ -20,10 +20,10 @@ package org.glowroot.container.impl;
 public class SpyingLogbackFilter {
 
     public static boolean active() {
-        return org.glowroot.common.SpyingLogbackFilter.active();
+        return org.glowroot.agent.util.SpyingLogbackFilter.active();
     }
 
     public static void clearMessages() {
-        org.glowroot.common.SpyingLogbackFilter.clearMessages();
+        org.glowroot.agent.util.SpyingLogbackFilter.clearMessages();
     }
 }

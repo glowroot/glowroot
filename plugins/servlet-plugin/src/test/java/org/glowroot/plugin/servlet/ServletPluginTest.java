@@ -182,11 +182,10 @@ public class ServletPluginTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getError()).isNotNull();
-        assertThat(entry.getError().getMessage()).isEqualTo("sendError, HTTP status code 500");
-        assertThat(entry.getError().getThrowable()).isNull();
+        assertThat(entry.getErrorMessage()).isEqualTo("sendError, HTTP status code 500");
+        assertThat(entry.getErrorThrowable()).isNull();
         assertThat(entry.getStackTrace()).isNotNull();
-        assertThat(entry.getStackTrace().get(0)).contains(".sendError(");
+        assertThat(entry.getStackTrace().get(0).getMethodName()).isEqualTo("sendError");
     }
 
     @Test
@@ -201,11 +200,10 @@ public class ServletPluginTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getError()).isNotNull();
-        assertThat(entry.getError().getMessage()).isEqualTo("setStatus, HTTP status code 500");
-        assertThat(entry.getError().getThrowable()).isNull();
+        assertThat(entry.getErrorMessage()).isEqualTo("setStatus, HTTP status code 500");
+        assertThat(entry.getErrorThrowable()).isNull();
         assertThat(entry.getStackTrace()).isNotNull();
-        assertThat(entry.getStackTrace().get(0)).contains(".setStatus(");
+        assertThat(entry.getStackTrace().get(0).getMethodName()).isEqualTo("setStatus");
     }
 
     @Test

@@ -390,7 +390,7 @@ public class ConfigTest {
         config.setMaxStackTraceSamplesPerTransaction(
                 config.getMaxStackTraceSamplesPerTransaction() + 10000);
         config.setCaptureThreadInfo(!config.isCaptureThreadInfo());
-        config.setCaptureGcInfo(!config.isCaptureGcInfo());
+        config.setCaptureGcActivity(!config.isCaptureGcActivity());
         config.setMBeanGaugeNotFoundDelaySeconds(
                 config.getMBeanGaugeNotFoundDelaySeconds() + 100000);
         config.setInternalQueryTimeoutSeconds(config.getInternalQueryTimeoutSeconds() + 1000000);
@@ -493,7 +493,7 @@ public class ConfigTest {
         mbeanAttribute1.setName("LoadedClassCount");
         MBeanAttribute mbeanAttribute2 = new MBeanAttribute();
         mbeanAttribute2.setName("TotalLoadedClassCount");
-        mbeanAttribute2.setEverIncreasing(true);
+        mbeanAttribute2.setCounter(true);
         config.setMBeanAttributes(Lists.newArrayList(mbeanAttribute1, mbeanAttribute2));
         return config;
     }

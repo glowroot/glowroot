@@ -59,7 +59,7 @@ public class ApacheHttpClient3xPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText())
+        assertThat(entries.get(0).getMessageText())
                 .isEqualTo("http client request: GET http://www.example.com/hello1");
     }
 
@@ -69,7 +69,7 @@ public class ApacheHttpClient3xPluginTest {
         Trace trace = container.getTraceService().getLastTrace();
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText())
+        assertThat(entries.get(0).getMessageText())
                 .isEqualTo("http client request: POST http://www.example.com/hello3");
     }
 

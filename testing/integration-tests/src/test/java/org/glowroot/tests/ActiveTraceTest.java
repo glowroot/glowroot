@@ -106,7 +106,7 @@ public class ActiveTraceTest {
             stopwatch = Stopwatch.createStarted();
             while (stopwatch.elapsed(SECONDS) < 5) {
                 trace = container.getTraceService().getActiveTrace(0, MILLISECONDS);
-                if (!trace.getRootTimer().getNestedTimers().isEmpty()) {
+                if (!trace.getRootTimer().getChildNodes().isEmpty()) {
                     break;
                 }
                 Thread.sleep(10);

@@ -35,7 +35,7 @@ public class AdvancedConfig {
     private int maxTraceEntriesPerTransaction;
     private int maxStackTraceSamplesPerTransaction;
     private boolean captureThreadInfo;
-    private boolean captureGcInfo;
+    private boolean captureGcActivity;
     private int mbeanGaugeNotFoundDelaySeconds;
     private int internalQueryTimeoutSeconds;
 
@@ -112,12 +112,12 @@ public class AdvancedConfig {
         this.captureThreadInfo = captureThreadInfo;
     }
 
-    public boolean isCaptureGcInfo() {
-        return captureGcInfo;
+    public boolean isCaptureGcActivity() {
+        return captureGcActivity;
     }
 
-    public void setCaptureGcInfo(boolean captureGcInfo) {
-        this.captureGcInfo = captureGcInfo;
+    public void setCaptureGcActivity(boolean captureGcActivity) {
+        this.captureGcActivity = captureGcActivity;
     }
 
     public int getMBeanGaugeNotFoundDelaySeconds() {
@@ -160,7 +160,7 @@ public class AdvancedConfig {
                     && Objects.equal(maxStackTraceSamplesPerTransaction,
                             that.maxStackTraceSamplesPerTransaction)
                     && Objects.equal(captureThreadInfo, that.captureThreadInfo)
-                    && Objects.equal(captureGcInfo, that.captureGcInfo)
+                    && Objects.equal(captureGcActivity, that.captureGcActivity)
                     && Objects.equal(mbeanGaugeNotFoundDelaySeconds,
                             that.mbeanGaugeNotFoundDelaySeconds)
                     && Objects.equal(internalQueryTimeoutSeconds, that.internalQueryTimeoutSeconds);
@@ -176,7 +176,7 @@ public class AdvancedConfig {
         return Objects.hashCode(timerWrapperMethods, weavingTimer,
                 immediatePartialStoreThresholdSeconds, maxAggregateTransactionsPerTransactionType,
                 maxAggregateQueriesPerQueryType, maxTraceEntriesPerTransaction,
-                maxStackTraceSamplesPerTransaction, captureThreadInfo, captureGcInfo,
+                maxStackTraceSamplesPerTransaction, captureThreadInfo, captureGcActivity,
                 mbeanGaugeNotFoundDelaySeconds, internalQueryTimeoutSeconds);
     }
 
@@ -193,7 +193,7 @@ public class AdvancedConfig {
                 .add("maxTraceEntriesPerTransaction", maxTraceEntriesPerTransaction)
                 .add("maxStackTraceSamplesPerTransaction", maxStackTraceSamplesPerTransaction)
                 .add("captureThreadInfo", captureThreadInfo)
-                .add("captureGcInfo", captureGcInfo)
+                .add("captureGcActivity", captureGcActivity)
                 .add("mbeanGaugeNotFoundDelaySeconds", mbeanGaugeNotFoundDelaySeconds)
                 .add("internalQueryTimeoutSeconds", internalQueryTimeoutSeconds)
                 .add("version", version)
@@ -210,7 +210,7 @@ public class AdvancedConfig {
             @JsonProperty("maxTraceEntriesPerTransaction") @Nullable Integer maxTraceEntriesPerTransaction,
             @JsonProperty("maxStackTraceSamplesPerTransaction") @Nullable Integer maxStackTraceSamplesPerTransaction,
             @JsonProperty("captureThreadInfo") @Nullable Boolean captureThreadInfo,
-            @JsonProperty("captureGcInfo") @Nullable Boolean captureGcInfo,
+            @JsonProperty("captureGcActivity") @Nullable Boolean captureGcActivity,
             @JsonProperty("mbeanGaugeNotFoundDelaySeconds") @Nullable Integer mbeanGaugeNotFoundDelaySeconds,
             @JsonProperty("internalQueryTimeoutSeconds") @Nullable Integer internalQueryTimeoutSeconds,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
@@ -225,7 +225,7 @@ public class AdvancedConfig {
         checkRequiredProperty(maxStackTraceSamplesPerTransaction,
                 "maxStackTraceSamplesPerTransaction");
         checkRequiredProperty(captureThreadInfo, "captureThreadInfo");
-        checkRequiredProperty(captureGcInfo, "captureGcInfo");
+        checkRequiredProperty(captureGcActivity, "captureGcActivity");
         checkRequiredProperty(mbeanGaugeNotFoundDelaySeconds, "mbeanGaugeNotFoundDelaySeconds");
         checkRequiredProperty(internalQueryTimeoutSeconds, "internalQueryTimeoutSeconds");
         checkRequiredProperty(version, "version");
@@ -239,7 +239,7 @@ public class AdvancedConfig {
         config.setMaxTraceEntriesPerTransaction(maxTraceEntriesPerTransaction);
         config.setMaxStackTraceSamplesPerTransaction(maxStackTraceSamplesPerTransaction);
         config.setCaptureThreadInfo(captureThreadInfo);
-        config.setCaptureGcInfo(captureGcInfo);
+        config.setCaptureGcActivity(captureGcActivity);
         config.setMBeanGaugeNotFoundDelaySeconds(mbeanGaugeNotFoundDelaySeconds);
         config.setInternalQueryTimeoutSeconds(internalQueryTimeoutSeconds);
         return config;

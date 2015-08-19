@@ -27,7 +27,7 @@ import com.google.common.reflect.Reflection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.ClassNames;
+import org.glowroot.agent.weaving.ClassNames;
 import org.glowroot.plugin.api.Agent;
 
 public class IsolatedClassLoader extends ClassLoader {

@@ -68,9 +68,9 @@ public class ErrorCaptureTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getErrorMessage()).isNotNull();
         assertThat(entries).hasSize(3);
-        assertThat(entries.get(0).getError()).isNull();
-        assertThat(entries.get(1).getError()).isNull();
-        assertThat(entries.get(2).getError()).isNull();
+        assertThat(entries.get(0).getErrorMessage()).isNull();
+        assertThat(entries.get(1).getErrorMessage()).isNull();
+        assertThat(entries.get(2).getErrorMessage()).isNull();
     }
 
     @Test
@@ -83,10 +83,12 @@ public class ErrorCaptureTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getErrorMessage()).isNull();
         assertThat(entries).hasSize(2);
-        assertThat(entries.get(1).getError()).isNotNull();
-        List<String> stackTrace = entries.get(1).getStackTrace();
-        assertThat(stackTrace.get(0))
-                .isEqualTo(LogError.class.getName() + ".addNestedErrorEntry(LogError.java)");
+        assertThat(entries.get(1).getErrorMessage()).isNotNull();
+        List<StackTraceElement> stackTrace = entries.get(1).getStackTrace();
+        assertThat(stackTrace.get(0).getClassName()).isEqualTo(LogError.class.getName());
+        assertThat(stackTrace.get(0).getMethodName()).isEqualTo("addNestedErrorEntry");
+        assertThat(stackTrace.get(0).getFileName())
+                .isEqualTo(LogError.class.getSimpleName() + ".java");
     }
 
     @Test
@@ -100,30 +102,30 @@ public class ErrorCaptureTest {
         assertThat(trace.getErrorMessage()).isNull();
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
-        assertThat(entry.getError()).isNotNull();
-        assertThat(entry.getMessage().getText()).isEqualTo("ERROR -- abc");
-        ThrowableInfo throwable = entry.getError().getThrowable();
+        assertThat(entry.getErrorMessage()).isNotNull();
+        assertThat(entry.getMessageText()).isEqualTo("ERROR -- abc");
+        ThrowableInfo throwable = entry.getErrorThrowable();
         assertThat(throwable.getDisplay()).isEqualTo(
                 "java.lang.IllegalStateException: java.lang.IllegalArgumentException: Cause 3");
-        assertThat(throwable.getStackTrace().get(0))
+        assertThat(throwable.getStackTrace().get(0).toString())
                 .startsWith(LogCauseAdvice.class.getName() + ".onAfter(");
         assertThat(throwable.getFramesInCommonWithCause()).isZero();
         ThrowableInfo cause = throwable.getCause();
         assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalArgumentException: Cause 3");
-        assertThat(cause.getStackTrace().get(0))
+        assertThat(cause.getStackTrace().get(0).toString())
                 .startsWith(LogCauseAdvice.class.getName() + ".onAfter(");
         assertThat(cause.getFramesInCommonWithCause()).isGreaterThan(0);
         Set<Integer> causeLineNumbers = Sets.newHashSet();
         causeLineNumbers.add(getFirstLineNumber(cause));
         cause = cause.getCause();
         assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalStateException: Cause 2");
-        assertThat(cause.getStackTrace().get(0))
+        assertThat(cause.getStackTrace().get(0).toString())
                 .startsWith(LogCauseAdvice.class.getName() + ".onAfter(");
         assertThat(cause.getFramesInCommonWithCause()).isGreaterThan(0);
         causeLineNumbers.add(getFirstLineNumber(cause));
         cause = cause.getCause();
         assertThat(cause.getDisplay()).isEqualTo("java.lang.NullPointerException: Cause 1");
-        assertThat(cause.getStackTrace().get(0))
+        assertThat(cause.getStackTrace().get(0).toString())
                 .startsWith(LogCauseAdvice.class.getName() + ".onAfter(");
         assertThat(cause.getFramesInCommonWithCause()).isGreaterThan(0);
         causeLineNumbers.add(getFirstLineNumber(cause));
@@ -141,18 +143,15 @@ public class ErrorCaptureTest {
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(trace.getErrorMessage()).isNull();
         assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessage().getText())
-                .isEqualTo("outer entry to test nesting level");
+        assertThat(entries.get(0).getMessageText()).isEqualTo("outer entry to test nesting level");
         assertThat(entries.get(0).getNestingLevel()).isEqualTo(0);
-        assertThat(entries.get(1).getError().getMessage())
+        assertThat(entries.get(1).getErrorMessage())
                 .isEqualTo("test add nested error entry message");
         assertThat(entries.get(1).getNestingLevel()).isEqualTo(1);
     }
 
     private static int getFirstLineNumber(ThrowableInfo cause) {
-        String element = cause.getStackTrace().get(0);
-        return Integer
-                .parseInt(element.substring(element.lastIndexOf(':') + 1, element.length() - 1));
+        return cause.getStackTrace().get(0).getLineNumber();
     }
 
     public static class ShouldCaptureError implements AppUnderTest {

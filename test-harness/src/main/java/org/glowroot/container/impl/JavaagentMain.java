@@ -27,7 +27,9 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
 import org.glowroot.Viewer;
-import org.glowroot.config.TransactionConfig;
+import org.glowroot.common.config.ImmutableTransactionConfig;
+import org.glowroot.common.config.TransactionConfig;
+import org.glowroot.common.repo.ConfigRepository;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -68,14 +70,14 @@ public class JavaagentMain {
             // failed to start, e.g. DataSourceLockTest
             return;
         }
-        org.glowroot.config.ConfigService configService =
-                glowrootModule.getConfigModule().getConfigService();
-        TransactionConfig config = configService.getTransactionConfig();
+        ConfigRepository configRepository = glowrootModule.getLocalModule().getConfigRepository();
+        TransactionConfig config = configRepository.getTransactionConfig();
         // conditional check is needed to prevent config file timestamp update when testing
         // ConfigFileLastModifiedTest.shouldNotUpdateFileOnStartupIfNoChanges()
         if (config.slowThresholdMillis() != 0) {
-            TransactionConfig updatedConfig = config.withSlowThresholdMillis(0);
-            configService.updateTransactionConfig(updatedConfig, config.version());
+            TransactionConfig updatedConfig = ImmutableTransactionConfig.builder().copyFrom(config)
+                    .slowThresholdMillis(0).build();
+            configRepository.updateTransactionConfig(updatedConfig, config.version());
         }
     }
 

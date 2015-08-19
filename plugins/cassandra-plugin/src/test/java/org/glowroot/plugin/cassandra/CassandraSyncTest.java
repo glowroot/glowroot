@@ -69,7 +69,7 @@ public class CassandraSyncTest {
         assertThat(query.getTotalRows()).isEqualTo(10);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText())
+        assertThat(entries.get(0).getMessageText())
                 .isEqualTo("cql execution: SELECT * FROM test.users => 10 rows");
     }
 
@@ -85,7 +85,7 @@ public class CassandraSyncTest {
         assertThat(query.getTotalRows()).isEqualTo(10);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText())
+        assertThat(entries.get(0).getMessageText())
                 .isEqualTo("cql execution: SELECT * FROM test.users => 10 rows");
     }
 
@@ -102,7 +102,7 @@ public class CassandraSyncTest {
         assertThat(query.getTotalRows()).isEqualTo(0);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText()).isEqualTo(
+        assertThat(entries.get(0).getMessageText()).isEqualTo(
                 "cql execution: INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
     }
 
@@ -118,7 +118,7 @@ public class CassandraSyncTest {
         assertThat(query.getTotalRows()).isEqualTo(0);
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessage().getText()).isEqualTo("cql execution:"
+        assertThat(entries.get(0).getMessageText()).isEqualTo("cql execution:"
                 + " INSERT INTO test.users (id,  fname, lname) VALUES (100, 'f100', 'l100'),"
                 + " INSERT INTO test.users (id,  fname, lname) VALUES (101, 'f101', 'l101'),"
                 + " 10 x INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?),"

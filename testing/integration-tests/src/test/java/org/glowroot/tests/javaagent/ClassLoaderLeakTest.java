@@ -19,8 +19,8 @@ import java.io.IOException;
 import java.util.List;
 
 import com.google.common.base.StandardSystemProperty;
+import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
-import org.assertj.core.util.Lists;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

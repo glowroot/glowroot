@@ -78,7 +78,7 @@ public class PreparedStatementTest {
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
         assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessage().getText()).isEqualTo(
+        assertThat(entry.getMessageText()).isEqualTo(
                 "jdbc execution: select * from employee where name like ? ['john%'] => 1 row");
     }
 
@@ -98,7 +98,7 @@ public class PreparedStatementTest {
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
         assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessage().getText()).isEqualTo(
+        assertThat(entry.getMessageText()).isEqualTo(
                 "jdbc execution: select * from employee where name like ? ['john%'] => 1 row");
     }
 
@@ -118,7 +118,7 @@ public class PreparedStatementTest {
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
         assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessage().getText())
+        assertThat(entry.getMessageText())
                 .isEqualTo("jdbc execution: update employee set name = ? ['nobody'] => 3 rows");
     }
 
@@ -138,7 +138,7 @@ public class PreparedStatementTest {
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
         assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessage().getText())
+        assertThat(entry.getMessageText())
                 .startsWith("jdbc execution: select * from employee where name like ?");
     }
 
@@ -168,9 +168,9 @@ public class PreparedStatementTest {
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
         assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessage().getText())
+        assertThat(entry.getMessageText())
                 .isEqualTo("jdbc execution: select * from employee where name like ? ['john%']");
-        assertThat(entry.getError().getMessage()).isEqualTo("An execute failure");
+        assertThat(entry.getErrorMessage()).isEqualTo("An execute failure");
     }
 
     @Test
@@ -201,7 +201,7 @@ public class PreparedStatementTest {
         }
         sql.append("] => 1 row");
 
-        assertThat(entry.getMessage().getText()).isEqualTo(sql.toString());
+        assertThat(entry.getMessageText()).isEqualTo(sql.toString());
     }
 
     @Test
@@ -221,7 +221,7 @@ public class PreparedStatementTest {
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
         assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessage().getText())
+        assertThat(entry.getMessageText())
                 .isEqualTo("jdbc execution: select * from employee where name like ? => 1 row");
     }
 
@@ -242,7 +242,7 @@ public class PreparedStatementTest {
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
         assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessage().getText()).isEqualTo(
+        assertThat(entry.getMessageText()).isEqualTo(
                 "jdbc execution: insert into employee (name, misc) values (?, ?) [NULL, NULL]");
     }
 
@@ -266,12 +266,12 @@ public class PreparedStatementTest {
         assertThat(entries).hasSize(2);
         TraceEntry entry1 = entries.get(0);
         assertThat(entry1.isActive()).isFalse();
-        assertThat(entry1.getMessage().getText()).isEqualTo(
+        assertThat(entry1.getMessageText()).isEqualTo(
                 "jdbc execution: insert into employee (name, misc) values (?, ?) ['jane',"
                         + " 0x00010203040506070809]");
         TraceEntry entry2 = entries.get(1);
         assertThat(entry2.isActive()).isFalse();
-        assertThat(entry2.getMessage().getText()).isEqualTo(
+        assertThat(entry2.getMessageText()).isEqualTo(
                 "jdbc execution: insert /**/ into employee (name, misc) values (?, ?) ['jane',"
                         + " {10 bytes}]");
     }
@@ -296,12 +296,12 @@ public class PreparedStatementTest {
         assertThat(entries).hasSize(2);
         TraceEntry entry1 = entries.get(0);
         assertThat(entry1.isActive()).isFalse();
-        assertThat(entry1.getMessage().getText()).isEqualTo(
+        assertThat(entry1.getMessageText()).isEqualTo(
                 "jdbc execution: insert into employee (name, misc) values (?, ?) ['jane',"
                         + " 0x00010203040506070809]");
         TraceEntry entry2 = entries.get(1);
         assertThat(entry2.isActive()).isFalse();
-        assertThat(entry2.getMessage().getText()).isEqualTo(
+        assertThat(entry2.getMessageText()).isEqualTo(
                 "jdbc execution: insert /**/ into employee (name, misc) values (?, ?) ['jane',"
                         + " {10 bytes}]");
     }
@@ -323,7 +323,7 @@ public class PreparedStatementTest {
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
         assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessage().getText()).isEqualTo(
+        assertThat(entry.getMessageText()).isEqualTo(
                 "jdbc execution: insert into employee (name, misc) values (?, ?) ['jane',"
                         + " {stream:ByteArrayInputStream}]");
     }
@@ -345,7 +345,7 @@ public class PreparedStatementTest {
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
         assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessage().getText()).isEqualTo(
+        assertThat(entry.getMessageText()).isEqualTo(
                 "jdbc execution: insert into employee (name, misc2) values (?, ?) ['jane',"
                         + " {stream:StringReader}]");
     }
@@ -367,7 +367,7 @@ public class PreparedStatementTest {
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
         assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessage().getText()).isEqualTo(
+        assertThat(entry.getMessageText()).isEqualTo(
                 "jdbc execution: select * from employee where name like ? ['john%'] => 1 row");
     }
 
@@ -387,7 +387,7 @@ public class PreparedStatementTest {
         assertThat(entries).hasSize(1);
         TraceEntry entry = entries.get(0);
         assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessage().getText()).isEqualTo(
+        assertThat(entry.getMessageText()).isEqualTo(
                 "jdbc execution: select * from employee where name like ? ['{}'] => 0 rows");
     }
 

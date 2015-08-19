@@ -99,7 +99,7 @@ public class ResultSetBenchmark {
         traceEntry.end();
     }
 
-    public static enum Database {
+    public enum Database {
         HSQLDB, MOCK
     }
 

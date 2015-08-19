@@ -69,7 +69,7 @@ public class AnalyzedClassPlanBTest {
     @Test
     public void shouldLogWarningInAnalyzedWorldPlanB() throws Exception {
         // given
-        container.addExpectedLogMessage("org.glowroot.weaving.AnalyzedWorld",
+        container.addExpectedLogMessage("org.glowroot.agent.weaving.AnalyzedWorld",
                 Y.class.getName() + " was not woven with requested advice");
         // when
         container.executeAppUnderTest(ShouldLogWarningInAnalyzedWorldPlanB.class);

@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.trace.Timer;
+import org.glowroot.container.trace.TimerNode;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.trace.TraceEntry;
 
@@ -70,25 +70,25 @@ public class InstrumentationConfigEnabledPropertyTest {
                         mapOf("subnestedkey1", "a", "subnestedkey2", "b")),
                 "nested2", mapOf("nestedkey21", "a", "nestedkey22", "b")));
         assertThat(trace.getRootTimer().getName()).isEqualTo("level one");
-        assertThat(trace.getRootTimer().getNestedTimerNames()).containsOnly("level two");
-        Timer levelTwoTimer = trace.getRootTimer().getNestedTimers().get(0);
-        assertThat(levelTwoTimer.getNestedTimerNames()).containsOnly("level three");
-        Timer levelThreeTimer = levelTwoTimer.getNestedTimers().get(0);
-        assertThat(levelThreeTimer.getNestedTimerNames()).containsOnly("level four");
-        Timer levelFourTimer = levelThreeTimer.getNestedTimers().get(0);
-        assertThat(levelFourTimer.getNestedTimerNames()).containsOnly("level five");
+        assertThat(trace.getRootTimer().getChildTimerNames()).containsOnly("level two");
+        TimerNode levelTwoTimer = trace.getRootTimer().getChildNodes().get(0);
+        assertThat(levelTwoTimer.getChildTimerNames()).containsOnly("level three");
+        TimerNode levelThreeTimer = levelTwoTimer.getChildNodes().get(0);
+        assertThat(levelThreeTimer.getChildTimerNames()).containsOnly("level four");
+        TimerNode levelFourTimer = levelThreeTimer.getChildNodes().get(0);
+        assertThat(levelFourTimer.getChildTimerNames()).containsOnly("level five");
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(3);
         TraceEntry entry2 = entries.get(0);
-        assertThat(entry2.getMessage().getText()).isEqualTo("Level Two");
-        assertThat(entry2.getMessage().getDetail()).isEqualTo(mapOf("arg1", "ax", "arg2", "bx"));
+        assertThat(entry2.getMessageText()).isEqualTo("Level Two");
+        assertThat(entry2.getMessageDetail()).isEqualTo(mapOf("arg1", "ax", "arg2", "bx"));
         TraceEntry entry3 = entries.get(1);
-        assertThat(entry3.getMessage().getText()).isEqualTo("Level Three");
-        assertThat(entry3.getMessage().getDetail()).isEqualTo(mapOf("arg1", "axy", "arg2", "bxy"));
+        assertThat(entry3.getMessageText()).isEqualTo("Level Three");
+        assertThat(entry3.getMessageDetail()).isEqualTo(mapOf("arg1", "axy", "arg2", "bxy"));
         // offset is measured in nanoseconds so there's no way this should be 0
         assertThat(entry3.getOffset()).isGreaterThan(0);
         TraceEntry entry4 = entries.get(2);
-        assertThat(entry4.getMessage().getText()).isEqualTo("Level Four: axy, bxy");
+        assertThat(entry4.getMessageText()).isEqualTo("Level Four: axy, bxy");
     }
 
     @Test
@@ -109,27 +109,27 @@ public class InstrumentationConfigEnabledPropertyTest {
                         mapOf("subnestedkey1", "a", "subnestedkey2", "b")),
                 "nested2", mapOf("nestedkey21", "a", "nestedkey22", "b")));
         assertThat(trace.getRootTimer().getName()).isEqualTo("level one");
-        assertThat(trace.getRootTimer().getNestedTimerNames()).containsOnly("level two");
-        Timer levelTwoTimer = trace.getRootTimer().getNestedTimers().get(0);
-        assertThat(levelTwoTimer.getNestedTimerNames()).containsOnly("level three");
-        Timer levelThreeTimer = levelTwoTimer.getNestedTimers().get(0);
-        assertThat(levelThreeTimer.getNestedTimerNames()).containsOnly("level four");
-        Timer levelFourTimer = levelThreeTimer.getNestedTimers().get(0);
-        assertThat(levelFourTimer.getNestedTimerNames()).containsOnly("level five");
+        assertThat(trace.getRootTimer().getChildTimerNames()).containsOnly("level two");
+        TimerNode levelTwoTimer = trace.getRootTimer().getChildNodes().get(0);
+        assertThat(levelTwoTimer.getChildTimerNames()).containsOnly("level three");
+        TimerNode levelThreeTimer = levelTwoTimer.getChildNodes().get(0);
+        assertThat(levelThreeTimer.getChildTimerNames()).containsOnly("level four");
+        TimerNode levelFourTimer = levelThreeTimer.getChildNodes().get(0);
+        assertThat(levelFourTimer.getChildTimerNames()).containsOnly("level five");
         List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
         assertThat(entries).hasSize(4);
         TraceEntry entry2 = entries.get(0);
-        assertThat(entry2.getMessage().getText()).isEqualTo("Level Two");
-        assertThat(entry2.getMessage().getDetail()).isEqualTo(mapOf("arg1", "ax", "arg2", "bx"));
+        assertThat(entry2.getMessageText()).isEqualTo("Level Two");
+        assertThat(entry2.getMessageDetail()).isEqualTo(mapOf("arg1", "ax", "arg2", "bx"));
         TraceEntry entry3 = entries.get(1);
-        assertThat(entry3.getMessage().getText()).isEqualTo("Level Three");
-        assertThat(entry3.getMessage().getDetail()).isEqualTo(mapOf("arg1", "axy", "arg2", "bxy"));
+        assertThat(entry3.getMessageText()).isEqualTo("Level Three");
+        assertThat(entry3.getMessageDetail()).isEqualTo(mapOf("arg1", "axy", "arg2", "bxy"));
         // offset is measured in nanoseconds so there's no way this should be 0
         assertThat(entry3.getOffset()).isGreaterThan(0);
         TraceEntry entry4 = entries.get(2);
-        assertThat(entry4.getMessage().getText()).isEqualTo("Level Four: axy, bxy");
+        assertThat(entry4.getMessageText()).isEqualTo("Level Four: axy, bxy");
         TraceEntry entry5 = entries.get(3);
-        assertThat(entry5.getMessage().getText()).isEqualTo("Level Five: axy, bxy");
+        assertThat(entry5.getMessageText()).isEqualTo("Level Five: axy, bxy");
     }
 
     private static Map<String, Object> mapOf(String k1, Object v1, String k2, Object v2) {

@@ -26,7 +26,7 @@ import java.util.jar.Manifest;
 
 import com.google.common.io.Resources;
 
-import org.glowroot.common.ClassNames;
+import org.glowroot.agent.weaving.ClassNames;
 
 public class DelegatingJavaagent {
 

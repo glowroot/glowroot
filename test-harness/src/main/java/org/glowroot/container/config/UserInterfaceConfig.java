@@ -182,7 +182,7 @@ public class UserInterfaceConfig {
         return config;
     }
 
-    public static enum AnonymousAccess {
+    public enum AnonymousAccess {
         NONE, READ_ONLY, ADMIN
     }
 }
