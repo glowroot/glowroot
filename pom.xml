@@ -39,6 +39,7 @@
     <module>misc/checker-qual-jdk6</module>
     <module>api</module>
     <module>plugin-api</module>
+    <module>collector-spi</module>
     <module>core</module>
     <module>test-harness</module>
     <module>testing/integration-tests</module>
