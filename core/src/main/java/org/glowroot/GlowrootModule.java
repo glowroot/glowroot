@@ -56,6 +56,7 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Tickers;
 import org.glowroot.local.LocalModule;
 import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.ui.CreateUiModuleBuilder;
 import org.glowroot.ui.UiModule;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -166,40 +167,44 @@ public class GlowrootModule {
 
     void initUi() {
         if (agentModule != null) {
-            uiModule = UiModule.create(ticker,
-                    clock,
-                    baseDir,
-                    agentModule.getLiveJvmService(),
-                    localModule.getConfigRepository(),
-                    localModule.getTraceRepository(),
-                    localModule.getAggregateRepository(),
-                    localModule.getGaugeValueRepository(),
-                    localModule.getRepoAdmin(),
-                    agentModule.getLiveTraceRepository(),
-                    agentModule.getLiveThreadDumpService(),
-                    agentModule.getLiveAggregateRepository(),
-                    agentModule.getLiveWeavingService(),
-                    bindAddress,
-                    version,
-                    agentModule.getPluginDescriptors());
+            uiModule = new CreateUiModuleBuilder()
+                    .ticker(ticker)
+                    .clock(clock)
+                    .baseDir(baseDir)
+                    .liveJvmService(agentModule.getLiveJvmService())
+                    .configRepository(localModule.getConfigRepository())
+                    .traceRepository(localModule.getTraceRepository())
+                    .aggregateRepository(localModule.getAggregateRepository())
+                    .gaugeValueRepository(localModule.getGaugeValueRepository())
+                    .repoAdmin(localModule.getRepoAdmin())
+                    .liveTraceRepository(agentModule.getLiveTraceRepository())
+                    .liveThreadDumpService(agentModule.getLiveThreadDumpService())
+                    .liveAggregateRepository(agentModule.getLiveAggregateRepository())
+                    .liveWeavingService(agentModule.getLiveWeavingService())
+                    .bindAddress(bindAddress)
+                    .version(version)
+                    .pluginDescriptors(agentModule.getPluginDescriptors())
+                    .build();
         } else {
             checkNotNull(viewerAgentModule);
-            uiModule = UiModule.create(ticker,
-                    clock,
-                    baseDir,
-                    viewerAgentModule.getLiveJvmService(),
-                    localModule.getConfigRepository(),
-                    localModule.getTraceRepository(),
-                    localModule.getAggregateRepository(),
-                    localModule.getGaugeValueRepository(),
-                    localModule.getRepoAdmin(),
-                    new LiveTraceRepositoryNop(),
-                    new LiveThreadDumpServiceNop(),
-                    new LiveAggregateRepositoryNop(),
-                    new LiveWeavingServiceNop(),
-                    bindAddress,
-                    version,
-                    viewerAgentModule.getPluginDescriptors());
+            uiModule = new CreateUiModuleBuilder()
+                    .ticker(ticker)
+                    .clock(clock)
+                    .baseDir(baseDir)
+                    .liveJvmService(viewerAgentModule.getLiveJvmService())
+                    .configRepository(localModule.getConfigRepository())
+                    .traceRepository(localModule.getTraceRepository())
+                    .aggregateRepository(localModule.getAggregateRepository())
+                    .gaugeValueRepository(localModule.getGaugeValueRepository())
+                    .repoAdmin(localModule.getRepoAdmin())
+                    .liveTraceRepository(new LiveTraceRepositoryNop())
+                    .liveThreadDumpService(new LiveThreadDumpServiceNop())
+                    .liveAggregateRepository(new LiveAggregateRepositoryNop())
+                    .liveWeavingService(new LiveWeavingServiceNop())
+                    .bindAddress(bindAddress)
+                    .version(version)
+                    .pluginDescriptors(viewerAgentModule.getPluginDescriptors())
+                    .build();
         }
     }
 

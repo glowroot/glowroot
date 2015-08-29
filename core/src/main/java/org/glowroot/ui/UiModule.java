@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
+import org.immutables.builder.Builder;
 
 import org.glowroot.common.config.PluginDescriptor;
 import org.glowroot.common.live.LiveAggregateRepository;
@@ -42,7 +43,8 @@ public class UiModule {
 
     private final LazyHttpServer lazyHttpServer;
 
-    public static UiModule create(
+    @Builder.Factory
+    public static UiModule createUiModule(
             Ticker ticker,
             Clock clock,
             File baseDir,
