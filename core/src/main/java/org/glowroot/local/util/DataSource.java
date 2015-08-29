@@ -61,6 +61,7 @@ public class DataSource {
     private volatile int queryTimeoutSeconds;
     private volatile boolean closing = false;
 
+    @GuardedBy("lock")
     private final LoadingCache</*@Untainted*/String, PreparedStatement> preparedStatementCache =
             CacheBuilder.newBuilder().weakValues()
                     .build(new CacheLoader</*@Untainted*/String, PreparedStatement>() {
@@ -317,17 +318,21 @@ public class DataSource {
     // helpful for upgrading schema
     void renameTable(@Untainted String oldTableName, @Untainted String newTableName)
             throws SQLException {
-        if (Schemas.tableExists(oldTableName, connection)) {
-            execute("alter table " + oldTableName + " rename to " + newTableName);
+        synchronized (lock) {
+            if (Schemas.tableExists(oldTableName, connection)) {
+                execute("alter table " + oldTableName + " rename to " + newTableName);
+            }
         }
     }
 
     // helpful for upgrading schema
     void renameColumn(@Untainted String tableName, @Untainted String oldColumnName,
             @Untainted String newColumnName) throws SQLException {
-        if (Schemas.columnExists(tableName, oldColumnName, connection)) {
-            execute("alter table " + tableName + " alter column " + oldColumnName + " rename to "
-                    + newColumnName);
+        synchronized (lock) {
+            if (Schemas.columnExists(tableName, oldColumnName, connection)) {
+                execute("alter table " + tableName + " alter column " + oldColumnName
+                        + " rename to " + newColumnName);
+            }
         }
     }
 
@@ -343,7 +348,7 @@ public class DataSource {
         Runtime.getRuntime().removeShutdownHook(shutdownHookThread);
     }
 
-    // lock must be acquired prior to calling this method
+    @GuardedBy("lock")
     private <T extends /*@Nullable*/Object> T queryUnderLock(@Untainted String sql, Object[] args,
             ResultSetExtractor<T> rse) throws Exception {
         PreparedStatement preparedStatement = prepareStatement(sql);
@@ -364,6 +369,7 @@ public class DataSource {
         // don't need to close statement since they are all cached and used under lock
     }
 
+    @GuardedBy("lock")
     private PreparedStatement prepareStatement(@Untainted String sql) throws SQLException {
         try {
             return preparedStatementCache.get(sql);

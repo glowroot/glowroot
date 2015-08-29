@@ -127,7 +127,11 @@ public class CappedDatabase {
 
     public <T> /*@Nullable*/ T unmarshal(long cappedId, Unmarshaller<T> unmarshaller)
             throws IOException {
-        if (out.isOverwritten(cappedId)) {
+        boolean overwritten;
+        synchronized (lock) {
+            overwritten = out.isOverwritten(cappedId);
+        }
+        if (overwritten) {
             return null;
         }
         // it's important to wrap CappedBlockInputStream in a BufferedInputStream to prevent
@@ -147,7 +151,11 @@ public class CappedDatabase {
     }
 
     public CharSource read(long cappedId, String overwrittenResponse) {
-        if (cappedId >= out.getCurrIndex()) {
+        boolean inTheFuture;
+        synchronized (lock) {
+            inTheFuture = cappedId >= out.getCurrIndex();
+        }
+        if (inTheFuture) {
             // this can happen when the glowroot folder is copied for analysis without shutting down
             // the JVM and glowroot.capped.db is copied first, then new data is written to
             // glowroot.capped.db and the new capped ids are written to glowroot.h2.db and then
@@ -159,11 +167,15 @@ public class CappedDatabase {
     }
 
     public boolean isExpired(long cappedId) {
-        return out.isOverwritten(cappedId);
+        synchronized (lock) {
+            return out.isOverwritten(cappedId);
+        }
     }
 
     public long getSmallestNonExpiredId() {
-        return out.getSmallestNonOverwrittenId();
+        synchronized (lock) {
+            return out.getSmallestNonOverwrittenId();
+        }
     }
 
     public void resize(int newSizeKb) throws IOException {
@@ -199,7 +211,11 @@ public class CappedDatabase {
 
         @Override
         public Reader openStream() throws IOException {
-            if (out.isOverwritten(cappedId)) {
+            boolean overwritten;
+            synchronized (lock) {
+                overwritten = out.isOverwritten(cappedId);
+            }
+            if (overwritten) {
                 return CharSource.wrap(overwrittenResponse).openStream();
             }
             // it's important to wrap CappedBlockInputStream in a BufferedInputStream to prevent

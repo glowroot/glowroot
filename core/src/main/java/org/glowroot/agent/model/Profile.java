@@ -63,6 +63,7 @@ public class Profile {
 
     // must be holding lock to call and can only use resulting node tree inside the same
     // synchronized block
+    @GuardedBy("lock")
     public MutableProfileNode getSyntheticRootNode() {
         mergeTheUnmergedStackTraces();
         return syntheticRootNode;
@@ -95,7 +96,7 @@ public class Profile {
         }
     }
 
-    // must be holding lock to call
+    @GuardedBy("lock")
     private void mergeTheUnmergedStackTraces() {
         for (int i = 0; i < unmergedStackTraces.size(); i++) {
             List<StackTraceElement> stackTrace = unmergedStackTraces.get(i);
@@ -111,7 +112,7 @@ public class Profile {
         unmergedStackTraceThreadStates.clear();
     }
 
-    // must be holding lock to call
+    @GuardedBy("lock")
     @VisibleForTesting
     public void addToStackTree(List<? extends /*@NonNull*/Object> stackTrace, String threadState) {
         syntheticRootNode.incrementSampleCount(1);

@@ -18,6 +18,7 @@ package org.glowroot.sandbox.ui;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -119,7 +120,7 @@ public class ExpensiveCall {
     }
 
     // this is just to prevent jvm from optimizing away for the loop below
-    public static volatile long dummy;
+    public static final AtomicLong dummy = new AtomicLong();
 
     // need
     private static final Object lock = new Object();
@@ -149,9 +150,9 @@ public class ExpensiveCall {
         long start = System.currentTimeMillis();
         while (System.currentTimeMillis() - start < millis) {
             for (int i = 0; i < 100000; i++) {
-                dummy += random.nextInt(1024);
+                dummy.addAndGet(random.nextInt(1024));
                 if (i % 100 == 0) {
-                    dummy += new byte[random.nextInt(1024)].length;
+                    dummy.addAndGet(new byte[random.nextInt(1024)].length);
                 }
             }
         }
@@ -161,7 +162,7 @@ public class ExpensiveCall {
             while (System.currentTimeMillis() - start < 3 * millis) {
                 synchronized (lock) {
                     Thread.sleep(random.nextInt(10));
-                    dummy++;
+                    dummy.incrementAndGet();
                 }
                 Thread.sleep(1);
             }

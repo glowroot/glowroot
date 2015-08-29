@@ -42,7 +42,7 @@ class BatchQueryMessageSupplier extends MessageSupplier {
             if (currQuery == null) {
                 currQuery = query;
                 currCount = 1;
-            } else if (query != currQuery) {
+            } else if (!query.equals(currQuery)) {
                 if (currCount == 1) {
                     queries.add(currQuery);
                 } else {

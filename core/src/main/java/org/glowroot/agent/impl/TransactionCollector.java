@@ -59,7 +59,7 @@ public class TransactionCollector {
     private final Set<Transaction> pendingTransactions = Sets.newCopyOnWriteArraySet();
 
     private final RateLimiter warningRateLimiter = RateLimiter.create(1.0 / 60);
-    @GuardedBy("warningLock")
+    @GuardedBy("warningRateLimiter")
     private int countSinceLastWarning;
 
     public TransactionCollector(ExecutorService executorService, ConfigService configService,

@@ -185,6 +185,7 @@ class ClasspathCache {
         return ImmutableList.copyOf(fullMatchingClassNames);
     }
 
+    @GuardedBy("this")
     private void updateCacheWithClasspathClasses(Multimap<String, File> newClassNameLocations) {
         String javaClassPath = StandardSystemProperty.JAVA_CLASS_PATH.value();
         if (javaClassPath == null) {
@@ -199,6 +200,7 @@ class ClasspathCache {
         }
     }
 
+    @GuardedBy("this")
     private void updateCacheWithBootstrapClasses(Multimap<String, File> newClassNameLocations) {
         String bootClassPath = System.getProperty("sun.boot.class.path");
         if (bootClassPath == null) {
@@ -265,6 +267,7 @@ class ClasspathCache {
         return analyzedMethods;
     }
 
+    @GuardedBy("this")
     private void updateCache(ClassLoader loader, Multimap<String, File> newClassNameLocations) {
         List<URL> urls = getURLs(loader);
         List<File> locations = Lists.newArrayList();
