@@ -32,8 +32,8 @@ import static org.glowroot.container.common.ObjectMappers.nullToFalse;
 
 public class TraceEntry {
 
-    private final long offset;
-    private final long duration;
+    private final long offsetNanos;
+    private final long durationNanos;
     private final boolean active;
     private final int nestingLevel;
     // messageText is null for entries created via TransactionService.addErrorEntry(ErrorMessage)
@@ -43,12 +43,12 @@ public class TraceEntry {
     private final @Nullable ThrowableInfo errorThrowable;
     private final @Nullable ImmutableList<StackTraceElement> stackTrace;
 
-    private TraceEntry(long offset, long duration, boolean active, int nestingLevel,
+    private TraceEntry(long offsetNanos, long durationNanos, boolean active, int nestingLevel,
             @Nullable String messageText, Map<String, /*@Nullable*/Object> messageDetail,
             @Nullable String errorMessage, @Nullable ThrowableInfo errorThrowable,
             @Nullable List<StackTraceElement> stackTrace) {
-        this.offset = offset;
-        this.duration = duration;
+        this.offsetNanos = offsetNanos;
+        this.durationNanos = durationNanos;
         this.active = active;
         this.nestingLevel = nestingLevel;
         this.messageText = messageText;
@@ -58,12 +58,12 @@ public class TraceEntry {
         this.stackTrace = stackTrace == null ? null : ImmutableList.copyOf(stackTrace);
     }
 
-    public long getOffset() {
-        return offset;
+    public long getOffsetNanos() {
+        return offsetNanos;
     }
 
-    public long getDuration() {
-        return duration;
+    public long getDurationNanos() {
+        return durationNanos;
     }
 
     public boolean isActive() {
@@ -97,8 +97,8 @@ public class TraceEntry {
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("offset", offset)
-                .add("duration", duration)
+                .add("offsetNanos", offsetNanos)
+                .add("durationNanos", durationNanos)
                 .add("active", active)
                 .add("nestingLevel", nestingLevel)
                 .add("messageText", messageText)
@@ -111,8 +111,8 @@ public class TraceEntry {
 
     @JsonCreator
     static TraceEntry readValue(
-            @JsonProperty("offset") @Nullable Long offset,
-            @JsonProperty("duration") @Nullable Long duration,
+            @JsonProperty("offsetNanos") @Nullable Long offsetNanos,
+            @JsonProperty("durationNanos") @Nullable Long durationNanos,
             @JsonProperty("active") @Nullable Boolean active,
             @JsonProperty("nestingLevel") @Nullable Integer nestingLevel,
             @JsonProperty("messageText") @Nullable String messageText,
@@ -122,9 +122,9 @@ public class TraceEntry {
             @JsonProperty("stackTrace") @Nullable List</*@Nullable*/StackTraceElement> uncheckedStackTrace)
                     throws JsonMappingException {
         List<StackTraceElement> stackTrace = checkNotNullItems(uncheckedStackTrace, "stackTrace");
-        return new TraceEntry(nullToZero(offset), nullToZero(duration), nullToFalse(active),
-                nullToZero(nestingLevel), messageText, nullToEmpty(messageDetail), errorMessage,
-                errorThrowable, stackTrace);
+        return new TraceEntry(nullToZero(offsetNanos), nullToZero(durationNanos),
+                nullToFalse(active), nullToZero(nestingLevel), messageText,
+                nullToEmpty(messageDetail), errorMessage, errorThrowable, stackTrace);
     }
 
     private static long nullToZero(@Nullable Long value) {

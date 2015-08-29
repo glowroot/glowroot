@@ -43,8 +43,8 @@ public class TracePointQueryBuilder {
     // inclusive on upper bound)
     public ParameterizedSql getParameterizedSql() {
         ParameterizedSqlBuilder builder = new ParameterizedSqlBuilder();
-        builder.appendText(
-                "select trace.id, trace.capture_time, trace.duration, trace.error from trace");
+        builder.appendText("select trace.id, trace.capture_time, trace.duration_nanos, trace.error"
+                + " from trace");
         ParameterizedSql criteria = getCustomAttributeCriteria();
         if (criteria == null) {
             builder.appendText(" where");
@@ -95,15 +95,15 @@ public class TracePointQueryBuilder {
     }
 
     private void appendDurationCriteria(ParameterizedSqlBuilder builder) {
-        long durationLow = query.durationLow();
-        if (durationLow != 0) {
-            builder.appendText(" and trace.duration >= ?");
-            builder.addArg(durationLow);
+        long durationNanosLow = query.durationNanosLow();
+        if (durationNanosLow != 0) {
+            builder.appendText(" and trace.duration_nanos >= ?");
+            builder.addArg(durationNanosLow);
         }
-        Long durationHigh = query.durationHigh();
-        if (durationHigh != null) {
-            builder.appendText(" and trace.duration <= ?");
-            builder.addArg(durationHigh);
+        Long durationNanosHigh = query.durationNanosHigh();
+        if (durationNanosHigh != null) {
+            builder.appendText(" and trace.duration_nanos <= ?");
+            builder.addArg(durationNanosHigh);
         }
     }
 
@@ -169,7 +169,7 @@ public class TracePointQueryBuilder {
     }
 
     private void appendOrderByAndLimit(ParameterizedSqlBuilder builder) {
-        builder.appendText(" order by trace.duration");
+        builder.appendText(" order by trace.duration_nanos");
         if (query.limit() != 0) {
             // +1 is to identify if limit was exceeded
             builder.appendText(" desc limit ?");

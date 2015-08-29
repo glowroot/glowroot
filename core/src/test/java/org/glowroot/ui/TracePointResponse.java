@@ -52,13 +52,13 @@ class TracePointResponse {
     static class RawPoint implements Comparable<RawPoint> {
 
         private final long captureTime;
-        private final double durationSeconds;
+        private final double durationMillis;
         private final String id;
 
         @JsonCreator
         RawPoint(ArrayNode point) {
             captureTime = point.get(0).asLong();
-            durationSeconds = point.get(1).asDouble();
+            durationMillis = point.get(1).asDouble();
             id = point.get(2).asText();
         }
 
@@ -66,8 +66,8 @@ class TracePointResponse {
             return captureTime;
         }
 
-        double durationSeconds() {
-            return durationSeconds;
+        double durationMillis() {
+            return durationMillis;
         }
 
         String id() {
@@ -77,7 +77,7 @@ class TracePointResponse {
         // natural sort order is by duration desc
         @Override
         public int compareTo(RawPoint o) {
-            return Double.compare(o.durationSeconds, durationSeconds);
+            return Double.compare(o.durationMillis, durationMillis);
         }
     }
 }

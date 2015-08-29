@@ -51,7 +51,7 @@
 </div>
 <div>
   <div class="gt-trace-attr-name">Duration:&nbsp;</div>
-  <div class="gt-trace-attr-value">{{nanosToMillis duration}}{{#if active}}..{{/if}} milliseconds</div>
+  <div class="gt-trace-attr-value">{{nanosToMillis durationNanos}}{{#if active}}..{{/if}} milliseconds</div>
 </div>
 {{#if user}}
   <div class="gt-trace-attr-name">User:&nbsp;</div>
@@ -88,7 +88,7 @@
             <div class="gt-break-word gt-second-line-indent">{{name}}</div>
           </div>
         </td>
-        <td>{{nanosToMillis total}}{{#if active}}..{{/if}}</td>
+        <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
         <td>{{count}}</td>
         <td></td>
       </tr>
@@ -119,7 +119,7 @@
             </div>
           </div>
         </td>
-        <td>{{nanosToMillis total}}{{#if active}}..{{/if}}</td>
+        <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
         <td>{{count}}</td>
         <td></td>
       </tr>
@@ -131,22 +131,22 @@
   <div class="gt-bold">
     JVM thread metrics
   </div>
-  {{#ifNotNA threadCpuTime}}
+  {{#ifNotNA threadCpuNanos}}
     <div class="gt-indent2">
       <span>CPU time:</span>
-      {{nanosToMillis threadCpuTime}} milliseconds
+      {{nanosToMillis threadCpuNanos}} milliseconds
     </div>
   {{/ifNotNA}}
-  {{#ifNotNA threadBlockedTime}}
+  {{#ifNotNA threadBlockedNanos}}
     <div class="gt-indent2">
       <span>Blocked time:</span>
-      {{nanosToMillis threadBlockedTime}} milliseconds
+      {{nanosToMillis threadBlockedNanos}} milliseconds
     </div>
   {{/ifNotNA}}
-  {{#ifNotNA threadWaitedTime}}
+  {{#ifNotNA threadWaitedNanos}}
     <div class="gt-indent2">
       <span>Waited time:</span>
-      {{nanosToMillis threadWaitedTime}} milliseconds
+      {{nanosToMillis threadWaitedNanos}} milliseconds
     </div>
   {{/ifNotNA}}
   {{#ifNotNA threadAllocatedBytes}}

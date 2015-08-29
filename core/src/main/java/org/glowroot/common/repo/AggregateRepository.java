@@ -118,16 +118,16 @@ public interface AggregateRepository {
 
     @Value.Immutable
     public interface OverallSummary {
-        // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
-        long totalMicros();
+        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+        double totalNanos();
         long transactionCount();
     }
 
     @Value.Immutable
     public interface TransactionSummary {
         String transactionName();
-        // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
-        long totalMicros();
+        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+        double totalNanos();
         long transactionCount();
     }
 
@@ -165,19 +165,21 @@ public interface AggregateRepository {
     @Value.Immutable
     public interface OverviewAggregate {
         long captureTime();
-        long totalMicros();
+        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+        double totalNanos();
         long transactionCount();
-        long totalCpuMicros(); // -1 means N/A
-        long totalBlockedMicros(); // -1 means N/A
-        long totalWaitedMicros(); // -1 means N/A
-        long totalAllocatedKBytes(); // -1 means N/A
+        double totalCpuNanos(); // -1 means N/A
+        double totalBlockedNanos(); // -1 means N/A
+        double totalWaitedNanos(); // -1 means N/A
+        double totalAllocatedBytes(); // -1 means N/A
         MutableTimerNode syntheticRootTimer();
     }
 
     @Value.Immutable
     public interface PercentileAggregate {
         long captureTime();
-        long totalMicros();
+        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+        double totalNanos();
         long transactionCount();
         LazyHistogram histogram();
     }

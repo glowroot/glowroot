@@ -40,13 +40,13 @@ public class TimerNode {
         public int compare(@Nullable TimerNode left, @Nullable TimerNode right) {
             checkNotNull(left);
             checkNotNull(right);
-            return Longs.compare(left.totalMicros, right.totalMicros);
+            return Longs.compare(left.totalNanos, right.totalNanos);
         }
     };
 
     private final String name;
     private final boolean extended;
-    private final long totalMicros;
+    private final long totalNanos;
     private final long count;
     private final boolean active;
 
@@ -56,7 +56,7 @@ public class TimerNode {
             List<TimerNode> childNodes) {
         this.name = name;
         this.extended = extended;
-        this.totalMicros = total;
+        this.totalNanos = total;
         this.count = count;
         this.active = active;
         this.childNodes = ImmutableList.copyOf(childNodes);
@@ -70,8 +70,8 @@ public class TimerNode {
         return extended;
     }
 
-    public long getTotal() {
-        return totalMicros;
+    public long getTotalNanos() {
+        return totalNanos;
     }
 
     public long getCount() {
@@ -100,7 +100,7 @@ public class TimerNode {
         return MoreObjects.toStringHelper(this)
                 .add("name", name)
                 .add("extended", extended)
-                .add("totalMicros", totalMicros)
+                .add("totalNanos", totalNanos)
                 .add("count", count)
                 .add("active", active)
                 .add("childNodes", childNodes)
@@ -111,16 +111,16 @@ public class TimerNode {
     static TimerNode readValue(
             @JsonProperty("name") @Nullable String name,
             @JsonProperty("extended") @Nullable Boolean extended,
-            @JsonProperty("totalMicros") @Nullable Long totalMicros,
+            @JsonProperty("totalNanos") @Nullable Long totalNanos,
             @JsonProperty("count") @Nullable Long count,
             @JsonProperty("active") @Nullable Boolean active,
             @JsonProperty("childNodes") @Nullable List</*@Nullable*/TimerNode> uncheckedChildNodes)
                     throws JsonMappingException {
         List<TimerNode> childNodes = orEmpty(uncheckedChildNodes, "childNodes");
         checkRequiredProperty(name, "name");
-        checkRequiredProperty(totalMicros, "totalMicros");
+        checkRequiredProperty(totalNanos, "totalNanos");
         checkRequiredProperty(count, "count");
-        return new TimerNode(name, orFalse(extended), totalMicros, count, orFalse(active),
+        return new TimerNode(name, orFalse(extended), totalNanos, count, orFalse(active),
                 childNodes);
     }
 

@@ -57,11 +57,11 @@ public class ThreadInfoComponent {
         checkNotNull(threadInfo);
         ThreadInfoSnapshotBuilder builder = new ThreadInfoSnapshotBuilder();
         if (IS_THREAD_CPU_TIME_SUPPORTED) {
-            builder.threadCpuTime(threadMXBean.getCurrentThreadCpuTime());
+            builder.threadCpuNanos(threadMXBean.getCurrentThreadCpuTime());
         }
         if (IS_THREAD_CONTENTION_MONITORING_SUPPORTED) {
-            builder.threadBlockedTimeMillis(threadInfo.getBlockedTime());
-            builder.threadWaitedTimeMillis(threadInfo.getWaitedTime());
+            builder.threadBlockedMillis(threadInfo.getBlockedTime());
+            builder.threadWaitedMillis(threadInfo.getWaitedTime());
         }
         if (threadAllocatedBytes != null) {
             builder.threadAllocatedBytes(
@@ -114,9 +114,9 @@ public class ThreadInfoComponent {
     private void addThreadCpuTime(ThreadInfoDataBuilder builder) {
         // getThreadCpuTime() returns -1 if CPU time measurement is disabled (which is different
         // than whether or not it is supported)
-        long threadCpuTime = threadMXBean.getThreadCpuTime(threadId);
-        if (startingSnapshot.threadCpuTime() != -1 && threadCpuTime != -1) {
-            builder.threadCpuTime(threadCpuTime - startingSnapshot.threadCpuTime());
+        long threadCpuNanos = threadMXBean.getThreadCpuTime(threadId);
+        if (startingSnapshot.threadCpuNanos() != -1 && threadCpuNanos != -1) {
+            builder.threadCpuNanos(threadCpuNanos - startingSnapshot.threadCpuNanos());
         }
     }
 
@@ -125,14 +125,14 @@ public class ThreadInfoComponent {
         // getBlockedTime() and getWaitedTime() return -1 if thread contention monitoring is
         // disabled (which is different than whether or not it is supported)
         long threadBlockedTimeMillis = threadInfo.getBlockedTime();
-        if (startingSnapshot.threadBlockedTimeMillis() != -1 && threadBlockedTimeMillis != -1) {
-            builder.threadBlockedTime(MILLISECONDS
-                    .toNanos(threadBlockedTimeMillis - startingSnapshot.threadBlockedTimeMillis()));
+        if (startingSnapshot.threadBlockedMillis() != -1 && threadBlockedTimeMillis != -1) {
+            builder.threadBlockedNanos(MILLISECONDS
+                    .toNanos(threadBlockedTimeMillis - startingSnapshot.threadBlockedMillis()));
         }
         long threadWaitedTimeMillis = threadInfo.getWaitedTime();
-        if (startingSnapshot.threadWaitedTimeMillis() != -1 && threadWaitedTimeMillis != -1) {
-            builder.threadWaitedTime(MILLISECONDS
-                    .toNanos(threadWaitedTimeMillis - startingSnapshot.threadWaitedTimeMillis()));
+        if (startingSnapshot.threadWaitedMillis() != -1 && threadWaitedTimeMillis != -1) {
+            builder.threadWaitedNanos(MILLISECONDS
+                    .toNanos(threadWaitedTimeMillis - startingSnapshot.threadWaitedMillis()));
         }
     }
 
@@ -148,15 +148,15 @@ public class ThreadInfoComponent {
     @Value.Immutable
     abstract static class ThreadInfoSnapshot {
         @Value.Default
-        long threadCpuTime() { // nanoseconds
+        long threadCpuNanos() {
             return -1;
         }
         @Value.Default
-        long threadBlockedTimeMillis() { // milliseconds (native resolution from jvm)
+        long threadBlockedMillis() { // milliseconds (native resolution from jvm)
             return -1;
         }
         @Value.Default
-        long threadWaitedTimeMillis() { // milliseconds (native resolution from jvm)
+        long threadWaitedMillis() { // milliseconds (native resolution from jvm)
             return -1;
         }
         @Value.Default
@@ -172,15 +172,15 @@ public class ThreadInfoComponent {
         public static final long NOT_AVAILABLE = -1;
 
         @Value.Default
-        public long threadCpuTime() { // nanoseconds
+        public long threadCpuNanos() {
             return NOT_AVAILABLE;
         }
         @Value.Default
-        public long threadBlockedTime() { // nanoseconds (for consistency)
+        public long threadBlockedNanos() {
             return NOT_AVAILABLE;
         }
         @Value.Default
-        public long threadWaitedTime() { // nanoseconds (for consistency)
+        public long threadWaitedNanos() {
             return NOT_AVAILABLE;
         }
         @Value.Default

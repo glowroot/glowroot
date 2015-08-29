@@ -28,68 +28,68 @@ public class LazyHistogramTest {
     @Test
     public void shouldTestPercentiles() {
         // test smaller numbers in more detail since that is where laziness occurs
-        for (int i = 0; i < 2000; i += 10) {
+        for (int i = 0; i < 2000000; i += 10000) {
             shouldTestPercentiles(i);
         }
-        shouldTestPercentiles(10000);
-        shouldTestPercentiles(100000);
+        shouldTestPercentiles(10000000);
+        shouldTestPercentiles(100000000);
     }
 
     @Test
     public void shouldTestEncodeDecode() throws Exception {
         // test smaller numbers in more detail since that is where laziness occurs
-        for (int i = 0; i < 2000; i += 10) {
+        for (int i = 0; i < 2000000; i += 10000) {
             shouldTestEncodeDecode(i);
         }
-        shouldTestEncodeDecode(10000);
-        shouldTestEncodeDecode(100000);
+        shouldTestEncodeDecode(10000000);
+        shouldTestEncodeDecode(100000000);
     }
 
     @Test
     public void shouldTestEncodeDecodeAndAddMore() throws Exception {
         // test smaller numbers in more detail since that is where laziness occurs
-        for (int i = 0; i < 2000; i += 10) {
+        for (int i = 0; i < 2000000; i += 10000) {
             shouldTestEncodeDecodeAndAddMore(i);
         }
-        shouldTestEncodeDecodeAndAddMore(10000);
-        shouldTestEncodeDecodeAndAddMore(100000);
+        shouldTestEncodeDecodeAndAddMore(10000000);
+        shouldTestEncodeDecodeAndAddMore(100000000);
     }
 
     @Test
     public void shouldTestDecodeOnTopOfExisting() throws Exception {
         // test smaller numbers in more detail since that is where laziness occurs
-        for (int i = 0; i < 2000; i += 10) {
+        for (int i = 0; i < 2000000; i += 10000) {
             shouldDecodeOnTopOfExisting(i, i);
         }
-        shouldDecodeOnTopOfExisting(10000, 10000);
-        shouldDecodeOnTopOfExisting(100000, 100000);
+        shouldDecodeOnTopOfExisting(10000000, 10000000);
+        shouldDecodeOnTopOfExisting(100000000, 100000000);
 
         // test smaller numbers in more detail since that is where laziness occurs
-        for (int i = 0; i < 2000; i += 10) {
+        for (int i = 0; i < 2000000; i += 10000) {
             shouldDecodeOnTopOfExisting(2 * i, i);
         }
-        shouldDecodeOnTopOfExisting(20000, 10000);
-        shouldDecodeOnTopOfExisting(200000, 100000);
+        shouldDecodeOnTopOfExisting(20000000, 10000000);
+        shouldDecodeOnTopOfExisting(200000000, 100000000);
 
         // test smaller numbers in more detail since that is where laziness occurs
-        for (int i = 0; i < 2000; i += 10) {
+        for (int i = 0; i < 2000000; i += 10000) {
             shouldDecodeOnTopOfExisting(i, 2 * i);
         }
-        shouldDecodeOnTopOfExisting(10000, 20000);
-        shouldDecodeOnTopOfExisting(100000, 200000);
+        shouldDecodeOnTopOfExisting(10000000, 20000000);
+        shouldDecodeOnTopOfExisting(100000000, 200000000);
     }
 
     @Test
     public void testResizingHistogramBetweenCompressedEncodings() {
         // given
         LazyHistogram lazyHistogram = new LazyHistogram();
-        for (int i = 0; i < 2000; i++) {
-            lazyHistogram.add(1);
+        for (int i = 0; i < 2000000; i += 1000) {
+            lazyHistogram.add(1000);
         }
         ByteBuffer buffer = ByteBuffer.allocate(lazyHistogram.getNeededByteBufferCapacity());
         lazyHistogram.encodeIntoByteBuffer(buffer);
         // when
-        lazyHistogram.add(10000);
+        lazyHistogram.add(10000000);
         buffer = ByteBuffer.allocate(lazyHistogram.getNeededByteBufferCapacity());
         lazyHistogram.encodeIntoByteBuffer(buffer);
         // then
@@ -99,7 +99,7 @@ public class LazyHistogramTest {
         // given
         LazyHistogram lazyHistogram = new LazyHistogram();
         // when
-        for (int i = num; i > 0; i--) {
+        for (int i = num; i > 0; i -= 1000) {
             lazyHistogram.add(i);
         }
         // then
@@ -113,7 +113,7 @@ public class LazyHistogramTest {
     private void shouldTestEncodeDecode(int num) throws Exception {
         // given
         LazyHistogram lazyHistogram = new LazyHistogram();
-        for (int i = num; i > 0; i--) {
+        for (int i = num; i > 0; i -= 1000) {
             lazyHistogram.add(i);
         }
         byte[] histogram = getHistogramBytes(lazyHistogram);
@@ -131,14 +131,14 @@ public class LazyHistogramTest {
     private void shouldTestEncodeDecodeAndAddMore(int num) throws Exception {
         // given
         LazyHistogram lazyHistogram = new LazyHistogram();
-        for (int i = num; i > 0; i--) {
+        for (int i = num; i > 0; i -= 1000) {
             lazyHistogram.add(i);
         }
         byte[] histogram = getHistogramBytes(lazyHistogram);
         lazyHistogram = new LazyHistogram();
         // when
         lazyHistogram.decodeFromByteBuffer(ByteBuffer.wrap(histogram));
-        for (int i = 2 * num; i > num; i--) {
+        for (int i = 2 * num; i > num; i -= 1000) {
             lazyHistogram.add(i);
         }
         // then
@@ -151,13 +151,13 @@ public class LazyHistogramTest {
 
     private void shouldDecodeOnTopOfExisting(int encodedSize, int nonEncodedSize) throws Exception {
         LazyHistogram lazyHistogram = new LazyHistogram();
-        for (int i = encodedSize; i > 0; i--) {
+        for (int i = encodedSize; i > 0; i -= 1000) {
             lazyHistogram.add(i);
         }
         byte[] histogram = getHistogramBytes(lazyHistogram);
         lazyHistogram = new LazyHistogram();
         // when
-        for (int i = nonEncodedSize + encodedSize; i > encodedSize; i--) {
+        for (int i = nonEncodedSize + encodedSize; i > encodedSize; i -= 1000) {
             lazyHistogram.add(i);
         }
         lazyHistogram.decodeFromByteBuffer(ByteBuffer.wrap(histogram));
@@ -170,8 +170,8 @@ public class LazyHistogramTest {
     }
 
     private void assertPercentile(LazyHistogram lazyHistogram, int num, double percentile) {
-        long low = (long) Math.floor(num * percentile * 0.99 / 100);
-        long high = (long) Math.ceil(num * percentile * 1.01 / 100);
+        long low = (long) Math.floor(num * percentile * 0.99 / (100 * 1000)) * 1000;
+        long high = (long) Math.ceil(num * percentile * 1.01 / (100 * 1000)) * 1000;
         assertThat(lazyHistogram.getValueAtPercentile(percentile)).isBetween(low, high);
     }
 

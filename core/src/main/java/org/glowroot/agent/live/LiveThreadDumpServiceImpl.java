@@ -90,7 +90,8 @@ public class LiveThreadDumpServiceImpl implements LiveThreadDumpService {
                 // left and right are from matchedThreadInfos so have corresponding transactions
                 checkNotNull(leftTransaction);
                 checkNotNull(rightTransaction);
-                return Longs.compare(rightTransaction.getDuration(), leftTransaction.getDuration());
+                return Longs.compare(rightTransaction.getDurationNanos(),
+                        leftTransaction.getDurationNanos());
             }
         });
         // sort descending by stack trace length
@@ -132,7 +133,7 @@ public class LiveThreadDumpServiceImpl implements LiveThreadDumpService {
         if (matchedTransaction != null) {
             builder.transactionType(matchedTransaction.getTransactionType());
             builder.transactionName(matchedTransaction.getTransactionName());
-            builder.transactionDuration(matchedTransaction.getDuration());
+            builder.transactionDuration(matchedTransaction.getDurationNanos());
             if (transactionCollector.shouldStoreSlow(matchedTransaction)) {
                 builder.traceId(matchedTransaction.getId());
             }

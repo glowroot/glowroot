@@ -20,16 +20,21 @@ import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
+import org.immutables.value.Value;
 
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.common.repo.ImmutableTracePointQuery;
 import org.glowroot.common.repo.Result;
+import org.glowroot.common.repo.StringComparator;
 import org.glowroot.common.repo.TraceRepository;
 import org.glowroot.common.repo.TraceRepository.TracePoint;
 import org.glowroot.common.repo.TraceRepository.TracePointQuery;
@@ -61,7 +66,37 @@ class TracePointJsonService {
 
     @GET("/backend/trace/points")
     String getPoints(String queryString) throws Exception {
-        TracePointQuery query = QueryStrings.decode(queryString, TracePointQuery.class);
+        TracePointRequest request = QueryStrings.decode(queryString, TracePointRequest.class);
+
+        double durationMillisLow = request.durationMillisLow();
+        long durationNanosLow = (long) Math.floor(durationMillisLow * NANOSECONDS_PER_MILLISECOND);
+        Long durationNanosHigh = null;
+        Double durationMillisHigh = request.durationMillisHigh();
+        if (durationMillisHigh != null) {
+            durationNanosHigh = (long) Math.ceil(durationMillisHigh * NANOSECONDS_PER_MILLISECOND);
+        }
+
+        TracePointQuery query = ImmutableTracePointQuery.builder()
+                .from(request.from())
+                .to(request.to())
+                .durationNanosLow(durationNanosLow)
+                .durationNanosHigh(durationNanosHigh)
+                .transactionType(request.transactionType())
+                .transactionNameComparator(request.transactionNameComparator())
+                .transactionName(request.transactionName())
+                .headlineComparator(request.headlineComparator())
+                .headline(request.headline())
+                .errorComparator(request.errorComparator())
+                .error(request.error())
+                .userComparator(request.userComparator())
+                .user(request.user())
+                .customAttributeName(request.customAttributeName())
+                .customAttributeValueComparator(request.customAttributeValueComparator())
+                .customAttributeValue(request.customAttributeValue())
+                .slowOnly(request.slowOnly())
+                .errorOnly(request.errorOnly())
+                .limit(request.limit())
+                .build();
         return new Handler(query).handle();
     }
 
@@ -133,14 +168,14 @@ class TracePointJsonService {
                     duplicateIndex = i;
                     break;
                 }
-                if (pendingPoint.duration() > point.duration()) {
+                if (pendingPoint.durationNanos() > point.durationNanos()) {
                     insertionIndex = i;
                     break;
                 }
             }
             if (duplicateIndex != -1) {
                 TracePoint point = orderedPoints.get(duplicateIndex);
-                if (pendingPoint.duration() > point.duration()) {
+                if (pendingPoint.durationNanos() > point.durationNanos()) {
                     // prefer the pending trace, it must be a partial trace that has just completed
                     orderedPoints.set(duplicateIndex, pendingPoint);
                 }
@@ -162,7 +197,7 @@ class TracePointJsonService {
                     if (!activeTracePoint.id().equals(point.id())) {
                         continue;
                     }
-                    if (activeTracePoint.duration() > point.duration()) {
+                    if (activeTracePoint.durationNanos() > point.durationNanos()) {
                         // prefer the active trace, it must be a partial trace that hasn't
                         // completed yet
                         j.remove();
@@ -186,7 +221,7 @@ class TracePointJsonService {
                 if (!point.error()) {
                     jg.writeStartArray();
                     jg.writeNumber(point.captureTime());
-                    jg.writeNumber(point.duration() / NANOSECONDS_PER_MILLISECOND);
+                    jg.writeNumber(point.durationNanos() / NANOSECONDS_PER_MILLISECOND);
                     jg.writeString(point.id());
                     jg.writeEndArray();
                 }
@@ -197,7 +232,7 @@ class TracePointJsonService {
                 if (point.error()) {
                     jg.writeStartArray();
                     jg.writeNumber(point.captureTime());
-                    jg.writeNumber(point.duration() / NANOSECONDS_PER_MILLISECOND);
+                    jg.writeNumber(point.durationNanos() / NANOSECONDS_PER_MILLISECOND);
                     jg.writeString(point.id());
                     jg.writeEndArray();
                 }
@@ -207,7 +242,7 @@ class TracePointJsonService {
             for (TracePoint activePoint : activePoints) {
                 jg.writeStartArray();
                 jg.writeNumber(activePoint.captureTime());
-                jg.writeNumber(activePoint.duration() / NANOSECONDS_PER_MILLISECOND);
+                jg.writeNumber(activePoint.durationNanos() / NANOSECONDS_PER_MILLISECOND);
                 jg.writeString(activePoint.id());
                 jg.writeEndArray();
             }
@@ -222,5 +257,39 @@ class TracePointJsonService {
             jg.close();
             return sb.toString();
         }
+    }
+
+    // same as TracePointQuery but with milliseconds instead of nanoseconds
+    @Value.Immutable
+    public abstract static class TracePointRequest {
+
+        public abstract long from();
+        public abstract long to();
+        public abstract double durationMillisLow();
+        public abstract @Nullable Double durationMillisHigh();
+        public abstract @Nullable String transactionType();
+        public abstract @Nullable StringComparator transactionNameComparator();
+        public abstract @Nullable String transactionName();
+        public abstract @Nullable StringComparator headlineComparator();
+        public abstract @Nullable String headline();
+        public abstract @Nullable StringComparator errorComparator();
+        public abstract @Nullable String error();
+        public abstract @Nullable StringComparator userComparator();
+        public abstract @Nullable String user();
+        public abstract @Nullable String customAttributeName();
+        public abstract @Nullable StringComparator customAttributeValueComparator();
+        public abstract @Nullable String customAttributeValue();
+
+        @Value.Default
+        public boolean slowOnly() {
+            return false;
+        }
+
+        @Value.Default
+        public boolean errorOnly() {
+            return false;
+        }
+
+        public abstract int limit();
     }
 }

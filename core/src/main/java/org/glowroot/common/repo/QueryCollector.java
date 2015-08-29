@@ -25,7 +25,7 @@ import java.util.Map.Entry;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.primitives.Longs;
+import com.google.common.primitives.Doubles;
 
 import org.glowroot.collector.spi.Query;
 
@@ -115,17 +115,17 @@ public class QueryCollector {
             aggregateQuery = new MutableQuery(query.queryText());
             queriesForQueryType.put(query.queryText(), aggregateQuery);
         }
-        aggregateQuery.addToTotalMicros(query.totalMicros());
+        aggregateQuery.addToTotalNanos(query.totalNanos());
         aggregateQuery.addToExecutionCount(query.executionCount());
         aggregateQuery.addToTotalRows(query.totalRows());
     }
 
     private void order(List<MutableQuery> aggregateQueries) {
-        // reverse sort by total micros
+        // reverse sort by total
         Collections.sort(aggregateQueries, new Comparator<MutableQuery>() {
             @Override
             public int compare(MutableQuery aggregateQuery1, MutableQuery aggregateQuery2) {
-                return Longs.compare(aggregateQuery2.totalMicros(), aggregateQuery1.totalMicros());
+                return Doubles.compare(aggregateQuery2.totalNanos(), aggregateQuery1.totalNanos());
             }
         });
     }

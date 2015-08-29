@@ -100,8 +100,8 @@ public class EntriesChunkSourceCreator {
 
         private void writeEntry(TraceEntry traceEntry) throws IOException {
             jg.writeStartObject();
-            jg.writeNumberField("offset", traceEntry.offset());
-            jg.writeNumberField("duration", traceEntry.duration());
+            jg.writeNumberField("offsetNanos", traceEntry.offsetNanos());
+            jg.writeNumberField("durationNanos", traceEntry.durationNanos());
             if (traceEntry.active()) {
                 jg.writeBooleanField("active", true);
             }

@@ -100,9 +100,9 @@
        class="col-lg-9 col-lg-pull-3 form-horizontal trace-filters"
        style="margin: 20px auto 0 auto;">
     <div class="form-group"
-         ng-class="{'has-error': formCtrl.filterDurationLow.$invalid || formCtrl.filterDurationHigh.$invalid}">
+         ng-class="{'has-error': formCtrl.filterDurationMillisLow.$invalid || formCtrl.filterDurationMillisHigh.$invalid}">
       <label class="col-lg-4 control-label"
-             for="{{filterDurationComparator !== 'less' ? 'filterDurationLow' : 'filterDurationHigh'}}">
+             for="{{filterDurationComparator !== 'less' ? 'filterDurationMillisLow' : 'filterDurationMillisHigh'}}">
         Duration
       </label>
 
@@ -117,24 +117,24 @@
                class="input-group-left">
           </div>
           <input type="text"
-                 ng-model="filter.durationLow"
+                 ng-model="filter.durationMillisLow"
                  ng-show="filterDurationComparator !== 'less'"
                  ng-pattern="/^(0|[1-9][0-9]*)$/"
                  class="form-control"
-                 id="filterDurationLow"
-                 name="filterDurationLow">
+                 id="filterDurationMillisLow"
+                 name="filterDurationMillisLow">
         <span ng-show="filterDurationComparator === 'between'"
               class="input-group-addon"
               style="border-left-width: 0; border-right-width: 0;">
           and
         </span>
           <input type="text"
-                 ng-model="filter.durationHigh"
+                 ng-model="filter.durationMillisHigh"
                  ng-show="filterDurationComparator !== 'greater'"
                  ng-pattern="/^(0|[1-9][0-9]*)$/"
                  class="form-control"
-                 id="filterDurationHigh"
-                 name="filterDurationHigh">
+                 id="filterDurationMillisHigh"
+                 name="filterDurationMillisHigh">
         <span class="input-group-addon">
           milliseconds
         </span>

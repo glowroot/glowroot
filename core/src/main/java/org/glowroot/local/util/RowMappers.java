@@ -57,12 +57,31 @@ public class RowMappers {
         }
     }
 
+    public static double getNotAvailableAwareDouble(ResultSet resultSet, int columnIndex)
+            throws SQLException {
+        double value = resultSet.getDouble(columnIndex);
+        if (resultSet.wasNull()) {
+            return ThreadInfoData.NOT_AVAILABLE;
+        } else {
+            return value;
+        }
+    }
+
     public static void setNotAvailableAwareLong(PreparedStatement preparedStatement,
             int columnIndex, long value) throws SQLException {
         if (value == ThreadInfoData.NOT_AVAILABLE) {
             preparedStatement.setNull(columnIndex, Types.BIGINT);
         } else {
             preparedStatement.setLong(columnIndex, value);
+        }
+    }
+
+    public static void setNotAvailableAwareDouble(PreparedStatement preparedStatement,
+            int columnIndex, double value) throws SQLException {
+        if (value == ThreadInfoData.NOT_AVAILABLE) {
+            preparedStatement.setNull(columnIndex, Types.BIGINT);
+        } else {
+            preparedStatement.setDouble(columnIndex, value);
         }
     }
 

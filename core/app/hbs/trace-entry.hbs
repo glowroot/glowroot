@@ -10,12 +10,12 @@
   {{^}}
     <div class="clearfix">
       <div class="gt-indent1 gt-left-numeric-column" style="width: {{offsetColumnWidth}}em; float: left;">
-        +{{nanosToMillis offset}}
+        +{{nanosToMillis offsetNanos}}
       </div>
       {{! +1 at the beginning is for the indent1 of the offset column }}
       <div style="margin-left: {{traceEntryIndent .}}em; float: left;">
         <span class="gt-inline-block gt-left-numeric-column" style="width: {{durationColumnWidth}}em;">
-          {{nanosToMillis duration}}{{#if active}}..{{/if}}
+          {{nanosToMillis durationNanos}}{{#if active}}..{{/if}}
         </span>
       </div>
       <div style="overflow: hidden; padding-left: 0.5em;">

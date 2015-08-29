@@ -96,7 +96,7 @@ public class AlertingService {
         boolean previouslyTriggered = triggeredAlertRepository.exists(alertConfig.version());
         long valueAtPercentile = histogram.getValueAtPercentile(alertConfig.percentile());
         boolean currentlyTriggered =
-                valueAtPercentile >= MILLISECONDS.toMicros(alertConfig.thresholdMillis());
+                valueAtPercentile >= MILLISECONDS.toNanos(alertConfig.thresholdMillis());
         if (previouslyTriggered && !currentlyTriggered) {
             triggeredAlertRepository.delete(alertConfig.version());
             sendAlert(alertConfig, valueAtPercentile, transactionCount, true);

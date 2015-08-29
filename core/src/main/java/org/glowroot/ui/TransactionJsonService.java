@@ -33,7 +33,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
-import com.google.common.primitives.Longs;
+import com.google.common.primitives.Doubles;
 import org.immutables.value.Value;
 
 import org.glowroot.common.live.LiveTraceRepository;
@@ -65,7 +65,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 class TransactionJsonService {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
-    private static final double MICROSECONDS_PER_MILLISECOND = 1000.0;
+    private static final double NANOSECONDS_PER_MILLISECOND = 1000000.0;
 
     private final TransactionCommonService transactionCommonService;
     private final TraceRepository traceRepository;
@@ -179,7 +179,7 @@ class TransactionJsonService {
                 queryList.add(ImmutableQuery.builder()
                         .queryType(entry.getKey())
                         .queryText(aggregateQuery.queryText())
-                        .totalMicros(aggregateQuery.totalMicros())
+                        .totalNanos(aggregateQuery.totalNanos())
                         .executionCount(aggregateQuery.executionCount())
                         .totalRows(aggregateQuery.totalRows())
                         .build());
@@ -191,7 +191,7 @@ class TransactionJsonService {
                 checkNotNull(left);
                 checkNotNull(right);
                 // sort descending
-                return Longs.compare(right.totalMicros(), left.totalMicros());
+                return Doubles.compare(right.totalNanos(), left.totalNanos());
             }
         });
         if (queryList.isEmpty()
@@ -339,8 +339,9 @@ class TransactionJsonService {
             for (int i = 0; i < percentiles.size(); i++) {
                 DataSeries dataSeries = dataSeriesList.get(i);
                 double percentile = percentiles.get(i);
+                // convert to milliseconds
                 dataSeries.add(percentileAggregate.captureTime(),
-                        histogram.getValueAtPercentile(percentile) / MICROSECONDS_PER_MILLISECOND);
+                        histogram.getValueAtPercentile(percentile) / NANOSECONDS_PER_MILLISECOND);
             }
         }
         if (lastPercentileAggregate != null) {
@@ -388,27 +389,27 @@ class TransactionJsonService {
             }
             lastOverviewAggregate = overviewAggregate;
             MutableLongMap<String> stackedTimers = stackedPoint.getStackedTimers();
-            long totalOtherMicros = overviewAggregate.totalMicros();
+            double totalOtherNanos = overviewAggregate.totalNanos();
             for (DataSeries dataSeries : dataSeriesList) {
-                MutableLong totalMicros = stackedTimers.get(dataSeries.getName());
-                if (totalMicros == null) {
+                MutableDouble totalNanos = stackedTimers.get(dataSeries.getName());
+                if (totalNanos == null) {
                     dataSeries.add(overviewAggregate.captureTime(), 0);
                 } else {
-                    // convert to average seconds
+                    // convert to average milliseconds
                     dataSeries.add(overviewAggregate.captureTime(),
-                            (totalMicros.longValue()
-                                    / (double) overviewAggregate.transactionCount())
-                                    / MICROSECONDS_PER_MILLISECOND);
-                    totalOtherMicros -= totalMicros.longValue();
+                            (totalNanos.doubleValue()
+                                    / overviewAggregate.transactionCount())
+                                    / NANOSECONDS_PER_MILLISECOND);
+                    totalOtherNanos -= totalNanos.doubleValue();
                 }
             }
             if (overviewAggregate.transactionCount() == 0) {
                 otherDataSeries.add(overviewAggregate.captureTime(), 0);
             } else {
-                // convert to average seconds
+                // convert to average milliseconds
                 otherDataSeries.add(overviewAggregate.captureTime(),
-                        (totalOtherMicros / (double) overviewAggregate.transactionCount())
-                                / MICROSECONDS_PER_MILLISECOND);
+                        (totalOtherNanos / overviewAggregate.transactionCount())
+                                / NANOSECONDS_PER_MILLISECOND);
             }
         }
         if (lastOverviewAggregate != null) {
@@ -423,23 +424,23 @@ class TransactionJsonService {
     private static List<String> getTopTimerNames(List<StackedPoint> stackedPoints, int topX) {
         MutableLongMap<String> timerTotals = new MutableLongMap<String>();
         for (StackedPoint stackedPoint : stackedPoints) {
-            for (Entry<String, MutableLong> entry : stackedPoint.getStackedTimers().entrySet()) {
-                timerTotals.add(entry.getKey(), entry.getValue().longValue());
+            for (Entry<String, MutableDouble> entry : stackedPoint.getStackedTimers().entrySet()) {
+                timerTotals.add(entry.getKey(), entry.getValue().doubleValue());
             }
         }
-        Ordering<Entry<String, MutableLong>> valueOrdering =
-                Ordering.natural().onResultOf(new Function<Entry<String, MutableLong>, Long>() {
+        Ordering<Entry<String, MutableDouble>> valueOrdering =
+                Ordering.natural().onResultOf(new Function<Entry<String, MutableDouble>, Double>() {
                     @Override
-                    public Long apply(@Nullable Entry<String, MutableLong> entry) {
+                    public Double apply(@Nullable Entry<String, MutableDouble> entry) {
                         checkNotNull(entry);
-                        return entry.getValue().longValue();
+                        return entry.getValue().doubleValue();
                     }
                 });
         List<String> timerNames = Lists.newArrayList();
         @SuppressWarnings("assignment.type.incompatible")
-        List<Entry<String, MutableLong>> topTimerTotals =
+        List<Entry<String, MutableDouble>> topTimerTotals =
                 valueOrdering.greatestOf(timerTotals.entrySet(), topX);
-        for (Entry<String, MutableLong> entry : topTimerTotals) {
+        for (Entry<String, MutableDouble> entry : topTimerTotals) {
             timerNames.add(entry.getKey());
         }
         return timerNames;
@@ -510,14 +511,14 @@ class TransactionJsonService {
 
         private static void addToStackedTimer(MutableTimerNode timer,
                 MutableLongMap<String> stackedTimers) {
-            long totalNestedMicros = 0;
+            double totalNestedNanos = 0;
             for (MutableTimerNode nestedTimer : timer.childNodes()) {
-                totalNestedMicros += nestedTimer.totalMicros();
+                totalNestedNanos += nestedTimer.totalNanos();
                 addToStackedTimer(nestedTimer, stackedTimers);
             }
             // timer name is only null for synthetic root timer which is never passed to this method
             String timerName = checkNotNull(timer.name());
-            stackedTimers.add(timerName, timer.totalMicros() - totalNestedMicros);
+            stackedTimers.add(timerName, timer.totalNanos() - totalNestedNanos);
         }
     }
 
@@ -526,23 +527,23 @@ class TransactionJsonService {
     //
     // not thread safe, for thread safety use guava's AtomicLongMap
     @SuppressWarnings("serial")
-    private static class MutableLongMap<K> extends HashMap<K, MutableLong> {
-        private void add(K key, long delta) {
-            MutableLong existing = get(key);
+    private static class MutableLongMap<K> extends HashMap<K, MutableDouble> {
+        private void add(K key, double delta) {
+            MutableDouble existing = get(key);
             if (existing == null) {
-                put(key, new MutableLong(delta));
+                put(key, new MutableDouble(delta));
             } else {
                 existing.value += delta;
             }
         }
     }
 
-    private static class MutableLong {
-        private long value;
-        private MutableLong(long value) {
+    private static class MutableDouble {
+        private double value;
+        private MutableDouble(double value) {
             this.value = value;
         }
-        private long longValue() {
+        private double doubleValue() {
             return value;
         }
     }
@@ -599,7 +600,7 @@ class TransactionJsonService {
     interface Query {
         String queryType();
         String queryText();
-        long totalMicros();
+        double totalNanos();
         long executionCount();
         long totalRows();
     }

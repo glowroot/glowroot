@@ -116,7 +116,7 @@
          style="position: relative; padding-top: 30px; margin-left: 40px;">
       <div ng-repeat="percentileValue in mergedAggregate.percentileValues">
         <label>{{percentileValue.dataSeriesName}}:</label>
-        {{percentileValue.value / 1000 | gtMillis}} ms
+        {{percentileValue.value / 1000000 | gtMillis}} ms
       </div>
 
       <div style="margin-top: 20px;">

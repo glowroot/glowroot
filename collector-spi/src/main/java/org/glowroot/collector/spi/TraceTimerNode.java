@@ -17,11 +17,22 @@ package org.glowroot.collector.spi;
 
 import java.util.Collection;
 
-public interface TraceTimerNode extends TimerNode {
+import javax.annotation.Nullable;
+
+public interface TraceTimerNode {
+
+    // only null for synthetic root node
+    @Nullable
+    String name();
+
+    boolean extended();
+
+    long totalNanos();
+
+    long count();
 
     // can only be true inside of partial trace captures
     boolean active();
 
-    @Override
     Collection<? extends TraceTimerNode> childNodes();
 }

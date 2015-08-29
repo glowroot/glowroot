@@ -98,7 +98,7 @@
           {{query.queryText}}
         </td>
         <td class="gt-query-total-column">
-          {{query.totalMicros / 1000 | gtMillis}}
+          {{query.totalNanos / 1000000 | gtMillis}}
         </td>
         <td class="gt-query-other-column">
           {{query.executionCount}}

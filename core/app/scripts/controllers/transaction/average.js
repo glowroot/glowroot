@@ -83,7 +83,7 @@ glowroot.controller('TransactionAverageCtrl', [
         treeTimers.push(timer);
         if (timer.childNodes) {
           timer.childNodes.sort(function (a, b) {
-            return b.totalMicros - a.totalMicros;
+            return b.totalNanos - a.totalNanos;
           });
           $.each(timer.childNodes, function (index, nestedTimer) {
             traverse(nestedTimer, nestingLevel + 1);
@@ -105,7 +105,7 @@ glowroot.controller('TransactionAverageCtrl', [
         if (!flattenedTimer) {
           flattenedTimer = {
             name: timer.name,
-            totalMicros: timer.totalMicros,
+            totalNanos: timer.totalNanos,
             count: timer.count
           };
           flattenedTimerMap[timer.name] = flattenedTimer;
@@ -113,7 +113,7 @@ glowroot.controller('TransactionAverageCtrl', [
         } else if (parentTimerNames.indexOf(timer.name) === -1) {
           // only add to existing flattened timer if the aggregate timer isn't appearing under itself
           // (this is possible when they are separated by another aggregate timer)
-          flattenedTimer.totalMicros += timer.totalMicros;
+          flattenedTimer.totalNanos += timer.totalNanos;
           flattenedTimer.count += timer.count;
         }
         if (timer.childNodes) {
@@ -126,7 +126,7 @@ glowroot.controller('TransactionAverageCtrl', [
       traverse($scope.mergedAggregate.rootTimer, []);
 
       flattenedTimers.sort(function (a, b) {
-        return b.totalMicros - a.totalMicros;
+        return b.totalNanos - a.totalNanos;
       });
 
       $scope.flattenedTimers = flattenedTimers;

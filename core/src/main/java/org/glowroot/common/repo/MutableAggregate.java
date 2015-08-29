@@ -34,13 +34,13 @@ import org.glowroot.common.util.Styles;
 public class MutableAggregate {
 
     private long captureTime;
-    private long totalMicros;
-    private long errorCount;
+    private double totalNanos;
     private long transactionCount;
-    private long totalCpuMicros = ThreadInfoData.NOT_AVAILABLE;
-    private long totalBlockedMicros = ThreadInfoData.NOT_AVAILABLE;
-    private long totalWaitedMicros = ThreadInfoData.NOT_AVAILABLE;
-    private long totalAllocatedKBytes = ThreadInfoData.NOT_AVAILABLE;
+    private long errorCount;
+    private double totalCpuNanos = ThreadInfoData.NOT_AVAILABLE;
+    private double totalBlockedNanos = ThreadInfoData.NOT_AVAILABLE;
+    private double totalWaitedNanos = ThreadInfoData.NOT_AVAILABLE;
+    private double totalAllocatedBytes = ThreadInfoData.NOT_AVAILABLE;
     private final LazyHistogram lazyHistogram = new LazyHistogram();
     private final MutableTimerNode syntheticRootTimerNode =
             MutableTimerNode.createSyntheticRootNode();
@@ -57,33 +57,33 @@ public class MutableAggregate {
         this.captureTime = captureTime;
     }
 
-    public void addTotalMicros(long totalMicros) {
-        this.totalMicros += totalMicros;
-    }
-
-    public void addErrorCount(long errorCount) {
-        this.errorCount += errorCount;
+    public void addTotalNanos(double totalNanos) {
+        this.totalNanos += totalNanos;
     }
 
     public void addTransactionCount(long transactionCount) {
         this.transactionCount += transactionCount;
     }
 
-    public void addTotalCpuMicros(long totalCpuMicros) {
-        this.totalCpuMicros = notAvailableAwareAdd(this.totalCpuMicros, totalCpuMicros);
+    public void addErrorCount(long errorCount) {
+        this.errorCount += errorCount;
     }
 
-    public void addTotalBlockedMicros(long totalBlockedMicros) {
-        this.totalBlockedMicros = notAvailableAwareAdd(this.totalBlockedMicros, totalBlockedMicros);
+    public void addTotalCpuNanos(double totalCpuNanos) {
+        this.totalCpuNanos = notAvailableAwareAdd(this.totalCpuNanos, totalCpuNanos);
     }
 
-    public void addTotalWaitedMicros(long totalWaitedMicros) {
-        this.totalWaitedMicros = notAvailableAwareAdd(this.totalWaitedMicros, totalWaitedMicros);
+    public void addTotalBlockedNanos(double totalBlockedNanos) {
+        this.totalBlockedNanos = notAvailableAwareAdd(this.totalBlockedNanos, totalBlockedNanos);
     }
 
-    public void addTotalAllocatedKBytes(long totalAllocatedKBytes) {
-        this.totalAllocatedKBytes =
-                notAvailableAwareAdd(this.totalAllocatedKBytes, totalAllocatedKBytes);
+    public void addTotalWaitedNanos(double totalWaitedNanos) {
+        this.totalWaitedNanos = notAvailableAwareAdd(this.totalWaitedNanos, totalWaitedNanos);
+    }
+
+    public void addTotalAllocatedBytes(double totalAllocatedBytes) {
+        this.totalAllocatedBytes =
+                notAvailableAwareAdd(this.totalAllocatedBytes, totalAllocatedBytes);
     }
 
     public void addHistogram(byte[] histogram) throws DataFormatException {
@@ -101,13 +101,13 @@ public class MutableAggregate {
     public Aggregate toAggregate() throws IOException {
         AggregateBuilder builder = new AggregateBuilder()
                 .captureTime(captureTime)
-                .totalMicros(totalMicros)
-                .errorCount(errorCount)
+                .totalNanos(totalNanos)
                 .transactionCount(transactionCount)
-                .totalCpuMicros(totalCpuMicros)
-                .totalBlockedMicros(totalBlockedMicros)
-                .totalWaitedMicros(totalWaitedMicros)
-                .totalAllocatedKBytes(totalAllocatedKBytes)
+                .errorCount(errorCount)
+                .totalCpuNanos(totalCpuNanos)
+                .totalBlockedNanos(totalBlockedNanos)
+                .totalWaitedNanos(totalWaitedNanos)
+                .totalAllocatedBytes(totalAllocatedBytes)
                 .histogram(lazyHistogram)
                 .syntheticRootTimerNode(syntheticRootTimerNode)
                 .queries(mergedQueries.getOrderedAndTruncatedQueries());
@@ -120,12 +120,12 @@ public class MutableAggregate {
     public OverviewAggregate toOverviewAggregate() throws IOException {
         return ImmutableOverviewAggregate.builder()
                 .captureTime(captureTime)
-                .totalMicros(totalMicros)
+                .totalNanos(totalNanos)
                 .transactionCount(transactionCount)
-                .totalCpuMicros(totalCpuMicros)
-                .totalBlockedMicros(totalBlockedMicros)
-                .totalWaitedMicros(totalWaitedMicros)
-                .totalAllocatedKBytes(totalAllocatedKBytes)
+                .totalCpuNanos(totalCpuNanos)
+                .totalBlockedNanos(totalBlockedNanos)
+                .totalWaitedNanos(totalWaitedNanos)
+                .totalAllocatedBytes(totalAllocatedBytes)
                 .syntheticRootTimer(syntheticRootTimerNode)
                 .build();
     }
@@ -133,7 +133,7 @@ public class MutableAggregate {
     public PercentileAggregate toPercentileAggregate() throws IOException {
         return ImmutablePercentileAggregate.builder()
                 .captureTime(captureTime)
-                .totalMicros(totalMicros)
+                .totalNanos(totalNanos)
                 .transactionCount(transactionCount)
                 .histogram(lazyHistogram)
                 .build();
@@ -147,7 +147,7 @@ public class MutableAggregate {
         this.syntheticRootProfileNode.mergeMatchedNode(syntheticRootProfileNode);
     }
 
-    private static long notAvailableAwareAdd(long x, long y) {
+    private static double notAvailableAwareAdd(double x, double y) {
         if (x == ThreadInfoData.NOT_AVAILABLE) {
             return y;
         }

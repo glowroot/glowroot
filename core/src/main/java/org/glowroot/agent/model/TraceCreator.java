@@ -69,7 +69,7 @@ public class TraceCreator {
         builder.error(errorMessage != null);
         builder.startTime(transaction.getStartTime());
         builder.captureTime(captureTime);
-        builder.duration(captureTick - transaction.getStartTick());
+        builder.durationNanos(captureTick - transaction.getStartTick());
         builder.transactionType(transaction.getTransactionType());
         builder.transactionName(transaction.getTransactionName());
         builder.headline(transaction.getHeadline());
@@ -88,14 +88,14 @@ public class TraceCreator {
         }
         ThreadInfoData threadInfo = transaction.getThreadInfo();
         if (threadInfo == null) {
-            builder.threadCpuTime(-1);
-            builder.threadBlockedTime(-1);
-            builder.threadWaitedTime(-1);
+            builder.threadCpuNanos(-1);
+            builder.threadBlockedNanos(-1);
+            builder.threadWaitedNanos(-1);
             builder.threadAllocatedBytes(-1);
         } else {
-            builder.threadCpuTime(threadInfo.threadCpuTime());
-            builder.threadBlockedTime(threadInfo.threadBlockedTime());
-            builder.threadWaitedTime(threadInfo.threadWaitedTime());
+            builder.threadCpuNanos(threadInfo.threadCpuNanos());
+            builder.threadBlockedNanos(threadInfo.threadBlockedNanos());
+            builder.threadWaitedNanos(threadInfo.threadWaitedNanos());
             builder.threadAllocatedBytes(threadInfo.threadAllocatedBytes());
         }
         builder.gcActivity(transaction.getGcActivity());
@@ -117,7 +117,7 @@ public class TraceCreator {
         builder.error(errorMessage != null);
         builder.startTime(transaction.getStartTime());
         builder.captureTime(captureTime);
-        builder.duration(captureTick - transaction.getStartTick());
+        builder.durationNanos(captureTick - transaction.getStartTick());
         builder.transactionType(transaction.getTransactionType());
         builder.transactionName(transaction.getTransactionName());
         builder.headline(transaction.getHeadline());
@@ -136,9 +136,9 @@ public class TraceCreator {
         }
         ThreadInfoData threadInfo = transaction.getThreadInfo();
         if (threadInfo != null) {
-            builder.threadCpuTime(threadInfo.threadCpuTime());
-            builder.threadBlockedTime(threadInfo.threadBlockedTime());
-            builder.threadWaitedTime(threadInfo.threadWaitedTime());
+            builder.threadCpuNanos(threadInfo.threadCpuNanos());
+            builder.threadBlockedNanos(threadInfo.threadBlockedNanos());
+            builder.threadWaitedNanos(threadInfo.threadWaitedNanos());
             builder.threadAllocatedBytes(threadInfo.threadAllocatedBytes());
         }
         builder.gcActivity(transaction.getGcActivity());

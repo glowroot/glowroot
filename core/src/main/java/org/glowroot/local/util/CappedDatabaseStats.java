@@ -19,8 +19,8 @@ public class CappedDatabaseStats {
 
     private long totalBytesBeforeCompression;
     private long totalBytesAfterCompression;
-    private long totalMicros;
-    private long totalWrites;
+    private long totalNanos;
+    private long writeCount;
 
     public long getTotalBytesBeforeCompression() {
         return totalBytesBeforeCompression;
@@ -31,11 +31,11 @@ public class CappedDatabaseStats {
     }
 
     public double getTotalMillis() {
-        return totalMicros / 1000.0;
+        return totalNanos / 1000000.0;
     }
 
-    public long getTotalWrites() {
-        return totalWrites;
+    public long getWriteCount() {
+        return writeCount;
     }
 
     public double getCompressionRatio() {
@@ -44,21 +44,21 @@ public class CappedDatabaseStats {
     }
 
     public double getAverageBytesPerWriteBeforeCompression() {
-        return totalBytesBeforeCompression / (double) totalWrites;
+        return totalBytesBeforeCompression / (double) writeCount;
     }
 
     public double getAverageBytesPerWriteAfterCompression() {
-        return totalBytesAfterCompression / (double) totalWrites;
+        return totalBytesAfterCompression / (double) writeCount;
     }
 
     public double getAverageMillisPerWrite() {
-        return totalMicros / (double) (1000 * totalWrites);
+        return totalNanos / (1000 * 1000 * (double) writeCount);
     }
 
-    void record(long bytesBeforeCompression, long bytesAfterCompression, long micros) {
+    void record(long bytesBeforeCompression, long bytesAfterCompression, long nanos) {
         totalBytesBeforeCompression += bytesBeforeCompression;
         totalBytesAfterCompression += bytesAfterCompression;
-        totalMicros += micros;
-        totalWrites++;
+        totalNanos += nanos;
+        writeCount++;
     }
 }

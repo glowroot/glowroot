@@ -32,7 +32,7 @@ import org.glowroot.collector.spi.GarbageCollectionActivity;
 import org.glowroot.collector.spi.ProfileNode;
 import org.glowroot.collector.spi.Query;
 import org.glowroot.collector.spi.ThrowableInfo;
-import org.glowroot.collector.spi.TimerNode;
+import org.glowroot.collector.spi.AggregateTimerNode;
 import org.glowroot.collector.spi.TraceTimerNode;
 import org.glowroot.common.repo.TraceRepository.TraceHeader;
 import org.glowroot.common.util.ObjectMappers;
@@ -50,7 +50,7 @@ public class JsonMarshaller {
         return mapper.writeValueAsString(traceHeader);
     }
 
-    public static String marshal(TimerNode aggregateTimer) throws IOException {
+    public static String marshal(AggregateTimerNode aggregateTimer) throws IOException {
         return mapper.writeValueAsString(aggregateTimer);
     }
 

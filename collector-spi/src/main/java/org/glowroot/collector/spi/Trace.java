@@ -34,7 +34,7 @@ public interface Trace {
 
     long captureTime();
 
-    long duration(); // nanoseconds
+    long durationNanos();
 
     String transactionType();
 
@@ -57,11 +57,11 @@ public interface Trace {
 
     TraceTimerNode rootTimer();
 
-    long threadCpuTime(); // nanoseconds, -1 means N/A
+    long threadCpuNanos(); // -1 means N/A
 
-    long threadBlockedTime(); // nanoseconds, -1 means N/A
+    long threadBlockedNanos(); // -1 means N/A
 
-    long threadWaitedTime(); // nanoseconds, -1 means N/A
+    long threadWaitedNanos(); // -1 means N/A
 
     long threadAllocatedBytes(); // -1 means N/A
 

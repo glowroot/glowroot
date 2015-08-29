@@ -92,7 +92,7 @@ public interface TraceRepository {
         boolean error();
         long startTime();
         long captureTime();
-        long duration(); // nanoseconds
+        long durationNanos();
         String transactionType();
         String transactionName();
         String headline();
@@ -105,9 +105,9 @@ public interface TraceRepository {
         @Nullable
         ThrowableInfo errorThrowable();
         TraceTimerNode rootTimer();
-        long threadCpuTime(); // nanoseconds, -1 means N/A
-        long threadBlockedTime(); // nanoseconds, -1 means N/A
-        long threadWaitedTime(); // nanoseconds, -1 means N/A
+        long threadCpuNanos(); // -1 means N/A
+        long threadBlockedNanos(); // -1 means N/A
+        long threadWaitedNanos(); // -1 means N/A
         long threadAllocatedBytes(); // -1 means N/A
         Map<String, GarbageCollectionActivity> gcActivity();
 
@@ -122,8 +122,8 @@ public interface TraceRepository {
 
         public abstract long from();
         public abstract long to();
-        public abstract long durationLow(); // nanoseconds
-        public abstract @Nullable Long durationHigh(); // nanoseconds
+        public abstract long durationNanosLow();
+        public abstract @Nullable Long durationNanosHigh();
         public abstract @Nullable String transactionType();
         public abstract @Nullable StringComparator transactionNameComparator();
         public abstract @Nullable String transactionName();
@@ -154,7 +154,7 @@ public interface TraceRepository {
     public interface TracePoint {
         String id();
         long captureTime();
-        long duration();
+        long durationNanos();
         boolean error();
     }
 

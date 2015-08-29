@@ -68,7 +68,7 @@ public class AggregatorTest {
         when(timer.getNestedTimers()).thenReturn(ImmutableList.<TimerImpl>of());
         when(transaction.getTransactionType()).thenReturn("a type");
         when(transaction.getTransactionName()).thenReturn("a name");
-        when(transaction.getDuration()).thenReturn(MILLISECONDS.toNanos(123));
+        when(transaction.getDurationNanos()).thenReturn(MILLISECONDS.toNanos(123));
         when(transaction.getRootTimer()).thenReturn(timer);
         when(transaction.getQueries()).thenReturn(ImmutableList.<QueryData>of());
         // when
@@ -87,21 +87,21 @@ public class AggregatorTest {
         // aggregation is done in a separate thread, so give it a little time to complete
         long start = System.currentTimeMillis();
         while (System.currentTimeMillis() - start < 5000) {
-            if (aggregateCollector.getTotalMicros() > 0) {
+            if (aggregateCollector.getTotalNanos() > 0) {
                 break;
             }
         }
-        assertThat(aggregateCollector.getTotalMicros()).isEqualTo(count * 123 * 1000);
+        assertThat(aggregateCollector.getTotalNanos()).isEqualTo(count * 123 * 1000000.0);
         aggregator.close();
     }
 
     private static class MockCollector implements Collector {
 
         // volatile needed for visibility from other thread
-        private volatile long totalMicros;
+        private volatile double totalNanos;
 
-        private long getTotalMicros() {
-            return totalMicros;
+        private double getTotalNanos() {
+            return totalNanos;
         }
 
         @Override
@@ -109,8 +109,8 @@ public class AggregatorTest {
                 Map<String, ? extends Map<String, ? extends Aggregate>> transactionAggregates,
                 long captureTime) throws Exception {
             // only capture first non-zero value
-            if (totalMicros == 0 && !overallAggregates.isEmpty()) {
-                totalMicros = overallAggregates.values().iterator().next().totalMicros();
+            if (totalNanos == 0 && !overallAggregates.isEmpty()) {
+                totalNanos = overallAggregates.values().iterator().next().totalNanos();
             }
         }
 

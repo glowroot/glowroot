@@ -80,13 +80,13 @@ class AggregateDao implements AggregateRepository {
     private static final ImmutableList<Column> overallAggregatePointColumns =
             ImmutableList.<Column>of(ImmutableColumn.of("transaction_type", Types.VARCHAR),
                     ImmutableColumn.of("capture_time", Types.BIGINT),
-                    ImmutableColumn.of("total_micros", Types.BIGINT),
-                    ImmutableColumn.of("error_count", Types.BIGINT),
+                    ImmutableColumn.of("total_nanos", Types.BIGINT),
                     ImmutableColumn.of("transaction_count", Types.BIGINT),
-                    ImmutableColumn.of("total_cpu_micros", Types.BIGINT),
-                    ImmutableColumn.of("total_blocked_micros", Types.BIGINT),
-                    ImmutableColumn.of("total_waited_micros", Types.BIGINT),
-                    ImmutableColumn.of("total_allocated_kbytes", Types.BIGINT),
+                    ImmutableColumn.of("error_count", Types.BIGINT),
+                    ImmutableColumn.of("total_cpu_nanos", Types.BIGINT),
+                    ImmutableColumn.of("total_blocked_nanos", Types.BIGINT),
+                    ImmutableColumn.of("total_waited_nanos", Types.BIGINT),
+                    ImmutableColumn.of("total_allocated_bytes", Types.BIGINT),
                     ImmutableColumn.of("queries_capped_id", Types.BIGINT), // capped database id
                     // profile json is always from "synthetic root"
                     ImmutableColumn.of("profile_capped_id", Types.BIGINT), // capped database id
@@ -98,13 +98,13 @@ class AggregateDao implements AggregateRepository {
             ImmutableList.<Column>of(ImmutableColumn.of("transaction_type", Types.VARCHAR),
                     ImmutableColumn.of("transaction_name", Types.VARCHAR),
                     ImmutableColumn.of("capture_time", Types.BIGINT),
-                    ImmutableColumn.of("total_micros", Types.BIGINT),
-                    ImmutableColumn.of("error_count", Types.BIGINT),
+                    ImmutableColumn.of("total_nanos", Types.BIGINT),
                     ImmutableColumn.of("transaction_count", Types.BIGINT),
-                    ImmutableColumn.of("total_cpu_micros", Types.BIGINT),
-                    ImmutableColumn.of("total_blocked_micros", Types.BIGINT),
-                    ImmutableColumn.of("total_waited_micros", Types.BIGINT),
-                    ImmutableColumn.of("total_allocated_kbytes", Types.BIGINT),
+                    ImmutableColumn.of("error_count", Types.BIGINT),
+                    ImmutableColumn.of("total_cpu_nanos", Types.BIGINT),
+                    ImmutableColumn.of("total_blocked_nanos", Types.BIGINT),
+                    ImmutableColumn.of("total_waited_nanos", Types.BIGINT),
+                    ImmutableColumn.of("total_allocated_bytes", Types.BIGINT),
                     ImmutableColumn.of("queries_capped_id", Types.BIGINT), // capped database id
                     // profile json is always from "synthetic root"
                     ImmutableColumn.of("profile_capped_id", Types.BIGINT), // capped database id
@@ -115,14 +115,14 @@ class AggregateDao implements AggregateRepository {
     // this index includes all columns needed for the overall aggregate query so h2 can return
     // the result set directly from the index without having to reference the table for each row
     private static final ImmutableList<String> overallAggregateIndexColumns = ImmutableList.of(
-            "capture_time", "transaction_type", "total_micros", "transaction_count", "error_count");
+            "capture_time", "transaction_type", "total_nanos", "transaction_count", "error_count");
 
     // this index includes all columns needed for the transaction aggregate query so h2 can return
     // the result set directly from the index without having to reference the table for each row
     //
     // capture_time is first so this can also be used for readTransactionErrorCounts()
     private static final ImmutableList<String> transactionAggregateIndexColumns =
-            ImmutableList.of("capture_time", "transaction_type", "transaction_name", "total_micros",
+            ImmutableList.of("capture_time", "transaction_type", "transaction_name", "total_nanos",
                     "transaction_count", "error_count");
 
     private final DataSource dataSource;
@@ -268,9 +268,9 @@ class AggregateDao implements AggregateRepository {
     @Override
     public ImmutableList<OverviewAggregate> readOverallOverviewAggregates(String transactionType,
             long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception {
-        return dataSource.query("select capture_time, total_micros, transaction_count,"
-                + " total_cpu_micros, total_blocked_micros, total_waited_micros,"
-                + " total_allocated_kbytes, timers from overall_aggregate_rollup_"
+        return dataSource.query("select capture_time, total_nanos, transaction_count,"
+                + " total_cpu_nanos, total_blocked_nanos, total_waited_nanos,"
+                + " total_allocated_bytes, timers from overall_aggregate_rollup_"
                 + castUntainted(rollupLevel) + " where transaction_type = ? and capture_time >= ?"
                 + " and capture_time <= ? order by capture_time", new OverviewAggregateRowMapper(),
                 transactionType, captureTimeFrom, captureTimeTo);
@@ -282,7 +282,7 @@ class AggregateDao implements AggregateRepository {
             String transactionType, long captureTimeFrom, long captureTimeTo, int rollupLevel)
                     throws Exception {
         return dataSource.query(
-                "select capture_time, total_micros, transaction_count, histogram"
+                "select capture_time, total_nanos, transaction_count, histogram"
                         + " from overall_aggregate_rollup_" + castUntainted(rollupLevel)
                         + " where transaction_type = ? and capture_time >= ? and capture_time <= ?"
                         + " order by capture_time",
@@ -296,8 +296,8 @@ class AggregateDao implements AggregateRepository {
             String transactionType, String transactionName, long captureTimeFrom,
             long captureTimeTo, int rollupLevel) throws Exception {
         return dataSource.query(
-                "select capture_time, total_micros, transaction_count, total_cpu_micros,"
-                        + " total_blocked_micros, total_waited_micros, total_allocated_kbytes,"
+                "select capture_time, total_nanos, transaction_count, total_cpu_nanos,"
+                        + " total_blocked_nanos, total_waited_nanos, total_allocated_bytes,"
                         + " timers from transaction_aggregate_rollup_" + castUntainted(rollupLevel)
                         + " where transaction_type = ? and transaction_name = ?"
                         + " and capture_time >= ? and capture_time <= ? order by capture_time",
@@ -311,7 +311,7 @@ class AggregateDao implements AggregateRepository {
             String transactionType, String transactionName, long captureTimeFrom,
             long captureTimeTo, int rollupLevel) throws Exception {
         return dataSource.query(
-                "select capture_time, total_micros, transaction_count, histogram"
+                "select capture_time, total_nanos, transaction_count, histogram"
                         + " from transaction_aggregate_rollup_" + castUntainted(rollupLevel)
                         + " where transaction_type = ? and transaction_name = ?"
                         + " and capture_time >= ? and capture_time <= ? order by capture_time",
@@ -499,9 +499,9 @@ class AggregateDao implements AggregateRepository {
     private void rollupOneInterval(long rollupTime, long fixedIntervalMillis, int toRollupLevel,
             int fromRollupLevel) throws Exception {
         Map<String, MutableAggregate> overallAggregates = dataSource.query(
-                "select transaction_type, total_micros, error_count, transaction_count,"
-                        + " total_cpu_micros, total_blocked_micros, total_waited_micros,"
-                        + " total_allocated_kbytes, queries_capped_id, profile_capped_id,"
+                "select transaction_type, total_nanos, transaction_count, error_count,"
+                        + " total_cpu_nanos, total_blocked_nanos, total_waited_nanos,"
+                        + " total_allocated_bytes, queries_capped_id, profile_capped_id,"
                         + " histogram, timers from overall_aggregate_rollup_"
                         + castUntainted(fromRollupLevel)
                         + " where capture_time > ? and capture_time <= ?",
@@ -512,10 +512,10 @@ class AggregateDao implements AggregateRepository {
             return;
         }
         Map<String, Map<String, MutableAggregate>> transactionAggregates = dataSource.query(
-                "select transaction_type, transaction_name, total_micros, error_count,"
-                        + " transaction_count, total_cpu_micros, total_blocked_micros,"
-                        + " total_waited_micros, total_allocated_kbytes, queries_capped_id,"
-                        + " profile_capped_id, histogram, timers from transaction_aggregate_rollup_"
+                "select transaction_type, transaction_name, total_nanos, transaction_count,"
+                        + " error_count, total_cpu_nanos, total_blocked_nanos, total_waited_nanos,"
+                        + " total_allocated_bytes, queries_capped_id, profile_capped_id, histogram,"
+                        + " timers from transaction_aggregate_rollup_"
                         + castUntainted(fromRollupLevel)
                         + " where capture_time > ? and capture_time <= ?",
                 new TransactionRollupResultSetExtractor(rollupTime, fromRollupLevel),
@@ -551,9 +551,9 @@ class AggregateDao implements AggregateRepository {
                     throws Exception {
         dataSource.update(
                 "insert into transaction_aggregate_rollup_" + castUntainted(rollupLevel)
-                        + " (transaction_type, transaction_name, capture_time, total_micros,"
-                        + " error_count, transaction_count, total_cpu_micros, total_blocked_micros,"
-                        + " total_waited_micros, total_allocated_kbytes, queries_capped_id,"
+                        + " (transaction_type, transaction_name, capture_time, total_nanos,"
+                        + " transaction_count, error_count, total_cpu_nanos, total_blocked_nanos,"
+                        + " total_waited_nanos, total_allocated_bytes, queries_capped_id,"
                         + " profile_capped_id, histogram, timers) values"
                         + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 new TransactionAggregateBinder(transactionType, transactionName, aggregate,
@@ -564,11 +564,10 @@ class AggregateDao implements AggregateRepository {
             ScratchBuffer scratchBuffer) throws Exception {
         dataSource.update(
                 "insert into overall_aggregate_rollup_" + castUntainted(rollupLevel)
-                        + " (transaction_type, capture_time, total_micros, error_count,"
-                        + " transaction_count, total_cpu_micros, total_blocked_micros,"
-                        + " total_waited_micros, total_allocated_kbytes, queries_capped_id,"
-                        + " profile_capped_id, histogram, timers) values"
-                        + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        + " (transaction_type, capture_time, total_nanos, transaction_count,"
+                        + " error_count, total_cpu_nanos, total_blocked_nanos, total_waited_nanos,"
+                        + " total_allocated_bytes, queries_capped_id, profile_capped_id, histogram,"
+                        + " timers) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 new OverallAggregateBinder(transactionType, aggregate, rollupLevel, scratchBuffer));
     }
 
@@ -577,7 +576,7 @@ class AggregateDao implements AggregateRepository {
             long captureTimeTo, int rollupLevel) throws Exception {
         // it's important that all these columns are in a single index so h2 can return the
         // result set directly from the index without having to reference the table for each row
-        OverallSummary summary = dataSource.query("select sum(total_micros),"
+        OverallSummary summary = dataSource.query("select sum(total_nanos),"
                 + " sum(transaction_count) from overall_aggregate_rollup_"
                 + castUntainted(rollupLevel) + " where transaction_type = ? and capture_time > ?"
                 + " and capture_time <= ?", new OverallSummaryResultSetExtractor(), transactionType,
@@ -593,9 +592,9 @@ class AggregateDao implements AggregateRepository {
     private OverallSummary combineOverallSummaries(OverallSummary overallSummary1,
             OverallSummary overallSummary2) {
         return ImmutableOverallSummary.builder()
-                .totalMicros(overallSummary1.totalMicros() + overallSummary2.totalMicros())
                 .transactionCount(
                         overallSummary1.transactionCount() + overallSummary2.transactionCount())
+                .totalNanos(overallSummary1.totalNanos() + overallSummary2.totalNanos())
                 .build();
     }
 
@@ -604,7 +603,7 @@ class AggregateDao implements AggregateRepository {
         // it's important that all these columns are in a single index so h2 can return the
         // result set directly from the index without having to reference the table for each row
         return dataSource.query(
-                "select transaction_name, sum(total_micros), sum(transaction_count)"
+                "select transaction_name, sum(total_nanos), sum(transaction_count)"
                         + " from transaction_aggregate_rollup_" + castUntainted(rollupLevel)
                         + " where transaction_type = ? and capture_time > ? and capture_time <= ?"
                         + " group by transaction_name order by " + getSortClause(query.sortOrder())
@@ -618,11 +617,11 @@ class AggregateDao implements AggregateRepository {
         // it's important that all these columns are in a single index so h2 can return the
         // result set directly from the index without having to reference the table for each row
         return dataSource.query(
-                "select transaction_name, sum(total_micros), sum(transaction_count)"
-                        + " from (select transaction_name, total_micros, transaction_count"
+                "select transaction_name, sum(total_nanos), sum(transaction_count)"
+                        + " from (select transaction_name, total_nanos, transaction_count"
                         + " from transaction_aggregate_rollup_" + castUntainted(rollupLevel)
                         + " where transaction_type = ? and capture_time > ? and capture_time <= ?"
-                        + " union all select transaction_name, total_micros, transaction_count"
+                        + " union all select transaction_name, total_nanos, transaction_count"
                         + " from transaction_aggregate_rollup_0 where transaction_type = ?"
                         + " and capture_time > ? and capture_time <= ?) group by transaction_name"
                         + " order by " + getSortClause(query.sortOrder())
@@ -658,25 +657,25 @@ class AggregateDao implements AggregateRepository {
     private void merge(MutableAggregate mergedAggregate, ResultSet resultSet, int startColumnIndex,
             int fromRollupLevel) throws Exception {
         int i = startColumnIndex;
-        long totalMicros = resultSet.getLong(i++);
-        long errorCount = resultSet.getLong(i++);
+        double totalNanos = resultSet.getDouble(i++);
         long transactionCount = resultSet.getLong(i++);
-        long totalCpuMicros = RowMappers.getNotAvailableAwareLong(resultSet, i++);
-        long totalBlockedMicros = RowMappers.getNotAvailableAwareLong(resultSet, i++);
-        long totalWaitedMicros = RowMappers.getNotAvailableAwareLong(resultSet, i++);
-        long totalAllocatedKBytes = RowMappers.getNotAvailableAwareLong(resultSet, i++);
+        long errorCount = resultSet.getLong(i++);
+        double totalCpuNanos = RowMappers.getNotAvailableAwareDouble(resultSet, i++);
+        double totalBlockedNanos = RowMappers.getNotAvailableAwareDouble(resultSet, i++);
+        double totalWaitedNanos = RowMappers.getNotAvailableAwareDouble(resultSet, i++);
+        double totalAllocatedBytes = RowMappers.getNotAvailableAwareDouble(resultSet, i++);
         Long queriesCappedId = RowMappers.getLong(resultSet, i++);
         Long profileCappedId = RowMappers.getLong(resultSet, i++);
         byte[] histogram = checkNotNull(resultSet.getBytes(i++));
         String timers = checkNotNull(resultSet.getString(i++));
 
-        mergedAggregate.addTotalMicros(totalMicros);
-        mergedAggregate.addErrorCount(errorCount);
+        mergedAggregate.addTotalNanos(totalNanos);
         mergedAggregate.addTransactionCount(transactionCount);
-        mergedAggregate.addTotalCpuMicros(totalCpuMicros);
-        mergedAggregate.addTotalBlockedMicros(totalBlockedMicros);
-        mergedAggregate.addTotalWaitedMicros(totalWaitedMicros);
-        mergedAggregate.addTotalAllocatedKBytes(totalAllocatedKBytes);
+        mergedAggregate.addErrorCount(errorCount);
+        mergedAggregate.addTotalCpuNanos(totalCpuNanos);
+        mergedAggregate.addTotalBlockedNanos(totalBlockedNanos);
+        mergedAggregate.addTotalWaitedNanos(totalWaitedNanos);
+        mergedAggregate.addTotalAllocatedBytes(totalAllocatedBytes);
         mergedAggregate.addHistogram(histogram);
         mergedAggregate.addTimers(JsonUnmarshaller.unmarshalAggregateTimers(timers));
         if (queriesCappedId != null) {
@@ -702,9 +701,9 @@ class AggregateDao implements AggregateRepository {
     private static @Untainted String getSortClause(TransactionSummarySortOrder sortOrder) {
         switch (sortOrder) {
             case TOTAL_TIME:
-                return "sum(total_micros) desc";
+                return "sum(total_nanos) desc";
             case AVERAGE_TIME:
-                return "sum(total_micros) / sum(transaction_count) desc";
+                return "sum(total_nanos) / sum(transaction_count) desc";
             case THROUGHPUT:
                 return "sum(transaction_count) desc";
             default:
@@ -792,16 +791,17 @@ class AggregateDao implements AggregateRepository {
         void bindCommon(PreparedStatement preparedStatement, int startIndex) throws Exception {
             int i = startIndex;
             preparedStatement.setLong(i++, aggregate.captureTime());
-            preparedStatement.setLong(i++, aggregate.totalMicros());
-            preparedStatement.setLong(i++, aggregate.errorCount());
+            preparedStatement.setDouble(i++, aggregate.totalNanos());
             preparedStatement.setLong(i++, aggregate.transactionCount());
-            RowMappers.setNotAvailableAwareLong(preparedStatement, i++, aggregate.totalCpuMicros());
-            RowMappers.setNotAvailableAwareLong(preparedStatement, i++,
-                    aggregate.totalBlockedMicros());
-            RowMappers.setNotAvailableAwareLong(preparedStatement, i++,
-                    aggregate.totalWaitedMicros());
-            RowMappers.setNotAvailableAwareLong(preparedStatement, i++,
-                    aggregate.totalAllocatedKBytes());
+            preparedStatement.setLong(i++, aggregate.errorCount());
+            RowMappers.setNotAvailableAwareDouble(preparedStatement, i++,
+                    aggregate.totalCpuNanos());
+            RowMappers.setNotAvailableAwareDouble(preparedStatement, i++,
+                    aggregate.totalBlockedNanos());
+            RowMappers.setNotAvailableAwareDouble(preparedStatement, i++,
+                    aggregate.totalWaitedNanos());
+            RowMappers.setNotAvailableAwareDouble(preparedStatement, i++,
+                    aggregate.totalAllocatedBytes());
             RowMappers.setLong(preparedStatement, i++, queriesCappedId);
             RowMappers.setLong(preparedStatement, i++, profileCappedId);
 
@@ -861,7 +861,7 @@ class AggregateDao implements AggregateRepository {
                 throw new SQLException("Aggregate query did not return any results");
             }
             return ImmutableOverallSummary.builder()
-                    .totalMicros(resultSet.getLong(1))
+                    .totalNanos(resultSet.getDouble(1))
                     .transactionCount(resultSet.getLong(2))
                     .build();
         }
@@ -877,7 +877,7 @@ class AggregateDao implements AggregateRepository {
             }
             return ImmutableTransactionSummary.builder()
                     .transactionName(transactionName)
-                    .totalMicros(resultSet.getLong(2))
+                    .totalNanos(resultSet.getDouble(2))
                     .transactionCount(resultSet.getLong(3))
                     .build();
         }
@@ -921,12 +921,12 @@ class AggregateDao implements AggregateRepository {
             int i = 1;
             ImmutableOverviewAggregate.Builder builder = ImmutableOverviewAggregate.builder()
                     .captureTime(resultSet.getLong(i++))
-                    .totalMicros(resultSet.getLong(i++))
+                    .totalNanos(resultSet.getDouble(i++))
                     .transactionCount(resultSet.getLong(i++))
-                    .totalCpuMicros(resultSet.getLong(i++))
-                    .totalBlockedMicros(resultSet.getLong(i++))
-                    .totalWaitedMicros(resultSet.getLong(i++))
-                    .totalAllocatedKBytes(resultSet.getLong(i++));
+                    .totalCpuNanos(resultSet.getDouble(i++))
+                    .totalBlockedNanos(resultSet.getDouble(i++))
+                    .totalWaitedNanos(resultSet.getDouble(i++))
+                    .totalAllocatedBytes(resultSet.getDouble(i++));
             String timers = checkNotNull(resultSet.getString(i++));
             builder.syntheticRootTimer(JsonUnmarshaller.unmarshalAggregateTimers(timers));
             return builder.build();
@@ -940,7 +940,7 @@ class AggregateDao implements AggregateRepository {
             int i = 1;
             ImmutablePercentileAggregate.Builder builder = ImmutablePercentileAggregate.builder()
                     .captureTime(resultSet.getLong(i++))
-                    .totalMicros(resultSet.getLong(i++))
+                    .totalNanos(resultSet.getLong(i++))
                     .transactionCount(resultSet.getLong(i++));
             byte[] histogramBytes = checkNotNull(resultSet.getBytes(i++));
             LazyHistogram histogram = new LazyHistogram();

@@ -39,8 +39,6 @@ import org.glowroot.common.util.Tickers;
 import org.glowroot.plugin.api.transaction.Timer;
 import org.glowroot.plugin.api.transaction.TimerName;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
 // instances are updated by a single thread, but can be read by other threads
 // memory visibility is therefore an issue for the reading threads
 //
@@ -123,14 +121,14 @@ public class TimerImpl implements Timer, org.glowroot.collector.spi.TraceTimerNo
             long theStartTick = startTick;
             long curr = ticker.read() - theStartTick;
             if (theTotalNanos == 0) {
-                builder.totalMicros(NANOSECONDS.toMicros(curr));
+                builder.totalNanos(curr);
                 builder.count(1);
             } else {
-                builder.totalMicros(NANOSECONDS.toMicros(theTotalNanos + curr));
+                builder.totalNanos(theTotalNanos + curr);
                 builder.count(count + 1);
             }
         } else {
-            builder.totalMicros(NANOSECONDS.toMicros(totalNanos));
+            builder.totalNanos(totalNanos);
             builder.count(count);
         }
         builder.active(active);
@@ -181,9 +179,9 @@ public class TimerImpl implements Timer, org.glowroot.collector.spi.TraceTimerNo
 
     // only called after transaction completion
     @Override
-    @JsonProperty("totalMicros")
-    public long totalMicros() {
-        return NANOSECONDS.toMicros(totalNanos);
+    @JsonProperty("totalNanos")
+    public long totalNanos() {
+        return totalNanos;
     }
 
     // only called after transaction completion

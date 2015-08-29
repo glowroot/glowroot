@@ -30,7 +30,7 @@ import static org.glowroot.common.util.ObjectMappers.checkRequiredProperty;
 public class MutableQuery implements Query {
 
     private final String queryText;
-    private long totalMicros;
+    private double totalNanos;
     private long executionCount;
     private long totalRows;
 
@@ -45,9 +45,9 @@ public class MutableQuery implements Query {
     }
 
     @Override
-    @JsonProperty("totalMicros")
-    public long totalMicros() {
-        return totalMicros;
+    @JsonProperty("totalNanos")
+    public double totalNanos() {
+        return totalNanos;
     }
 
     @Override
@@ -64,14 +64,14 @@ public class MutableQuery implements Query {
 
     MutableQuery copy() {
         MutableQuery copy = new MutableQuery(queryText);
-        copy.totalMicros = totalMicros;
+        copy.totalNanos = totalNanos;
         copy.executionCount = executionCount;
         copy.totalRows = totalRows;
         return copy;
     }
 
-    void addToTotalMicros(long totalMicros) {
-        this.totalMicros += totalMicros;
+    void addToTotalNanos(double totalNanos) {
+        this.totalNanos += totalNanos;
     }
 
     void addToExecutionCount(long executionCount) {
@@ -84,15 +84,15 @@ public class MutableQuery implements Query {
 
     @JsonCreator
     static MutableQuery readValue(@JsonProperty("queryText") @Nullable String queryText,
-            @JsonProperty("totalMicros") @Nullable Long totalMicros,
+            @JsonProperty("totalNanos") @Nullable Double totalNanos,
             @JsonProperty("executionCount") @Nullable Long executionCount,
             @JsonProperty("totalRows") @Nullable Long totalRows) throws JsonMappingException {
         checkRequiredProperty(queryText, "queryText");
-        checkRequiredProperty(totalMicros, "totalMicros");
+        checkRequiredProperty(totalNanos, "totalNanos");
         checkRequiredProperty(executionCount, "executionCount");
         checkRequiredProperty(totalRows, "totalRows");
         MutableQuery aggregateQuery = new MutableQuery(queryText);
-        aggregateQuery.totalMicros = totalMicros;
+        aggregateQuery.totalNanos = totalNanos;
         aggregateQuery.executionCount = executionCount;
         aggregateQuery.totalRows = totalRows;
         return aggregateQuery;

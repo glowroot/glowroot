@@ -53,7 +53,7 @@ HandlebarsRendering = (function () {
       buffer += options.fn(timer);
       if (timer.childNodes) {
         timer.childNodes.sort(function (a, b) {
-          return b.total - a.total;
+          return b.totalNanos - a.totalNanos;
         });
         $.each(timer.childNodes, function (index, nestedTimer) {
           traverse(nestedTimer, nestingLevel + 1);
@@ -75,7 +75,7 @@ HandlebarsRendering = (function () {
       if (!flattenedTimer) {
         flattenedTimer = {
           name: timer.name,
-          total: timer.total,
+          totalNanos: timer.totalNanos,
           count: timer.count,
           active: timer.active
         };
@@ -84,7 +84,7 @@ HandlebarsRendering = (function () {
       } else if (parentTimerNames.indexOf(timer.name) === -1) {
         // only add to existing flattened timer if the timer isn't appearing under itself
         // (this is possible when they are separated by another timer)
-        flattenedTimer.total += timer.total;
+        flattenedTimer.totalNanos += timer.totalNanos;
         flattenedTimer.active = flattenedTimer.active || timer.active;
         flattenedTimer.count += timer.count;
       }
@@ -99,7 +99,7 @@ HandlebarsRendering = (function () {
     traverse(rootTimer, []);
 
     flattenedTimers.sort(function (a, b) {
-      return b.total - a.total;
+      return b.totalNanos - a.totalNanos;
     });
     var buffer = '';
     $.each(flattenedTimers, function (index, timer) {
@@ -166,10 +166,6 @@ HandlebarsRendering = (function () {
     return formatMillis(nanos / 1000000);
   });
 
-  Handlebars.registerHelper('microsToMillis', function (micros) {
-    return formatMillis(micros / 1000);
-  });
-
   Handlebars.registerHelper('ifExistenceYes', function (existence, options) {
     if (existence === 'yes') {
       return options.fn(this);
@@ -192,7 +188,7 @@ HandlebarsRendering = (function () {
   });
 
   Handlebars.registerHelper('ifAnyThreadInfo', function (trace, options) {
-    if (trace.threadCpuTime || trace.threadBlockedTime || trace.threadWaitedTime || trace.threadAllocatedBytes) {
+    if (trace.threadCpuNanos || trace.threadBlockedNanos || trace.threadWaitedNanos || trace.threadAllocatedBytes) {
       return options.fn(this);
     }
     return options.inverse(this);

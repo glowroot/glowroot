@@ -24,23 +24,21 @@ public interface Aggregate {
 
     long captureTime();
 
-    long totalMicros();
+    // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+    double totalNanos();
 
     long transactionCount();
-
     long errorCount();
 
-    long totalCpuMicros(); // -1 means N/A
-
-    long totalBlockedMicros(); // -1 means N/A
-
-    long totalWaitedMicros(); // -1 means N/A
-
-    long totalAllocatedKBytes(); // -1 means N/A
+    // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+    double totalCpuNanos(); // -1 means N/A
+    double totalBlockedNanos(); // -1 means N/A
+    double totalWaitedNanos(); // -1 means N/A
+    double totalAllocatedBytes(); // -1 means N/A
 
     Histogram histogram();
 
-    TimerNode syntheticRootTimerNode();
+    AggregateTimerNode syntheticRootTimerNode();
 
     // key is query type (e.g. "SQL", "CQL")
     Map<String, ? extends Collection<? extends Query>> queries();

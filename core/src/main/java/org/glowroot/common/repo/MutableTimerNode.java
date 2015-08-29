@@ -25,7 +25,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.collect.Lists;
 
-import org.glowroot.collector.spi.TimerNode;
+import org.glowroot.collector.spi.AggregateTimerNode;
+import org.glowroot.collector.spi.TraceTimerNode;
 import org.glowroot.markers.UsedByJsonBinding;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -33,13 +34,13 @@ import static org.glowroot.common.util.ObjectMappers.checkRequiredProperty;
 import static org.glowroot.common.util.ObjectMappers.orEmpty;
 
 @UsedByJsonBinding
-public class MutableTimerNode implements TimerNode {
+public class MutableTimerNode implements AggregateTimerNode {
 
     // only null for synthetic root timer
     private final @Nullable String name;
     private final boolean extended;
-    // aggregation uses microseconds to avoid (unlikely) 292 year nanosecond rollover
-    private long totalMicros;
+    // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+    private double totalNanos;
     private long count;
     private final List<MutableTimerNode> childNodes;
 
@@ -47,18 +48,18 @@ public class MutableTimerNode implements TimerNode {
         return new MutableTimerNode(null, false, 0, 0, new ArrayList<MutableTimerNode>());
     }
 
-    private MutableTimerNode(@Nullable String name, boolean extended, long totalMicros, long count,
+    private MutableTimerNode(@Nullable String name, boolean extended, double totalNanos, long count,
             List<MutableTimerNode> nestedTimers) {
         this.name = name;
         this.extended = extended;
-        this.totalMicros = totalMicros;
+        this.totalNanos = totalNanos;
         this.count = count;
         this.childNodes = Lists.newArrayList(nestedTimers);
     }
 
     public void mergeMatchedTimer(MutableTimerNode timerNode) {
         count += timerNode.count();
-        totalMicros += timerNode.totalMicros();
+        totalNanos += timerNode.totalNanos();
         for (MutableTimerNode toBeMergedChildNode : timerNode.childNodes()) {
             // for each to-be-merged nested node look for a match
             MutableTimerNode foundMatchingNestedTimer = null;
@@ -93,9 +94,9 @@ public class MutableTimerNode implements TimerNode {
     }
 
     @Override
-    @JsonProperty("totalMicros")
-    public long totalMicros() {
-        return totalMicros;
+    @JsonProperty("totalNanos")
+    public double totalNanos() {
+        return totalNanos;
     }
 
     @Override
@@ -110,7 +111,7 @@ public class MutableTimerNode implements TimerNode {
         return childNodes;
     }
 
-    public void mergeAsChildTimer(TimerNode timerNode) {
+    public void mergeAsChildTimer(TraceTimerNode timerNode) {
         // timer names are only null for synthetic root node
         String timerName = checkNotNull(timerNode.name());
         boolean extended = timerNode.extended();
@@ -130,12 +131,12 @@ public class MutableTimerNode implements TimerNode {
         }
         if (name == null) {
             // special case for synthetic root node
-            totalMicros += timerNode.totalMicros();
+            totalNanos += timerNode.totalNanos();
             count += timerNode.count();
         }
-        matchingTimerNode.totalMicros += timerNode.totalMicros();
+        matchingTimerNode.totalNanos += timerNode.totalNanos();
         matchingTimerNode.count += timerNode.count();
-        for (TimerNode childNode : timerNode.childNodes()) {
+        for (TraceTimerNode childNode : timerNode.childNodes()) {
             matchingTimerNode.mergeAsChildTimer(childNode);
         }
     }
@@ -143,14 +144,14 @@ public class MutableTimerNode implements TimerNode {
     @JsonCreator
     static MutableTimerNode readValue(@JsonProperty("name") @Nullable String name,
             @JsonProperty("extended") @Nullable Boolean extended,
-            @JsonProperty("totalMicros") @Nullable Long totalMicros,
+            @JsonProperty("totalNanos") @Nullable Double totalNanos,
             @JsonProperty("count") @Nullable Long count,
             @JsonProperty("nestedTimers") @Nullable List</*@Nullable*/MutableTimerNode> uncheckedNestedTimers)
                     throws JsonMappingException {
         List<MutableTimerNode> nestedTimers = orEmpty(uncheckedNestedTimers, "nestedTimers");
-        checkRequiredProperty(totalMicros, "totalMicros");
+        checkRequiredProperty(totalNanos, "totalNanos");
         checkRequiredProperty(count, "count");
-        return new MutableTimerNode(name, orFalse(extended), totalMicros, count, nestedTimers);
+        return new MutableTimerNode(name, orFalse(extended), totalNanos, count, nestedTimers);
     }
 
     private static boolean orFalse(@Nullable Boolean value) {

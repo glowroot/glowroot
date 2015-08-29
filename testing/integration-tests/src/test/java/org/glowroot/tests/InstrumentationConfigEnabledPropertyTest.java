@@ -85,8 +85,8 @@ public class InstrumentationConfigEnabledPropertyTest {
         TraceEntry entry3 = entries.get(1);
         assertThat(entry3.getMessageText()).isEqualTo("Level Three");
         assertThat(entry3.getMessageDetail()).isEqualTo(mapOf("arg1", "axy", "arg2", "bxy"));
-        // offset is measured in nanoseconds so there's no way this should be 0
-        assertThat(entry3.getOffset()).isGreaterThan(0);
+        // there's no way offsetNanos should be 0
+        assertThat(entry3.getOffsetNanos()).isGreaterThan(0);
         TraceEntry entry4 = entries.get(2);
         assertThat(entry4.getMessageText()).isEqualTo("Level Four: axy, bxy");
     }
@@ -124,8 +124,8 @@ public class InstrumentationConfigEnabledPropertyTest {
         TraceEntry entry3 = entries.get(1);
         assertThat(entry3.getMessageText()).isEqualTo("Level Three");
         assertThat(entry3.getMessageDetail()).isEqualTo(mapOf("arg1", "axy", "arg2", "bxy"));
-        // offset is measured in nanoseconds so there's no way this should be 0
-        assertThat(entry3.getOffset()).isGreaterThan(0);
+        // there's no way offsetNanos should be 0
+        assertThat(entry3.getOffsetNanos()).isGreaterThan(0);
         TraceEntry entry4 = entries.get(2);
         assertThat(entry4.getMessageText()).isEqualTo("Level Four: axy, bxy");
         TraceEntry entry5 = entries.get(3);

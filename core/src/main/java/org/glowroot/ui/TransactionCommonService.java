@@ -64,7 +64,7 @@ class TransactionCommonService {
                         @Nullable TransactionSummary right) {
                     checkNotNull(left);
                     checkNotNull(right);
-                    return Longs.compare(right.totalMicros(), left.totalMicros());
+                    return Doubles.compare(right.totalNanos(), left.totalNanos());
                 }
             };
 
@@ -75,8 +75,8 @@ class TransactionCommonService {
                         @Nullable TransactionSummary right) {
                     checkNotNull(left);
                     checkNotNull(right);
-                    return Doubles.compare(right.totalMicros() / (double) right.transactionCount(),
-                            left.totalMicros() / (double) left.transactionCount());
+                    return Doubles.compare(right.totalNanos() / right.transactionCount(),
+                            left.totalNanos() / left.transactionCount());
                 }
             };
 
@@ -413,16 +413,16 @@ class TransactionCommonService {
                         configRepository.getAdvancedConfig().maxAggregateQueriesPerQueryType());
             }
             currRollupTime = rollupTime;
-            currMergedAggregate.addTotalMicros(nonRolledUpOverviewAggregate.totalMicros());
+            currMergedAggregate.addTotalNanos(nonRolledUpOverviewAggregate.totalNanos());
             currMergedAggregate
                     .addTransactionCount(nonRolledUpOverviewAggregate.transactionCount());
-            currMergedAggregate.addTotalCpuMicros(nonRolledUpOverviewAggregate.totalCpuMicros());
+            currMergedAggregate.addTotalCpuNanos(nonRolledUpOverviewAggregate.totalCpuNanos());
             currMergedAggregate
-                    .addTotalBlockedMicros(nonRolledUpOverviewAggregate.totalBlockedMicros());
+                    .addTotalBlockedNanos(nonRolledUpOverviewAggregate.totalBlockedNanos());
             currMergedAggregate
-                    .addTotalWaitedMicros(nonRolledUpOverviewAggregate.totalWaitedMicros());
+                    .addTotalWaitedNanos(nonRolledUpOverviewAggregate.totalWaitedNanos());
             currMergedAggregate
-                    .addTotalAllocatedKBytes(nonRolledUpOverviewAggregate.totalAllocatedKBytes());
+                    .addTotalAllocatedBytes(nonRolledUpOverviewAggregate.totalAllocatedBytes());
             currMergedAggregate.addTimers(nonRolledUpOverviewAggregate.syntheticRootTimer());
         }
         if (currMergedAggregate != null) {
@@ -453,7 +453,7 @@ class TransactionCommonService {
                         configRepository.getAdvancedConfig().maxAggregateQueriesPerQueryType());
             }
             currRollupTime = rollupTime;
-            currMergedAggregate.addTotalMicros(nonRolledUpPercentileAggregate.totalMicros());
+            currMergedAggregate.addTotalNanos(nonRolledUpPercentileAggregate.totalNanos());
             currMergedAggregate
                     .addTransactionCount(nonRolledUpPercentileAggregate.transactionCount());
             currMergedAggregate.addHistogram(nonRolledUpPercentileAggregate.histogram());
@@ -495,7 +495,7 @@ class TransactionCommonService {
     private static OverallSummary combineOverallSummaries(OverallSummary summary1,
             OverallSummary summary2) {
         return ImmutableOverallSummary.builder()
-                .totalMicros(summary1.totalMicros() + summary2.totalMicros())
+                .totalNanos(summary1.totalNanos() + summary2.totalNanos())
                 .transactionCount(summary1.transactionCount() + summary2.transactionCount())
                 .build();
     }
@@ -504,7 +504,7 @@ class TransactionCommonService {
             TransactionSummary summary1, TransactionSummary summary2) {
         return ImmutableTransactionSummary.builder()
                 .transactionName(transactionName)
-                .totalMicros(summary1.totalMicros() + summary2.totalMicros())
+                .totalNanos(summary1.totalNanos() + summary2.totalNanos())
                 .transactionCount(summary1.transactionCount() + summary2.transactionCount())
                 .build();
     }

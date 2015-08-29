@@ -32,14 +32,12 @@ public abstract class TraceQuery {
         return Long.MAX_VALUE;
     }
 
-    // nanoseconds
     @Value.Default
-    public long durationLow() {
+    public long durationMillisLow() {
         return 0;
     }
 
-    // nanoseconds
-    public abstract @Nullable Long durationHigh();
+    public abstract @Nullable Long durationMillisHigh();
     public abstract @Nullable String transactionType();
     public abstract @Nullable StringComparator transactionNameComparator();
     public abstract @Nullable String transactionName();

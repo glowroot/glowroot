@@ -54,7 +54,7 @@ public class UserProfileScheduler {
         int intervalMillis = userRecordingConfig.profileIntervalMillis();
         ScheduledRunnable userProfileRunnable = new UserProfileRunnable(transaction, configService);
         long initialDelay =
-                Math.max(0, intervalMillis - NANOSECONDS.toMillis(transaction.getDuration()));
+                Math.max(0, intervalMillis - NANOSECONDS.toMillis(transaction.getDurationNanos()));
         userProfileRunnable.scheduleWithFixedDelay(scheduledExecutor, initialDelay, intervalMillis,
                 MILLISECONDS);
         transaction.setUserProfileRunnable(userProfileRunnable);

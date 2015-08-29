@@ -22,9 +22,9 @@ import javax.annotation.Nullable;
 
 public interface TraceEntry {
 
-    long offset();
+    long offsetNanos();
 
-    long duration();
+    long durationNanos();
 
     boolean active();
 

@@ -324,23 +324,23 @@ public class TraceEntryImpl implements QueryEntry, Timer {
     private static class SpiTraceEntry implements TraceEntry {
 
         private final TraceEntryImpl traceEntry;
-        private final long offset;
-        private final long duration;
+        private final long offsetNanos;
+        private final long durationNanos;
         private final boolean active;
         private final @Nullable ReadableMessage message;
 
         private SpiTraceEntry(TraceEntryImpl traceEntry, long transactionStartTick,
                 long captureTick) {
             this.traceEntry = traceEntry;
-            offset = traceEntry.getStartTick() - transactionStartTick;
+            offsetNanos = traceEntry.getStartTick() - transactionStartTick;
             long endTick = traceEntry.getEndTick();
             if (traceEntry.isCompleted() && Tickers.lessThanOrEqual(endTick, captureTick)) {
                 // duration is calculated relative to revised start tick
-                duration = endTick - traceEntry.getRevisedStartTick();
+                durationNanos = endTick - traceEntry.getRevisedStartTick();
                 active = false;
             } else {
                 // duration is calculated relative to revised start tick
-                duration = captureTick - traceEntry.getRevisedStartTick();
+                durationNanos = captureTick - traceEntry.getRevisedStartTick();
                 active = true;
             }
             MessageSupplier messageSupplier = traceEntry.getMessageSupplier();
@@ -353,8 +353,8 @@ public class TraceEntryImpl implements QueryEntry, Timer {
         }
 
         @Override
-        public long offset() {
-            return offset;
+        public long offsetNanos() {
+            return offsetNanos;
         }
 
         @Override
@@ -385,8 +385,8 @@ public class TraceEntryImpl implements QueryEntry, Timer {
         }
 
         @Override
-        public long duration() {
-            return duration;
+        public long durationNanos() {
+            return durationNanos;
         }
 
         @Override

@@ -52,11 +52,11 @@ public class AggregateMerging {
             List<PercentileAggregate> percentileAggregates, List<Double> percentiles)
                     throws Exception {
         long transactionCount = 0;
-        long totalMicros = 0;
+        double totalNanos = 0;
         LazyHistogram histogram = new LazyHistogram();
         for (PercentileAggregate percentileAggregate : percentileAggregates) {
             transactionCount += percentileAggregate.transactionCount();
-            totalMicros += percentileAggregate.totalMicros();
+            totalNanos += percentileAggregate.totalNanos();
             histogram.merge(percentileAggregate.histogram());
         }
 
@@ -67,37 +67,37 @@ public class AggregateMerging {
                     histogram.getValueAtPercentile(percentile)));
         }
         return ImmutablePercentileMergedAggregate.builder()
-                .totalMicros(totalMicros)
                 .transactionCount(transactionCount)
+                .totalNanos(totalNanos)
                 .addAllPercentileValues(percentileValues)
                 .build();
     }
 
     public static ThreadInfoAggregate getThreadInfoAggregate(
             List<OverviewAggregate> overviewAggregates) {
-        long totalCpuMicros = ThreadInfoData.NOT_AVAILABLE;
-        long totalBlockedMicros = ThreadInfoData.NOT_AVAILABLE;
-        long totalWaitedMicros = ThreadInfoData.NOT_AVAILABLE;
-        long totalAllocatedKBytes = ThreadInfoData.NOT_AVAILABLE;
+        double totalCpuNanos = ThreadInfoData.NOT_AVAILABLE;
+        double totalBlockedNanos = ThreadInfoData.NOT_AVAILABLE;
+        double totalWaitedNanos = ThreadInfoData.NOT_AVAILABLE;
+        double totalAllocatedBytes = ThreadInfoData.NOT_AVAILABLE;
         for (OverviewAggregate overviewAggregate : overviewAggregates) {
-            totalCpuMicros =
-                    notAvailableAwareAdd(totalCpuMicros, overviewAggregate.totalCpuMicros());
-            totalBlockedMicros = notAvailableAwareAdd(totalBlockedMicros,
-                    overviewAggregate.totalBlockedMicros());
-            totalWaitedMicros =
-                    notAvailableAwareAdd(totalWaitedMicros, overviewAggregate.totalWaitedMicros());
-            totalAllocatedKBytes = notAvailableAwareAdd(totalAllocatedKBytes,
-                    overviewAggregate.totalAllocatedKBytes());
+            totalCpuNanos =
+                    notAvailableAwareAdd(totalCpuNanos, overviewAggregate.totalCpuNanos());
+            totalBlockedNanos = notAvailableAwareAdd(totalBlockedNanos,
+                    overviewAggregate.totalBlockedNanos());
+            totalWaitedNanos =
+                    notAvailableAwareAdd(totalWaitedNanos, overviewAggregate.totalWaitedNanos());
+            totalAllocatedBytes = notAvailableAwareAdd(totalAllocatedBytes,
+                    overviewAggregate.totalAllocatedBytes());
         }
         return ImmutableThreadInfoAggregate.builder()
-                .totalCpuMicros(totalCpuMicros)
-                .totalBlockedMicros(totalBlockedMicros)
-                .totalWaitedMicros(totalWaitedMicros)
-                .totalAllocatedKBytes(totalAllocatedKBytes)
+                .totalCpuNanos(totalCpuNanos)
+                .totalBlockedNanos(totalBlockedNanos)
+                .totalWaitedNanos(totalWaitedNanos)
+                .totalAllocatedBytes(totalAllocatedBytes)
                 .build();
     }
 
-    private static long notAvailableAwareAdd(long x, long y) {
+    private static double notAvailableAwareAdd(double x, double y) {
         if (x == ThreadInfoData.NOT_AVAILABLE) {
             return y;
         }
@@ -109,14 +109,15 @@ public class AggregateMerging {
 
     @Value.Immutable
     public interface TimerMergedAggregate {
-        MutableTimerNode syntheticRootTimer();
         long transactionCount();
+        MutableTimerNode syntheticRootTimer();
     }
 
     @Value.Immutable
     public interface PercentileMergedAggregate {
-        long totalMicros();
         long transactionCount();
+        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+        double totalNanos();
         ImmutableList<PercentileValue> percentileValues();
     }
 
@@ -130,16 +131,17 @@ public class AggregateMerging {
     @Value.Immutable
     public abstract static class ThreadInfoAggregate {
 
-        abstract long totalCpuMicros(); // -1 means N/A
-        abstract long totalBlockedMicros(); // -1 means N/A
-        abstract long totalWaitedMicros(); // -1 means N/A
-        abstract long totalAllocatedKBytes(); // -1 means N/A
+        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+        abstract double totalCpuNanos(); // -1 means N/A
+        abstract double totalBlockedNanos(); // -1 means N/A
+        abstract double totalWaitedNanos(); // -1 means N/A
+        abstract double totalAllocatedBytes(); // -1 means N/A
 
         public boolean isEmpty() {
-            return totalCpuMicros() == ThreadInfoData.NOT_AVAILABLE
-                    && totalBlockedMicros() == ThreadInfoData.NOT_AVAILABLE
-                    && totalWaitedMicros() == ThreadInfoData.NOT_AVAILABLE
-                    && totalAllocatedKBytes() == ThreadInfoData.NOT_AVAILABLE;
+            return totalCpuNanos() == ThreadInfoData.NOT_AVAILABLE
+                    && totalBlockedNanos() == ThreadInfoData.NOT_AVAILABLE
+                    && totalWaitedNanos() == ThreadInfoData.NOT_AVAILABLE
+                    && totalAllocatedBytes() == ThreadInfoData.NOT_AVAILABLE;
         }
     }
 }

@@ -144,7 +144,9 @@ public class LazyHistogram implements org.glowroot.collector.spi.Histogram {
 
     @EnsuresNonNull("histogram")
     private void convertValuesToHistogram() {
-        histogram = new Histogram(HISTOGRAM_SIGNIFICANT_DIGITS);
+        // tracking nanoseconds, but only at microsecond precision (to save histogram space)
+        histogram = new Histogram(1000, 2000, HISTOGRAM_SIGNIFICANT_DIGITS);
+        histogram.setAutoResize(true);
         for (int i = 0; i < size; i++) {
             histogram.recordValue(values[i]);
         }

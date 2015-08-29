@@ -79,11 +79,11 @@ public class TransactionCollector {
         // check if trace-specific store threshold was set
         long slowThresholdMillis = transaction.getSlowThresholdMillisOverride();
         if (slowThresholdMillis != Transaction.USE_GENERAL_STORE_THRESHOLD) {
-            return transaction.getDuration() >= MILLISECONDS.toNanos(slowThresholdMillis);
+            return transaction.getDurationNanos() >= MILLISECONDS.toNanos(slowThresholdMillis);
         }
         // fall back to default slow trace threshold
         slowThresholdMillis = configService.getTransactionConfig().slowThresholdMillis();
-        if (transaction.getDuration() >= MILLISECONDS.toNanos(slowThresholdMillis)) {
+        if (transaction.getDurationNanos() >= MILLISECONDS.toNanos(slowThresholdMillis)) {
             return true;
         }
 

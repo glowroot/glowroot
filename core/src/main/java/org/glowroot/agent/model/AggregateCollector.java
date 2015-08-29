@@ -48,7 +48,6 @@ import org.glowroot.common.repo.QueryCollector;
 import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 // must be used under an appropriate lock
 @Styles.Private
@@ -56,14 +55,15 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 class AggregateCollector {
 
     private final @Nullable String transactionName;
-    private long totalMicros;
-    private long errorCount;
+    private long totalNanos;
     private long transactionCount;
-    private long totalCpuTime = ThreadInfoData.NOT_AVAILABLE;
-    private long totalBlockedTime = ThreadInfoData.NOT_AVAILABLE;
-    private long totalWaitedTime = ThreadInfoData.NOT_AVAILABLE;
+    private long errorCount;
+    private long totalCpuNanos = ThreadInfoData.NOT_AVAILABLE;
+    private long totalBlockedNanos = ThreadInfoData.NOT_AVAILABLE;
+    private long totalWaitedNanos = ThreadInfoData.NOT_AVAILABLE;
     private long totalAllocatedBytes = ThreadInfoData.NOT_AVAILABLE;
-    // histogram uses microseconds to reduce (or at least simplify) bucket allocations
+    // histogram values are in nanoseconds, but with microsecond precision to reduce the number of
+    // buckets (and memory) required
     private final LazyHistogram lazyHistogram = new LazyHistogram();
     private final MutableTimerNode syntheticRootTimerNode =
             MutableTimerNode.createSyntheticRootNode();
@@ -80,22 +80,23 @@ class AggregateCollector {
     }
 
     void add(Transaction transaction) {
-        long durationMicros = NANOSECONDS.toMicros(transaction.getDuration());
-        totalMicros += durationMicros;
+        long durationNanos = transaction.getDurationNanos();
+        totalNanos += durationNanos;
+        transactionCount++;
         if (transaction.getErrorMessage() != null) {
             errorCount++;
         }
-        transactionCount++;
         ThreadInfoData threadInfo = transaction.getThreadInfo();
         if (threadInfo != null) {
-            totalCpuTime = notAvailableAwareAdd(totalCpuTime, threadInfo.threadCpuTime());
-            totalBlockedTime =
-                    notAvailableAwareAdd(totalBlockedTime, threadInfo.threadBlockedTime());
-            totalWaitedTime = notAvailableAwareAdd(totalWaitedTime, threadInfo.threadWaitedTime());
+            totalCpuNanos = notAvailableAwareAdd(totalCpuNanos, threadInfo.threadCpuNanos());
+            totalBlockedNanos =
+                    notAvailableAwareAdd(totalBlockedNanos, threadInfo.threadBlockedNanos());
+            totalWaitedNanos =
+                    notAvailableAwareAdd(totalWaitedNanos, threadInfo.threadWaitedNanos());
             totalAllocatedBytes =
                     notAvailableAwareAdd(totalAllocatedBytes, threadInfo.threadAllocatedBytes());
         }
-        lazyHistogram.add(durationMicros);
+        lazyHistogram.add(durationNanos);
     }
 
     void addToTimers(TimerImpl rootTimer) {
@@ -115,13 +116,13 @@ class AggregateCollector {
     Aggregate build(long captureTime) throws IOException {
         return new AggregateBuilder()
                 .captureTime(captureTime)
-                .totalMicros(totalMicros)
-                .errorCount(errorCount)
+                .totalNanos(totalNanos)
                 .transactionCount(transactionCount)
-                .totalCpuMicros(notAvailableAwareNanosToMicros(totalCpuTime))
-                .totalBlockedMicros(notAvailableAwareNanosToMicros(totalBlockedTime))
-                .totalWaitedMicros(notAvailableAwareNanosToMicros(totalWaitedTime))
-                .totalAllocatedKBytes(notAvailableAwareBytesToKBytes(totalAllocatedBytes))
+                .errorCount(errorCount)
+                .totalCpuNanos(totalCpuNanos)
+                .totalBlockedNanos(totalBlockedNanos)
+                .totalWaitedNanos(totalWaitedNanos)
+                .totalAllocatedBytes(totalAllocatedBytes)
                 .histogram(lazyHistogram)
                 .syntheticRootTimerNode(syntheticRootTimerNode)
                 .queries(getQueries())
@@ -132,12 +133,12 @@ class AggregateCollector {
     OverviewAggregate buildLiveOverviewAggregate(long captureTime) throws IOException {
         return ImmutableOverviewAggregate.builder()
                 .captureTime(captureTime)
-                .totalMicros(totalMicros)
+                .totalNanos(totalNanos)
                 .transactionCount(transactionCount)
-                .totalCpuMicros(notAvailableAwareNanosToMicros(totalCpuTime))
-                .totalBlockedMicros(notAvailableAwareNanosToMicros(totalBlockedTime))
-                .totalWaitedMicros(notAvailableAwareNanosToMicros(totalWaitedTime))
-                .totalAllocatedKBytes(notAvailableAwareBytesToKBytes(totalAllocatedBytes))
+                .totalCpuNanos(totalCpuNanos)
+                .totalBlockedNanos(totalBlockedNanos)
+                .totalWaitedNanos(totalWaitedNanos)
+                .totalAllocatedBytes(totalAllocatedBytes)
                 .syntheticRootTimer(syntheticRootTimerNode)
                 .build();
     }
@@ -145,7 +146,7 @@ class AggregateCollector {
     PercentileAggregate buildLivePercentileAggregate(long captureTime) throws IOException {
         return ImmutablePercentileAggregate.builder()
                 .captureTime(captureTime)
-                .totalMicros(totalMicros)
+                .totalNanos(totalNanos)
                 .transactionCount(transactionCount)
                 .histogram(lazyHistogram)
                 .build();
@@ -153,7 +154,7 @@ class AggregateCollector {
 
     OverallSummary getLiveOverallSummary() {
         return ImmutableOverallSummary.builder()
-                .totalMicros(totalMicros)
+                .totalNanos(totalNanos)
                 .transactionCount(transactionCount)
                 .build();
     }
@@ -163,7 +164,7 @@ class AggregateCollector {
         checkNotNull(transactionName);
         return ImmutableTransactionSummary.builder()
                 .transactionName(transactionName)
-                .totalMicros(totalMicros)
+                .totalNanos(totalNanos)
                 .transactionCount(transactionCount)
                 .build();
     }
@@ -218,20 +219,6 @@ class AggregateCollector {
             return null;
         }
         return syntheticRootNode;
-    }
-
-    private static long notAvailableAwareNanosToMicros(long nanoseconds) {
-        if (nanoseconds == ThreadInfoData.NOT_AVAILABLE) {
-            return ThreadInfoData.NOT_AVAILABLE;
-        }
-        return NANOSECONDS.toMicros(nanoseconds);
-    }
-
-    private static long notAvailableAwareBytesToKBytes(long bytes) {
-        if (bytes == ThreadInfoData.NOT_AVAILABLE) {
-            return ThreadInfoData.NOT_AVAILABLE;
-        }
-        return bytes / 1024;
     }
 
     private static long notAvailableAwareAdd(long x, long y) {

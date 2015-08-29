@@ -108,8 +108,7 @@ class TraceEntryComponent {
         return endTick;
     }
 
-    // duration of trace in nanoseconds
-    long getDuration() {
+    long getDurationNanos() {
         return completed ? endTick - startTick : ticker.read() - startTick;
     }
 

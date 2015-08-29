@@ -28,16 +28,16 @@ public class Query {
 
     private final String queryType;
     private final String queryText;
-    private final long totalMicros;
+    private final double totalNanos;
     private final long executionCount;
     private final long totalRows;
     private final boolean active;
 
-    private Query(String queryType, String queryText, long totalMicros, long executionCount,
+    private Query(String queryType, String queryText, double totalNanos, long executionCount,
             long totalRows, boolean active) {
         this.queryType = queryType;
         this.queryText = queryText;
-        this.totalMicros = totalMicros;
+        this.totalNanos = totalNanos;
         this.executionCount = executionCount;
         this.totalRows = totalRows;
         this.active = active;
@@ -51,8 +51,8 @@ public class Query {
         return queryText;
     }
 
-    public long getTotalMicros() {
-        return totalMicros;
+    public double getTotalNanos() {
+        return totalNanos;
     }
 
     public long getExecutionCount() {
@@ -72,7 +72,7 @@ public class Query {
         return MoreObjects.toStringHelper(this)
                 .add("queryType", queryType)
                 .add("queryText", queryText)
-                .add("totalMicros", totalMicros)
+                .add("totalNanos", totalNanos)
                 .add("executionCount", executionCount)
                 .add("totalRows", totalRows)
                 .add("active", active)
@@ -83,17 +83,17 @@ public class Query {
     static Query readValue(
             @JsonProperty("queryType") @Nullable String queryType,
             @JsonProperty("queryText") @Nullable String queryText,
-            @JsonProperty("totalMicros") @Nullable Long totalMicros,
+            @JsonProperty("totalNanos") @Nullable Double totalNanos,
             @JsonProperty("executionCount") @Nullable Long executionCount,
             @JsonProperty("totalRows") @Nullable Long totalRows,
             @JsonProperty("active") @Nullable Boolean active)
                     throws JsonMappingException {
         checkRequiredProperty(queryType, "queryType");
         checkRequiredProperty(queryText, "queryText");
-        checkRequiredProperty(totalMicros, "totalMicros");
+        checkRequiredProperty(totalNanos, "totalNanos");
         checkRequiredProperty(executionCount, "executionCount");
         checkRequiredProperty(totalRows, "totalRows");
-        return new Query(queryType, queryText, totalMicros, executionCount, totalRows,
+        return new Query(queryType, queryText, totalNanos, executionCount, totalRows,
                 orFalse(active));
     }
 

@@ -75,7 +75,7 @@ class TraceDao implements TraceRepository {
             ImmutableColumn.of("error", Types.BOOLEAN),
             ImmutableColumn.of("start_time", Types.BIGINT),
             ImmutableColumn.of("capture_time", Types.BIGINT),
-            ImmutableColumn.of("duration", Types.BIGINT), // nanoseconds
+            ImmutableColumn.of("duration_nanos", Types.BIGINT), // nanoseconds
             ImmutableColumn.of("transaction_type", Types.VARCHAR),
             ImmutableColumn.of("transaction_name", Types.VARCHAR),
             ImmutableColumn.of("headline", Types.VARCHAR),
@@ -104,24 +104,24 @@ class TraceDao implements TraceRepository {
                     ImmutableColumn.of("capture_time", Types.BIGINT));
 
     private static final ImmutableList<Index> traceIndexes = ImmutableList.<Index>of(
-            // duration, id and error columns are included so h2 can return the result set directly
-            // from the index without having to reference the table for each row
+            // duration_nanos, id and error columns are included so h2 can return the result set
+            // directly from the index without having to reference the table for each row
             //
             // trace_slow_idx is for slow trace point query and for readOverallSlowCount()
             ImmutableIndex.of("trace_slow_idx",
-                    ImmutableList.of("transaction_type", "slow", "capture_time", "duration",
+                    ImmutableList.of("transaction_type", "slow", "capture_time", "duration_nanos",
                             "error", "id")),
             // trace_slow_idx is for slow trace point query and for readTransactionSlowCount()
             ImmutableIndex.of("trace_transaction_slow_idx",
                     ImmutableList.of("transaction_type", "transaction_name", "slow", "capture_time",
-                            "duration", "error", "id")),
+                            "duration_nanos", "error", "id")),
             // trace_error_idx is for error trace point query and for readOverallErrorCount()
             ImmutableIndex.of("trace_error_idx",
-                    ImmutableList.of("transaction_type", "error", "capture_time", "duration",
+                    ImmutableList.of("transaction_type", "error", "capture_time", "duration_nanos",
                             "error", "id")),
             // trace_error_idx is for error trace point query and for readTransactionErrorCount()
             ImmutableIndex.of("trace_transaction_error_idx", ImmutableList.of("transaction_type",
-                    "transaction_name", "error", "capture_time", "duration", "id")));
+                    "transaction_name", "error", "capture_time", "duration_nanos", "id")));
 
     private final DataSource dataSource;
     private final CappedDatabase traceCappedDatabase;
@@ -137,13 +137,13 @@ class TraceDao implements TraceRepository {
 
     public void collect(final Trace trace) throws Exception {
         dataSource.update(
-                "merge into trace (id, partial, slow, error, start_time, capture_time, duration,"
-                        + " transaction_type, transaction_name, headline, user, custom_attributes,"
-                        + " custom_detail, error_message, error_throwable, timers, thread_cpu_time,"
-                        + " thread_blocked_time, thread_waited_time, thread_allocated_bytes,"
-                        + " gc_activity, entry_count, entries_capped_id, profile_sample_count,"
-                        + " profile_capped_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
-                        + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "merge into trace (id, partial, slow, error, start_time, capture_time,"
+                        + " duration_nanos, transaction_type, transaction_name, headline, user,"
+                        + " custom_attributes, custom_detail, error_message, error_throwable,"
+                        + " timers, thread_cpu_time, thread_blocked_time, thread_waited_time,"
+                        + " thread_allocated_bytes, gc_activity, entry_count, entries_capped_id,"
+                        + " profile_sample_count, profile_capped_id) values (?, ?, ?, ?, ?, ?, ?,"
+                        + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 new TraceBinder(trace));
         if (!trace.customAttributes().isEmpty()) {
             dataSource.batchUpdate(
@@ -240,9 +240,9 @@ class TraceDao implements TraceRepository {
     @Override
     public @Nullable TraceHeader readTraceHeader(String traceId) throws Exception {
         List<TraceHeader> traces = dataSource.query(
-                "select id, partial, error, start_time, capture_time, duration, transaction_type,"
-                        + " transaction_name, headline, user, custom_attributes, custom_detail,"
-                        + " error_message, error_throwable, timers, thread_cpu_time,"
+                "select id, partial, error, start_time, capture_time, duration_nanos,"
+                        + " transaction_type, transaction_name, headline, user, custom_attributes,"
+                        + " custom_detail, error_message, error_throwable, timers, thread_cpu_time,"
                         + " thread_blocked_time, thread_waited_time, thread_allocated_bytes,"
                         + " gc_activity, entry_count, entries_capped_id, profile_sample_count,"
                         + " profile_capped_id from trace where id = ?",
@@ -391,7 +391,7 @@ class TraceDao implements TraceRepository {
             preparedStatement.setBoolean(i++, trace.error());
             preparedStatement.setLong(i++, trace.startTime());
             preparedStatement.setLong(i++, trace.captureTime());
-            preparedStatement.setLong(i++, trace.duration());
+            preparedStatement.setLong(i++, trace.durationNanos());
             preparedStatement.setString(i++, trace.transactionType());
             preparedStatement.setString(i++, trace.transactionName());
             preparedStatement.setString(i++, trace.headline());
@@ -401,9 +401,9 @@ class TraceDao implements TraceRepository {
             preparedStatement.setString(i++, trace.errorMessage());
             preparedStatement.setString(i++, errorThrowable);
             preparedStatement.setString(i++, timers);
-            RowMappers.setNotAvailableAwareLong(preparedStatement, i++, trace.threadCpuTime());
-            RowMappers.setNotAvailableAwareLong(preparedStatement, i++, trace.threadBlockedTime());
-            RowMappers.setNotAvailableAwareLong(preparedStatement, i++, trace.threadWaitedTime());
+            RowMappers.setNotAvailableAwareLong(preparedStatement, i++, trace.threadCpuNanos());
+            RowMappers.setNotAvailableAwareLong(preparedStatement, i++, trace.threadBlockedNanos());
+            RowMappers.setNotAvailableAwareLong(preparedStatement, i++, trace.threadWaitedNanos());
             RowMappers.setNotAvailableAwareLong(preparedStatement, i++,
                     trace.threadAllocatedBytes());
             preparedStatement.setString(i++, gcActivity);
@@ -423,7 +423,7 @@ class TraceDao implements TraceRepository {
             return ImmutableTracePoint.builder()
                     .id(id)
                     .captureTime(resultSet.getLong(2))
-                    .duration(resultSet.getLong(3))
+                    .durationNanos(resultSet.getLong(3))
                     .error(resultSet.getBoolean(4))
                     .build();
         }
@@ -444,7 +444,7 @@ class TraceDao implements TraceRepository {
                     .error(resultSet.getBoolean(columnIndex++))
                     .startTime(resultSet.getLong(columnIndex++))
                     .captureTime(resultSet.getLong(columnIndex++))
-                    .duration(resultSet.getLong(columnIndex++))
+                    .durationNanos(resultSet.getLong(columnIndex++))
                     .transactionType(Strings.nullToEmpty(resultSet.getString(columnIndex++)))
                     .transactionName(Strings.nullToEmpty(resultSet.getString(columnIndex++)))
                     .headline(Strings.nullToEmpty(resultSet.getString(columnIndex++)))
@@ -461,10 +461,11 @@ class TraceDao implements TraceRepository {
             String timers = checkNotNull(resultSet.getString(columnIndex++));
             builder.rootTimer(JsonUnmarshaller.unmarshalTraceTimers(timers));
 
-            builder.threadCpuTime(RowMappers.getNotAvailableAwareLong(resultSet, columnIndex++));
-            builder.threadBlockedTime(
+            builder.threadCpuNanos(RowMappers.getNotAvailableAwareLong(resultSet, columnIndex++));
+            builder.threadBlockedNanos(
                     RowMappers.getNotAvailableAwareLong(resultSet, columnIndex++));
-            builder.threadWaitedTime(RowMappers.getNotAvailableAwareLong(resultSet, columnIndex++));
+            builder.threadWaitedNanos(
+                    RowMappers.getNotAvailableAwareLong(resultSet, columnIndex++));
             builder.threadAllocatedBytes(
                     RowMappers.getNotAvailableAwareLong(resultSet, columnIndex++));
 

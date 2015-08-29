@@ -71,8 +71,8 @@ public class TraceService {
     }
 
     public @Nullable Trace getLastTrace() throws Exception {
-        String content = httpClient.get(
-                "/backend/trace/points?from=0&to=" + Long.MAX_VALUE + "&duration-low=0&limit=1000");
+        String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
+                + "&duration-millis-low=0&limit=1000");
         TracePointResponse response =
                 ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
         List<RawPoint> points = Lists.newArrayList();
@@ -110,12 +110,12 @@ public class TraceService {
         sb.append(query.from());
         sb.append("&to=");
         sb.append(query.to());
-        sb.append("&duration-low=");
-        sb.append(query.durationLow());
-        Long durationHigh = query.durationHigh();
-        if (durationHigh != null) {
-            sb.append("&duration-high=");
-            sb.append(durationHigh);
+        sb.append("&duration-millis-low=");
+        sb.append(query.durationMillisLow());
+        Long durationMillisHigh = query.durationMillisHigh();
+        if (durationMillisHigh != null) {
+            sb.append("&duration-millis-high=");
+            sb.append(durationMillisHigh);
         }
         String transactionType = query.transactionType();
         if (transactionType != null) {
@@ -201,8 +201,8 @@ public class TraceService {
     }
 
     private @Nullable Trace getActiveTrace() throws Exception {
-        String content = httpClient.get(
-                "/backend/trace/points?from=0&to=" + Long.MAX_VALUE + "&duration-low=0&limit=1000");
+        String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
+                + "&duration-millis-low=0&limit=1000");
         TracePointResponse response =
                 ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
         if (response.getActivePoints().isEmpty()) {

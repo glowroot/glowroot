@@ -73,23 +73,23 @@ glowroot.controller('TracesCtrl', [
       var from = appliedFilter.from;
       var to = appliedFilter.to;
       var limit = appliedFilter.limit;
-      if (appliedFilter.durationLow) {
-        appliedFilter.durationLow = Number(appliedFilter.durationLow);
+      if (appliedFilter.durationMillisLow) {
+        appliedFilter.durationMillisLow = Number(appliedFilter.durationMillisLow);
       }
-      if (appliedFilter.durationHigh) {
-        appliedFilter.durationHigh = Number(appliedFilter.durationHigh);
+      if (appliedFilter.durationMillisHigh) {
+        appliedFilter.durationMillisHigh = Number(appliedFilter.durationMillisHigh);
       }
-      var durationLow = appliedFilter.durationLow;
-      var durationHigh = appliedFilter.durationHigh;
+      var durationMillisLow = appliedFilter.durationMillisLow;
+      var durationMillisHigh = appliedFilter.durationMillisHigh;
       var query = angular.copy(appliedFilter);
       if ($scope.transactionName) {
         query.transactionNameComparator = 'equals';
         query.transactionName = $scope.transactionName;
       }
       // convert duration from milliseconds to nanoseconds
-      query.durationLow = Math.ceil(query.durationLow * 1000000);
-      if (query.durationHigh) {
-        query.durationHigh = Math.floor(query.durationHigh * 1000000);
+      query.durationMillisLow = Math.ceil(query.durationMillisLow * 1000000);
+      if (query.durationMillisHigh) {
+        query.durationMillisHigh = Math.floor(query.durationMillisHigh * 1000000);
       }
       if (slowOnly) {
         query.slowOnly = true;
@@ -134,8 +134,8 @@ glowroot.controller('TracesCtrl', [
             // user clicked on Refresh button, need to reset axes
             plot.getAxes().xaxis.options.min = from;
             plot.getAxes().xaxis.options.max = to;
-            plot.getAxes().yaxis.options.min = durationLow;
-            plot.getAxes().yaxis.options.realMax = durationHigh;
+            plot.getAxes().yaxis.options.min = durationMillisLow;
+            plot.getAxes().yaxis.options.realMax = durationMillisHigh;
             plot.setData([data.normalPoints, data.errorPoints, data.activePoints]);
             // setupGrid is needed in case yaxis.max === undefined
             if (highlightedTraceId) {
@@ -177,8 +177,8 @@ glowroot.controller('TracesCtrl', [
     };
 
     $scope.clearCriteria = function () {
-      $scope.filter.durationLow = 0;
-      $scope.filter.durationHigh = undefined;
+      $scope.filter.durationMillisLow = 0;
+      $scope.filter.durationMillisHigh = undefined;
       $scope.filterDurationComparator = 'greater';
       $scope.filter.headlineComparator = 'begins';
       $scope.filter.headline = '';
@@ -289,15 +289,15 @@ glowroot.controller('TracesCtrl', [
       }
     };
 
-    function updateFilter(from, to, durationLow, durationHigh) {
+    function updateFilter(from, to, durationMillisLow, durationMillisHigh) {
       appliedFilter.from = from;
       appliedFilter.to = to;
-      // set both appliedFilter and $scope.filter durationLow/durationHigh
-      appliedFilter.durationLow = $scope.filter.durationLow = durationLow;
-      appliedFilter.durationHigh = $scope.filter.durationHigh = durationHigh;
-      if (durationHigh && durationLow !== 0) {
+      // set both appliedFilter and $scope.filter durationMillisLow/durationMillisHigh
+      appliedFilter.durationMillisLow = $scope.filter.durationMillisLow = durationMillisLow;
+      appliedFilter.durationMillisHigh = $scope.filter.durationMillisHigh = durationMillisHigh;
+      if (durationMillisHigh && durationMillisLow !== 0) {
         $scope.filterDurationComparator = 'between';
-      } else if (durationHigh) {
+      } else if (durationMillisHigh) {
         $scope.filterDurationComparator = 'less';
       } else {
         $scope.filterDurationComparator = 'greater';
@@ -307,8 +307,8 @@ glowroot.controller('TracesCtrl', [
     function getFilteredData() {
       var from = plot.getAxes().xaxis.options.min;
       var to = plot.getAxes().xaxis.options.max;
-      var durationLow = plot.getAxes().yaxis.options.min;
-      var durationHigh = plot.getAxes().yaxis.options.realMax || Number.MAX_VALUE;
+      var durationMillisLow = plot.getAxes().yaxis.options.min;
+      var durationMillisHigh = plot.getAxes().yaxis.options.realMax || Number.MAX_VALUE;
       var data = [];
       var i, j;
       var nodata = true;
@@ -317,7 +317,7 @@ glowroot.controller('TracesCtrl', [
         var points = plot.getData()[i].data;
         for (j = 0; j < points.length; j++) {
           var point = points[j];
-          if (point[0] >= from && point[0] <= to && point[1] >= durationLow && point[1] <= durationHigh) {
+          if (point[0] >= from && point[0] <= to && point[1] >= durationMillisLow && point[1] <= durationMillisHigh) {
             data[i].push(point);
             nodata = false;
           }
@@ -396,8 +396,8 @@ glowroot.controller('TracesCtrl', [
       $scope.traceChartTo = Number($location.search()['trace-chart-to']);
       appliedFilter.from = $scope.traceChartFrom || $scope.chartFrom;
       appliedFilter.to = $scope.traceChartTo || $scope.chartTo;
-      appliedFilter.durationLow = Number($location.search()['duration-low']) || 0;
-      appliedFilter.durationHigh = Number($location.search()['duration-high']) || undefined;
+      appliedFilter.durationMillisLow = Number($location.search()['duration-millis-low']) || 0;
+      appliedFilter.durationMillisHigh = Number($location.search()['duration-millis-high']) || undefined;
       appliedFilter.headlineComparator = $location.search()['headline-comparator'] || 'begins';
       appliedFilter.headline = $location.search().headline || '';
       appliedFilter.errorComparator = $location.search()['error-comparator'] || 'begins';
@@ -420,9 +420,9 @@ glowroot.controller('TracesCtrl', [
       delete $scope.filter.from;
       delete $scope.filter.to;
 
-      if (appliedFilter.durationLow !== 0 && appliedFilter.durationHigh) {
+      if (appliedFilter.durationMillisLow !== 0 && appliedFilter.durationMillisHigh) {
         $scope.filterDurationComparator = 'between';
-      } else if (appliedFilter.durationHigh) {
+      } else if (appliedFilter.durationMillisHigh) {
         $scope.filterDurationComparator = 'less';
       } else {
         $scope.filterDurationComparator = 'greater';
@@ -443,9 +443,9 @@ glowroot.controller('TracesCtrl', [
 
     $scope.$watch('filterDurationComparator', function (value) {
       if (value === 'greater') {
-        $scope.filter.durationHigh = undefined;
+        $scope.filter.durationMillisHigh = undefined;
       } else if (value === 'less') {
-        $scope.filter.durationLow = 0;
+        $scope.filter.durationMillisLow = 0;
       }
     });
 
@@ -457,11 +457,11 @@ glowroot.controller('TracesCtrl', [
       if ($scope.traceChartTo) {
         query['trace-chart-to'] = $scope.traceChartTo;
       }
-      if (Number(appliedFilter.durationLow)) {
-        query['duration-low'] = appliedFilter.durationLow;
+      if (Number(appliedFilter.durationMillisLow)) {
+        query['duration-millis-low'] = appliedFilter.durationMillisLow;
       }
-      if (Number(appliedFilter.durationHigh)) {
-        query['duration-high'] = appliedFilter.durationHigh;
+      if (Number(appliedFilter.durationMillisHigh)) {
+        query['duration-millis-high'] = appliedFilter.durationMillisHigh;
       }
       if (appliedFilter.headline) {
         query['headline-comparator'] = appliedFilter.headlineComparator;

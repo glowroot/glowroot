@@ -71,7 +71,7 @@ public class AlertingServiceTest {
     @Test
     public void shouldSendMail() throws Exception {
         // given
-        setup(1000);
+        setup(1000000);
         AlertingService alertingService = new AlertingService(configRepository,
                 triggeredAlertRepository, aggregateRepository, mailService);
         // when
@@ -83,7 +83,7 @@ public class AlertingServiceTest {
     @Test
     public void shouldNotSendMail() throws Exception {
         // given
-        setup(999);
+        setup(999000);
         AlertingService alertingService = new AlertingService(configRepository,
                 triggeredAlertRepository, aggregateRepository, mailService);
         // when
@@ -143,7 +143,7 @@ public class AlertingServiceTest {
         }
         PercentileAggregate aggregate = ImmutablePercentileAggregate.builder()
                 .captureTime(120000)
-                .totalMicros(1000)
+                .totalNanos(1000000)
                 .transactionCount(1)
                 .histogram(lazyHistogram)
                 .build();

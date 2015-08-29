@@ -184,9 +184,8 @@ public class Transaction {
         return traceEntryComponent.getEndTick();
     }
 
-    // duration of trace in nanoseconds
-    public long getDuration() {
-        return traceEntryComponent.getDuration();
+    public long getDurationNanos() {
+        return traceEntryComponent.getDurationNanos();
     }
 
     public String getTransactionType() {

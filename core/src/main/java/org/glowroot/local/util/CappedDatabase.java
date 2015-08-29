@@ -44,8 +44,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.util.ChunkSource;
 import org.glowroot.markers.OnlyUsedByTests;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
 public class CappedDatabase {
 
     private static final Logger logger = LoggerFactory.getLogger(CappedDatabase.class);
@@ -119,8 +117,7 @@ public class CappedDatabase {
                 statsByType.put(type, stats);
             }
             stats.record(countingStreamBeforeCompression.getCount(),
-                    countingStreamAfterCompression.getCount(),
-                    NANOSECONDS.toMicros(endTick - startTick));
+                    countingStreamAfterCompression.getCount(), endTick - startTick);
             return out.endBlock();
         }
     }

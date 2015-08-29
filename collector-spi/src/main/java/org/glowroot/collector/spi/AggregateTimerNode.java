@@ -19,7 +19,7 @@ import java.util.Collection;
 
 import javax.annotation.Nullable;
 
-public interface TimerNode {
+public interface AggregateTimerNode {
 
     // only null for synthetic root node
     @Nullable
@@ -27,9 +27,10 @@ public interface TimerNode {
 
     boolean extended();
 
-    long totalMicros();
+    // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+    double totalNanos();
 
     long count();
 
-    Collection<? extends TimerNode> childNodes();
+    Collection<? extends AggregateTimerNode> childNodes();
 }

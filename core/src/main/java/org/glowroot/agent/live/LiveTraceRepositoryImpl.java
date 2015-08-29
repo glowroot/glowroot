@@ -144,7 +144,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                 activeTracePoints.add(ImmutableTracePoint.builder()
                         .id(transaction.getId())
                         .captureTime(captureTime)
-                        .duration(captureTick - startTick)
+                        .durationNanos(captureTick - startTick)
                         .error(transaction.getErrorMessage() != null)
                         .build());
             }
@@ -154,7 +154,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                     @Override
                     public Long apply(@Nullable TracePoint tracePoint) {
                         checkNotNull(tracePoint);
-                        return tracePoint.duration();
+                        return tracePoint.durationNanos();
                     }
                 }));
         if (query.limit() != 0 && activeTracePoints.size() > query.limit()) {
@@ -171,7 +171,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                 points.add(ImmutableTracePoint.builder()
                         .id(transaction.getId())
                         .captureTime(captureTime)
-                        .duration(transaction.getDuration())
+                        .durationNanos(transaction.getDurationNanos())
                         .error(transaction.getErrorMessage() != null)
                         .build());
             }
@@ -240,12 +240,12 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     private boolean matchesDuration(Transaction transaction, TracePointQuery query) {
-        long duration = transaction.getDuration();
-        if (duration < query.durationLow()) {
+        long durationNanos = transaction.getDurationNanos();
+        if (durationNanos < query.durationNanosLow()) {
             return false;
         }
-        Long durationHigh = query.durationHigh();
-        return durationHigh == null || duration <= durationHigh;
+        Long durationNanosHigh = query.durationNanosHigh();
+        return durationNanosHigh == null || durationNanos <= durationNanosHigh;
     }
 
     private boolean matchesTransactionType(Transaction transaction, TracePointQuery query) {

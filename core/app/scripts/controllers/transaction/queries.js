@@ -71,7 +71,7 @@ glowroot.controller('TransactionQueriesCtrl', [
       $scope.sortAttribute = $location.search()['sort-attribute'] || 'total-time';
       $scope.sortReverse = $location.search()['sort-direction'] === 'asc';
       if ($scope.sortAttribute === 'total-time') {
-        $scope.sortAttr = '-totalMicros';
+        $scope.sortAttr = '-totalNanos';
       } else if ($scope.sortAttribute === 'execution-count') {
         $scope.sortAttr = '-executionCount';
       } else if ($scope.sortAttribute === 'time-per-execution') {
@@ -207,7 +207,7 @@ glowroot.controller('TransactionQueriesCtrl', [
             $scope.showQueries = data.length;
             $scope.queries = data;
             angular.forEach($scope.queries, function (query) {
-              query.timePerExecution = query.totalMicros / (1000 * query.executionCount);
+              query.timePerExecution = query.totalNanos / (1000000 * query.executionCount);
               query.rowsPerExecution = query.totalRows / query.executionCount;
             });
           })

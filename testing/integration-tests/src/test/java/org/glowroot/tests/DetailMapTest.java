@@ -84,8 +84,8 @@ public class DetailMapTest {
         assertThat(entry2.getMessageText()).isEqualTo("Level Three");
         assertThat(entry2.getMessageDetail())
                 .isEqualTo(ImmutableMap.of("arg1", "axy", "arg2", "bxy"));
-        // offset is measured in nanoseconds so there's no way this should be 0
-        assertThat(entry2.getOffset()).isGreaterThan(0);
+        // there's no way offsetNanos should be 0
+        assertThat(entry2.getOffsetNanos()).isGreaterThan(0);
         TraceEntry entry3 = entries.get(2);
         assertThat(entry3.getMessageText()).isEqualTo("Level Four: axy, bxy");
     }

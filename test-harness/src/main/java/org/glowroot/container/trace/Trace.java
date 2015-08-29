@@ -38,7 +38,7 @@ public class Trace {
     private final boolean error;
     private final long startTime;
     private final long captureTime;
-    private final long duration;
+    private final long durationNanos;
     private final String transactionType;
     private final String transactionName;
     private final String headline;
@@ -48,9 +48,9 @@ public class Trace {
     private final @Nullable String errorMessage;
     private final @Nullable ThrowableInfo errorThrowable;
     private final TimerNode rootTimer;
-    private final long threadCpuTime;
-    private final long threadBlockedTime;
-    private final long threadWaitedTime;
+    private final long threadCpuNanos;
+    private final long threadBlockedNanos;
+    private final long threadWaitedNanos;
     private final long threadAllocatedBytes;
     private final Map<String, GarbageCollectionActivity> gcActivity;
     private final long entryCount;
@@ -62,8 +62,8 @@ public class Trace {
             long captureTime, long duration, String transactionType, String transactionName,
             String headline, @Nullable String user, Map<String, List<String>> customAttributes,
             Map<String, /*@Nullable*/Object> customDetail, @Nullable String errorMessage,
-            @Nullable ThrowableInfo errorThrowable, TimerNode rootTimer, long threadCpuTime,
-            long threadBlockedTime, long threadWaitedTime, long threadAllocatedBytes,
+            @Nullable ThrowableInfo errorThrowable, TimerNode rootTimer, long threadCpuNanos,
+            long threadBlockedNanos, long threadWaitedNanos, long threadAllocatedBytes,
             Map<String, GarbageCollectionActivity> gcActivity, long entryCount,
             long profileSampleCount, Existence entriesExistence, Existence profileExistence) {
         this.id = id;
@@ -72,7 +72,7 @@ public class Trace {
         this.error = error;
         this.startTime = startTime;
         this.captureTime = captureTime;
-        this.duration = duration;
+        this.durationNanos = duration;
         this.transactionType = transactionType;
         this.transactionName = transactionName;
         this.headline = headline;
@@ -82,9 +82,9 @@ public class Trace {
         this.errorMessage = errorMessage;
         this.errorThrowable = errorThrowable;
         this.rootTimer = rootTimer;
-        this.threadCpuTime = threadCpuTime;
-        this.threadBlockedTime = threadBlockedTime;
-        this.threadWaitedTime = threadWaitedTime;
+        this.threadCpuNanos = threadCpuNanos;
+        this.threadBlockedNanos = threadBlockedNanos;
+        this.threadWaitedNanos = threadWaitedNanos;
         this.threadAllocatedBytes = threadAllocatedBytes;
         this.gcActivity = gcActivity;
         this.entryCount = entryCount;
@@ -117,8 +117,8 @@ public class Trace {
         return captureTime;
     }
 
-    public long getDuration() {
-        return duration;
+    public long getDurationNanos() {
+        return durationNanos;
     }
 
     public String getTransactionType() {
@@ -157,16 +157,16 @@ public class Trace {
         return rootTimer;
     }
 
-    public long getThreadCpuTime() {
-        return threadCpuTime;
+    public long getThreadCpuNanos() {
+        return threadCpuNanos;
     }
 
-    public long getThreadBlockedTime() {
-        return threadBlockedTime;
+    public long getThreadBlockedNanos() {
+        return threadBlockedNanos;
     }
 
-    public long getThreadWaitedTime() {
-        return threadWaitedTime;
+    public long getThreadWaitedNanos() {
+        return threadWaitedNanos;
     }
 
     public long getThreadAllocatedBytes() {
@@ -202,7 +202,7 @@ public class Trace {
                 .add("error", error)
                 .add("startTime", startTime)
                 .add("captureTime", captureTime)
-                .add("duration", duration)
+                .add("durationNanos", durationNanos)
                 .add("transactionType", transactionType)
                 .add("transactionName", transactionName)
                 .add("headline", headline)
@@ -212,9 +212,9 @@ public class Trace {
                 .add("errorMessage", errorMessage)
                 .add("errorThrowable", errorThrowable)
                 .add("rootTimer", rootTimer)
-                .add("threadCpuTime", threadCpuTime)
-                .add("threadBlockedTime", threadBlockedTime)
-                .add("threadWaitedTime", threadWaitedTime)
+                .add("threadCpuNanos", threadCpuNanos)
+                .add("threadBlockedNanos", threadBlockedNanos)
+                .add("threadWaitedNanos", threadWaitedNanos)
                 .add("threadAllocatedBytes", threadAllocatedBytes)
                 .add("gcActivity", gcActivity)
                 .add("entryCount", entryCount)
@@ -232,7 +232,7 @@ public class Trace {
             @JsonProperty("error") @Nullable Boolean error,
             @JsonProperty("startTime") @Nullable Long startTime,
             @JsonProperty("captureTime") @Nullable Long captureTime,
-            @JsonProperty("duration") @Nullable Long duration,
+            @JsonProperty("durationNanos") @Nullable Long durationNanos,
             @JsonProperty("transactionType") @Nullable String transactionType,
             @JsonProperty("transactionName") @Nullable String transactionName,
             @JsonProperty("headline") @Nullable String headline,
@@ -242,9 +242,9 @@ public class Trace {
             @JsonProperty("errorMessage") @Nullable String errorMessage,
             @JsonProperty("errorThrowable") @Nullable ThrowableInfo errorThrowable,
             @JsonProperty("rootTimer") @Nullable TimerNode rootTimer,
-            @JsonProperty("threadCpuTime") @Nullable Long threadCpuTime,
-            @JsonProperty("threadBlockedTime") @Nullable Long threadBlockedTime,
-            @JsonProperty("threadWaitedTime") @Nullable Long threadWaitedTime,
+            @JsonProperty("threadCpuNanos") @Nullable Long threadCpuNanos,
+            @JsonProperty("threadBlockedNanos") @Nullable Long threadBlockedNanos,
+            @JsonProperty("threadWaitedNanos") @Nullable Long threadWaitedNanos,
             @JsonProperty("threadAllocatedBytes") @Nullable Long threadAllocatedBytes,
             @JsonProperty("gcActivity") @Nullable Map<String, /*@Nullable*/GarbageCollectionActivity> gcActivityUnchecked,
             @JsonProperty("entryCount") @Nullable Long entryCount,
@@ -262,23 +262,23 @@ public class Trace {
         checkRequiredProperty(error, "error");
         checkRequiredProperty(startTime, "startTime");
         checkRequiredProperty(captureTime, "captureTime");
-        checkRequiredProperty(duration, "duration");
+        checkRequiredProperty(durationNanos, "durationNanos");
         checkRequiredProperty(transactionType, "transactionType");
         checkRequiredProperty(transactionName, "transactionName");
         checkRequiredProperty(headline, "headline");
         checkRequiredProperty(rootTimer, "rootTimer");
-        checkRequiredProperty(threadCpuTime, "threadCpuTime");
-        checkRequiredProperty(threadBlockedTime, "threadBlockedTime");
-        checkRequiredProperty(threadWaitedTime, "threadWaitedTime");
+        checkRequiredProperty(threadCpuNanos, "threadCpuNanos");
+        checkRequiredProperty(threadBlockedNanos, "threadBlockedNanos");
+        checkRequiredProperty(threadWaitedNanos, "threadWaitedNanos");
         checkRequiredProperty(threadAllocatedBytes, "threadAllocatedBytes");
         checkRequiredProperty(entryCount, "entryCount");
         checkRequiredProperty(profileSampleCount, "profileSampleCount");
         checkRequiredProperty(entriesExistence, "entriesExistence");
         checkRequiredProperty(profileExistence, "profileExistence");
-        return new Trace(id, active, partial, error, startTime, captureTime, duration,
+        return new Trace(id, active, partial, error, startTime, captureTime, durationNanos,
                 transactionType, transactionName, headline, user, customAttributes,
-                nullToEmpty(customDetail), errorMessage, errorThrowable, rootTimer, threadCpuTime,
-                threadBlockedTime, threadWaitedTime, threadAllocatedBytes, gcActivity, entryCount,
+                nullToEmpty(customDetail), errorMessage, errorThrowable, rootTimer, threadCpuNanos,
+                threadBlockedNanos, threadWaitedNanos, threadAllocatedBytes, gcActivity, entryCount,
                 profileSampleCount, entriesExistence, profileExistence);
     }
 

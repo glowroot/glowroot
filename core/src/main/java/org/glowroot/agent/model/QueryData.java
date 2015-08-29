@@ -26,8 +26,6 @@ import org.glowroot.collector.spi.Query;
 import org.glowroot.common.util.Tickers;
 import org.glowroot.plugin.api.transaction.Timer;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
 // TODO update this comment that was copied from TimerImpl
 //
 // instances are updated by a single thread, but can be read by other threads
@@ -56,7 +54,7 @@ public class QueryData implements Timer, Query {
     private final @Nullable QueryData nextQueryData;
 
     // nanosecond rollover (292 years) isn't a concern for total time on a single transaction
-    private long totalTime;
+    private long totalNanos;
     private long executionCount;
     private long totalRows;
 
@@ -98,17 +96,17 @@ public class QueryData implements Timer, Query {
             // these two lines and then "total + curr" would overstate the correct value
             // (it seems better to understate the correct value if there is an update to the
             // timer values in between these two lines)
-            long theTotalTime = totalTime;
+            long theTotalNanos = totalNanos;
             long theTotalRows = totalRows;
             // capture startTick before ticker.read() so curr is never < 0
             long theStartTick = startTick;
             long curr = ticker.read() - theStartTick;
-            jg.writeNumberField("totalTime", theTotalTime + curr);
+            jg.writeNumberField("totalNanos", theTotalNanos + curr);
             jg.writeNumberField("executionCount", executionCount);
             jg.writeNumberField("totalRows", theTotalRows);
             jg.writeBooleanField("active", true);
         } else {
-            jg.writeNumberField("totalTime", totalTime);
+            jg.writeNumberField("totalNanos", totalNanos);
             jg.writeNumberField("executionCount", executionCount);
             jg.writeNumberField("totalRows", totalRows);
         }
@@ -139,14 +137,9 @@ public class QueryData implements Timer, Query {
         totalRows += inc;
     }
 
-    // only called after transaction completion
-    public long getTotalTime() {
-        return totalTime;
-    }
-
     @Override
-    public long totalMicros() {
-        return NANOSECONDS.toMicros(totalTime);
+    public double totalNanos() {
+        return totalNanos;
     }
 
     // only called after transaction completion
@@ -180,6 +173,6 @@ public class QueryData implements Timer, Query {
     }
 
     private void endInternal(long endTick) {
-        totalTime += endTick - startTick;
+        totalNanos += endTick - startTick;
     }
 }
