@@ -81,7 +81,7 @@
       <dependency>
         <groupId>org.immutables</groupId>
         <artifactId>value</artifactId>
-        <version>2.0.17</version>
+        <version>2.0.21</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
@@ -158,12 +158,12 @@
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-core</artifactId>
-        <version>1.10.3</version>
+        <version>1.10.5</version>
       </dependency>
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-generator-annprocess</artifactId>
-        <version>1.10.3</version>
+        <version>1.10.5</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -469,7 +469,7 @@
             the classpath for the explicit annotation processing setup below -->
           <groupId>org.immutables</groupId>
           <artifactId>value</artifactId>
-          <version>2.0.17</version>
+          <version>2.0.21</version>
         </dependency>
       </dependencies>
       <build>

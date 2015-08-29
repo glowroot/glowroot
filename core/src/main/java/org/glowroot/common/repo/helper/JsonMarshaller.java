@@ -26,10 +26,8 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.io.CharStreams;
 
-import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.collector.spi.GarbageCollectionActivity;
 import org.glowroot.collector.spi.ProfileNode;
 import org.glowroot.collector.spi.Query;
@@ -43,12 +41,6 @@ import org.glowroot.common.util.Traverser;
 public class JsonMarshaller {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
-
-    static {
-        SimpleModule module = new SimpleModule();
-        module.setMixInAnnotation(TimerImpl.class, ImmutableXTraceTimerNode.class);
-        mapper.registerModule(module);
-    }
 
     private JsonMarshaller() {}
 

@@ -95,17 +95,15 @@ public abstract class InstrumentationConfig {
 
     public abstract @Nullable Long transactionSlowThresholdMillis();
 
-    // this property only for plugin authors (to be used in glowroot.plugin.json),
-    // so it is ignored when written to config.json
-    @JsonIgnore
+    // TODO ignore this property when writing to config.json
+    // it is only for plugin authors (to be used in glowroot.plugin.json)
     @Value.Default
     public String enabledProperty() {
         return "";
     }
 
-    // this property only for plugin authors (to be used in glowroot.plugin.json),
-    // so it is ignored when written to config.json
-    @JsonIgnore
+    // TODO ignore this property when writing to config.json
+    // it is only for plugin authors (to be used in glowroot.plugin.json)
     @Value.Default
     public String traceEntryEnabledProperty() {
         return "";

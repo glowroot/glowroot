@@ -24,6 +24,7 @@ import java.util.NoSuchElementException;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -167,35 +168,41 @@ public class TimerImpl implements Timer, org.glowroot.collector.spi.TraceTimerNo
     }
 
     @Override
+    @JsonProperty("name")
     public String name() {
         return timerName.name();
     }
 
     @Override
+    @JsonProperty("extended")
     public boolean extended() {
         return timerName.extended();
     }
 
     // only called after transaction completion
     @Override
+    @JsonProperty("totalMicros")
     public long totalMicros() {
         return NANOSECONDS.toMicros(totalNanos);
     }
 
     // only called after transaction completion
     @Override
+    @JsonProperty("count")
     public long count() {
         return count;
     }
 
     // only called after transaction completion
     @Override
+    @JsonProperty("active")
     public boolean active() {
         return false;
     }
 
     // only called after transaction completion
     @Override
+    @JsonProperty("childNodes")
     public Collection<? extends org.glowroot.collector.spi.TraceTimerNode> childNodes() {
         return Lists.newArrayList(getNestedTimers());
     }
