@@ -100,7 +100,9 @@ public class TraceCreator {
         }
         builder.gcActivity(transaction.getGcActivity());
         builder.entries(transaction.getEntries());
+        builder.entryLimitExceeded(transaction.isEntryLimitExceeded());
         builder.syntheticRootProfileNode(transaction.getSyntheticRootProfileNode());
+        builder.profileLimitExceeded(transaction.isProfileLimitExceeded());
         return builder.build();
     }
 
@@ -145,12 +147,14 @@ public class TraceCreator {
         int entryCount = transaction.getEntryCount();
         long profileSampleCount = transaction.getProfileSampleCount();
         builder.entryCount(entryCount);
-        builder.profileSampleCount(profileSampleCount);
+        builder.entryLimitExceeded(transaction.isEntryLimitExceeded());
         if (entryCount == 0) {
             builder.entriesExistence(Existence.NO);
         } else {
             builder.entriesExistence(Existence.YES);
         }
+        builder.profileSampleCount(profileSampleCount);
+        builder.profileLimitExceeded(transaction.isProfileLimitExceeded());
         if (transaction.getProfile() == null) {
             builder.profileExistence(Existence.NO);
         } else {

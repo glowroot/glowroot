@@ -69,6 +69,10 @@ public interface Trace {
 
     Collection<? extends TraceEntry> entries();
 
+    boolean entryLimitExceeded();
+
     @Nullable
     ProfileNode syntheticRootProfileNode();
+
+    boolean profileLimitExceeded();
 }

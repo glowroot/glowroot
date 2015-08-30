@@ -131,10 +131,6 @@ public class TraceEntryImpl implements QueryEntry, Timer {
         return stackTrace;
     }
 
-    public boolean limitExceededMarker() {
-        return false;
-    }
-
     @Override
     public void end() {
         long endTick = ticker.read();

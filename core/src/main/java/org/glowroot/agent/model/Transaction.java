@@ -330,6 +330,11 @@ public class Transaction {
         }
     }
 
+    // TODO implement profile limit
+    public boolean isProfileLimitExceeded() {
+        return false;
+    }
+
     public int getSlowThresholdMillisOverride() {
         return slowThresholdMillis;
     }
@@ -474,6 +479,10 @@ public class Transaction {
     public void setEntryLimitExceeded() {
         traceEntryComponent.setEntryLimitExceeded();
         memoryBarrier = true;
+    }
+
+    public boolean isEntryLimitExceeded() {
+        return traceEntryComponent.isEntryLimitExceeded();
     }
 
     public void captureStackTrace(@Nullable ThreadInfo threadInfo, int limit,

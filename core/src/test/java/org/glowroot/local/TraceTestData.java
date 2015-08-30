@@ -64,8 +64,10 @@ class TraceTestData {
                 .threadBlockedNanos(-1)
                 .threadWaitedNanos(-1)
                 .threadAllocatedBytes(-1)
-                .entries(ImmutableList.<TraceEntry>of())
                 .gcActivity(ImmutableMap.<String, GarbageCollectionActivity>of())
+                .entries(ImmutableList.<TraceEntry>of())
+                .entryLimitExceeded(false)
+                .profileLimitExceeded(false)
                 .build();
     }
 }

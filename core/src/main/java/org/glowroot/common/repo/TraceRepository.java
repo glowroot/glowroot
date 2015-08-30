@@ -112,8 +112,11 @@ public interface TraceRepository {
         Map<String, GarbageCollectionActivity> gcActivity();
 
         int entryCount();
-        long profileSampleCount();
+        boolean entryLimitExceeded();
         Existence entriesExistence();
+
+        long profileSampleCount();
+        boolean profileLimitExceeded();
         Existence profileExistence();
     }
 

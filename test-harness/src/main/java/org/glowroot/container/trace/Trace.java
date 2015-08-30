@@ -54,8 +54,10 @@ public class Trace {
     private final long threadAllocatedBytes;
     private final Map<String, GarbageCollectionActivity> gcActivity;
     private final long entryCount;
-    private final long profileSampleCount;
+    private final boolean entryLimitExceeded;
     private final Existence entriesExistence;
+    private final long profileSampleCount;
+    private final boolean profileLimitExceeded;
     private final Existence profileExistence;
 
     private Trace(String id, boolean active, boolean partial, boolean error, long startTime,
@@ -65,7 +67,8 @@ public class Trace {
             @Nullable ThrowableInfo errorThrowable, TimerNode rootTimer, long threadCpuNanos,
             long threadBlockedNanos, long threadWaitedNanos, long threadAllocatedBytes,
             Map<String, GarbageCollectionActivity> gcActivity, long entryCount,
-            long profileSampleCount, Existence entriesExistence, Existence profileExistence) {
+            boolean entryLimitExceeded, Existence entriesExistence, long profileSampleCount,
+            boolean profileLimitExceeded, Existence profileExistence) {
         this.id = id;
         this.active = active;
         this.partial = partial;
@@ -88,8 +91,10 @@ public class Trace {
         this.threadAllocatedBytes = threadAllocatedBytes;
         this.gcActivity = gcActivity;
         this.entryCount = entryCount;
-        this.profileSampleCount = profileSampleCount;
+        this.entryLimitExceeded = entryLimitExceeded;
         this.entriesExistence = entriesExistence;
+        this.profileSampleCount = profileSampleCount;
+        this.profileLimitExceeded = profileLimitExceeded;
         this.profileExistence = profileExistence;
     }
 
@@ -181,12 +186,20 @@ public class Trace {
         return entryCount;
     }
 
-    public long getProfileSampleCount() {
-        return profileSampleCount;
+    public boolean isEntryLimitExceeded() {
+        return entryLimitExceeded;
     }
 
     public Existence getEntriesExistence() {
         return entriesExistence;
+    }
+
+    public long getProfileSampleCount() {
+        return profileSampleCount;
+    }
+
+    public boolean isProfileLimitExceeded() {
+        return profileLimitExceeded;
     }
 
     public Existence getProfileExistence() {
@@ -218,8 +231,10 @@ public class Trace {
                 .add("threadAllocatedBytes", threadAllocatedBytes)
                 .add("gcActivity", gcActivity)
                 .add("entryCount", entryCount)
-                .add("profileSampleCount", profileSampleCount)
+                .add("entryLimitExceeded", entryLimitExceeded)
                 .add("entriesExistence", entriesExistence)
+                .add("profileSampleCount", profileSampleCount)
+                .add("profileLimitExceeded", profileLimitExceeded)
                 .add("profileExistence", profileExistence)
                 .toString();
     }
@@ -248,8 +263,10 @@ public class Trace {
             @JsonProperty("threadAllocatedBytes") @Nullable Long threadAllocatedBytes,
             @JsonProperty("gcActivity") @Nullable Map<String, /*@Nullable*/GarbageCollectionActivity> gcActivityUnchecked,
             @JsonProperty("entryCount") @Nullable Long entryCount,
-            @JsonProperty("profileSampleCount") @Nullable Long profileSampleCount,
+            @JsonProperty("entryLimitExceeded") @Nullable Boolean entryLimitExceeded,
             @JsonProperty("entriesExistence") @Nullable Existence entriesExistence,
+            @JsonProperty("profileSampleCount") @Nullable Long profileSampleCount,
+            @JsonProperty("profileLimitExceeded") @Nullable Boolean profileLimitExceeded,
             @JsonProperty("profileExistence") @Nullable Existence profileExistence)
                     throws JsonMappingException {
         Map<String, GarbageCollectionActivity> gcActivity =
@@ -272,14 +289,17 @@ public class Trace {
         checkRequiredProperty(threadWaitedNanos, "threadWaitedNanos");
         checkRequiredProperty(threadAllocatedBytes, "threadAllocatedBytes");
         checkRequiredProperty(entryCount, "entryCount");
-        checkRequiredProperty(profileSampleCount, "profileSampleCount");
+        checkRequiredProperty(entryLimitExceeded, "entryLimitExceeded");
         checkRequiredProperty(entriesExistence, "entriesExistence");
+        checkRequiredProperty(profileSampleCount, "profileSampleCount");
+        checkRequiredProperty(profileLimitExceeded, "profileLimitExceeded");
         checkRequiredProperty(profileExistence, "profileExistence");
         return new Trace(id, active, partial, error, startTime, captureTime, durationNanos,
                 transactionType, transactionName, headline, user, customAttributes,
                 nullToEmpty(customDetail), errorMessage, errorThrowable, rootTimer, threadCpuNanos,
                 threadBlockedNanos, threadWaitedNanos, threadAllocatedBytes, gcActivity, entryCount,
-                profileSampleCount, entriesExistence, profileExistence);
+                entryLimitExceeded, entriesExistence, profileSampleCount, profileLimitExceeded,
+                profileExistence);
     }
 
     public enum Existence {

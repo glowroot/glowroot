@@ -149,6 +149,10 @@ class TraceEntryComponent {
         entryLimitExceeded = true;
     }
 
+    boolean isEntryLimitExceeded() {
+        return entryLimitExceeded;
+    }
+
     private TraceEntryImpl createEntry(long startTick, @Nullable MessageSupplier messageSupplier,
             @Nullable QueryData queryData, long queryExecutionCount,
             @Nullable ErrorMessage errorMessage, @Nullable TimerImpl timer, boolean limitBypassed) {

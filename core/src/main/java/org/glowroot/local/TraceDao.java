@@ -91,8 +91,10 @@ class TraceDao implements TraceRepository {
             ImmutableColumn.of("thread_allocated_bytes", Types.BIGINT),
             ImmutableColumn.of("gc_activity", Types.VARCHAR), // json data
             ImmutableColumn.of("entry_count", Types.BIGINT),
+            ImmutableColumn.of("entry_limit_exceeded", Types.BOOLEAN),
             ImmutableColumn.of("entries_capped_id", Types.VARCHAR), // capped database id
             ImmutableColumn.of("profile_sample_count", Types.BIGINT),
+            ImmutableColumn.of("profile_limit_exceeded", Types.BOOLEAN),
             // profile json is always from "synthetic root"
             ImmutableColumn.of("profile_capped_id", Types.VARCHAR)); // capped database id
 
@@ -141,9 +143,10 @@ class TraceDao implements TraceRepository {
                         + " duration_nanos, transaction_type, transaction_name, headline, user,"
                         + " custom_attributes, custom_detail, error_message, error_throwable,"
                         + " timers, thread_cpu_time, thread_blocked_time, thread_waited_time,"
-                        + " thread_allocated_bytes, gc_activity, entry_count, entries_capped_id,"
-                        + " profile_sample_count, profile_capped_id) values (?, ?, ?, ?, ?, ?, ?,"
-                        + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        + " thread_allocated_bytes, gc_activity, entry_count, entry_limit_exceeded,"
+                        + " entries_capped_id, profile_sample_count, profile_limit_exceeded,"
+                        + " profile_capped_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
+                        + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 new TraceBinder(trace));
         if (!trace.customAttributes().isEmpty()) {
             dataSource.batchUpdate(
@@ -244,8 +247,9 @@ class TraceDao implements TraceRepository {
                         + " transaction_type, transaction_name, headline, user, custom_attributes,"
                         + " custom_detail, error_message, error_throwable, timers, thread_cpu_time,"
                         + " thread_blocked_time, thread_waited_time, thread_allocated_bytes,"
-                        + " gc_activity, entry_count, entries_capped_id, profile_sample_count,"
-                        + " profile_capped_id from trace where id = ?",
+                        + " gc_activity, entry_count, entry_limit_exceeded, entries_capped_id,"
+                        + " profile_sample_count, profile_limit_exceeded, profile_capped_id"
+                        + " from trace where id = ?",
                 new TraceHeaderRowMapper(), traceId);
         if (traces.isEmpty()) {
             return null;
@@ -408,8 +412,10 @@ class TraceDao implements TraceRepository {
                     trace.threadAllocatedBytes());
             preparedStatement.setString(i++, gcActivity);
             preparedStatement.setInt(i++, trace.entries().size());
+            preparedStatement.setBoolean(i++, trace.entryLimitExceeded());
             RowMappers.setLong(preparedStatement, i++, entriesId);
             preparedStatement.setLong(i++, profileSampleCount);
+            preparedStatement.setBoolean(i++, trace.profileLimitExceeded());
             RowMappers.setLong(preparedStatement, i++, profileId);
         }
     }
@@ -473,9 +479,11 @@ class TraceDao implements TraceRepository {
                     JsonUnmarshaller.unmarshalGcActivity(resultSet.getString(columnIndex++)));
 
             builder.entryCount(resultSet.getInt(columnIndex++));
+            builder.entryLimitExceeded(resultSet.getBoolean(columnIndex++));
             builder.entriesExistence(
                     RowMappers.getExistence(resultSet, columnIndex++, traceCappedDatabase));
             builder.profileSampleCount(resultSet.getLong(columnIndex++));
+            builder.profileLimitExceeded(resultSet.getBoolean(columnIndex++));
             builder.profileExistence(
                     RowMappers.getExistence(resultSet, columnIndex++, traceCappedDatabase));
             return builder.build();
