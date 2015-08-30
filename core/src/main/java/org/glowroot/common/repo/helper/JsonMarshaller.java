@@ -28,11 +28,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.CharStreams;
 
-import org.glowroot.collector.spi.GarbageCollectionActivity;
+import org.glowroot.collector.spi.AggregateTimerNode;
+import org.glowroot.collector.spi.GarbageCollectorActivity;
 import org.glowroot.collector.spi.ProfileNode;
 import org.glowroot.collector.spi.Query;
 import org.glowroot.collector.spi.ThrowableInfo;
-import org.glowroot.collector.spi.AggregateTimerNode;
 import org.glowroot.collector.spi.TraceTimerNode;
 import org.glowroot.common.repo.TraceRepository.TraceHeader;
 import org.glowroot.common.util.ObjectMappers;
@@ -111,7 +111,7 @@ public class JsonMarshaller {
     }
 
     public static @Nullable String marshalGcActivity(
-            Map<String, ? extends GarbageCollectionActivity> gcActivity) throws IOException {
+            Collection<? extends GarbageCollectorActivity> gcActivity) throws IOException {
         if (gcActivity.isEmpty()) {
             return null;
         }

@@ -17,6 +17,7 @@ package org.glowroot.common.repo;
 
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -25,7 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharSource;
 import org.immutables.value.Value;
 
-import org.glowroot.collector.spi.GarbageCollectionActivity;
+import org.glowroot.collector.spi.GarbageCollectorActivity;
 import org.glowroot.collector.spi.ThrowableInfo;
 import org.glowroot.collector.spi.TraceTimerNode;
 import org.glowroot.common.util.Styles;
@@ -109,7 +110,7 @@ public interface TraceRepository {
         long threadBlockedNanos(); // -1 means N/A
         long threadWaitedNanos(); // -1 means N/A
         long threadAllocatedBytes(); // -1 means N/A
-        Map<String, GarbageCollectionActivity> gcActivity();
+        List<GarbageCollectorActivity> gcActivity();
 
         int entryCount();
         boolean entryLimitExceeded();

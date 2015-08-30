@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.instrument.Instrumentation;
 import java.nio.channels.FileLock;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -47,7 +48,7 @@ import org.glowroot.agent.ViewerAgentModule;
 import org.glowroot.agent.util.SpyingLogbackFilter;
 import org.glowroot.collector.spi.Aggregate;
 import org.glowroot.collector.spi.Collector;
-import org.glowroot.collector.spi.GaugeValue;
+import org.glowroot.collector.spi.GaugePoint;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.live.LiveThreadDumpService.LiveThreadDumpServiceNop;
 import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
@@ -375,10 +376,10 @@ public class GlowrootModule {
         }
 
         @Override
-        public void collectGaugeValues(Map<String, ? extends GaugeValue> gaugeValues)
+        public void collectGaugePoints(Collection<? extends GaugePoint> gaugeValues)
                 throws Exception {
             if (instance != null) {
-                instance.collectGaugeValues(gaugeValues);
+                instance.collectGaugePoints(gaugeValues);
             }
         }
 

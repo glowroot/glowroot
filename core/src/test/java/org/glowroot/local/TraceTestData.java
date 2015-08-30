@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.immutables.value.Value;
 
-import org.glowroot.collector.spi.GarbageCollectionActivity;
+import org.glowroot.collector.spi.GarbageCollectorActivity;
 import org.glowroot.collector.spi.Trace;
 import org.glowroot.collector.spi.TraceEntry;
 import org.glowroot.collector.spi.TraceTimerNode;
@@ -64,7 +64,7 @@ class TraceTestData {
                 .threadBlockedNanos(-1)
                 .threadWaitedNanos(-1)
                 .threadAllocatedBytes(-1)
-                .gcActivity(ImmutableMap.<String, GarbageCollectionActivity>of())
+                .gcActivity(ImmutableList.<GarbageCollectorActivity>of())
                 .entries(ImmutableList.<TraceEntry>of())
                 .entryLimitExceeded(false)
                 .profileLimitExceeded(false)

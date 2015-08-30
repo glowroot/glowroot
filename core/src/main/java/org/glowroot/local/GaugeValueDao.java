@@ -19,9 +19,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLongArray;
@@ -33,17 +32,17 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Longs;
 import org.checkerframework.checker.tainting.qual.Untainted;
-import org.immutables.value.Value;
 
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.PatternObjectNameQueryExp;
-import org.glowroot.collector.spi.GaugeValue;
+import org.glowroot.collector.spi.GaugePoint;
 import org.glowroot.common.config.GaugeConfig;
 import org.glowroot.common.config.GaugeConfig.MBeanAttribute;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.ImmutableGauge;
+import org.glowroot.common.repo.ImmutableGaugeValue;
 import org.glowroot.common.util.Clock;
 import org.glowroot.local.util.DataSource;
 import org.glowroot.local.util.DataSource.PreparedStatementBinder;
@@ -57,7 +56,6 @@ import org.glowroot.local.util.Schemas.Index;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static org.glowroot.local.util.Checkers.castUntainted;
 
-@Value.Include(GaugeValue.class)
 class GaugeValueDao implements GaugeValueRepository {
 
     private static final ImmutableList<Column> gaugeValueRollup0Columns = ImmutableList.<Column>of(
@@ -149,18 +147,16 @@ class GaugeValueDao implements GaugeValueRepository {
         return gauges;
     }
 
-    public void store(final Map<String, ? extends GaugeValue> gaugeValues) throws Exception {
-        if (gaugeValues.isEmpty()) {
+    public void store(final Collection<? extends GaugePoint> gaugePoints) throws Exception {
+        if (gaugePoints.isEmpty()) {
             return;
         }
         dataSource.batchUpdate("insert into gauge_point_rollup_0 (gauge_id, capture_time,"
                 + " value) values (?, ?, ?)", new PreparedStatementBinder() {
                     @Override
                     public void bind(PreparedStatement preparedStatement) throws Exception {
-                        for (Entry<String, ? extends GaugeValue> entry : gaugeValues.entrySet()) {
-                            String gaugeName = entry.getKey();
-                            GaugeValue gaugeValue = entry.getValue();
-                            long gaugeId = gaugeMetaDao.getOrCreateGaugeId(gaugeName);
+                        for (GaugePoint gaugePoint : gaugePoints) {
+                            long gaugeId = gaugeMetaDao.getOrCreateGaugeId(gaugePoint.gaugeName());
                             if (gaugeId == -1) {
                                 // data source is closing and a new gauge id was needed, but could
                                 // not insert it, but this bind is already inside of the data source
@@ -168,8 +164,8 @@ class GaugeValueDao implements GaugeValueRepository {
                                 break;
                             }
                             preparedStatement.setLong(1, gaugeId);
-                            preparedStatement.setLong(2, gaugeValue.captureTime());
-                            preparedStatement.setDouble(3, gaugeValue.value());
+                            preparedStatement.setLong(2, gaugePoint.captureTime());
+                            preparedStatement.setDouble(3, gaugePoint.value());
                             preparedStatement.addBatch();
                         }
                     }

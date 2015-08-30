@@ -30,7 +30,7 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.AdvancedConfig;
-import org.glowroot.container.trace.GarbageCollectionActivity;
+import org.glowroot.container.trace.GarbageCollectorActivity;
 import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,7 +70,7 @@ public class TraceGcActivityTest {
         Trace trace = container.getTraceService().getLastTrace();
         long collectionCount = 0;
         long collectionTime = 0;
-        for (GarbageCollectionActivity gcActivity : trace.getGcActivity().values()) {
+        for (GarbageCollectorActivity gcActivity : trace.getGcActivity()) {
             collectionCount += gcActivity.getCollectionCount();
             collectionTime += gcActivity.getCollectionTimeMillis();
         }

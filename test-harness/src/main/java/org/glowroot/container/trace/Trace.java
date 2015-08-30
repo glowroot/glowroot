@@ -52,7 +52,7 @@ public class Trace {
     private final long threadBlockedNanos;
     private final long threadWaitedNanos;
     private final long threadAllocatedBytes;
-    private final Map<String, GarbageCollectionActivity> gcActivity;
+    private final List<GarbageCollectorActivity> gcActivity;
     private final long entryCount;
     private final boolean entryLimitExceeded;
     private final Existence entriesExistence;
@@ -66,9 +66,9 @@ public class Trace {
             Map<String, /*@Nullable*/Object> customDetail, @Nullable String errorMessage,
             @Nullable ThrowableInfo errorThrowable, TimerNode rootTimer, long threadCpuNanos,
             long threadBlockedNanos, long threadWaitedNanos, long threadAllocatedBytes,
-            Map<String, GarbageCollectionActivity> gcActivity, long entryCount,
-            boolean entryLimitExceeded, Existence entriesExistence, long profileSampleCount,
-            boolean profileLimitExceeded, Existence profileExistence) {
+            List<GarbageCollectorActivity> gcActivity, long entryCount, boolean entryLimitExceeded,
+            Existence entriesExistence, long profileSampleCount, boolean profileLimitExceeded,
+            Existence profileExistence) {
         this.id = id;
         this.active = active;
         this.partial = partial;
@@ -178,7 +178,7 @@ public class Trace {
         return threadAllocatedBytes;
     }
 
-    public Map<String, GarbageCollectionActivity> getGcActivity() {
+    public List<GarbageCollectorActivity> getGcActivity() {
         return gcActivity;
     }
 
@@ -261,7 +261,7 @@ public class Trace {
             @JsonProperty("threadBlockedNanos") @Nullable Long threadBlockedNanos,
             @JsonProperty("threadWaitedNanos") @Nullable Long threadWaitedNanos,
             @JsonProperty("threadAllocatedBytes") @Nullable Long threadAllocatedBytes,
-            @JsonProperty("gcActivity") @Nullable Map<String, /*@Nullable*/GarbageCollectionActivity> gcActivityUnchecked,
+            @JsonProperty("gcActivity") @Nullable List</*@Nullable*/GarbageCollectorActivity> gcActivityUnchecked,
             @JsonProperty("entryCount") @Nullable Long entryCount,
             @JsonProperty("entryLimitExceeded") @Nullable Boolean entryLimitExceeded,
             @JsonProperty("entriesExistence") @Nullable Existence entriesExistence,
@@ -269,8 +269,7 @@ public class Trace {
             @JsonProperty("profileLimitExceeded") @Nullable Boolean profileLimitExceeded,
             @JsonProperty("profileExistence") @Nullable Existence profileExistence)
                     throws JsonMappingException {
-        Map<String, GarbageCollectionActivity> gcActivity =
-                orEmpty(gcActivityUnchecked, "gcActivity");
+        List<GarbageCollectorActivity> gcActivity = orEmpty(gcActivityUnchecked, "gcActivity");
         Map<String, List<String>> customAttributes =
                 orEmpty2(customAttributesUnchecked, "customAttributes");
         checkRequiredProperty(id, "id");

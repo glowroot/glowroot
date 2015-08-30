@@ -34,7 +34,8 @@ import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -46,10 +47,10 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
-import org.glowroot.agent.util.PatternObjectNameQueryExp;
 import org.glowroot.agent.util.LazyPlatformMBeanServer.InitListener;
+import org.glowroot.agent.util.PatternObjectNameQueryExp;
 import org.glowroot.collector.spi.Collector;
-import org.glowroot.collector.spi.GaugeValue;
+import org.glowroot.collector.spi.GaugePoint;
 import org.glowroot.common.config.GaugeConfig;
 import org.glowroot.common.config.GaugeConfig.MBeanAttribute;
 import org.glowroot.common.util.Clock;
@@ -58,7 +59,7 @@ import org.glowroot.common.util.ScheduledRunnable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-@Value.Include(GaugeValue.class)
+@Value.Include(GaugePoint.class)
 class GaugeCollector extends ScheduledRunnable {
 
     private final Logger logger;
@@ -79,7 +80,7 @@ class GaugeCollector extends ScheduledRunnable {
 
     // since gauges have their own dedicated thread, don't need to worry about thread safety of
     // priorRawCounterValues (except can't initialize here outside of the dedicated thread)
-    private @MonotonicNonNull Map<String, GaugeValue> priorRawCounterValues;
+    private @MonotonicNonNull Map<String, GaugePoint> priorRawCounterValues;
 
     GaugeCollector(ConfigService configService, Collector collector,
             LazyPlatformMBeanServer lazyPlatformMBeanServer,
@@ -120,20 +121,20 @@ class GaugeCollector extends ScheduledRunnable {
 
     @Override
     protected void runInternal() throws Exception {
-        final Map<String, GaugeValue> gaugeValues = Maps.newHashMap();
+        final List<GaugePoint> gaugeValues = Lists.newArrayList();
         if (priorRawCounterValues == null) {
             // wait to now to initialize priorGaugeValues inside of the dedicated thread
             priorRawCounterValues = Maps.newHashMap();
         }
         for (GaugeConfig gaugeConfig : configService.getGaugeConfigs()) {
-            gaugeValues.putAll(collectGaugeValues(gaugeConfig));
+            gaugeValues.addAll(collectGaugeValues(gaugeConfig));
         }
         try {
             scheduledExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        collector.collectGaugeValues(gaugeValues);
+                        collector.collectGaugePoints(gaugeValues);
                     } catch (Throwable t) {
                         // log and terminate successfully
                         logger.error(t.getMessage(), t);
@@ -160,8 +161,7 @@ class GaugeCollector extends ScheduledRunnable {
 
     @VisibleForTesting
     @RequiresNonNull("priorRawCounterValues")
-    Map<String, GaugeValue> collectGaugeValues(GaugeConfig gaugeConfig)
-            throws InterruptedException {
+    List<GaugePoint> collectGaugeValues(GaugeConfig gaugeConfig) throws InterruptedException {
         String mbeanObjectName = gaugeConfig.mbeanObjectName();
         if (!mbeanObjectName.contains("*")) {
             ObjectName objectName;
@@ -171,7 +171,7 @@ class GaugeCollector extends ScheduledRunnable {
                 logger.debug(e.getMessage(), e);
                 // using toString() instead of getMessage() in order to capture exception class name
                 logFirstTimeMBeanException(mbeanObjectName, e.toString());
-                return ImmutableMap.of();
+                return ImmutableList.of();
             }
             return collectGaugeValues(objectName, gaugeConfig.mbeanAttributes(), mbeanObjectName);
         }
@@ -179,21 +179,21 @@ class GaugeCollector extends ScheduledRunnable {
                 new PatternObjectNameQueryExp(mbeanObjectName));
         if (objectNames.isEmpty()) {
             logFirstTimeMBeanNotMatchedOrFound(mbeanObjectName);
-            return ImmutableMap.of();
+            return ImmutableList.of();
         }
-        Map<String, GaugeValue> gaugeValues = Maps.newHashMap();
+        List<GaugePoint> gaugeValues = Lists.newArrayList();
         for (ObjectName objectName : objectNames) {
-            gaugeValues.putAll(collectGaugeValues(objectName, gaugeConfig.mbeanAttributes(),
+            gaugeValues.addAll(collectGaugeValues(objectName, gaugeConfig.mbeanAttributes(),
                     objectName.getDomain() + ":" + objectName.getKeyPropertyListString()));
         }
         return gaugeValues;
     }
 
     @RequiresNonNull("priorRawCounterValues")
-    private Map<String, GaugeValue> collectGaugeValues(ObjectName objectName,
+    private List<GaugePoint> collectGaugeValues(ObjectName objectName,
             List<MBeanAttribute> mbeanAttributes, String mbeanObjectName) {
         long captureTime = clock.currentTimeMillis();
-        Map<String, GaugeValue> gaugeValues = Maps.newHashMap();
+        List<GaugePoint> gaugeValues = Lists.newArrayList();
         for (MBeanAttribute mbeanAttribute : mbeanAttributes) {
             String mbeanAttributeName = mbeanAttribute.name();
             Object attributeValue;
@@ -241,18 +241,27 @@ class GaugeCollector extends ScheduledRunnable {
             if (value != null) {
                 String gaugeName = mbeanObjectName + ',' + mbeanAttributeName;
                 if (mbeanAttribute.counter()) {
-                    GaugeValue priorRawCounterValue = priorRawCounterValues.get(gaugeName);
+                    GaugePoint priorRawCounterValue = priorRawCounterValues.get(gaugeName);
                     if (priorRawCounterValue != null) {
                         double valuePerSecond = 1000 * (value - priorRawCounterValue.value())
                                 / (captureTime - priorRawCounterValue.captureTime());
-                        gaugeValues.put(gaugeName, ImmutableGaugeValue.builder()
-                                .captureTime(captureTime).value(valuePerSecond).build());
+                        gaugeValues.add(ImmutableGaugePoint.builder()
+                                .gaugeName(gaugeName)
+                                .captureTime(captureTime)
+                                .value(valuePerSecond)
+                                .build());
                     }
-                    priorRawCounterValues.put(gaugeName, ImmutableGaugeValue.builder()
-                            .captureTime(captureTime).value(value).build());
+                    priorRawCounterValues.put(gaugeName, ImmutableGaugePoint.builder()
+                            .gaugeName(gaugeName)
+                            .captureTime(captureTime)
+                            .value(value)
+                            .build());
                 } else {
-                    gaugeValues.put(gaugeName, ImmutableGaugeValue.builder()
-                            .captureTime(captureTime).value(value).build());
+                    gaugeValues.add(ImmutableGaugePoint.builder()
+                            .gaugeName(gaugeName)
+                            .captureTime(captureTime)
+                            .value(value)
+                            .build());
                 }
             }
         }

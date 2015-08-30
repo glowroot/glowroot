@@ -65,7 +65,7 @@ public interface Trace {
 
     long threadAllocatedBytes(); // -1 means N/A
 
-    Map<String, ? extends GarbageCollectionActivity> gcActivity();
+    Collection<? extends GarbageCollectorActivity> gcActivity();
 
     Collection<? extends TraceEntry> entries();
 

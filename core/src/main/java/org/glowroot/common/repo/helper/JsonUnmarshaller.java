@@ -37,7 +37,7 @@ import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
 import org.glowroot.agent.model.ImmutableThrowableInfo;
-import org.glowroot.collector.spi.GarbageCollectionActivity;
+import org.glowroot.collector.spi.GarbageCollectorActivity;
 import org.glowroot.collector.spi.ThrowableInfo;
 import org.glowroot.collector.spi.TraceTimerNode;
 import org.glowroot.common.repo.MutableProfileNode;
@@ -101,13 +101,13 @@ public class JsonUnmarshaller {
         return mapper.readerFor(ImmutableXTraceTimerNode.class).readValue(timers);
     }
 
-    public static Map<String, GarbageCollectionActivity> unmarshalGcActivity(
-            @Nullable String gcActivity) throws IOException {
+    public static List<GarbageCollectorActivity> unmarshalGcActivity(@Nullable String gcActivity)
+            throws IOException {
         if (gcActivity == null) {
-            return ImmutableMap.of();
+            return ImmutableList.of();
         }
         return mapper
-                .readerFor(new TypeReference<Map<String, ImmutableXGarbageCollectionActivity>>() {})
+                .readerFor(new TypeReference<List<ImmutableXGarbageCollectionActivity>>() {})
                 .readValue(gcActivity);
     }
 
@@ -203,7 +203,7 @@ public class JsonUnmarshaller {
 
     // TODO use @Value.Include for this
     @Value.Immutable
-    interface XGarbageCollectionActivity extends GarbageCollectionActivity {}
+    interface XGarbageCollectionActivity extends GarbageCollectorActivity {}
 
     @Value.Immutable
     abstract static class XTraceTimerNode implements TraceTimerNode {

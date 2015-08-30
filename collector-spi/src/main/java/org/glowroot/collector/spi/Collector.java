@@ -15,6 +15,7 @@
  */
 package org.glowroot.collector.spi;
 
+import java.util.Collection;
 import java.util.Map;
 
 public interface Collector {
@@ -27,6 +28,5 @@ public interface Collector {
             Map<String, ? extends Map<String, ? extends Aggregate>> transactionAggregates,
             long captureTime) throws Exception;
 
-    // gaugeValues map key is gauge name
-    void collectGaugeValues(Map<String, ? extends GaugeValue> gaugeValues) throws Exception;
+    void collectGaugePoints(Collection<? extends GaugePoint> gaugePoints) throws Exception;
 }

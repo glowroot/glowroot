@@ -21,7 +21,6 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
-import org.glowroot.collector.spi.GaugeValue;
 import org.glowroot.common.util.Styles;
 
 public interface GaugeValueRepository {
@@ -44,5 +43,12 @@ public interface GaugeValueRepository {
     public interface Gauge {
         String name();
         String display();
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    public interface GaugeValue {
+        long captureTime();
+        double value();
     }
 }

@@ -15,7 +15,9 @@
  */
 package org.glowroot.collector.spi;
 
-public interface GarbageCollectionActivity {
+public interface GarbageCollectorActivity {
+
+    String collectorName();
 
     long collectionCount();
 

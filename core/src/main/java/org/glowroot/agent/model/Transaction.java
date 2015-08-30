@@ -20,6 +20,7 @@ import java.lang.management.ThreadInfo;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -30,7 +31,6 @@ import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.model.ThreadInfoComponent.ThreadInfoData;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
-import org.glowroot.collector.spi.GarbageCollectionActivity;
+import org.glowroot.collector.spi.GarbageCollectorActivity;
 import org.glowroot.collector.spi.ProfileNode;
 import org.glowroot.collector.spi.TraceEntry;
 import org.glowroot.common.config.AdvancedConfig;
@@ -251,8 +251,8 @@ public class Transaction {
     }
 
     // can be called from a non-transaction thread
-    public Map<String, GarbageCollectionActivity> getGcActivity() {
-        return gcActivityComponent == null ? ImmutableMap.<String, GarbageCollectionActivity>of()
+    public List<GarbageCollectorActivity> getGcActivity() {
+        return gcActivityComponent == null ? ImmutableList.<GarbageCollectorActivity>of()
                 : gcActivityComponent.getGcActivity();
     }
 

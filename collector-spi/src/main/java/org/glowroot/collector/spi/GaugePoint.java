@@ -15,7 +15,9 @@
  */
 package org.glowroot.collector.spi;
 
-public interface GaugeValue {
+public interface GaugePoint {
+
+    String gaugeName();
 
     long captureTime();
 

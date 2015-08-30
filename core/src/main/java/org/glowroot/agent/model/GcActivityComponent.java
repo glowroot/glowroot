@@ -23,6 +23,7 @@ import java.util.Set;
 
 import javax.annotation.concurrent.GuardedBy;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -30,7 +31,7 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.spi.GarbageCollectionActivity;
+import org.glowroot.collector.spi.GarbageCollectorActivity;
 
 class GcActivityComponent {
 
@@ -39,7 +40,7 @@ class GcActivityComponent {
     private final Map<String, GcSnapshot> startingSnapshots;
 
     @GuardedBy("lock")
-    private volatile @MonotonicNonNull Map<String, GarbageCollectionActivity> completedGcActivity;
+    private volatile @MonotonicNonNull List<GarbageCollectorActivity> completedGcActivity;
 
     private final Object lock = new Object();
 
@@ -63,7 +64,7 @@ class GcActivityComponent {
     }
 
     // safe to be called from another thread
-    Map<String, GarbageCollectionActivity> getGcActivity() {
+    List<GarbageCollectorActivity> getGcActivity() {
         synchronized (lock) {
             if (completedGcActivity == null) {
                 // transaction thread is still alive (and cannot terminate in the middle of this
@@ -76,10 +77,10 @@ class GcActivityComponent {
         }
     }
 
-    private Map<String, GarbageCollectionActivity> getGcActivityInternal() {
+    private List<GarbageCollectorActivity> getGcActivityInternal() {
         Set<String> unmatchedNames = Sets.newHashSet(startingSnapshots.keySet());
         List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
-        Map<String, GarbageCollectionActivity> gcActivity = Maps.newHashMap();
+        List<GarbageCollectorActivity> gcActivity = Lists.newArrayList();
         for (GarbageCollectorMXBean gcBean : gcBeans) {
             String name = gcBean.getName();
             GcSnapshot gcSnapshot = startingSnapshots.get(name);
@@ -94,7 +95,8 @@ class GcActivityComponent {
                 // no new collections, so don't write it out
                 continue;
             }
-            gcActivity.put(name, ImmutableXGarbageCollectionActivity.builder()
+            gcActivity.add(ImmutableXGarbageCollectionActivity.builder()
+                    .collectorName(name)
                     .collectionCount(collectionCountEnd - gcSnapshot.collectionCount())
                     .collectionTimeMillis(collectionTimeEnd - gcSnapshot.collectionTime())
                     .build());
@@ -113,5 +115,5 @@ class GcActivityComponent {
 
     // TODO use @Value.Include for this
     @Value.Immutable
-    interface XGarbageCollectionActivity extends GarbageCollectionActivity {}
+    interface XGarbageCollectionActivity extends GarbageCollectorActivity {}
 }

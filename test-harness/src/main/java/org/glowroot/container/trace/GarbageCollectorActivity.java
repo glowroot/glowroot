@@ -24,14 +24,21 @@ import com.google.common.base.MoreObjects;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
-public class GarbageCollectionActivity {
+public class GarbageCollectorActivity {
 
+    private final String collectorName;
     private final long collectionCount;
     private final long collectionTimeMillis;
 
-    private GarbageCollectionActivity(long collectionCount, long collectionTimeMillis) {
+    private GarbageCollectorActivity(String collectorName, long collectionCount,
+            long collectionTimeMillis) {
+        this.collectorName = collectorName;
         this.collectionCount = collectionCount;
         this.collectionTimeMillis = collectionTimeMillis;
+    }
+
+    public String getCollectorName() {
+        return collectorName;
     }
 
     public long getCollectionCount() {
@@ -45,18 +52,21 @@ public class GarbageCollectionActivity {
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
+                .add("collectorName", collectorName)
                 .add("collectionCount", collectionCount)
                 .add("collectionTimeMillis", collectionTimeMillis)
                 .toString();
     }
 
     @JsonCreator
-    static GarbageCollectionActivity readValue(
+    static GarbageCollectorActivity readValue(
+            @JsonProperty("collectorName") @Nullable String collectorName,
             @JsonProperty("collectionCount") @Nullable Long collectionCount,
             @JsonProperty("collectionTimeMillis") @Nullable Long collectionTimeMillis)
                     throws JsonMappingException {
+        checkRequiredProperty(collectorName, "collectorName");
         checkRequiredProperty(collectionCount, "collectionCount");
         checkRequiredProperty(collectionTimeMillis, "collectionTimeMillis");
-        return new GarbageCollectionActivity(collectionCount, collectionTimeMillis);
+        return new GarbageCollectorActivity(collectorName, collectionCount, collectionTimeMillis);
     }
 }

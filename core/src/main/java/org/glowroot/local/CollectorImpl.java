@@ -15,11 +15,12 @@
  */
 package org.glowroot.local;
 
+import java.util.Collection;
 import java.util.Map;
 
 import org.glowroot.collector.spi.Aggregate;
 import org.glowroot.collector.spi.Collector;
-import org.glowroot.collector.spi.GaugeValue;
+import org.glowroot.collector.spi.GaugePoint;
 import org.glowroot.collector.spi.Trace;
 import org.glowroot.common.repo.helper.AlertingService;
 
@@ -52,7 +53,7 @@ class CollectorImpl implements Collector {
     }
 
     @Override
-    public void collectGaugeValues(Map<String, ? extends GaugeValue> gaugeValues) throws Exception {
-        gaugeValueDao.store(gaugeValues);
+    public void collectGaugePoints(Collection<? extends GaugePoint> gaugePoints) throws Exception {
+        gaugeValueDao.store(gaugePoints);
     }
 }

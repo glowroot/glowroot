@@ -15,6 +15,7 @@
  */
 package org.glowroot.agent.impl;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -29,7 +30,7 @@ import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.collector.spi.Aggregate;
 import org.glowroot.collector.spi.Collector;
-import org.glowroot.collector.spi.GaugeValue;
+import org.glowroot.collector.spi.GaugePoint;
 import org.glowroot.collector.spi.Trace;
 import org.glowroot.common.config.ImmutableAdvancedConfig;
 import org.glowroot.common.util.Clock;
@@ -118,7 +119,7 @@ public class AggregatorTest {
         public void collectTrace(Trace trace) throws Exception {}
 
         @Override
-        public void collectGaugeValues(Map<String, ? extends GaugeValue> gaugeValues)
+        public void collectGaugePoints(Collection<? extends GaugePoint> gaugeValues)
                 throws Exception {}
     }
 }

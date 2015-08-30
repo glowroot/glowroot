@@ -34,13 +34,13 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.spi.GaugeValue;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveJvmService.MBeanTreeRequest;
 import org.glowroot.common.live.LiveThreadDumpService;
 import org.glowroot.common.repo.ConfigRepository;
 import org.glowroot.common.repo.GaugeValueRepository;
 import org.glowroot.common.repo.GaugeValueRepository.Gauge;
+import org.glowroot.common.repo.GaugeValueRepository.GaugeValue;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 
