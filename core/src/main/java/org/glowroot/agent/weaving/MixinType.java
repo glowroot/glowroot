@@ -28,7 +28,6 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.weaving.ImmutableMixinType;
 import org.glowroot.plugin.api.weaving.Mixin;
 import org.glowroot.plugin.api.weaving.MixinInit;
 

@@ -29,7 +29,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import org.glowroot.common.config.PropertyDescriptor.PropertyType;
 import org.glowroot.common.config.PropertyValue.PropertyValueDeserializer;
 import org.glowroot.common.config.PropertyValue.PropertyValueSerializer;
 
@@ -60,6 +59,10 @@ public class PropertyValue {
     @Nullable
     Object value() {
         return value;
+    }
+
+    enum PropertyType {
+        STRING, BOOLEAN, DOUBLE
     }
 
     static class PropertyValueSerializer extends JsonSerializer<PropertyValue> {

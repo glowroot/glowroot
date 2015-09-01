@@ -61,12 +61,12 @@ import org.glowroot.agent.weaving.WeavingTimerService;
 import org.glowroot.api.internal.GlowrootService;
 import org.glowroot.collector.spi.Collector;
 import org.glowroot.common.config.PluginDescriptor;
-import org.glowroot.common.live.LiveAggregateRepository;
-import org.glowroot.common.live.LiveJvmService;
-import org.glowroot.common.live.LiveThreadDumpService;
-import org.glowroot.common.live.LiveTraceRepository;
-import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.Clock;
+import org.glowroot.live.LiveAggregateRepository;
+import org.glowroot.live.LiveJvmService;
+import org.glowroot.live.LiveThreadDumpService;
+import org.glowroot.live.LiveTraceRepository;
+import org.glowroot.live.LiveWeavingService;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.plugin.api.transaction.TransactionService;
 
@@ -79,6 +79,10 @@ public class AgentModule {
 
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
+
+    // 1 minute
+    private static final long ROLLUP_0_INTERVAL_MILLIS =
+            Long.getLong("glowroot.internal.rollup.0.intervalMillis", 60 * 1000);
 
     private final PluginCache pluginCache;
     private final ConfigService configService;
@@ -113,7 +117,7 @@ public class AgentModule {
             @Nullable Instrumentation instrumentation, File baseDir, @Nullable File glowrootJarFile,
             ScheduledExecutorService scheduledExecutor, boolean jbossModules) throws Exception {
         pluginCache = PluginCache.create(glowrootJarFile, false);
-        configService = new ConfigService(baseDir, pluginCache.pluginDescriptors());
+        configService = ConfigService.create(baseDir, pluginCache.pluginDescriptors());
         this.instrumentation = instrumentation;
         transactionRegistry = new TransactionRegistry();
 
@@ -129,7 +133,7 @@ public class AgentModule {
                 new WeavingTimerServiceImpl(transactionRegistry, configService, timerNameCache);
 
         aggregator = new Aggregator(scheduledExecutor, collector, configService,
-                configService.getRollupConfigs().get(0).intervalMillis(), clock);
+                ROLLUP_0_INTERVAL_MILLIS, clock);
         transactionCollector = new TransactionCollector(scheduledExecutor, configService, collector,
                 aggregator, clock, ticker);
 
@@ -221,24 +225,8 @@ public class AgentModule {
         return configService;
     }
 
-    public AnalyzedWorld getAnalyzedWorld() {
-        return analyzedWorld;
-    }
-
-    public TransactionRegistry getTransactionRegistry() {
-        return transactionRegistry;
-    }
-
-    public TransactionCollector getTransactionCollector() {
-        return transactionCollector;
-    }
-
     public AdviceCache getAdviceCache() {
         return adviceCache;
-    }
-
-    public Aggregator getAggregator() {
-        return aggregator;
     }
 
     public LazyPlatformMBeanServer getLazyPlatformMBeanServer() {
@@ -267,14 +255,6 @@ public class AgentModule {
 
     public WeavingTimerService getWeavingTimerService() {
         return weavingTimerService;
-    }
-
-    public boolean isTimerWrapperMethods() {
-        return timerWrapperMethods;
-    }
-
-    public boolean isJvmRetransformClassesSupported() {
-        return jvmRetransformClassesSupported;
     }
 
     public List<PluginDescriptor> getPluginDescriptors() {

@@ -27,6 +27,19 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
   function ($scope, $http, $rootScope, $location, $timeout, confirmIfHasChanges, httpErrors) {
     $scope.page = {};
 
+    $scope.$watch('page.defaultDisplayedPercentiles', function (newVal) {
+      if ($scope.config) {
+        var percentiles = [];
+        angular.forEach(newVal.split(','), function (percentile) {
+          percentile = percentile.trim();
+          if (percentile.length) {
+            percentiles.push(Number(percentile));
+          }
+        });
+        $scope.config.defaultDisplayedPercentiles = percentiles;
+      }
+    });
+
     $scope.showChangeAdminPassword = function () {
       return $scope.config && $scope.config.adminPasswordEnabled && $scope.originalConfig.adminPasswordEnabled;
     };
@@ -110,6 +123,8 @@ glowroot.controller('ConfigUserInterfaceCtrl', [
       $scope.originalConfig = angular.copy(data.config);
       $scope.activePort = data.activePort;
       $scope.page = {};
+
+      $scope.page.defaultDisplayedPercentiles = $scope.config.defaultDisplayedPercentiles.join(', ');
     }
 
     $scope.save = function (deferred) {

@@ -1,15 +1,15 @@
 {
   "transaction": {
     "profilingIntervalMillis": 1000,
-    "slowThresholdMillis": 0,
+    "slowThresholdMillis": 0
+  },
+  "ui": {
     "defaultDisplayedTransactionType": "Integration test",
     "defaultDisplayedPercentiles": [
       50.0,
       95.0,
       99.0
-    ]
-  },
-  "ui": {
+    ],
     "port": 0,
     "adminPasswordHash": "",
     "readOnlyPasswordHash": "",
@@ -55,8 +55,7 @@
     "maxStackTraceSamplesPerTransaction": 10000,
     "captureThreadInfo": true,
     "captureGcActivity": true,
-    "mbeanGaugeNotFoundDelaySeconds": 60,
-    "internalQueryTimeoutSeconds": 60
+    "mbeanGaugeNotFoundDelaySeconds": 60
   },
   "plugins": [
     {

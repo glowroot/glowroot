@@ -108,7 +108,7 @@ public class TransactionCollector {
         return pendingTransactions;
     }
 
-    public void onCompletedTransaction(final Transaction transaction) {
+    void onCompletedTransaction(final Transaction transaction) {
 
         transaction.onCompleteCaptureThreadInfo();
         // capture time is calculated by the aggregator because it depends on monotonically

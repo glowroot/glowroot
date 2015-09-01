@@ -27,7 +27,7 @@ import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.OptionalService;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.config.PluginDescriptor;
-import org.glowroot.common.live.LiveJvmService;
+import org.glowroot.live.LiveJvmService;
 
 public class ViewerAgentModule {
 
@@ -38,7 +38,7 @@ public class ViewerAgentModule {
 
     public ViewerAgentModule(File baseDir, @Nullable File glowrootJarFile) throws Exception {
         pluginCache = PluginCache.create(glowrootJarFile, true);
-        configService = new ConfigService(baseDir, pluginCache.pluginDescriptors());
+        configService = ConfigService.create(baseDir, pluginCache.pluginDescriptors());
         lazyPlatformMBeanServer = new LazyPlatformMBeanServer(false);
         OptionalService<ThreadAllocatedBytes> threadAllocatedBytes = ThreadAllocatedBytes.create();
         liveJvmService = new LiveJvmServiceImpl(lazyPlatformMBeanServer,

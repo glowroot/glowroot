@@ -24,7 +24,6 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -64,24 +63,6 @@ public class ObjectMappers {
             mapper.registerModule(extraModule);
         }
         return mapper;
-    }
-
-    public static <T> T readRequiredValue(ObjectMapper mapper, String content, Class<T> valueType)
-            throws IOException {
-        T value = mapper.readValue(content, valueType);
-        if (value == null) {
-            throw new JsonMappingException("Content is json null");
-        }
-        return value;
-    }
-
-    public static <T extends /*@NonNull*/Object> T readRequiredValue(ObjectMapper mapper,
-            String content, TypeReference<T> valueTypeRef) throws IOException {
-        T value = mapper.readValue(content, valueTypeRef);
-        if (value == null) {
-            throw new JsonMappingException("Content is json null");
-        }
-        return value;
     }
 
     @EnsuresNonNull("#1")

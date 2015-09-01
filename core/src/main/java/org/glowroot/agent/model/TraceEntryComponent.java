@@ -204,7 +204,7 @@ class TraceEntryComponent {
         }
     }
 
-    public static Collection<TraceEntry> toSpiTraceEntries(Collection<TraceEntryImpl> entries,
+    private static Collection<TraceEntry> toSpiTraceEntries(Collection<TraceEntryImpl> entries,
             final long transactionStartTick, final long captureTick) {
         return Collections2.transform(entries, new Function<TraceEntryImpl, TraceEntry>() {
             @Override

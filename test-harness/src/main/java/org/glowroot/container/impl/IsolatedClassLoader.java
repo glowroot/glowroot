@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.weaving.ClassNames;
 import org.glowroot.plugin.api.Agent;
 
-public class IsolatedClassLoader extends ClassLoader {
+class IsolatedClassLoader extends ClassLoader {
 
     private static final Logger logger = LoggerFactory.getLogger(IsolatedClassLoader.class);
 
@@ -46,12 +46,6 @@ public class IsolatedClassLoader extends ClassLoader {
                 .add(IsolatedClassLoader.class)
                 .build();
         this.excludePackages = ImmutableList.copyOf(excludePackages);
-    }
-
-    public <S, T extends S> S newInstance(Class<T> implClass, Class<S> bridgeClass)
-            throws Exception {
-        validateBridgeable(bridgeClass.getName());
-        return bridgeClass.cast(loadClass(implClass.getName()).newInstance());
     }
 
     @Override
@@ -89,24 +83,12 @@ public class IsolatedClassLoader extends ClassLoader {
         return weaveAndDefineClass(name, bytes);
     }
 
-    public Class<?> weaveAndDefineClass(String name, byte[] bytes) {
+    private Class<?> weaveAndDefineClass(String name, byte[] bytes) {
         String packageName = Reflection.getPackageName(name);
         if (getPackage(packageName) == null) {
             definePackage(packageName, null, null, null, null, null, null, null);
         }
         return super.defineClass(name, bytes, 0, bytes.length);
-    }
-
-    private void validateBridgeable(String name) {
-        if (isInBootstrapClassLoader(name)) {
-            return;
-        }
-        for (Class<?> bridgeClass : bridgeClasses) {
-            if (bridgeClass.getName().equals(name)) {
-                return;
-            }
-        }
-        throw new IllegalStateException("Class '" + name + "' is not bridgeable");
     }
 
     private boolean loadWithParentClassLoader(String name) {

@@ -20,8 +20,8 @@ import javax.annotation.Nullable;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 
-import org.glowroot.common.live.ImmutableAvailability;
-import org.glowroot.common.live.LiveJvmService.Availability;
+import org.glowroot.live.ImmutableAvailability;
+import org.glowroot.live.LiveJvmService.Availability;
 
 public abstract class OptionalService<T> {
 

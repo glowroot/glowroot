@@ -243,16 +243,12 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             this.bridgeClasses.addAll(bridgeClasses);
         }
 
-        public void addBridgeClasses(Class<?>... bridgeClasses) {
+        void addBridgeClasses(Class<?>... bridgeClasses) {
             this.bridgeClasses.addAll(Arrays.asList(bridgeClasses));
         }
 
         public void addExcludePackages(List<String> excludePackages) {
             this.excludePackages.addAll(excludePackages);
-        }
-
-        public void addExcludePackages(String... excludePackages) {
-            this.excludePackages.addAll(Arrays.asList(excludePackages));
         }
 
         @RequiresNonNull("weavingTimerService")

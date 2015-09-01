@@ -33,8 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.weaving.AnalyzedWorld.ParseContext;
+import org.glowroot.agent.weaving.AnalyzingClassVisitor.ShortCircuitException;
 import org.glowroot.agent.weaving.WeavingClassVisitor.PointcutClassFoundException;
-import org.glowroot.agent.weaving.WeavingClassVisitor.ShortCircuitException;
 import org.glowroot.agent.weaving.WeavingTimerService.WeavingTimer;
 
 import static org.objectweb.asm.Opcodes.ASM5;

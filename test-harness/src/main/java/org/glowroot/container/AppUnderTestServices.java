@@ -19,8 +19,8 @@ import org.glowroot.GlowrootModule;
 import org.glowroot.MainEntryPoint;
 import org.glowroot.common.config.ImmutablePluginConfig;
 import org.glowroot.common.config.PluginConfig;
-import org.glowroot.common.repo.ConfigRepository;
-import org.glowroot.local.LocalModule;
+import org.glowroot.server.repo.ConfigRepository;
+import org.glowroot.server.simplerepo.SimpleRepoModule;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -46,7 +46,7 @@ public class AppUnderTestServices {
     private static ConfigRepository getConfigRepository() {
         GlowrootModule glowrootModule = MainEntryPoint.getGlowrootModule();
         checkNotNull(glowrootModule);
-        LocalModule storageModule = glowrootModule.getLocalModule();
-        return storageModule.getConfigRepository();
+        SimpleRepoModule simpleRepoModule = glowrootModule.getSimpleRepoModule();
+        return simpleRepoModule.getConfigRepository();
     }
 }

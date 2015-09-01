@@ -15,8 +15,6 @@
  */
 package org.glowroot.container.config;
 
-import java.util.List;
-
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -24,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
-import com.google.common.collect.Lists;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
@@ -32,8 +29,6 @@ public class TransactionConfig {
 
     private int slowThresholdMillis;
     private int profilingIntervalMillis;
-    private String defaultDisplayedTransactionType = "";
-    private List<Double> defaultDisplayedPercentiles = Lists.newArrayList();
 
     private final String version;
 
@@ -57,22 +52,6 @@ public class TransactionConfig {
         this.profilingIntervalMillis = profilingIntervalMillis;
     }
 
-    public String getDefaultDisplayedTransactionType() {
-        return defaultDisplayedTransactionType;
-    }
-
-    public void setDefaultDisplayedTransactionType(String defaultDisplayedTransactionType) {
-        this.defaultDisplayedTransactionType = defaultDisplayedTransactionType;
-    }
-
-    public List<Double> getDefaultDisplayedPercentiles() {
-        return defaultDisplayedPercentiles;
-    }
-
-    public void setDefaultDisplayedPercentiles(List<Double> defaultDisplayedPercentiles) {
-        this.defaultDisplayedPercentiles = defaultDisplayedPercentiles;
-    }
-
     public String getVersion() {
         return version;
     }
@@ -85,10 +64,7 @@ public class TransactionConfig {
             // sending to the server, and represents the current version hash when receiving from
             // the server
             return Objects.equal(slowThresholdMillis, that.slowThresholdMillis)
-                    && Objects.equal(profilingIntervalMillis, that.profilingIntervalMillis)
-                    && Objects.equal(defaultDisplayedTransactionType,
-                            that.defaultDisplayedTransactionType)
-                    && Objects.equal(defaultDisplayedPercentiles, that.defaultDisplayedPercentiles);
+                    && Objects.equal(profilingIntervalMillis, that.profilingIntervalMillis);
         }
         return false;
     }
@@ -98,8 +74,7 @@ public class TransactionConfig {
         // intentionally leaving off version since it represents the prior version hash when
         // sending to the server, and represents the current version hash when receiving from the
         // server
-        return Objects.hashCode(slowThresholdMillis, profilingIntervalMillis,
-                defaultDisplayedTransactionType, defaultDisplayedPercentiles);
+        return Objects.hashCode(slowThresholdMillis, profilingIntervalMillis);
     }
 
     @Override
@@ -107,8 +82,6 @@ public class TransactionConfig {
         return MoreObjects.toStringHelper(this)
                 .add("slowThresholdMillis", slowThresholdMillis)
                 .add("profilingIntervalMillis", profilingIntervalMillis)
-                .add("defaultDisplayedTransactionType", defaultDisplayedTransactionType)
-                .add("defaultDisplayedPercentiles", defaultDisplayedPercentiles)
                 .add("version", version)
                 .toString();
     }
@@ -117,19 +90,13 @@ public class TransactionConfig {
     static TransactionConfig readValue(
             @JsonProperty("slowThresholdMillis") @Nullable Integer slowThresholdMillis,
             @JsonProperty("profilingIntervalMillis") @Nullable Integer profilingIntervalMillis,
-            @JsonProperty("defaultDisplayedTransactionType") @Nullable String defaultDisplayedTransactionType,
-            @JsonProperty("defaultDisplayedPercentiles") @Nullable List<Double> defaultDisplayedPercentiles,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
         checkRequiredProperty(slowThresholdMillis, "slowThresholdMillis");
         checkRequiredProperty(profilingIntervalMillis, "profilingIntervalMillis");
-        checkRequiredProperty(defaultDisplayedTransactionType, "defaultDisplayedTransactionType");
-        checkRequiredProperty(defaultDisplayedPercentiles, "defaultDisplayedPercentiles");
         checkRequiredProperty(version, "version");
         TransactionConfig config = new TransactionConfig(version);
         config.setSlowThresholdMillis(slowThresholdMillis);
         config.setProfilingIntervalMillis(profilingIntervalMillis);
-        config.setDefaultDisplayedTransactionType(defaultDisplayedTransactionType);
-        config.setDefaultDisplayedPercentiles(defaultDisplayedPercentiles);
         return config;
     }
 }

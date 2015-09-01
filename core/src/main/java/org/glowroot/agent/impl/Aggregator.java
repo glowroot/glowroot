@@ -49,7 +49,7 @@ public class Aggregator {
     private final ConfigService configService;
     private final Clock clock;
 
-    private final long fixedAggregateIntervalMillis;
+    private final long aggregateIntervalMillis;
 
     private final BlockingQueue<PendingTransaction> pendingTransactionQueue =
             Queues.newLinkedBlockingQueue();
@@ -59,14 +59,14 @@ public class Aggregator {
     private final Object lock = new Object();
 
     public Aggregator(ScheduledExecutorService scheduledExecutor, Collector collector,
-            ConfigService configService, long fixedAggregateIntervalMillis, Clock clock) {
+            ConfigService configService, long aggregateIntervalMillis, Clock clock) {
         this.scheduledExecutor = scheduledExecutor;
         this.collector = collector;
         this.configService = configService;
         this.clock = clock;
-        this.fixedAggregateIntervalMillis = fixedAggregateIntervalMillis;
+        this.aggregateIntervalMillis = aggregateIntervalMillis;
         activeIntervalCollector = new AggregateIntervalCollector(clock.currentTimeMillis(),
-                fixedAggregateIntervalMillis,
+                aggregateIntervalMillis,
                 configService.getAdvancedConfig().maxAggregateTransactionsPerTransactionType(),
                 configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
         // dedicated thread to aggregating transaction data
@@ -94,7 +94,7 @@ public class Aggregator {
         pendingIntervalCollectors.clear();
     }
 
-    public long add(Transaction transaction) {
+    long add(Transaction transaction) {
         // this synchronized block is to ensure traces are placed into processing queue in the
         // order of captureTime (so that queue reader can assume if captureTime indicates time to
         // flush, then no new traces will come in with prior captureTime)
@@ -156,7 +156,7 @@ public class Aggregator {
                 // flush in separate thread to avoid pending transactions from piling up quickly
                 scheduledExecutor.execute(new IntervalFlusher(activeIntervalCollector));
                 activeIntervalCollector = new AggregateIntervalCollector(
-                        pendingTransaction.captureTime(), fixedAggregateIntervalMillis,
+                        pendingTransaction.captureTime(), aggregateIntervalMillis,
                         configService.getAdvancedConfig()
                                 .maxAggregateTransactionsPerTransactionType(),
                         configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
@@ -185,7 +185,7 @@ public class Aggregator {
                     // flush in separate thread to avoid pending transactions from piling up quickly
                     scheduledExecutor.execute(new IntervalFlusher(activeIntervalCollector));
                     activeIntervalCollector = new AggregateIntervalCollector(currentTime,
-                            fixedAggregateIntervalMillis,
+                            aggregateIntervalMillis,
                             configService.getAdvancedConfig()
                                     .maxAggregateTransactionsPerTransactionType(),
                             configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());

@@ -48,12 +48,12 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.LazyPlatformMBeanServer.InitListener;
-import org.glowroot.agent.util.PatternObjectNameQueryExp;
 import org.glowroot.collector.spi.Collector;
 import org.glowroot.collector.spi.GaugePoint;
 import org.glowroot.common.config.GaugeConfig;
 import org.glowroot.common.config.GaugeConfig.MBeanAttribute;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common.util.PatternObjectNameQueryExp;
 import org.glowroot.common.util.Reflections;
 import org.glowroot.common.util.ScheduledRunnable;
 

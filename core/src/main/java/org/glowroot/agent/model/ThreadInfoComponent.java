@@ -27,12 +27,13 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
 
 import org.glowroot.agent.util.ThreadAllocatedBytes;
+import org.glowroot.collector.spi.Trace;
 import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class ThreadInfoComponent {
+class ThreadInfoComponent {
 
     private static final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
     private static final boolean IS_THREAD_CPU_TIME_SUPPORTED =
@@ -167,25 +168,23 @@ public class ThreadInfoComponent {
 
     @Styles.Private
     @Value.Immutable
-    public abstract static class ThreadInfoData {
-
-        public static final long NOT_AVAILABLE = -1;
+    abstract static class ThreadInfoData {
 
         @Value.Default
         public long threadCpuNanos() {
-            return NOT_AVAILABLE;
+            return Trace.THREAD_DATA_NOT_AVAILABLE;
         }
         @Value.Default
         public long threadBlockedNanos() {
-            return NOT_AVAILABLE;
+            return Trace.THREAD_DATA_NOT_AVAILABLE;
         }
         @Value.Default
         public long threadWaitedNanos() {
-            return NOT_AVAILABLE;
+            return Trace.THREAD_DATA_NOT_AVAILABLE;
         }
         @Value.Default
         public long threadAllocatedBytes() {
-            return NOT_AVAILABLE;
+            return Trace.THREAD_DATA_NOT_AVAILABLE;
         }
     }
 }

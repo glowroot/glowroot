@@ -27,7 +27,7 @@ import org.glowroot.common.util.ObjectMappers;
 public class Versions {
 
     private static final Logger logger = LoggerFactory.getLogger(Versions.class);
-    private static final ObjectMapper mapper = ObjectMappers.create(JacksonModule.create());
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private Versions() {}
 

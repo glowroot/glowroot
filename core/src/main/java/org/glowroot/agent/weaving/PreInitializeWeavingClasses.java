@@ -321,6 +321,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.AnalyzedWorld$1");
         types.add("org.glowroot.agent.weaving.AnalyzedWorld$ParseContext");
         types.add("org.glowroot.agent.weaving.AnalyzingClassVisitor");
+        types.add("org.glowroot.agent.weaving.AnalyzingClassVisitor$ShortCircuitException");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$ClassMetaHolder");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$MethodMetaHolder");
@@ -353,7 +354,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor$InitMixins");
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor$MethodMetaGroup");
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor$PointcutClassFoundException");
-        types.add("org.glowroot.agent.weaving.WeavingClassVisitor$ShortCircuitException");
         types.add("org.glowroot.agent.weaving.WeavingMethodVisitor");
         types.add("org.glowroot.agent.weaving.WeavingMethodVisitor$CatchHandler");
         types.add("org.glowroot.agent.weaving.WeavingTimerService");

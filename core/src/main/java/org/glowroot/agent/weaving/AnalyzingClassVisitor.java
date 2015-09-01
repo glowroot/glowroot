@@ -33,7 +33,6 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
 import org.glowroot.agent.weaving.AnalyzedWorld.ParseContext;
-import org.glowroot.agent.weaving.WeavingClassVisitor.ShortCircuitException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ASM5;
@@ -332,5 +331,11 @@ class AnalyzingClassVisitor extends ClassVisitor {
             default:
                 return Advice.ordering.immutableSortedCopy(matchingAdvisors);
         }
+    }
+
+    @SuppressWarnings("serial")
+    static class ShortCircuitException extends RuntimeException {
+        static final ShortCircuitException INSTANCE = new ShortCircuitException();
+        private ShortCircuitException() {}
     }
 }

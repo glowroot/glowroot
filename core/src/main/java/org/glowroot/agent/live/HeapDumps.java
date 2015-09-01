@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.OptionalService;
 
-public class HeapDumps {
+class HeapDumps {
 
     private static final String MBEAN_NAME = "com.sun.management:type=HotSpotDiagnostic";
 
@@ -40,7 +40,7 @@ public class HeapDumps {
         this.objectName = objectName;
     }
 
-    public void dumpHeap(String path) throws Exception {
+    void dumpHeap(String path) throws Exception {
         lazyPlatformMBeanServer.invoke(objectName, "dumpHeap", new Object[] {path, false},
                 new String[] {"java.lang.String", "boolean"});
     }

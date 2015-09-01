@@ -41,9 +41,9 @@ import org.glowroot.agent.impl.AdviceCache;
 import org.glowroot.agent.live.ClasspathCache.UiAnalyzedMethod;
 import org.glowroot.agent.weaving.AnalyzedWorld;
 import org.glowroot.common.config.InstrumentationConfig;
-import org.glowroot.common.live.ImmutableGlobalMeta;
-import org.glowroot.common.live.ImmutableMethodSignature;
-import org.glowroot.common.live.LiveWeavingService;
+import org.glowroot.live.ImmutableGlobalMeta;
+import org.glowroot.live.ImmutableMethodSignature;
+import org.glowroot.live.LiveWeavingService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;

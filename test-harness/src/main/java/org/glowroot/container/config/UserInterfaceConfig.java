@@ -15,6 +15,8 @@
  */
 package org.glowroot.container.config;
 
+import java.util.List;
+
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -22,11 +24,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
+import com.google.common.collect.Lists;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class UserInterfaceConfig {
 
+    private String defaultDisplayedTransactionType = "";
+    private List<Double> defaultDisplayedPercentiles = Lists.newArrayList();
     private int port;
     private boolean adminPasswordEnabled;
     private boolean readOnlyPasswordEnabled;
@@ -44,6 +49,22 @@ public class UserInterfaceConfig {
 
     private UserInterfaceConfig(String version) {
         this.version = version;
+    }
+
+    public String getDefaultDisplayedTransactionType() {
+        return defaultDisplayedTransactionType;
+    }
+
+    public void setDefaultDisplayedTransactionType(String defaultDisplayedTransactionType) {
+        this.defaultDisplayedTransactionType = defaultDisplayedTransactionType;
+    }
+
+    public List<Double> getDefaultDisplayedPercentiles() {
+        return defaultDisplayedPercentiles;
+    }
+
+    public void setDefaultDisplayedPercentiles(List<Double> defaultDisplayedPercentiles) {
+        this.defaultDisplayedPercentiles = defaultDisplayedPercentiles;
     }
 
     public int getPort() {
@@ -124,7 +145,10 @@ public class UserInterfaceConfig {
             //
             // also intentionally leaving off currentAdminPassword, newAdminPassword and
             // newReadOnlyPassword since those are just used as a temporary messaging mechanism
-            return Objects.equal(port, that.port)
+            return Objects.equal(defaultDisplayedTransactionType,
+                    that.defaultDisplayedTransactionType)
+                    && Objects.equal(defaultDisplayedPercentiles, that.defaultDisplayedPercentiles)
+                    && Objects.equal(port, that.port)
                     && Objects.equal(adminPasswordEnabled, that.adminPasswordEnabled)
                     && Objects.equal(readOnlyPasswordEnabled, that.readOnlyPasswordEnabled)
                     && Objects.equal(anonymousAccess, that.anonymousAccess)
@@ -141,8 +165,9 @@ public class UserInterfaceConfig {
         //
         // also intentionally leaving off currentPassword and newPassword since those are just used
         // as a temporary messaging mechanism
-        return Objects.hashCode(port, adminPasswordEnabled, readOnlyPasswordEnabled,
-                anonymousAccess, sessionTimeoutMinutes);
+        return Objects.hashCode(defaultDisplayedTransactionType, defaultDisplayedPercentiles, port,
+                adminPasswordEnabled, readOnlyPasswordEnabled, anonymousAccess,
+                sessionTimeoutMinutes);
     }
 
     @Override
@@ -150,6 +175,8 @@ public class UserInterfaceConfig {
         // leaving off currentAdminPassword, newAdminPassword and newReadOnlyPassword since those
         // are plain text passwords
         return MoreObjects.toStringHelper(this)
+                .add("defaultDisplayedTransactionType", defaultDisplayedTransactionType)
+                .add("defaultDisplayedPercentiles", defaultDisplayedPercentiles)
                 .add("port", port)
                 .add("adminPasswordEnabled", adminPasswordEnabled)
                 .add("passwordEnabled", adminPasswordEnabled)
@@ -161,12 +188,16 @@ public class UserInterfaceConfig {
 
     @JsonCreator
     static UserInterfaceConfig readValue(
+            @JsonProperty("defaultDisplayedTransactionType") @Nullable String defaultDisplayedTransactionType,
+            @JsonProperty("defaultDisplayedPercentiles") @Nullable List<Double> defaultDisplayedPercentiles,
             @JsonProperty("port") @Nullable Integer port,
             @JsonProperty("adminPasswordEnabled") @Nullable Boolean adminPasswordEnabled,
             @JsonProperty("readOnlyPasswordEnabled") @Nullable Boolean readOnlyPasswordEnabled,
             @JsonProperty("anonymousAccess") @Nullable AnonymousAccess anonymousAccess,
             @JsonProperty("sessionTimeoutMinutes") @Nullable Integer sessionTimeoutMinutes,
             @JsonProperty("version") @Nullable String version) throws JsonMappingException {
+        checkRequiredProperty(defaultDisplayedTransactionType, "defaultDisplayedTransactionType");
+        checkRequiredProperty(defaultDisplayedPercentiles, "defaultDisplayedPercentiles");
         checkRequiredProperty(port, "port");
         checkRequiredProperty(adminPasswordEnabled, "adminPasswordEnabled");
         checkRequiredProperty(readOnlyPasswordEnabled, "readOnlyPasswordEnabled");
@@ -174,6 +205,8 @@ public class UserInterfaceConfig {
         checkRequiredProperty(sessionTimeoutMinutes, "sessionTimeoutMinutes");
         checkRequiredProperty(version, "version");
         UserInterfaceConfig config = new UserInterfaceConfig(version);
+        config.setDefaultDisplayedTransactionType(defaultDisplayedTransactionType);
+        config.setDefaultDisplayedPercentiles(defaultDisplayedPercentiles);
         config.setPort(port);
         config.setAdminPasswordEnabled(adminPasswordEnabled);
         config.setReadOnlyPasswordEnabled(readOnlyPasswordEnabled);

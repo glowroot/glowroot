@@ -15,11 +15,8 @@
  */
 package org.glowroot.agent.model;
 
-import java.io.IOException;
-
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Ticker;
 
 import org.glowroot.collector.spi.Query;
@@ -67,7 +64,7 @@ public class QueryData implements Timer, Query {
         this.nextQueryData = nextQueryData;
     }
 
-    public String getQueryType() {
+    String getQueryType() {
         return queryType;
     }
 
@@ -79,38 +76,6 @@ public class QueryData implements Timer, Query {
     @Nullable
     QueryData getNextQueryData() {
         return nextQueryData;
-    }
-
-    // safe to be called from another thread
-    public void writeValue(String queryType, String queryText, JsonGenerator jg)
-            throws IOException {
-        jg.writeStartObject();
-        jg.writeStringField("queryType", queryType);
-        jg.writeStringField("queryText", queryText);
-        boolean active = selfNestingLevel > 0;
-        if (active) {
-            // try to grab a quick, consistent view, but no guarantee on consistency since the
-            // transaction is active
-            //
-            // grab total before curr, to avoid case where total is updated in between
-            // these two lines and then "total + curr" would overstate the correct value
-            // (it seems better to understate the correct value if there is an update to the
-            // timer values in between these two lines)
-            long theTotalNanos = totalNanos;
-            long theTotalRows = totalRows;
-            // capture startTick before ticker.read() so curr is never < 0
-            long theStartTick = startTick;
-            long curr = ticker.read() - theStartTick;
-            jg.writeNumberField("totalNanos", theTotalNanos + curr);
-            jg.writeNumberField("executionCount", executionCount);
-            jg.writeNumberField("totalRows", theTotalRows);
-            jg.writeBooleanField("active", true);
-        } else {
-            jg.writeNumberField("totalNanos", totalNanos);
-            jg.writeNumberField("executionCount", executionCount);
-            jg.writeNumberField("totalRows", totalRows);
-        }
-        jg.writeEndObject();
     }
 
     public void start(long startTick, long batchSize) {
@@ -159,17 +124,6 @@ public class QueryData implements Timer, Query {
             // restarting a previously stopped execution, so need to decrement count
             this.startTick = startTick;
         }
-    }
-
-    public void extend() {
-        if (selfNestingLevel++ == 0) {
-            // restarting a previously stopped execution, so need to decrement count
-            this.startTick = ticker.read();
-        }
-    }
-
-    boolean isActive() {
-        return selfNestingLevel > 0;
     }
 
     private void endInternal(long endTick) {

@@ -62,21 +62,6 @@ public abstract class ChunkSource {
         };
     }
 
-    public static int readFully(Reader reader, char[] buffer) throws IOException {
-        int total = 0;
-        while (true) {
-            int n = reader.read(buffer, total, buffer.length - total);
-            if (n == -1) {
-                break;
-            }
-            total += n;
-            if (total == buffer.length) {
-                break;
-            }
-        }
-        return total;
-    }
-
     public interface ChunkCopier {
 
         // returns false when nothing left to copy
@@ -105,6 +90,21 @@ public abstract class ChunkSource {
             }
             writer.write(buffer, 0, total);
             return true;
+        }
+
+        private static int readFully(Reader reader, char[] buffer) throws IOException {
+            int total = 0;
+            while (true) {
+                int n = reader.read(buffer, total, buffer.length - total);
+                if (n == -1) {
+                    break;
+                }
+                total += n;
+                if (total == buffer.length) {
+                    break;
+                }
+            }
+            return total;
         }
     }
 

@@ -47,8 +47,7 @@ public class PluginConfigTest {
     public static void setUp() throws Exception {
         // create config.json with empty properties to test different code path
         baseDir = TempDirs.createTempDir("glowroot-test-basedir");
-        Files.write("{\"ui\":{\"port\":0},\"plugins\":[{\"id\":\"glowroot-integration-tests\","
-                + "\"enabled\":true}]}", new File(baseDir, "config.json"), Charsets.UTF_8);
+        Files.write("{\"ui\":{\"port\":0}}", new File(baseDir, "config.json"), Charsets.UTF_8);
         container = Containers.createWithFileDb(baseDir);
     }
 

@@ -100,7 +100,7 @@ public class TimerImpl implements Timer, org.glowroot.collector.spi.TraceTimerNo
 
     // safe to be called from another thread when transaction is still active transaction
     @JsonIgnore
-    public TraceTimerNode getSnapshot() throws IOException {
+    TraceTimerNode getSnapshot() throws IOException {
 
         TraceTimerNodeBuilder builder = new TraceTimerNodeBuilder();
         builder.name(timerName.name());
@@ -158,11 +158,6 @@ public class TimerImpl implements Timer, org.glowroot.collector.spi.TraceTimerNo
         if (--selfNestingLevel == 0) {
             endInternal(endTick);
         }
-    }
-
-    @JsonIgnore
-    public TimerNameImpl getTimerName() {
-        return timerName;
     }
 
     @Override
@@ -260,33 +255,6 @@ public class TimerImpl implements Timer, org.glowroot.collector.spi.TraceTimerNo
         return startNestedTimerInternal(timerName, startTick);
     }
 
-    public TimerImpl extend() {
-        TimerImpl currentTimer = transaction.getCurrentTimer();
-        if (currentTimer == null) {
-            logger.warn("extend() transaction currentTimer is null");
-            return this;
-        }
-        if (currentTimer == parent) {
-            // restarting a previously stopped execution, so need to decrement count
-            count--;
-            start(ticker.read());
-            return this;
-        }
-        if (currentTimer == this) {
-            selfNestingLevel++;
-            return this;
-        }
-        // otherwise can't just restart timer, so need to start an "extended" timer under the
-        // current timer
-        TimerNameImpl extendedTimer = timerName.extendedTimer();
-        if (extendedTimer == null) {
-            logger.warn("extend() should only be accessible to non-extended timers");
-            return this;
-        }
-        return currentTimer.startNestedTimer(extendedTimer);
-    }
-
-    // copy of no-arg extend() that by-passes ticker read when it is already available
     public TimerImpl extend(long startTick) {
         TimerImpl currentTimer = transaction.getCurrentTimer();
         if (currentTimer == null) {

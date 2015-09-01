@@ -25,27 +25,28 @@ import org.immutables.value.Value;
 
 import org.glowroot.agent.model.ThreadInfoComponent.ThreadInfoData;
 import org.glowroot.collector.spi.Aggregate;
+import org.glowroot.collector.spi.Trace;
 import org.glowroot.common.config.AdvancedConfig;
-import org.glowroot.common.repo.AggregateRepository.ErrorPoint;
-import org.glowroot.common.repo.AggregateRepository.OverallErrorSummary;
-import org.glowroot.common.repo.AggregateRepository.OverallSummary;
-import org.glowroot.common.repo.AggregateRepository.OverviewAggregate;
-import org.glowroot.common.repo.AggregateRepository.PercentileAggregate;
-import org.glowroot.common.repo.AggregateRepository.TransactionErrorSummary;
-import org.glowroot.common.repo.AggregateRepository.TransactionSummary;
-import org.glowroot.common.repo.ImmutableErrorPoint;
-import org.glowroot.common.repo.ImmutableOverallErrorSummary;
-import org.glowroot.common.repo.ImmutableOverallSummary;
-import org.glowroot.common.repo.ImmutableOverviewAggregate;
-import org.glowroot.common.repo.ImmutablePercentileAggregate;
-import org.glowroot.common.repo.ImmutableTransactionErrorSummary;
-import org.glowroot.common.repo.ImmutableTransactionSummary;
-import org.glowroot.common.repo.LazyHistogram;
-import org.glowroot.common.repo.MutableProfileNode;
-import org.glowroot.common.repo.MutableQuery;
-import org.glowroot.common.repo.MutableTimerNode;
-import org.glowroot.common.repo.QueryCollector;
+import org.glowroot.common.model.LazyHistogram;
+import org.glowroot.common.model.MutableProfileNode;
+import org.glowroot.common.model.MutableQuery;
+import org.glowroot.common.model.MutableTimerNode;
+import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.util.Styles;
+import org.glowroot.live.ImmutableErrorPoint;
+import org.glowroot.live.ImmutableOverallErrorSummary;
+import org.glowroot.live.ImmutableOverallSummary;
+import org.glowroot.live.ImmutableOverviewAggregate;
+import org.glowroot.live.ImmutablePercentileAggregate;
+import org.glowroot.live.ImmutableTransactionErrorSummary;
+import org.glowroot.live.ImmutableTransactionSummary;
+import org.glowroot.live.LiveAggregateRepository.ErrorPoint;
+import org.glowroot.live.LiveAggregateRepository.OverallErrorSummary;
+import org.glowroot.live.LiveAggregateRepository.OverallSummary;
+import org.glowroot.live.LiveAggregateRepository.OverviewAggregate;
+import org.glowroot.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.live.LiveAggregateRepository.TransactionErrorSummary;
+import org.glowroot.live.LiveAggregateRepository.TransactionSummary;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -58,10 +59,10 @@ class AggregateCollector {
     private long totalNanos;
     private long transactionCount;
     private long errorCount;
-    private long totalCpuNanos = ThreadInfoData.NOT_AVAILABLE;
-    private long totalBlockedNanos = ThreadInfoData.NOT_AVAILABLE;
-    private long totalWaitedNanos = ThreadInfoData.NOT_AVAILABLE;
-    private long totalAllocatedBytes = ThreadInfoData.NOT_AVAILABLE;
+    private long totalCpuNanos = Trace.THREAD_DATA_NOT_AVAILABLE;
+    private long totalBlockedNanos = Trace.THREAD_DATA_NOT_AVAILABLE;
+    private long totalWaitedNanos = Trace.THREAD_DATA_NOT_AVAILABLE;
+    private long totalAllocatedBytes = Trace.THREAD_DATA_NOT_AVAILABLE;
     // histogram values are in nanoseconds, but with microsecond precision to reduce the number of
     // buckets (and memory) required
     private final LazyHistogram lazyHistogram = new LazyHistogram();
@@ -222,10 +223,10 @@ class AggregateCollector {
     }
 
     private static long notAvailableAwareAdd(long x, long y) {
-        if (x == ThreadInfoData.NOT_AVAILABLE) {
+        if (x == Trace.THREAD_DATA_NOT_AVAILABLE) {
             return y;
         }
-        if (y == ThreadInfoData.NOT_AVAILABLE) {
+        if (y == Trace.THREAD_DATA_NOT_AVAILABLE) {
             return x;
         }
         return x + y;

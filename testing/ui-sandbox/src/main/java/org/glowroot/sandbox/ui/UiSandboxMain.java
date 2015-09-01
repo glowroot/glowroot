@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.config.TransactionConfig;
+import org.glowroot.container.config.UserInterfaceConfig;
 import org.glowroot.container.impl.JavaagentContainer;
 import org.glowroot.container.impl.LocalContainer;
 
@@ -58,8 +59,11 @@ public class UiSandboxMain {
             TransactionConfig transactionConfig =
                     container.getConfigService().getTransactionConfig();
             transactionConfig.setProfilingIntervalMillis(100);
-            transactionConfig.setDefaultDisplayedTransactionType("Sandbox");
             container.getConfigService().updateTransactionConfig(transactionConfig);
+            UserInterfaceConfig userInterfaceConfig =
+                    container.getConfigService().getUserInterfaceConfig();
+            userInterfaceConfig.setDefaultDisplayedTransactionType("Sandbox");
+            container.getConfigService().updateUserInterfaceConfig(userInterfaceConfig);
         }
         container.executeAppUnderTest(GenerateTraces.class);
     }

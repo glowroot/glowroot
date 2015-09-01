@@ -74,7 +74,7 @@ public class MainEntryPoint {
         try {
             glowrootModule = new GlowrootModule(baseDir, properties, null, glowrootJarFile, version,
                     true, false);
-            glowrootModule.initUi();
+            glowrootModule.initEmbeddedServer();
         } catch (BaseDirLockedException e) {
             logBaseDirLockedException(baseDir);
             return;
@@ -99,9 +99,9 @@ public class MainEntryPoint {
         glowrootModule = new GlowrootModule(baseDir, properties, instrumentation, glowrootJarFile,
                 version, false, jbossModules);
         if (instrumentation == null) {
-            glowrootModule.initUi();
+            glowrootModule.initEmbeddedServer();
         } else {
-            glowrootModule.initUiLazy(instrumentation);
+            glowrootModule.initEmbeddedServerLazy(instrumentation);
         }
         startupLogger.info("Glowroot started (version {})", version);
     }

@@ -24,16 +24,9 @@ import com.google.common.collect.Lists;
 
 import org.glowroot.agent.impl.Aggregator;
 import org.glowroot.agent.model.AggregateIntervalCollector;
-import org.glowroot.common.live.LiveAggregateRepository;
-import org.glowroot.common.repo.AggregateRepository.ErrorPoint;
-import org.glowroot.common.repo.AggregateRepository.OverallErrorSummary;
-import org.glowroot.common.repo.AggregateRepository.OverallSummary;
-import org.glowroot.common.repo.AggregateRepository.OverviewAggregate;
-import org.glowroot.common.repo.AggregateRepository.PercentileAggregate;
-import org.glowroot.common.repo.AggregateRepository.TransactionErrorSummary;
-import org.glowroot.common.repo.AggregateRepository.TransactionSummary;
-import org.glowroot.common.repo.MutableProfileNode;
-import org.glowroot.common.repo.MutableQuery;
+import org.glowroot.common.model.MutableProfileNode;
+import org.glowroot.common.model.MutableQuery;
+import org.glowroot.live.LiveAggregateRepository;
 
 public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
 

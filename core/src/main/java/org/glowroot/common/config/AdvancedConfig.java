@@ -79,11 +79,6 @@ public abstract class AdvancedConfig {
         return 60;
     }
 
-    @Value.Default
-    public int internalQueryTimeoutSeconds() {
-        return 60;
-    }
-
     @Value.Derived
     @JsonIgnore
     public String version() {

@@ -16,7 +16,6 @@
 package org.glowroot.common.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -32,16 +31,6 @@ public abstract class TransactionConfig {
     @Value.Default
     public int slowThresholdMillis() {
         return 2000;
-    }
-
-    @Value.Default
-    public String defaultDisplayedTransactionType() {
-        return "";
-    }
-
-    @Value.Default
-    public ImmutableList<Double> defaultDisplayedPercentiles() {
-        return ImmutableList.of(50.0, 95.0, 99.0);
     }
 
     @Value.Derived

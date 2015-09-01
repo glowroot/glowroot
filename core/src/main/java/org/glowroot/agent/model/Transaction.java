@@ -180,7 +180,7 @@ public class Transaction {
         return traceEntryComponent.isCompleted();
     }
 
-    public long getEndTick() {
+    long getEndTick() {
         return traceEntryComponent.getEndTick();
     }
 
@@ -219,7 +219,7 @@ public class Transaction {
         return ImmutableSetMultimap.copyOf(orderedCustomAttributes);
     }
 
-    public Map<String, ? extends /*@Nullable*/Object> getCustomDetail() {
+    Map<String, ? extends /*@Nullable*/Object> getCustomDetail() {
         MessageSupplier messageSupplier = traceEntryComponent.getRootEntry().getMessageSupplier();
         // root trace entry messageSupplier is never be null
         checkNotNull(messageSupplier);
@@ -246,12 +246,13 @@ public class Transaction {
     }
 
     // can be called from a non-transaction thread
-    public @Nullable ThreadInfoData getThreadInfo() {
+    @Nullable
+    ThreadInfoData getThreadInfo() {
         return threadInfoComponent == null ? null : threadInfoComponent.getThreadInfo();
     }
 
     // can be called from a non-transaction thread
-    public List<GarbageCollectorActivity> getGcActivity() {
+    List<GarbageCollectorActivity> getGcActivity() {
         return gcActivityComponent == null ? ImmutableList.<GarbageCollectorActivity>of()
                 : gcActivityComponent.getGcActivity();
     }
@@ -302,7 +303,7 @@ public class Transaction {
         return traceEntryComponent.getEntries();
     }
 
-    public long getProfileSampleCount() {
+    long getProfileSampleCount() {
         if (profile == null) {
             return 0;
         } else {
@@ -310,7 +311,8 @@ public class Transaction {
         }
     }
 
-    public @Nullable Profile getProfile() {
+    @Nullable
+    Profile getProfile() {
         return profile;
     }
 
@@ -331,7 +333,7 @@ public class Transaction {
     }
 
     // TODO implement profile limit
-    public boolean isProfileLimitExceeded() {
+    boolean isProfileLimitExceeded() {
         return false;
     }
 
@@ -481,7 +483,7 @@ public class Transaction {
         memoryBarrier = true;
     }
 
-    public boolean isEntryLimitExceeded() {
+    boolean isEntryLimitExceeded() {
         return traceEntryComponent.isEntryLimitExceeded();
     }
 
@@ -529,7 +531,7 @@ public class Transaction {
         this.captureTime = captureTime;
     }
 
-    public long getCaptureTime() {
+    long getCaptureTime() {
         return captureTime;
     }
 

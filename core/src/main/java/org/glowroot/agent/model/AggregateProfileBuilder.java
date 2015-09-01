@@ -17,7 +17,7 @@ package org.glowroot.agent.model;
 
 import com.google.common.collect.ImmutableList;
 
-import org.glowroot.common.repo.MutableProfileNode;
+import org.glowroot.common.model.MutableProfileNode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

@@ -42,7 +42,7 @@ public class TimerNameCache {
                 }
             });
 
-    public TimerName getName(Class<?> adviceClass) {
+    TimerName getName(Class<?> adviceClass) {
         if (adviceClass == null) {
             logger.error("get(): argument 'adviceClass' must be non-null");
             return getUnknownName();

@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 import org.objectweb.asm.Type;
 
-import org.glowroot.agent.weaving.ImmutableShimType;
 import org.glowroot.plugin.api.weaving.Shim;
 
 @Value.Immutable

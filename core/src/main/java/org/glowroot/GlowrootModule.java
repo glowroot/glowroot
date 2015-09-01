@@ -27,6 +27,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 
 import javax.annotation.Nullable;
+import javax.management.MBeanServer;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
@@ -45,20 +46,23 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.AgentModule;
 import org.glowroot.agent.ViewerAgentModule;
+import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.SpyingLogbackFilter;
 import org.glowroot.collector.spi.Aggregate;
 import org.glowroot.collector.spi.Collector;
 import org.glowroot.collector.spi.GaugePoint;
-import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
-import org.glowroot.common.live.LiveThreadDumpService.LiveThreadDumpServiceNop;
-import org.glowroot.common.live.LiveTraceRepository.LiveTraceRepositoryNop;
-import org.glowroot.common.live.LiveWeavingService.LiveWeavingServiceNop;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Tickers;
-import org.glowroot.local.LocalModule;
+import org.glowroot.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
+import org.glowroot.live.LiveThreadDumpService.LiveThreadDumpServiceNop;
+import org.glowroot.live.LiveTraceRepository.LiveTraceRepositoryNop;
+import org.glowroot.live.LiveWeavingService.LiveWeavingServiceNop;
 import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.ui.CreateUiModuleBuilder;
-import org.glowroot.ui.UiModule;
+import org.glowroot.server.repo.ConfigRepository;
+import org.glowroot.server.simplerepo.PlatformMBeanServerLifecycle;
+import org.glowroot.server.simplerepo.SimpleRepoModule;
+import org.glowroot.server.ui.CreateUiModuleBuilder;
+import org.glowroot.server.ui.UiModule;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -72,7 +76,7 @@ public class GlowrootModule {
     private final Clock clock;
     // only null in viewer mode
     private final @Nullable ScheduledExecutorService scheduledExecutor;
-    private final LocalModule localModule;
+    private SimpleRepoModule simpleRepoModule;
     private final @Nullable AgentModule agentModule;
     private final @Nullable ViewerAgentModule viewerAgentModule;
     private final File baseDir;
@@ -85,6 +89,8 @@ public class GlowrootModule {
 
     private final String bindAddress;
     private final String version;
+
+    private final boolean h2MemDb;
 
     private volatile @MonotonicNonNull UiModule uiModule;
 
@@ -115,32 +121,41 @@ public class GlowrootModule {
         ticker = Tickers.getTicker();
         clock = Clock.systemClock();
 
+        // mem db is only used for testing (by glowroot-test-container)
+        h2MemDb = Boolean.parseBoolean(properties.get("internal.h2.memdb"));
+
         if (viewerModeEnabled) {
             viewerAgentModule = new ViewerAgentModule(baseDir, glowrootJarFile);
             scheduledExecutor = null;
             agentModule = null;
-            localModule = new LocalModule(baseDir, properties, clock, ticker,
-                    viewerAgentModule.getConfigService(), null,
-                    viewerAgentModule.getLazyPlatformMBeanServer(), viewerModeEnabled);
+            ConfigRepository configRepository = ConfigRepositoryImpl.create(baseDir,
+                    viewerAgentModule.getPluginDescriptors(), viewerAgentModule.getConfigService());
+            PlatformMBeanServerLifecycle platformMBeanServerLifecycle =
+                    new PlatformMBeanServerLifecycleImpl(
+                            viewerAgentModule.getLazyPlatformMBeanServer());
+            simpleRepoModule = new SimpleRepoModule(baseDir, clock, ticker, configRepository, null,
+                    platformMBeanServerLifecycle, h2MemDb, true);
         } else {
             ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
                     .setNameFormat("Glowroot-Background-%d").build();
             scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
             // trace module needs to be started as early as possible, so that weaving will be
-            // applied to
-            // as many classes as possible
+            // applied to as many classes as possible
             // in particular, it needs to be started before StorageModule which uses shaded H2,
-            // which
-            // loads java.sql.DriverManager, which loads 3rd party jdbc drivers found via
+            // which loads java.sql.DriverManager, which loads 3rd party jdbc drivers found via
             // services/java.sql.Driver, and those drivers need to be woven
             CollectorProxy collectorProxy = new CollectorProxy();
             agentModule = new AgentModule(clock, ticker, collectorProxy, instrumentation, baseDir,
                     glowrootJarFile, scheduledExecutor, jbossModules);
-            localModule = new LocalModule(baseDir, properties, clock, ticker,
-                    agentModule.getConfigService(), scheduledExecutor,
-                    agentModule.getLazyPlatformMBeanServer(), viewerModeEnabled);
+            ConfigRepository configRepository = ConfigRepositoryImpl.create(baseDir,
+                    agentModule.getPluginDescriptors(), agentModule.getConfigService());
+            PlatformMBeanServerLifecycle platformMBeanServerLifecycle =
+                    new PlatformMBeanServerLifecycleImpl(
+                            agentModule.getLazyPlatformMBeanServer());
+            simpleRepoModule = new SimpleRepoModule(baseDir, clock, ticker, configRepository,
+                    scheduledExecutor, platformMBeanServerLifecycle, h2MemDb, false);
             // now inject the real repositories into the proxies
-            collectorProxy.setInstance(localModule.getCollector());
+            collectorProxy.setInstance(simpleRepoModule.getCollector());
             viewerAgentModule = null;
         }
 
@@ -149,7 +164,7 @@ public class GlowrootModule {
         this.version = version;
     }
 
-    void initUiLazy(final Instrumentation instrumentation) {
+    void initEmbeddedServerLazy(final Instrumentation instrumentation) {
         // cannot start netty in premain otherwise can crash JVM
         // see https://github.com/netty/netty/issues/3233
         // and https://bugs.openjdk.java.net/browse/JDK-8041920
@@ -158,7 +173,7 @@ public class GlowrootModule {
             public void run() {
                 try {
                     waitForMain(instrumentation);
-                    initUi();
+                    initEmbeddedServer();
                 } catch (Throwable t) {
                     logger.error(t.getMessage(), t);
                 }
@@ -166,18 +181,18 @@ public class GlowrootModule {
         });
     }
 
-    void initUi() {
+    void initEmbeddedServer() throws Exception {
         if (agentModule != null) {
             uiModule = new CreateUiModuleBuilder()
                     .ticker(ticker)
                     .clock(clock)
                     .baseDir(baseDir)
                     .liveJvmService(agentModule.getLiveJvmService())
-                    .configRepository(localModule.getConfigRepository())
-                    .traceRepository(localModule.getTraceRepository())
-                    .aggregateRepository(localModule.getAggregateRepository())
-                    .gaugeValueRepository(localModule.getGaugeValueRepository())
-                    .repoAdmin(localModule.getRepoAdmin())
+                    .configRepository(simpleRepoModule.getConfigRepository())
+                    .traceRepository(simpleRepoModule.getTraceRepository())
+                    .aggregateRepository(simpleRepoModule.getAggregateRepository())
+                    .gaugeValueRepository(simpleRepoModule.getGaugeValueRepository())
+                    .repoAdmin(simpleRepoModule.getRepoAdmin())
                     .liveTraceRepository(agentModule.getLiveTraceRepository())
                     .liveThreadDumpService(agentModule.getLiveThreadDumpService())
                     .liveAggregateRepository(agentModule.getLiveAggregateRepository())
@@ -193,11 +208,11 @@ public class GlowrootModule {
                     .clock(clock)
                     .baseDir(baseDir)
                     .liveJvmService(viewerAgentModule.getLiveJvmService())
-                    .configRepository(localModule.getConfigRepository())
-                    .traceRepository(localModule.getTraceRepository())
-                    .aggregateRepository(localModule.getAggregateRepository())
-                    .gaugeValueRepository(localModule.getGaugeValueRepository())
-                    .repoAdmin(localModule.getRepoAdmin())
+                    .configRepository(simpleRepoModule.getConfigRepository())
+                    .traceRepository(simpleRepoModule.getTraceRepository())
+                    .aggregateRepository(simpleRepoModule.getAggregateRepository())
+                    .gaugeValueRepository(simpleRepoModule.getGaugeValueRepository())
+                    .repoAdmin(simpleRepoModule.getRepoAdmin())
                     .liveTraceRepository(new LiveTraceRepositoryNop())
                     .liveThreadDumpService(new LiveThreadDumpServiceNop())
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
@@ -278,8 +293,8 @@ public class GlowrootModule {
     }
 
     @OnlyUsedByTests
-    public LocalModule getLocalModule() {
-        return localModule;
+    public SimpleRepoModule getSimpleRepoModule() {
+        return simpleRepoModule;
     }
 
     @OnlyUsedByTests
@@ -315,7 +330,7 @@ public class GlowrootModule {
         if (agentModule != null) {
             agentModule.close();
         }
-        localModule.close();
+        simpleRepoModule.close();
         if (scheduledExecutor != null) {
             // close scheduled executor last to prevent exceptions due to above modules attempting
             // to use a shutdown executor
@@ -386,6 +401,26 @@ public class GlowrootModule {
         @VisibleForTesting
         void setInstance(Collector instance) {
             this.instance = instance;
+        }
+    }
+
+    private static class PlatformMBeanServerLifecycleImpl implements PlatformMBeanServerLifecycle {
+
+        private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
+
+        private PlatformMBeanServerLifecycleImpl(LazyPlatformMBeanServer lazyPlatformMBeanServer) {
+            this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
+        }
+
+        @Override
+        public void addInitListener(final InitListener listener) {
+            lazyPlatformMBeanServer.addInitListener(
+                    new org.glowroot.agent.util.LazyPlatformMBeanServer.InitListener() {
+                        @Override
+                        public void postInit(MBeanServer mbeanServer) throws Exception {
+                            listener.doWithPlatformMBeanServer(mbeanServer);
+                        }
+                    });
         }
     }
 }

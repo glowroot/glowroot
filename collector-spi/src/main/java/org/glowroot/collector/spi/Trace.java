@@ -22,6 +22,8 @@ import javax.annotation.Nullable;
 
 public interface Trace {
 
+    public static final long THREAD_DATA_NOT_AVAILABLE = -1;
+
     String id();
 
     boolean partial();

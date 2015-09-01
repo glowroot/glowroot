@@ -23,33 +23,16 @@ glowroot.controller('ConfigTransactionCtrl', [
   'confirmIfHasChanges',
   'httpErrors',
   function ($scope, $http, backendUrl, confirmIfHasChanges, httpErrors) {
-    // initialize page binding object
-    $scope.page = {};
 
     $scope.hasChanges = function () {
       return $scope.originalConfig && !angular.equals($scope.config, $scope.originalConfig);
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
 
-    $scope.$watch('page.defaultDisplayedPercentiles', function (newVal) {
-      if ($scope.config) {
-        var percentiles = [];
-        angular.forEach(newVal.split(','), function (percentile) {
-          percentile = percentile.trim();
-          if (percentile.length) {
-            percentiles.push(Number(percentile));
-          }
-        });
-        $scope.config.defaultDisplayedPercentiles = percentiles;
-      }
-    });
-
     function onNewData(data) {
       $scope.loaded = true;
       $scope.config = data;
       $scope.originalConfig = angular.copy($scope.config);
-
-      $scope.page.defaultDisplayedPercentiles = $scope.config.defaultDisplayedPercentiles.join(', ');
     }
 
     $scope.save = function (deferred) {

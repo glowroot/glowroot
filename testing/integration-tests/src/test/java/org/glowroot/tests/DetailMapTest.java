@@ -150,7 +150,7 @@ public class DetailMapTest {
     public void shouldReadDetailMapWithBadType() throws Exception {
         // given
         for (int i = 0; i < 4; i++) {
-            container.addExpectedLogMessage("org.glowroot.common.repo.helper.DetailMapWriter",
+            container.addExpectedLogMessage("org.glowroot.common.model.DetailMapWriter",
                     "detail map has unexpected value type: java.io.File");
         }
         // when
@@ -168,9 +168,9 @@ public class DetailMapTest {
     @Test
     public void shouldReadDetailMapWithNullKey() throws Exception {
         // given
-        container.addExpectedLogMessage("org.glowroot.common.repo.helper.DetailMapWriter",
+        container.addExpectedLogMessage("org.glowroot.common.model.DetailMapWriter",
                 "detail map has null key");
-        container.addExpectedLogMessage("org.glowroot.common.repo.helper.DetailMapWriter",
+        container.addExpectedLogMessage("org.glowroot.common.model.DetailMapWriter",
                 "detail map has null key");
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNullKey.class);
@@ -191,9 +191,9 @@ public class DetailMapTest {
     public void shouldReadDetailMapWithBadKeyType() throws Exception {
         // given
         for (int i = 0; i < 2; i++) {
-            container.addExpectedLogMessage("org.glowroot.common.repo.helper.DetailMapWriter",
+            container.addExpectedLogMessage("org.glowroot.common.model.DetailMapWriter",
                     "detail map has unexpected key type: java.io.File");
-            container.addExpectedLogMessage("org.glowroot.common.repo.helper.DetailMapWriter",
+            container.addExpectedLogMessage("org.glowroot.common.model.DetailMapWriter",
                     "detail map has unexpected value type: java.io.File");
         }
         // when

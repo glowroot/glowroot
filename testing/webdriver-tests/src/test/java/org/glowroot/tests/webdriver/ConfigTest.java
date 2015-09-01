@@ -22,6 +22,7 @@ import org.glowroot.tests.webdriver.config.ConfigSidebar;
 import org.glowroot.tests.webdriver.config.SmtpConfigPage;
 import org.glowroot.tests.webdriver.config.StorageConfigPage;
 import org.glowroot.tests.webdriver.config.TransactionConfigPage;
+import org.glowroot.tests.webdriver.config.UserInterfaceConfigPage;
 import org.glowroot.tests.webdriver.config.UserRecordingConfigPage;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,8 +45,6 @@ public class ConfigTest extends WebDriverTest {
         page.getSlowThresholdTextField().sendKeys("2345");
         page.getProfilingIntervalTextField().clear();
         page.getProfilingIntervalTextField().sendKeys("3456");
-        page.getDefaultDisplayedPercentilesTextField().clear();
-        page.getDefaultDisplayedPercentilesTextField().sendKeys("3,4,5,6");
         page.clickSaveButton();
 
         // then
@@ -53,6 +52,29 @@ public class ConfigTest extends WebDriverTest {
         globalNavbar.getConfigurationLink().click();
         assertThat(page.getSlowThresholdTextField().getAttribute("value")).isEqualTo("2345");
         assertThat(page.getProfilingIntervalTextField().getAttribute("value")).isEqualTo("3456");
+    }
+
+    @Test
+    public void shouldUpdateUserInterfaceConfig() throws Exception {
+        // given
+        App app = new App(driver, "http://localhost:" + container.getUiPort());
+        GlobalNavbar globalNavbar = new GlobalNavbar(driver);
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+        UserInterfaceConfigPage page = new UserInterfaceConfigPage(driver);
+
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getUserInterfaceLink().click();
+
+        // when
+        page.getDefaultDisplayedPercentilesTextField().clear();
+        page.getDefaultDisplayedPercentilesTextField().sendKeys("3,4,5,6");
+        page.clickSaveButton();
+
+        // then
+        app.open();
+        globalNavbar.getConfigurationLink().click();
+        configSidebar.getUserInterfaceLink().click();
         assertThat(page.getDefaultDisplayedPercentilesTextField().getAttribute("value"))
                 .isEqualTo("3, 4, 5, 6");
     }

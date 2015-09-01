@@ -39,7 +39,7 @@ public abstract class Traverser<T extends /*@NonNull*/Object, E extends Exceptio
                 continue;
             }
             T unprocessed = (T) popped;
-            Iterator<? extends T> childNodes = visit(unprocessed);
+            Iterator<? extends T> childNodes = visit(unprocessed).iterator();
             if (!childNodes.hasNext()) {
                 // optimization for no children
                 revisitAfterChildren(unprocessed);
@@ -53,7 +53,7 @@ public abstract class Traverser<T extends /*@NonNull*/Object, E extends Exceptio
         }
     }
 
-    public abstract Iterator<? extends T> visit(T node) throws E;
+    public abstract Iterable<? extends T> visit(T node) throws E;
 
-    public abstract void revisitAfterChildren(T node) throws E;
+    public void revisitAfterChildren(@SuppressWarnings("unused") T node) throws E {};
 }

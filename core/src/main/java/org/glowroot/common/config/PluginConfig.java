@@ -28,7 +28,7 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.config.PropertyDescriptor.PropertyType;
+import org.glowroot.common.config.PropertyValue.PropertyType;
 
 @Value.Immutable
 public abstract class PluginConfig {
@@ -111,20 +111,20 @@ public abstract class PluginConfig {
     }
 
     public @Nullable PropertyValue getValidatedPropertyValue(String propertyName,
-            PropertyType type) {
+            PropertyType propertyType) {
         PropertyValue propertyValue = properties().get(propertyName);
         if (propertyValue == null) {
             return null;
         }
         Object value = propertyValue.value();
         if (value == null) {
-            return PropertyValue.getDefaultValue(type);
+            return PropertyValue.getDefaultValue(propertyType);
         }
-        if (PropertyDescriptor.isValidType(value, type)) {
+        if (PropertyDescriptor.isValidType(value, propertyType)) {
             return propertyValue;
         } else {
             logger.warn("invalid value for plugin property: {}", propertyName);
-            return PropertyValue.getDefaultValue(type);
+            return PropertyValue.getDefaultValue(propertyType);
         }
     }
 }

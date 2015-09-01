@@ -29,7 +29,7 @@ import org.glowroot.MainEntryPoint;
 import org.glowroot.Viewer;
 import org.glowroot.common.config.ImmutableTransactionConfig;
 import org.glowroot.common.config.TransactionConfig;
-import org.glowroot.common.repo.ConfigRepository;
+import org.glowroot.server.repo.ConfigRepository;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -70,7 +70,8 @@ public class JavaagentMain {
             // failed to start, e.g. DataSourceLockTest
             return;
         }
-        ConfigRepository configRepository = glowrootModule.getLocalModule().getConfigRepository();
+        ConfigRepository configRepository =
+                glowrootModule.getSimpleRepoModule().getConfigRepository();
         TransactionConfig config = configRepository.getTransactionConfig();
         // conditional check is needed to prevent config file timestamp update when testing
         // ConfigFileLastModifiedTest.shouldNotUpdateFileOnStartupIfNoChanges()

@@ -339,6 +339,9 @@ public class ConfigTest {
     private static void updateAllFields(TransactionConfig config) {
         config.setSlowThresholdMillis(config.getSlowThresholdMillis() + 1);
         config.setProfilingIntervalMillis(config.getProfilingIntervalMillis() + 1);
+    }
+
+    private static void updateAllFields(UserInterfaceConfig config) {
         config.setDefaultDisplayedTransactionType(
                 config.getDefaultDisplayedTransactionType() + "a");
         List<Double> percentiles = Lists.newArrayList();
@@ -346,9 +349,6 @@ public class ConfigTest {
             percentiles.add(percentile / 2);
         }
         config.setDefaultDisplayedPercentiles(percentiles);
-    }
-
-    private static void updateAllFields(UserInterfaceConfig config) {
         // changing the port and password are tested elsewhere
         config.setSessionTimeoutMinutes(config.getSessionTimeoutMinutes() + 1);
     }
@@ -393,7 +393,6 @@ public class ConfigTest {
         config.setCaptureGcActivity(!config.isCaptureGcActivity());
         config.setMBeanGaugeNotFoundDelaySeconds(
                 config.getMBeanGaugeNotFoundDelaySeconds() + 100000);
-        config.setInternalQueryTimeoutSeconds(config.getInternalQueryTimeoutSeconds() + 1000000);
     }
 
     private static void updateAllFields(PluginConfig config) {

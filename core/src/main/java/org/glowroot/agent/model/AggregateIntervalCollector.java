@@ -32,16 +32,15 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.spi.Aggregate;
 import org.glowroot.collector.spi.Collector;
-import org.glowroot.common.repo.AggregateRepository.ErrorPoint;
-import org.glowroot.common.repo.AggregateRepository.OverallErrorSummary;
-import org.glowroot.common.repo.AggregateRepository.OverallSummary;
-import org.glowroot.common.repo.AggregateRepository.OverviewAggregate;
-import org.glowroot.common.repo.AggregateRepository.PercentileAggregate;
-import org.glowroot.common.repo.AggregateRepository.TransactionErrorSummary;
-import org.glowroot.common.repo.AggregateRepository.TransactionSummary;
-import org.glowroot.common.repo.MutableProfileNode;
-import org.glowroot.common.repo.MutableQuery;
-import org.glowroot.common.repo.Utils;
+import org.glowroot.common.model.MutableProfileNode;
+import org.glowroot.common.model.MutableQuery;
+import org.glowroot.live.LiveAggregateRepository.ErrorPoint;
+import org.glowroot.live.LiveAggregateRepository.OverallErrorSummary;
+import org.glowroot.live.LiveAggregateRepository.OverallSummary;
+import org.glowroot.live.LiveAggregateRepository.OverviewAggregate;
+import org.glowroot.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.live.LiveAggregateRepository.TransactionErrorSummary;
+import org.glowroot.live.LiveAggregateRepository.TransactionSummary;
 
 public class AggregateIntervalCollector {
 
@@ -54,9 +53,10 @@ public class AggregateIntervalCollector {
     private final int maxAggregateTransactionsPerTransactionType;
     private final int maxAggregateQueriesPerQueryType;
 
-    public AggregateIntervalCollector(long currentTime, long fixedAggregateIntervalMillis,
+    public AggregateIntervalCollector(long currentTime, long aggregateIntervalMillis,
             int maxAggregateTransactionsPerTransactionType, int maxAggregateQueriesPerQueryType) {
-        captureTime = Utils.getNextRollupTime(currentTime, fixedAggregateIntervalMillis);
+        captureTime = (long) Math.ceil(currentTime / (double) aggregateIntervalMillis)
+                * aggregateIntervalMillis;
         this.maxAggregateTransactionsPerTransactionType =
                 maxAggregateTransactionsPerTransactionType;
         this.maxAggregateQueriesPerQueryType = maxAggregateQueriesPerQueryType;

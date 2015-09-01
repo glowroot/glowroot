@@ -35,9 +35,9 @@ import com.google.common.primitives.Longs;
 import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.model.Transaction;
-import org.glowroot.common.live.ImmutableAllThreads;
-import org.glowroot.common.live.ImmutableOneThread;
-import org.glowroot.common.live.LiveThreadDumpService;
+import org.glowroot.live.ImmutableAllThreads;
+import org.glowroot.live.ImmutableOneThread;
+import org.glowroot.live.LiveThreadDumpService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

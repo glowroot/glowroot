@@ -99,28 +99,25 @@ public class TraceEntryImpl implements QueryEntry, Timer {
         return messageSupplier;
     }
 
-    public @Nullable ErrorMessage getErrorMessage() {
+    @Nullable
+    ErrorMessage getErrorMessage() {
         return errorMessage;
     }
 
-    public TraceEntry toSpiTraceEntry(long transactionStartTick, long captureTick) {
+    TraceEntry toSpiTraceEntry(long transactionStartTick, long captureTick) {
         return new SpiTraceEntry(this, transactionStartTick, captureTick);
     }
 
-    public long getStartTick() {
+    long getStartTick() {
         return startTick;
     }
 
-    public long getRevisedStartTick() {
+    private long getRevisedStartTick() {
         return revisedStartTick;
     }
 
-    public boolean isCompleted() {
+    private boolean isCompleted() {
         return selfNestingLevel == 0;
-    }
-
-    public long getEndTick() {
-        return endTick;
     }
 
     public int nestingLevel() {
@@ -259,11 +256,11 @@ public class TraceEntryImpl implements QueryEntry, Timer {
 
     // row count -1 means no navigation has been attempted
     // row count 0 means that navigation has been attempted but there were 0 rows
-    public boolean isQueryNavigationAttempted() {
+    private boolean isQueryNavigationAttempted() {
         return currRow != -1;
     }
 
-    public long getRowCount() {
+    private long getRowCount() {
         return maxRow;
     }
 
@@ -329,7 +326,7 @@ public class TraceEntryImpl implements QueryEntry, Timer {
                 long captureTick) {
             this.traceEntry = traceEntry;
             offsetNanos = traceEntry.getStartTick() - transactionStartTick;
-            long endTick = traceEntry.getEndTick();
+            long endTick = traceEntry.endTick;
             if (traceEntry.isCompleted() && Tickers.lessThanOrEqual(endTick, captureTick)) {
                 // duration is calculated relative to revised start tick
                 durationNanos = endTick - traceEntry.getRevisedStartTick();

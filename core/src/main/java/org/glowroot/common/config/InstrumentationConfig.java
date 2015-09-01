@@ -23,19 +23,12 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
-import com.google.common.primitives.Ints;
 import org.immutables.value.Value;
 
 import org.glowroot.plugin.api.weaving.MethodModifier;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 @Value.Immutable
 public abstract class InstrumentationConfig {
-
-    public static final Ordering<InstrumentationConfig> ordering =
-            new InstrumentationConfigOrdering();
 
     public abstract String className();
 
@@ -164,36 +157,5 @@ public abstract class InstrumentationConfig {
 
     public enum CaptureKind {
         TIMER, TRACE_ENTRY, TRANSACTION, OTHER
-    }
-
-    private static class InstrumentationConfigOrdering extends Ordering<InstrumentationConfig> {
-        @Override
-        public int compare(@Nullable InstrumentationConfig left,
-                @Nullable InstrumentationConfig right) {
-            checkNotNull(left);
-            checkNotNull(right);
-            int compare = left.className().compareToIgnoreCase(right.className());
-            if (compare != 0) {
-                return compare;
-            }
-            compare = left.methodName().compareToIgnoreCase(right.methodName());
-            if (compare != 0) {
-                return compare;
-            }
-            compare = Ints.compare(left.methodParameterTypes().size(),
-                    right.methodParameterTypes().size());
-            if (compare != 0) {
-                return compare;
-            }
-            List<String> leftParameterTypes = left.methodParameterTypes();
-            List<String> rightParameterTypes = right.methodParameterTypes();
-            for (int i = 0; i < leftParameterTypes.size(); i++) {
-                compare = leftParameterTypes.get(i).compareToIgnoreCase(rightParameterTypes.get(i));
-                if (compare != 0) {
-                    return compare;
-                }
-            }
-            return 0;
-        }
     }
 }

@@ -286,7 +286,7 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
         }
     }
 
-    static List<String> buildCommand(int containerPort, File baseDir, boolean useFileDb,
+    private static List<String> buildCommand(int containerPort, File baseDir, boolean useFileDb,
             boolean viewerMode, List<String> extraJvmArgs) throws Exception {
         List<String> command = Lists.newArrayList();
         String javaExecutable = StandardSystemProperty.JAVA_HOME.value() + File.separator + "bin"

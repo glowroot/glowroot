@@ -41,10 +41,6 @@ public class TransactionConfigPage {
         return withWait(xpath("//div[@gt-label='Slow threshold']//input"));
     }
 
-    public WebElement getDefaultDisplayedPercentilesTextField() {
-        return withWait(xpath("//div[@gt-label='Default displayed percentiles']//input"));
-    }
-
     public void clickSaveButton() {
         WebElement saveButton = withWait(xpath("//button[normalize-space()='Save changes']"));
         saveButton.click();

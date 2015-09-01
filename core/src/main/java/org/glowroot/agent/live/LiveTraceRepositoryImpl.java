@@ -38,17 +38,14 @@ import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.agent.model.TraceCreator;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.collector.spi.ProfileNode;
-import org.glowroot.common.live.ImmutableTraceExport;
-import org.glowroot.common.live.LiveTraceRepository;
-import org.glowroot.common.repo.ImmutableTracePoint;
-import org.glowroot.common.repo.StringComparator;
-import org.glowroot.common.repo.TraceRepository.TraceHeader;
-import org.glowroot.common.repo.TraceRepository.TracePoint;
-import org.glowroot.common.repo.TraceRepository.TracePointQuery;
-import org.glowroot.common.repo.helper.EntriesChunkSourceCreator;
-import org.glowroot.common.repo.helper.JsonMarshaller;
+import org.glowroot.common.model.EntriesChunkSourceCreator;
+import org.glowroot.common.model.ProfileJsonMarshaller;
 import org.glowroot.common.util.ChunkSource;
 import org.glowroot.common.util.Clock;
+import org.glowroot.live.ImmutableTraceExport;
+import org.glowroot.live.ImmutableTracePoint;
+import org.glowroot.live.LiveTraceRepository;
+import org.glowroot.live.StringComparator;
 import org.glowroot.markers.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -224,7 +221,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         if (syntheticRootProfileNode == null) {
             return null;
         }
-        return ChunkSource.wrap(JsonMarshaller.marshal(syntheticRootProfileNode));
+        return ChunkSource.wrap(ProfileJsonMarshaller.marshal(syntheticRootProfileNode));
     }
 
     private boolean matches(Transaction transaction, TracePointQuery query) {

@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
@@ -38,9 +39,12 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.config.ImmutableInstrumentationConfig;
 import org.glowroot.common.config.ImmutablePluginDescriptor;
-import org.glowroot.common.config.JacksonModule;
+import org.glowroot.common.config.ImmutablePropertyDescriptor;
+import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.config.PluginDescriptor;
+import org.glowroot.common.config.PropertyDescriptor;
 import org.glowroot.common.util.ObjectMappers;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -49,7 +53,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public abstract class PluginCache {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginCache.class);
-    private static final ObjectMapper mapper = ObjectMappers.create(JacksonModule.create());
+    private static final ObjectMapper mapper = ObjectMappers.create();
+
+    static {
+        SimpleModule module = new SimpleModule();
+        module.addAbstractTypeMapping(InstrumentationConfig.class,
+                ImmutableInstrumentationConfig.class);
+        module.addAbstractTypeMapping(PropertyDescriptor.class, ImmutablePropertyDescriptor.class);
+        mapper.registerModule(module);
+    }
 
     public abstract ImmutableList<File> pluginJars();
     public abstract ImmutableList<PluginDescriptor> pluginDescriptors();

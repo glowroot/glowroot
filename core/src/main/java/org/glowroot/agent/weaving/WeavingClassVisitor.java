@@ -55,6 +55,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.weaving.AnalyzingClassVisitor.ShortCircuitException;
 import org.glowroot.plugin.api.weaving.Shim;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -684,12 +685,6 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     @SuppressWarnings("serial")
-    static class ShortCircuitException extends RuntimeException {
-        static final ShortCircuitException INSTANCE = new ShortCircuitException();
-        private ShortCircuitException() {}
-    }
-
-    @SuppressWarnings("serial")
     static class PointcutClassFoundException extends RuntimeException {
         private static final PointcutClassFoundException INSTANCE =
                 new PointcutClassFoundException();
@@ -753,7 +748,7 @@ class WeavingClassVisitor extends ClassVisitor {
         @Value.Auxiliary
         abstract AnalyzedMethod analyzedMethod();
 
-        static AnalyzedMethodKey wrap(AnalyzedMethod analyzedMethod) {
+        private static AnalyzedMethodKey wrap(AnalyzedMethod analyzedMethod) {
             return ImmutableAnalyzedMethodKey.builder()
                     .name(analyzedMethod.name())
                     .addAllParameterTypes(analyzedMethod.parameterTypes())

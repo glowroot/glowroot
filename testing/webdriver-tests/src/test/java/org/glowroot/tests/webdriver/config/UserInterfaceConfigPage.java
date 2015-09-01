@@ -33,6 +33,10 @@ public class UserInterfaceConfigPage {
         this.driver = driver;
     }
 
+    public WebElement getDefaultDisplayedPercentilesTextField() {
+        return withWait(xpath("//div[@gt-label='Default displayed percentiles']//input"));
+    }
+
     public WebElement getAdminPasswordEnabledCheckBox() {
         return withWait(xpath("//div[@gt-model='config.adminPasswordEnabled']//input"));
     }

@@ -39,11 +39,6 @@ public class Styles {
     public @interface Private {}
 
     @Target({PACKAGE, TYPE})
-    @Value.Style(from = "copyFrom", visibility = ImplementationVisibility.PACKAGE)
-    @JsonSerialize
-    public @interface PackagePrivate {}
-
-    @Target({PACKAGE, TYPE})
     @Value.Style(from = "copyFrom", allParameters = true)
     @JsonSerialize
     public @interface AllParameters {}

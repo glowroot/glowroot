@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
-import org.glowroot.common.repo.MutableProfileNode;
+import org.glowroot.common.model.MutableProfileNode;
 import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -57,7 +57,7 @@ public class Profile {
         this.mayHaveSyntheticTimerMethods = mayHaveSyntheticTimerMethods;
     }
 
-    public Object getLock() {
+    Object getLock() {
         return lock;
     }
 
@@ -69,13 +69,13 @@ public class Profile {
         return syntheticRootNode;
     }
 
-    public long getSampleCount() {
+    long getSampleCount() {
         synchronized (lock) {
             return syntheticRootNode.sampleCount() + unmergedStackTraces.size();
         }
     }
 
-    public boolean mayHaveSyntheticTimerMethods() {
+    boolean mayHaveSyntheticTimerMethods() {
         return mayHaveSyntheticTimerMethods;
     }
 
@@ -266,7 +266,7 @@ public class Profile {
 
     @Value.Immutable
     @Styles.AllParameters
-    public interface StackTraceElementPlus {
+    interface StackTraceElementPlus {
         StackTraceElement stackTraceElement();
         ImmutableList<String> timerNames();
     }

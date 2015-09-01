@@ -22,6 +22,8 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.config.PropertyValue.PropertyType;
+
 @Value.Immutable
 public abstract class PropertyDescriptor {
 
@@ -58,7 +60,7 @@ public abstract class PropertyDescriptor {
         }
         Object value = defaultValue.value();
         if (value == null) {
-            // this actually shouldn't occur since immutables unmarshals null defaultValue as null
+            // this actually shouldn't occur since jackson unmarshals null defaultValue as null
             // as opposed to new PropertyValue(null)
             return PropertyValue.getDefaultValue(type());
         }
@@ -81,9 +83,5 @@ public abstract class PropertyDescriptor {
             default:
                 throw new AssertionError("Unexpected property type: " + type);
         }
-    }
-
-    enum PropertyType {
-        STRING, BOOLEAN, DOUBLE
     }
 }

@@ -23,10 +23,10 @@ import org.immutables.value.Value;
 
 import org.glowroot.agent.model.ThreadInfoComponent.ThreadInfoData;
 import org.glowroot.collector.spi.Trace;
-import org.glowroot.common.repo.ImmutableTraceHeader;
-import org.glowroot.common.repo.TraceRepository.Existence;
-import org.glowroot.common.repo.TraceRepository.TraceHeader;
 import org.glowroot.common.util.Styles;
+import org.glowroot.live.ImmutableTraceHeader;
+import org.glowroot.live.LiveTraceRepository.Existence;
+import org.glowroot.live.LiveTraceRepository.TraceHeader;
 
 @Styles.Private
 @Value.Include(Trace.class)

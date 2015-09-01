@@ -19,10 +19,10 @@ public interface Query {
 
     String queryText();
 
-    long executionCount();
-
     // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
     double totalNanos();
+
+    long executionCount();
 
     long totalRows();
 }
