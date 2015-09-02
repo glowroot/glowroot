@@ -77,11 +77,10 @@ class ErrorCommonService {
     private final ImmutableList<RollupConfig> rollupConfigs;
 
     ErrorCommonService(AggregateRepository aggregateRepository,
-            LiveAggregateRepository liveAggregateRepository,
-            ImmutableList<RollupConfig> rollupConfigs) {
+            LiveAggregateRepository liveAggregateRepository, List<RollupConfig> rollupConfigs) {
         this.aggregateRepository = aggregateRepository;
         this.liveAggregateRepository = liveAggregateRepository;
-        this.rollupConfigs = rollupConfigs;
+        this.rollupConfigs = ImmutableList.copyOf(rollupConfigs);
     }
 
     // from is non-inclusive

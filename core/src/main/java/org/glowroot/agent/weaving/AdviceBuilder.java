@@ -265,8 +265,7 @@ public class AdviceBuilder {
     }
 
     private static List<AdviceParameter> getAdviceParameters(Annotation[][] parameterAnnotations,
-            Class<?>[] parameterTypes,
-            ImmutableList<Class<? extends Annotation>> validBindAnnotationTypes,
+            Class<?>[] parameterTypes, List<Class<? extends Annotation>> validBindAnnotationTypes,
             Class<? extends Annotation> adviceAnnotationType) throws AdviceConstructionException {
 
         List<AdviceParameter> parameters = Lists.newArrayList();
@@ -290,7 +289,7 @@ public class AdviceBuilder {
 
     private static @Nullable Class<? extends Annotation> getValidBindAnnotationType(
             Annotation[] parameterAnnotations,
-            ImmutableList<Class<? extends Annotation>> validBindAnnotationTypes)
+            List<Class<? extends Annotation>> validBindAnnotationTypes)
                     throws AdviceConstructionException {
 
         Class<? extends Annotation> foundBindAnnotationType = null;

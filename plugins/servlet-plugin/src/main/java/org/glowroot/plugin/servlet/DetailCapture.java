@@ -103,7 +103,7 @@ class DetailCapture {
         return ImmutableMap.copyOf(requestHeaders);
     }
 
-    static boolean matchesOneOf(String key, ImmutableList<Pattern> patterns) {
+    static boolean matchesOneOf(String key, List<Pattern> patterns) {
         for (Pattern pattern : patterns) {
             if (pattern.matcher(key).matches()) {
                 return true;

@@ -422,7 +422,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         return numSaveArgsNeeded;
     }
 
-    private int getNum(ImmutableList<AdviceParameter> adviceParameters) {
+    private int getNum(List<AdviceParameter> adviceParameters) {
         int numSaveArgsNeeded = 0;
         for (AdviceParameter parameter : adviceParameters) {
             if (parameter.kind() == ParameterKind.METHOD_ARG_ARRAY) {

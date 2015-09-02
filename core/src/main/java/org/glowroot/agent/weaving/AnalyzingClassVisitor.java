@@ -194,7 +194,7 @@ class AnalyzingClassVisitor extends ClassVisitor {
         return analyzedClass;
     }
 
-    private List<AnalyzedClass> getAnalyzedHierarchy(ImmutableList<String> classNames,
+    private List<AnalyzedClass> getAnalyzedHierarchy(List<String> classNames,
             ParseContext parseContext) {
         List<AnalyzedClass> analyzedHierarchy = Lists.newArrayList();
         for (String className : classNames) {

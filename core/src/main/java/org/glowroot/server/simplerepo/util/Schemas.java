@@ -75,8 +75,8 @@ public class Schemas {
         }
     }
 
-    static void syncIndexes(@Untainted String tableName, ImmutableList<Index> indexes,
-            Connection connection) throws SQLException {
+    static void syncIndexes(@Untainted String tableName, List<Index> indexes, Connection connection)
+            throws SQLException {
         ImmutableSet<Index> desiredIndexes = ImmutableSet.copyOf(indexes);
         Set<Index> existingIndexes = getIndexes(tableName, connection);
         for (Index index : Sets.difference(existingIndexes, desiredIndexes)) {

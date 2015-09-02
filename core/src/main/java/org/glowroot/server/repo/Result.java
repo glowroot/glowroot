@@ -21,11 +21,11 @@ import com.google.common.collect.ImmutableList;
 
 public class Result<T> {
 
-    private final List<T> records;
+    private final ImmutableList<T> records;
     private final boolean moreAvailable;
 
     public Result(List<T> records, boolean moreAvailable) {
-        this.records = records;
+        this.records = ImmutableList.copyOf(records);
         this.moreAvailable = moreAvailable;
     }
 
@@ -37,8 +37,7 @@ public class Result<T> {
         return moreAvailable;
     }
 
-    public static <T extends /*@NonNull*/Object> Result<T> from(ImmutableList<T> records,
-            int limit) {
+    public static <T extends /*@NonNull*/Object> Result<T> from(List<T> records, int limit) {
         if (limit == 0) {
             return new Result<T>(records, false);
         } else if (records.size() > limit) {

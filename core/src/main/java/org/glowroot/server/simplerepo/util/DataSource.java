@@ -284,7 +284,7 @@ public class DataSource {
         }
     }
 
-    public void syncIndexes(@Untainted String tableName, ImmutableList<Index> indexes)
+    public void syncIndexes(@Untainted String tableName, List<Index> indexes)
             throws SQLException {
         synchronized (lock) {
             if (closing) {

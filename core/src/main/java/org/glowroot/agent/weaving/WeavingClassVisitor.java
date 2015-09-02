@@ -121,9 +121,8 @@ class WeavingClassVisitor extends ClassVisitor {
     private @MonotonicNonNull String metaHolderInternalName;
     private int methodMetaCounter;
 
-    public WeavingClassVisitor(ClassVisitor cv, List<Advice> advisors,
-            ImmutableList<ShimType> shimTypes, ImmutableList<MixinType> mixinTypes,
-            @Nullable ClassLoader loader, AnalyzedWorld analyzedWorld,
+    public WeavingClassVisitor(ClassVisitor cv, List<Advice> advisors, List<ShimType> shimTypes,
+            List<MixinType> mixinTypes, @Nullable ClassLoader loader, AnalyzedWorld analyzedWorld,
             @Nullable CodeSource codeSource, boolean timerWrapperMethods) {
         super(ASM5, cv);
         this.cv = cv;
@@ -400,8 +399,8 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     private static String /*@Nullable*/[] getInterfacesIncludingShimsAndMixins(
-            String /*@Nullable*/[] interfaces, ImmutableList<ShimType> matchedShimTypes,
-            ImmutableList<MixinType> matchedMixinTypes) {
+            String /*@Nullable*/[] interfaces, List<ShimType> matchedShimTypes,
+            List<MixinType> matchedMixinTypes) {
         if (matchedMixinTypes.isEmpty() && matchedShimTypes.isEmpty()) {
             return interfaces;
         }
@@ -698,9 +697,9 @@ class WeavingClassVisitor extends ClassVisitor {
         private boolean cascadingConstructor;
 
         InitMixins(MethodVisitor mv, int access, String name, String desc,
-                ImmutableList<MixinType> matchedMixinTypes, Type type) {
+                List<MixinType> matchedMixinTypes, Type type) {
             super(ASM5, mv, access, name, desc);
-            this.matchedMixinTypes = matchedMixinTypes;
+            this.matchedMixinTypes = ImmutableList.copyOf(matchedMixinTypes);
             this.type = type;
         }
 
