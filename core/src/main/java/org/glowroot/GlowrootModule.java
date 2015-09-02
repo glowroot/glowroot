@@ -19,9 +19,15 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.instrument.Instrumentation;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.channels.FileLock;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -37,6 +43,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
+import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -76,7 +83,7 @@ public class GlowrootModule {
     private final Clock clock;
     // only null in viewer mode
     private final @Nullable ScheduledExecutorService scheduledExecutor;
-    private SimpleRepoModule simpleRepoModule;
+    private final @Nullable SimpleRepoModule simpleRepoModule;
     private final @Nullable AgentModule agentModule;
     private final @Nullable ViewerAgentModule viewerAgentModule;
     private final File baseDir;
@@ -147,15 +154,23 @@ public class GlowrootModule {
             CollectorProxy collectorProxy = new CollectorProxy();
             agentModule = new AgentModule(clock, ticker, collectorProxy, instrumentation, baseDir,
                     glowrootJarFile, scheduledExecutor, jbossModules);
-            ConfigRepository configRepository = ConfigRepositoryImpl.create(baseDir,
-                    agentModule.getPluginDescriptors(), agentModule.getConfigService());
-            PlatformMBeanServerLifecycle platformMBeanServerLifecycle =
-                    new PlatformMBeanServerLifecycleImpl(
-                            agentModule.getLazyPlatformMBeanServer());
-            simpleRepoModule = new SimpleRepoModule(baseDir, clock, ticker, configRepository,
-                    scheduledExecutor, platformMBeanServerLifecycle, h2MemDb, false);
-            // now inject the real repositories into the proxies
-            collectorProxy.setInstance(simpleRepoModule.getCollector());
+
+            Collector collector = loadCustomCollector(baseDir);
+
+            if (collector != null) {
+                simpleRepoModule = null;
+            } else {
+                ConfigRepository configRepository = ConfigRepositoryImpl.create(baseDir,
+                        agentModule.getPluginDescriptors(), agentModule.getConfigService());
+                PlatformMBeanServerLifecycle platformMBeanServerLifecycle =
+                        new PlatformMBeanServerLifecycleImpl(
+                                agentModule.getLazyPlatformMBeanServer());
+                simpleRepoModule = new SimpleRepoModule(baseDir, clock, ticker, configRepository,
+                        scheduledExecutor, platformMBeanServerLifecycle, h2MemDb, false);
+                collector = simpleRepoModule.getCollector();
+            }
+            // now inject the real collector into the proxy
+            collectorProxy.setInstance(collector);
             viewerAgentModule = null;
         }
 
@@ -165,6 +180,10 @@ public class GlowrootModule {
     }
 
     void initEmbeddedServerLazy(final Instrumentation instrumentation) {
+        if (simpleRepoModule == null) {
+            // using custom collector with no UI
+            return;
+        }
         // cannot start netty in premain otherwise can crash JVM
         // see https://github.com/netty/netty/issues/3233
         // and https://bugs.openjdk.java.net/browse/JDK-8041920
@@ -182,6 +201,10 @@ public class GlowrootModule {
     }
 
     void initEmbeddedServer() throws Exception {
+        if (simpleRepoModule == null) {
+            // using custom collector with no UI
+            return;
+        }
         if (agentModule != null) {
             uiModule = new CreateUiModuleBuilder()
                     .ticker(ticker)
@@ -222,6 +245,38 @@ public class GlowrootModule {
                     .pluginDescriptors(viewerAgentModule.getPluginDescriptors())
                     .build();
         }
+    }
+
+    private static @Nullable Collector loadCustomCollector(File baseDir)
+            throws MalformedURLException {
+        File servicesDir = new File(baseDir, "services");
+        if (!servicesDir.exists()) {
+            return null;
+        }
+        if (!servicesDir.isDirectory()) {
+            return null;
+        }
+        File[] files = servicesDir.listFiles();
+        if (files == null) {
+            return null;
+        }
+        List<URL> urls = Lists.newArrayList();
+        for (File file : files) {
+            if (file.isFile() && file.getName().endsWith(".jar")) {
+                urls.add(file.toURI().toURL());
+            }
+        }
+        if (urls.isEmpty()) {
+            return null;
+        }
+        URLClassLoader servicesClassLoader = new URLClassLoader(urls.toArray(new URL[0]));
+        ServiceLoader<Collector> serviceLoader =
+                ServiceLoader.load(Collector.class, servicesClassLoader);
+        Iterator<Collector> i = serviceLoader.iterator();
+        if (!i.hasNext()) {
+            return null;
+        }
+        return i.next();
     }
 
     private static void waitForMain(Instrumentation instrumentation) throws InterruptedException {
@@ -294,6 +349,8 @@ public class GlowrootModule {
 
     @OnlyUsedByTests
     public SimpleRepoModule getSimpleRepoModule() {
+        // simpleRepoModule is always used by tests
+        checkNotNull(simpleRepoModule);
         return simpleRepoModule;
     }
 
@@ -330,6 +387,8 @@ public class GlowrootModule {
         if (agentModule != null) {
             agentModule.close();
         }
+        // simpleRepoModule is always used by tests
+        checkNotNull(simpleRepoModule);
         simpleRepoModule.close();
         if (scheduledExecutor != null) {
             // close scheduled executor last to prevent exceptions due to above modules attempting
