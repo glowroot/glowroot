@@ -172,8 +172,21 @@ public class DataSource {
             ResultSetCloser closer = new ResultSetCloser(resultSet);
             try {
                 List<T> mappedRows = Lists.newArrayList();
+                boolean errorLogged = false;
                 while (resultSet.next()) {
-                    mappedRows.add(rowMapper.mapRow(resultSet));
+                    try {
+                        mappedRows.add(rowMapper.mapRow(resultSet));
+                    } catch (Exception e) {
+                        // this can happen when copying h2 database while glowroot is running, and
+                        // h2 database is corrupted sometimes, then running h2 recover tool, and
+                        // then still see error when running java -jar glowroot.jar,
+                        // e.g. "Missing lob entry, block: 504196"
+                        if (!errorLogged) {
+                            // just log the first error
+                            logger.error(e.getMessage(), e);
+                            errorLogged = true;
+                        }
+                    }
                 }
                 return ImmutableList.copyOf(mappedRows);
             } catch (Throwable t) {
