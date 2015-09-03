@@ -32,7 +32,7 @@ import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.TraceCreator;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.collector.spi.Collector;
-import org.glowroot.collector.spi.Trace;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.common.util.Clock;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.markers.UsedByReflection;

@@ -21,10 +21,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
+import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,12 +53,12 @@ public class PluginConfiguredInstrumentationTest {
         // when
         container.executeAppUnderTest(ShouldExecuteAAA.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getTransactionName()).isEqualTo("abc zzz");
-        assertThat(trace.getUser()).isEqualTo("uzzz");
-        assertThat(trace.getCustomAttributes().get("View")).containsExactly("vabc");
-        assertThat(trace.getCustomAttributes().get("Z")).containsExactly("zabc");
-        assertThat(trace.getEntryCount()).isZero();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.transactionName()).isEqualTo("abc zzz");
+        assertThat(header.user()).isEqualTo("uzzz");
+        assertThat(header.attributes().get("View")).containsExactly("vabc");
+        assertThat(header.attributes().get("Z")).containsExactly("zabc");
+        assertThat(header.entryCount()).isZero();
     }
 
     public static class ShouldExecuteAAA implements AppUnderTest, TraceMarker {

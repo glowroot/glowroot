@@ -36,11 +36,9 @@ import com.google.common.io.CharStreams;
 import com.google.common.primitives.Doubles;
 import org.immutables.value.Value;
 
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
 import org.glowroot.common.model.LazyHistogram;
-import org.glowroot.common.model.MutableProfileNode;
-import org.glowroot.common.model.MutableQuery;
-import org.glowroot.common.model.MutableTimerNode;
-import org.glowroot.common.model.ProfileJsonMarshaller;
+import org.glowroot.common.model.MutableProfileTree;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.live.LiveAggregateRepository.OverallSummary;
@@ -155,33 +153,33 @@ class TransactionJsonService {
     String getProfile(String queryString) throws Exception {
         TransactionProfileRequest request =
                 QueryStrings.decode(queryString, TransactionProfileRequest.class);
-        MutableProfileNode profile = transactionCommonService.getMergedProfile(
+        MutableProfileTree profileTree = transactionCommonService.getMergedProfile(
                 request.transactionType(), request.transactionName(), request.from(), request.to(),
                 request.include(), request.exclude(), request.truncateLeafPercentage());
-        if (profile.sampleCount() == 0 && request.include().isEmpty() && request.exclude().isEmpty()
+        if (profileTree.getSampleCount() == 0 && request.include().isEmpty()
+                && request.exclude().isEmpty()
                 && transactionCommonService.shouldHaveProfile(request.transactionType(),
                         request.transactionName(), request.from(), request.to())) {
             return "{\"overwritten\":true}";
         }
-        return ProfileJsonMarshaller.marshal(profile);
+        return profileTree.toJson();
     }
 
     @GET("/backend/transaction/queries")
     String getQueries(String queryString) throws Exception {
         TransactionDataRequest request =
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
-        Map<String, List<MutableQuery>> queries = transactionCommonService.getMergedQueries(
+        List<Aggregate.QueriesByType> queries = transactionCommonService.getMergedQueries(
                 request.transactionType(), request.transactionName(), request.from(), request.to());
         List<Query> queryList = Lists.newArrayList();
-        for (Entry<String, List<MutableQuery>> entry : queries.entrySet()) {
-            List<MutableQuery> queriesForQueryType = entry.getValue();
-            for (MutableQuery aggregateQuery : queriesForQueryType) {
+        for (Aggregate.QueriesByType queriesByType : queries) {
+            for (Aggregate.Query query : queriesByType.getQueryList()) {
                 queryList.add(ImmutableQuery.builder()
-                        .queryType(entry.getKey())
-                        .queryText(aggregateQuery.queryText())
-                        .totalNanos(aggregateQuery.totalNanos())
-                        .executionCount(aggregateQuery.executionCount())
-                        .totalRows(aggregateQuery.totalRows())
+                        .queryType(queriesByType.getType())
+                        .queryText(query.getText())
+                        .totalNanos(query.getTotalNanos())
+                        .executionCount(query.getExecutionCount())
+                        .totalRows(query.getTotalRows())
                         .build());
             }
         }
@@ -268,29 +266,10 @@ class TransactionJsonService {
     @GET("/backend/transaction/flame-graph")
     String getFlameGraph(String queryString) throws Exception {
         FlameGraphRequest request = QueryStrings.decode(queryString, FlameGraphRequest.class);
-        MutableProfileNode profile = transactionCommonService.getMergedProfile(
+        MutableProfileTree profileTree = transactionCommonService.getMergedProfile(
                 request.transactionType(), request.transactionName(), request.from(), request.to(),
                 request.include(), request.exclude(), request.truncateLeafPercentage());
-        MutableProfileNode interestingNode = profile;
-        while (interestingNode.hasOneChildNode()) {
-            interestingNode = interestingNode.getOnlyChildNode();
-        }
-        if (interestingNode.isEmpty()) {
-            // only a single branch through entire tree
-            interestingNode = profile;
-        }
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartObject();
-        jg.writeObjectFieldStart("");
-        jg.writeNumberField("svUnique", 0);
-        jg.writeNumberField("svTotal", interestingNode.sampleCount());
-        jg.writeObjectFieldStart("svChildren");
-        writeFlameGraphNode(interestingNode, jg);
-        jg.writeEndObject();
-        jg.writeEndObject();
-        jg.close();
-        return sb.toString();
+        return profileTree.toFlameGraphJson();
     }
 
     private Map<Long, Long> getTransactionCounts(List<OverviewAggregate> overviewAggregates) {
@@ -335,7 +314,8 @@ class TransactionJsonService {
                         percentileAggregate.captureTime(), dataSeriesList, null);
             }
             lastPercentileAggregate = percentileAggregate;
-            LazyHistogram histogram = percentileAggregate.histogram();
+            LazyHistogram histogram = new LazyHistogram();
+            histogram.merge(percentileAggregate.histogram());
             for (int i = 0; i < percentiles.size(); i++) {
                 DataSeries dataSeries = dataSeriesList.get(i);
                 double percentile = percentiles.get(i);
@@ -452,29 +432,6 @@ class TransactionJsonService {
                 && request.from() < currentTimeMillis;
     }
 
-    // TODO use non-recursive algorithm to guard from stack overflow error
-    private static void writeFlameGraphNode(MutableProfileNode node, JsonGenerator jg)
-            throws IOException {
-        StackTraceElement stackTraceElement = node.stackTraceElement();
-        if (stackTraceElement == null) {
-            jg.writeObjectFieldStart("");
-        } else {
-            jg.writeObjectFieldStart(stackTraceElement.toString());
-        }
-        long svUnique = node.sampleCount();
-        for (MutableProfileNode childNode : node.childNodes()) {
-            svUnique -= childNode.sampleCount();
-        }
-        jg.writeNumberField("svUnique", svUnique);
-        jg.writeNumberField("svTotal", node.sampleCount());
-        jg.writeObjectFieldStart("svChildren");
-        for (MutableProfileNode childNode : node.childNodes()) {
-            writeFlameGraphNode(childNode, jg);
-        }
-        jg.writeEndObject();
-        jg.writeEndObject();
-    }
-
     private static class StackedPoint {
 
         private final OverviewAggregate overviewAggregate;
@@ -482,12 +439,10 @@ class TransactionJsonService {
         private final MutableLongMap<String> stackedTimers;
 
         private static StackedPoint create(OverviewAggregate overviewAggregate) throws IOException {
-            MutableTimerNode syntheticRootTimer = overviewAggregate.syntheticRootTimer();
             MutableLongMap<String> stackedTimers = new MutableLongMap<String>();
-            // skip synthetic root timer
-            for (MutableTimerNode realRootTimer : syntheticRootTimer.childNodes()) {
-                // skip real root timers
-                for (MutableTimerNode topLevelTimer : realRootTimer.childNodes()) {
+            for (Aggregate.Timer rootTimer : overviewAggregate.rootTimers()) {
+                // skip root timers
+                for (Aggregate.Timer topLevelTimer : rootTimer.getChildTimerList()) {
                     // traverse tree starting at top-level (under root) timers
                     addToStackedTimer(topLevelTimer, stackedTimers);
                 }
@@ -509,16 +464,15 @@ class TransactionJsonService {
             return stackedTimers;
         }
 
-        private static void addToStackedTimer(MutableTimerNode timer,
+        private static void addToStackedTimer(Aggregate.Timer timer,
                 MutableLongMap<String> stackedTimers) {
             double totalNestedNanos = 0;
-            for (MutableTimerNode nestedTimer : timer.childNodes()) {
-                totalNestedNanos += nestedTimer.totalNanos();
-                addToStackedTimer(nestedTimer, stackedTimers);
+            for (Aggregate.Timer childTimer : timer.getChildTimerList()) {
+                totalNestedNanos += childTimer.getTotalNanos();
+                addToStackedTimer(childTimer, stackedTimers);
             }
-            // timer name is only null for synthetic root timer which is never passed to this method
-            String timerName = checkNotNull(timer.name());
-            stackedTimers.add(timerName, timer.totalNanos() - totalNestedNanos);
+            String timerName = timer.getName();
+            stackedTimers.add(timerName, timer.getTotalNanos() - totalNestedNanos);
         }
     }
 

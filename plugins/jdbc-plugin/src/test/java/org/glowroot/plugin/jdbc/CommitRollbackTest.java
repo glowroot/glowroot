@@ -19,7 +19,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.Set;
 
+import com.google.common.collect.Sets;
 import org.apache.commons.dbcp.DelegatingConnection;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -31,7 +33,6 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,20 +61,21 @@ public class CommitRollbackTest {
         // when
         container.executeAppUnderTest(ExecuteJdbcCommit.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
-        TraceEntry jdbcInsertEntry = entries.get(0);
-        assertThat(jdbcInsertEntry.getMessageText())
+        Trace.Entry jdbcInsertEntry = entries.get(0);
+        assertThat(jdbcInsertEntry.message())
                 .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
-        TraceEntry jdbcCommitEntry = entries.get(1);
-        assertThat(jdbcCommitEntry.getMessageText()).isEqualTo("jdbc commit");
-        assertThat(trace.getRootTimer().getChildNodes()).hasSize(2);
-        // ordering is by total desc, so not fixed (though root timer will be first since it
-        // encompasses all other timings)
-        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTimer().getChildTimerNames()).containsOnly("jdbc execute",
-                "jdbc commit");
+        Trace.Entry jdbcCommitEntry = entries.get(1);
+        assertThat(jdbcCommitEntry.message()).isEqualTo("jdbc commit");
+        assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
+        assertThat(header.rootTimer().childTimers()).hasSize(2);
+        // ordering is by total desc, so order is not fixed
+        Set<String> childTimerNames = Sets.newHashSet();
+        childTimerNames.add(header.rootTimer().childTimers().get(0).name());
+        childTimerNames.add(header.rootTimer().childTimers().get(1).name());
+        assertThat(childTimerNames).containsOnly("jdbc execute", "jdbc commit");
     }
 
     @Test
@@ -82,21 +84,22 @@ public class CommitRollbackTest {
         // when
         container.executeAppUnderTest(ExecuteJdbcCommitThrowing.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
-        TraceEntry jdbcInsertEntry = entries.get(0);
-        assertThat(jdbcInsertEntry.getMessageText())
+        Trace.Entry jdbcInsertEntry = entries.get(0);
+        assertThat(jdbcInsertEntry.message())
                 .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
-        TraceEntry jdbcCommitEntry = entries.get(1);
-        assertThat(jdbcCommitEntry.getMessageText()).isEqualTo("jdbc commit");
-        assertThat(jdbcCommitEntry.getErrorMessage()).isEqualTo("A commit failure");
-        assertThat(trace.getRootTimer().getChildNodes()).hasSize(2);
-        // ordering is by total desc, so not fixed (though root timer will be first since it
-        // encompasses all other timings)
-        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTimer().getChildTimerNames()).containsOnly("jdbc execute",
-                "jdbc commit");
+        Trace.Entry jdbcCommitEntry = entries.get(1);
+        assertThat(jdbcCommitEntry.message()).isEqualTo("jdbc commit");
+        assertThat(jdbcCommitEntry.error().get().message()).isEqualTo("A commit failure");
+        assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
+        assertThat(header.rootTimer().childTimers()).hasSize(2);
+        // ordering is by total desc, so order is not fixed
+        Set<String> childTimerNames = Sets.newHashSet();
+        childTimerNames.add(header.rootTimer().childTimers().get(0).name());
+        childTimerNames.add(header.rootTimer().childTimers().get(1).name());
+        assertThat(childTimerNames).containsOnly("jdbc execute", "jdbc commit");
     }
 
     @Test
@@ -105,20 +108,21 @@ public class CommitRollbackTest {
         // when
         container.executeAppUnderTest(ExecuteJdbcRollback.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
-        TraceEntry jdbcInsertEntry = entries.get(0);
-        assertThat(jdbcInsertEntry.getMessageText())
+        Trace.Entry jdbcInsertEntry = entries.get(0);
+        assertThat(jdbcInsertEntry.message())
                 .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
-        TraceEntry jdbcCommitEntry = entries.get(1);
-        assertThat(jdbcCommitEntry.getMessageText()).isEqualTo("jdbc rollback");
-        assertThat(trace.getRootTimer().getChildNodes()).hasSize(2);
-        // ordering is by total desc, so not fixed (though root timer will be first since it
-        // encompasses all other timings)
-        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTimer().getChildTimerNames()).containsOnly("jdbc execute",
-                "jdbc rollback");
+        Trace.Entry jdbcCommitEntry = entries.get(1);
+        assertThat(jdbcCommitEntry.message()).isEqualTo("jdbc rollback");
+        assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
+        assertThat(header.rootTimer().childTimers()).hasSize(2);
+        // ordering is by total desc, so order is not fixed
+        Set<String> childTimerNames = Sets.newHashSet();
+        childTimerNames.add(header.rootTimer().childTimers().get(0).name());
+        childTimerNames.add(header.rootTimer().childTimers().get(1).name());
+        assertThat(childTimerNames).containsOnly("jdbc execute", "jdbc rollback");
     }
 
     @Test
@@ -127,21 +131,21 @@ public class CommitRollbackTest {
         // when
         container.executeAppUnderTest(ExecuteJdbcRollbackThrowing.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
-        TraceEntry jdbcInsertEntry = entries.get(0);
-        assertThat(jdbcInsertEntry.getMessageText())
+        Trace.Entry jdbcInsertEntry = entries.get(0);
+        assertThat(jdbcInsertEntry.message())
                 .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
-        TraceEntry jdbcCommitEntry = entries.get(1);
-        assertThat(jdbcCommitEntry.getMessageText()).isEqualTo("jdbc rollback");
-        assertThat(jdbcCommitEntry.getErrorMessage()).isEqualTo("A rollback failure");
-        assertThat(trace.getRootTimer().getChildNodes()).hasSize(2);
-        // ordering is by total desc, so not fixed (though root timer will be first since it
-        // encompasses all other timings)
-        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTimer().getChildTimerNames()).containsOnly("jdbc execute",
-                "jdbc rollback");
+        Trace.Entry jdbcCommitEntry = entries.get(1);
+        assertThat(jdbcCommitEntry.message()).isEqualTo("jdbc rollback");
+        assertThat(jdbcCommitEntry.error().get().message()).isEqualTo("A rollback failure");
+        assertThat(header.rootTimer().childTimers()).hasSize(2);
+        // ordering is by total desc, so order is not fixed
+        Set<String> childTimerNames = Sets.newHashSet();
+        childTimerNames.add(header.rootTimer().childTimers().get(0).name());
+        childTimerNames.add(header.rootTimer().childTimers().get(1).name());
+        assertThat(childTimerNames).containsOnly("jdbc execute", "jdbc rollback");
     }
 
     public abstract static class ExecuteJdbcCommitBase implements AppUnderTest, TraceMarker {

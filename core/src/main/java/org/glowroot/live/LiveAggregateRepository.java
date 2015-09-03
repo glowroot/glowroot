@@ -16,16 +16,13 @@
 package org.glowroot.live;
 
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 
 import org.immutables.value.Value;
 
-import org.glowroot.common.model.LazyHistogram;
-import org.glowroot.common.model.MutableProfileNode;
-import org.glowroot.common.model.MutableQuery;
-import org.glowroot.common.model.MutableTimerNode;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
 import org.glowroot.common.util.Styles;
 
 public interface LiveAggregateRepository {
@@ -51,11 +48,11 @@ public interface LiveAggregateRepository {
                     throws Exception;
 
     @Nullable
-    LiveResult<MutableProfileNode> getLiveProfile(String transactionType,
+    LiveResult<ProfileTree> getLiveProfileTree(String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception;
 
     @Nullable
-    LiveResult<Map<String, List<MutableQuery>>> getLiveQueries(String transactionType,
+    LiveResult<List<Aggregate.QueriesByType>> getLiveQueries(String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception;
 
     @Nullable
@@ -111,7 +108,7 @@ public interface LiveAggregateRepository {
         double totalBlockedNanos(); // -1 means N/A
         double totalWaitedNanos(); // -1 means N/A
         double totalAllocatedBytes(); // -1 means N/A
-        MutableTimerNode syntheticRootTimer();
+        List<Aggregate.Timer> rootTimers();
     }
 
     @Value.Immutable
@@ -120,7 +117,7 @@ public interface LiveAggregateRepository {
         // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
         double totalNanos();
         long transactionCount();
-        LazyHistogram histogram();
+        Aggregate.Histogram histogram();
     }
 
     @Value.Immutable
@@ -179,13 +176,13 @@ public interface LiveAggregateRepository {
         }
 
         @Override
-        public @Nullable LiveResult<MutableProfileNode> getLiveProfile(String transactionType,
+        public @Nullable LiveResult<ProfileTree> getLiveProfileTree(String transactionType,
                 @Nullable String transactionName, long from, long to) {
             return null;
         }
 
         @Override
-        public @Nullable LiveResult<Map<String, List<MutableQuery>>> getLiveQueries(
+        public @Nullable LiveResult<List<Aggregate.QueriesByType>> getLiveQueries(
                 String transactionType, @Nullable String transactionName, long from, long to) {
             return null;
         }

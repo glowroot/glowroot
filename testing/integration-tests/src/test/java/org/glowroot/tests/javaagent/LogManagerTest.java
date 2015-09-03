@@ -24,11 +24,11 @@ import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.impl.JavaagentContainer;
-import org.glowroot.container.trace.Trace;
 import org.glowroot.plugin.api.Agent;
 import org.glowroot.plugin.api.transaction.TransactionService;
 
@@ -70,9 +70,9 @@ public class LogManagerTest {
         // when
         container.executeAppUnderTest(ShouldUseCustomLogManager.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         // then
-        assertThat(trace.getUser()).isEqualTo(CustomLogManager.class.getName());
+        assertThat(header.user()).isEqualTo(CustomLogManager.class.getName());
     }
 
     private static boolean isShaded() {

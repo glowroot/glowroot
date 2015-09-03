@@ -16,7 +16,6 @@
 package org.glowroot.agent.live;
 
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -24,8 +23,8 @@ import com.google.common.collect.Lists;
 
 import org.glowroot.agent.impl.Aggregator;
 import org.glowroot.agent.model.AggregateIntervalCollector;
-import org.glowroot.common.model.MutableProfileNode;
-import org.glowroot.common.model.MutableQuery;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
 import org.glowroot.live.LiveAggregateRepository;
 
 public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
@@ -89,11 +88,11 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
     }
 
     @Override
-    public @Nullable LiveResult<MutableProfileNode> getLiveProfile(final String transactionType,
+    public @Nullable LiveResult<ProfileTree> getLiveProfileTree(final String transactionType,
             final @Nullable String transactionName, long from, long to) throws Exception {
-        return map(from, to, new Mapper<MutableProfileNode>() {
+        return map(from, to, new Mapper<ProfileTree>() {
             @Override
-            public @Nullable MutableProfileNode map(AggregateIntervalCollector collector)
+            public @Nullable ProfileTree map(AggregateIntervalCollector collector)
                     throws Exception {
                 return collector.getLiveProfile(transactionType, transactionName);
             }
@@ -101,12 +100,12 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
     }
 
     @Override
-    public @Nullable LiveResult<Map<String, List<MutableQuery>>> getLiveQueries(
+    public @Nullable LiveResult<List<Aggregate.QueriesByType>> getLiveQueries(
             final String transactionType, final @Nullable String transactionName, long from,
             long to) throws Exception {
-        return map(from, to, new Mapper<Map<String, List<MutableQuery>>>() {
+        return map(from, to, new Mapper<List<Aggregate.QueriesByType>>() {
             @Override
-            public Map<String, List<MutableQuery>> map(AggregateIntervalCollector collector)
+            public List<Aggregate.QueriesByType> map(AggregateIntervalCollector collector)
                     throws Exception {
                 return collector.getLiveQueries(transactionType, transactionName);
             }
@@ -164,9 +163,13 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
         List<T> list = Lists.newArrayList();
         for (AggregateIntervalCollector collector : collectors) {
             T item = mapper.map(collector);
-            if (item != null) {
-                list.add(item);
+            if (item == null) {
+                continue;
             }
+            if (item instanceof List && ((List<?>) item).isEmpty()) {
+                continue;
+            }
+            list.add(item);
         }
         if (list.isEmpty()) {
             return null;

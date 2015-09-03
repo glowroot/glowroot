@@ -56,10 +56,10 @@ public class ThreadInfoTest {
         // when
         container.executeAppUnderTest(Normal.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadCpuNanos()).isNotEqualTo(-1);
-        assertThat(trace.getThreadBlockedNanos()).isNotEqualTo(-1);
-        assertThat(trace.getThreadWaitedNanos()).isNotEqualTo(-1);
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.threadCpuNanos().isPresent()).isTrue();
+        assertThat(header.threadBlockedNanos().isPresent()).isTrue();
+        assertThat(header.threadWaitedNanos().isPresent()).isTrue();
     }
 
     @Test
@@ -71,10 +71,10 @@ public class ThreadInfoTest {
         // when
         container.executeAppUnderTest(Normal.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadCpuNanos()).isEqualTo(-1);
-        assertThat(trace.getThreadBlockedNanos()).isEqualTo(-1);
-        assertThat(trace.getThreadWaitedNanos()).isEqualTo(-1);
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.threadCpuNanos().isPresent()).isFalse();
+        assertThat(header.threadBlockedNanos().isPresent()).isFalse();
+        assertThat(header.threadWaitedNanos().isPresent()).isFalse();
     }
 
     @Test
@@ -83,10 +83,10 @@ public class ThreadInfoTest {
         // when
         container.executeAppUnderTest(ThreadCpuTimeDisabled.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadCpuNanos()).isEqualTo(-1);
-        assertThat(trace.getThreadBlockedNanos()).isNotEqualTo(-1);
-        assertThat(trace.getThreadWaitedNanos()).isNotEqualTo(-1);
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.threadCpuNanos().isPresent()).isFalse();
+        assertThat(header.threadBlockedNanos().isPresent()).isTrue();
+        assertThat(header.threadWaitedNanos().isPresent()).isTrue();
     }
 
     @Test
@@ -95,10 +95,10 @@ public class ThreadInfoTest {
         // when
         container.executeAppUnderTest(ThreadCpuTimeDisabledMid.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadCpuNanos()).isEqualTo(-1);
-        assertThat(trace.getThreadBlockedNanos()).isNotEqualTo(-1);
-        assertThat(trace.getThreadWaitedNanos()).isNotEqualTo(-1);
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.threadCpuNanos().isPresent()).isFalse();
+        assertThat(header.threadBlockedNanos().isPresent()).isTrue();
+        assertThat(header.threadWaitedNanos().isPresent()).isTrue();
     }
 
     @Test
@@ -107,10 +107,10 @@ public class ThreadInfoTest {
         // when
         container.executeAppUnderTest(ThreadCpuTimeEnabledMid.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadCpuNanos()).isEqualTo(-1);
-        assertThat(trace.getThreadBlockedNanos()).isNotEqualTo(-1);
-        assertThat(trace.getThreadWaitedNanos()).isNotEqualTo(-1);
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.threadCpuNanos().isPresent()).isFalse();
+        assertThat(header.threadBlockedNanos().isPresent()).isTrue();
+        assertThat(header.threadWaitedNanos().isPresent()).isTrue();
     }
 
     @Test
@@ -119,10 +119,10 @@ public class ThreadInfoTest {
         // when
         container.executeAppUnderTest(ThreadContentionMonitoringDisabled.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadCpuNanos()).isNotEqualTo(-1);
-        assertThat(trace.getThreadBlockedNanos()).isEqualTo(-1);
-        assertThat(trace.getThreadWaitedNanos()).isEqualTo(-1);
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.threadCpuNanos().isPresent()).isTrue();
+        assertThat(header.threadBlockedNanos().isPresent()).isFalse();
+        assertThat(header.threadWaitedNanos().isPresent()).isFalse();
     }
 
     @Test
@@ -131,10 +131,10 @@ public class ThreadInfoTest {
         // when
         container.executeAppUnderTest(ThreadContentionMonitoringDisabledMid.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadCpuNanos()).isNotEqualTo(-1);
-        assertThat(trace.getThreadBlockedNanos()).isEqualTo(-1);
-        assertThat(trace.getThreadWaitedNanos()).isEqualTo(-1);
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.threadCpuNanos().isPresent()).isTrue();
+        assertThat(header.threadBlockedNanos().isPresent()).isFalse();
+        assertThat(header.threadWaitedNanos().isPresent()).isFalse();
     }
 
     @Test
@@ -143,10 +143,10 @@ public class ThreadInfoTest {
         // when
         container.executeAppUnderTest(ThreadContentionMonitoringEnabledMid.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadCpuNanos()).isNotEqualTo(-1);
-        assertThat(trace.getThreadBlockedNanos()).isEqualTo(-1);
-        assertThat(trace.getThreadWaitedNanos()).isEqualTo(-1);
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.threadCpuNanos().isPresent()).isTrue();
+        assertThat(header.threadBlockedNanos().isPresent()).isFalse();
+        assertThat(header.threadWaitedNanos().isPresent()).isFalse();
     }
 
     @Test
@@ -155,10 +155,10 @@ public class ThreadInfoTest {
         // when
         container.executeAppUnderTest(BothDisabled.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadCpuNanos()).isEqualTo(-1);
-        assertThat(trace.getThreadBlockedNanos()).isEqualTo(-1);
-        assertThat(trace.getThreadWaitedNanos()).isEqualTo(-1);
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.threadCpuNanos().isPresent()).isFalse();
+        assertThat(header.threadBlockedNanos().isPresent()).isFalse();
+        assertThat(header.threadWaitedNanos().isPresent()).isFalse();
     }
 
     public static class Normal implements AppUnderTest {

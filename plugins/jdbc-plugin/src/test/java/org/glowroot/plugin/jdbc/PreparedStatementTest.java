@@ -37,7 +37,6 @@ import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.aggregate.Query;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -68,17 +67,17 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
         assertThat(query.getExecutionCount()).isEqualTo(1);
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessageText()).isEqualTo(
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.active().or(false)).isFalse();
+        assertThat(entry.message()).isEqualTo(
                 "jdbc execution: select * from employee where name like ? ['john%'] => 1 row");
     }
 
@@ -88,17 +87,17 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementQueryAndIterateOverResults.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
         assertThat(query.getExecutionCount()).isEqualTo(1);
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessageText()).isEqualTo(
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.active().or(false)).isFalse();
+        assertThat(entry.message()).isEqualTo(
                 "jdbc execution: select * from employee where name like ? ['john%'] => 1 row");
     }
 
@@ -108,17 +107,17 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementUpdate.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
         assertThat(query.getExecutionCount()).isEqualTo(1);
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessageText())
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.active().or(false)).isFalse();
+        assertThat(entry.message())
                 .isEqualTo("jdbc execution: update employee set name = ? ['nobody'] => 3 rows");
     }
 
@@ -128,17 +127,17 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementLargeParamSetFirst.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
         assertThat(query.getExecutionCount()).isEqualTo(1);
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessageText())
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.active().or(false)).isFalse();
+        assertThat(entry.message())
                 .startsWith("jdbc execution: select * from employee where name like ?");
     }
 
@@ -148,8 +147,8 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(PreparedStatementNullSql.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getEntryCount()).isZero();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.entryCount()).isZero();
     }
 
     @Test
@@ -158,19 +157,19 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementThrowing.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
         assertThat(query.getExecutionCount()).isEqualTo(1);
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessageText())
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.active().or(false)).isFalse();
+        assertThat(entry.message())
                 .isEqualTo("jdbc execution: select * from employee where name like ? ['john%']");
-        assertThat(entry.getErrorMessage()).isEqualTo("An execute failure");
+        assertThat(entry.error().get().message()).isEqualTo("An execute failure");
     }
 
     @Test
@@ -180,16 +179,16 @@ public class PreparedStatementTest {
         container.executeAppUnderTest(
                 ExecutePreparedStatementWithTonsOfBindParametersAndIterateOverResults.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
         assertThat(query.getExecutionCount()).isEqualTo(1);
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.isActive()).isFalse();
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.active().or(false)).isFalse();
         StringBuilder sql =
                 new StringBuilder("jdbc execution: select * from employee where name like ?");
         for (int i = 0; i < 200; i++) {
@@ -201,7 +200,7 @@ public class PreparedStatementTest {
         }
         sql.append("] => 1 row");
 
-        assertThat(entry.getMessageText()).isEqualTo(sql.toString());
+        assertThat(entry.message()).isEqualTo(sql.toString());
     }
 
     @Test
@@ -211,17 +210,17 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
         assertThat(query.getExecutionCount()).isEqualTo(1);
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessageText())
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.active().or(false)).isFalse();
+        assertThat(entry.message())
                 .isEqualTo("jdbc execution: select * from employee where name like ? => 1 row");
     }
 
@@ -232,17 +231,17 @@ public class PreparedStatementTest {
         // whens
         container.executeAppUnderTest(ExecutePreparedStatementWithSetNull.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
         assertThat(query.getExecutionCount()).isEqualTo(1);
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessageText()).isEqualTo(
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.active().or(false)).isFalse();
+        assertThat(entry.message()).isEqualTo(
                 "jdbc execution: insert into employee (name, misc) values (?, ?) [NULL, NULL]");
     }
 
@@ -253,7 +252,7 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementWithBinary.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(2);
         Query query1 = queries.get(0);
@@ -262,16 +261,16 @@ public class PreparedStatementTest {
         Query query2 = queries.get(1);
         assertThat(query2.isActive()).isFalse();
         assertThat(query2.getExecutionCount()).isEqualTo(1);
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
-        TraceEntry entry1 = entries.get(0);
-        assertThat(entry1.isActive()).isFalse();
-        assertThat(entry1.getMessageText()).isEqualTo(
+        Trace.Entry entry1 = entries.get(0);
+        assertThat(entry1.active().or(false)).isFalse();
+        assertThat(entry1.message()).isEqualTo(
                 "jdbc execution: insert into employee (name, misc) values (?, ?) ['jane',"
                         + " 0x00010203040506070809]");
-        TraceEntry entry2 = entries.get(1);
-        assertThat(entry2.isActive()).isFalse();
-        assertThat(entry2.getMessageText()).isEqualTo(
+        Trace.Entry entry2 = entries.get(1);
+        assertThat(entry2.active().or(false)).isFalse();
+        assertThat(entry2.message()).isEqualTo(
                 "jdbc execution: insert /**/ into employee (name, misc) values (?, ?) ['jane',"
                         + " {10 bytes}]");
     }
@@ -283,7 +282,7 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementWithBinaryUsingSetObject.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(2);
         Query query1 = queries.get(0);
@@ -292,16 +291,16 @@ public class PreparedStatementTest {
         Query query2 = queries.get(1);
         assertThat(query2.isActive()).isFalse();
         assertThat(query2.getExecutionCount()).isEqualTo(1);
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
-        TraceEntry entry1 = entries.get(0);
-        assertThat(entry1.isActive()).isFalse();
-        assertThat(entry1.getMessageText()).isEqualTo(
+        Trace.Entry entry1 = entries.get(0);
+        assertThat(entry1.active().or(false)).isFalse();
+        assertThat(entry1.message()).isEqualTo(
                 "jdbc execution: insert into employee (name, misc) values (?, ?) ['jane',"
                         + " 0x00010203040506070809]");
-        TraceEntry entry2 = entries.get(1);
-        assertThat(entry2.isActive()).isFalse();
-        assertThat(entry2.getMessageText()).isEqualTo(
+        Trace.Entry entry2 = entries.get(1);
+        assertThat(entry2.active().or(false)).isFalse();
+        assertThat(entry2.message()).isEqualTo(
                 "jdbc execution: insert /**/ into employee (name, misc) values (?, ?) ['jane',"
                         + " {10 bytes}]");
     }
@@ -313,17 +312,17 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementWithBinaryStream.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
         assertThat(query.getExecutionCount()).isEqualTo(1);
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessageText()).isEqualTo(
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.active().or(false)).isFalse();
+        assertThat(entry.message()).isEqualTo(
                 "jdbc execution: insert into employee (name, misc) values (?, ?) ['jane',"
                         + " {stream:ByteArrayInputStream}]");
     }
@@ -335,17 +334,17 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementWithCharacterStream.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
         assertThat(query.getExecutionCount()).isEqualTo(1);
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessageText()).isEqualTo(
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.active().or(false)).isFalse();
+        assertThat(entry.message()).isEqualTo(
                 "jdbc execution: insert into employee (name, misc2) values (?, ?) ['jane',"
                         + " {stream:StringReader}]");
     }
@@ -357,17 +356,17 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementWithClear.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
         assertThat(query.getExecutionCount()).isEqualTo(1);
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessageText()).isEqualTo(
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.active().or(false)).isFalse();
+        assertThat(entry.message()).isEqualTo(
                 "jdbc execution: select * from employee where name like ? ['john%'] => 1 row");
     }
 
@@ -377,17 +376,17 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementThatHasInternalGlowrootToken.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
         assertThat(query.isActive()).isFalse();
         assertThat(query.getExecutionCount()).isEqualTo(1);
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.isActive()).isFalse();
-        assertThat(entry.getMessageText()).isEqualTo(
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.active().or(false)).isFalse();
+        assertThat(entry.message()).isEqualTo(
                 "jdbc execution: select * from employee where name like ? ['{}'] => 0 rows");
     }
 

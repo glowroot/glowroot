@@ -16,19 +16,19 @@
 package org.glowroot.server.repo;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Map;
 import java.util.zip.DataFormatException;
 
-import org.immutables.value.Value;
+import com.google.common.collect.Lists;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-import org.glowroot.collector.spi.Aggregate;
-import org.glowroot.collector.spi.Trace;
+import org.glowroot.collector.spi.Constants;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
 import org.glowroot.common.model.LazyHistogram;
-import org.glowroot.common.model.MutableProfileNode;
-import org.glowroot.common.model.MutableQuery;
-import org.glowroot.common.model.MutableTimerNode;
+import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
+import org.glowroot.common.model.MutableProfileTree;
+import org.glowroot.common.model.MutableTimer;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.util.Styles;
 import org.glowroot.live.ImmutableOverviewAggregate;
@@ -37,27 +37,25 @@ import org.glowroot.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.live.LiveAggregateRepository.PercentileAggregate;
 
 @Styles.Private
-@Value.Include(Aggregate.class)
 public class MutableAggregate {
 
     private final long captureTime;
     private double totalNanos;
     private long transactionCount;
     private long errorCount;
-    private double totalCpuNanos = Trace.THREAD_DATA_NOT_AVAILABLE;
-    private double totalBlockedNanos = Trace.THREAD_DATA_NOT_AVAILABLE;
-    private double totalWaitedNanos = Trace.THREAD_DATA_NOT_AVAILABLE;
-    private double totalAllocatedBytes = Trace.THREAD_DATA_NOT_AVAILABLE;
+    private double totalCpuNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
+    private double totalBlockedNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
+    private double totalWaitedNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
+    private double totalAllocatedBytes = Constants.THREAD_DATA_NOT_AVAILABLE;
     private final LazyHistogram lazyHistogram = new LazyHistogram();
-    private final MutableTimerNode syntheticRootTimerNode =
-            MutableTimerNode.createSyntheticRootNode();
-    private final QueryCollector mergedQueries;
-    private final MutableProfileNode syntheticRootProfileNode =
-            MutableProfileNode.createSyntheticRootNode();
+    private final List<MutableTimer> rootTimers = Lists.newArrayList();
+    private QueryCollector queries;
+    // lazy instantiated to reduce memory footprint
+    private @MonotonicNonNull MutableProfileTree profileTree;
 
     public MutableAggregate(long captureTime, int maxAggregateQueriesPerQueryType) {
         this.captureTime = captureTime;
-        mergedQueries = new QueryCollector(maxAggregateQueriesPerQueryType, 0);
+        queries = new QueryCollector(maxAggregateQueriesPerQueryType, 0);
     }
 
     public void addTotalNanos(double totalNanos) {
@@ -89,33 +87,44 @@ public class MutableAggregate {
                 notAvailableAwareAdd(this.totalAllocatedBytes, totalAllocatedBytes);
     }
 
-    public void addHistogram(byte[] histogram) throws DataFormatException {
-        lazyHistogram.decodeFromByteBuffer(ByteBuffer.wrap(histogram));
+    public void mergeHistogram(Aggregate.Histogram toBeMergedHistogram) throws DataFormatException {
+        lazyHistogram.merge(toBeMergedHistogram);
     }
 
-    public void addHistogram(LazyHistogram histogram) throws DataFormatException {
-        lazyHistogram.merge(histogram);
+    public void mergeRootTimers(List<Aggregate.Timer> toBeMergedRootTimers) {
+        for (Aggregate.Timer toBeMergedRootTimer : toBeMergedRootTimers) {
+            mergeRootTimer(toBeMergedRootTimer);
+        }
     }
 
-    public void addTimers(MutableTimerNode syntheticRootTimer) throws IOException {
-        this.syntheticRootTimerNode.mergeMatchedTimer(syntheticRootTimer);
+    private void mergeRootTimer(Aggregate.Timer toBeMergedRootTimer) {
+        for (MutableTimer rootTimer : rootTimers) {
+            if (toBeMergedRootTimer.getName().equals(rootTimer.getName())) {
+                rootTimer.merge(toBeMergedRootTimer);
+                return;
+            }
+        }
+        MutableTimer rootTimer = MutableTimer.createRootTimer(toBeMergedRootTimer.getName(),
+                toBeMergedRootTimer.getExtended());
+        rootTimer.merge(toBeMergedRootTimer);
+        rootTimers.add(rootTimer);
     }
 
-    public Aggregate toAggregate() throws IOException {
-        AggregateBuilder builder = new AggregateBuilder()
-                .captureTime(captureTime)
-                .totalNanos(totalNanos)
-                .transactionCount(transactionCount)
-                .errorCount(errorCount)
-                .totalCpuNanos(totalCpuNanos)
-                .totalBlockedNanos(totalBlockedNanos)
-                .totalWaitedNanos(totalWaitedNanos)
-                .totalAllocatedBytes(totalAllocatedBytes)
-                .histogram(lazyHistogram)
-                .syntheticRootTimerNode(syntheticRootTimerNode)
-                .queries(mergedQueries.getOrderedAndTruncatedQueries());
-        if (syntheticRootProfileNode.sampleCount() > 0) {
-            builder.syntheticRootProfileNode(syntheticRootProfileNode);
+    public Aggregate toAggregate(ScratchBuffer scratchBuffer) throws IOException {
+        Aggregate.Builder builder = Aggregate.newBuilder()
+                .setCaptureTime(captureTime)
+                .setTotalNanos(totalNanos)
+                .setTransactionCount(transactionCount)
+                .setErrorCount(errorCount)
+                .setTotalCpuNanos(totalCpuNanos)
+                .setTotalBlockedNanos(totalBlockedNanos)
+                .setTotalWaitedNanos(totalWaitedNanos)
+                .setTotalAllocatedBytes(totalAllocatedBytes)
+                .setTotalNanosHistogram(lazyHistogram.toProtobuf(scratchBuffer))
+                .addAllRootTimer(getRootTimersProtobuf())
+                .addAllQueriesByType(queries.toProtobuf(true));
+        if (profileTree != null) {
+            builder.setProfileTree(profileTree.toProtobuf());
         }
         return builder.build();
     }
@@ -129,7 +138,7 @@ public class MutableAggregate {
                 .totalBlockedNanos(totalBlockedNanos)
                 .totalWaitedNanos(totalWaitedNanos)
                 .totalAllocatedBytes(totalAllocatedBytes)
-                .syntheticRootTimer(syntheticRootTimerNode)
+                .rootTimers(getRootTimersProtobuf())
                 .build();
     }
 
@@ -138,23 +147,34 @@ public class MutableAggregate {
                 .captureTime(captureTime)
                 .totalNanos(totalNanos)
                 .transactionCount(transactionCount)
-                .histogram(lazyHistogram)
+                .histogram(lazyHistogram.toProtobuf(new ScratchBuffer()))
                 .build();
     }
 
-    public void addQueries(Map<String, List<MutableQuery>> queries) throws IOException {
-        mergedQueries.mergeQueries(queries);
+    public void mergeQueries(List<Aggregate.QueriesByType> toBeMergedQueries) throws IOException {
+        queries.mergeQueries(toBeMergedQueries);
     }
 
-    public void addProfile(MutableProfileNode syntheticRootProfileNode) throws IOException {
-        this.syntheticRootProfileNode.mergeMatchedNode(syntheticRootProfileNode);
+    public void mergeProfile(ProfileTree toBeMergedProfileTree) throws IOException {
+        if (profileTree == null) {
+            profileTree = new MutableProfileTree();
+        }
+        profileTree.merge(toBeMergedProfileTree);
+    }
+
+    private List<Aggregate.Timer> getRootTimersProtobuf() {
+        List<Aggregate.Timer> rootTimers = Lists.newArrayListWithCapacity(this.rootTimers.size());
+        for (MutableTimer rootTimer : this.rootTimers) {
+            rootTimers.add(rootTimer.toProtobuf());
+        }
+        return rootTimers;
     }
 
     private static double notAvailableAwareAdd(double x, double y) {
-        if (x == Trace.THREAD_DATA_NOT_AVAILABLE) {
+        if (x == Constants.THREAD_DATA_NOT_AVAILABLE) {
             return y;
         }
-        if (y == Trace.THREAD_DATA_NOT_AVAILABLE) {
+        if (y == Constants.THREAD_DATA_NOT_AVAILABLE) {
             return x;
         }
         return x + y;

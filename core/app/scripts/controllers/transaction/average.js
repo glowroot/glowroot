@@ -57,13 +57,22 @@ glowroot.controller('TransactionAverageCtrl', [
     };
 
     function onRefreshData(data, query) {
-      // mergedAggregate.timers is always synthetic root timer
-      var syntheticRootTimer = data.mergedAggregate.syntheticRootTimer;
-      if (syntheticRootTimer.childNodes.length === 1) {
-        // strip off synthetic root node
-        data.mergedAggregate.rootTimer = syntheticRootTimer.childNodes[0];
+      var rootTimers = data.mergedAggregate.rootTimers;
+      if (rootTimers.length === 1) {
+        data.mergedAggregate.rootTimer = rootTimers[0];
       } else {
-        syntheticRootTimer.name = '<multiple root nodes>';
+        var rootTimer = {
+          name: '<multiple root nodes>',
+          totalNanos: 0,
+          count: 0,
+          childTimers: rootTimers
+        };
+        var i;
+        for (i = 0; i < rootTimers.length; i++) {
+          rootTimer.totalNanos += rootTimers[i].totalNanos;
+          rootTimer.count += rootTimers[i].count;
+        }
+        data.mergedAggregate.rootTimer = rootTimer;
       }
       $scope.transactionCounts = data.transactionCounts;
       $scope.mergedAggregate = data.mergedAggregate;
@@ -81,11 +90,11 @@ glowroot.controller('TransactionAverageCtrl', [
       function traverse(timer, nestingLevel) {
         timer.nestingLevel = nestingLevel;
         treeTimers.push(timer);
-        if (timer.childNodes) {
-          timer.childNodes.sort(function (a, b) {
+        if (timer.childTimers) {
+          timer.childTimers.sort(function (a, b) {
             return b.totalNanos - a.totalNanos;
           });
-          $.each(timer.childNodes, function (index, nestedTimer) {
+          $.each(timer.childTimers, function (index, nestedTimer) {
             traverse(nestedTimer, nestingLevel + 1);
           });
         }
@@ -116,8 +125,8 @@ glowroot.controller('TransactionAverageCtrl', [
           flattenedTimer.totalNanos += timer.totalNanos;
           flattenedTimer.count += timer.count;
         }
-        if (timer.childNodes) {
-          $.each(timer.childNodes, function (index, nestedTimer) {
+        if (timer.childTimers) {
+          $.each(timer.childTimers, function (index, nestedTimer) {
             traverse(nestedTimer, parentTimerNames.concat(timer));
           });
         }

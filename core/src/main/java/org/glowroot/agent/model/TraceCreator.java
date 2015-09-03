@@ -16,156 +16,111 @@
 package org.glowroot.agent.model;
 
 import java.io.IOException;
-import java.util.Map;
-
-import com.google.common.collect.ImmutableSetMultimap;
-import org.immutables.value.Value;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map.Entry;
 
 import org.glowroot.agent.model.ThreadInfoComponent.ThreadInfoData;
-import org.glowroot.collector.spi.Trace;
+import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
+import org.glowroot.common.model.DetailMapWriter;
 import org.glowroot.common.util.Styles;
-import org.glowroot.live.ImmutableTraceHeader;
-import org.glowroot.live.LiveTraceRepository.Existence;
-import org.glowroot.live.LiveTraceRepository.TraceHeader;
 
 @Styles.Private
-@Value.Include(Trace.class)
 public class TraceCreator {
 
     private TraceCreator() {}
 
     public static Trace createPartialTrace(Transaction transaction, long captureTime,
             long captureTick) throws IOException {
-        return createTrace(transaction, true, true, true, captureTime, captureTick);
+        return createFullTrace(transaction, true, true, captureTime, captureTick);
     }
 
     public static Trace createCompletedTrace(Transaction transaction, boolean slow)
             throws IOException {
-        return createTrace(transaction, slow, false, false, transaction.getCaptureTime(),
+        return createFullTrace(transaction, slow, false, transaction.getCaptureTime(),
                 transaction.getEndTick());
     }
 
-    public static TraceHeader createActiveTraceHeader(Transaction transaction, long captureTime,
+    public static Trace.Header createPartialTraceHeader(Transaction transaction, long captureTime,
             long captureTick) throws IOException {
-        return createTraceHeader(transaction, true, false, captureTime, captureTick);
+        // only slow transactions reach this point, so setting slow=true (second arg below)
+        return createTraceHeader(transaction, true, true, captureTime, captureTick);
     }
 
-    public static TraceHeader createCompletedTraceHeader(Transaction transaction)
+    public static Trace.Header createCompletedTraceHeader(Transaction transaction)
             throws IOException {
-        return createTraceHeader(transaction, false, false, transaction.getCaptureTime(),
+        // only slow transactions reach this point, so setting slow=true (second arg below)
+        return createTraceHeader(transaction, true, false, transaction.getCaptureTime(),
                 transaction.getEndTick());
     }
 
     // timings for traces that are still active are normalized to the capture tick in order to
     // *attempt* to present a picture of the trace at that exact tick
     // (without using synchronization to block updates to the trace while it is being read)
-    private static Trace createTrace(Transaction transaction, boolean slow, boolean active,
+    private static Trace createFullTrace(Transaction transaction, boolean slow,
             boolean partial, long captureTime, long captureTick) throws IOException {
-        TraceBuilder builder = new TraceBuilder();
-        builder.id(transaction.getId());
-        builder.partial(partial);
-        builder.slow(slow);
+        Trace.Header header =
+                createTraceHeader(transaction, slow, partial, captureTime, captureTick);
+        List<Trace.Entry> entries = transaction.getEntriesProtobuf();
+        ProfileTree profileTree = transaction.getProfileTreeProtobuf();
+        Trace.Builder builder = Trace.newBuilder()
+                .setHeader(header)
+                .addAllEntry(entries);
+        if (profileTree != null) {
+            builder.setProfileTree(profileTree);
+        }
+        return builder.build();
+    }
+
+    private static Trace.Header createTraceHeader(Transaction transaction, boolean slow,
+            boolean partial, long captureTime, long captureTick) throws IOException {
+        Trace.Header.Builder builder = Trace.Header.newBuilder();
+        builder.setId(transaction.getId());
+        builder.setPartial(partial);
+        builder.setSlow(slow);
         ErrorMessage errorMessage = transaction.getErrorMessage();
-        builder.error(errorMessage != null);
-        builder.startTime(transaction.getStartTime());
-        builder.captureTime(captureTime);
-        builder.durationNanos(captureTick - transaction.getStartTick());
-        builder.transactionType(transaction.getTransactionType());
-        builder.transactionName(transaction.getTransactionName());
-        builder.headline(transaction.getHeadline());
-        builder.user(transaction.getUser());
-        ImmutableSetMultimap<String, String> customAttributes = transaction.getCustomAttributes();
-        builder.customAttributes(customAttributes.asMap());
-        builder.customDetail(cast(transaction.getCustomDetail()));
+        builder.setStartTime(transaction.getStartTime());
+        builder.setCaptureTime(captureTime);
+        builder.setDurationNanos(captureTick - transaction.getStartTick());
+        builder.setTransactionType(transaction.getTransactionType());
+        builder.setTransactionName(transaction.getTransactionName());
+        builder.setHeadline(transaction.getHeadline());
+        builder.setUser(transaction.getUser());
+        for (Entry<String, Collection<String>> entry : transaction.getCustomAttributes().asMap()
+                .entrySet()) {
+            builder.addAttributeBuilder()
+                    .setName(entry.getKey())
+                    .addAllValue(entry.getValue());
+        }
+        builder.addAllDetailEntry(DetailMapWriter.toProtobufDetail(transaction.getCustomDetail()));
         if (errorMessage != null) {
-            builder.errorMessage(errorMessage.message());
-            builder.errorThrowable(errorMessage.throwable());
+            Trace.Error.Builder errorBuilder = builder.getErrorBuilder();
+            errorBuilder.setMessage(errorMessage.message());
+            Trace.Throwable throwable = errorMessage.throwable();
+            if (throwable != null) {
+                errorBuilder.setException(throwable);
+            }
+            errorBuilder.build();
         }
-        if (active) {
-            builder.rootTimer(transaction.getRootTimer().getSnapshot());
-        } else {
-            builder.rootTimer(transaction.getRootTimer());
-        }
+        builder.setRootTimer(transaction.getRootTimer().toProtobuf());
         ThreadInfoData threadInfo = transaction.getThreadInfo();
         if (threadInfo == null) {
-            builder.threadCpuNanos(-1);
-            builder.threadBlockedNanos(-1);
-            builder.threadWaitedNanos(-1);
-            builder.threadAllocatedBytes(-1);
+            builder.setThreadCpuNanos(-1);
+            builder.setThreadBlockedNanos(-1);
+            builder.setThreadWaitedNanos(-1);
+            builder.setThreadAllocatedBytes(-1);
         } else {
-            builder.threadCpuNanos(threadInfo.threadCpuNanos());
-            builder.threadBlockedNanos(threadInfo.threadBlockedNanos());
-            builder.threadWaitedNanos(threadInfo.threadWaitedNanos());
-            builder.threadAllocatedBytes(threadInfo.threadAllocatedBytes());
+            builder.setThreadCpuNanos(threadInfo.threadCpuNanos());
+            builder.setThreadBlockedNanos(threadInfo.threadBlockedNanos());
+            builder.setThreadWaitedNanos(threadInfo.threadWaitedNanos());
+            builder.setThreadAllocatedBytes(threadInfo.threadAllocatedBytes());
         }
-        builder.gcActivity(transaction.getGcActivity());
-        builder.entries(transaction.getEntries());
-        builder.entryLimitExceeded(transaction.isEntryLimitExceeded());
-        builder.syntheticRootProfileNode(transaction.getSyntheticRootProfileNode());
-        builder.profileLimitExceeded(transaction.isProfileLimitExceeded());
+        builder.addAllGcActivity(transaction.getGcActivity());
+        builder.setEntryCount(transaction.getEntryCount());
+        builder.setEntryLimitExceeded(transaction.isEntryLimitExceeded());
+        builder.setProfileSampleCount(transaction.getProfileSampleCount());
+        builder.setProfileSampleLimitExceeded(transaction.isProfileSampleLimitExceeded());
         return builder.build();
-    }
-
-    // timings for traces that are still active are normalized to the capture tick in order to
-    // *attempt* to present a picture of the trace at that exact tick
-    // (without using synchronization to block updates to the trace while it is being read)
-    private static TraceHeader createTraceHeader(Transaction transaction, boolean active,
-            boolean partial, long captureTime, long captureTick) throws IOException {
-        ImmutableTraceHeader.Builder builder = ImmutableTraceHeader.builder();
-        builder.id(transaction.getId());
-        builder.active(active);
-        builder.partial(partial);
-        ErrorMessage errorMessage = transaction.getErrorMessage();
-        builder.error(errorMessage != null);
-        builder.startTime(transaction.getStartTime());
-        builder.captureTime(captureTime);
-        builder.durationNanos(captureTick - transaction.getStartTick());
-        builder.transactionType(transaction.getTransactionType());
-        builder.transactionName(transaction.getTransactionName());
-        builder.headline(transaction.getHeadline());
-        builder.user(transaction.getUser());
-        ImmutableSetMultimap<String, String> customAttributes = transaction.getCustomAttributes();
-        builder.putAllCustomAttributes(customAttributes.asMap());
-        builder.customDetail(cast(transaction.getCustomDetail()));
-        if (errorMessage != null) {
-            builder.errorMessage(errorMessage.message());
-            builder.errorThrowable(errorMessage.throwable());
-        }
-        if (active) {
-            builder.rootTimer(transaction.getRootTimer().getSnapshot());
-        } else {
-            builder.rootTimer(transaction.getRootTimer());
-        }
-        ThreadInfoData threadInfo = transaction.getThreadInfo();
-        if (threadInfo != null) {
-            builder.threadCpuNanos(threadInfo.threadCpuNanos());
-            builder.threadBlockedNanos(threadInfo.threadBlockedNanos());
-            builder.threadWaitedNanos(threadInfo.threadWaitedNanos());
-            builder.threadAllocatedBytes(threadInfo.threadAllocatedBytes());
-        }
-        builder.gcActivity(transaction.getGcActivity());
-        int entryCount = transaction.getEntryCount();
-        long profileSampleCount = transaction.getProfileSampleCount();
-        builder.entryCount(entryCount);
-        builder.entryLimitExceeded(transaction.isEntryLimitExceeded());
-        if (entryCount == 0) {
-            builder.entriesExistence(Existence.NO);
-        } else {
-            builder.entriesExistence(Existence.YES);
-        }
-        builder.profileSampleCount(profileSampleCount);
-        builder.profileLimitExceeded(transaction.isProfileLimitExceeded());
-        if (transaction.getProfile() == null) {
-            builder.profileExistence(Existence.NO);
-        } else {
-            builder.profileExistence(Existence.YES);
-        }
-        return builder.build();
-    }
-
-    @SuppressWarnings("return.type.incompatible")
-    private static Map<String, ? extends Object> cast(
-            Map<String, ? extends /*@Nullable*/Object> detail) {
-        return detail;
     }
 }

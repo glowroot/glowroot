@@ -15,19 +15,11 @@
  */
 package org.glowroot.common.model;
 
-import javax.annotation.Nullable;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonMappingException;
-
-import org.glowroot.collector.spi.Query;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
 import org.glowroot.markers.UsedByJsonBinding;
 
-import static org.glowroot.common.util.ObjectMappers.checkRequiredProperty;
-
 @UsedByJsonBinding
-public class MutableQuery implements Query {
+public class MutableQuery {
 
     private final String queryText;
     private double totalNanos;
@@ -38,36 +30,20 @@ public class MutableQuery implements Query {
         this.queryText = queryText;
     }
 
-    @Override
-    @JsonProperty("queryText")
-    public String queryText() {
+    public String getQueryText() {
         return queryText;
     }
 
-    @Override
-    @JsonProperty("totalNanos")
-    public double totalNanos() {
+    public double getTotalNanos() {
         return totalNanos;
     }
 
-    @Override
-    @JsonProperty("executionCount")
-    public long executionCount() {
+    public long getExecutionCount() {
         return executionCount;
     }
 
-    @Override
-    @JsonProperty("totalRows")
-    public long totalRows() {
+    public long getTotalRows() {
         return totalRows;
-    }
-
-    public MutableQuery copy() {
-        MutableQuery copy = new MutableQuery(queryText);
-        copy.totalNanos = totalNanos;
-        copy.executionCount = executionCount;
-        copy.totalRows = totalRows;
-        return copy;
     }
 
     public void addToTotalNanos(double totalNanos) {
@@ -82,19 +58,12 @@ public class MutableQuery implements Query {
         this.totalRows += totalRows;
     }
 
-    @JsonCreator
-    static MutableQuery readValue(@JsonProperty("queryText") @Nullable String queryText,
-            @JsonProperty("totalNanos") @Nullable Double totalNanos,
-            @JsonProperty("executionCount") @Nullable Long executionCount,
-            @JsonProperty("totalRows") @Nullable Long totalRows) throws JsonMappingException {
-        checkRequiredProperty(queryText, "queryText");
-        checkRequiredProperty(totalNanos, "totalNanos");
-        checkRequiredProperty(executionCount, "executionCount");
-        checkRequiredProperty(totalRows, "totalRows");
-        MutableQuery aggregateQuery = new MutableQuery(queryText);
-        aggregateQuery.totalNanos = totalNanos;
-        aggregateQuery.executionCount = executionCount;
-        aggregateQuery.totalRows = totalRows;
-        return aggregateQuery;
+    public Aggregate.Query toProtobuf() {
+        return Aggregate.Query.newBuilder()
+                .setText(queryText)
+                .setTotalNanos(totalNanos)
+                .setExecutionCount(executionCount)
+                .setTotalRows(totalRows)
+                .build();
     }
 }

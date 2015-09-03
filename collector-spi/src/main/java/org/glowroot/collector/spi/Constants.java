@@ -15,14 +15,7 @@
  */
 package org.glowroot.collector.spi;
 
-public interface Query {
+public class Constants {
 
-    String queryText();
-
-    // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
-    double totalNanos();
-
-    long executionCount();
-
-    long totalRows();
+    public static final long THREAD_DATA_NOT_AVAILABLE = -1;
 }

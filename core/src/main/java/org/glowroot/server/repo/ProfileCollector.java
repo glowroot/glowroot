@@ -15,16 +15,16 @@
  */
 package org.glowroot.server.repo;
 
-import org.glowroot.common.model.MutableProfileNode;
+import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.common.model.MutableProfileTree;
 
 public class ProfileCollector {
 
-    private final MutableProfileNode syntheticRootNode =
-            MutableProfileNode.createSyntheticRootNode();
+    private final MutableProfileTree profileTree = new MutableProfileTree();
     private long lastCaptureTime;
 
-    public void mergeSyntheticRootNode(MutableProfileNode syntheticRootNode) {
-        this.syntheticRootNode.mergeMatchedNode(syntheticRootNode);
+    public void mergeProfileTree(ProfileTree profileTree) {
+        this.profileTree.merge(profileTree);
     }
 
     public void updateLastCaptureTime(long captureTime) {
@@ -35,7 +35,7 @@ public class ProfileCollector {
         return lastCaptureTime;
     }
 
-    public MutableProfileNode getSyntheticRootNode() {
-        return syntheticRootNode;
+    public MutableProfileTree getProfileTree() {
+        return profileTree;
     }
 }

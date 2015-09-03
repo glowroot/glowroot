@@ -54,8 +54,8 @@ public class GcActivityTest {
         // when
         container.executeAppUnderTest(GenerateTraceWithGc.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getGcActivity()).isNotEmpty();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.gcActivities()).isNotEmpty();
     }
 
     @Test
@@ -67,8 +67,8 @@ public class GcActivityTest {
         // when
         container.executeAppUnderTest(GenerateTraceWithGc.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getGcActivity()).isEmpty();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.gcActivities()).isEmpty();
     }
 
     public static class GenerateTraceWithGc implements AppUnderTest, TraceMarker {

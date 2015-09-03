@@ -5,7 +5,7 @@
 {{/if}}
 {{#if active}}
   <div>
-    <strong style="font-size: 16px;">ACTIVE {{#if partial}}/ PARTIAL{{/if}}</strong>
+    <strong style="font-size: 16px;">ACTIVE</strong>
   </div>
 {{^}}
   {{#if partial}}
@@ -33,13 +33,13 @@
 <div class="gt-trace-attr-value">{{transactionName}}</div>
 {{#if error}}
   <div class="gt-trace-attr-name">Error:&nbsp;</div>
-  <div class="gt-trace-attr-value">{{errorMessage}}</div>
-  {{#if errorThrowable}}
+  <div class="gt-trace-attr-value">{{error.message}}</div>
+  {{#if error.exception}}
     <div class="gt-trace-exception-indent">
       <span class="gt-inline-block gt-unexpanded-content gt-link-color">exception</span>
       {{! using span so background will stretch beyond page border if needed }}
       <div class="gt-inline-block gt-expanded-content gt-nowrap gt-with-clip hide">
-        {{{exceptionHtml errorThrowable}}}
+        {{{exceptionHtml error.exception}}}
         <i class="fa fa-clipboard gt-clip"></i>
       </div>
     </div>
@@ -57,11 +57,13 @@
   <div class="gt-trace-attr-name">User:&nbsp;</div>
   <div class="gt-trace-attr-value">{{user}}</div>
 {{/if}}
-{{#eachKeyValuePair customAttributes}}
+{{#eachKeyValuePair attributes}}
   <div class="gt-trace-attr-name">{{key}}:&nbsp;</div>
   <div class="gt-trace-attr-value">{{value}}</div>
 {{/eachKeyValuePair}}
-{{{customDetailHtml customDetail}}}
+{{#if detail}}
+  {{{headerDetailHtml detail}}}
+{{/if}}
 <div class="gt-bold">
   Breakdown:
 </div>

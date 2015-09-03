@@ -22,12 +22,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Doubles;
 
-import org.glowroot.collector.spi.Query;
+import org.glowroot.agent.model.QueryData;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Query;
 
 public class QueryCollector {
 
@@ -51,39 +53,45 @@ public class QueryCollector {
         return lastCaptureTime;
     }
 
-    public Map<String, List<MutableQuery>> getOrderedAndTruncatedQueries() {
+    public List<Aggregate.QueriesByType> toProtobuf(boolean orderAndLimit) {
         if (queries.isEmpty()) {
-            return ImmutableMap.of();
+            return ImmutableList.of();
         }
-        Map<String, List<MutableQuery>> mergedQueries = Maps.newHashMap();
+        List<Aggregate.QueriesByType> queriesByType = Lists.newArrayList();
         for (Entry<String, Map<String, MutableQuery>> entry : queries.entrySet()) {
-            List<MutableQuery> aggregateQueries = Lists.newArrayList(entry.getValue().values());
-            order(aggregateQueries);
-            if (aggregateQueries.size() > limit) {
-                aggregateQueries = aggregateQueries.subList(0, limit);
+            List<Query> queries = Lists.newArrayListWithCapacity(entry.getValue().values().size());
+            for (MutableQuery query : entry.getValue().values()) {
+                queries.add(query.toProtobuf());
             }
-            mergedQueries.put(entry.getKey(), aggregateQueries);
+            if (orderAndLimit) {
+                order(queries);
+                if (queries.size() > limit) {
+                    queries = queries.subList(0, limit);
+                }
+            }
+            queriesByType.add(Aggregate.QueriesByType.newBuilder()
+                    .setType(entry.getKey())
+                    .addAllQuery(queries)
+                    .build());
         }
-        return mergedQueries;
+        return queriesByType;
     }
 
-    // not using static ObjectMapper because ObjectMapper caches keys, and in this particular case
-    // the keys are (often very large) sql queries and have seen it retain 26mb worth of memory
-    public void mergeQueries(Map<String, List<MutableQuery>> toBeMergedQueries) throws IOException {
-        for (Entry<String, List<MutableQuery>> entry : toBeMergedQueries.entrySet()) {
-            String queryType = entry.getKey();
+    public void mergeQueries(List<Aggregate.QueriesByType> toBeMergedQueries) throws IOException {
+        for (Aggregate.QueriesByType toBeMergedQueriesByType : toBeMergedQueries) {
+            String queryType = toBeMergedQueriesByType.getType();
             Map<String, MutableQuery> queriesForQueryType = queries.get(queryType);
             if (queriesForQueryType == null) {
                 queriesForQueryType = Maps.newHashMap();
                 queries.put(queryType, queriesForQueryType);
             }
-            for (MutableQuery query : entry.getValue()) {
+            for (Query query : toBeMergedQueriesByType.getQueryList()) {
                 mergeQuery(query, queriesForQueryType);
             }
         }
     }
 
-    public void mergeQuery(String queryType, Query query) {
+    public void mergeQuery(String queryType, QueryData query) {
         Map<String, MutableQuery> queriesForQueryType = queries.get(queryType);
         if (queriesForQueryType == null) {
             queriesForQueryType = Maps.newHashMap();
@@ -92,40 +100,43 @@ public class QueryCollector {
         mergeQuery(query, queriesForQueryType);
     }
 
-    public Map<String, List<MutableQuery>> copy() {
-        Map<String, List<MutableQuery>> copy = Maps.newHashMapWithExpectedSize(queries.size());
-        for (Entry<String, Map<String, MutableQuery>> entry : queries.entrySet()) {
-            Map<String, MutableQuery> values = entry.getValue();
-            List<MutableQuery> list = Lists.newArrayListWithCapacity(values.size());
-            for (MutableQuery item : values.values()) {
-                list.add(item.copy());
-            }
-            copy.put(entry.getKey(), list);
-        }
-        return copy;
-    }
-
-    private void mergeQuery(Query query, Map<String, MutableQuery> queriesForQueryType) {
-        MutableQuery aggregateQuery = queriesForQueryType.get(query.queryText());
+    private void mergeQuery(Aggregate.Query query, Map<String, MutableQuery> queriesForQueryType) {
+        MutableQuery aggregateQuery = queriesForQueryType.get(query.getText());
         if (aggregateQuery == null) {
             if (maxMultiplierWhileBuilding != 0
                     && queriesForQueryType.size() >= limit * maxMultiplierWhileBuilding) {
                 return;
             }
-            aggregateQuery = new MutableQuery(query.queryText());
-            queriesForQueryType.put(query.queryText(), aggregateQuery);
+            aggregateQuery = new MutableQuery(query.getText());
+            queriesForQueryType.put(query.getText(), aggregateQuery);
         }
-        aggregateQuery.addToTotalNanos(query.totalNanos());
-        aggregateQuery.addToExecutionCount(query.executionCount());
-        aggregateQuery.addToTotalRows(query.totalRows());
+        aggregateQuery.addToTotalNanos(query.getTotalNanos());
+        aggregateQuery.addToExecutionCount(query.getExecutionCount());
+        aggregateQuery.addToTotalRows(query.getTotalRows());
     }
 
-    private void order(List<MutableQuery> aggregateQueries) {
+    private void mergeQuery(QueryData query, Map<String, MutableQuery> queriesForQueryType) {
+        MutableQuery aggregateQuery = queriesForQueryType.get(query.getQueryText());
+        if (aggregateQuery == null) {
+            if (maxMultiplierWhileBuilding != 0
+                    && queriesForQueryType.size() >= limit * maxMultiplierWhileBuilding) {
+                return;
+            }
+            aggregateQuery = new MutableQuery(query.getQueryText());
+            queriesForQueryType.put(query.getQueryText(), aggregateQuery);
+        }
+        aggregateQuery.addToTotalNanos(query.getTotalNanos());
+        aggregateQuery.addToExecutionCount(query.getExecutionCount());
+        aggregateQuery.addToTotalRows(query.getTotalRows());
+    }
+
+    private void order(List<Query> queries) {
         // reverse sort by total
-        Collections.sort(aggregateQueries, new Comparator<MutableQuery>() {
+        Collections.sort(queries, new Comparator<Query>() {
             @Override
-            public int compare(MutableQuery aggregateQuery1, MutableQuery aggregateQuery2) {
-                return Doubles.compare(aggregateQuery2.totalNanos(), aggregateQuery1.totalNanos());
+            public int compare(Query aggregateQuery1, Query aggregateQuery2) {
+                return Doubles.compare(aggregateQuery2.getTotalNanos(),
+                        aggregateQuery1.getTotalNanos());
             }
         });
     }

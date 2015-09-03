@@ -69,10 +69,11 @@ public interface TransactionService {
      * {@link TraceEntry#end()} on the dummy entry ends the timer. If {@code endWithError} is called
      * on the dummy entry, then the dummy entry will be escalated to a real entry. If
      * {@link TraceEntry#endWithStackTrace(long, TimeUnit)} is called on the dummy entry and the
-     * dummy entry duration exceeds the specified threshold, then the dummy entry will be escalated
-     * to a real entry. If {@code endWithError} is called on the dummy entry, then the dummy entry
-     * will be escalated to a real entry. A hard cap ( {@code maxTraceEntriesPerTransaction * 2}) on
-     * the total number of (real) entries is applied when escalating dummy entries to real entries.
+     * dummy entry total time exceeds the specified threshold, then the dummy entry will be
+     * escalated to a real entry. If {@code endWithError} is called on the dummy entry, then the
+     * dummy entry will be escalated to a real entry. A hard cap (
+     * {@code maxTraceEntriesPerTransaction * 2}) on the total number of (real) entries is applied
+     * when escalating dummy entries to real entries.
      * 
      * If there is no current transaction, this method does nothing, and returns a no-op instance of
      * {@link TraceEntry}.
@@ -104,8 +105,8 @@ public interface TransactionService {
     Timer startTimer(TimerName timerName);
 
     /**
-     * Adds a trace entry with the specified error message and duration zero. It does not set the
-     * error attribute on the transaction, which must be done with
+     * Adds a trace entry with the specified error message and total time of zero. It does not set
+     * the error attribute on the transaction, which must be done with
      * {@link TransactionService#setTransactionError} or with {@code endWithError} on the root
      * entry.
      * 
@@ -121,8 +122,8 @@ public interface TransactionService {
     void addErrorEntry(Throwable t);
 
     /**
-     * Adds a trace entry with the specified error message and duration zero. It does not set the
-     * error attribute on the transaction, which must be done with
+     * Adds a trace entry with the specified error message and total time of zero. It does not set
+     * the error attribute on the transaction, which must be done with
      * {@link TransactionService#setTransactionError} or with {@code endWithError} on the root
      * entry.
      * 
@@ -140,8 +141,8 @@ public interface TransactionService {
     void addErrorEntry(@Nullable String message);
 
     /**
-     * Adds a trace entry with the specified error message and duration zero. It does not set the
-     * error attribute on the transaction, which must be done with
+     * Adds a trace entry with the specified error message and total time of zero. It does not set
+     * the error attribute on the transaction, which must be done with
      * {@link TransactionService#setTransactionError} or with {@code endWithError} on the root
      * entry.
      * 

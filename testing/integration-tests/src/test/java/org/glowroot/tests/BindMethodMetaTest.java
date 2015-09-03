@@ -23,11 +23,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
+import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,26 +55,26 @@ public class BindMethodMetaTest {
         // when
         container.executeAppUnderTest(ShouldCoverBindMethodMetas.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries.get(0).getMessageText()).isEqualTo("Coverage get: false");
-        assertThat(entries.get(1).getMessageText()).isEqualTo("Coverage get: 100");
-        assertThat(entries.get(2).getMessageText()).isEqualTo("Coverage get: b");
-        assertThat(entries.get(3).getMessageText()).isEqualTo("Coverage get: 300");
-        assertThat(entries.get(4).getMessageText()).isEqualTo("Coverage get: 400");
-        assertThat(entries.get(5).getMessageText()).isEqualTo("Coverage get: 500");
-        assertThat(entries.get(6).getMessageText()).isEqualTo("Coverage get: 600.0");
-        assertThat(entries.get(7).getMessageText()).isEqualTo("Coverage get: 700.0");
-        assertThat(entries.get(8).getMessageText()).isEqualTo("Coverage get: [1, 2, 3]");
-        assertThat(entries.get(9).getMessageText()).isEqualTo("Coverage put: true");
-        assertThat(entries.get(10).getMessageText()).isEqualTo("Coverage put: 101");
-        assertThat(entries.get(11).getMessageText()).isEqualTo("Coverage put: c");
-        assertThat(entries.get(12).getMessageText()).isEqualTo("Coverage put: 303");
-        assertThat(entries.get(13).getMessageText()).isEqualTo("Coverage put: 404");
-        assertThat(entries.get(14).getMessageText()).isEqualTo("Coverage put: 505");
-        assertThat(entries.get(15).getMessageText()).isEqualTo("Coverage put: 606.0");
-        assertThat(entries.get(16).getMessageText()).isEqualTo("Coverage put: 707.0");
-        assertThat(entries.get(17).getMessageText()).isEqualTo("Coverage put: [7, 8, 9]");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        assertThat(entries.get(0).message()).isEqualTo("Coverage get: false");
+        assertThat(entries.get(1).message()).isEqualTo("Coverage get: 100");
+        assertThat(entries.get(2).message()).isEqualTo("Coverage get: b");
+        assertThat(entries.get(3).message()).isEqualTo("Coverage get: 300");
+        assertThat(entries.get(4).message()).isEqualTo("Coverage get: 400");
+        assertThat(entries.get(5).message()).isEqualTo("Coverage get: 500");
+        assertThat(entries.get(6).message()).isEqualTo("Coverage get: 600.0");
+        assertThat(entries.get(7).message()).isEqualTo("Coverage get: 700.0");
+        assertThat(entries.get(8).message()).isEqualTo("Coverage get: [1, 2, 3]");
+        assertThat(entries.get(9).message()).isEqualTo("Coverage put: true");
+        assertThat(entries.get(10).message()).isEqualTo("Coverage put: 101");
+        assertThat(entries.get(11).message()).isEqualTo("Coverage put: c");
+        assertThat(entries.get(12).message()).isEqualTo("Coverage put: 303");
+        assertThat(entries.get(13).message()).isEqualTo("Coverage put: 404");
+        assertThat(entries.get(14).message()).isEqualTo("Coverage put: 505");
+        assertThat(entries.get(15).message()).isEqualTo("Coverage put: 606.0");
+        assertThat(entries.get(16).message()).isEqualTo("Coverage put: 707.0");
+        assertThat(entries.get(17).message()).isEqualTo("Coverage put: [7, 8, 9]");
     }
 
     public static class ShouldCoverBindMethodMetas implements AppUnderTest, TraceMarker {

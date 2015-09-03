@@ -47,7 +47,7 @@ public interface LiveThreadDumpService {
         @Nullable
         String transactionName();
         @Nullable
-        Long transactionDuration();
+        Long transactionTotalNanos();
         @Nullable
         String traceId();
     }

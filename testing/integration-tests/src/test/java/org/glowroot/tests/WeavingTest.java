@@ -23,10 +23,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
+import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -55,11 +54,11 @@ public class WeavingTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getHeadline()).isEqualTo("Level One");
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessageText()).isEqualTo("Level Two");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.headline()).isEqualTo("Level One");
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.message()).isEqualTo("Level Two");
     }
 
     public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest {

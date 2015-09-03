@@ -26,11 +26,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
+import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
 import org.glowroot.container.config.PluginConfig;
-import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -126,9 +126,9 @@ public class PluginConfigTest {
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getHeadline()).isEqualTo("Level 1");
-        assertThat(trace.getTransactionName()).isEqualTo("basic test");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.headline()).isEqualTo("Level 1");
+        assertThat(header.transactionName()).isEqualTo("basic test");
     }
 
     @Test
@@ -141,9 +141,9 @@ public class PluginConfigTest {
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getHeadline()).isEqualTo("Level One*");
-        assertThat(trace.getTransactionName()).isEqualTo("basic test");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.headline()).isEqualTo("Level One*");
+        assertThat(header.transactionName()).isEqualTo("basic test");
     }
 
     public static class SimpleApp implements AppUnderTest {

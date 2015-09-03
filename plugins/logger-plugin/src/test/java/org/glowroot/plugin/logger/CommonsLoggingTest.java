@@ -30,7 +30,6 @@ import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -63,13 +62,13 @@ public class CommonsLoggingTest {
         // when
         container.executeAppUnderTest(ShouldLog.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(trace.getErrorMessage()).isEqualTo("efg");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        assertThat(header.error().get().message()).isEqualTo("efg");
         assertThat(entries).hasSize(3);
-        assertThat(entries.get(0).getMessageText()).isEqualTo("log warn: def");
-        assertThat(entries.get(1).getMessageText()).isEqualTo("log error: efg");
-        assertThat(entries.get(2).getMessageText()).isEqualTo("log fatal: fgh");
+        assertThat(entries.get(0).message()).isEqualTo("log warn: def");
+        assertThat(entries.get(1).message()).isEqualTo("log error: efg");
+        assertThat(entries.get(2).message()).isEqualTo("log fatal: fgh");
     }
 
     @Test
@@ -80,28 +79,28 @@ public class CommonsLoggingTest {
         // when
         container.executeAppUnderTest(ShouldLogWithThrowable.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(trace.getErrorMessage()).isEqualTo("efg_");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        assertThat(header.error().get().message()).isEqualTo("efg_");
         assertThat(entries).hasSize(3);
 
-        TraceEntry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessageText()).isEqualTo("log warn: def_");
-        assertThat(warnEntry.getErrorMessage()).isEqualTo("456");
-        assertThat(warnEntry.getErrorThrowable().getStackTrace().get(0).getMethodName())
-                .isEqualTo("traceMarker");
+        Trace.Entry warnEntry = entries.get(0);
+        assertThat(warnEntry.message()).isEqualTo("log warn: def_");
+        assertThat(warnEntry.error().get().message()).isEqualTo("456");
+        assertThat(warnEntry.error().get().exception().get().stackTraceElements().get(0))
+                .contains("traceMarker");
 
-        TraceEntry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessageText()).isEqualTo("log error: efg_");
-        assertThat(errorEntry.getErrorMessage()).isEqualTo("567");
-        assertThat(errorEntry.getErrorThrowable().getStackTrace().get(0).getMethodName())
-                .isEqualTo("traceMarker");
+        Trace.Entry errorEntry = entries.get(1);
+        assertThat(errorEntry.message()).isEqualTo("log error: efg_");
+        assertThat(errorEntry.error().get().message()).isEqualTo("567");
+        assertThat(errorEntry.error().get().exception().get().stackTraceElements().get(0))
+                .contains("traceMarker");
 
-        TraceEntry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.getMessageText()).isEqualTo("log fatal: fgh_");
-        assertThat(fatalEntry.getErrorMessage()).isEqualTo("678");
-        assertThat(fatalEntry.getErrorThrowable().getStackTrace().get(0).getMethodName())
-                .isEqualTo("traceMarker");
+        Trace.Entry fatalEntry = entries.get(2);
+        assertThat(fatalEntry.message()).isEqualTo("log fatal: fgh_");
+        assertThat(fatalEntry.error().get().message()).isEqualTo("678");
+        assertThat(fatalEntry.error().get().exception().get().stackTraceElements().get(0))
+                .contains("traceMarker");
     }
 
     @Test
@@ -112,20 +111,20 @@ public class CommonsLoggingTest {
         // when
         container.executeAppUnderTest(ShouldLogWithNullThrowable.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(trace.getErrorMessage()).isEqualTo("efg_");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        assertThat(header.error().get().message()).isEqualTo("efg_");
         assertThat(entries).hasSize(3);
 
-        TraceEntry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessageText()).isEqualTo("log warn: def_");
-        assertThat(warnEntry.getErrorMessage()).isEqualTo("def_");
-        TraceEntry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessageText()).isEqualTo("log error: efg_");
-        assertThat(errorEntry.getErrorMessage()).isEqualTo("efg_");
-        TraceEntry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.getMessageText()).isEqualTo("log fatal: fgh_");
-        assertThat(fatalEntry.getErrorMessage()).isEqualTo("fgh_");
+        Trace.Entry warnEntry = entries.get(0);
+        assertThat(warnEntry.message()).isEqualTo("log warn: def_");
+        assertThat(warnEntry.error().get().message()).isEqualTo("def_");
+        Trace.Entry errorEntry = entries.get(1);
+        assertThat(errorEntry.message()).isEqualTo("log error: efg_");
+        assertThat(errorEntry.error().get().message()).isEqualTo("efg_");
+        Trace.Entry fatalEntry = entries.get(2);
+        assertThat(fatalEntry.message()).isEqualTo("log fatal: fgh_");
+        assertThat(fatalEntry.error().get().message()).isEqualTo("fgh_");
     }
 
     @Test
@@ -137,8 +136,8 @@ public class CommonsLoggingTest {
         // when
         container.executeAppUnderTest(ShouldLog.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getEntryCount()).isZero();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.entryCount()).isZero();
     }
 
     public static class ShouldLog implements AppUnderTest, TraceMarker {

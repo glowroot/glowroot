@@ -68,12 +68,12 @@ class TracePointJsonService {
     String getPoints(String queryString) throws Exception {
         TracePointRequest request = QueryStrings.decode(queryString, TracePointRequest.class);
 
-        double durationMillisLow = request.durationMillisLow();
-        long durationNanosLow = (long) Math.floor(durationMillisLow * NANOSECONDS_PER_MILLISECOND);
+        double durationMillisLow = request.responseTimeMillisLow();
+        long durationNanosLow = Math.round(durationMillisLow * NANOSECONDS_PER_MILLISECOND);
         Long durationNanosHigh = null;
-        Double durationMillisHigh = request.durationMillisHigh();
+        Double durationMillisHigh = request.responseTimeMillisHigh();
         if (durationMillisHigh != null) {
-            durationNanosHigh = (long) Math.ceil(durationMillisHigh * NANOSECONDS_PER_MILLISECOND);
+            durationNanosHigh = Math.round(durationMillisHigh * NANOSECONDS_PER_MILLISECOND);
         }
 
         TracePointQuery query = ImmutableTracePointQuery.builder()
@@ -265,8 +265,8 @@ class TracePointJsonService {
 
         public abstract long from();
         public abstract long to();
-        public abstract double durationMillisLow();
-        public abstract @Nullable Double durationMillisHigh();
+        public abstract double responseTimeMillisLow();
+        public abstract @Nullable Double responseTimeMillisHigh();
         public abstract @Nullable String transactionType();
         public abstract @Nullable StringComparator transactionNameComparator();
         public abstract @Nullable String transactionName();

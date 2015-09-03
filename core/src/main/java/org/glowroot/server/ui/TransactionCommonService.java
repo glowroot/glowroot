@@ -15,27 +15,21 @@
  */
 package org.glowroot.server.ui;
 
-import java.util.ArrayDeque;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 
-import org.glowroot.common.model.MutableProfileNode;
-import org.glowroot.common.model.MutableQuery;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.common.model.MutableProfileTree;
 import org.glowroot.common.model.QueryCollector;
-import org.glowroot.common.util.Traverser;
 import org.glowroot.live.ImmutableOverallSummary;
 import org.glowroot.live.ImmutableTransactionSummary;
 import org.glowroot.live.LiveAggregateRepository;
@@ -247,28 +241,24 @@ class TransactionCommonService {
     }
 
     // from is non-inclusive
-    MutableProfileNode getMergedProfile(String transactionType, @Nullable String transactionName,
+    MutableProfileTree getMergedProfile(String transactionType, @Nullable String transactionName,
             long from, long to, List<String> includes, List<String> excludes,
             double truncateLeafPercentage) throws Exception {
-        MutableProfileNode syntheticRootNode =
+        MutableProfileTree profileTree =
                 getMergedProfile(transactionType, transactionName, from, to);
-        long syntheticRootNodeSampleCount = syntheticRootNode.sampleCount();
         if (!includes.isEmpty() || !excludes.isEmpty()) {
-            filter(syntheticRootNode, includes, excludes);
+            profileTree.filter(includes, excludes);
         }
         if (truncateLeafPercentage != 0) {
-            int minSamples =
-                    (int) Math.ceil(syntheticRootNode.sampleCount() * truncateLeafPercentage);
+            int minSamples = (int) Math.ceil(profileTree.getSampleCount() * truncateLeafPercentage);
             // don't truncate any root nodes
-            truncateLeafs(syntheticRootNode.childNodes(), minSamples);
+            profileTree.truncateLeafs(minSamples);
         }
-        // retain original sample count for synthetic root node in case of filtered profile
-        syntheticRootNode.setSampleCount(syntheticRootNodeSampleCount);
-        return syntheticRootNode;
+        return profileTree;
     }
 
     // from is non-inclusive
-    Map<String, List<MutableQuery>> getMergedQueries(String transactionType,
+    List<Aggregate.QueriesByType> getMergedQueries(String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
         return getMergedQueries(transactionType, transactionName, from, to,
                 configRepository.getAdvancedConfig().maxAggregateQueriesPerQueryType());
@@ -306,11 +296,11 @@ class TransactionCommonService {
     // result as opposed to charted over time period
     //
     // from is non-inclusive
-    private MutableProfileNode getMergedProfile(String transactionType,
+    private MutableProfileTree getMergedProfile(String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
         int initialRollupLevel = aggregateRepository.getRollupLevelForView(from, to);
-        LiveResult<MutableProfileNode> liveResult =
-                liveAggregateRepository.getLiveProfile(transactionType, transactionName, from, to);
+        LiveResult<ProfileTree> liveResult = liveAggregateRepository
+                .getLiveProfileTree(transactionType, transactionName, from, to);
         // -1 since query 'to' is inclusive
         // this way don't need to worry about de-dupping between live and stored aggregates
         long revisedTo = liveResult == null ? to : liveResult.initialCaptureTime() - 1;
@@ -326,11 +316,11 @@ class TransactionCommonService {
             }
         }
         if (liveResult != null) {
-            for (MutableProfileNode syntheticRootNode : liveResult.get()) {
-                mergedProfile.mergeSyntheticRootNode(syntheticRootNode);
+            for (ProfileTree profileTree : liveResult.get()) {
+                mergedProfile.mergeProfileTree(profileTree);
             }
         }
-        return mergedProfile.getSyntheticRootNode();
+        return mergedProfile.getProfileTree();
     }
 
     // this method may return some rolled up query aggregates and some non-rolled up
@@ -339,11 +329,11 @@ class TransactionCommonService {
     // result as opposed to charted over time period
     //
     // from is non-inclusive
-    private Map<String, List<MutableQuery>> getMergedQueries(String transactionType,
+    private List<Aggregate.QueriesByType> getMergedQueries(String transactionType,
             @Nullable String transactionName, long from, long to,
             int maxAggregateQueriesPerQueryType) throws Exception {
         int initialRollupLevel = aggregateRepository.getRollupLevelForView(from, to);
-        LiveResult<Map<String, List<MutableQuery>>> liveResult =
+        LiveResult<List<Aggregate.QueriesByType>> liveResult =
                 liveAggregateRepository.getLiveQueries(transactionType, transactionName, from, to);
         // -1 since query 'to' is inclusive
         // this way don't need to worry about de-dupping between live and stored aggregates
@@ -360,11 +350,11 @@ class TransactionCommonService {
             }
         }
         if (liveResult != null) {
-            for (Map<String, List<MutableQuery>> queries : liveResult.get()) {
+            for (List<Aggregate.QueriesByType> queries : liveResult.get()) {
                 mergedQueries.mergeQueries(queries);
             }
         }
-        return mergedQueries.getOrderedAndTruncatedQueries();
+        return mergedQueries.toProtobuf(true);
     }
 
     // from is non-inclusive
@@ -424,7 +414,7 @@ class TransactionCommonService {
                     .addTotalWaitedNanos(nonRolledUpOverviewAggregate.totalWaitedNanos());
             currMergedAggregate
                     .addTotalAllocatedBytes(nonRolledUpOverviewAggregate.totalAllocatedBytes());
-            currMergedAggregate.addTimers(nonRolledUpOverviewAggregate.syntheticRootTimer());
+            currMergedAggregate.mergeRootTimers(nonRolledUpOverviewAggregate.rootTimers());
         }
         if (currMergedAggregate != null) {
             // roll up final one
@@ -457,7 +447,7 @@ class TransactionCommonService {
             currMergedAggregate.addTotalNanos(nonRolledUpPercentileAggregate.totalNanos());
             currMergedAggregate
                     .addTransactionCount(nonRolledUpPercentileAggregate.transactionCount());
-            currMergedAggregate.addHistogram(nonRolledUpPercentileAggregate.histogram());
+            currMergedAggregate.mergeHistogram(nonRolledUpPercentileAggregate.histogram());
         }
         if (currMergedAggregate != null) {
             // roll up final one
@@ -510,48 +500,6 @@ class TransactionCommonService {
                 .build();
     }
 
-    // using non-recursive algorithm to avoid stack overflow error on deep profiles
-    private static void filter(MutableProfileNode syntheticRootNode, List<String> includes,
-            List<String> excludes) {
-        for (String include : includes) {
-            if (syntheticRootNode.isMatched()) {
-                new ProfileResetMatches(syntheticRootNode).traverse();
-            }
-            new ProfileFilterer(syntheticRootNode, include, false).traverse();
-        }
-        for (String exclude : excludes) {
-            // reset is only needed prior to first exclusion, since exclusions won't leave behind
-            // any matched nodes
-            if (syntheticRootNode.isMatched()) {
-                new ProfileResetMatches(syntheticRootNode).traverse();
-            }
-            new ProfileFilterer(syntheticRootNode, exclude, true).traverse();
-        }
-    }
-
-    // using non-recursive algorithm to avoid stack overflow error on deep profiles
-    private static void truncateLeafs(Iterable<MutableProfileNode> rootNodes, int minSamples) {
-        Deque<MutableProfileNode> toBeVisited = new ArrayDeque<MutableProfileNode>();
-        for (MutableProfileNode rootNode : rootNodes) {
-            toBeVisited.add(rootNode);
-        }
-        MutableProfileNode node;
-        while ((node = toBeVisited.poll()) != null) {
-            for (Iterator<MutableProfileNode> i = node.childNodes().iterator(); i.hasNext();) {
-                MutableProfileNode childNode = i.next();
-                if (childNode.sampleCount() < minSamples) {
-                    i.remove();
-                    // TODO capture sampleCount per timerName of non-ellipsed structure
-                    // and use this in UI dropdown filter of timer names
-                    // (currently sampleCount per timerName of ellipsed structure is used)
-                    node.incrementEllipsedSampleCount((int) childNode.sampleCount());
-                } else {
-                    toBeVisited.add(childNode);
-                }
-            }
-        }
-    }
-
     private static List<TransactionSummary> sortTransactionSummaries(
             Iterable<TransactionSummary> transactionSummaries,
             TransactionSummarySortOrder sortOrder) {
@@ -567,122 +515,4 @@ class TransactionCommonService {
         }
     }
 
-    private static class ProfileFilterer extends Traverser<MutableProfileNode, RuntimeException> {
-
-        private final String filterTextUpper;
-        private final boolean exclusion;
-
-        private ProfileFilterer(MutableProfileNode rootNode, String filterText, boolean exclusion) {
-            super(rootNode);
-            this.filterTextUpper = filterText.toUpperCase(Locale.ENGLISH);
-            this.exclusion = exclusion;
-        }
-
-        @Override
-        public Collection<? extends MutableProfileNode> visit(MutableProfileNode node) {
-            if (isMatch(node)) {
-                node.setMatched();
-                // no need to visit children
-                return ImmutableSet.of();
-            }
-            return node.childNodes();
-        }
-
-        @Override
-        public void revisitAfterChildren(MutableProfileNode node) {
-            if (node.isMatched()) {
-                // if exclusion then node will be removed by parent
-                // if not exclusion then keep node and all children
-                return;
-            }
-            if (node.isEmpty()) {
-                return;
-            }
-            if (removeNode(node)) {
-                // node will be removed by parent
-                if (exclusion) {
-                    node.setMatched();
-                }
-                return;
-            }
-            if (!exclusion) {
-                node.setMatched();
-            }
-            // node is a partial match, need to filter it out
-            long filteredSampleCount = 0;
-            for (Iterator<MutableProfileNode> i = node.iterator(); i.hasNext();) {
-                MutableProfileNode childNode = i.next();
-                if (exclusion == !childNode.isMatched()) {
-                    filteredSampleCount += childNode.sampleCount();
-                } else {
-                    i.remove();
-                }
-            }
-            node.setSampleCount(filteredSampleCount);
-        }
-
-        private boolean isMatch(MutableProfileNode node) {
-            StackTraceElement stackTraceElement = node.stackTraceElement();
-            if (stackTraceElement == null) {
-                return false;
-            }
-            String stackTraceElementUpper =
-                    stackTraceElement.toString().toUpperCase(Locale.ENGLISH);
-            if (stackTraceElementUpper.contains(filterTextUpper)) {
-                return true;
-            }
-            String leafThreadState = node.leafThreadState();
-            if (leafThreadState != null) {
-                String leafThreadStateUpper = leafThreadState.toUpperCase(Locale.ENGLISH);
-                if (leafThreadStateUpper.contains(filterTextUpper)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private boolean removeNode(MutableProfileNode node) {
-            if (node.isSyntheticRootNode()) {
-                return false;
-            }
-            if (exclusion) {
-                return hasOnlyMatchedChildren(node);
-            } else {
-                return hasNoMatchedChildren(node);
-            }
-        }
-
-        private boolean hasOnlyMatchedChildren(MutableProfileNode node) {
-            for (MutableProfileNode childNode : node) {
-                if (!childNode.isMatched()) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        private boolean hasNoMatchedChildren(MutableProfileNode node) {
-            for (MutableProfileNode childNode : node) {
-                if (childNode.isMatched()) {
-                    return false;
-                }
-            }
-            return true;
-        }
-    }
-
-    private static class ProfileResetMatches
-            extends Traverser<MutableProfileNode, RuntimeException> {
-
-        private ProfileResetMatches(MutableProfileNode rootNode) {
-            super(rootNode);
-        }
-
-        @Override
-        public Collection<? extends MutableProfileNode> visit(MutableProfileNode node)
-                throws RuntimeException {
-            node.resetMatched();
-            return node.childNodes();
-        }
-    }
 }

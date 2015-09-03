@@ -102,7 +102,7 @@ case "$1" in
                  # code coverage for Slf4jTest and Slf4jMarkerTest
                  # (see comments in those classes for more detail)
                  mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent package \
-                                 -pl api,plugin-api,collector-spi,core,plugins/logger-plugin \
+                                 -pl api,plugin-api,core,plugins/logger-plugin \
                                  -Dglowroot.test.harness=javaagent \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
                                  -Djacoco.propertyName=jacocoArgLine \
@@ -112,7 +112,7 @@ case "$1" in
                  # the sonar.jdbc.password system property is set in the pom.xml using the
                  # environment variable SONAR_DB_PASSWORD (instead of setting the system
                  # property on the command line which which would make it visible to ps)
-                 mvn sonar:sonar -pl .,api,plugin-api,collector-spi,core,plugins/cassandra-plugin,plugins/jdbc-plugin,plugins/logger-plugin,plugins/servlet-plugin \
+                 mvn sonar:sonar -pl .,api,plugin-api,core,plugins/cassandra-plugin,plugins/jdbc-plugin,plugins/logger-plugin,plugins/servlet-plugin \
                                  -Dsonar.jdbc.url=$SONAR_JDBC_URL \
                                  -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \
                                  -Dsonar.host.url=$SONAR_HOST_URL \
@@ -151,7 +151,9 @@ case "$1" in
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@Untainted\*/|/*@org.checkerframework.checker.tainting.qual.Untainted*/|g'
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@\([A-Za-z]*\)\*/|/*@org.checkerframework.checker.nullness.qual.\1*/|g'
 
-               mvn clean compile -pl .,misc/license-resource-bundle,api,plugin-api,collector-spi,core,test-harness,plugins/cassandra-plugin,plugins/jdbc-plugin,plugins/logger-plugin,plugins/servlet-plugin \
+               # omitting collector-spi from checker framework validation as it contains (mostly) generated code which does not pass
+               mvn clean install -am -pl collector-spi
+               mvn clean compile -pl .,misc/license-resource-bundle,api,plugin-api,core,test-harness,plugins/cassandra-plugin,plugins/jdbc-plugin,plugins/logger-plugin,plugins/servlet-plugin \
                                  -Pchecker \
                                  -Dchecker.install.dir=$HOME/checker-framework \
                                  -Dchecker.stubs.dir=$PWD/misc/checker-stubs \

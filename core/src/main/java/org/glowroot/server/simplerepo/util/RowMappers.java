@@ -22,7 +22,7 @@ import java.sql.Types;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.collector.spi.Trace;
+import org.glowroot.collector.spi.Constants;
 import org.glowroot.live.LiveTraceRepository.Existence;
 
 public class RowMappers {
@@ -47,21 +47,11 @@ public class RowMappers {
         }
     }
 
-    public static long getNotAvailableAwareLong(ResultSet resultSet, int columnIndex)
-            throws SQLException {
-        long value = resultSet.getLong(columnIndex);
-        if (resultSet.wasNull()) {
-            return Trace.THREAD_DATA_NOT_AVAILABLE;
-        } else {
-            return value;
-        }
-    }
-
     public static double getNotAvailableAwareDouble(ResultSet resultSet, int columnIndex)
             throws SQLException {
         double value = resultSet.getDouble(columnIndex);
         if (resultSet.wasNull()) {
-            return Trace.THREAD_DATA_NOT_AVAILABLE;
+            return Constants.THREAD_DATA_NOT_AVAILABLE;
         } else {
             return value;
         }
@@ -69,7 +59,7 @@ public class RowMappers {
 
     public static void setNotAvailableAwareLong(PreparedStatement preparedStatement,
             int columnIndex, long value) throws SQLException {
-        if (value == Trace.THREAD_DATA_NOT_AVAILABLE) {
+        if (value == Constants.THREAD_DATA_NOT_AVAILABLE) {
             preparedStatement.setNull(columnIndex, Types.BIGINT);
         } else {
             preparedStatement.setLong(columnIndex, value);
@@ -78,7 +68,7 @@ public class RowMappers {
 
     public static void setNotAvailableAwareDouble(PreparedStatement preparedStatement,
             int columnIndex, double value) throws SQLException {
-        if (value == Trace.THREAD_DATA_NOT_AVAILABLE) {
+        if (value == Constants.THREAD_DATA_NOT_AVAILABLE) {
             preparedStatement.setNull(columnIndex, Types.BIGINT);
         } else {
             preparedStatement.setDouble(columnIndex, value);

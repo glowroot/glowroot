@@ -23,11 +23,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
+import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,10 +55,10 @@ public class ExceptionalInstrumentationTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithErrorEntry.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries.size()).isEqualTo(1);
-        assertThat(entries.get(0).getErrorMessage()).isEqualTo("This is exceptional");
+        assertThat(entries.get(0).error().get().message()).isEqualTo("This is exceptional");
     }
 
     public static class ShouldGenerateTraceWithErrorEntry implements AppUnderTest, TraceMarker {

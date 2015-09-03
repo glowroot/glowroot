@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent;
 
-import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.management.AttributeNotFoundException;
@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.collector.spi.Collector;
-import org.glowroot.collector.spi.GaugePoint;
+import org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue;
 import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.config.GaugeConfig;
 import org.glowroot.common.config.ImmutableAdvancedConfig;
@@ -83,7 +83,7 @@ public class GaugeCollectorTest {
                 .mbeanObjectName("invalid mbean object name")
                 .build();
         // when
-        List<GaugePoint> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfigs);
+        Map<String, GaugeValue> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfigs);
         // then
         assertThat(gaugeValues).isEmpty();
         verify(logger).debug(anyString(), any(Exception.class));
@@ -104,7 +104,7 @@ public class GaugeCollectorTest {
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(InstanceNotFoundException.class);
         // when
-        List<GaugePoint> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfigs);
+        Map<String, GaugeValue> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfigs);
         // then
         assertThat(gaugeValues).isEmpty();
         verify(logger).debug(anyString(), any(Exception.class));
@@ -123,7 +123,7 @@ public class GaugeCollectorTest {
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(InstanceNotFoundException.class);
         // when
-        List<GaugePoint> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfig);
+        Map<String, GaugeValue> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfig);
         // then
         assertThat(gaugeValues).isEmpty();
         verify(logger).debug(anyString(), any(Exception.class));

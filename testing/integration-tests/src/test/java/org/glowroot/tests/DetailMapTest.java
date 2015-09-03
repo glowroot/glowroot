@@ -29,9 +29,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.trace.TimerNode;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,34 +58,39 @@ public class DetailMapTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getHeadline()).isEqualTo("Level One");
-        assertThat(trace.getCustomDetail())
-                .isEqualTo(ImmutableMap.of("arg1", "a", "arg2", "b", "nested1",
-                        ImmutableMap.of("nestedkey11", "a", "nestedkey12", "b", "subnested1",
-                                ImmutableMap.of("subnestedkey1", "a", "subnestedkey2", "b")),
-                        "nested2", ImmutableMap.of("nestedkey21", "a", "nestedkey22", "b")));
-        assertThat(trace.getTransactionName()).isEqualTo("basic test");
-        assertThat(trace.getRootTimer().getName()).isEqualTo("level one");
-        assertThat(trace.getRootTimer().getChildTimerNames()).containsOnly("level two");
-        TimerNode levelTwoTimer = trace.getRootTimer().getChildNodes().get(0);
-        assertThat(levelTwoTimer.getChildTimerNames()).containsOnly("level three");
-        TimerNode levelThreeTimer = levelTwoTimer.getChildNodes().get(0);
-        assertThat(levelThreeTimer.getChildTimerNames()).containsOnly("level four");
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(3);
-        TraceEntry entry1 = entries.get(0);
-        assertThat(entry1.getMessageText()).isEqualTo("Level Two");
-        assertThat(entry1.getMessageDetail())
-                .isEqualTo(ImmutableMap.of("arg1", "ax", "arg2", "bx"));
-        TraceEntry entry2 = entries.get(1);
-        assertThat(entry2.getMessageText()).isEqualTo("Level Three");
-        assertThat(entry2.getMessageDetail())
-                .isEqualTo(ImmutableMap.of("arg1", "axy", "arg2", "bxy"));
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.headline()).isEqualTo("Level One");
+        assertThat(header.detail()).isEqualTo(ImmutableMap.of("arg1", "a", "arg2", "b", "nested1",
+                ImmutableMap.of("nestedkey11", "a", "nestedkey12", "b", "subnested1",
+                        ImmutableMap.of("subnestedkey1", "a", "subnestedkey2", "b")),
+                "nested2", ImmutableMap.of("nestedkey21", "a", "nestedkey22", "b")));
+        assertThat(header.transactionName()).isEqualTo("basic test");
+        assertThat(header.rootTimer().name()).isEqualTo("level one");
+        assertThat(header.rootTimer().childTimers()).hasSize(1);
+        assertThat(header.rootTimer().childTimers().get(0).name())
+                .isEqualTo("level two");
+        Trace.Timer levelTwoTimer = header.rootTimer().childTimers().get(0);
+        assertThat(levelTwoTimer.childTimers()).hasSize(1);
+        assertThat(levelTwoTimer.childTimers().get(0).name()).isEqualTo("level three");
+        Trace.Timer levelThreeTimer = levelTwoTimer.childTimers().get(0);
+        assertThat(levelThreeTimer.childTimers()).hasSize(1);
+        assertThat(levelThreeTimer.childTimers().get(0).name()).isEqualTo("level four");
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        assertThat(entries).hasSize(1);
+        Trace.Entry entry2 = entries.get(0);
+        assertThat(entry2.message()).isEqualTo("Level Two");
+        assertThat(entry2.detail()).isEqualTo(ImmutableMap.of("arg1", "ax", "arg2", "bx"));
+        List<Trace.Entry> childEntries2 = entry2.childEntries();
+        assertThat(childEntries2).hasSize(1);
+        Trace.Entry entry3 = childEntries2.get(0);
+        assertThat(entry3.message()).isEqualTo("Level Three");
+        assertThat(entry3.detail()).isEqualTo(ImmutableMap.of("arg1", "axy", "arg2", "bxy"));
         // there's no way offsetNanos should be 0
-        assertThat(entry2.getOffsetNanos()).isGreaterThan(0);
-        TraceEntry entry3 = entries.get(2);
-        assertThat(entry3.getMessageText()).isEqualTo("Level Four: axy, bxy");
+        assertThat(entry3.startOffsetNanos()).isGreaterThan(0);
+        List<Trace.Entry> childEntries3 = entry3.childEntries();
+        assertThat(childEntries3).hasSize(1);
+        Trace.Entry entry4 = childEntries3.get(0);
+        assertThat(entry4.message()).isEqualTo("Level Four: axy, bxy");
     }
 
     @Test
@@ -96,9 +99,9 @@ public class DetailMapTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithBooleans.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getHeadline()).isEqualTo("Level One");
-        assertThat(trace.getCustomDetail())
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.headline()).isEqualTo("Level One");
+        assertThat(header.detail())
                 .isEqualTo(ImmutableMap.of("arg1", false, "arg2", true, "nested1",
                         ImmutableMap.of("nestedkey11", false, "nestedkey12", true, "subnested1",
                                 ImmutableMap.of("subnestedkey1", false, "subnestedkey2", true)),
@@ -111,39 +114,12 @@ public class DetailMapTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNumbers.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getHeadline()).isEqualTo("Level One");
-        assertThat(trace.getCustomDetail())
-                .isEqualTo(ImmutableMap.of("arg1", 5.0, "arg2", 5.5, "nested1",
-                        ImmutableMap.of("nestedkey11", 5.0, "nestedkey12", 5.5, "subnested1",
-                                ImmutableMap.of("subnestedkey1", 5.0, "subnestedkey2", 5.5)),
-                        "nested2", ImmutableMap.of("nestedkey21", 5.0, "nestedkey22", 5.5)));
-    }
-
-    @Test
-    public void shouldReadDetailMapWithNulls() throws Exception {
-        // given
-        // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithNulls.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getHeadline()).isEqualTo("Level One");
-        Map<String, Object> map = Maps.newLinkedHashMap();
-        map.put("arg1", 5.0);
-        map.put("arg2", null);
-        Map<String, Object> nestedMap = Maps.newLinkedHashMap();
-        nestedMap.put("nestedkey11", 5.0);
-        nestedMap.put("nestedkey12", null);
-        map.put("nested1", nestedMap);
-        Map<String, Object> subnestedMap = Maps.newLinkedHashMap();
-        subnestedMap.put("subnestedkey1", 5.0);
-        subnestedMap.put("subnestedkey2", null);
-        nestedMap.put("subnested1", subnestedMap);
-        Map<String, Object> nestedMap2 = Maps.newLinkedHashMap();
-        nestedMap2.put("nestedkey21", 5.0);
-        nestedMap2.put("nestedkey22", null);
-        map.put("nested2", nestedMap2);
-        assertThat(trace.getCustomDetail()).isEqualTo(map);
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.headline()).isEqualTo("Level One");
+        assertThat(header.detail()).isEqualTo(ImmutableMap.of("arg1", 5.0, "arg2", 5.5, "nested1",
+                ImmutableMap.of("nestedkey11", 5.0, "nestedkey12", 5.5, "subnested1",
+                        ImmutableMap.of("subnestedkey1", 5.0, "subnestedkey2", 5.5)),
+                "nested2", ImmutableMap.of("nestedkey21", 5.0, "nestedkey22", 5.5)));
     }
 
     @Test
@@ -156,13 +132,12 @@ public class DetailMapTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithBadType.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getHeadline()).isEqualTo("Level One");
-        assertThat(trace.getCustomDetail())
-                .isEqualTo(ImmutableMap.of("arg1", "a", "arg2", "x", "nested1",
-                        ImmutableMap.of("nestedkey11", "a", "nestedkey12", "x", "subnested1",
-                                ImmutableMap.of("subnestedkey1", "a", "subnestedkey2", "x")),
-                        "nested2", ImmutableMap.of("nestedkey21", "a", "nestedkey22", "x")));
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.headline()).isEqualTo("Level One");
+        assertThat(header.detail()).isEqualTo(ImmutableMap.of("arg1", "a", "arg2", "x", "nested1",
+                ImmutableMap.of("nestedkey11", "a", "nestedkey12", "x", "subnested1",
+                        ImmutableMap.of("subnestedkey1", "a", "subnestedkey2", "x")),
+                "nested2", ImmutableMap.of("nestedkey21", "a", "nestedkey22", "x")));
     }
 
     @Test
@@ -175,35 +150,14 @@ public class DetailMapTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNullKey.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getHeadline()).isEqualTo("Level One");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.headline()).isEqualTo("Level One");
         Map<String, Object> map = Maps.newLinkedHashMap();
         map.put("arg1", "useArg2AsKeyAndValue");
-        map.put("", null);
         Map<String, Object> nestedMap = Maps.newLinkedHashMap();
         nestedMap.put("nestedkey11", "useArg2AsKeyAndValue");
-        nestedMap.put("", null);
         map.put("nested1", nestedMap);
-        assertThat(trace.getCustomDetail()).isEqualTo(map);
-    }
-
-    @Test
-    public void shouldReadDetailMapWithBadKeyType() throws Exception {
-        // given
-        for (int i = 0; i < 2; i++) {
-            container.addExpectedLogMessage("org.glowroot.common.model.DetailMapWriter",
-                    "detail map has unexpected key type: java.io.File");
-            container.addExpectedLogMessage("org.glowroot.common.model.DetailMapWriter",
-                    "detail map has unexpected value type: java.io.File");
-        }
-        // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithBadKeyType.class);
-        // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getHeadline()).isEqualTo("Level One");
-        assertThat(trace.getCustomDetail())
-                .isEqualTo(ImmutableMap.of("arg1", "useArg2AsKeyAndValue", "x", "x", "nested1",
-                        ImmutableMap.of("nestedkey11", "useArg2AsKeyAndValue", "x", "x")));
+        assertThat(header.detail()).isEqualTo(map);
     }
 
     public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest {

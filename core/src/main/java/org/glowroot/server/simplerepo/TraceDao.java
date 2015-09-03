@@ -20,39 +20,30 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.io.CharSource;
 import org.checkerframework.checker.tainting.qual.Untainted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.spi.ProfileNode;
-import org.glowroot.collector.spi.Trace;
-import org.glowroot.common.model.EntriesChunkSourceCreator;
-import org.glowroot.common.model.ProfileJsonMarshaller;
-import org.glowroot.common.util.ChunkSource;
-import org.glowroot.live.ImmutableTraceHeader;
+import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.live.ImmutableTracePoint;
-import org.glowroot.live.LiveTraceRepository.TraceHeader;
+import org.glowroot.live.LiveTraceRepository.Existence;
 import org.glowroot.live.LiveTraceRepository.TracePoint;
 import org.glowroot.live.LiveTraceRepository.TracePointQuery;
 import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.server.repo.ImmutableErrorMessageCount;
+import org.glowroot.server.repo.ImmutableHeaderPlus;
 import org.glowroot.server.repo.ImmutableTraceErrorPoint;
 import org.glowroot.server.repo.Result;
 import org.glowroot.server.repo.TraceRepository;
-import org.glowroot.server.repo.helper.JsonMarshaller;
-import org.glowroot.server.repo.helper.JsonUnmarshaller;
 import org.glowroot.server.simplerepo.TracePointQueryBuilder.ParameterizedSql;
 import org.glowroot.server.simplerepo.util.CappedDatabase;
 import org.glowroot.server.simplerepo.util.DataSource;
@@ -84,23 +75,10 @@ class TraceDao implements TraceRepository {
             ImmutableColumn.of("transaction_name", Types.VARCHAR),
             ImmutableColumn.of("headline", Types.VARCHAR),
             ImmutableColumn.of("user", Types.VARCHAR),
-            ImmutableColumn.of("custom_attributes", Types.VARCHAR), // json data
-            ImmutableColumn.of("custom_detail", Types.VARCHAR), // json data
             ImmutableColumn.of("error_message", Types.VARCHAR),
-            ImmutableColumn.of("error_throwable", Types.VARCHAR), // json data
-            ImmutableColumn.of("timers", Types.VARCHAR), // json data
-            ImmutableColumn.of("thread_cpu_time", Types.BIGINT), // nanoseconds
-            ImmutableColumn.of("thread_blocked_time", Types.BIGINT), // nanoseconds
-            ImmutableColumn.of("thread_waited_time", Types.BIGINT), // nanoseconds
-            ImmutableColumn.of("thread_allocated_bytes", Types.BIGINT),
-            ImmutableColumn.of("gc_activity", Types.VARCHAR), // json data
-            ImmutableColumn.of("entry_count", Types.BIGINT),
-            ImmutableColumn.of("entry_limit_exceeded", Types.BOOLEAN),
-            ImmutableColumn.of("entries_capped_id", Types.VARCHAR), // capped database id
-            ImmutableColumn.of("profile_sample_count", Types.BIGINT),
-            ImmutableColumn.of("profile_limit_exceeded", Types.BOOLEAN),
-            // profile json is always from "synthetic root"
-            ImmutableColumn.of("profile_capped_id", Types.VARCHAR)); // capped database id
+            ImmutableColumn.of("header", Types.BLOB), // protobuf
+            ImmutableColumn.of("entries_capped_id", Types.VARCHAR), // protobuf
+            ImmutableColumn.of("profile_capped_id", Types.VARCHAR)); // protobuf
 
     // capture_time column is used for expiring records without using FK with on delete cascade
     private static final ImmutableList<Column> transactionCustomAttributeColumns =
@@ -145,27 +123,23 @@ class TraceDao implements TraceRepository {
         dataSource.update(
                 "merge into trace (id, partial, slow, error, start_time, capture_time,"
                         + " duration_nanos, transaction_type, transaction_name, headline, user,"
-                        + " custom_attributes, custom_detail, error_message, error_throwable,"
-                        + " timers, thread_cpu_time, thread_blocked_time, thread_waited_time,"
-                        + " thread_allocated_bytes, gc_activity, entry_count, entry_limit_exceeded,"
-                        + " entries_capped_id, profile_sample_count, profile_limit_exceeded,"
-                        + " profile_capped_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
-                        + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        + " error_message, header, entries_capped_id, profile_capped_id)"
+                        + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 new TraceBinder(trace));
-        if (!trace.customAttributes().isEmpty()) {
+        final Trace.Header header = trace.getHeader();
+        if (header.getAttributeCount() > 0) {
             dataSource.batchUpdate(
                     "insert into trace_custom_attribute (trace_id, name, value, capture_time)"
                             + " values (?, ?, ?, ?)",
                     new PreparedStatementBinder() {
                         @Override
                         public void bind(PreparedStatement preparedStatement) throws SQLException {
-                            for (Entry<String, ? extends Collection<String>> entry : trace
-                                    .customAttributes().entrySet()) {
-                                for (String value : entry.getValue()) {
-                                    preparedStatement.setString(1, trace.id());
-                                    preparedStatement.setString(2, entry.getKey());
+                            for (Trace.Attribute attribute : header.getAttributeList()) {
+                                for (String value : attribute.getValueList()) {
+                                    preparedStatement.setString(1, header.getId());
+                                    preparedStatement.setString(2, attribute.getName());
                                     preparedStatement.setString(3, value);
-                                    preparedStatement.setLong(4, trace.captureTime());
+                                    preparedStatement.setLong(4, header.getCaptureTime());
                                     preparedStatement.addBatch();
                                 }
                             }
@@ -245,15 +219,9 @@ class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable TraceHeader readTraceHeader(String traceId) throws Exception {
-        List<TraceHeader> traces = dataSource.query(
-                "select id, partial, error, start_time, capture_time, duration_nanos,"
-                        + " transaction_type, transaction_name, headline, user, custom_attributes,"
-                        + " custom_detail, error_message, error_throwable, timers, thread_cpu_time,"
-                        + " thread_blocked_time, thread_waited_time, thread_allocated_bytes,"
-                        + " gc_activity, entry_count, entry_limit_exceeded, entries_capped_id,"
-                        + " profile_sample_count, profile_limit_exceeded, profile_capped_id"
-                        + " from trace where id = ?",
+    public @Nullable HeaderPlus readHeader(String traceId) throws Exception {
+        List<HeaderPlus> traces = dataSource.query(
+                "select header, entries_capped_id, profile_capped_id from trace where id = ?",
                 new TraceHeaderRowMapper(), traceId);
         if (traces.isEmpty()) {
             return null;
@@ -265,13 +233,21 @@ class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable CharSource readEntries(String traceId) throws Exception {
-        return readFromCappedDatabase("entries_capped_id", traceId);
+    public List<Trace.Entry> readEntries(String traceId) throws Exception {
+        List<Trace.Entry> entries =
+                dataSource.query("select entries_capped_id from trace where id = ?",
+                        new EntriesResultExtractor(), traceId);
+        if (entries == null) {
+            // data source is closing
+            return ImmutableList.of();
+        }
+        return entries;
     }
 
     @Override
-    public @Nullable CharSource readProfile(String traceId) throws Exception {
-        return readFromCappedDatabase("profile_capped_id", traceId);
+    public @Nullable ProfileTree readProfileTree(String traceId) throws Exception {
+        return dataSource.query("select profile_capped_id from trace where id = ?",
+                new ProfileTreeResultExtractor(), traceId);
     }
 
     @Override
@@ -283,12 +259,6 @@ class TraceDao implements TraceRepository {
     void deleteBefore(long captureTime) throws SQLException {
         dataSource.deleteBefore("trace_custom_attribute", captureTime);
         dataSource.deleteBefore("trace", captureTime);
-    }
-
-    private @Nullable CharSource readFromCappedDatabase(@Untainted String columnName,
-            String traceId) throws Exception {
-        return dataSource.query("select " + columnName + " from trace where id = ?",
-                new CappedIdResultExtractor(), traceId);
     }
 
     @Override
@@ -331,95 +301,81 @@ class TraceDao implements TraceRepository {
         }
     }
 
-    private class CappedIdResultExtractor implements ResultSetExtractor</*@Nullable*/CharSource> {
+    private class EntriesResultExtractor implements ResultSetExtractor<List<Trace.Entry>> {
         @Override
-        public @Nullable CharSource extractData(ResultSet resultSet) throws SQLException {
+        public List<Trace.Entry> extractData(ResultSet resultSet) throws Exception {
             if (!resultSet.next()) {
                 // trace must have just expired while user was viewing it
-                return CharSource.wrap("{\"expired\":true}");
+                return ImmutableList.of();
+            }
+            long cappedId = resultSet.getLong(1);
+            if (resultSet.wasNull()) {
+                return ImmutableList.of();
+            }
+            return traceCappedDatabase.readMessages(cappedId, Trace.Entry.parser());
+        }
+    }
+
+    private class ProfileTreeResultExtractor
+            implements ResultSetExtractor</*@Nullable*/ProfileTree> {
+        @Override
+        public @Nullable ProfileTree extractData(ResultSet resultSet) throws Exception {
+            if (!resultSet.next()) {
+                // trace must have just expired while user was viewing it
+                return null;
             }
             long cappedId = resultSet.getLong(1);
             if (resultSet.wasNull()) {
                 return null;
             }
-            return traceCappedDatabase.read(cappedId, "{\"overwritten\":true}");
-
+            return traceCappedDatabase.readMessage(cappedId, ProfileTree.parser());
         }
     }
 
     private class TraceBinder implements PreparedStatementBinder {
 
-        private final Trace trace;
+        private final Trace.Header header;
         private final @Nullable Long entriesId;
         private final @Nullable Long profileId;
-        private final @Nullable String customAttributes;
-        private final @Nullable String customDetail;
-        private final @Nullable String errorThrowable;
-        private final String timers;
-        private final @Nullable String gcActivity;
-        private final long profileSampleCount;
 
         private TraceBinder(Trace trace) throws IOException {
-            this.trace = trace;
+            this.header = trace.getHeader();
 
-            ChunkSource entries =
-                    EntriesChunkSourceCreator.createEntriesChunkSource(trace.entries());
-            if (entries == null) {
+            List<Trace.Entry> entries = trace.getEntryList();
+            if (entries.isEmpty()) {
                 entriesId = null;
             } else {
-                entriesId =
-                        traceCappedDatabase.write(entries, TraceCappedDatabaseStats.TRACE_ENTRIES);
+                entriesId = traceCappedDatabase.writeMessages(entries,
+                        TraceCappedDatabaseStats.TRACE_ENTRIES);
             }
 
-            ProfileNode syntheticRootProfileNode = trace.syntheticRootProfileNode();
-            if (syntheticRootProfileNode == null) {
+            ProfileTree profileTree = trace.getProfileTree();
+            if (profileTree.getNodeCount() == 0) {
                 profileId = null;
-                profileSampleCount = 0;
             } else {
-                profileId = traceCappedDatabase.write(
-                        CharSource.wrap(ProfileJsonMarshaller.marshal(syntheticRootProfileNode)),
+                profileId = traceCappedDatabase.writeMessage(profileTree,
                         TraceCappedDatabaseStats.TRACE_PROFILES);
-                profileSampleCount = syntheticRootProfileNode.sampleCount();
             }
-
-            customAttributes = JsonMarshaller.marshalCustomAttributes(trace.customAttributes());
-            customDetail = JsonMarshaller.marshalDetailMap(trace.customDetail());
-            errorThrowable = JsonMarshaller.marshal(trace.errorThrowable());
-            timers = JsonMarshaller.marshal(trace.rootTimer());
-            gcActivity = JsonMarshaller.marshalGcActivity(trace.gcActivity());
         }
 
         // minimal work inside this method as it is called with active connection
         @Override
         public void bind(PreparedStatement preparedStatement) throws Exception {
             int i = 1;
-            preparedStatement.setString(i++, trace.id());
-            preparedStatement.setBoolean(i++, trace.partial());
-            preparedStatement.setBoolean(i++, trace.slow());
-            preparedStatement.setBoolean(i++, trace.error());
-            preparedStatement.setLong(i++, trace.startTime());
-            preparedStatement.setLong(i++, trace.captureTime());
-            preparedStatement.setLong(i++, trace.durationNanos());
-            preparedStatement.setString(i++, trace.transactionType());
-            preparedStatement.setString(i++, trace.transactionName());
-            preparedStatement.setString(i++, trace.headline());
-            preparedStatement.setString(i++, trace.user());
-            preparedStatement.setString(i++, customAttributes);
-            preparedStatement.setString(i++, customDetail);
-            preparedStatement.setString(i++, trace.errorMessage());
-            preparedStatement.setString(i++, errorThrowable);
-            preparedStatement.setString(i++, timers);
-            RowMappers.setNotAvailableAwareLong(preparedStatement, i++, trace.threadCpuNanos());
-            RowMappers.setNotAvailableAwareLong(preparedStatement, i++, trace.threadBlockedNanos());
-            RowMappers.setNotAvailableAwareLong(preparedStatement, i++, trace.threadWaitedNanos());
-            RowMappers.setNotAvailableAwareLong(preparedStatement, i++,
-                    trace.threadAllocatedBytes());
-            preparedStatement.setString(i++, gcActivity);
-            preparedStatement.setInt(i++, trace.entries().size());
-            preparedStatement.setBoolean(i++, trace.entryLimitExceeded());
+            preparedStatement.setString(i++, header.getId());
+            preparedStatement.setBoolean(i++, header.getPartial());
+            preparedStatement.setBoolean(i++, header.getSlow());
+            preparedStatement.setBoolean(i++, header.hasError());
+            preparedStatement.setLong(i++, header.getStartTime());
+            preparedStatement.setLong(i++, header.getCaptureTime());
+            preparedStatement.setLong(i++, header.getDurationNanos());
+            preparedStatement.setString(i++, header.getTransactionType());
+            preparedStatement.setString(i++, header.getTransactionName());
+            preparedStatement.setString(i++, header.getHeadline());
+            preparedStatement.setString(i++, header.getUser());
+            preparedStatement.setString(i++, header.getError().getMessage());
+            preparedStatement.setBytes(i++, header.toByteArray());
             RowMappers.setLong(preparedStatement, i++, entriesId);
-            preparedStatement.setLong(i++, profileSampleCount);
-            preparedStatement.setBoolean(i++, trace.profileLimitExceeded());
             RowMappers.setLong(preparedStatement, i++, profileId);
         }
     }
@@ -439,64 +395,17 @@ class TraceDao implements TraceRepository {
         }
     }
 
-    private class TraceHeaderRowMapper implements RowMapper<TraceHeader> {
-
+    private class TraceHeaderRowMapper implements RowMapper<HeaderPlus> {
         @Override
-        public TraceHeader mapRow(ResultSet resultSet) throws Exception {
-            int columnIndex = 1;
-            String id = resultSet.getString(columnIndex++);
-            // this checkNotNull is safe since id is the primary key and cannot be null
-            checkNotNull(id);
-            ImmutableTraceHeader.Builder builder = ImmutableTraceHeader.builder()
-                    .id(id)
-                    .active(false)
-                    .partial(resultSet.getBoolean(columnIndex++))
-                    .error(resultSet.getBoolean(columnIndex++))
-                    .startTime(resultSet.getLong(columnIndex++))
-                    .captureTime(resultSet.getLong(columnIndex++))
-                    .durationNanos(resultSet.getLong(columnIndex++))
-                    .transactionType(Strings.nullToEmpty(resultSet.getString(columnIndex++)))
-                    .transactionName(Strings.nullToEmpty(resultSet.getString(columnIndex++)))
-                    .headline(Strings.nullToEmpty(resultSet.getString(columnIndex++)))
-                    .user(resultSet.getString(columnIndex++));
-
-            builder.customAttributes(
-                    JsonUnmarshaller.unmarshalCustomAttributes(resultSet.getString(columnIndex++)));
-            builder.customDetail(
-                    cast(JsonUnmarshaller.unmarshalDetailMap(resultSet.getString(columnIndex++))));
-            builder.errorMessage(resultSet.getString(columnIndex++));
-            builder.errorThrowable(
-                    JsonUnmarshaller.unmarshalThrowable(resultSet.getString(columnIndex++)));
-
-            String timers = checkNotNull(resultSet.getString(columnIndex++));
-            builder.rootTimer(JsonUnmarshaller.unmarshalTraceTimers(timers));
-
-            builder.threadCpuNanos(RowMappers.getNotAvailableAwareLong(resultSet, columnIndex++));
-            builder.threadBlockedNanos(
-                    RowMappers.getNotAvailableAwareLong(resultSet, columnIndex++));
-            builder.threadWaitedNanos(
-                    RowMappers.getNotAvailableAwareLong(resultSet, columnIndex++));
-            builder.threadAllocatedBytes(
-                    RowMappers.getNotAvailableAwareLong(resultSet, columnIndex++));
-
-            builder.gcActivity(
-                    JsonUnmarshaller.unmarshalGcActivity(resultSet.getString(columnIndex++)));
-
-            builder.entryCount(resultSet.getInt(columnIndex++));
-            builder.entryLimitExceeded(resultSet.getBoolean(columnIndex++));
-            builder.entriesExistence(
-                    RowMappers.getExistence(resultSet, columnIndex++, traceCappedDatabase));
-            builder.profileSampleCount(resultSet.getLong(columnIndex++));
-            builder.profileLimitExceeded(resultSet.getBoolean(columnIndex++));
-            builder.profileExistence(
-                    RowMappers.getExistence(resultSet, columnIndex++, traceCappedDatabase));
-            return builder.build();
-        }
-
-        @SuppressWarnings("return.type.incompatible")
-        private Map<String, ? extends Object> cast(
-                Map<String, ? extends /*@Nullable*/Object> detail) {
-            return detail;
+        public HeaderPlus mapRow(ResultSet resultSet) throws Exception {
+            byte[] header = checkNotNull(resultSet.getBytes(1));
+            Existence entriesExistence = RowMappers.getExistence(resultSet, 2, traceCappedDatabase);
+            Existence profileExistence = RowMappers.getExistence(resultSet, 3, traceCappedDatabase);
+            return ImmutableHeaderPlus.builder()
+                    .header(Trace.Header.parseFrom(header))
+                    .entriesExistence(entriesExistence)
+                    .profileExistence(profileExistence)
+                    .build();
         }
     }
 

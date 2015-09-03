@@ -59,9 +59,9 @@ public class TimerTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithTimers.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getRootTimer().getChildNodes()).isEmpty();
-        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.rootTimer().childTimers()).isEmpty();
+        assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
     }
 
     @Test
@@ -70,10 +70,10 @@ public class TimerTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSelfNestedTimer.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getRootTimer().getChildNodes()).isEmpty();
-        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTimer().getCount()).isEqualTo(1);
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.rootTimer().childTimers()).isEmpty();
+        assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
+        assertThat(header.rootTimer().count()).isEqualTo(1);
     }
 
     @Test
@@ -89,14 +89,14 @@ public class TimerTest {
             }
         });
         // then
-        Trace trace = container.getTraceService().getActiveTrace(5, SECONDS);
-        assertThat(trace).isNotNull();
-        assertThat(trace.getRootTimer().getChildNodes()).isEmpty();
-        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTimer().getCount()).isEqualTo(1);
-        assertThat(trace.getRootTimer().isActive()).isTrue();
+        Trace.Header header = container.getTraceService().getActiveTrace(5, SECONDS);
+        assertThat(header).isNotNull();
+        assertThat(header.rootTimer().childTimers()).isEmpty();
+        assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
+        assertThat(header.rootTimer().count()).isEqualTo(1);
+        assertThat(header.rootTimer().active().or(false)).isTrue();
         // cleanup
-        // interrupt trace
+        // interrupt header
         container.interruptAppUnderTest();
         future.get();
         executorService.shutdown();

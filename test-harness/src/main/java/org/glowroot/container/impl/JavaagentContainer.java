@@ -309,12 +309,13 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
                 File file = new File(path);
                 if (file.getName().matches("glowroot-test-harness-[0-9.]+(-SNAPSHOT)?.jar")) {
                     javaagentJarFile = file;
-                } else if (!file.getName().matches("glowroot-core-[0-9.]+(-SNAPSHOT)?.jar")) {
-                    // ignoring glowroot-core, which should not be here since glowroot-test-harness
-                    // shades that artifact, but maven 3.3.3 (and maybe future?) is not using the
-                    // dependency reduced pom during downstream module builds, which causes the
-                    // glowroot-core artifact to be included when running "mvn clean install" from
-                    // the project root
+                } else if (!file.getName().matches("glowroot-[a-z-]+-[0-9.]+(-SNAPSHOT)?.jar")) {
+                    // ignoring glowroot artifacts (glowroot-core, glowroot-api,
+                    // glowroot-plugin-api, glowroot-collector-spi), which should not be here since
+                    // glowroot-test-harness shades them, but maven 3.3.1/3.3.3 (and maybe future?)
+                    // are not using the dependency reduced pom during downstream module builds,
+                    // which causes the glowroot artifacts to be included when running
+                    // "mvn clean install" from the project root
                     paths.add(path);
                 }
             }

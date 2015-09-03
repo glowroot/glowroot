@@ -30,7 +30,6 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,20 +55,20 @@ public class ApacheHttpClient3xPluginTest {
     @Test
     public void shouldCaptureHttpGet() throws Exception {
         container.executeAppUnderTest(ExecuteHttpGet.class);
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessageText())
+        assertThat(entries.get(0).message())
                 .isEqualTo("http client request: GET http://www.example.com/hello1");
     }
 
     @Test
     public void shouldCaptureHttpPost() throws Exception {
         container.executeAppUnderTest(ExecuteHttpPost.class);
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessageText())
+        assertThat(entries.get(0).message())
                 .isEqualTo("http client request: POST http://www.example.com/hello3");
     }
 

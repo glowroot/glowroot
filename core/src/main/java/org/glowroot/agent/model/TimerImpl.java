@@ -16,7 +16,6 @@
 package org.glowroot.agent.model;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -24,16 +23,14 @@ import java.util.NoSuchElementException;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.spi.TraceTimerNode;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Tickers;
 import org.glowroot.plugin.api.transaction.Timer;
@@ -57,8 +54,7 @@ import org.glowroot.plugin.api.transaction.TimerName;
 //
 // all timing data is in nanoseconds
 @Styles.Private
-@Value.Include(TraceTimerNode.class)
-public class TimerImpl implements Timer, org.glowroot.collector.spi.TraceTimerNode {
+public class TimerImpl implements Timer {
 
     private static final Logger logger = LoggerFactory.getLogger(TimerImpl.class);
 
@@ -100,11 +96,11 @@ public class TimerImpl implements Timer, org.glowroot.collector.spi.TraceTimerNo
 
     // safe to be called from another thread when transaction is still active transaction
     @JsonIgnore
-    TraceTimerNode getSnapshot() throws IOException {
+    Trace.Timer toProtobuf() throws IOException {
 
-        TraceTimerNodeBuilder builder = new TraceTimerNodeBuilder();
-        builder.name(timerName.name());
-        builder.extended(timerName.extended());
+        Trace.Timer.Builder builder = Trace.Timer.newBuilder();
+        builder.setName(timerName.name());
+        builder.setExtended(timerName.extended());
 
         boolean active = selfNestingLevel > 0;
 
@@ -121,28 +117,26 @@ public class TimerImpl implements Timer, org.glowroot.collector.spi.TraceTimerNo
             long theStartTick = startTick;
             long curr = ticker.read() - theStartTick;
             if (theTotalNanos == 0) {
-                builder.totalNanos(curr);
-                builder.count(1);
+                builder.setTotalNanos(curr);
+                builder.setCount(1);
             } else {
-                builder.totalNanos(theTotalNanos + curr);
-                builder.count(count + 1);
+                builder.setTotalNanos(theTotalNanos + curr);
+                builder.setCount(count + 1);
             }
         } else {
-            builder.totalNanos(totalNanos);
-            builder.count(count);
+            builder.setTotalNanos(totalNanos);
+            builder.setCount(count);
         }
-        builder.active(active);
+        builder.setActive(active);
 
-        if (headChild == null) {
-            builder.childNodes(ImmutableList.<TraceTimerNode>of());
-        } else {
-            List<TraceTimerNode> nestedTimers = Lists.newArrayList();
+        if (headChild != null) {
+            List<Trace.Timer> nestedTimers = Lists.newArrayList();
             TimerImpl curr = headChild;
             while (curr != null) {
-                nestedTimers.add(curr.getSnapshot());
+                nestedTimers.add(curr.toProtobuf());
                 curr = curr.nextSibling;
             }
-            builder.childNodes(nestedTimers);
+            builder.addAllChildTimer(nestedTimers);
         }
         return builder.build();
     }
@@ -160,49 +154,27 @@ public class TimerImpl implements Timer, org.glowroot.collector.spi.TraceTimerNo
         }
     }
 
-    @Override
-    @JsonProperty("name")
-    public String name() {
+    public String getName() {
         return timerName.name();
     }
 
-    @Override
-    @JsonProperty("extended")
-    public boolean extended() {
+    public boolean isExtended() {
         return timerName.extended();
     }
 
     // only called after transaction completion
-    @Override
-    @JsonProperty("totalNanos")
-    public long totalNanos() {
+    public long getTotalNanos() {
         return totalNanos;
     }
 
     // only called after transaction completion
-    @Override
-    @JsonProperty("count")
-    public long count() {
+    public long getCount() {
         return count;
     }
 
     // only called after transaction completion
-    @Override
-    @JsonProperty("active")
-    public boolean active() {
-        return false;
-    }
-
-    // only called after transaction completion
-    @Override
-    @JsonProperty("childNodes")
-    public Collection<? extends org.glowroot.collector.spi.TraceTimerNode> childNodes() {
-        return Lists.newArrayList(getNestedTimers());
-    }
-
-    // only called after transaction completion
     @JsonIgnore
-    public Iterable<TimerImpl> getNestedTimers() {
+    public Iterable<TimerImpl> getChildTimers() {
         if (headChild == null) {
             return ImmutableList.of();
         } else {

@@ -28,11 +28,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
+import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.TransactionConfig;
-import org.glowroot.container.trace.Trace;
 import org.glowroot.tests.DetailMapTest.ShouldGenerateTraceWithNestedEntries;
 import org.glowroot.tests.ProfilingTest.ShouldGenerateTraceWithProfile;
 
@@ -62,8 +62,8 @@ public class ExportTest {
         // given
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         // when
-        Trace trace = container.getTraceService().getLastTrace();
-        InputStream in = container.getTraceService().getTraceExport(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        InputStream in = container.getTraceService().getTraceExport(header.id());
         // then should not bomb
         ZipInputStream zipIn = new ZipInputStream(in);
         zipIn.getNextEntry();
@@ -78,8 +78,8 @@ public class ExportTest {
         container.getConfigService().updateTransactionConfig(transactionConfig);
         container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
         // when
-        Trace trace = container.getTraceService().getLastTrace();
-        InputStream in = container.getTraceService().getTraceExport(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        InputStream in = container.getTraceService().getTraceExport(header.id());
         // then should not bomb
         ZipInputStream zipIn = new ZipInputStream(in);
         zipIn.getNextEntry();
@@ -105,8 +105,8 @@ public class ExportTest {
             }
         });
         // when
-        Trace trace = container.getTraceService().getActiveTrace(5, SECONDS);
-        InputStream in = container.getTraceService().getTraceExport(trace.getId());
+        Trace.Header header = container.getTraceService().getActiveTrace(5, SECONDS);
+        InputStream in = container.getTraceService().getTraceExport(header.id());
         // then should not bomb
         ZipInputStream zipIn = new ZipInputStream(in);
         zipIn.getNextEntry();

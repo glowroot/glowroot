@@ -20,13 +20,16 @@ import java.util.Arrays;
 import java.util.zip.DataFormatException;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.protobuf.ByteString;
 import org.HdrHistogram.Histogram;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-public class LazyHistogram implements org.glowroot.collector.spi.Histogram {
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
 
-    private static final int HISTOGRAM_SIGNIFICANT_DIGITS = 2;
+public class LazyHistogram {
+
+    private static final int HISTOGRAM_SIGNIFICANT_DIGITS = 5;
     private static final int MAX_VALUES = 1024;
 
     private long[] values = new long[8];
@@ -35,40 +38,39 @@ public class LazyHistogram implements org.glowroot.collector.spi.Histogram {
 
     private @MonotonicNonNull Histogram histogram;
 
-    public void decodeFromByteBuffer(ByteBuffer buffer) throws DataFormatException {
-        if (buffer.getInt() == 0) {
-            // 0 means list of (already sorted) longs
-            // read size and use it to pre-allocate correctly sized array
-            int numNewValues = buffer.getInt();
-            ensureCapacity(size + numNewValues);
-            if (histogram == null) {
-                // only will be sorted afterwards if starting out empty
-                sorted = size == 0;
-                while (buffer.remaining() > 0) {
-                    values[size++] = buffer.getLong();
-                }
-            } else {
-                while (buffer.remaining() > 0) {
-                    histogram.recordValue(buffer.getLong());
-                }
+    public Aggregate.Histogram toProtobuf(ScratchBuffer scratchBuffer) {
+        Aggregate.Histogram.Builder builder = Aggregate.Histogram.newBuilder();
+        if (histogram == null) {
+            if (!sorted) {
+                // sort values before storing so don't have to sort each time later when calculating
+                // percentiles
+                sortValues();
+            }
+            for (int i = 0; i < size; i++) {
+                builder.addOrderedRawValue(values[i]);
             }
         } else {
-            // 1 means compressed histogram
+            ByteBuffer buffer = scratchBuffer.getBuffer(histogram.getNeededByteBufferCapacity());
+            buffer.clear();
+            histogram.encodeIntoByteBuffer(buffer);
+            int size = buffer.position();
+            buffer.flip();
+            builder.setEncodedBytes(ByteString.copyFrom(buffer, size));
+        }
+        return builder.build();
+    }
+
+    public void merge(Aggregate.Histogram toBeMergedHistogram) throws DataFormatException {
+        ByteString encodedBytes = toBeMergedHistogram.getEncodedBytes();
+        if (encodedBytes.isEmpty()) {
+            for (long rawValue : toBeMergedHistogram.getOrderedRawValueList()) {
+                add(rawValue);
+            }
+        } else {
             if (histogram == null) {
                 convertValuesToHistogram();
             }
-            histogram.add(Histogram.decodeFromCompressedByteBuffer(buffer, 0));
-        }
-    }
-
-    public void merge(LazyHistogram toBeMergedHistogram) {
-        convertValuesToHistogram();
-        if (toBeMergedHistogram.histogram == null) {
-            for (int i = 0; i < toBeMergedHistogram.size; i++) {
-                histogram.recordValue(toBeMergedHistogram.values[i]);
-            }
-        } else {
-            histogram.add(toBeMergedHistogram.histogram);
+            histogram.add(Histogram.decodeFromByteBuffer(encodedBytes.asReadOnlyByteBuffer(), 0));
         }
     }
 
@@ -86,32 +88,11 @@ public class LazyHistogram implements org.glowroot.collector.spi.Histogram {
         return histogram.getValueAtPercentile(percentile);
     }
 
-    @Override
     public int getNeededByteBufferCapacity() {
         if (histogram == null) {
             return 8 + size * 8;
         } else {
             return 4 + histogram.getNeededByteBufferCapacity();
-        }
-    }
-
-    @Override
-    public void encodeIntoByteBuffer(ByteBuffer buffer) {
-        if (histogram == null) {
-            buffer.putInt(0);
-            // write the size so can pre-allocate correctly sized array when reading
-            buffer.putInt(size);
-            if (!sorted) {
-                // sort values before storing so don't have to sort each time later when calculating
-                // percentiles
-                sortValues();
-            }
-            for (int i = 0; i < size; i++) {
-                buffer.putLong(values[i]);
-            }
-        } else {
-            buffer.putInt(1);
-            histogram.encodeIntoCompressedByteBuffer(buffer);
         }
     }
 
@@ -156,5 +137,17 @@ public class LazyHistogram implements org.glowroot.collector.spi.Histogram {
     private void sortValues() {
         Arrays.sort(values, 0, size);
         sorted = true;
+    }
+
+    public static class ScratchBuffer {
+
+        private @MonotonicNonNull ByteBuffer buffer;
+
+        ByteBuffer getBuffer(int capacity) {
+            if (buffer == null || buffer.capacity() < capacity) {
+                buffer = ByteBuffer.allocate(capacity);
+            }
+            return buffer;
+        }
     }
 }

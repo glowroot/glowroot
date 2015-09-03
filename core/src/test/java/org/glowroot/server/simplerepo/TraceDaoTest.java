@@ -21,10 +21,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.collector.spi.Trace;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.common.util.Tickers;
 import org.glowroot.live.ImmutableTracePointQuery;
-import org.glowroot.live.LiveTraceRepository.TraceHeader;
 import org.glowroot.live.LiveTraceRepository.TracePoint;
 import org.glowroot.live.LiveTraceRepository.TracePointQuery;
 import org.glowroot.live.StringComparator;
@@ -73,31 +72,28 @@ public class TraceDaoTest {
                 .errorOnly(false)
                 .limit(1)
                 .build();
-        // new TracePointQuery(0, 100, 0, Long.MAX_VALUE, "unit test", false,
-        // false, null, null, null, null, null, null, null, null, null, null, null, 1);
-        // when
         Result<TracePoint> queryResult = traceDao.readPoints(query);
-        TraceHeader traceHeader2 = traceDao.readTraceHeader(queryResult.records().get(0).id());
+        Trace.Header header = traceDao.readHeader(queryResult.records().get(0).id()).header();
         // then
-        assertThat(traceHeader2.id()).isEqualTo(trace.id());
-        assertThat(traceHeader2.partial()).isEqualTo(trace.partial());
-        assertThat(traceHeader2.startTime()).isEqualTo(trace.startTime());
-        assertThat(traceHeader2.captureTime()).isEqualTo(trace.captureTime());
-        assertThat(traceHeader2.durationNanos()).isEqualTo(trace.durationNanos());
-        assertThat(traceHeader2.headline()).isEqualTo("test headline");
-        assertThat(traceHeader2.user()).isEqualTo(trace.user());
+        assertThat(header.getId()).isEqualTo(trace.getHeader().getId());
+        assertThat(header.getPartial()).isEqualTo(trace.getHeader().getPartial());
+        assertThat(header.getStartTime()).isEqualTo(trace.getHeader().getStartTime());
+        assertThat(header.getCaptureTime()).isEqualTo(trace.getHeader().getCaptureTime());
+        assertThat(header.getDurationNanos()).isEqualTo(trace.getHeader().getDurationNanos());
+        assertThat(header.getHeadline()).isEqualTo("test headline");
+        assertThat(header.getUser()).isEqualTo(trace.getHeader().getUser());
     }
 
     @Test
-    public void shouldReadTraceWithDurationQualifier() throws Exception {
+    public void shouldReadTraceWithTotalNanosQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
                 .from(0)
                 .to(100)
-                .durationNanosLow(trace.durationNanos())
-                .durationNanosHigh(trace.durationNanos())
+                .durationNanosLow(trace.getHeader().getDurationNanos())
+                .durationNanosHigh(trace.getHeader().getDurationNanos())
                 .transactionType("unit test")
                 .errorOnly(false)
                 .limit(1)
@@ -109,15 +105,15 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldNotReadTraceWithHighDurationQualifier() throws Exception {
+    public void shouldNotReadTraceWithHighTotalNanosQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
                 .from(0)
                 .to(0)
-                .durationNanosLow(trace.durationNanos() + 1)
-                .durationNanosHigh(trace.durationNanos() + 2)
+                .durationNanosLow(trace.getHeader().getDurationNanos() + 1)
+                .durationNanosHigh(trace.getHeader().getDurationNanos() + 2)
                 .transactionType("unit test")
                 .errorOnly(false)
                 .limit(1)
@@ -129,15 +125,15 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldNotReadTraceWithLowDurationQualifier() throws Exception {
+    public void shouldNotReadTraceWithLowTotalNanosQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
                 .from(0)
                 .to(0)
-                .durationNanosLow(trace.durationNanos() - 2)
-                .durationNanosHigh(trace.durationNanos() - 1)
+                .durationNanosLow(trace.getHeader().getDurationNanos() - 2)
+                .durationNanosHigh(trace.getHeader().getDurationNanos() - 1)
                 .transactionType("unit test")
                 .errorOnly(false)
                 .limit(1)

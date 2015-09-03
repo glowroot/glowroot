@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.common.model.LazyHistogram;
+import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.live.ImmutablePercentileAggregate;
 import org.glowroot.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.server.repo.AggregateRepository;
@@ -33,7 +34,6 @@ import org.glowroot.server.repo.config.AlertConfig;
 import org.glowroot.server.repo.config.ImmutableAlertConfig;
 import org.glowroot.server.repo.config.ImmutableSmtpConfig;
 import org.glowroot.server.repo.config.SmtpConfig;
-import org.glowroot.server.repo.helper.AlertingService;
 import org.glowroot.server.util.Encryption;
 import org.glowroot.server.util.MailService;
 
@@ -145,7 +145,7 @@ public class AlertingServiceTest {
                 .captureTime(120000)
                 .totalNanos(1000000)
                 .transactionCount(1)
-                .histogram(lazyHistogram)
+                .histogram(lazyHistogram.toProtobuf(new ScratchBuffer()))
                 .build();
         when(configRepository.getAlertConfigs()).thenReturn(ImmutableList.of(alertConfig));
         when(aggregateRepository.readOverallPercentileAggregates("tt", 60001, 120000, 0))

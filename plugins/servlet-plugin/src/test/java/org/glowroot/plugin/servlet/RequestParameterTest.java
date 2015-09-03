@@ -63,10 +63,10 @@ public class RequestParameterTest {
         // when
         container.executeAppUnderTest(GetParameter.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         @SuppressWarnings("unchecked")
         Map<String, Object> requestParameters =
-                (Map<String, Object>) trace.getCustomDetail().get("Request parameters");
+                (Map<String, Object>) header.detail().get("Request parameters");
         assertThat(requestParameters).hasSize(3);
         assertThat(requestParameters.get("xYz")).isEqualTo("aBc");
         assertThat(requestParameters.get("jpassword1")).isEqualTo("****");
@@ -82,9 +82,9 @@ public class RequestParameterTest {
         // when
         container.executeAppUnderTest(GetParameter.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getCustomDetail()).hasSize(1);
-        assertThat(trace.getCustomDetail()).containsKey("Request http method");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.detail()).hasSize(1);
+        assertThat(header.detail()).containsKey("Request http method");
     }
 
     @Test
@@ -102,10 +102,10 @@ public class RequestParameterTest {
         // when
         container.executeAppUnderTest(GetBadParameterMap.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         @SuppressWarnings("unchecked")
         Map<String, Object> requestParameters =
-                (Map<String, Object>) trace.getCustomDetail().get("Request parameters");
+                (Map<String, Object>) header.detail().get("Request parameters");
         assertThat(requestParameters).hasSize(1);
         assertThat(requestParameters.get("k")).isEqualTo("");
     }
@@ -116,8 +116,8 @@ public class RequestParameterTest {
         // when
         container.executeAppUnderTest(GetParameterOutsideServlet.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header).isNull();
         // basically just testing that it should not generate any errors
     }
 

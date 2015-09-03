@@ -48,7 +48,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -161,7 +160,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     @Override
     public String getHeapDumpDefaultDirectory() {
         String heapDumpPath = getHeapDumpPathFromCommandLine();
-        if (Strings.isNullOrEmpty(heapDumpPath)) {
+        if (heapDumpPath == null) {
             String javaTempDir =
                     MoreObjects.firstNonNull(StandardSystemProperty.JAVA_IO_TMPDIR.value(), ".");
             heapDumpPath = new File(javaTempDir).getAbsolutePath();

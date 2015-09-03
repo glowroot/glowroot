@@ -23,7 +23,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.channels.FileLock;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -55,9 +54,10 @@ import org.glowroot.agent.AgentModule;
 import org.glowroot.agent.ViewerAgentModule;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.SpyingLogbackFilter;
-import org.glowroot.collector.spi.Aggregate;
 import org.glowroot.collector.spi.Collector;
-import org.glowroot.collector.spi.GaugePoint;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Tickers;
 import org.glowroot.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
@@ -434,15 +434,15 @@ public class GlowrootModule {
         private volatile @MonotonicNonNull Collector instance;
 
         @Override
-        public void collectTrace(org.glowroot.collector.spi.Trace trace) throws Exception {
+        public void collectTrace(Trace trace) throws Exception {
             if (instance != null) {
                 instance.collectTrace(trace);
             }
         }
 
         @Override
-        public void collectAggregates(Map<String, ? extends Aggregate> overallAggregates,
-                Map<String, ? extends Map<String, ? extends Aggregate>> transactionAggregates,
+        public void collectAggregates(Map<String, Aggregate> overallAggregates,
+                Map<String, Map<String, Aggregate>> transactionAggregates,
                 long captureTime) throws Exception {
             if (instance != null) {
                 instance.collectAggregates(overallAggregates, transactionAggregates, captureTime);
@@ -450,10 +450,9 @@ public class GlowrootModule {
         }
 
         @Override
-        public void collectGaugePoints(Collection<? extends GaugePoint> gaugeValues)
-                throws Exception {
+        public void collectGaugeValues(Map<String, GaugeValue> gaugeValues) throws Exception {
             if (instance != null) {
-                instance.collectGaugePoints(gaugeValues);
+                instance.collectGaugeValues(gaugeValues);
             }
         }
 

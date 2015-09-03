@@ -49,8 +49,9 @@ public class UserProfileScheduler {
         if (!user.equalsIgnoreCase(userRecordingConfig.user())) {
             return;
         }
-        // schedule the first stack collection for configured interval after trace start (or
-        // immediately, if trace duration already exceeds configured collection interval)
+        // schedule the first stack collection for configured interval after transaction start (or
+        // immediately, if the transaction's total time already exceeds configured collection
+        // interval)
         int intervalMillis = userRecordingConfig.profileIntervalMillis();
         ScheduledRunnable userProfileRunnable = new UserProfileRunnable(transaction, configService);
         long initialDelay =

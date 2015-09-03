@@ -21,7 +21,7 @@ import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.spi.Trace;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.common.util.Tickers;
 import org.glowroot.server.simplerepo.util.CappedDatabase;
 import org.glowroot.server.simplerepo.util.DataSource;

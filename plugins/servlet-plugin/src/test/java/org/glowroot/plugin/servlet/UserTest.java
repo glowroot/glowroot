@@ -29,8 +29,8 @@ import org.junit.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 import org.glowroot.Containers;
-import org.glowroot.container.Container;
 import org.glowroot.container.trace.Trace;
+import org.glowroot.container.Container;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,8 +61,8 @@ public class UserTest {
         // when
         container.executeAppUnderTest(HasRequestUserPrincipal.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getUser()).isEqualTo("my name is mock");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.user()).isEqualTo("my name is mock");
     }
 
     @Test
@@ -81,8 +81,8 @@ public class UserTest {
         // when
         container.executeAppUnderTest(HasSessionUserAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getUser()).isEqualTo("abc");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.user()).isEqualTo("abc");
     }
 
     @Test
@@ -93,8 +93,8 @@ public class UserTest {
         // when
         container.executeAppUnderTest(SetSessionUserAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getUser()).isEqualTo("abc");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.user()).isEqualTo("abc");
     }
 
     @Test
@@ -105,10 +105,10 @@ public class UserTest {
         // when
         container.executeAppUnderTest(SetSessionUserAttributeNull.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         // this is intentional, setting user attribute to null shouldn't clear out user for
         // that particular request (since the request was in fact, originally, for that user)
-        assertThat(trace.getUser()).isEqualTo("something");
+        assertThat(header.user()).isEqualTo("something");
     }
 
     @Test
@@ -119,8 +119,8 @@ public class UserTest {
         // when
         container.executeAppUnderTest(HasNestedSessionUserAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getUser()).isEqualTo("xyz");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.user()).isEqualTo("xyz");
     }
 
     @Test
@@ -131,8 +131,8 @@ public class UserTest {
         // when
         container.executeAppUnderTest(SetNestedSessionUserAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getUser()).isEqualTo("xyz");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.user()).isEqualTo("xyz");
     }
 
     @Test
@@ -143,8 +143,8 @@ public class UserTest {
         // when
         container.executeAppUnderTest(HasSessionUserAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getUser()).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.user()).isEmpty();
     }
 
     @Test
@@ -155,8 +155,8 @@ public class UserTest {
         // when
         container.executeAppUnderTest(HasNestedSessionUserAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getUser()).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.user()).isEmpty();
     }
 
     @SuppressWarnings("serial")

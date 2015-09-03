@@ -61,8 +61,8 @@ class TraceDetailHttpService implements HttpService {
         String traceId = traceIds.get(0);
         logger.debug("handleRequest(): traceComponent={}, traceId={}", traceComponent, traceId);
 
-        ChunkSource chunkSource = getDetailChunkSource(traceComponent, traceId);
-        if (chunkSource == null) {
+        ChunkSource detail = getDetailChunkSource(traceComponent, traceId);
+        if (detail == null) {
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
@@ -74,7 +74,8 @@ class TraceDetailHttpService implements HttpService {
         }
         HttpServices.preventCaching(response);
         ctx.write(response);
-        ChannelFuture future = ctx.write(ChunkedInputs.from(chunkSource));
+        // TODO no more point in chunking here
+        ChannelFuture future = ctx.write(ChunkedInputs.from(detail));
         HttpServices.addErrorListener(future);
         if (!keepAlive) {
             HttpServices.addCloseListener(future);
@@ -86,10 +87,20 @@ class TraceDetailHttpService implements HttpService {
     private @Nullable ChunkSource getDetailChunkSource(String traceComponent, String traceId)
             throws Exception {
         if (traceComponent.equals("entries")) {
-            return traceCommonService.getEntries(traceId);
+            String entriesJson = traceCommonService.getEntriesJson(traceId);
+            if (entriesJson == null) {
+                // this includes trace was found but the trace had no trace entries
+                // caller should check trace.entry_count
+                return null;
+            }
+            return ChunkSource.wrap(entriesJson);
         }
         if (traceComponent.equals("profile")) {
-            return traceCommonService.getProfile(traceId);
+            String profileJson = traceCommonService.getProfileTreeJson(traceId);
+            if (profileJson == null) {
+                return null;
+            }
+            return ChunkSource.wrap(profileJson);
         }
         throw new IllegalStateException("Unexpected trace component: " + traceComponent);
     }

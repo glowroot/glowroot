@@ -15,12 +15,10 @@
  */
 package org.glowroot.common.model;
 
-import java.nio.ByteBuffer;
-
 import org.junit.Test;
 
-import org.glowroot.collector.spi.Histogram;
-import org.glowroot.common.model.LazyHistogram;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -80,22 +78,6 @@ public class LazyHistogramTest {
         shouldDecodeOnTopOfExisting(100000000, 200000000);
     }
 
-    @Test
-    public void testResizingHistogramBetweenCompressedEncodings() {
-        // given
-        LazyHistogram lazyHistogram = new LazyHistogram();
-        for (int i = 0; i < 2000000; i += 1000) {
-            lazyHistogram.add(1000);
-        }
-        ByteBuffer buffer = ByteBuffer.allocate(lazyHistogram.getNeededByteBufferCapacity());
-        lazyHistogram.encodeIntoByteBuffer(buffer);
-        // when
-        lazyHistogram.add(10000000);
-        buffer = ByteBuffer.allocate(lazyHistogram.getNeededByteBufferCapacity());
-        lazyHistogram.encodeIntoByteBuffer(buffer);
-        // then
-    }
-
     private void shouldTestPercentiles(int num) {
         // given
         LazyHistogram lazyHistogram = new LazyHistogram();
@@ -117,10 +99,10 @@ public class LazyHistogramTest {
         for (int i = num; i > 0; i -= 1000) {
             lazyHistogram.add(i);
         }
-        byte[] histogram = getHistogramBytes(lazyHistogram);
+        Aggregate.Histogram histogram = lazyHistogram.toProtobuf(new ScratchBuffer());
         lazyHistogram = new LazyHistogram();
         // when
-        lazyHistogram.decodeFromByteBuffer(ByteBuffer.wrap(histogram));
+        lazyHistogram.merge(histogram);
         // then
         assertPercentile(lazyHistogram, num, 50);
         assertPercentile(lazyHistogram, num, 95);
@@ -135,10 +117,10 @@ public class LazyHistogramTest {
         for (int i = num; i > 0; i -= 1000) {
             lazyHistogram.add(i);
         }
-        byte[] histogram = getHistogramBytes(lazyHistogram);
+        Aggregate.Histogram histogram = lazyHistogram.toProtobuf(new ScratchBuffer());
         lazyHistogram = new LazyHistogram();
         // when
-        lazyHistogram.decodeFromByteBuffer(ByteBuffer.wrap(histogram));
+        lazyHistogram.merge(histogram);
         for (int i = 2 * num; i > num; i -= 1000) {
             lazyHistogram.add(i);
         }
@@ -155,13 +137,13 @@ public class LazyHistogramTest {
         for (int i = encodedSize; i > 0; i -= 1000) {
             lazyHistogram.add(i);
         }
-        byte[] histogram = getHistogramBytes(lazyHistogram);
+        Aggregate.Histogram histogram = lazyHistogram.toProtobuf(new ScratchBuffer());
         lazyHistogram = new LazyHistogram();
         // when
         for (int i = nonEncodedSize + encodedSize; i > encodedSize; i -= 1000) {
             lazyHistogram.add(i);
         }
-        lazyHistogram.decodeFromByteBuffer(ByteBuffer.wrap(histogram));
+        lazyHistogram.merge(histogram);
         // then
         assertPercentile(lazyHistogram, encodedSize + nonEncodedSize, 50);
         assertPercentile(lazyHistogram, encodedSize + nonEncodedSize, 95);
@@ -174,16 +156,5 @@ public class LazyHistogramTest {
         long low = (long) Math.floor(num * percentile * 0.99 / (100 * 1000)) * 1000;
         long high = (long) Math.ceil(num * percentile * 1.01 / (100 * 1000)) * 1000;
         assertThat(lazyHistogram.getValueAtPercentile(percentile)).isBetween(low, high);
-    }
-
-    private static byte[] getHistogramBytes(Histogram histogram) {
-        ByteBuffer buffer = ByteBuffer.allocate(histogram.getNeededByteBufferCapacity());
-        buffer.clear();
-        histogram.encodeIntoByteBuffer(buffer);
-        int size = buffer.position();
-        buffer.flip();
-        byte[] histogramBytes = new byte[size];
-        buffer.get(histogramBytes, 0, size);
-        return histogramBytes;
     }
 }

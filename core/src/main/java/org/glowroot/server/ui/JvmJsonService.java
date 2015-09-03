@@ -34,6 +34,7 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.live.LiveJvmService;
@@ -42,7 +43,6 @@ import org.glowroot.live.LiveThreadDumpService;
 import org.glowroot.server.repo.ConfigRepository;
 import org.glowroot.server.repo.GaugeValueRepository;
 import org.glowroot.server.repo.GaugeValueRepository.Gauge;
-import org.glowroot.server.repo.GaugeValueRepository.GaugeValue;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -221,7 +221,7 @@ class JvmJsonService {
         }
         long nonRolledUpFrom = from;
         if (!gaugeValues.isEmpty()) {
-            long lastRolledUpTime = gaugeValues.get(gaugeValues.size() - 1).captureTime();
+            long lastRolledUpTime = gaugeValues.get(gaugeValues.size() - 1).getCaptureTime();
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<GaugeValue> allGaugeValues = Lists.newArrayList(gaugeValues);
@@ -236,10 +236,10 @@ class JvmJsonService {
         GaugeValue lastGaugeValue = null;
         for (GaugeValue gaugeValue : gaugeValues) {
             if (lastGaugeValue != null
-                    && gaugeValue.captureTime() - lastGaugeValue.captureTime() > gapMillis) {
+                    && gaugeValue.getCaptureTime() - lastGaugeValue.getCaptureTime() > gapMillis) {
                 dataSeries.addNull();
             }
-            dataSeries.add(gaugeValue.captureTime(), gaugeValue.value());
+            dataSeries.add(gaugeValue.getCaptureTime(), gaugeValue.getValue());
             lastGaugeValue = gaugeValue;
         }
         return dataSeries;

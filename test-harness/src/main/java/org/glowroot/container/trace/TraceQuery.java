@@ -33,11 +33,11 @@ public abstract class TraceQuery {
     }
 
     @Value.Default
-    public long durationMillisLow() {
+    public double responseTimeMillisLow() {
         return 0;
     }
 
-    public abstract @Nullable Long durationMillisHigh();
+    public abstract @Nullable Double responseTimeMillisHigh();
     public abstract @Nullable String transactionType();
     public abstract @Nullable StringComparator transactionNameComparator();
     public abstract @Nullable String transactionName();

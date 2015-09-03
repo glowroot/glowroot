@@ -55,8 +55,8 @@ public class GlowrootApiTest {
         // when
         container.executeAppUnderTest(SetTransactionType.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getTransactionType()).isEqualTo("a type");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.transactionType()).isEqualTo("a type");
     }
 
     @Test
@@ -65,8 +65,8 @@ public class GlowrootApiTest {
         // when
         container.executeAppUnderTest(SetTransactionName.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getTransactionName()).isEqualTo("a name");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.transactionName()).isEqualTo("a name");
     }
 
     @Test
@@ -75,9 +75,9 @@ public class GlowrootApiTest {
         // when
         container.executeAppUnderTest(SetTransactionErrorWithThrowable.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isEqualTo("abc");
-        assertThat(trace.getErrorThrowable().getDisplay())
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.error().get().message()).isEqualTo("abc");
+        assertThat(header.error().get().exception().get().display())
                 .isEqualTo("java.lang.IllegalStateException: abc");
     }
 
@@ -87,9 +87,9 @@ public class GlowrootApiTest {
         // when
         container.executeAppUnderTest(SetTransactionErrorWithMessage.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isEqualTo("xyz");
-        assertThat(trace.getErrorThrowable()).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.error().get().message()).isEqualTo("xyz");
+        assertThat(header.error().get().exception().isPresent()).isFalse();
     }
 
     @Test
@@ -98,9 +98,9 @@ public class GlowrootApiTest {
         // when
         container.executeAppUnderTest(SetTransactionErrorWithMessageAndThrowable.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isEqualTo("efg");
-        assertThat(trace.getErrorThrowable().getDisplay())
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.error().get().message()).isEqualTo("efg");
+        assertThat(header.error().get().exception().get().display())
                 .isEqualTo("java.lang.IllegalStateException: tuv");
     }
 
@@ -110,8 +110,8 @@ public class GlowrootApiTest {
         // when
         container.executeAppUnderTest(SetTransactionUser.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getUser()).isEqualTo("a user");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.user()).isEqualTo("a user");
     }
 
     @Test
@@ -120,9 +120,9 @@ public class GlowrootApiTest {
         // when
         container.executeAppUnderTest(AddTransactionCustomAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getCustomAttributes().size()).isEqualTo(1);
-        assertThat(trace.getCustomAttributes().get("an attr")).containsExactly("a val");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.attributes().size()).isEqualTo(1);
+        assertThat(header.attributes().get("an attr")).containsExactly("a val");
     }
 
     @Test
@@ -131,8 +131,8 @@ public class GlowrootApiTest {
         // when
         container.executeAppUnderTest(SetTransactionSlowThreshold.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header).isNull();
     }
 
     public static class SetTransactionType implements AppUnderTest, TraceMarker {

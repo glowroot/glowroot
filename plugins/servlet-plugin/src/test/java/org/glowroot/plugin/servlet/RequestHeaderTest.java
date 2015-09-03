@@ -67,10 +67,10 @@ public class RequestHeaderTest {
         // when
         container.executeAppUnderTest(SetStandardRequestHeaders.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) trace.getCustomDetail().get("Request headers");
+                (Map<String, Object>) header.detail().get("Request headers");
         assertThat(requestHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(requestHeaders.get("Content-Length")).isEqualTo("1");
         assertThat(requestHeaders.get("Extra")).isNull();
@@ -84,10 +84,10 @@ public class RequestHeaderTest {
         // when
         container.executeAppUnderTest(SetStandardRequestHeadersLowercase.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) trace.getCustomDetail().get("Request headers");
+                (Map<String, Object>) header.detail().get("Request headers");
         assertThat(requestHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(requestHeaders.get("content-length")).isEqualTo("1");
         assertThat(requestHeaders.get("extra")).isNull();
@@ -101,10 +101,10 @@ public class RequestHeaderTest {
         // when
         container.executeAppUnderTest(SetOtherRequestHeaders.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) trace.getCustomDetail().get("Request headers");
+                (Map<String, Object>) header.detail().get("Request headers");
         @SuppressWarnings("unchecked")
         List<String> one = (List<String>) requestHeaders.get("One");
         assertThat(one).containsExactly("ab", "xy");
@@ -120,10 +120,10 @@ public class RequestHeaderTest {
         // when
         container.executeAppUnderTest(GetBadRequestHeaders.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) trace.getCustomDetail().get("Request headers");
+                (Map<String, Object>) header.detail().get("Request headers");
         assertThat(requestHeaders).isNull();
     }
 
@@ -135,10 +135,10 @@ public class RequestHeaderTest {
         // when
         container.executeAppUnderTest(GetBadRequestHeaders2.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastTrace();
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) trace.getCustomDetail().get("Request headers");
+                (Map<String, Object>) header.detail().get("Request headers");
         assertThat(requestHeaders).hasSize(1);
         assertThat(requestHeaders.get("h1")).isEqualTo("");
     }
@@ -149,8 +149,8 @@ public class RequestHeaderTest {
         // when
         container.executeAppUnderTest(SetTransactionNameOverrideRequestHeaders.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getTransactionName()).isEqualTo("AbcXyz");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.transactionName()).isEqualTo("AbcXyz");
     }
 
     @SuppressWarnings("serial")

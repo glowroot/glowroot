@@ -16,15 +16,17 @@
 package org.glowroot.server.repo;
 
 import java.sql.SQLException;
+import java.util.List;
 
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.CharSource;
 import org.immutables.value.Value;
 
+import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.common.util.Styles;
-import org.glowroot.live.LiveTraceRepository.TraceHeader;
+import org.glowroot.live.LiveTraceRepository.Existence;
 import org.glowroot.live.LiveTraceRepository.TracePoint;
 import org.glowroot.live.LiveTraceRepository.TracePointQuery;
 
@@ -50,13 +52,12 @@ public interface TraceRepository {
     Result<ErrorMessageCount> readErrorMessageCounts(ErrorMessageQuery query) throws Exception;
 
     @Nullable
-    TraceHeader readTraceHeader(String traceId) throws Exception;
+    HeaderPlus readHeader(String traceId) throws Exception;
+
+    List<Trace.Entry> readEntries(String traceId) throws Exception;
 
     @Nullable
-    CharSource readEntries(String traceId) throws Exception;
-
-    @Nullable
-    CharSource readProfile(String traceId) throws Exception;
+    ProfileTree readProfileTree(String traceId) throws Exception;
 
     // only supported by local storage implementation
     void deleteAll() throws SQLException;
@@ -86,5 +87,13 @@ public interface TraceRepository {
     public interface TraceErrorPoint {
         long captureTime();
         long errorCount();
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    public interface HeaderPlus {
+        Trace.Header header();
+        Existence entriesExistence();
+        Existence profileExistence();
     }
 }

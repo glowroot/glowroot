@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.impl;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -28,10 +27,10 @@ import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.QueryData;
 import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
-import org.glowroot.collector.spi.Aggregate;
 import org.glowroot.collector.spi.Collector;
-import org.glowroot.collector.spi.GaugePoint;
-import org.glowroot.collector.spi.Trace;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.common.config.ImmutableAdvancedConfig;
 import org.glowroot.common.util.Clock;
 
@@ -65,8 +64,8 @@ public class AggregatorTest {
 
         Transaction transaction = mock(Transaction.class);
         TimerImpl timer = mock(TimerImpl.class);
-        when(timer.name()).thenReturn("test 123");
-        when(timer.getNestedTimers()).thenReturn(ImmutableList.<TimerImpl>of());
+        when(timer.getName()).thenReturn("test 123");
+        when(timer.getChildTimers()).thenReturn(ImmutableList.<TimerImpl>of());
         when(transaction.getTransactionType()).thenReturn("a type");
         when(transaction.getTransactionName()).thenReturn("a name");
         when(transaction.getDurationNanos()).thenReturn(MILLISECONDS.toNanos(123));
@@ -106,12 +105,12 @@ public class AggregatorTest {
         }
 
         @Override
-        public void collectAggregates(Map<String, ? extends Aggregate> overallAggregates,
-                Map<String, ? extends Map<String, ? extends Aggregate>> transactionAggregates,
-                long captureTime) throws Exception {
+        public void collectAggregates(Map<String, Aggregate> overallAggregates,
+                Map<String, Map<String, Aggregate>> transactionAggregates, long captureTime)
+                        throws Exception {
             // only capture first non-zero value
             if (totalNanos == 0 && !overallAggregates.isEmpty()) {
-                totalNanos = overallAggregates.values().iterator().next().totalNanos();
+                totalNanos = overallAggregates.values().iterator().next().getTotalNanos();
             }
         }
 
@@ -119,7 +118,6 @@ public class AggregatorTest {
         public void collectTrace(Trace trace) throws Exception {}
 
         @Override
-        public void collectGaugePoints(Collection<? extends GaugePoint> gaugeValues)
-                throws Exception {}
+        public void collectGaugeValues(Map<String, GaugeValue> gaugeValues) throws Exception {}
     }
 }

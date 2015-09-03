@@ -15,21 +15,20 @@
  */
 package org.glowroot.agent.model;
 
-import java.util.Collection;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.spi.ThrowableInfo;
-import org.glowroot.collector.spi.TraceEntry;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
+import org.glowroot.common.model.DetailMapWriter;
 import org.glowroot.common.util.Tickers;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.QueryEntry;
@@ -57,8 +56,6 @@ public class TraceEntryImpl implements QueryEntry, Timer {
     // not volatile, so depends on memory barrier in Transaction for visibility
     private long endTick;
 
-    private final int nestingLevel;
-
     // this is for maintaining linear list of trace entries
     private @Nullable TraceEntryImpl nextTraceEntry;
 
@@ -80,12 +77,11 @@ public class TraceEntryImpl implements QueryEntry, Timer {
 
     TraceEntryImpl(@Nullable TraceEntryImpl parentTraceEntry,
             @Nullable MessageSupplier messageSupplier, @Nullable QueryData queryData,
-            long queryExecutionCount, long startTick, int nestingLevel, @Nullable TimerImpl timer) {
+            long queryExecutionCount, long startTick, @Nullable TimerImpl timer) {
         this.parentTraceEntry = parentTraceEntry;
         this.messageSupplier = messageSupplier;
         this.queryData = queryData;
         this.startTick = startTick;
-        this.nestingLevel = nestingLevel;
         this.timer = timer;
         revisedStartTick = startTick;
         selfNestingLevel = 1;
@@ -104,28 +100,62 @@ public class TraceEntryImpl implements QueryEntry, Timer {
         return errorMessage;
     }
 
-    TraceEntry toSpiTraceEntry(long transactionStartTick, long captureTick) {
-        return new SpiTraceEntry(this, transactionStartTick, captureTick);
+    Trace.Entry toProtobuf(long transactionStartTick, long captureTick,
+            List<Trace.Entry> childEntries) {
+        long offsetNanos = startTick - transactionStartTick;
+        long durationNanos;
+        boolean active;
+        if (isCompleted() && Tickers.lessThanOrEqual(endTick, captureTick)) {
+            // total time is calculated relative to revised start tick
+            durationNanos = endTick - revisedStartTick;
+            active = false;
+        } else {
+            // total time is calculated relative to revised start tick
+            durationNanos = captureTick - revisedStartTick;
+            active = true;
+        }
+        MessageSupplier messageSupplier = getMessageSupplier();
+        ReadableMessage message =
+                messageSupplier == null ? null : (ReadableMessage) messageSupplier.get();
+
+        Trace.Entry.Builder builder = Trace.Entry.newBuilder()
+                .setStartOffsetNanos(offsetNanos)
+                .setDurationNanos(durationNanos)
+                .setActive(active)
+                .setMessage(message == null ? "" : message.getText() + getRowCountSuffix());
+        if (message != null) {
+            builder.addAllDetailEntry(DetailMapWriter.toProtobufDetail(message.getDetail()));
+        }
+        ErrorMessage errorMessage = this.errorMessage;
+        if (errorMessage != null) {
+            Trace.Error.Builder errorBuilder = builder.getErrorBuilder();
+            errorBuilder.setMessage(errorMessage.message());
+            Trace.Throwable throwable = errorMessage.throwable();
+            if (throwable != null) {
+                errorBuilder.setException(throwable);
+            }
+            errorBuilder.build();
+        }
+        if (stackTrace != null) {
+            for (StackTraceElement stackTraceElement : stackTrace) {
+                builder.addLocationStackTraceElementBuilder()
+                        .setClassName(stackTraceElement.getClassName())
+                        .setMethodName(Strings.nullToEmpty(stackTraceElement.getMethodName()))
+                        .setFileName(Strings.nullToEmpty(stackTraceElement.getFileName()))
+                        .setLineNumber(stackTraceElement.getLineNumber())
+                        .build();
+            }
+        }
+        builder.addAllChildEntry(childEntries);
+        return builder.build();
     }
 
     long getStartTick() {
         return startTick;
     }
 
-    private long getRevisedStartTick() {
-        return revisedStartTick;
-    }
-
     private boolean isCompleted() {
         return selfNestingLevel == 0;
-    }
-
-    public int nestingLevel() {
-        return nestingLevel;
-    }
-
-    public @Nullable ImmutableList<StackTraceElement> stackTrace() {
-        return stackTrace;
     }
 
     @Override
@@ -178,9 +208,9 @@ public class TraceEntryImpl implements QueryEntry, Timer {
         // are not returned from plugin api so no way for extend() to be called when timer is null
         checkNotNull(timer);
         if (selfNestingLevel++ == 0) {
-            long priorDuration = endTick - revisedStartTick;
+            long priorDurationNanos = endTick - revisedStartTick;
             long currTick = ticker.read();
-            revisedStartTick = currTick - priorDuration;
+            revisedStartTick = currTick - priorDurationNanos;
             extendedTimer = timer.extend(currTick);
             if (queryData != null) {
                 queryData.extend(currTick);
@@ -314,89 +344,15 @@ public class TraceEntryImpl implements QueryEntry, Timer {
         transaction.popEntry(this, endTick);
     }
 
-    private static class SpiTraceEntry implements TraceEntry {
-
-        private final TraceEntryImpl traceEntry;
-        private final long offsetNanos;
-        private final long durationNanos;
-        private final boolean active;
-        private final @Nullable ReadableMessage message;
-
-        private SpiTraceEntry(TraceEntryImpl traceEntry, long transactionStartTick,
-                long captureTick) {
-            this.traceEntry = traceEntry;
-            offsetNanos = traceEntry.getStartTick() - transactionStartTick;
-            long endTick = traceEntry.endTick;
-            if (traceEntry.isCompleted() && Tickers.lessThanOrEqual(endTick, captureTick)) {
-                // duration is calculated relative to revised start tick
-                durationNanos = endTick - traceEntry.getRevisedStartTick();
-                active = false;
-            } else {
-                // duration is calculated relative to revised start tick
-                durationNanos = captureTick - traceEntry.getRevisedStartTick();
-                active = true;
-            }
-            MessageSupplier messageSupplier = traceEntry.getMessageSupplier();
-            message = messageSupplier == null ? null : (ReadableMessage) messageSupplier.get();
+    private String getRowCountSuffix() {
+        if (!isQueryNavigationAttempted()) {
+            return "";
         }
-
-        @Override
-        public @Nullable Collection<StackTraceElement> stackTrace() {
-            return traceEntry.stackTrace();
-        }
-
-        @Override
-        public long offsetNanos() {
-            return offsetNanos;
-        }
-
-        @Override
-        public int nestingLevel() {
-            return traceEntry.nestingLevel();
-        }
-
-        @Override
-        public @Nullable String messageText() {
-            return message == null ? null : message.getText() + getRowCountSuffix();
-        }
-
-        @Override
-        public Map<String, ? extends /*@Nullable*/Object> messageDetail() {
-            return message == null ? ImmutableMap.<String, Object>of() : message.getDetail();
-        }
-
-        @Override
-        public @Nullable String errorMessage() {
-            ErrorMessage errorMessage = traceEntry.getErrorMessage();
-            return errorMessage == null ? null : errorMessage.message();
-        }
-
-        @Override
-        public @Nullable ThrowableInfo errorThrowable() {
-            ErrorMessage errorMessage = traceEntry.getErrorMessage();
-            return errorMessage == null ? null : errorMessage.throwable();
-        }
-
-        @Override
-        public long durationNanos() {
-            return durationNanos;
-        }
-
-        @Override
-        public boolean active() {
-            return active;
-        }
-
-        private String getRowCountSuffix() {
-            if (!traceEntry.isQueryNavigationAttempted()) {
-                return "";
-            }
-            long rowCount = traceEntry.getRowCount();
-            if (rowCount == 1) {
-                return " => 1 row";
-            } else {
-                return " => " + rowCount + " rows";
-            }
+        long rowCount = getRowCount();
+        if (rowCount == 1) {
+            return " => 1 row";
+        } else {
+            return " => " + rowCount + " rows";
         }
     }
 }

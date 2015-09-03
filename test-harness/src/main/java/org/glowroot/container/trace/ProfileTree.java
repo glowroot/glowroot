@@ -13,24 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.collector.spi;
+package org.glowroot.container.trace;
 
-import java.util.Collection;
+import java.util.List;
 
-import javax.annotation.Nullable;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.base.Optional;
+import org.immutables.value.Value;
 
-public interface AggregateTimerNode {
+@Value.Immutable
+@JsonSerialize
+public interface ProfileTree {
 
-    // only null for synthetic root node
-    @Nullable
-    String name();
+    long unfilteredSampleCount();
+    List<ProfileNode> rootNodes();
 
-    boolean extended();
+    @Value.Immutable
+    @JsonSerialize
+    public interface ProfileNode {
 
-    // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
-    double totalNanos();
-
-    long count();
-
-    Collection<? extends AggregateTimerNode> childNodes();
+        String stackTraceElement();
+        Optional<String> leafThreadState();
+        int sampleCount();
+        List<String> timerNames();
+        List<ProfileNode> childNodes();
+    }
 }

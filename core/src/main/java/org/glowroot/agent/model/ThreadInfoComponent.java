@@ -27,7 +27,7 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
 
 import org.glowroot.agent.util.ThreadAllocatedBytes;
-import org.glowroot.collector.spi.Trace;
+import org.glowroot.collector.spi.Constants;
 import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -172,19 +172,19 @@ class ThreadInfoComponent {
 
         @Value.Default
         public long threadCpuNanos() {
-            return Trace.THREAD_DATA_NOT_AVAILABLE;
+            return Constants.THREAD_DATA_NOT_AVAILABLE;
         }
         @Value.Default
         public long threadBlockedNanos() {
-            return Trace.THREAD_DATA_NOT_AVAILABLE;
+            return Constants.THREAD_DATA_NOT_AVAILABLE;
         }
         @Value.Default
         public long threadWaitedNanos() {
-            return Trace.THREAD_DATA_NOT_AVAILABLE;
+            return Constants.THREAD_DATA_NOT_AVAILABLE;
         }
         @Value.Default
         public long threadAllocatedBytes() {
-            return Trace.THREAD_DATA_NOT_AVAILABLE;
+            return Constants.THREAD_DATA_NOT_AVAILABLE;
         }
     }
 }

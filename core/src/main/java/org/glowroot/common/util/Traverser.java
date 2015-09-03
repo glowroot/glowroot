@@ -17,13 +17,16 @@ package org.glowroot.common.util;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 
 public abstract class Traverser<T extends /*@NonNull*/Object, E extends Exception> {
 
     private static final Object ALREADY_TRAVERSED_MARKER = new Object();
 
     private final Deque<Object> stack;
+
+    private int depth;
 
     public Traverser(T root) {
         stack = new ArrayDeque<Object>();
@@ -36,24 +39,27 @@ public abstract class Traverser<T extends /*@NonNull*/Object, E extends Exceptio
             Object popped = stack.pop();
             if (popped == ALREADY_TRAVERSED_MARKER) {
                 revisitAfterChildren((T) stack.pop());
+                depth--;
                 continue;
             }
             T unprocessed = (T) popped;
-            Iterator<? extends T> childNodes = visit(unprocessed).iterator();
-            if (!childNodes.hasNext()) {
+            List<? extends T> childNodes = visit(unprocessed, depth);
+            if (childNodes.isEmpty()) {
                 // optimization for no children
                 revisitAfterChildren(unprocessed);
             } else {
                 stack.push(unprocessed);
                 stack.push(ALREADY_TRAVERSED_MARKER);
-                while (childNodes.hasNext()) {
-                    stack.push(childNodes.next());
+                ListIterator<? extends T> i = childNodes.listIterator(childNodes.size());
+                while (i.hasPrevious()) {
+                    stack.push(i.previous());
                 }
+                depth++;
             }
         }
     }
 
-    public abstract Iterable<? extends T> visit(T node) throws E;
+    public abstract List<? extends T> visit(T node, int depth) throws E;
 
-    public void revisitAfterChildren(@SuppressWarnings("unused") T node) throws E {};
+    protected void revisitAfterChildren(@SuppressWarnings("unused") T node) throws E {};
 }

@@ -67,10 +67,10 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNotNull();
-        assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
-        assertThat(getUpdatedSessionAttributes(trace)).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNotNull();
+        assertThat(getSessionAttributes(header).get("testattr")).isEqualTo("val");
+        assertThat(getUpdatedSessionAttributes(header)).isNull();
     }
 
     @Test
@@ -81,10 +81,10 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNotNull();
-        assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
-        assertThat(getUpdatedSessionAttributes(trace)).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNotNull();
+        assertThat(getSessionAttributes(header).get("testattr")).isEqualTo("val");
+        assertThat(getUpdatedSessionAttributes(header)).isNull();
     }
 
     @Test
@@ -94,10 +94,10 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNotNull();
-        assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
-        assertThat(getUpdatedSessionAttributes(trace)).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNotNull();
+        assertThat(getSessionAttributes(header).get("testattr")).isEqualTo("val");
+        assertThat(getUpdatedSessionAttributes(header)).isNull();
     }
 
     @Test
@@ -108,10 +108,10 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNotNull();
-        assertThat(getSessionAttributes(trace).get("testattr")).isEqualTo("val");
-        assertThat(getUpdatedSessionAttributes(trace)).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNotNull();
+        assertThat(getSessionAttributes(header).get("testattr")).isEqualTo("val");
+        assertThat(getUpdatedSessionAttributes(header)).isNull();
     }
 
     @Test
@@ -121,9 +121,9 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNull();
-        assertThat(getUpdatedSessionAttributes(trace)).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNull();
+        assertThat(getUpdatedSessionAttributes(header)).isNull();
     }
 
     @Test
@@ -134,11 +134,11 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getInitialSessionAttributes(trace)).isNotNull();
-        assertThat(getInitialSessionAttributes(trace).get("testother")).isEqualTo("v");
-        assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
-        assertThat(getUpdatedSessionAttributes(trace).get("testattr")).isEqualTo("val");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getInitialSessionAttributes(header)).isNotNull();
+        assertThat(getInitialSessionAttributes(header).get("testother")).isEqualTo("v");
+        assertThat(getUpdatedSessionAttributes(header)).isNotNull();
+        assertThat(getUpdatedSessionAttributes(header).get("testattr")).isEqualTo("val");
     }
 
     @Test
@@ -148,10 +148,10 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNull();
-        assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
-        assertThat(getUpdatedSessionAttributes(trace).get("testattr")).isEqualTo("val");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNull();
+        assertThat(getUpdatedSessionAttributes(header)).isNotNull();
+        assertThat(getUpdatedSessionAttributes(header).get("testattr")).isEqualTo("val");
     }
 
     @Test
@@ -162,10 +162,10 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNull();
-        assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
-        assertThat(getUpdatedSessionAttributes(trace).get("testattr")).isEqualTo("val");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNull();
+        assertThat(getUpdatedSessionAttributes(header)).isNotNull();
+        assertThat(getUpdatedSessionAttributes(header).get("testattr")).isEqualTo("val");
     }
 
     @Test
@@ -175,9 +175,9 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(SetSessionAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNull();
-        assertThat(getUpdatedSessionAttributes(trace)).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNull();
+        assertThat(getUpdatedSessionAttributes(header)).isNull();
     }
 
     @Test
@@ -187,10 +187,10 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(SetSessionAttributeNull.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNull();
-        assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
-        assertThat(getUpdatedSessionAttributes(trace).containsValue("testattr")).isFalse();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNull();
+        assertThat(getUpdatedSessionAttributes(header)).isNotNull();
+        assertThat(getUpdatedSessionAttributes(header).containsValue("testattr")).isFalse();
     }
 
     @Test
@@ -201,11 +201,11 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNotNull();
-        assertThat(getSessionAttributes(trace).get("one.two.three")).isEqualTo("four");
-        assertThat(getSessionAttributes(trace).get("one.amap.x")).isEqualTo("y");
-        assertThat(getUpdatedSessionAttributes(trace)).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNotNull();
+        assertThat(getSessionAttributes(header).get("one.two.three")).isEqualTo("four");
+        assertThat(getSessionAttributes(header).get("one.amap.x")).isEqualTo("y");
+        assertThat(getUpdatedSessionAttributes(header)).isNull();
     }
 
     @Test
@@ -216,11 +216,11 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(SetNestedSessionAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNull();
-        assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
-        assertThat(getUpdatedSessionAttributes(trace).get("one.two.three")).isEqualTo("four");
-        assertThat(getUpdatedSessionAttributes(trace).get("one.amap.x")).isEqualTo("y");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNull();
+        assertThat(getUpdatedSessionAttributes(header)).isNotNull();
+        assertThat(getUpdatedSessionAttributes(header).get("one.two.three")).isEqualTo("four");
+        assertThat(getUpdatedSessionAttributes(header).get("one.amap.x")).isEqualTo("y");
     }
 
     @Test
@@ -231,9 +231,9 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNull();
-        assertThat(getUpdatedSessionAttributes(trace)).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNull();
+        assertThat(getUpdatedSessionAttributes(header)).isNull();
     }
 
     @Test
@@ -244,9 +244,9 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNull();
-        assertThat(getUpdatedSessionAttributes(trace)).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNull();
+        assertThat(getUpdatedSessionAttributes(header)).isNull();
     }
 
     @Test
@@ -257,13 +257,13 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNotNull();
-        assertThat(getSessionAttributes(trace)).hasSize(5);
-        assertThat(getSessionAttributes(trace).get("one.two.three")).isEqualTo("four");
-        assertThat(getSessionAttributes(trace).get("one.amap.x")).isEqualTo("y");
-        assertThat(getSessionAttributes(trace).get("one.another")).isEqualTo("3");
-        assertThat(getUpdatedSessionAttributes(trace)).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNotNull();
+        assertThat(getSessionAttributes(header)).hasSize(5);
+        assertThat(getSessionAttributes(header).get("one.two.three")).isEqualTo("four");
+        assertThat(getSessionAttributes(header).get("one.amap.x")).isEqualTo("y");
+        assertThat(getSessionAttributes(header).get("one.another")).isEqualTo("3");
+        assertThat(getUpdatedSessionAttributes(header)).isNull();
     }
 
     @Test
@@ -274,13 +274,13 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(SetNestedSessionAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNull();
-        assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
-        assertThat(getUpdatedSessionAttributes(trace)).hasSize(5);
-        assertThat(getUpdatedSessionAttributes(trace).get("one.two.three")).isEqualTo("four");
-        assertThat(getUpdatedSessionAttributes(trace).get("one.amap.x")).isEqualTo("y");
-        assertThat(getUpdatedSessionAttributes(trace).get("one.another")).isEqualTo("3");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNull();
+        assertThat(getUpdatedSessionAttributes(header)).isNotNull();
+        assertThat(getUpdatedSessionAttributes(header)).hasSize(5);
+        assertThat(getUpdatedSessionAttributes(header).get("one.two.three")).isEqualTo("four");
+        assertThat(getUpdatedSessionAttributes(header).get("one.amap.x")).isEqualTo("y");
+        assertThat(getUpdatedSessionAttributes(header).get("one.another")).isEqualTo("3");
     }
 
     @Test
@@ -291,12 +291,12 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(SetNestedSessionAttributeToNull.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNull();
-        assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
-        assertThat(getUpdatedSessionAttributes(trace)).hasSize(1);
-        assertThat(getUpdatedSessionAttributes(trace).containsKey("one")).isTrue();
-        assertThat(getUpdatedSessionAttributes(trace).get("one")).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNull();
+        assertThat(getUpdatedSessionAttributes(header)).isNotNull();
+        assertThat(getUpdatedSessionAttributes(header)).hasSize(1);
+        assertThat(getUpdatedSessionAttributes(header).containsKey("one")).isTrue();
+        assertThat(getUpdatedSessionAttributes(header).get("one")).isNull();
     }
 
     @Test
@@ -307,12 +307,12 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(SetNestedSessionAttributeToNull.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNull();
-        assertThat(getUpdatedSessionAttributes(trace)).isNotNull();
-        assertThat(getUpdatedSessionAttributes(trace)).hasSize(1);
-        assertThat(getUpdatedSessionAttributes(trace).containsKey("one.two")).isTrue();
-        assertThat(getUpdatedSessionAttributes(trace).get("one.two")).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNull();
+        assertThat(getUpdatedSessionAttributes(header)).isNotNull();
+        assertThat(getUpdatedSessionAttributes(header)).hasSize(1);
+        assertThat(getUpdatedSessionAttributes(header).containsKey("one.two")).isTrue();
+        assertThat(getUpdatedSessionAttributes(header).get("one.two")).isNull();
     }
 
     @Test
@@ -323,9 +323,9 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(HasSessionAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNull();
-        assertThat(getUpdatedSessionAttributes(trace)).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNull();
+        assertThat(getUpdatedSessionAttributes(header)).isNull();
     }
 
     @Test
@@ -336,9 +336,9 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(HasNestedSessionAttribute.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNull();
-        assertThat(getUpdatedSessionAttributes(trace)).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNull();
+        assertThat(getUpdatedSessionAttributes(header)).isNull();
     }
 
     @Test
@@ -348,25 +348,25 @@ public class SessionAttributeTest {
         // when
         container.executeAppUnderTest(GetBadAttributeNames.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(getSessionAttributes(trace)).isNull();
-        assertThat(getUpdatedSessionAttributes(trace)).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(getSessionAttributes(header)).isNull();
+        assertThat(getUpdatedSessionAttributes(header)).isNull();
     }
 
     @SuppressWarnings("unchecked")
-    private static @Nullable Map<String, String> getSessionAttributes(Trace trace) {
-        return (Map<String, String>) trace.getCustomDetail().get("Session attributes");
+    private static @Nullable Map<String, String> getSessionAttributes(Trace.Header header) {
+        return (Map<String, String>) header.detail().get("Session attributes");
     }
 
     @SuppressWarnings("unchecked")
-    private static @Nullable Map<String, String> getInitialSessionAttributes(Trace trace) {
-        return (Map<String, String>) trace.getCustomDetail()
+    private static @Nullable Map<String, String> getInitialSessionAttributes(Trace.Header header) {
+        return (Map<String, String>) header.detail()
                 .get("Session attributes (at beginning of this request)");
     }
 
     @SuppressWarnings("unchecked")
-    private static @Nullable Map<String, String> getUpdatedSessionAttributes(Trace trace) {
-        return (Map<String, String>) trace.getCustomDetail()
+    private static @Nullable Map<String, String> getUpdatedSessionAttributes(Trace.Header header) {
+        return (Map<String, String>) header.detail()
                 .get("Session attributes (updated during this request)");
     }
 

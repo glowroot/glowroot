@@ -23,11 +23,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
+import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
-import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -55,9 +54,9 @@ public class JdbcDriverTest {
         // given
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries.get(0).getMessageText()).isEqualTo("major version");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        assertThat(entries.get(0).message()).isEqualTo("major version");
     }
 
     public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest, TraceMarker {

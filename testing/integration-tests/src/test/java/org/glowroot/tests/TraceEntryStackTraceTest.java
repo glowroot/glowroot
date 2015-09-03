@@ -29,7 +29,6 @@ import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -64,17 +63,17 @@ public class TraceEntryStackTraceTest {
         container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithTraceEntryStackTrace.class);
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        List<StackTraceElement> stackTrace = entries.get(0).getStackTrace();
+        List<String> stackTrace = entries.get(0).locationStackTraceElements();
         assertThat(stackTrace).isNotEmpty();
-        assertThat(stackTrace.get(0).getClassName()).isEqualTo(Pause.class.getName());
-        assertThat(stackTrace.get(0).getMethodName()).isEqualTo("pauseOneMillisecond");
-        assertThat(stackTrace.get(0).getFileName())
-                .isEqualTo(Pause.class.getSimpleName() + ".java");
-        for (StackTraceElement element : stackTrace) {
-            assertThat(element.getMethodName()).doesNotContain("$glowroot$");
+        assertThat(stackTrace.get(0)).startsWith(Pause.class.getName() + ".pauseOneMillisecond("
+                + Pause.class.getSimpleName() + ".java:");
+        for (String element : stackTrace) {
+            assertThat(element).doesNotContain("$glowroot$");
+            // assert that element contains line number (or is a native method
+            assertThat(element).matches(".*\\.java:[0-9]+\\)|.*Native Method\\)");
         }
     }
 

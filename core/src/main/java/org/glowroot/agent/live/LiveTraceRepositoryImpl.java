@@ -27,6 +27,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -37,12 +38,9 @@ import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.agent.model.TraceCreator;
 import org.glowroot.agent.model.Transaction;
-import org.glowroot.collector.spi.ProfileNode;
-import org.glowroot.common.model.EntriesChunkSourceCreator;
-import org.glowroot.common.model.ProfileJsonMarshaller;
-import org.glowroot.common.util.ChunkSource;
+import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.common.util.Clock;
-import org.glowroot.live.ImmutableTraceExport;
 import org.glowroot.live.ImmutableTracePoint;
 import org.glowroot.live.LiveTraceRepository;
 import org.glowroot.live.StringComparator;
@@ -68,7 +66,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     // checks active traces first, then pending traces (and finally caller should check stored
     // traces) to make sure that the trace is not missed if it is in transition between these states
     @Override
-    public @Nullable TraceHeader getTraceHeader(String traceId) throws IOException {
+    public @Nullable Trace.Header getHeader(String traceId) throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
@@ -79,38 +77,33 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable ChunkSource getTraceEntries(String traceId) {
+    public List<Trace.Entry> getEntries(String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
-                return createEntries(transaction);
+                return transaction.getEntriesProtobuf();
+            }
+        }
+        return ImmutableList.of();
+    }
+
+    @Override
+    public @Nullable ProfileTree getProfileTree(String traceId) throws IOException {
+        for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
+                transactionCollector.getPendingTransactions())) {
+            if (transaction.getId().equals(traceId)) {
+                return transaction.getProfileTreeProtobuf();
             }
         }
         return null;
     }
 
     @Override
-    public @Nullable ChunkSource getTraceProfile(String traceId) throws IOException {
+    public @Nullable Trace getFullTrace(String traceId) throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
-                return createProfile(transaction);
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public @Nullable TraceExport getTraceExport(String traceId) throws IOException {
-        for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
-                transactionCollector.getPendingTransactions())) {
-            if (transaction.getId().equals(traceId)) {
-                TraceHeader traceHeader = createTraceHeader(transaction);
-                return ImmutableTraceExport.builder()
-                        .traceHeader(traceHeader)
-                        .entries(createEntries(transaction))
-                        .profile(createProfile(transaction))
-                        .build();
+                return createFullTrace(transaction);
             }
         }
         return null;
@@ -203,29 +196,29 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         return true;
     }
 
-    private TraceHeader createTraceHeader(Transaction transaction) throws IOException {
+    private Trace.Header createTraceHeader(Transaction transaction) throws IOException {
+        // capture time before checking if complete to guard against condition where partial
+        // trace header is created with captureTime > the real (completed) capture time
+        long captureTime = clock.currentTimeMillis();
+        long captureTick = ticker.read();
         if (transaction.isCompleted()) {
             return TraceCreator.createCompletedTraceHeader(transaction);
         } else {
-            return TraceCreator.createActiveTraceHeader(transaction, clock.currentTimeMillis(),
+            return TraceCreator.createPartialTraceHeader(transaction, captureTime, captureTick);
+        }
+    }
+
+    private Trace createFullTrace(Transaction transaction) throws IOException {
+        if (transaction.isCompleted()) {
+            return TraceCreator.createCompletedTrace(transaction, true);
+        } else {
+            return TraceCreator.createPartialTrace(transaction, clock.currentTimeMillis(),
                     ticker.read());
         }
     }
 
-    private @Nullable ChunkSource createEntries(Transaction active) {
-        return EntriesChunkSourceCreator.createEntriesChunkSource(active.getEntries());
-    }
-
-    private @Nullable ChunkSource createProfile(Transaction active) throws IOException {
-        ProfileNode syntheticRootProfileNode = active.getSyntheticRootProfileNode();
-        if (syntheticRootProfileNode == null) {
-            return null;
-        }
-        return ChunkSource.wrap(ProfileJsonMarshaller.marshal(syntheticRootProfileNode));
-    }
-
     private boolean matches(Transaction transaction, TracePointQuery query) {
-        return matchesDuration(transaction, query)
+        return matchesTotal(transaction, query)
                 && matchesTransactionType(transaction, query)
                 && matchesSlowOnly(transaction, query)
                 && matchesErrorOnly(transaction, query)
@@ -236,13 +229,13 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                 && matchesCustomAttribute(transaction, query);
     }
 
-    private boolean matchesDuration(Transaction transaction, TracePointQuery query) {
-        long durationNanos = transaction.getDurationNanos();
-        if (durationNanos < query.durationNanosLow()) {
+    private boolean matchesTotal(Transaction transaction, TracePointQuery query) {
+        long totalNanos = transaction.getDurationNanos();
+        if (totalNanos < query.durationNanosLow()) {
             return false;
         }
-        Long durationNanosHigh = query.durationNanosHigh();
-        return durationNanosHigh == null || durationNanos <= durationNanosHigh;
+        Long totalNanosHigh = query.durationNanosHigh();
+        return totalNanosHigh == null || totalNanos <= totalNanosHigh;
     }
 
     private boolean matchesTransactionType(Transaction transaction, TracePointQuery query) {
@@ -273,7 +266,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
 
     private boolean matchesError(Transaction transaction, TracePointQuery query) {
         ErrorMessage errorMessage = transaction.getErrorMessage();
-        String text = errorMessage == null ? null : errorMessage.message();
+        String text = errorMessage == null ? "" : errorMessage.message();
         return matchesUsingStringComparator(query.errorComparator(), query.error(), text);
     }
 
@@ -310,11 +303,9 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     private boolean matchesUsingStringComparator(@Nullable StringComparator requestComparator,
-            @Nullable String requestText, @Nullable String traceText) throws AssertionError {
+            @Nullable String requestText, String traceText) throws AssertionError {
         if (requestComparator == null || Strings.isNullOrEmpty(requestText)) {
             return true;
-        } else if (Strings.isNullOrEmpty(traceText)) {
-            return false;
         }
         return requestComparator.matches(traceText, requestText);
     }

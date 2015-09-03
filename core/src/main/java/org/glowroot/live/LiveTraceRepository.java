@@ -16,34 +16,29 @@
 package org.glowroot.live;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
-import org.glowroot.collector.spi.GarbageCollectorActivity;
-import org.glowroot.collector.spi.ThrowableInfo;
-import org.glowroot.collector.spi.TraceTimerNode;
-import org.glowroot.common.util.ChunkSource;
+import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.markers.OnlyUsedByTests;
 
 public interface LiveTraceRepository {
 
     @Nullable
-    TraceHeader getTraceHeader(String traceId) throws IOException;
+    Trace.Header getHeader(String traceId) throws IOException;
+
+    List<Trace.Entry> getEntries(String traceId) throws IOException;
 
     @Nullable
-    ChunkSource getTraceEntries(String traceId) throws IOException;
+    ProfileTree getProfileTree(String traceId) throws IOException;
 
     @Nullable
-    ChunkSource getTraceProfile(String traceId) throws IOException;
-
-    @Nullable
-    TraceExport getTraceExport(String traceId) throws IOException;
+    Trace getFullTrace(String traceId) throws IOException;
 
     int getMatchingTraceCount(String transactionType, @Nullable String transactionName);
 
@@ -57,43 +52,6 @@ public interface LiveTraceRepository {
 
     @OnlyUsedByTests
     int getPendingTransactionCount();
-
-    @Value.Immutable
-    public interface TraceHeader {
-        String id();
-        abstract boolean active();
-        // "partial" means "partial stored" but no longer currently active
-        boolean partial();
-        boolean error();
-        long startTime();
-        long captureTime();
-        long durationNanos();
-        String transactionType();
-        String transactionName();
-        String headline();
-        @Nullable
-        String user();
-        Map<String, Collection<String>> customAttributes();
-        Map<String, ? extends /*@Nullable*/Object> customDetail();
-        @Nullable
-        String errorMessage();
-        @Nullable
-        ThrowableInfo errorThrowable();
-        TraceTimerNode rootTimer();
-        long threadCpuNanos(); // -1 means N/A
-        long threadBlockedNanos(); // -1 means N/A
-        long threadWaitedNanos(); // -1 means N/A
-        long threadAllocatedBytes(); // -1 means N/A
-        List<GarbageCollectorActivity> gcActivity();
-
-        int entryCount();
-        boolean entryLimitExceeded();
-        Existence entriesExistence();
-
-        long profileSampleCount();
-        boolean profileLimitExceeded();
-        Existence profileExistence();
-    }
 
     @Value.Immutable
     public abstract static class TracePointQuery {
@@ -136,15 +94,6 @@ public interface LiveTraceRepository {
         boolean error();
     }
 
-    @Value.Immutable
-    public interface TraceExport {
-        TraceHeader traceHeader();
-        @Nullable
-        ChunkSource entries();
-        @Nullable
-        ChunkSource profile();
-    }
-
     public enum Existence {
         YES, NO, EXPIRED;
     }
@@ -152,22 +101,22 @@ public interface LiveTraceRepository {
     public class LiveTraceRepositoryNop implements LiveTraceRepository {
 
         @Override
-        public @Nullable TraceHeader getTraceHeader(String traceId) {
+        public @Nullable Trace.Header getHeader(String traceId) {
             return null;
         }
 
         @Override
-        public @Nullable ChunkSource getTraceEntries(String traceId) {
+        public List<Trace.Entry> getEntries(String traceId) {
+            return ImmutableList.of();
+        }
+
+        @Override
+        public @Nullable ProfileTree getProfileTree(String traceId) {
             return null;
         }
 
         @Override
-        public @Nullable ChunkSource getTraceProfile(String traceId) {
-            return null;
-        }
-
-        @Override
-        public @Nullable TraceExport getTraceExport(String traceId) {
+        public @Nullable Trace getFullTrace(String traceId) {
             return null;
         }
 

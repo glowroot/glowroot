@@ -17,14 +17,12 @@ package org.glowroot.server.ui;
 
 import java.io.IOException;
 import java.net.URL;
-import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
@@ -46,9 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.ChunkSource;
-import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.live.LiveTraceRepository.TraceExport;
-import org.glowroot.live.LiveTraceRepository.TraceHeader;
+import org.glowroot.server.ui.TraceCommonService.TraceExport;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
@@ -58,7 +54,6 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 class TraceExportHttpService implements HttpService {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceExportHttpService.class);
-    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final TraceCommonService traceCommonService;
     private final String version;
@@ -74,17 +69,17 @@ class TraceExportHttpService implements HttpService {
         String uri = request.getUri();
         String id = uri.substring(uri.lastIndexOf('/') + 1);
         logger.debug("handleRequest(): id={}", id);
-        TraceExport export = traceCommonService.getExport(id);
-        if (export == null) {
+        TraceExport traceExport = traceCommonService.getExport(id);
+        if (traceExport == null) {
             logger.warn("no trace found for id: {}", id);
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
         }
-        ChunkedInput<HttpContent> in = getExportChunkedInput(export);
+        ChunkedInput<HttpContent> in = getExportChunkedInput(traceExport);
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         response.headers().set(Names.TRANSFER_ENCODING, Values.CHUNKED);
         response.headers().set(CONTENT_TYPE, MediaType.ZIP.toString());
         response.headers().set("Content-Disposition",
-                "attachment; filename=" + getFilename(export.traceHeader()) + ".zip");
+                "attachment; filename=" + traceExport.fileName() + ".zip");
         boolean keepAlive = HttpHeaders.isKeepAlive(request);
         if (keepAlive && !request.getProtocolVersion().isKeepAliveDefault()) {
             response.headers().set(Names.CONNECTION, Values.KEEP_ALIVE);
@@ -100,24 +95,24 @@ class TraceExportHttpService implements HttpService {
         return null;
     }
 
-    private ChunkedInput<HttpContent> getExportChunkedInput(TraceExport export) throws IOException {
-        ChunkSource chunkSource = render(export);
-        return ChunkedInputs.fromChunkSourceToZipFileDownload(chunkSource,
-                getFilename(export.traceHeader()));
+    private ChunkedInput<HttpContent> getExportChunkedInput(TraceExport traceExport)
+            throws IOException {
+        ChunkSource chunkSource = render(traceExport);
+        return ChunkedInputs.fromChunkSourceToZipFileDownload(chunkSource, traceExport.fileName());
     }
 
     private ChunkSource render(TraceExport traceExport) throws IOException {
         String htmlStartTag = "<html>";
         String exportCssPlaceholder = "<link rel=\"stylesheet\" href=\"styles/export.css\">";
         String exportJsPlaceholder = "<script src=\"scripts/export.js\"></script>";
-        String tracePlaceholder = "<script type=\"text/json\" id=\"traceJson\"></script>";
+        String headerPlaceholder = "<script type=\"text/json\" id=\"headerJson\"></script>";
         String entriesPlaceholder = "<script type=\"text/json\" id=\"entriesJson\"></script>";
         String profilePlaceholder = "<script type=\"text/json\" id=\"profileJson\"></script>";
         String footerMessagePlaceholder = "<span id=\"footerMessage\"></span>";
 
         String templateContent = asCharSource("trace-export.html").read();
         Pattern pattern = Pattern.compile("(" + htmlStartTag + "|" + exportCssPlaceholder + "|"
-                + exportJsPlaceholder + "|" + tracePlaceholder + "|" + entriesPlaceholder + "|"
+                + exportJsPlaceholder + "|" + headerPlaceholder + "|" + entriesPlaceholder + "|"
                 + profilePlaceholder + "|" + footerMessagePlaceholder + ")");
         Matcher matcher = pattern.matcher(templateContent);
         int curr = 0;
@@ -139,25 +134,24 @@ class TraceExportHttpService implements HttpService {
                 chunkSources.add(ChunkSource.wrap("<script>"));
                 chunkSources.add(asChunkSource("scripts/export.js"));
                 chunkSources.add(ChunkSource.wrap("</script>"));
-            } else if (match.equals(tracePlaceholder)) {
-                chunkSources.add(ChunkSource.wrap("<script type=\"text/json\" id=\"traceJson\">"));
-                chunkSources.add(
-                        ChunkSource.wrap(mapper.writeValueAsString(traceExport.traceHeader())));
+            } else if (match.equals(headerPlaceholder)) {
+                chunkSources.add(ChunkSource.wrap("<script type=\"text/json\" id=\"headerJson\">"));
+                chunkSources.add(ChunkSource.wrap(traceExport.headerJson()));
                 chunkSources.add(ChunkSource.wrap("</script>"));
             } else if (match.equals(entriesPlaceholder)) {
                 chunkSources
                         .add(ChunkSource.wrap("<script type=\"text/json\" id=\"entriesJson\">"));
-                ChunkSource entries = traceExport.entries();
-                if (entries != null) {
-                    chunkSources.add(entries);
+                String entriesJson = traceExport.entriesJson();
+                if (entriesJson != null) {
+                    chunkSources.add(ChunkSource.wrap(entriesJson));
                 }
                 chunkSources.add(ChunkSource.wrap("</script>"));
             } else if (match.equals(profilePlaceholder)) {
                 chunkSources
                         .add(ChunkSource.wrap("<script type=\"text/json\" id=\"profileJson\">"));
-                ChunkSource profile = traceExport.profile();
-                if (profile != null) {
-                    chunkSources.add(profile);
+                String profileJson = traceExport.profileTreeJson();
+                if (profileJson != null) {
+                    chunkSources.add(ChunkSource.wrap(profileJson));
                 }
                 chunkSources.add(ChunkSource.wrap("</script>"));
             } else if (match.equals(footerMessagePlaceholder)) {
@@ -168,11 +162,6 @@ class TraceExportHttpService implements HttpService {
         }
         chunkSources.add(ChunkSource.wrap(templateContent.substring(curr)));
         return ChunkSource.concat(chunkSources);
-    }
-
-    private static String getFilename(TraceHeader traceHeader) {
-        return "trace-"
-                + new SimpleDateFormat("yyyyMMdd-HHmmss-SSS").format(traceHeader.startTime());
     }
 
     private static ChunkSource asChunkSource(String exportResourceName) {

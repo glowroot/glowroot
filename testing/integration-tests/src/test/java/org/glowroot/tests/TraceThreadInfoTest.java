@@ -60,8 +60,8 @@ public class TraceThreadInfoTest {
         // when
         container.executeAppUnderTest(ShouldUseCpu.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadCpuNanos()).isGreaterThanOrEqualTo(MILLISECONDS.toNanos(10));
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.threadCpuNanos().get()).isGreaterThanOrEqualTo(MILLISECONDS.toNanos(10));
     }
 
     @Test
@@ -70,8 +70,8 @@ public class TraceThreadInfoTest {
         // when
         container.executeAppUnderTest(ShouldWait.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadWaitedNanos()).isGreaterThanOrEqualTo(5);
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.threadWaitedNanos().get()).isGreaterThanOrEqualTo(5);
     }
 
     @Test
@@ -80,8 +80,8 @@ public class TraceThreadInfoTest {
         // when
         container.executeAppUnderTest(ShouldBlock.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getThreadBlockedNanos()).isGreaterThanOrEqualTo(5);
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.threadBlockedNanos().get()).isGreaterThanOrEqualTo(5);
     }
 
     public static class ShouldUseCpu implements AppUnderTest, TraceMarker {

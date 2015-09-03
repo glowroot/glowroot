@@ -15,24 +15,22 @@
  */
 package org.glowroot.container.trace;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 
 import org.glowroot.container.common.HttpClient;
 import org.glowroot.container.common.ObjectMappers;
+import org.glowroot.container.trace.ProfileTree.ProfileNode;
 import org.glowroot.container.trace.TracePointResponse.RawPoint;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -44,19 +42,15 @@ public class TraceService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     static {
+        mapper.registerModule(new GuavaModule());
         SimpleModule module = new SimpleModule();
-        module.addDeserializer(StackTraceElement.class, new JsonDeserializer<StackTraceElement>() {
-            @Override
-            public StackTraceElement deserialize(JsonParser p, DeserializationContext ctxt)
-                    throws IOException {
-                String className = p.nextTextValue();
-                String methodName = p.nextTextValue();
-                String fileName = p.nextTextValue();
-                int lineNumber = p.nextIntValue(0);
-                p.nextValue();
-                return new StackTraceElement(className, methodName, fileName, lineNumber);
-            }
-        });
+        module.addAbstractTypeMapping(Trace.Error.class, ImmutableError.class);
+        module.addAbstractTypeMapping(Trace.Throwable.class, ImmutableThrowable.class);
+        module.addAbstractTypeMapping(Trace.Timer.class, ImmutableTimer.class);
+        module.addAbstractTypeMapping(Trace.GarbageCollectionActivity.class,
+                ImmutableGarbageCollectionActivity.class);
+        module.addAbstractTypeMapping(Trace.Entry.class, ImmutableEntry.class);
+        module.addAbstractTypeMapping(ProfileNode.class, ImmutableProfileNode.class);
         mapper.registerModule(module);
     }
 
@@ -70,9 +64,9 @@ public class TraceService {
         return httpClient.getAsStream("/export/trace/" + traceId);
     }
 
-    public @Nullable Trace getLastTrace() throws Exception {
+    public @Nullable Trace.Header getLastTrace() throws Exception {
         String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
-                + "&duration-millis-low=0&limit=1000");
+                + "&response-time-millis-low=0&limit=1000");
         TracePointResponse response =
                 ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
         List<RawPoint> points = Lists.newArrayList();
@@ -88,34 +82,34 @@ public class TraceService {
     // this method blocks for an active trace to be available because
     // sometimes need to give container enough time to start up and for the trace to hit its store
     // threshold
-    public @Nullable Trace getActiveTrace(int timeout, TimeUnit unit) throws Exception {
+    public @Nullable Trace.Header getActiveTrace(int timeout, TimeUnit unit) throws Exception {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        Trace trace = null;
+        Trace.Header header = null;
         // try at least once (e.g. in case timeoutMillis == 0)
         boolean first = true;
         while (first || stopwatch.elapsed(unit) < timeout) {
-            trace = getActiveTrace();
-            if (trace != null) {
+            header = getActiveTrace();
+            if (header != null) {
                 break;
             }
             Thread.sleep(20);
             first = false;
         }
-        return trace;
+        return header;
     }
 
-    public List<Trace> getTraces(TraceQuery query) throws Exception {
+    public List<Trace.Header> getTraces(TraceQuery query) throws Exception {
         StringBuilder sb = new StringBuilder();
         sb.append("from=");
         sb.append(query.from());
         sb.append("&to=");
         sb.append(query.to());
-        sb.append("&duration-millis-low=");
-        sb.append(query.durationMillisLow());
-        Long durationMillisHigh = query.durationMillisHigh();
-        if (durationMillisHigh != null) {
-            sb.append("&duration-millis-high=");
-            sb.append(durationMillisHigh);
+        sb.append("&response-time-millis-low=");
+        sb.append(query.responseTimeMillisLow());
+        Double responseTimeMillisHigh = query.responseTimeMillisHigh();
+        if (responseTimeMillisHigh != null) {
+            sb.append("&response-time-millis-high=");
+            sb.append(responseTimeMillisHigh);
         }
         String transactionType = query.transactionType();
         if (transactionType != null) {
@@ -163,7 +157,7 @@ public class TraceService {
         String content = httpClient.get("/backend/trace/points?" + sb.toString());
         TracePointResponse response =
                 ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
-        List<Trace> traces = Lists.newArrayList();
+        List<Trace.Header> traces = Lists.newArrayList();
         for (RawPoint point : response.getNormalPoints()) {
             traces.add(getTrace(point.getId()));
         }
@@ -176,14 +170,14 @@ public class TraceService {
         return traces;
     }
 
-    public List<TraceEntry> getEntries(String traceId) throws Exception {
+    public List<Trace.Entry> getEntries(String traceId) throws Exception {
         String content = httpClient.get("/backend/trace/entries?trace-id=" + traceId);
-        return mapper.readValue(content, new TypeReference<List<TraceEntry>>() {});
+        return mapper.readValue(content, new TypeReference<List<Trace.Entry>>() {});
     }
 
-    public ProfileNode getProfile(String traceId) throws Exception {
+    public ProfileTree getProfile(String traceId) throws Exception {
         String content = httpClient.get("/backend/trace/profile?trace-id=" + traceId);
-        return mapper.readValue(content, ProfileNode.class);
+        return mapper.readValue(content, ImmutableProfileTree.class);
     }
 
     public void assertNoActiveTransactions() throws Exception {
@@ -200,9 +194,9 @@ public class TraceService {
         throw new AssertionError("There are still active transactions");
     }
 
-    private @Nullable Trace getActiveTrace() throws Exception {
+    private @Nullable Trace.Header getActiveTrace() throws Exception {
         String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
-                + "&duration-millis-low=0&limit=1000");
+                + "&response-time-millis-low=0&limit=1000");
         TracePointResponse response =
                 ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
         if (response.getActivePoints().isEmpty()) {
@@ -215,8 +209,8 @@ public class TraceService {
         }
     }
 
-    private Trace getTrace(String traceId) throws Exception {
-        String traceContent = httpClient.get("/backend/trace/header/" + traceId);
-        return ObjectMappers.readRequiredValue(mapper, traceContent, Trace.class);
+    private Trace.Header getTrace(String traceId) throws Exception {
+        String content = httpClient.get("/backend/trace/header/" + traceId);
+        return mapper.readValue(content, ImmutableHeader.class);
     }
 }

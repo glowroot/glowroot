@@ -17,20 +17,20 @@ package org.glowroot.agent.model;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import org.immutables.value.Value;
+import com.google.common.collect.Lists;
 
 import org.glowroot.agent.model.ThreadInfoComponent.ThreadInfoData;
-import org.glowroot.collector.spi.Aggregate;
-import org.glowroot.collector.spi.Trace;
+import org.glowroot.collector.spi.Constants;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
 import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.model.LazyHistogram;
-import org.glowroot.common.model.MutableProfileNode;
-import org.glowroot.common.model.MutableQuery;
-import org.glowroot.common.model.MutableTimerNode;
+import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
+import org.glowroot.common.model.MutableProfileTree;
+import org.glowroot.common.model.MutableTimer;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.util.Styles;
 import org.glowroot.live.ImmutableErrorPoint;
@@ -52,37 +52,35 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 // must be used under an appropriate lock
 @Styles.Private
-@Value.Include(Aggregate.class)
 class AggregateCollector {
 
     private final @Nullable String transactionName;
     private long totalNanos;
     private long transactionCount;
     private long errorCount;
-    private long totalCpuNanos = Trace.THREAD_DATA_NOT_AVAILABLE;
-    private long totalBlockedNanos = Trace.THREAD_DATA_NOT_AVAILABLE;
-    private long totalWaitedNanos = Trace.THREAD_DATA_NOT_AVAILABLE;
-    private long totalAllocatedBytes = Trace.THREAD_DATA_NOT_AVAILABLE;
+    private long totalCpuNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
+    private long totalBlockedNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
+    private long totalWaitedNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
+    private long totalAllocatedBytes = Constants.THREAD_DATA_NOT_AVAILABLE;
     // histogram values are in nanoseconds, but with microsecond precision to reduce the number of
     // buckets (and memory) required
     private final LazyHistogram lazyHistogram = new LazyHistogram();
-    private final MutableTimerNode syntheticRootTimerNode =
-            MutableTimerNode.createSyntheticRootNode();
-    private final QueryCollector mergedQueries;
-    private final AggregateProfileBuilder aggregateProfile = new AggregateProfileBuilder();
+    private final List<MutableTimer> rootTimers = Lists.newArrayList();
+    private final QueryCollector queries;
+    private final MutableProfileTree profileTree = new MutableProfileTree();
 
     AggregateCollector(@Nullable String transactionName, int maxAggregateQueriesPerQueryType) {
         int hardLimitMultiplierWhileBuilding = transactionName == null
                 ? AdvancedConfig.OVERALL_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER
                 : AdvancedConfig.TRANSACTION_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER;
-        mergedQueries = new QueryCollector(maxAggregateQueriesPerQueryType,
+        queries = new QueryCollector(maxAggregateQueriesPerQueryType,
                 hardLimitMultiplierWhileBuilding);
         this.transactionName = transactionName;
     }
 
     void add(Transaction transaction) {
-        long durationNanos = transaction.getDurationNanos();
-        totalNanos += durationNanos;
+        long totalNanos = transaction.getDurationNanos();
+        this.totalNanos += totalNanos;
         transactionCount++;
         if (transaction.getErrorMessage() != null) {
             errorCount++;
@@ -97,37 +95,46 @@ class AggregateCollector {
             totalAllocatedBytes =
                     notAvailableAwareAdd(totalAllocatedBytes, threadInfo.threadAllocatedBytes());
         }
-        lazyHistogram.add(durationNanos);
+        lazyHistogram.add(totalNanos);
     }
 
-    void addToTimers(TimerImpl rootTimer) {
-        syntheticRootTimerNode.mergeAsChildTimer(rootTimer);
+    void mergeRootTimer(TimerImpl toBeMergedRootTimer) {
+        for (MutableTimer rootTimer : rootTimers) {
+            if (toBeMergedRootTimer.getName().equals(rootTimer.getName())) {
+                rootTimer.merge(toBeMergedRootTimer);
+                return;
+            }
+        }
+        MutableTimer rootTimer = MutableTimer.createRootTimer(toBeMergedRootTimer.getName(),
+                toBeMergedRootTimer.isExtended());
+        rootTimer.merge(toBeMergedRootTimer);
+        rootTimers.add(rootTimer);
     }
 
-    void addToQueries(Iterable<QueryData> queries) {
-        for (QueryData query : queries) {
-            mergedQueries.mergeQuery(query.getQueryType(), query);
+    void mergeQueries(Iterable<QueryData> toBeMergedQueries) {
+        for (QueryData toBeMergedQuery : toBeMergedQueries) {
+            queries.mergeQuery(toBeMergedQuery.getQueryType(), toBeMergedQuery);
         }
     }
 
-    void addToProfile(Profile profile) {
-        aggregateProfile.addProfile(profile);
+    void mergeProfile(Profile toBeMergedProfile) {
+        toBeMergedProfile.mergeIntoProfileTree(profileTree);
     }
 
-    Aggregate build(long captureTime) throws IOException {
-        return new AggregateBuilder()
-                .captureTime(captureTime)
-                .totalNanos(totalNanos)
-                .transactionCount(transactionCount)
-                .errorCount(errorCount)
-                .totalCpuNanos(totalCpuNanos)
-                .totalBlockedNanos(totalBlockedNanos)
-                .totalWaitedNanos(totalWaitedNanos)
-                .totalAllocatedBytes(totalAllocatedBytes)
-                .histogram(lazyHistogram)
-                .syntheticRootTimerNode(syntheticRootTimerNode)
-                .queries(getQueries())
-                .syntheticRootProfileNode(getSyntheticRootProfileNode())
+    Aggregate build(long captureTime, ScratchBuffer scratchBuffer) throws IOException {
+        return Aggregate.newBuilder()
+                .setCaptureTime(captureTime)
+                .setTotalNanos(totalNanos)
+                .setTransactionCount(transactionCount)
+                .setErrorCount(errorCount)
+                .setTotalCpuNanos(totalCpuNanos)
+                .setTotalBlockedNanos(totalBlockedNanos)
+                .setTotalWaitedNanos(totalWaitedNanos)
+                .setTotalAllocatedBytes(totalAllocatedBytes)
+                .setTotalNanosHistogram(lazyHistogram.toProtobuf(scratchBuffer))
+                .addAllRootTimer(getRootTimersProtobuf())
+                .addAllQueriesByType(queries.toProtobuf(true))
+                .setProfileTree(profileTree.toProtobuf())
                 .build();
     }
 
@@ -140,16 +147,17 @@ class AggregateCollector {
                 .totalBlockedNanos(totalBlockedNanos)
                 .totalWaitedNanos(totalWaitedNanos)
                 .totalAllocatedBytes(totalAllocatedBytes)
-                .syntheticRootTimer(syntheticRootTimerNode)
+                .rootTimers(getRootTimersProtobuf())
                 .build();
     }
 
-    PercentileAggregate buildLivePercentileAggregate(long captureTime) throws IOException {
+    PercentileAggregate buildLivePercentileAggregate(long captureTime)
+            throws IOException {
         return ImmutablePercentileAggregate.builder()
                 .captureTime(captureTime)
                 .totalNanos(totalNanos)
                 .transactionCount(transactionCount)
-                .histogram(lazyHistogram)
+                .histogram(lazyHistogram.toProtobuf(new ScratchBuffer()))
                 .build();
     }
 
@@ -188,13 +196,13 @@ class AggregateCollector {
     }
 
     // needs to return copy for thread safety
-    MutableProfileNode getLiveProfile() throws IOException {
-        return aggregateProfile.getSyntheticRootNode().copy();
+    ProfileTree getLiveProfile() throws IOException {
+        return profileTree.toProtobuf();
     }
 
     // needs to return copy for thread safety
-    Map<String, List<MutableQuery>> getLiveQueries() {
-        return mergedQueries.copy();
+    List<Aggregate.QueriesByType> getLiveQueries() {
+        return queries.toProtobuf(false);
     }
 
     @Nullable
@@ -209,24 +217,19 @@ class AggregateCollector {
                 .build();
     }
 
-    private Map<String, List<MutableQuery>> getQueries() throws IOException {
-        return mergedQueries.getOrderedAndTruncatedQueries();
-    }
-
-    @Nullable
-    private MutableProfileNode getSyntheticRootProfileNode() throws IOException {
-        MutableProfileNode syntheticRootNode = aggregateProfile.getSyntheticRootNode();
-        if (syntheticRootNode.isEmpty()) {
-            return null;
+    private List<Aggregate.Timer> getRootTimersProtobuf() {
+        List<Aggregate.Timer> rootTimers = Lists.newArrayListWithCapacity(this.rootTimers.size());
+        for (MutableTimer rootTimer : this.rootTimers) {
+            rootTimers.add(rootTimer.toProtobuf());
         }
-        return syntheticRootNode;
+        return rootTimers;
     }
 
     private static long notAvailableAwareAdd(long x, long y) {
-        if (x == Trace.THREAD_DATA_NOT_AVAILABLE) {
+        if (x == Constants.THREAD_DATA_NOT_AVAILABLE) {
             return y;
         }
-        if (y == Trace.THREAD_DATA_NOT_AVAILABLE) {
+        if (y == Constants.THREAD_DATA_NOT_AVAILABLE) {
             return x;
         }
         return x + y;

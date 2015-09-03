@@ -93,7 +93,7 @@ class TracePointResponse {
         @JsonCreator
         static RawPoint readValue(ArrayNode point) {
             long captureTime = point.get(0).asLong();
-            // duration which is point.get(1) is not needed here
+            // total millis which is point.get(1) is not needed here
             String id = point.get(2).asText();
             return new RawPoint(captureTime, id);
         }

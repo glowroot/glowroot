@@ -22,26 +22,29 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 import java.io.Reader;
-import java.io.Writer;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.io.ByteSource;
 import com.google.common.io.CharSource;
 import com.google.common.io.CountingOutputStream;
 import com.google.common.primitives.Longs;
+import com.google.protobuf.AbstractMessageLite;
+import com.google.protobuf.Parser;
 import com.ning.compress.lzf.LZFInputStream;
 import com.ning.compress.lzf.LZFOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.common.util.ChunkSource;
 import org.glowroot.markers.OnlyUsedByTests;
 
 public class CappedDatabase {
@@ -69,20 +72,23 @@ public class CappedDatabase {
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
     }
 
-    public long write(final CharSource charSource, String type) throws IOException {
+    public long writeMessage(final AbstractMessageLite message, String type) throws IOException {
         return write(type, new Copier() {
             @Override
-            public void copyTo(Writer writer) throws IOException {
-                charSource.copyTo(writer);
+            public void copyTo(OutputStream writer) throws IOException {
+                message.writeTo(writer);
             }
         });
     }
 
-    public long write(final ChunkSource charSource, String type) throws IOException {
+    public long writeMessages(final List<? extends AbstractMessageLite> messages, String type)
+            throws IOException {
         return write(type, new Copier() {
             @Override
-            public void copyTo(Writer writer) throws IOException {
-                charSource.copyTo(writer);
+            public void copyTo(OutputStream writer) throws IOException {
+                for (AbstractMessageLite message : messages) {
+                    message.writeDelimitedTo(writer);
+                }
             }
         });
     }
@@ -93,6 +99,16 @@ public class CappedDatabase {
             return new CappedDatabaseStats();
         }
         return stats;
+    }
+
+    @OnlyUsedByTests
+    long write(final ByteSource byteSource, String type) throws IOException {
+        return write(type, new Copier() {
+            @Override
+            public void copyTo(OutputStream out) throws IOException {
+                byteSource.copyTo(out);
+            }
+        });
     }
 
     private long write(String type, Copier copier) throws IOException {
@@ -106,10 +122,8 @@ public class CappedDatabase {
                     new NonClosingCountingOutputStream(out);
             CountingOutputStream countingStreamBeforeCompression =
                     new CountingOutputStream(new LZFOutputStream(countingStreamAfterCompression));
-            Writer compressedWriter =
-                    new OutputStreamWriter(countingStreamBeforeCompression, Charsets.UTF_8);
-            copier.copyTo(compressedWriter);
-            compressedWriter.close();
+            copier.copyTo(countingStreamBeforeCompression);
+            countingStreamBeforeCompression.close();
             long endTick = ticker.read();
             CappedDatabaseStats stats = statsByType.get(type);
             if (stats == null) {
@@ -122,8 +136,8 @@ public class CappedDatabase {
         }
     }
 
-    public <T> /*@Nullable*/ T unmarshal(long cappedId, Unmarshaller<T> unmarshaller)
-            throws IOException {
+    public <T extends /*@NonNull*/Object> /*@Nullable*/ T readMessage(long cappedId,
+            Parser<T> parser) throws IOException {
         boolean overwritten;
         synchronized (lock) {
             overwritten = out.isOverwritten(cappedId);
@@ -134,20 +148,52 @@ public class CappedDatabase {
         // it's important to wrap CappedBlockInputStream in a BufferedInputStream to prevent
         // lots of small reads from the underlying RandomAccessFile
         final int bufferSize = 32768;
-        Reader reader = new InputStreamReader(
-                new LZFInputStream(
-                        new BufferedInputStream(new CappedBlockInputStream(cappedId), bufferSize)),
-                Charsets.UTF_8);
+        InputStream input = new LZFInputStream(
+                new BufferedInputStream(new CappedBlockInputStream(cappedId), bufferSize));
         try {
-            return unmarshaller.unmarshal(reader);
-        } catch (CappedBlockRolledOverMidReadException e) {
+            return parser.parseFrom(input);
+        } catch (Exception e) {
+            if (!out.isOverwritten(cappedId)) {
+                logger.error(e.getMessage(), e);
+            }
             return null;
         } finally {
-            reader.close();
+            input.close();
         }
     }
 
-    public CharSource read(long cappedId, String overwrittenResponse) {
+    public <T extends /*@NonNull*/Object> List<T> readMessages(long cappedId, Parser<T> parser)
+            throws IOException {
+        boolean overwritten;
+        synchronized (lock) {
+            overwritten = out.isOverwritten(cappedId);
+        }
+        if (overwritten) {
+            return ImmutableList.of();
+        }
+        // it's important to wrap CappedBlockInputStream in a BufferedInputStream to prevent
+        // lots of small reads from the underlying RandomAccessFile
+        final int bufferSize = 32768;
+        InputStream input = new LZFInputStream(
+                new BufferedInputStream(new CappedBlockInputStream(cappedId), bufferSize));
+        List<T> messages = Lists.newArrayList();
+        try {
+            T message;
+            while ((message = parser.parseDelimitedFrom(input)) != null) {
+                messages.add(message);
+            }
+        } catch (Exception e) {
+            if (!out.isOverwritten(cappedId)) {
+                logger.error(e.getMessage(), e);
+            }
+            return ImmutableList.of();
+        } finally {
+            input.close();
+        }
+        return messages;
+    }
+
+    CharSource read(long cappedId, String overwrittenResponse) {
         boolean inTheFuture;
         synchronized (lock) {
             inTheFuture = cappedId >= out.getCurrIndex();
@@ -292,12 +338,8 @@ public class CappedDatabase {
         }
     }
 
-    public interface Unmarshaller<T> {
-        T unmarshal(Reader reader) throws IOException;
-    }
-
     private interface Copier {
-        void copyTo(Writer writer) throws IOException;
+        void copyTo(OutputStream out) throws IOException;
     }
 
     @SuppressWarnings("serial")

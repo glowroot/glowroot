@@ -21,11 +21,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
+import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.TransactionConfig;
-import org.glowroot.container.trace.Trace;
 import org.glowroot.plugin.api.Agent;
 import org.glowroot.plugin.api.transaction.TransactionService;
 
@@ -57,8 +57,8 @@ public class SetTraceStoreThresholdTest {
         // when
         container.executeAppUnderTest(SetLargeTraceStoreThreshold.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header).isNull();
     }
 
     @Test
@@ -70,8 +70,8 @@ public class SetTraceStoreThresholdTest {
         // when
         container.executeAppUnderTest(SetLargeAndThenSmallTraceStoreThreshold.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace).isNotNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header).isNotNull();
     }
 
     @Test
@@ -83,8 +83,8 @@ public class SetTraceStoreThresholdTest {
         // when
         container.executeAppUnderTest(SetSmallAndThenLargeTraceStoreThreshold.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace).isNotNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header).isNotNull();
     }
 
     public static class SetLargeTraceStoreThreshold implements AppUnderTest, TraceMarker {

@@ -358,7 +358,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.WeavingMethodVisitor$CatchHandler");
         types.add("org.glowroot.agent.weaving.WeavingTimerService");
         types.add("org.glowroot.agent.weaving.WeavingTimerService$WeavingTimer");
-        types.add("org.glowroot.collector.spi.TraceTimerNode");
         types.add("org.glowroot.common.util.Reflections");
         types.add("org.glowroot.common.util.Tickers");
         types.add("org.glowroot.common.util.Tickers$DummyTicker");

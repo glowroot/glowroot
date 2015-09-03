@@ -1,44 +1,20 @@
 {
-  "transaction": {
-    "profilingIntervalMillis": 1000,
-    "slowThresholdMillis": 0
-  },
   "ui": {
-    "defaultDisplayedTransactionType": "Integration test",
+    "port": 0,
+    "defaultDisplayedTransactionType": "",
     "defaultDisplayedPercentiles": [
       50.0,
       95.0,
       99.0
     ],
-    "port": 0,
     "adminPasswordHash": "",
     "readOnlyPasswordHash": "",
     "anonymousAccess": "admin",
     "sessionTimeoutMinutes": 30
   },
-  "storage": {
-    "rollupExpirationHours": [
-      2147483647,
-      2147483647,
-      2147483647
-    ],
-    "traceExpirationHours": 2147483647,
-    "rollupCappedDatabaseSizesMb": [
-      500,
-      500,
-      500
-    ],
-    "traceCappedDatabaseSizeMb": 500
-  },
-  "smtp": {
-    "fromEmailAddress": "",
-    "fromDisplayName": "",
-    "host": "",
-    "port": null,
-    "ssl": false,
-    "username": "",
-    "encryptedPassword": "",
-    "additionalProperties": { }
+  "transaction": {
+    "profilingIntervalMillis": 1000,
+    "slowThresholdMillis": 0
   },
   "userRecording": {
     "enabled": false,
@@ -79,7 +55,6 @@
       "properties": { }
     }
   ],
-  "instrumentation": [ ],
   "gauges": [
     {
       "mbeanObjectName": "java.lang:type=Memory",
@@ -122,5 +97,30 @@
       ]
     }
   ],
+  "instrumentation": [ ],
+  "storage": {
+    "rollupExpirationHours": [
+      2147483647,
+      2147483647,
+      2147483647
+    ],
+    "traceExpirationHours": 2147483647,
+    "rollupCappedDatabaseSizesMb": [
+      500,
+      500,
+      500
+    ],
+    "traceCappedDatabaseSizeMb": 500
+  },
+  "smtp": {
+    "fromEmailAddress": "",
+    "fromDisplayName": "",
+    "host": "",
+    "port": null,
+    "ssl": false,
+    "username": "",
+    "encryptedPassword": "",
+    "additionalProperties": { }
+  },
   "alerts": [ ]
 }

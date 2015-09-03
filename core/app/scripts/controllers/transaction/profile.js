@@ -112,9 +112,9 @@ glowroot.controller('TransactionProfileCtrl', [
               $scope.showProfile = false;
               return;
             }
-            $scope.showProfile = data.sampleCount;
+            $scope.showProfile = data.unfilteredSampleCount;
             if ($scope.showProfile) {
-              $scope.sampleCount = data.sampleCount;
+              $scope.sampleCount = data.unfilteredSampleCount;
               $('#profileOuter').removeData('gtLoaded');
               HandlebarsRendering.profileToggle(undefined, '#profileOuter', data);
             }

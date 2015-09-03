@@ -59,7 +59,7 @@ class TracePointQueryBuilder {
         builder.appendText(" trace.capture_time > ? and trace.capture_time <= ?");
         builder.addArg(query.from());
         builder.addArg(query.to());
-        appendDurationCriteria(builder);
+        appendTotalNanosCriteria(builder);
         appendTransactionTypeCriteria(builder);
         appendSlowOnlyCriteria(builder);
         appendErrorOnlyCriteria(builder);
@@ -94,16 +94,16 @@ class TracePointQueryBuilder {
         }
     }
 
-    private void appendDurationCriteria(ParameterizedSqlBuilder builder) {
-        long durationNanosLow = query.durationNanosLow();
-        if (durationNanosLow != 0) {
+    private void appendTotalNanosCriteria(ParameterizedSqlBuilder builder) {
+        long totalNanosLow = query.durationNanosLow();
+        if (totalNanosLow != 0) {
             builder.appendText(" and trace.duration_nanos >= ?");
-            builder.addArg(durationNanosLow);
+            builder.addArg(totalNanosLow);
         }
-        Long durationNanosHigh = query.durationNanosHigh();
-        if (durationNanosHigh != null) {
+        Long totalNanosHigh = query.durationNanosHigh();
+        if (totalNanosHigh != null) {
             builder.appendText(" and trace.duration_nanos <= ?");
-            builder.addArg(durationNanosHigh);
+            builder.addArg(totalNanosHigh);
         }
     }
 

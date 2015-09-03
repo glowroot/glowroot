@@ -16,10 +16,7 @@
 package org.glowroot.common.util;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Locale;
-
-import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -29,7 +26,6 @@ import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,10 +34,6 @@ import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.google.common.collect.ImmutableList;
-import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
-
-import org.glowroot.collector.spi.ThrowableInfo;
 
 public class ObjectMappers {
 
@@ -54,7 +46,6 @@ public class ObjectMappers {
         module.setDeserializerModifier(new EnumDeserializerModifier());
         module.addSerializer(StackTraceElement.class, new StackTraceElementSerializer());
         module.addDeserializer(StackTraceElement.class, new StackTraceElementDeserializer());
-        module.addSerializer(ThrowableInfo.class, new ThrowableInfoSerializer());
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(module);
@@ -63,29 +54,6 @@ public class ObjectMappers {
             mapper.registerModule(extraModule);
         }
         return mapper;
-    }
-
-    @EnsuresNonNull("#1")
-    public static <T> void checkRequiredProperty(T reference, String fieldName)
-            throws JsonMappingException {
-        if (reference == null) {
-            throw new JsonMappingException("Null value not allowed for field: " + fieldName);
-        }
-    }
-
-    @SuppressWarnings("return.type.incompatible")
-    public static <T> List</*@NonNull*/T> orEmpty(@Nullable List<T> list, String fieldName)
-            throws JsonMappingException {
-        if (list == null) {
-            return ImmutableList.of();
-        }
-        for (T item : list) {
-            if (item == null) {
-                throw new JsonMappingException(
-                        "Null items are not allowed in array field: " + fieldName);
-            }
-        }
-        return list;
     }
 
     private static final class StackTraceElementSerializer
@@ -113,27 +81,6 @@ public class ObjectMappers {
             int lineNumber = p.nextIntValue(0);
             p.nextValue();
             return new StackTraceElement(className, methodName, fileName, lineNumber);
-        }
-    }
-
-    private static final class ThrowableInfoSerializer extends JsonSerializer<ThrowableInfo> {
-        @Override
-        public void serialize(ThrowableInfo throwableInfo, JsonGenerator jg,
-                SerializerProvider serializers) throws IOException, JsonProcessingException {
-            jg.writeStartObject();
-            jg.writeStringField("display", throwableInfo.display());
-            jg.writeArrayFieldStart("stackTrace");
-            for (StackTraceElement stackTraceElement : throwableInfo.stackTrace()) {
-                // strip synthetic timer methods
-                String methodName = stackTraceElement.getMethodName();
-                if (methodName != null && !methodName.contains("$glowroot$timer$")) {
-                    jg.writeObject(stackTraceElement);
-                }
-            }
-            jg.writeEndArray();
-            jg.writeNumberField("framesInCommonWithCause", throwableInfo.framesInCommonWithCause());
-            jg.writeObjectField("cause", throwableInfo.cause());
-            jg.writeEndObject();
         }
     }
 

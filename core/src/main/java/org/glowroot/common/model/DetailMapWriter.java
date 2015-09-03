@@ -15,7 +15,6 @@
  */
 package org.glowroot.common.model;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
@@ -23,10 +22,13 @@ import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Optional;
+import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -44,56 +46,62 @@ public class DetailMapWriter {
         UNSHADED_GUAVA_OPTIONAL_CLASS_NAME = className;
     }
 
-    private final JsonGenerator jg;
-
-    public DetailMapWriter(JsonGenerator jg) {
-        this.jg = jg;
+    public static List<Trace.DetailEntry> toProtobufDetail(
+            Map<String, ? extends /*@Nullable*/Object> detail) {
+        return writeMap(detail);
     }
 
-    public void write(Map<String, ? extends /*@Nullable*/Object> detail) throws IOException {
-        writeMap(detail);
-    }
-
-    private void writeMap(Map<?, ?> detail) throws IOException {
-        jg.writeStartObject();
-        for (Entry<?, ?> entry : detail.entrySet()) {
+    private static List<Trace.DetailEntry> writeMap(Map<?, ?> detail) {
+        List<Trace.DetailEntry> entries = Lists.newArrayListWithCapacity(detail.size());
+        for (Entry<?, ? extends /*@Nullable*/Object> entry : detail.entrySet()) {
             Object key = entry.getKey();
-            if (key instanceof String) {
-                jg.writeFieldName((String) key);
-            } else if (key == null) {
-                // this map comes from plugin, so need extra defensive check
+            if (key == null) {
+                // skip invalid data
                 logger.warn("detail map has null key");
-                jg.writeFieldName("");
-            } else {
-                // this map comes from plugin, so need extra defensive check
-                logger.warn("detail map has unexpected key type: {}", key.getClass().getName());
-                jg.writeFieldName(key.toString());
+                continue;
             }
-            writeValue(entry.getValue());
+            String name = key.toString();
+            if (name == null) {
+                // skip invalid data
+                continue;
+            }
+            Trace.DetailEntry.Builder builder = Trace.DetailEntry.newBuilder()
+                    .setName(name);
+            writeValue(builder, entry.getValue(), false);
+            entries.add(builder.build());
         }
-        jg.writeEndObject();
+        return entries;
     }
 
-    private void writeValue(@Nullable Object value) throws IOException {
+    private static void writeValue(Trace.DetailEntry.Builder builder, @Nullable Object value,
+            boolean insideList) {
         if (value == null) {
-            jg.writeNull();
+            // add nothing (as a corollary, this will strip null/Optional.absent() items from lists)
         } else if (value instanceof String) {
-            jg.writeString((String) value);
+            builder.addValueBuilder().setSval((String) value);
         } else if (value instanceof Boolean) {
-            jg.writeBoolean((Boolean) value);
+            builder.addValueBuilder().setBval((Boolean) value);
+        } else if (value instanceof Long) {
+            builder.addValueBuilder().setLval((Long) value);
         } else if (value instanceof Number) {
-            jg.writeNumber(((Number) value).doubleValue());
+            builder.addValueBuilder().setDval(((Number) value).doubleValue());
         } else if (value instanceof Optional) {
             Optional<?> val = (Optional<?>) value;
-            writeValue(val.orNull());
+            writeValue(builder, val.orNull(), insideList);
         } else if (value instanceof Map) {
-            writeMap((Map<?, ?>) value);
-        } else if (value instanceof List) {
-            jg.writeStartArray();
-            for (Object v : (List<?>) value) {
-                writeValue(v);
+            if (insideList) {
+                logger.warn("detail maps do not support maps inside of lists");
+            } else {
+                builder.addAllChildEntry(writeMap((Map<?, ?>) value));
             }
-            jg.writeEndArray();
+        } else if (value instanceof List) {
+            if (insideList) {
+                logger.warn("detail maps do not support lists inside of lists");
+            } else {
+                for (Object v : (List<?>) value) {
+                    writeValue(builder, v, true);
+                }
+            }
         } else if (isUnshadedGuavaOptionalClass(value)) {
             // this is just for plugin tests that run against shaded glowroot-core
             Class<?> optionalClass = value.getClass().getSuperclass();
@@ -101,13 +109,13 @@ public class DetailMapWriter {
             checkNotNull(optionalClass);
             try {
                 Method orNullMethod = optionalClass.getMethod("orNull");
-                writeValue(orNullMethod.invoke(value));
+                writeValue(builder, orNullMethod.invoke(value), insideList);
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }
         } else {
             logger.warn("detail map has unexpected value type: {}", value.getClass().getName());
-            jg.writeString(value.toString());
+            builder.addValueBuilder().setSval(Strings.nullToEmpty(value.toString()));
         }
     }
 

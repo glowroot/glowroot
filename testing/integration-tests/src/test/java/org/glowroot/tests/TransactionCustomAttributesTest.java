@@ -17,7 +17,7 @@ package org.glowroot.tests;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Map;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -56,9 +56,9 @@ public class TransactionCustomAttributesTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        Iterator<Entry<String, List<String>>> i = trace.getCustomAttributes().entrySet().iterator();
-        Entry<String, List<String>> entry = i.next();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        Iterator<Map.Entry<String, List<String>>> i = header.attributes().entrySet().iterator();
+        Map.Entry<String, List<String>> entry = i.next();
         assertThat(entry.getKey()).isEqualTo("Wee Four");
         assertThat(entry.getValue()).containsExactly("ww");
         entry = i.next();

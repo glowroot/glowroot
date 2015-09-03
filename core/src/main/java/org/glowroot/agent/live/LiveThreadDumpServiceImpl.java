@@ -81,7 +81,7 @@ public class LiveThreadDumpServiceImpl implements LiveThreadDumpService {
                 unmatchedThreadInfos.add(threadInfo);
             }
         }
-        // sort descending by duration
+        // sort descending by total time
         Collections.sort(matchedThreadInfos, new Comparator<ThreadInfo>() {
             @Override
             public int compare(ThreadInfo left, ThreadInfo right) {
@@ -133,7 +133,7 @@ public class LiveThreadDumpServiceImpl implements LiveThreadDumpService {
         if (matchedTransaction != null) {
             builder.transactionType(matchedTransaction.getTransactionType());
             builder.transactionName(matchedTransaction.getTransactionName());
-            builder.transactionDuration(matchedTransaction.getDurationNanos());
+            builder.transactionTotalNanos(matchedTransaction.getDurationNanos());
             if (transactionCollector.shouldStoreSlow(matchedTransaction)) {
                 builder.traceId(matchedTransaction.getId());
             }

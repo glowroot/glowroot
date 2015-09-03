@@ -24,16 +24,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.spi.Aggregate;
 import org.glowroot.collector.spi.Collector;
-import org.glowroot.common.model.MutableProfileNode;
-import org.glowroot.common.model.MutableQuery;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.live.LiveAggregateRepository.ErrorPoint;
 import org.glowroot.live.LiveAggregateRepository.OverallErrorSummary;
 import org.glowroot.live.LiveAggregateRepository.OverallSummary;
@@ -74,10 +73,11 @@ public class AggregateIntervalCollector {
     public void flush(Collector collector) throws Exception {
         Map<String, Aggregate> overallAggregates = Maps.newHashMap();
         Map<String, Map<String, Aggregate>> transactionAggregates = Maps.newHashMap();
+        ScratchBuffer scratchBuffer = new ScratchBuffer();
         for (Entry<String, IntervalTypeCollector> e : typeCollectors.entrySet()) {
             IntervalTypeCollector intervalTypeCollector = e.getValue();
             overallAggregates.put(e.getKey(),
-                    build(intervalTypeCollector.overallAggregateCollector));
+                    build(intervalTypeCollector.overallAggregateCollector, scratchBuffer));
             for (Entry<String, AggregateCollector> f : intervalTypeCollector.transactionAggregateCollectors
                     .entrySet()) {
                 Map<String, Aggregate> map = transactionAggregates.get(e.getKey());
@@ -85,7 +85,7 @@ public class AggregateIntervalCollector {
                     map = Maps.newHashMap();
                     transactionAggregates.put(e.getKey(), map);
                 }
-                map.put(f.getKey(), build(f.getValue()));
+                map.put(f.getKey(), build(f.getValue(), scratchBuffer));
             }
         }
         collector.collectAggregates(overallAggregates, transactionAggregates, captureTime);
@@ -184,19 +184,19 @@ public class AggregateIntervalCollector {
         }
     }
 
-    public Map<String, List<MutableQuery>> getLiveQueries(String transactionType,
+    public List<Aggregate.QueriesByType> getLiveQueries(String transactionType,
             @Nullable String transactionName) throws IOException {
         AggregateCollector aggregateCollector =
                 getAggregateCollector(transactionType, transactionName);
         if (aggregateCollector == null) {
-            return ImmutableMap.of();
+            return ImmutableList.of();
         }
         synchronized (aggregateCollector) {
             return aggregateCollector.getLiveQueries();
         }
     }
 
-    public @Nullable MutableProfileNode getLiveProfile(String transactionType,
+    public @Nullable ProfileTree getLiveProfile(String transactionType,
             @Nullable String transactionName) throws IOException {
         AggregateCollector aggregateCollector =
                 getAggregateCollector(transactionType, transactionName);
@@ -222,9 +222,10 @@ public class AggregateIntervalCollector {
         return typeCollector;
     }
 
-    private Aggregate build(AggregateCollector aggregateCollector) throws IOException {
+    private Aggregate build(AggregateCollector aggregateCollector, ScratchBuffer scratchBuffer)
+            throws IOException {
         synchronized (aggregateCollector) {
-            return aggregateCollector.build(captureTime);
+            return aggregateCollector.build(captureTime, scratchBuffer);
         }
     }
 
@@ -256,10 +257,10 @@ public class AggregateIntervalCollector {
             Profile profile = transaction.getProfile();
             synchronized (overallAggregateCollector) {
                 overallAggregateCollector.add(transaction);
-                overallAggregateCollector.addToTimers(transaction.getRootTimer());
-                overallAggregateCollector.addToQueries(transaction.getQueries());
+                overallAggregateCollector.mergeRootTimer(transaction.getRootTimer());
+                overallAggregateCollector.mergeQueries(transaction.getQueries());
                 if (profile != null) {
-                    overallAggregateCollector.addToProfile(profile);
+                    overallAggregateCollector.mergeProfile(profile);
                 }
             }
             AggregateCollector transactionAggregateCollector =
@@ -283,11 +284,11 @@ public class AggregateIntervalCollector {
             }
             synchronized (transactionAggregateCollector) {
                 transactionAggregateCollector.add(transaction);
-                transactionAggregateCollector.addToTimers(transaction.getRootTimer());
-                transactionAggregateCollector.addToQueries(transaction.getQueries());
+                transactionAggregateCollector.mergeRootTimer(transaction.getRootTimer());
+                transactionAggregateCollector.mergeQueries(transaction.getQueries());
                 if (profile != null) {
-                    overallAggregateCollector.addToProfile(profile);
-                    transactionAggregateCollector.addToProfile(profile);
+                    overallAggregateCollector.mergeProfile(profile);
+                    transactionAggregateCollector.mergeProfile(profile);
                 }
             }
         }

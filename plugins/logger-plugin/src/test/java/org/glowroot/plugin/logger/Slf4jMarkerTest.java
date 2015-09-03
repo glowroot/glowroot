@@ -31,7 +31,6 @@ import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -71,12 +70,12 @@ public class Slf4jMarkerTest {
         // when
         container.executeAppUnderTest(ShouldLog.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(trace.getErrorMessage()).isEqualTo("efg");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        assertThat(header.error().get().message()).isEqualTo("efg");
         assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).getMessageText()).isEqualTo("log warn: def");
-        assertThat(entries.get(1).getMessageText()).isEqualTo("log error: efg");
+        assertThat(entries.get(0).message()).isEqualTo("log warn: def");
+        assertThat(entries.get(1).message()).isEqualTo("log error: efg");
     }
 
     @Test
@@ -87,22 +86,22 @@ public class Slf4jMarkerTest {
         // when
         container.executeAppUnderTest(ShouldLogWithThrowable.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(trace.getErrorMessage()).isEqualTo("efg_t");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        assertThat(header.error().get().message()).isEqualTo("efg_t");
         assertThat(entries).hasSize(2);
 
-        TraceEntry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessageText()).isEqualTo("log warn: def_t");
-        assertThat(warnEntry.getErrorMessage()).isEqualTo("456");
-        assertThat(warnEntry.getErrorThrowable().getStackTrace().get(0).getMethodName())
-                .isEqualTo("traceMarker");
+        Trace.Entry warnEntry = entries.get(0);
+        assertThat(warnEntry.message()).isEqualTo("log warn: def_t");
+        assertThat(warnEntry.error().get().message()).isEqualTo("456");
+        assertThat(warnEntry.error().get().exception().get().stackTraceElements().get(0))
+                .contains("traceMarker");
 
-        TraceEntry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessageText()).isEqualTo("log error: efg_t");
-        assertThat(errorEntry.getErrorMessage()).isEqualTo("567");
-        assertThat(errorEntry.getErrorThrowable().getStackTrace().get(0).getMethodName())
-                .isEqualTo("traceMarker");
+        Trace.Entry errorEntry = entries.get(1);
+        assertThat(errorEntry.message()).isEqualTo("log error: efg_t");
+        assertThat(errorEntry.error().get().message()).isEqualTo("567");
+        assertThat(errorEntry.error().get().exception().get().stackTraceElements().get(0))
+                .contains("traceMarker");
     }
 
     @Test
@@ -113,17 +112,17 @@ public class Slf4jMarkerTest {
         // when
         container.executeAppUnderTest(ShouldLogWithNullThrowable.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(trace.getErrorMessage()).isEqualTo("efg_tnull");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        assertThat(header.error().get().message()).isEqualTo("efg_tnull");
         assertThat(entries).hasSize(2);
 
-        TraceEntry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessageText()).isEqualTo("log warn: def_tnull");
-        assertThat(warnEntry.getErrorMessage()).isEqualTo("def_tnull");
-        TraceEntry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessageText()).isEqualTo("log error: efg_tnull");
-        assertThat(errorEntry.getErrorMessage()).isEqualTo("efg_tnull");
+        Trace.Entry warnEntry = entries.get(0);
+        assertThat(warnEntry.message()).isEqualTo("log warn: def_tnull");
+        assertThat(warnEntry.error().get().message()).isEqualTo("def_tnull");
+        Trace.Entry errorEntry = entries.get(1);
+        assertThat(errorEntry.message()).isEqualTo("log error: efg_tnull");
+        assertThat(errorEntry.error().get().message()).isEqualTo("efg_tnull");
     }
 
     @Test
@@ -132,14 +131,14 @@ public class Slf4jMarkerTest {
         // when
         container.executeAppUnderTest(ShouldLogWithOneParameter.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
 
-        TraceEntry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessageText()).isEqualTo("log warn: def_1 d");
-        TraceEntry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessageText()).isEqualTo("log error: efg_1 e");
+        Trace.Entry warnEntry = entries.get(0);
+        assertThat(warnEntry.message()).isEqualTo("log warn: def_1 d");
+        Trace.Entry errorEntry = entries.get(1);
+        assertThat(errorEntry.message()).isEqualTo("log error: efg_1 e");
     }
 
     @Test
@@ -148,22 +147,22 @@ public class Slf4jMarkerTest {
         // when
         container.executeAppUnderTest(ShouldLogWithOneParameterAndThrowable.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(trace.getErrorMessage()).isEqualTo("efg_1_t e");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        assertThat(header.error().get().message()).isEqualTo("efg_1_t e");
         assertThat(entries).hasSize(2);
 
-        TraceEntry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessageText()).isEqualTo("log warn: def_1_t d");
-        assertThat(warnEntry.getErrorMessage()).isEqualTo("456");
-        assertThat(warnEntry.getErrorThrowable().getStackTrace().get(0).getMethodName())
-                .isEqualTo("traceMarker");
+        Trace.Entry warnEntry = entries.get(0);
+        assertThat(warnEntry.message()).isEqualTo("log warn: def_1_t d");
+        assertThat(warnEntry.error().get().message()).isEqualTo("456");
+        assertThat(warnEntry.error().get().exception().get().stackTraceElements().get(0))
+                .contains("traceMarker");
 
-        TraceEntry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessageText()).isEqualTo("log error: efg_1_t e");
-        assertThat(errorEntry.getErrorMessage()).isEqualTo("567");
-        assertThat(errorEntry.getErrorThrowable().getStackTrace().get(0).getMethodName())
-                .isEqualTo("traceMarker");
+        Trace.Entry errorEntry = entries.get(1);
+        assertThat(errorEntry.message()).isEqualTo("log error: efg_1_t e");
+        assertThat(errorEntry.error().get().message()).isEqualTo("567");
+        assertThat(errorEntry.error().get().exception().get().stackTraceElements().get(0))
+                .contains("traceMarker");
     }
 
     @Test
@@ -172,14 +171,14 @@ public class Slf4jMarkerTest {
         // when
         container.executeAppUnderTest(ShouldLogWithTwoParameters.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
 
-        TraceEntry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessageText()).isEqualTo("log warn: def_2 d e");
-        TraceEntry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessageText()).isEqualTo("log error: efg_2 e f");
+        Trace.Entry warnEntry = entries.get(0);
+        assertThat(warnEntry.message()).isEqualTo("log warn: def_2 d e");
+        Trace.Entry errorEntry = entries.get(1);
+        assertThat(errorEntry.message()).isEqualTo("log error: efg_2 e f");
     }
 
     @Test
@@ -188,14 +187,14 @@ public class Slf4jMarkerTest {
         // when
         container.executeAppUnderTest(ShouldLogWithMoreThanTwoParameters.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
 
-        TraceEntry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessageText()).isEqualTo("log warn: def_3 d e f");
-        TraceEntry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessageText()).isEqualTo("log error: efg_3 e f g");
+        Trace.Entry warnEntry = entries.get(0);
+        assertThat(warnEntry.message()).isEqualTo("log warn: def_3 d e f");
+        Trace.Entry errorEntry = entries.get(1);
+        assertThat(errorEntry.message()).isEqualTo("log error: efg_3 e f g");
     }
 
     @Test
@@ -204,21 +203,21 @@ public class Slf4jMarkerTest {
         // when
         container.executeAppUnderTest(ShouldLogWithParametersAndThrowable.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
 
-        TraceEntry warnEntry = entries.get(0);
-        assertThat(warnEntry.getMessageText()).isEqualTo("log warn: def_3_t d e f");
-        assertThat(warnEntry.getErrorMessage()).isEqualTo("456");
-        assertThat(warnEntry.getErrorThrowable().getStackTrace().get(0).getMethodName())
-                .isEqualTo("traceMarker");
+        Trace.Entry warnEntry = entries.get(0);
+        assertThat(warnEntry.message()).isEqualTo("log warn: def_3_t d e f");
+        assertThat(warnEntry.error().get().message()).isEqualTo("456");
+        assertThat(warnEntry.error().get().exception().get().stackTraceElements().get(0))
+                .contains("traceMarker");
 
-        TraceEntry errorEntry = entries.get(1);
-        assertThat(errorEntry.getMessageText()).isEqualTo("log error: efg_3_t e f g");
-        assertThat(errorEntry.getErrorMessage()).isEqualTo("567");
-        assertThat(errorEntry.getErrorThrowable().getStackTrace().get(0).getMethodName())
-                .isEqualTo("traceMarker");
+        Trace.Entry errorEntry = entries.get(1);
+        assertThat(errorEntry.message()).isEqualTo("log error: efg_3_t e f g");
+        assertThat(errorEntry.error().get().message()).isEqualTo("567");
+        assertThat(errorEntry.error().get().exception().get().stackTraceElements().get(0))
+                .contains("traceMarker");
     }
 
     @Test
@@ -230,8 +229,8 @@ public class Slf4jMarkerTest {
         // when
         container.executeAppUnderTest(ShouldLog.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getEntryCount()).isZero();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.entryCount()).isZero();
     }
 
     public static class ShouldLog implements AppUnderTest, TraceMarker {

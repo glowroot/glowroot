@@ -20,12 +20,9 @@
       <artifactId>glowroot-core</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <!-- do not include glowroot-api or glowroot-plugin-api since want to either get them
-      transitively from glowroot-core or get it as part of shaded glowroot-core
-      (note: including them with provided scope here will override the glowroot-api and
-      glowroot-plugin-api that are included via promoteTransitiveDependencies when glowroot-core
-      itself is not shaded, and then glowroot-api and glowroot-plugin-api won't be passed along to
-      dependents, e.g. glowroot-webdriver-tests) -->
+    <!-- do not include glowroot-api, glowroot-plugin-api or glowroot-collector-spi since want to
+      either get them transitively from glowroot-core (during mvn test) or get them from shaded
+      glowroot-core (during mvn package) -->
     <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>value</artifactId>
@@ -55,6 +52,11 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-guava</artifactId>
+      <version>2.6.1</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -109,7 +111,6 @@
             ${project.build.directory}/dependency-reduced-pom.xml
           </dependencyReducedPomLocation>
           <createSourcesJar>true</createSourcesJar>
-          <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
           <artifactSet>
             <includes>
               <include>org.glowroot:glowroot-core</include>

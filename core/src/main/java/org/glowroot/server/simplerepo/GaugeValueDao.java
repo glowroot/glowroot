@@ -20,8 +20,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLongArray;
@@ -35,7 +36,7 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.Longs;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
-import org.glowroot.collector.spi.GaugePoint;
+import org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue;
 import org.glowroot.common.config.GaugeConfig;
 import org.glowroot.common.config.GaugeConfig.MBeanAttribute;
 import org.glowroot.common.util.Clock;
@@ -44,7 +45,6 @@ import org.glowroot.server.repo.ConfigRepository;
 import org.glowroot.server.repo.ConfigRepository.RollupConfig;
 import org.glowroot.server.repo.GaugeValueRepository;
 import org.glowroot.server.repo.ImmutableGauge;
-import org.glowroot.server.repo.ImmutableGaugeValue;
 import org.glowroot.server.simplerepo.PlatformMBeanServerLifecycle.InitListener;
 import org.glowroot.server.simplerepo.util.DataSource;
 import org.glowroot.server.simplerepo.util.DataSource.PreparedStatementBinder;
@@ -161,25 +161,26 @@ class GaugeValueDao implements GaugeValueRepository {
         return gauges;
     }
 
-    public void store(final Collection<? extends GaugePoint> gaugePoints) throws Exception {
-        if (gaugePoints.isEmpty()) {
+    public void store(final Map<String, GaugeValue> gaugeValues) throws Exception {
+        if (gaugeValues.isEmpty()) {
             return;
         }
         dataSource.batchUpdate("insert into gauge_point_rollup_0 (gauge_id, capture_time,"
                 + " value) values (?, ?, ?)", new PreparedStatementBinder() {
                     @Override
                     public void bind(PreparedStatement preparedStatement) throws Exception {
-                        for (GaugePoint gaugePoint : gaugePoints) {
-                            long gaugeId = gaugeMetaDao.getOrCreateGaugeId(gaugePoint.gaugeName());
+                        for (Entry<String, GaugeValue> entry : gaugeValues.entrySet()) {
+                            long gaugeId = gaugeMetaDao.getOrCreateGaugeId(entry.getKey());
                             if (gaugeId == -1) {
                                 // data source is closing and a new gauge id was needed, but could
                                 // not insert it, but this bind is already inside of the data source
                                 // lock so any inserts here will succeed, thus the break
                                 break;
                             }
+                            GaugeValue gaugeValue = entry.getValue();
                             preparedStatement.setLong(1, gaugeId);
-                            preparedStatement.setLong(2, gaugePoint.captureTime());
-                            preparedStatement.setDouble(3, gaugePoint.value());
+                            preparedStatement.setLong(2, gaugeValue.getCaptureTime());
+                            preparedStatement.setDouble(3, gaugeValue.getValue());
                             preparedStatement.addBatch();
                         }
                     }
@@ -249,13 +250,13 @@ class GaugeValueDao implements GaugeValueRepository {
             return ImmutableList.of();
         }
         GaugeValue lastGaugeValue = gaugeValues.get(gaugeValues.size() - 1);
-        if (lastGaugeValue.captureTime() <= liveCaptureTime) {
+        if (lastGaugeValue.getCaptureTime() <= liveCaptureTime) {
             return gaugeValues;
         }
         List<GaugeValue> correctedGaugeValues = Lists.newArrayList(gaugeValues);
-        GaugeValue correctedLastGaugeValue = ImmutableGaugeValue.builder()
-                .copyFrom(lastGaugeValue)
-                .captureTime(liveCaptureTime)
+        GaugeValue correctedLastGaugeValue = GaugeValue.newBuilder()
+                .setCaptureTime(liveCaptureTime)
+                .setValue(lastGaugeValue.getValue())
                 .build();
         correctedGaugeValues.set(correctedGaugeValues.size() - 1, correctedLastGaugeValue);
         return correctedGaugeValues;
@@ -349,9 +350,9 @@ class GaugeValueDao implements GaugeValueRepository {
         public GaugeValue mapRow(ResultSet resultSet) throws SQLException {
             long captureTime = resultSet.getLong(1);
             double value = resultSet.getDouble(2);
-            return ImmutableGaugeValue.builder()
-                    .captureTime(captureTime)
-                    .value(value)
+            return GaugeValue.newBuilder()
+                    .setCaptureTime(captureTime)
+                    .setValue(value)
                     .build();
         }
     }

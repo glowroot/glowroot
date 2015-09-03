@@ -19,7 +19,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Ticker;
 
-import org.glowroot.collector.spi.Query;
 import org.glowroot.common.util.Tickers;
 import org.glowroot.plugin.api.transaction.Timer;
 
@@ -42,7 +41,7 @@ import org.glowroot.plugin.api.transaction.Timer;
 // in-flight (e.g. partial traces and active traces displayed in the UI) may not be visible
 //
 // all timing data is in nanoseconds
-public class QueryData implements Timer, Query {
+public class QueryData implements Timer {
 
     private static final Ticker ticker = Tickers.getTicker();
 
@@ -68,8 +67,7 @@ public class QueryData implements Timer, Query {
         return queryType;
     }
 
-    @Override
-    public String queryText() {
+    public String getQueryText() {
         return queryText;
     }
 
@@ -102,20 +100,17 @@ public class QueryData implements Timer, Query {
         totalRows += inc;
     }
 
-    @Override
-    public double totalNanos() {
+    public double getTotalNanos() {
         return totalNanos;
     }
 
     // only called after transaction completion
-    @Override
-    public long executionCount() {
+    public long getExecutionCount() {
         return executionCount;
     }
 
     // only called after transaction completion
-    @Override
-    public long totalRows() {
+    public long getTotalRows() {
         return totalRows;
     }
 

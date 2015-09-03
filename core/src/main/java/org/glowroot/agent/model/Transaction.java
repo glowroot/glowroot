@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.model;
 
-import java.io.IOException;
 import java.lang.management.ThreadInfo;
 import java.util.Collection;
 import java.util.HashMap;
@@ -40,9 +39,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.model.ThreadInfoComponent.ThreadInfoData;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
-import org.glowroot.collector.spi.GarbageCollectorActivity;
-import org.glowroot.collector.spi.ProfileNode;
-import org.glowroot.collector.spi.TraceEntry;
+import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.util.ScheduledRunnable;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
@@ -163,7 +161,7 @@ public class Transaction {
         this.completionCallback = completionCallback;
     }
 
-    public long getStartTime() {
+    long getStartTime() {
         return startTime;
     }
 
@@ -203,8 +201,8 @@ public class Transaction {
         return ((ReadableMessage) messageSupplier.get()).getText();
     }
 
-    public @Nullable String getUser() {
-        return user;
+    public String getUser() {
+        return Strings.nullToEmpty(user);
     }
 
     public ImmutableSetMultimap<String, String> getCustomAttributes() {
@@ -252,8 +250,8 @@ public class Transaction {
     }
 
     // can be called from a non-transaction thread
-    List<GarbageCollectorActivity> getGcActivity() {
-        return gcActivityComponent == null ? ImmutableList.<GarbageCollectorActivity>of()
+    List<Trace.GarbageCollectionActivity> getGcActivity() {
+        return gcActivityComponent == null ? ImmutableList.<Trace.GarbageCollectionActivity>of()
                 : gcActivityComponent.getGcActivity();
     }
 
@@ -298,12 +296,12 @@ public class Transaction {
         };
     }
 
-    public Collection<TraceEntry> getEntries() {
+    public List<Trace.Entry> getEntriesProtobuf() {
         readMemoryBarrier();
-        return traceEntryComponent.getEntries();
+        return traceEntryComponent.toProtobuf();
     }
 
-    long getProfileSampleCount() {
+    public long getProfileSampleCount() {
         if (profile == null) {
             return 0;
         } else {
@@ -316,24 +314,15 @@ public class Transaction {
         return profile;
     }
 
-    public @Nullable ProfileNode getSyntheticRootProfileNode() throws IOException {
+    public @Nullable ProfileTree getProfileTreeProtobuf() {
         if (profile == null) {
             return null;
         }
-        if (isCompleted()) {
-            synchronized (profile.getLock()) {
-                // even though complete, still need lock to ensure visibility
-                return profile.getSyntheticRootNode();
-            }
-        } else {
-            synchronized (profile.getLock()) {
-                return profile.getSyntheticRootNode().copy();
-            }
-        }
+        return profile.toProtobuf();
     }
 
     // TODO implement profile limit
-    boolean isProfileLimitExceeded() {
+    boolean isProfileSampleLimitExceeded() {
         return false;
     }
 

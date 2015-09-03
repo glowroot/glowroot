@@ -16,23 +16,18 @@
 package org.glowroot.server.simplerepo;
 
 import java.io.File;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import org.immutables.value.Value;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.glowroot.collector.spi.Aggregate;
-import org.glowroot.collector.spi.Query;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
 import org.glowroot.common.config.ImmutableAdvancedConfig;
-import org.glowroot.common.model.LazyHistogram;
-import org.glowroot.common.model.MutableTimerNode;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Tickers;
@@ -55,7 +50,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @Styles.Private
-@Value.Include(Aggregate.class)
 public class AggregateDaoTest {
 
     private DataSource dataSource;
@@ -127,114 +121,98 @@ public class AggregateDaoTest {
 
     // also used by TransactionCommonServiceTest
     public void populateAggregates() throws Exception {
-        Aggregate overallAggregate = new AggregateBuilder()
-                .captureTime(10000)
-                .totalNanos(1000000)
-                .errorCount(0)
-                .transactionCount(10)
-                .totalCpuNanos(-1)
-                .totalBlockedNanos(-1)
-                .totalWaitedNanos(-1)
-                .totalAllocatedBytes(-1)
-                .syntheticRootTimerNode(getFakeSyntheticRootTimer())
-                .histogram(getFakeHistogram())
-                .queries(ImmutableMap.<String, Collection<Query>>of())
+        Aggregate overallAggregate = Aggregate.newBuilder()
+                .setCaptureTime(10000)
+                .setTotalNanos(1000000)
+                .setErrorCount(0)
+                .setTransactionCount(10)
+                .setTotalCpuNanos(-1)
+                .setTotalBlockedNanos(-1)
+                .setTotalWaitedNanos(-1)
+                .setTotalAllocatedBytes(-1)
+                .setTotalNanosHistogram(getFakeHistogram())
                 .build();
         Map<String, Aggregate> transactionAggregates = Maps.newHashMap();
-        transactionAggregates.put("one", new AggregateBuilder()
-                .captureTime(10000)
-                .totalNanos(100000)
-                .errorCount(0)
-                .transactionCount(1)
-                .totalCpuNanos(-1)
-                .totalBlockedNanos(-1)
-                .totalWaitedNanos(-1)
-                .totalAllocatedBytes(-1)
-                .syntheticRootTimerNode(getFakeSyntheticRootTimer())
-                .histogram(getFakeHistogram())
-                .queries(ImmutableMap.<String, Collection<Query>>of())
+        transactionAggregates.put("one", Aggregate.newBuilder()
+                .setCaptureTime(10000)
+                .setTotalNanos(100000)
+                .setErrorCount(0)
+                .setTransactionCount(1)
+                .setTotalCpuNanos(-1)
+                .setTotalBlockedNanos(-1)
+                .setTotalWaitedNanos(-1)
+                .setTotalAllocatedBytes(-1)
+                .setTotalNanosHistogram(getFakeHistogram())
                 .build());
-        transactionAggregates.put("two", new AggregateBuilder()
-                .captureTime(10000)
-                .totalNanos(300000)
-                .errorCount(0)
-                .transactionCount(2)
-                .totalCpuNanos(-1)
-                .totalBlockedNanos(-1)
-                .totalWaitedNanos(-1)
-                .totalAllocatedBytes(-1)
-                .syntheticRootTimerNode(getFakeSyntheticRootTimer())
-                .histogram(getFakeHistogram())
-                .queries(ImmutableMap.<String, Collection<Query>>of())
+        transactionAggregates.put("two", Aggregate.newBuilder()
+                .setCaptureTime(10000)
+                .setTotalNanos(300000)
+                .setErrorCount(0)
+                .setTransactionCount(2)
+                .setTotalCpuNanos(-1)
+                .setTotalBlockedNanos(-1)
+                .setTotalWaitedNanos(-1)
+                .setTotalAllocatedBytes(-1)
+                .setTotalNanosHistogram(getFakeHistogram())
                 .build());
-        transactionAggregates.put("seven", new AggregateBuilder()
-                .captureTime(10000)
-                .totalNanos(1400000)
-                .errorCount(0)
-                .transactionCount(7)
-                .totalCpuNanos(-1)
-                .totalBlockedNanos(-1)
-                .totalWaitedNanos(-1)
-                .totalAllocatedBytes(-1)
-                .syntheticRootTimerNode(getFakeSyntheticRootTimer())
-                .histogram(getFakeHistogram())
-                .queries(ImmutableMap.<String, Collection<Query>>of())
+        transactionAggregates.put("seven", Aggregate.newBuilder()
+                .setCaptureTime(10000)
+                .setTotalNanos(1400000)
+                .setErrorCount(0)
+                .setTransactionCount(7)
+                .setTotalCpuNanos(-1)
+                .setTotalBlockedNanos(-1)
+                .setTotalWaitedNanos(-1)
+                .setTotalAllocatedBytes(-1)
+                .setTotalNanosHistogram(getFakeHistogram())
                 .build());
         aggregateDao.store(ImmutableMap.of("a type", overallAggregate),
                 ImmutableMap.of("a type", transactionAggregates), 10000);
 
-        Aggregate overallAggregate2 = new AggregateBuilder()
-                .captureTime(20000)
-                .totalNanos(1000000)
-                .errorCount(0)
-                .transactionCount(10)
-                .totalCpuNanos(-1)
-                .totalBlockedNanos(-1)
-                .totalWaitedNanos(-1)
-                .totalAllocatedBytes(-1)
-                .syntheticRootTimerNode(getFakeSyntheticRootTimer())
-                .histogram(getFakeHistogram())
-                .queries(ImmutableMap.<String, Collection<Query>>of())
+        Aggregate overallAggregate2 = Aggregate.newBuilder()
+                .setCaptureTime(20000)
+                .setTotalNanos(1000000)
+                .setErrorCount(0)
+                .setTransactionCount(10)
+                .setTotalCpuNanos(-1)
+                .setTotalBlockedNanos(-1)
+                .setTotalWaitedNanos(-1)
+                .setTotalAllocatedBytes(-1)
+                .setTotalNanosHistogram(getFakeHistogram())
                 .build();
         Map<String, Aggregate> transactionAggregates2 = Maps.newHashMap();
-        transactionAggregates2.put("one", new AggregateBuilder()
-                .captureTime(20000)
-                .totalNanos(100000)
-                .errorCount(0)
-                .transactionCount(1)
-                .totalCpuNanos(-1)
-                .totalBlockedNanos(-1)
-                .totalWaitedNanos(-1)
-                .totalAllocatedBytes(-1)
-                .syntheticRootTimerNode(getFakeSyntheticRootTimer())
-                .histogram(getFakeHistogram())
-                .queries(ImmutableMap.<String, Collection<Query>>of())
+        transactionAggregates2.put("one", Aggregate.newBuilder()
+                .setCaptureTime(20000)
+                .setTotalNanos(100000)
+                .setErrorCount(0)
+                .setTransactionCount(1)
+                .setTotalCpuNanos(-1)
+                .setTotalBlockedNanos(-1)
+                .setTotalWaitedNanos(-1)
+                .setTotalAllocatedBytes(-1)
+                .setTotalNanosHistogram(getFakeHistogram())
                 .build());
-        transactionAggregates2.put("two", new AggregateBuilder()
-                .captureTime(20000)
-                .totalNanos(300000)
-                .errorCount(0)
-                .transactionCount(2)
-                .totalCpuNanos(-1)
-                .totalBlockedNanos(-1)
-                .totalWaitedNanos(-1)
-                .totalAllocatedBytes(-1)
-                .syntheticRootTimerNode(getFakeSyntheticRootTimer())
-                .histogram(getFakeHistogram())
-                .queries(ImmutableMap.<String, Collection<Query>>of())
+        transactionAggregates2.put("two", Aggregate.newBuilder()
+                .setCaptureTime(20000)
+                .setTotalNanos(300000)
+                .setErrorCount(0)
+                .setTransactionCount(2)
+                .setTotalCpuNanos(-1)
+                .setTotalBlockedNanos(-1)
+                .setTotalWaitedNanos(-1)
+                .setTotalAllocatedBytes(-1)
+                .setTotalNanosHistogram(getFakeHistogram())
                 .build());
-        transactionAggregates2.put("seven", new AggregateBuilder()
-                .captureTime(20000)
-                .totalNanos(1400000)
-                .errorCount(0)
-                .transactionCount(7)
-                .totalCpuNanos(-1)
-                .totalBlockedNanos(-1)
-                .totalWaitedNanos(-1)
-                .totalAllocatedBytes(-1)
-                .syntheticRootTimerNode(getFakeSyntheticRootTimer())
-                .histogram(getFakeHistogram())
-                .queries(ImmutableMap.<String, Collection<Query>>of())
+        transactionAggregates2.put("seven", Aggregate.newBuilder()
+                .setCaptureTime(20000)
+                .setTotalNanos(1400000)
+                .setErrorCount(0)
+                .setTransactionCount(7)
+                .setTotalCpuNanos(-1)
+                .setTotalBlockedNanos(-1)
+                .setTotalWaitedNanos(-1)
+                .setTotalAllocatedBytes(-1)
+                .setTotalNanosHistogram(getFakeHistogram())
                 .build());
         aggregateDao.store(ImmutableMap.of("a type", overallAggregate2),
                 ImmutableMap.of("a type", transactionAggregates2), 20000);
@@ -245,14 +223,10 @@ public class AggregateDaoTest {
         return aggregateDao;
     }
 
-    private static MutableTimerNode getFakeSyntheticRootTimer() {
-        return MutableTimerNode.createSyntheticRootNode();
-    }
-
-    private static LazyHistogram getFakeHistogram() {
-        LazyHistogram histogram = new LazyHistogram();
-        histogram.add(123);
-        histogram.add(456);
-        return histogram;
+    private static Aggregate.Histogram getFakeHistogram() {
+        return Aggregate.Histogram.newBuilder()
+                .addOrderedRawValue(123)
+                .addOrderedRawValue(456)
+                .build();
     }
 }

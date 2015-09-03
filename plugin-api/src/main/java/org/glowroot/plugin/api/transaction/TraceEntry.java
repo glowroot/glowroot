@@ -33,11 +33,11 @@ public interface TraceEntry {
     void end();
 
     /**
-     * End the entry and capture a stack trace if its duration exceeds the specified
+     * End the entry and capture a stack trace if its total time exceeds the specified
      * {@code threshold}.
      * 
      * In case the trace has accumulated {@code maxTraceEntriesPerTransaction} entries and this is a
-     * dummy entry and its duration exceeds the specified threshold, then this dummy entry is
+     * dummy entry and its total time exceeds the specified threshold, then this dummy entry is
      * escalated into a real entry. A hard cap ({@code maxTraceEntriesPerTransaction * 2}) on the
      * total number of (real) entries is applied when escalating dummy entries to real entries.
      */

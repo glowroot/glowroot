@@ -25,16 +25,15 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
-import org.glowroot.collector.spi.ThrowableInfo;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.common.util.Styles;
 
 @Value.Immutable
 @Styles.AllParameters
-@Value.Include(ThrowableInfo.class)
 public abstract class ErrorMessage {
 
     public abstract String message();
-    public abstract @Nullable ThrowableInfo throwable();
+    public abstract @Nullable Trace.Throwable throwable();
 
     public static ErrorMessage from(Throwable t) {
         return from(null, t);
@@ -57,9 +56,9 @@ public abstract class ErrorMessage {
         return ImmutableErrorMessage.of(msg, buildThrowableInfo(t, null));
     }
 
-    private static ThrowableInfo buildThrowableInfo(Throwable t,
+    private static Trace.Throwable buildThrowableInfo(Throwable t,
             @Nullable List<StackTraceElement> causedStackTrace) {
-        int framesInCommon = 0;
+        int framesInCommonWithEnclosing = 0;
         ImmutableList<StackTraceElement> stackTrace = ImmutableList.copyOf(t.getStackTrace());
         if (causedStackTrace != null) {
             ListIterator<StackTraceElement> i = stackTrace.listIterator(stackTrace.size());
@@ -71,23 +70,34 @@ public abstract class ErrorMessage {
                 if (!element.equals(causedElement)) {
                     break;
                 }
-                framesInCommon++;
+                framesInCommonWithEnclosing++;
             }
-            if (framesInCommon > 0) {
+            if (framesInCommonWithEnclosing > 0) {
                 // strip off common frames
-                stackTrace = stackTrace.subList(0, stackTrace.size() - framesInCommon);
+                stackTrace = stackTrace.subList(0, stackTrace.size() - framesInCommonWithEnclosing);
             }
         }
-        ImmutableThrowableInfo.Builder builder = ImmutableThrowableInfo.builder()
-                .display(t.toString())
-                .stackTrace(stackTrace)
-                .framesInCommonWithCause(framesInCommon);
+        Trace.Throwable.Builder builder = Trace.Throwable.newBuilder()
+                .setDisplay(t.toString());
+        for (StackTraceElement element : stackTrace) {
+            builder.addElement(toProtobuf(element));
+        }
+        builder.setFramesInCommonWithEnclosing(framesInCommonWithEnclosing);
         Throwable cause = t.getCause();
         if (cause != null) {
             // pass t's original stack trace to construct the nested cause
             // (not stackTraces, which now has common frames removed)
-            builder.cause(buildThrowableInfo(cause, Arrays.asList(t.getStackTrace())));
+            builder.setCause(buildThrowableInfo(cause, Arrays.asList(t.getStackTrace())));
         }
         return builder.build();
+    }
+
+    private static Trace.StackTraceElement toProtobuf(StackTraceElement ste) {
+        return Trace.StackTraceElement.newBuilder()
+                .setClassName(ste.getClassName())
+                .setMethodName(Strings.nullToEmpty(ste.getMethodName()))
+                .setFileName(Strings.nullToEmpty(ste.getFileName()))
+                .setLineNumber(ste.getLineNumber())
+                .build();
     }
 }

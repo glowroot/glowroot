@@ -13,26 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.collector.spi;
+package org.glowroot.common.model;
 
-import java.util.Collection;
+import java.nio.ByteBuffer;
 
-import javax.annotation.Nullable;
+import org.junit.Test;
 
-public interface TraceTimerNode {
+import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 
-    // only null for synthetic root node
-    @Nullable
-    String name();
+import static org.assertj.core.api.Assertions.assertThat;
 
-    boolean extended();
+public class ScratchBufferTest {
 
-    long totalNanos();
-
-    long count();
-
-    // can only be true inside of partial trace captures
-    boolean active();
-
-    Collection<? extends TraceTimerNode> childNodes();
+    @Test
+    public void testCapacityExpands() {
+        // given
+        ScratchBuffer scratchBuffer = new ScratchBuffer();
+        scratchBuffer.getBuffer(1000);
+        // when
+        ByteBuffer buffer = scratchBuffer.getBuffer(2000);
+        // then
+        assertThat(buffer.capacity()).isEqualTo(2000);
+    }
 }

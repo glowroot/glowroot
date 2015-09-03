@@ -35,7 +35,6 @@ import org.glowroot.container.config.InstrumentationConfig.CaptureKind;
 import org.glowroot.container.config.InstrumentationConfig.MethodModifier;
 import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -77,18 +76,22 @@ public class ConfiguredInstrumentationTest {
         // when
         container.executeAppUnderTest(ShouldExecute1.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        assertThat(trace.getTransactionType()).isEqualTo("test override type");
-        assertThat(trace.getTransactionName()).isEqualTo("test override name");
-        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTimer().getChildTimerNames()).containsOnly("execute one");
-        assertThat(trace.getRootTimer().getChildNodes().get(0).getChildTimerNames())
-                .containsOnly("execute one timer only");
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.getMessageText()).isEqualTo("execute1() => void");
-        assertThat(entry.getStackTrace()).isNotNull();
+        assertThat(header.transactionType()).isEqualTo("test override type");
+        assertThat(header.transactionName()).isEqualTo("test override name");
+        assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
+        assertThat(header.rootTimer().childTimers()).hasSize(1);
+        assertThat(header.rootTimer().childTimers().get(0).name())
+                .isEqualTo("execute one");
+        assertThat(header.rootTimer().childTimers().get(0).childTimers()).hasSize(1);
+        assertThat(header.rootTimer().childTimers().get(0).childTimers().get(0)
+                .name())
+                        .isEqualTo("execute one timer only");
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.message()).isEqualTo("execute1() => void");
+        assertThat(entry.locationStackTraceElements()).isNotEmpty();
     }
 
     @Test
@@ -97,12 +100,14 @@ public class ConfiguredInstrumentationTest {
         // when
         container.executeAppUnderTest(ShouldExecuteWithReturn.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getRootTimer().getName()).isEqualTo("mock trace marker");
-        assertThat(trace.getRootTimer().getChildTimerNames()).containsOnly("execute with return");
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
+        assertThat(header.rootTimer().childTimers()).hasSize(1);
+        assertThat(header.rootTimer().childTimers().get(0).name())
+                .isEqualTo("execute with return");
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getMessageText()).isEqualTo("executeWithReturn() => xyz");
+        assertThat(entries.get(0).message()).isEqualTo("executeWithReturn() => xyz");
     }
 
     @Test
@@ -111,13 +116,13 @@ public class ConfiguredInstrumentationTest {
         // when
         container.executeAppUnderTest(ShouldExecuteWithArgs.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getHeadline()).isEqualTo("executeWithArgs(): abc, 123, the name");
-        assertThat(trace.getTransactionType()).isEqualTo("Pointcut config test");
-        assertThat(trace.getTransactionName()).isEqualTo("Misc / executeWithArgs");
-        assertThat(trace.getRootTimer().getName()).isEqualTo("execute with args");
-        assertThat(trace.getRootTimer().getChildNodes()).isEmpty();
-        assertThat(trace.getEntryCount()).isZero();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.headline()).isEqualTo("executeWithArgs(): abc, 123, the name");
+        assertThat(header.transactionType()).isEqualTo("Pointcut config test");
+        assertThat(header.transactionName()).isEqualTo("Misc / executeWithArgs");
+        assertThat(header.rootTimer().name()).isEqualTo("execute with args");
+        assertThat(header.rootTimer().childTimers()).isEmpty();
+        assertThat(header.entryCount()).isZero();
     }
 
     protected static void addInstrumentationForExecute1() throws Exception {

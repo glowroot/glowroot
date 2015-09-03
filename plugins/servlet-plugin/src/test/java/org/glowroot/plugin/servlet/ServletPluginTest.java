@@ -46,7 +46,6 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -77,11 +76,11 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(ExecuteServlet.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getHeadline()).isEqualTo("/testservlet");
-        assertThat(trace.getTransactionName()).isEqualTo("/testservlet");
-        assertThat(trace.getCustomDetail().get("Request http method")).isEqualTo("GET");
-        assertThat(trace.getEntryCount()).isZero();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.headline()).isEqualTo("/testservlet");
+        assertThat(header.transactionName()).isEqualTo("/testservlet");
+        assertThat(header.detail().get("Request http method")).isEqualTo("GET");
+        assertThat(header.entryCount()).isZero();
     }
 
     @Test
@@ -90,11 +89,11 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(ExecuteFilter.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getHeadline()).isEqualTo("/testfilter");
-        assertThat(trace.getTransactionName()).isEqualTo("/testfilter");
-        assertThat(trace.getCustomDetail().get("Request http method")).isEqualTo("GET");
-        assertThat(trace.getEntryCount()).isZero();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.headline()).isEqualTo("/testfilter");
+        assertThat(header.transactionName()).isEqualTo("/testfilter");
+        assertThat(header.detail().get("Request http method")).isEqualTo("GET");
+        assertThat(header.entryCount()).isZero();
     }
 
     @Test
@@ -103,11 +102,11 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(ExecuteFilterWithNestedServlet.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getHeadline()).isEqualTo("/testfilter");
-        assertThat(trace.getTransactionName()).isEqualTo("/testfilter");
-        assertThat(trace.getCustomDetail().get("Request http method")).isEqualTo("GET");
-        assertThat(trace.getEntryCount()).isZero();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.headline()).isEqualTo("/testfilter");
+        assertThat(header.transactionName()).isEqualTo("/testfilter");
+        assertThat(header.detail().get("Request http method")).isEqualTo("GET");
+        assertThat(header.entryCount()).isZero();
     }
 
     @Test
@@ -116,10 +115,9 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(TestNoQueryString.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        String queryString = (String) trace.getCustomDetail().get("Request query string");
-        assertThat(queryString).isNull();
-        assertThat(trace.getEntryCount()).isZero();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.detail()).doesNotContainKey("Request query string");
+        assertThat(header.entryCount()).isZero();
     }
 
     @Test
@@ -128,10 +126,9 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(TestEmptyQueryString.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        String queryString = (String) trace.getCustomDetail().get("Request query string");
-        assertThat(queryString).isEqualTo("");
-        assertThat(trace.getEntryCount()).isZero();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.detail().get("Request query string")).isEqualTo("");
+        assertThat(header.entryCount()).isZero();
     }
 
     @Test
@@ -140,10 +137,9 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(TestNonEmptyQueryString.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        String queryString = (String) trace.getCustomDetail().get("Request query string");
-        assertThat(queryString).isEqualTo("a=b&c=d");
-        assertThat(trace.getEntryCount()).isZero();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.detail().get("Request query string")).isEqualTo("a=b&c=d");
+        assertThat(header.entryCount()).isZero();
     }
 
     @Test
@@ -152,10 +148,10 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(ServletThrowsException.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isNotNull();
-        assertThat(trace.getErrorThrowable()).isNotNull();
-        assertThat(trace.getEntryCount()).isZero();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.error().get().message()).isNotEmpty();
+        assertThat(header.error().get().exception().isPresent()).isTrue();
+        assertThat(header.entryCount()).isZero();
     }
 
     @Test
@@ -164,10 +160,10 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(FilterThrowsException.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isNotNull();
-        assertThat(trace.getErrorThrowable()).isNotNull();
-        assertThat(trace.getEntryCount()).isZero();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.error().get().message()).isNotEmpty();
+        assertThat(header.error().get().exception().isPresent()).isTrue();
+        assertThat(header.entryCount()).isZero();
     }
 
     @Test
@@ -176,16 +172,16 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(Send500Error.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isEqualTo("sendError, HTTP status code 500");
-        assertThat(trace.getErrorThrowable()).isNull();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.error().get().message()).isEqualTo("sendError, HTTP status code 500");
+        assertThat(header.error().get().exception().isPresent()).isFalse();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.getErrorMessage()).isEqualTo("sendError, HTTP status code 500");
-        assertThat(entry.getErrorThrowable()).isNull();
-        assertThat(entry.getStackTrace()).isNotNull();
-        assertThat(entry.getStackTrace().get(0).getMethodName()).isEqualTo("sendError");
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.error().get().message()).isEqualTo("sendError, HTTP status code 500");
+        assertThat(entry.error().get().exception().isPresent()).isFalse();
+        assertThat(entry.locationStackTraceElements()).isNotEmpty();
+        assertThat(entry.locationStackTraceElements().get(0)).contains("sendError");
     }
 
     @Test
@@ -194,16 +190,15 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(SetStatus500Error.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getErrorMessage()).isEqualTo("setStatus, HTTP status code 500");
-        assertThat(trace.getErrorThrowable()).isNull();
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.error().get().message()).isEqualTo("setStatus, HTTP status code 500");
+        assertThat(header.error().get().exception().isPresent()).isFalse();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
-        TraceEntry entry = entries.get(0);
-        assertThat(entry.getErrorMessage()).isEqualTo("setStatus, HTTP status code 500");
-        assertThat(entry.getErrorThrowable()).isNull();
-        assertThat(entry.getStackTrace()).isNotNull();
-        assertThat(entry.getStackTrace().get(0).getMethodName()).isEqualTo("setStatus");
+        Trace.Entry entry = entries.get(0);
+        assertThat(entry.error().get().message()).isEqualTo("setStatus, HTTP status code 500");
+        assertThat(entry.error().get().exception().isPresent()).isFalse();
+        assertThat(entry.locationStackTraceElements().get(0)).contains("setStatus");
     }
 
     @Test
@@ -215,8 +210,8 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(ExecuteServlet.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header).isNull();
     }
 
     @Test
@@ -225,8 +220,8 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(BizzareServletContainer.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header).isNull();
     }
 
     @Test
@@ -235,8 +230,8 @@ public class ServletPluginTest {
         // when
         container.executeAppUnderTest(BizzareThrowingServletContainer.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace).isNull();
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header).isNull();
     }
 
     @SuppressWarnings("serial")

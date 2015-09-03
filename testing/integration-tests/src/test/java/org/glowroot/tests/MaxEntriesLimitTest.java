@@ -24,7 +24,6 @@ import com.google.common.base.Stopwatch;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.glowroot.Containers;
@@ -33,13 +32,11 @@ import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.AdvancedConfig;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.TraceEntry;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Ignore
 public class MaxEntriesLimitTest {
 
     private static Container container;
@@ -47,7 +44,7 @@ public class MaxEntriesLimitTest {
     @BeforeClass
     public static void setUp() throws Exception {
         container = Containers.getSharedContainer();
-        // capture one trace to warm up the system since this test involves some timing
+        // capture one header to warm up the system since this test involves some timing
         container.executeAppUnderTest(WarmupTrace.class);
     }
 
@@ -83,46 +80,42 @@ public class MaxEntriesLimitTest {
         // then
         // test harness needs to kick off test, so may need to wait a little
         Stopwatch stopwatch = Stopwatch.createStarted();
-        Trace trace = null;
+        Trace.Header header = null;
         while (stopwatch.elapsed(SECONDS) < 2) {
-            trace = container.getTraceService().getActiveTrace(0, MILLISECONDS);
-            if (trace == null) {
+            header = container.getTraceService().getActiveTrace(0, MILLISECONDS);
+            if (header == null) {
                 continue;
             }
-            if (trace.getEntryCount() == 100) {
+            if (header.entryCount() == 100) {
                 break;
             }
             // otherwise continue
         }
-        assertThat(trace).isNotNull();
-        assertThat(trace.getEntryCount()).isEqualTo(100);
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(101);
-        // FIXME assertThat(entries.get(100).isLimitExceededMarker()).isTrue();
+        assertThat(header).isNotNull();
+        assertThat(header.entryCount()).isEqualTo(100);
+        assertThat(header.entryLimitExceeded().or(false)).isTrue();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        assertThat(entries).hasSize(25);
 
-        // part 2 of this test
+        // part 2 of this test, extend the max trace entries limit in the middle of transaction
         advancedConfig = container.getConfigService().getAdvancedConfig();
         advancedConfig.setMaxTraceEntriesPerTransaction(200);
         container.getConfigService().updateAdvancedConfig(advancedConfig);
         stopwatch.stop().reset().start();
         while (stopwatch.elapsed(SECONDS) < 2) {
-            trace = container.getTraceService().getActiveTrace(0, MILLISECONDS);
-            if (trace == null) {
+            header = container.getTraceService().getActiveTrace(0, MILLISECONDS);
+            if (header == null) {
                 continue;
             }
-            if (trace.getEntryCount() == 200) {
+            if (header.entryCount() == 200) {
                 break;
             }
             // otherwise continue
         }
         container.interruptAppUnderTest();
-        assertThat(trace).isNotNull();
-        assertThat(trace.getEntryCount()).isEqualTo(200);
-        entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(entries).hasSize(203);
-        // FIXME assertThat(entries.get(100).isLimitExceededMarker()).isTrue();
-        // FIXME assertThat(entries.get(101).isLimitExtendedMarker()).isTrue();
-        // FIXME assertThat(entries.get(202).isLimitExceededMarker()).isTrue();
+        assertThat(header).isNotNull();
+        assertThat(header.entryCount()).isEqualTo(200);
+        assertThat(header.entryLimitExceeded().or(false)).isTrue();
         // cleanup
         executorService.shutdown();
     }
@@ -136,13 +129,12 @@ public class MaxEntriesLimitTest {
         // when
         container.executeAppUnderTest(GenerateLimitBypassedEntries.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getEntryCount()).isEqualTo(101);
-        List<TraceEntry> entries = container.getTraceService().getEntries(trace.getId());
-        assertThat(trace).isNotNull();
-        assertThat(entries).hasSize(102);
-        // FIXME assertThat(entries.get(100).isLimitExceededMarker()).isTrue();
-        assertThat(entries.get(101).getMessageText()).isEqualTo("ERROR -- abc");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.entryCount()).isEqualTo(101);
+        assertThat(header.entryLimitExceeded().or(false)).isTrue();
+        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        assertThat(entries).hasSize(26);
+        assertThat(entries.get(25).message()).isEqualTo("ERROR -- abc");
     }
 
     public static class GenerateLotsOfEntries implements AppUnderTest, TraceMarker {

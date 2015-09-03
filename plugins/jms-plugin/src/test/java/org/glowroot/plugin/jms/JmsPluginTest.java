@@ -63,19 +63,19 @@ public class JmsPluginTest {
     @Test
     public void shouldReceiveMessage() throws Exception {
         container.executeAppUnderTest(ReceiveMessage.class);
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getTransactionType()).isEqualTo("Background");
-        assertThat(trace.getTransactionName()).isEqualTo("JMS Message: TestMessageListener");
-        assertThat(trace.getHeadline()).isEqualTo("JMS Message: TestMessageListener");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.transactionType()).isEqualTo("Background");
+        assertThat(header.transactionName()).isEqualTo("JMS Message: TestMessageListener");
+        assertThat(header.headline()).isEqualTo("JMS Message: TestMessageListener");
     }
 
     @Test
     public void shouldSendMessage() throws Exception {
         container.executeAppUnderTest(SendMessage.class);
-        Trace trace = container.getTraceService().getLastTrace();
-        List<String> nestedTimerNames = trace.getRootTimer().getChildTimerNames();
-        assertThat(nestedTimerNames).hasSize(1);
-        assertThat(nestedTimerNames.get(0)).isEqualTo("jms send message");
+        Trace.Header header = container.getTraceService().getLastTrace();
+        List<Trace.Timer> nestedTimers = header.rootTimer().childTimers();
+        assertThat(nestedTimers).hasSize(1);
+        assertThat(nestedTimers.get(0).name()).isEqualTo("jms send message");
     }
 
     public static class ReceiveMessage implements AppUnderTest {

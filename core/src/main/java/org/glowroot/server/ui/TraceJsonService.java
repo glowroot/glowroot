@@ -18,9 +18,6 @@ package org.glowroot.server.ui;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.live.LiveTraceRepository.TraceHeader;
-import org.glowroot.server.repo.helper.JsonMarshaller;
-
 @JsonService
 class TraceJsonService {
 
@@ -33,13 +30,13 @@ class TraceJsonService {
     }
 
     @GET("/backend/trace/header/(.+)")
-    String getTraceHeader(String id) throws Exception {
-        TraceHeader trace = traceCommonService.getTraceHeader(id);
-        if (trace == null) {
+    String getHeader(String id) throws Exception {
+        String headerJson = traceCommonService.getHeaderJson(id);
+        if (headerJson == null) {
             logger.debug("no trace found for id: {}", id);
             return "{\"expired\":true}";
         } else {
-            return JsonMarshaller.marshal(trace);
+            return headerJson;
         }
     }
 }

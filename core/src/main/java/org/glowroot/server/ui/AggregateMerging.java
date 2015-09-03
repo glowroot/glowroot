@@ -21,9 +21,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
-import org.glowroot.collector.spi.Trace;
+import org.glowroot.collector.spi.Constants;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer;
 import org.glowroot.common.model.LazyHistogram;
-import org.glowroot.common.model.MutableTimerNode;
+import org.glowroot.common.model.MutableTimer;
 import org.glowroot.common.util.Styles;
 import org.glowroot.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.live.LiveAggregateRepository.PercentileAggregate;
@@ -36,14 +38,14 @@ class AggregateMerging {
     static TimerMergedAggregate getTimerMergedAggregate(List<OverviewAggregate> overviewAggregates)
             throws Exception {
         long transactionCount = 0;
-        MutableTimerNode syntheticRootTimer = MutableTimerNode.createSyntheticRootNode();
+        List<MutableTimer> rootTimers = Lists.newArrayList();
         for (OverviewAggregate aggregate : overviewAggregates) {
             transactionCount += aggregate.transactionCount();
-            syntheticRootTimer.mergeMatchedTimer(aggregate.syntheticRootTimer());
+            mergeRootTimers(aggregate.rootTimers(), rootTimers);
         }
         ImmutableTimerMergedAggregate.Builder timerMergedAggregate =
                 ImmutableTimerMergedAggregate.builder();
-        timerMergedAggregate.syntheticRootTimer(syntheticRootTimer);
+        timerMergedAggregate.rootTimers(rootTimers);
         timerMergedAggregate.transactionCount(transactionCount);
         return timerMergedAggregate.build();
     }
@@ -74,10 +76,10 @@ class AggregateMerging {
     }
 
     static ThreadInfoAggregate getThreadInfoAggregate(List<OverviewAggregate> overviewAggregates) {
-        double totalCpuNanos = Trace.THREAD_DATA_NOT_AVAILABLE;
-        double totalBlockedNanos = Trace.THREAD_DATA_NOT_AVAILABLE;
-        double totalWaitedNanos = Trace.THREAD_DATA_NOT_AVAILABLE;
-        double totalAllocatedBytes = Trace.THREAD_DATA_NOT_AVAILABLE;
+        double totalCpuNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
+        double totalBlockedNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
+        double totalWaitedNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
+        double totalAllocatedBytes = Constants.THREAD_DATA_NOT_AVAILABLE;
         for (OverviewAggregate overviewAggregate : overviewAggregates) {
             totalCpuNanos =
                     notAvailableAwareAdd(totalCpuNanos, overviewAggregate.totalCpuNanos());
@@ -96,11 +98,31 @@ class AggregateMerging {
                 .build();
     }
 
+    private static void mergeRootTimers(List<Aggregate.Timer> toBeMergedRootTimers,
+            List<MutableTimer> rootTimers) {
+        for (Aggregate.Timer toBeMergedRootTimer : toBeMergedRootTimers) {
+            mergeRootTimer(toBeMergedRootTimer, rootTimers);
+        }
+    }
+
+    private static void mergeRootTimer(Timer toBeMergedRootTimer, List<MutableTimer> rootTimers) {
+        for (MutableTimer rootTimer : rootTimers) {
+            if (toBeMergedRootTimer.getName().equals(rootTimer.getName())) {
+                rootTimer.merge(toBeMergedRootTimer);
+                return;
+            }
+        }
+        MutableTimer rootTimer = MutableTimer.createRootTimer(toBeMergedRootTimer.getName(),
+                toBeMergedRootTimer.getExtended());
+        rootTimer.merge(toBeMergedRootTimer);
+        rootTimers.add(rootTimer);
+    }
+
     private static double notAvailableAwareAdd(double x, double y) {
-        if (x == Trace.THREAD_DATA_NOT_AVAILABLE) {
+        if (x == Constants.THREAD_DATA_NOT_AVAILABLE) {
             return y;
         }
-        if (y == Trace.THREAD_DATA_NOT_AVAILABLE) {
+        if (y == Constants.THREAD_DATA_NOT_AVAILABLE) {
             return x;
         }
         return x + y;
@@ -109,7 +131,7 @@ class AggregateMerging {
     @Value.Immutable
     interface TimerMergedAggregate {
         long transactionCount();
-        MutableTimerNode syntheticRootTimer();
+        List<MutableTimer> rootTimers();
     }
 
     @Value.Immutable
@@ -137,10 +159,10 @@ class AggregateMerging {
         abstract double totalAllocatedBytes(); // -1 means N/A
 
         boolean isEmpty() {
-            return totalCpuNanos() == Trace.THREAD_DATA_NOT_AVAILABLE
-                    && totalBlockedNanos() == Trace.THREAD_DATA_NOT_AVAILABLE
-                    && totalWaitedNanos() == Trace.THREAD_DATA_NOT_AVAILABLE
-                    && totalAllocatedBytes() == Trace.THREAD_DATA_NOT_AVAILABLE;
+            return totalCpuNanos() == Constants.THREAD_DATA_NOT_AVAILABLE
+                    && totalBlockedNanos() == Constants.THREAD_DATA_NOT_AVAILABLE
+                    && totalWaitedNanos() == Constants.THREAD_DATA_NOT_AVAILABLE
+                    && totalAllocatedBytes() == Constants.THREAD_DATA_NOT_AVAILABLE;
         }
     }
 }

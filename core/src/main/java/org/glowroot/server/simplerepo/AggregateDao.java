@@ -15,9 +15,9 @@
  */
 package org.glowroot.server.simplerepo;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.Reader;
-import java.nio.ByteBuffer;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -30,17 +30,17 @@ import java.util.concurrent.atomic.AtomicLongArray;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.CharSource;
+import com.google.protobuf.AbstractMessageLite;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Parser;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
-import org.glowroot.collector.spi.Aggregate;
-import org.glowroot.collector.spi.Histogram;
-import org.glowroot.common.model.LazyHistogram;
-import org.glowroot.common.model.MutableProfileNode;
-import org.glowroot.common.model.MutableQuery;
-import org.glowroot.common.model.ProfileJsonMarshaller;
-import org.glowroot.common.model.ProfileJsonUnmarshaller;
+import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType;
+import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.util.Clock;
 import org.glowroot.live.ImmutableErrorPoint;
@@ -63,10 +63,7 @@ import org.glowroot.server.repo.ConfigRepository.RollupConfig;
 import org.glowroot.server.repo.MutableAggregate;
 import org.glowroot.server.repo.ProfileCollector;
 import org.glowroot.server.repo.Result;
-import org.glowroot.server.repo.helper.JsonMarshaller;
-import org.glowroot.server.repo.helper.JsonUnmarshaller;
 import org.glowroot.server.simplerepo.util.CappedDatabase;
-import org.glowroot.server.simplerepo.util.CappedDatabase.Unmarshaller;
 import org.glowroot.server.simplerepo.util.DataSource;
 import org.glowroot.server.simplerepo.util.DataSource.PreparedStatementBinder;
 import org.glowroot.server.simplerepo.util.DataSource.ResultSetExtractor;
@@ -76,7 +73,6 @@ import org.glowroot.server.simplerepo.util.ImmutableIndex;
 import org.glowroot.server.simplerepo.util.RowMappers;
 import org.glowroot.server.simplerepo.util.Schemas.Column;
 import org.glowroot.server.simplerepo.util.Schemas.Index;
-import org.glowroot.server.simplerepo.util.ScratchBuffer;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -94,12 +90,10 @@ class AggregateDao implements AggregateRepository {
                     ImmutableColumn.of("total_blocked_nanos", Types.BIGINT),
                     ImmutableColumn.of("total_waited_nanos", Types.BIGINT),
                     ImmutableColumn.of("total_allocated_bytes", Types.BIGINT),
-                    ImmutableColumn.of("queries_capped_id", Types.BIGINT), // capped database id
-                    // profile json is always from "synthetic root"
-                    ImmutableColumn.of("profile_capped_id", Types.BIGINT), // capped database id
-                    ImmutableColumn.of("histogram", Types.BLOB),
-                    // timers json is always from "synthetic root"
-                    ImmutableColumn.of("timers", Types.VARCHAR)); // json data
+                    ImmutableColumn.of("queries_capped_id", Types.BIGINT), // protobuf
+                    ImmutableColumn.of("profile_tree_capped_id", Types.BIGINT), // protobuf
+                    ImmutableColumn.of("histogram", Types.BLOB), // protobuf
+                    ImmutableColumn.of("root_timers", Types.BLOB)); // protobuf
 
     private static final ImmutableList<Column> transactionAggregateColumns =
             ImmutableList.<Column>of(ImmutableColumn.of("transaction_type", Types.VARCHAR),
@@ -112,12 +106,10 @@ class AggregateDao implements AggregateRepository {
                     ImmutableColumn.of("total_blocked_nanos", Types.BIGINT),
                     ImmutableColumn.of("total_waited_nanos", Types.BIGINT),
                     ImmutableColumn.of("total_allocated_bytes", Types.BIGINT),
-                    ImmutableColumn.of("queries_capped_id", Types.BIGINT), // capped database id
-                    // profile json is always from "synthetic root"
-                    ImmutableColumn.of("profile_capped_id", Types.BIGINT), // capped database id
-                    ImmutableColumn.of("histogram", Types.BLOB),
-                    // timers json is always from "synthetic root"
-                    ImmutableColumn.of("timers", Types.VARCHAR)); // json data
+                    ImmutableColumn.of("queries_capped_id", Types.BIGINT), // protobuf
+                    ImmutableColumn.of("profile_tree_capped_id", Types.BIGINT), // protobuf
+                    ImmutableColumn.of("histogram", Types.BLOB), // protobuf
+                    ImmutableColumn.of("root_timers", Types.BLOB)); // protobuf
 
     // this index includes all columns needed for the overall aggregate query so h2 can return
     // the result set directly from the index without having to reference the table for each row
@@ -174,20 +166,19 @@ class AggregateDao implements AggregateRepository {
         // TODO initial rollup in case store is not called in a reasonable time
     }
 
-    void store(Map<String, ? extends Aggregate> overallAggregates,
-            Map<String, ? extends Map<String, ? extends Aggregate>> transactionAggregates,
+    void store(Map<String, Aggregate> overallAggregates,
+            Map<String, Map<String, Aggregate>> transactionAggregates,
             long captureTime) throws Exception {
         // intentionally not using batch update as that could cause memory spike while preparing a
         // large batch
-        ScratchBuffer scratchBuffer = new ScratchBuffer();
-        for (Entry<String, ? extends Aggregate> entry : overallAggregates.entrySet()) {
-            storeOverallAggregate(0, entry.getKey(), entry.getValue(), scratchBuffer);
+        for (Entry<String, Aggregate> entry : overallAggregates.entrySet()) {
+            storeOverallAggregate(0, entry.getKey(), entry.getValue());
         }
-        for (Entry<String, ? extends Map<String, ? extends Aggregate>> outerEntry : transactionAggregates
+        for (Entry<String, Map<String, Aggregate>> outerEntry : transactionAggregates
                 .entrySet()) {
-            for (Entry<String, ? extends Aggregate> innerEntry : outerEntry.getValue().entrySet()) {
+            for (Entry<String, Aggregate> innerEntry : outerEntry.getValue().entrySet()) {
                 storeTransactionAggregate(0, outerEntry.getKey(), innerEntry.getKey(),
-                        innerEntry.getValue(), scratchBuffer);
+                        innerEntry.getValue());
             }
         }
         synchronized (rollupLock) {
@@ -277,7 +268,7 @@ class AggregateDao implements AggregateRepository {
             long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception {
         return dataSource.query("select capture_time, total_nanos, transaction_count,"
                 + " total_cpu_nanos, total_blocked_nanos, total_waited_nanos,"
-                + " total_allocated_bytes, timers from overall_aggregate_rollup_"
+                + " total_allocated_bytes, root_timers from overall_aggregate_rollup_"
                 + castUntainted(rollupLevel) + " where transaction_type = ? and capture_time >= ?"
                 + " and capture_time <= ? order by capture_time", new OverviewAggregateRowMapper(),
                 transactionType, captureTimeFrom, captureTimeTo);
@@ -305,9 +296,10 @@ class AggregateDao implements AggregateRepository {
         return dataSource.query(
                 "select capture_time, total_nanos, transaction_count, total_cpu_nanos,"
                         + " total_blocked_nanos, total_waited_nanos, total_allocated_bytes,"
-                        + " timers from transaction_aggregate_rollup_" + castUntainted(rollupLevel)
-                        + " where transaction_type = ? and transaction_name = ?"
-                        + " and capture_time >= ? and capture_time <= ? order by capture_time",
+                        + " root_timers from transaction_aggregate_rollup_"
+                        + castUntainted(rollupLevel) + " where transaction_type = ?"
+                        + " and transaction_name = ? and capture_time >= ? and capture_time <= ?"
+                        + " order by capture_time",
                 new OverviewAggregateRowMapper(), transactionType, transactionName, captureTimeFrom,
                 captureTimeTo);
     }
@@ -357,12 +349,15 @@ class AggregateDao implements AggregateRepository {
     @Override
     public void mergeInOverallProfile(ProfileCollector mergedProfile, String transactionType,
             long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception {
-        dataSource.query("select capture_time, profile_capped_id from overall_aggregate_rollup_"
-                + castUntainted(rollupLevel) + " where transaction_type = ? and capture_time > ?"
-                + " and capture_time <= ? and profile_capped_id >= ?",
-                new ProfileMergingResultSetExtractor(mergedProfile, rollupLevel), transactionType,
-                captureTimeFrom, captureTimeTo,
-                rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
+        dataSource
+                .query("select capture_time, profile_tree_capped_id from overall_aggregate_rollup_"
+                        + castUntainted(rollupLevel)
+                        + " where transaction_type = ? and capture_time > ?"
+                        + " and capture_time <= ? and profile_tree_capped_id >= ?",
+                        new ProfileMergingResultSetExtractor(mergedProfile, rollupLevel),
+                        transactionType,
+                        captureTimeFrom, captureTimeTo,
+                        rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
     }
 
     // captureTimeFrom is non-inclusive
@@ -371,10 +366,10 @@ class AggregateDao implements AggregateRepository {
             String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
                     throws Exception {
         dataSource.query(
-                "select capture_time, profile_capped_id from transaction_aggregate_rollup_"
+                "select capture_time, profile_tree_capped_id from transaction_aggregate_rollup_"
                         + castUntainted(rollupLevel) + " where transaction_type = ?"
                         + " and transaction_name = ? and capture_time > ? and capture_time <= ?"
-                        + " and profile_capped_id >= ?",
+                        + " and profile_tree_capped_id >= ?",
                 new ProfileMergingResultSetExtractor(mergedProfile, rollupLevel), transactionType,
                 transactionName, captureTimeFrom, captureTimeTo,
                 rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
@@ -426,16 +421,16 @@ class AggregateDao implements AggregateRepository {
     @Override
     public boolean shouldHaveOverallProfile(String transactionType, long captureTimeFrom,
             long captureTimeTo) throws Exception {
-        return shouldHaveOverallSomething("profile_capped_id", transactionType, captureTimeFrom,
-                captureTimeTo);
+        return shouldHaveOverallSomething("profile_tree_capped_id", transactionType,
+                captureTimeFrom, captureTimeTo);
     }
 
     // captureTimeFrom is non-inclusive
     @Override
     public boolean shouldHaveTransactionProfile(String transactionType, String transactionName,
             long captureTimeFrom, long captureTimeTo) throws Exception {
-        return shouldHaveTransactionSomething("profile_capped_id", transactionType, transactionName,
-                captureTimeFrom, captureTimeTo);
+        return shouldHaveTransactionSomething("profile_tree_capped_id", transactionType,
+                transactionName, captureTimeFrom, captureTimeTo);
     }
 
     @Override
@@ -508,8 +503,8 @@ class AggregateDao implements AggregateRepository {
         Map<String, MutableAggregate> overallAggregates = dataSource.query(
                 "select transaction_type, total_nanos, transaction_count, error_count,"
                         + " total_cpu_nanos, total_blocked_nanos, total_waited_nanos,"
-                        + " total_allocated_bytes, queries_capped_id, profile_capped_id,"
-                        + " histogram, timers from overall_aggregate_rollup_"
+                        + " total_allocated_bytes, queries_capped_id, profile_tree_capped_id,"
+                        + " histogram, root_timers from overall_aggregate_rollup_"
                         + castUntainted(fromRollupLevel)
                         + " where capture_time > ? and capture_time <= ?",
                 new OverallRollupResultSetExtractor(rollupTime, fromRollupLevel),
@@ -521,8 +516,8 @@ class AggregateDao implements AggregateRepository {
         Map<String, Map<String, MutableAggregate>> transactionAggregates = dataSource.query(
                 "select transaction_type, transaction_name, total_nanos, transaction_count,"
                         + " error_count, total_cpu_nanos, total_blocked_nanos, total_waited_nanos,"
-                        + " total_allocated_bytes, queries_capped_id, profile_capped_id, histogram,"
-                        + " timers from transaction_aggregate_rollup_"
+                        + " total_allocated_bytes, queries_capped_id, profile_tree_capped_id,"
+                        + " histogram, root_timers from transaction_aggregate_rollup_"
                         + castUntainted(fromRollupLevel)
                         + " where capture_time > ? and capture_time <= ?",
                 new TransactionRollupResultSetExtractor(rollupTime, fromRollupLevel),
@@ -541,41 +536,40 @@ class AggregateDao implements AggregateRepository {
         // large batch
         ScratchBuffer scratchBuffer = new ScratchBuffer();
         for (Entry<String, MutableAggregate> entry : overallAggregates.entrySet()) {
-            storeOverallAggregate(rollupLevel, entry.getKey(), entry.getValue().toAggregate(),
-                    scratchBuffer);
+            storeOverallAggregate(rollupLevel, entry.getKey(),
+                    entry.getValue().toAggregate(scratchBuffer));
         }
         for (Entry<String, Map<String, MutableAggregate>> outerEntry : transactionAggregates
                 .entrySet()) {
             for (Entry<String, MutableAggregate> innerEntry : outerEntry.getValue().entrySet()) {
                 storeTransactionAggregate(rollupLevel, outerEntry.getKey(), innerEntry.getKey(),
-                        innerEntry.getValue().toAggregate(), scratchBuffer);
+                        innerEntry.getValue().toAggregate(scratchBuffer));
             }
         }
     }
 
     private void storeTransactionAggregate(int rollupLevel, String transactionType,
-            String transactionName, Aggregate aggregate, ScratchBuffer scratchBuffer)
-                    throws Exception {
+            String transactionName, Aggregate aggregate) throws Exception {
         dataSource.update(
                 "insert into transaction_aggregate_rollup_" + castUntainted(rollupLevel)
                         + " (transaction_type, transaction_name, capture_time, total_nanos,"
                         + " transaction_count, error_count, total_cpu_nanos, total_blocked_nanos,"
                         + " total_waited_nanos, total_allocated_bytes, queries_capped_id,"
-                        + " profile_capped_id, histogram, timers) values"
+                        + " profile_tree_capped_id, histogram, root_timers) values"
                         + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 new TransactionAggregateBinder(transactionType, transactionName, aggregate,
-                        rollupLevel, scratchBuffer));
+                        rollupLevel));
     }
 
-    private void storeOverallAggregate(int rollupLevel, String transactionType, Aggregate aggregate,
-            ScratchBuffer scratchBuffer) throws Exception {
+    private void storeOverallAggregate(int rollupLevel, String transactionType, Aggregate aggregate)
+            throws Exception {
         dataSource.update(
                 "insert into overall_aggregate_rollup_" + castUntainted(rollupLevel)
                         + " (transaction_type, capture_time, total_nanos, transaction_count,"
                         + " error_count, total_cpu_nanos, total_blocked_nanos, total_waited_nanos,"
-                        + " total_allocated_bytes, queries_capped_id, profile_capped_id, histogram,"
-                        + " timers) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                new OverallAggregateBinder(transactionType, aggregate, rollupLevel, scratchBuffer));
+                        + " total_allocated_bytes, queries_capped_id, profile_tree_capped_id,"
+                        + " histogram, root_timers) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                new OverallAggregateBinder(transactionType, aggregate, rollupLevel));
     }
 
     // captureTimeFrom is non-inclusive
@@ -674,7 +668,7 @@ class AggregateDao implements AggregateRepository {
         Long queriesCappedId = RowMappers.getLong(resultSet, i++);
         Long profileCappedId = RowMappers.getLong(resultSet, i++);
         byte[] histogram = checkNotNull(resultSet.getBytes(i++));
-        String timers = checkNotNull(resultSet.getString(i++));
+        byte[] rootTimers = checkNotNull(resultSet.getBytes(i++));
 
         mergedAggregate.addTotalNanos(totalNanos);
         mergedAggregate.addTransactionCount(transactionCount);
@@ -683,20 +677,20 @@ class AggregateDao implements AggregateRepository {
         mergedAggregate.addTotalBlockedNanos(totalBlockedNanos);
         mergedAggregate.addTotalWaitedNanos(totalWaitedNanos);
         mergedAggregate.addTotalAllocatedBytes(totalAllocatedBytes);
-        mergedAggregate.addHistogram(histogram);
-        mergedAggregate.addTimers(JsonUnmarshaller.unmarshalAggregateTimers(timers));
+        mergedAggregate.mergeHistogram(Aggregate.Histogram.parseFrom(histogram));
+        mergedAggregate.mergeRootTimers(readMessages(rootTimers, Aggregate.Timer.parser()));
         if (queriesCappedId != null) {
-            Map<String, List<MutableQuery>> queries =
-                    readQueries(rollupCappedDatabases.get(fromRollupLevel), queriesCappedId);
+            List<Aggregate.QueriesByType> queries = rollupCappedDatabases.get(fromRollupLevel)
+                    .readMessages(queriesCappedId, Aggregate.QueriesByType.parser());
             if (queries != null) {
-                mergedAggregate.addQueries(queries);
+                mergedAggregate.mergeQueries(queries);
             }
         }
         if (profileCappedId != null) {
-            MutableProfileNode profile =
-                    readProfile(rollupCappedDatabases.get(fromRollupLevel), profileCappedId);
-            if (profile != null) {
-                mergedAggregate.addProfile(profile);
+            ProfileTree profileTree = rollupCappedDatabases.get(fromRollupLevel)
+                    .readMessage(profileCappedId, ProfileTree.parser());
+            if (profileTree != null) {
+                mergedAggregate.mergeProfile(profileTree);
             }
         }
     }
@@ -730,26 +724,24 @@ class AggregateDao implements AggregateRepository {
         }
     }
 
-    private static @Nullable Map<String, List<MutableQuery>> readQueries(
-            CappedDatabase cappedDatabase, long cappedId) throws IOException {
-        return cappedDatabase.unmarshal(cappedId,
-                new Unmarshaller<Map<String, List<MutableQuery>>>() {
-                    @Override
-                    public Map<String, List<MutableQuery>> unmarshal(Reader reader)
-                            throws IOException {
-                        return JsonUnmarshaller.unmarshalQueries(reader);
-                    }
-                });
+    private static byte[] writeMessages(List<? extends AbstractMessageLite> messages)
+            throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        for (AbstractMessageLite message : messages) {
+            message.writeDelimitedTo(baos);
+        }
+        return baos.toByteArray();
     }
 
-    private static @Nullable MutableProfileNode readProfile(CappedDatabase cappedDatabase,
-            long cappedId) throws IOException {
-        return cappedDatabase.unmarshal(cappedId, new Unmarshaller<MutableProfileNode>() {
-            @Override
-            public MutableProfileNode unmarshal(Reader reader) throws IOException {
-                return ProfileJsonUnmarshaller.unmarshalProfile(reader);
-            }
-        });
+    private static <T extends /*@NonNull*/Object> List<T> readMessages(byte[] bytes,
+            Parser<T> parser) throws InvalidProtocolBufferException {
+        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+        List<T> messages = Lists.newArrayList();
+        T message;
+        while ((message = parser.parseDelimitedFrom(bais)) != null) {
+            messages.add(message);
+        }
+        return messages;
     }
 
     private class AggregateBinder {
@@ -758,62 +750,49 @@ class AggregateDao implements AggregateRepository {
         private final @Nullable Long queriesCappedId;
         private final @Nullable Long profileCappedId;
         private final byte[] histogramBytes;
-        private final String timers;
+        private final byte[] rootTimers;
 
-        private AggregateBinder(Aggregate aggregate, int rollupLevel, ScratchBuffer scratchBuffer)
-                throws IOException {
+        private AggregateBinder(Aggregate aggregate, int rollupLevel) throws IOException {
             this.aggregate = aggregate;
 
-            String queries = JsonMarshaller.marshal(aggregate.queries());
-            if (queries == null) {
+            List<QueriesByType> queries = aggregate.getQueriesByTypeList();
+            if (queries.isEmpty()) {
                 queriesCappedId = null;
             } else {
-                queriesCappedId = rollupCappedDatabases.get(rollupLevel).write(
-                        CharSource.wrap(queries), RollupCappedDatabaseStats.AGGREGATE_QUERIES);
+                queriesCappedId = rollupCappedDatabases.get(rollupLevel).writeMessages(queries,
+                        RollupCappedDatabaseStats.AGGREGATE_QUERIES);
             }
-
-            org.glowroot.collector.spi.ProfileNode syntheticRootProfileNode =
-                    aggregate.syntheticRootProfileNode();
-            if (syntheticRootProfileNode == null) {
+            ProfileTree profileTree = aggregate.getProfileTree();
+            if (profileTree.getNodeCount() == 0) {
                 profileCappedId = null;
             } else {
-                profileCappedId = rollupCappedDatabases.get(rollupLevel).write(
-                        CharSource.wrap(ProfileJsonMarshaller.marshal(syntheticRootProfileNode)),
+                profileCappedId = rollupCappedDatabases.get(rollupLevel).writeMessage(profileTree,
                         RollupCappedDatabaseStats.AGGREGATE_PROFILES);
             }
-
-            Histogram histogram = aggregate.histogram();
-            ByteBuffer buffer = scratchBuffer.getBuffer(histogram.getNeededByteBufferCapacity());
-            buffer.clear();
-            histogram.encodeIntoByteBuffer(buffer);
-            int size = buffer.position();
-            buffer.flip();
-            histogramBytes = new byte[size];
-            buffer.get(histogramBytes, 0, size);
-
-            timers = JsonMarshaller.marshal(aggregate.syntheticRootTimerNode());
+            histogramBytes = aggregate.getTotalNanosHistogram().toByteArray();
+            rootTimers = writeMessages(aggregate.getRootTimerList());
         }
 
         // minimal work inside this method as it is called with active connection
         void bindCommon(PreparedStatement preparedStatement, int startIndex) throws Exception {
             int i = startIndex;
-            preparedStatement.setLong(i++, aggregate.captureTime());
-            preparedStatement.setDouble(i++, aggregate.totalNanos());
-            preparedStatement.setLong(i++, aggregate.transactionCount());
-            preparedStatement.setLong(i++, aggregate.errorCount());
+            preparedStatement.setLong(i++, aggregate.getCaptureTime());
+            preparedStatement.setDouble(i++, aggregate.getTotalNanos());
+            preparedStatement.setLong(i++, aggregate.getTransactionCount());
+            preparedStatement.setLong(i++, aggregate.getErrorCount());
             RowMappers.setNotAvailableAwareDouble(preparedStatement, i++,
-                    aggregate.totalCpuNanos());
+                    aggregate.getTotalCpuNanos());
             RowMappers.setNotAvailableAwareDouble(preparedStatement, i++,
-                    aggregate.totalBlockedNanos());
+                    aggregate.getTotalBlockedNanos());
             RowMappers.setNotAvailableAwareDouble(preparedStatement, i++,
-                    aggregate.totalWaitedNanos());
+                    aggregate.getTotalWaitedNanos());
             RowMappers.setNotAvailableAwareDouble(preparedStatement, i++,
-                    aggregate.totalAllocatedBytes());
+                    aggregate.getTotalAllocatedBytes());
             RowMappers.setLong(preparedStatement, i++, queriesCappedId);
             RowMappers.setLong(preparedStatement, i++, profileCappedId);
 
             preparedStatement.setBytes(i++, histogramBytes);
-            preparedStatement.setString(i++, timers);
+            preparedStatement.setBytes(i++, rootTimers);
         }
     }
 
@@ -822,9 +801,9 @@ class AggregateDao implements AggregateRepository {
 
         private final String transactionType;
 
-        private OverallAggregateBinder(String transactionType, Aggregate aggregate, int rollupLevel,
-                ScratchBuffer scratchBuffer) throws IOException {
-            super(aggregate, rollupLevel, scratchBuffer);
+        private OverallAggregateBinder(String transactionType, Aggregate aggregate, int rollupLevel)
+                throws IOException {
+            super(aggregate, rollupLevel);
             this.transactionType = transactionType;
         }
 
@@ -843,9 +822,8 @@ class AggregateDao implements AggregateRepository {
         private final String transactionName;
 
         private TransactionAggregateBinder(String transactionType, String transactionName,
-                Aggregate aggregate, int rollupLevel, ScratchBuffer scratchBuffer)
-                        throws IOException {
-            super(aggregate, rollupLevel, scratchBuffer);
+                Aggregate aggregate, int rollupLevel) throws IOException {
+            super(aggregate, rollupLevel);
             this.transactionType = transactionType;
             this.transactionName = transactionName;
         }
@@ -934,8 +912,8 @@ class AggregateDao implements AggregateRepository {
                     .totalBlockedNanos(resultSet.getDouble(i++))
                     .totalWaitedNanos(resultSet.getDouble(i++))
                     .totalAllocatedBytes(resultSet.getDouble(i++));
-            String timers = checkNotNull(resultSet.getString(i++));
-            builder.syntheticRootTimer(JsonUnmarshaller.unmarshalAggregateTimers(timers));
+            byte[] rootTimers = checkNotNull(resultSet.getBytes(i++));
+            builder.rootTimers(readMessages(rootTimers, Aggregate.Timer.parser()));
             return builder.build();
         }
     }
@@ -949,10 +927,8 @@ class AggregateDao implements AggregateRepository {
                     .captureTime(resultSet.getLong(i++))
                     .totalNanos(resultSet.getLong(i++))
                     .transactionCount(resultSet.getLong(i++));
-            byte[] histogramBytes = checkNotNull(resultSet.getBytes(i++));
-            LazyHistogram histogram = new LazyHistogram();
-            histogram.decodeFromByteBuffer(ByteBuffer.wrap(histogramBytes));
-            builder.histogram(histogram);
+            byte[] histogram = checkNotNull(resultSet.getBytes(i++));
+            builder.histogram(Aggregate.Histogram.parser().parseFrom(histogram));
             return builder.build();
         }
     }
@@ -986,10 +962,10 @@ class AggregateDao implements AggregateRepository {
             long captureTime = Long.MIN_VALUE;
             while (resultSet.next()) {
                 captureTime = Math.max(captureTime, resultSet.getLong(1));
-                MutableProfileNode profile =
-                        readProfile(rollupCappedDatabases.get(rollupLevel), resultSet.getLong(2));
-                if (profile != null) {
-                    mergedProfile.mergeSyntheticRootNode(profile);
+                ProfileTree profileTree = rollupCappedDatabases.get(rollupLevel)
+                        .readMessage(resultSet.getLong(2), ProfileTree.parser());
+                if (profileTree != null) {
+                    mergedProfile.mergeProfileTree(profileTree);
                     mergedProfile.updateLastCaptureTime(captureTime);
                 }
             }
@@ -1012,8 +988,8 @@ class AggregateDao implements AggregateRepository {
             long captureTime = Long.MIN_VALUE;
             while (resultSet.next()) {
                 captureTime = Math.max(captureTime, resultSet.getLong(1));
-                Map<String, List<MutableQuery>> queries =
-                        readQueries(rollupCappedDatabases.get(rollupLevel), resultSet.getLong(2));
+                List<Aggregate.QueriesByType> queries = rollupCappedDatabases.get(rollupLevel)
+                        .readMessages(resultSet.getLong(2), Aggregate.QueriesByType.parser());
                 if (queries != null) {
                     mergedQueries.mergeQueries(queries);
                     mergedQueries.updateLastCaptureTime(captureTime);

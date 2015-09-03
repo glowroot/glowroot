@@ -15,13 +15,12 @@
  */
 package org.glowroot.server.simplerepo;
 
-import java.util.Collection;
 import java.util.Map;
 
-import org.glowroot.collector.spi.Aggregate;
 import org.glowroot.collector.spi.Collector;
-import org.glowroot.collector.spi.GaugePoint;
-import org.glowroot.collector.spi.Trace;
+import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.server.repo.helper.AlertingService;
 
 class CollectorImpl implements Collector {
@@ -40,8 +39,8 @@ class CollectorImpl implements Collector {
     }
 
     @Override
-    public void collectAggregates(Map<String, ? extends Aggregate> overallAggregates,
-            Map<String, ? extends Map<String, ? extends Aggregate>> transactionAggregates,
+    public void collectAggregates(Map<String, Aggregate> overallAggregates,
+            Map<String, Map<String, Aggregate>> transactionAggregates,
             long captureTime) throws Exception {
         aggregateDao.store(overallAggregates, transactionAggregates, captureTime);
         alertingService.checkAlerts(captureTime);
@@ -53,7 +52,7 @@ class CollectorImpl implements Collector {
     }
 
     @Override
-    public void collectGaugePoints(Collection<? extends GaugePoint> gaugePoints) throws Exception {
-        gaugeValueDao.store(gaugePoints);
+    public void collectGaugeValues(Map<String, GaugeValue> gaugeValues) throws Exception {
+        gaugeValueDao.store(gaugeValues);
     }
 }

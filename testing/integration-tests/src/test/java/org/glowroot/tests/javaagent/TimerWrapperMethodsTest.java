@@ -30,9 +30,8 @@ import org.glowroot.container.Threads;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.impl.JavaagentContainer;
-import org.glowroot.container.trace.ProfileNode;
+import org.glowroot.container.trace.ProfileTree;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.Trace.Existence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -71,11 +70,11 @@ public class TimerWrapperMethodsTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
         // then
-        Trace trace = container.getTraceService().getLastTrace();
-        assertThat(trace.getProfileExistence()).isEqualTo(Existence.YES);
+        Trace.Header header = container.getTraceService().getLastTrace();
+        assertThat(header.profileSampleCount()).isGreaterThan(0);
         // profiler should have captured about 10 stack traces
-        ProfileNode rootProfileNode = container.getTraceService().getProfile(trace.getId());
-        assertThat(rootProfileNode.getSampleCount()).isBetween(5, 15);
+        ProfileTree profileTree = container.getTraceService().getProfile(header.id());
+        assertThat(profileTree.unfilteredSampleCount()).isBetween(5L, 15L);
     }
 
     public static class ShouldGenerateTraceWithProfile implements AppUnderTest, TraceMarker {

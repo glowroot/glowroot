@@ -15,59 +15,57 @@
  */
 package org.glowroot.server.simplerepo;
 
-import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import org.immutables.value.Value;
-
-import org.glowroot.collector.spi.GarbageCollectorActivity;
-import org.glowroot.collector.spi.Trace;
-import org.glowroot.collector.spi.TraceEntry;
-import org.glowroot.collector.spi.TraceTimerNode;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.common.util.Styles;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @Styles.Private
-@Value.Include({Trace.class, TraceTimerNode.class})
 class TraceTestData {
 
     private static final AtomicInteger counter = new AtomicInteger();
 
     static Trace createTrace() {
-        return new TraceBuilder()
-                .id("abc" + counter.getAndIncrement())
-                .partial(false)
-                .slow(true)
-                .error(false)
-                .startTime(1)
-                .captureTime(11)
-                .durationNanos(MILLISECONDS.toNanos(10))
-                .transactionType("unit test")
-                .transactionName("test transaction name")
-                .headline("test headline")
-                .user("j")
-                .customAttributes(ImmutableMap.<String, Collection<String>>of("abc",
-                        ImmutableList.of("xyz"), "xyz", ImmutableList.of("abc")))
-                .customDetail(ImmutableMap.of("abc1", "xyz1", "xyz2", "abc2"))
-                .rootTimer(new TraceTimerNodeBuilder()
-                        .name("the top")
-                        .extended(false)
-                        .totalNanos(123)
-                        .count(1)
-                        .active(false)
-                        .childNodes(ImmutableList.<TraceTimerNode>of())
-                        .build())
-                .threadCpuNanos(-1)
-                .threadBlockedNanos(-1)
-                .threadWaitedNanos(-1)
-                .threadAllocatedBytes(-1)
-                .gcActivity(ImmutableList.<GarbageCollectorActivity>of())
-                .entries(ImmutableList.<TraceEntry>of())
-                .entryLimitExceeded(false)
-                .profileLimitExceeded(false)
+        Trace.Header header = Trace.Header.newBuilder()
+                .setId("abc" + counter.getAndIncrement())
+                .setPartial(false)
+                .setSlow(true)
+                .setStartTime(1)
+                .setCaptureTime(11)
+                .setDurationNanos(MILLISECONDS.toNanos(10))
+                .setTransactionType("unit test")
+                .setTransactionName("test transaction name")
+                .setHeadline("test headline")
+                .setUser("j")
+                .addAttribute(Trace.Attribute.newBuilder()
+                        .setName("abc")
+                        .addValue("xyz"))
+                .addAttribute(Trace.Attribute.newBuilder()
+                        .setName("xyz")
+                        .addValue("abc"))
+                .addDetailEntry(Trace.DetailEntry.newBuilder()
+                        .setName("abc1")
+                        .addValue(Trace.DetailValue.newBuilder().setSval("xyz1").build()))
+                .addDetailEntry(Trace.DetailEntry.newBuilder()
+                        .setName("xyz2")
+                        .addValue(Trace.DetailValue.newBuilder().setSval("abc2").build()))
+                .setRootTimer(Trace.Timer.newBuilder()
+                        .setName("the top")
+                        .setExtended(false)
+                        .setTotalNanos(123)
+                        .setCount(1)
+                        .setActive(false))
+                .setThreadCpuNanos(-1)
+                .setThreadBlockedNanos(-1)
+                .setThreadWaitedNanos(-1)
+                .setThreadAllocatedBytes(-1)
+                .setEntryLimitExceeded(false)
+                .setProfileSampleLimitExceeded(false)
+                .build();
+        return Trace.newBuilder()
+                .setHeader(header)
                 .build();
     }
 }

@@ -29,7 +29,7 @@ public abstract class ChunkSource {
 
     public abstract ChunkCopier getCopier(Writer writer) throws IOException;
 
-    public void copyTo(Writer writer) throws IOException {
+    void copyTo(Writer writer) throws IOException {
         ChunkCopier copier = getCopier(writer);
         while (copier.copyNext()) {
         }

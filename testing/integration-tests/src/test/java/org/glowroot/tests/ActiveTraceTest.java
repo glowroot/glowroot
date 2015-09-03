@@ -31,9 +31,8 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.config.TransactionConfig;
-import org.glowroot.container.trace.ProfileNode;
+import org.glowroot.container.trace.ProfileTree;
 import org.glowroot.container.trace.Trace;
-import org.glowroot.container.trace.Trace.Existence;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -68,7 +67,7 @@ public class ActiveTraceTest {
         shouldReadActiveTrace(ShouldGenerateActiveTraceStuckOnNonRootTimer.class, true);
     }
 
-    private Trace shouldReadActiveTrace(final Class<? extends AppUnderTest> appUnderTest,
+    private Trace.Header shouldReadActiveTrace(final Class<? extends AppUnderTest> appUnderTest,
             boolean stuckOnNonRoot) throws Exception {
         // given
         TransactionConfig transactionConfig = container.getConfigService().getTransactionConfig();
@@ -89,13 +88,13 @@ public class ActiveTraceTest {
         });
         // then
         Stopwatch stopwatch = Stopwatch.createStarted();
-        Trace trace = null;
-        ProfileNode profile = null;
+        Trace.Header header = null;
+        ProfileTree profileTree = null;
         while (stopwatch.elapsed(SECONDS) < 5) {
-            trace = container.getTraceService().getActiveTrace(0, MILLISECONDS);
-            if (trace != null && trace.getProfileExistence() == Existence.YES) {
-                profile = container.getTraceService().getProfile(trace.getId());
-                if (profile != null) {
+            header = container.getTraceService().getActiveTrace(0, MILLISECONDS);
+            if (header != null && header.profileSampleCount() > 0) {
+                profileTree = container.getTraceService().getProfile(header.id());
+                if (profileTree != null) {
                     break;
                 }
             }
@@ -105,34 +104,32 @@ public class ActiveTraceTest {
             // wait for trace to get into nested timer
             stopwatch = Stopwatch.createStarted();
             while (stopwatch.elapsed(SECONDS) < 5) {
-                trace = container.getTraceService().getActiveTrace(0, MILLISECONDS);
-                if (!trace.getRootTimer().getChildNodes().isEmpty()) {
+                header = container.getTraceService().getActiveTrace(0, MILLISECONDS);
+                if (!header.rootTimer().childTimers().isEmpty()) {
                     break;
                 }
                 Thread.sleep(10);
             }
         }
         Thread.sleep(20);
-        trace = container.getTraceService().getActiveTrace(0, MILLISECONDS);
-        assertThat(trace).isNotNull();
-        assertThat(trace.isActive()).isTrue();
-        assertThat(trace.isPartial()).isFalse();
+        header = container.getTraceService().getActiveTrace(0, MILLISECONDS);
+        assertThat(header).isNotNull();
+        assertThat(header.partial().or(false)).isTrue();
         if (stuckOnNonRoot) {
-            assertThat(trace.getEntryCount()).isEqualTo(2);
+            assertThat(header.entryCount()).isEqualTo(2);
         } else {
-            assertThat(trace.getEntryCount()).isZero();
+            assertThat(header.entryCount()).isZero();
         }
-        assertThat(profile).isNotNull();
+        assertThat(profileTree).isNotNull();
         // interrupt trace
         container.interruptAppUnderTest();
         future.get();
         // should now be reported as complete (not partial)
-        trace = container.getTraceService().getLastTrace();
-        assertThat(trace.isActive()).isFalse();
-        assertThat(trace.isPartial()).isFalse();
+        header = container.getTraceService().getLastTrace();
+        assertThat(header.partial().or(false)).isFalse();
         // cleanup
         executorService.shutdown();
-        return trace;
+        return header;
     }
 
     public static class ShouldGenerateActiveTraceStuckOnRootTimer

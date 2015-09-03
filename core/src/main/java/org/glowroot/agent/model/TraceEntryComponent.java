@@ -15,19 +15,19 @@
  */
 package org.glowroot.agent.model;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Function;
 import com.google.common.base.Ticker;
-import com.google.common.collect.Collections2;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.collector.spi.TraceEntry;
+import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.common.util.Tickers;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 
@@ -64,7 +64,7 @@ class TraceEntryComponent {
             Ticker ticker) {
         this.startTick = startTick;
         this.ticker = ticker;
-        rootEntry = new TraceEntryImpl(null, messageSupplier, null, 0, startTick, -1, timer);
+        rootEntry = new TraceEntryImpl(null, messageSupplier, null, 0, startTick, timer);
         activeEntry = rootEntry;
         tailEntry = rootEntry;
     }
@@ -73,22 +73,32 @@ class TraceEntryComponent {
         return rootEntry;
     }
 
-    // this does not include root trace entry
-    public Collection<TraceEntry> getEntries() {
+    // this does not include the root trace entry
+    public List<Trace.Entry> toProtobuf() {
         long captureTick;
         if (completed) {
             captureTick = endTick;
         } else {
             captureTick = ticker.read();
         }
-        List<TraceEntryImpl> entries = Lists.newArrayListWithCapacity(entryCount);
-        TraceEntryImpl curr = rootEntry.getNextTraceEntry();
+        Map<TraceEntryImpl, List<TraceEntryImpl>> childEntryMap = Maps.newHashMap();
+        TraceEntryImpl entry = rootEntry.getNextTraceEntry();
         // filter out entries that started after the capture tick
-        while (curr != null && Tickers.lessThanOrEqual(curr.getStartTick(), captureTick)) {
-            entries.add(curr);
-            curr = curr.getNextTraceEntry();
+        // checking completed is short circuit optimization for the common case
+        while (entry != null
+                && (completed || Tickers.lessThanOrEqual(entry.getStartTick(), captureTick))) {
+            // checkNotNull is safe because only the root entry has null parent
+            TraceEntryImpl parentTraceEntry = checkNotNull(entry.getParentTraceEntry());
+            List<TraceEntryImpl> childEntries = childEntryMap.get(parentTraceEntry);
+            if (childEntries == null) {
+                childEntries = Lists.newArrayList();
+                childEntryMap.put(parentTraceEntry, childEntries);
+            }
+            childEntries.add(entry);
+            entry = entry.getNextTraceEntry();
         }
-        return toSpiTraceEntries(entries, startTick, captureTick);
+
+        return getProtobufChildEntries(rootEntry, childEntryMap, startTick, captureTick);
     }
 
     // this does not include root trace entry
@@ -161,17 +171,8 @@ class TraceEntryComponent {
             // the flag so that it can be triggered again (and possibly then a second limit marker)
             entryLimitExceeded = false;
         }
-        int nestingLevel;
-        if (entryLimitExceeded && limitBypassed) {
-            // limit bypassed entries have no proper nesting, so put them directly under the root
-            nestingLevel = 1;
-        } else {
-            // activeEntry is only null when transaction is complete
-            checkNotNull(activeEntry);
-            nestingLevel = activeEntry.nestingLevel() + 1;
-        }
         TraceEntryImpl entry = new TraceEntryImpl(activeEntry, messageSupplier, queryData,
-                queryExecutionCount, startTick, nestingLevel, timer);
+                queryExecutionCount, startTick, timer);
         entry.setErrorMessage(errorMessage);
         return entry;
     }
@@ -204,14 +205,21 @@ class TraceEntryComponent {
         }
     }
 
-    private static Collection<TraceEntry> toSpiTraceEntries(Collection<TraceEntryImpl> entries,
-            final long transactionStartTick, final long captureTick) {
-        return Collections2.transform(entries, new Function<TraceEntryImpl, TraceEntry>() {
-            @Override
-            public TraceEntry apply(@Nullable TraceEntryImpl traceEntry) {
-                checkNotNull(traceEntry);
-                return traceEntry.toSpiTraceEntry(transactionStartTick, captureTick);
-            }
-        });
+    private static List<Trace.Entry> getProtobufChildEntries(TraceEntryImpl entry,
+            Map<TraceEntryImpl, List<TraceEntryImpl>> childEntryMap, long transactionStartTick,
+            long captureTick) {
+        List<TraceEntryImpl> childEntries = childEntryMap.get(entry);
+        if (childEntries == null) {
+            return ImmutableList.of();
+        }
+        List<Trace.Entry> protobufChildEntries =
+                Lists.newArrayListWithCapacity(childEntries.size());
+        for (TraceEntryImpl childEntry : childEntries) {
+            List<Trace.Entry> subChildEntries = getProtobufChildEntries(childEntry, childEntryMap,
+                    transactionStartTick, captureTick);
+            protobufChildEntries
+                    .add(childEntry.toProtobuf(transactionStartTick, captureTick, subChildEntries));
+        }
+        return protobufChildEntries;
     }
 }
