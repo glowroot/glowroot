@@ -19,7 +19,7 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
-public class Result<T> {
+public class Result<T extends /*@NonNull*/Object> {
 
     private final ImmutableList<T> records;
     private final boolean moreAvailable;
