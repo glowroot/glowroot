@@ -20,6 +20,7 @@ import org.junit.runner.Result;
 import org.junit.runner.notification.RunListener;
 
 import org.glowroot.Containers;
+import org.glowroot.agent.util.SpyingLogbackFilter;
 import org.glowroot.container.Container;
 
 public class SharedSetupRunListener extends RunListener {
@@ -28,9 +29,8 @@ public class SharedSetupRunListener extends RunListener {
 
     public static Container getContainer() throws Exception {
         if (sharedContainer == null) {
-            CassandraWrapper.start();
+            startCassandra();
             Container container = Containers.getSharedContainer();
-            TempWorkaround.applyWorkaround(container);
             return container;
         }
         return sharedContainer;
@@ -45,14 +45,22 @@ public class SharedSetupRunListener extends RunListener {
 
     @Override
     public void testRunStarted(Description description) throws Exception {
-        CassandraWrapper.start();
+        startCassandra();
         sharedContainer = Containers.getSharedContainer();
-        TempWorkaround.applyWorkaround(sharedContainer);
     }
 
     @Override
     public void testRunFinished(Result result) throws Exception {
         sharedContainer.close();
         CassandraWrapper.stop();
+    }
+
+    private static void startCassandra() throws Exception {
+        CassandraWrapper.start();
+        // need to trigger and clear known warning message in static initializer
+        Class.forName("com.datastax.driver.core.NettyUtil");
+        if (SpyingLogbackFilter.active()) {
+            SpyingLogbackFilter.clearMessages();
+        }
     }
 }

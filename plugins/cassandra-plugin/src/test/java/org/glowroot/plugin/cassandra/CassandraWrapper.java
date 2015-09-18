@@ -105,8 +105,6 @@ class CassandraWrapper {
         command.add("-Dcassandra-foreground=yes");
         command.add(
                 "-Dcassandra.data_file_directories=" + cassandraDir.getAbsolutePath() + "/data");
-        // command.add("-Dcassandra.");
-        // command.add("-Dcassandra.");
         // this is used inside low-entropy docker containers
         String sourceOfRandomness = System.getProperty("java.security.egd");
         if (sourceOfRandomness != null) {
@@ -131,7 +129,7 @@ class CassandraWrapper {
 
     private static void waitForCassandra() throws InterruptedException {
         while (true) {
-            Cluster cluster = Cluster.builder().addContactPoint("localhost").build();
+            Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
             try {
                 cluster.connect();
                 cluster.close();

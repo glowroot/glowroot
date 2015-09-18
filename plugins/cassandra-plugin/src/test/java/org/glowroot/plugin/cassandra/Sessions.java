@@ -23,7 +23,7 @@ import com.datastax.driver.core.Session;
 class Sessions {
 
     static Session createSession() throws IOException {
-        Cluster cluster = Cluster.builder().addContactPoint("localhost").build();
+        Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
         Session session = cluster.newSession();
         session.execute("CREATE KEYSPACE IF NOT EXISTS test WITH REPLICATION ="
                 + " { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");

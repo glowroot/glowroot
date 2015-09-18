@@ -72,14 +72,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <!-- pinning version since selenium-api uses org.json:json:20080701
-        and sauce_junit uses org.json:json:20090211 -->
-      <groupId>org.json</groupId>
-      <artifactId>json</artifactId>
-      <version>20090211</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-test-harness</artifactId>
       <version>${project.version}</version>
@@ -107,7 +99,7 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
       <!-- spring-test 4.0 depends on servlet 3.0 -->
-      <version>3.2.13.RELEASE</version>
+      <version>3.2.14.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -115,7 +107,7 @@
         org.springframework.mock.web.MockHttpServletRequest -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
-      <version>3.2.13.RELEASE</version>
+      <version>3.2.14.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>

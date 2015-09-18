@@ -23,17 +23,16 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.SimpleStatement;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceMarker;
 import org.glowroot.container.aggregate.Query;
+import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -202,9 +201,9 @@ public class CassandraSyncTest {
         @Override
         public void traceMarker() throws Exception {
             BatchStatement batchStatement = new BatchStatement();
-            batchStatement.add(new SimpleStatement(
+            batchStatement.add(session.newSimpleStatement(
                     "INSERT INTO test.users (id,  fname, lname) VALUES (100, 'f100', 'l100')"));
-            batchStatement.add(new SimpleStatement(
+            batchStatement.add(session.newSimpleStatement(
                     "INSERT INTO test.users (id,  fname, lname) VALUES (101, 'f101', 'l101')"));
             PreparedStatement preparedStatement =
                     session.prepare("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
@@ -213,7 +212,7 @@ public class CassandraSyncTest {
                 boundStatement.bind(i, "f" + i, "l" + i);
                 batchStatement.add(boundStatement);
             }
-            batchStatement.add(new SimpleStatement(
+            batchStatement.add(session.newSimpleStatement(
                     "INSERT INTO test.users (id,  fname, lname) VALUES (300, 'f300', 'l300')"));
             session.execute(batchStatement);
         }

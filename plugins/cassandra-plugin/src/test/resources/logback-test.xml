@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration>
+<configuration>
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <!-- don't clutter unit test output with cassandra info logging -->
+  <root level="warn">
+    <appender-ref ref="CONSOLE" />
+  </root>
+  <!-- suppress known harmless warn message in NettyUtil static initializer -->
+  <logger name="com.datastax.driver.core.NettyUtil" level="error" />
+</configuration>

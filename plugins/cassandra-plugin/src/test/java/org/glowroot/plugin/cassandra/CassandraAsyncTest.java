@@ -23,7 +23,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.SimpleStatement;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -200,9 +199,9 @@ public class CassandraAsyncTest {
         @Override
         public void traceMarker() throws Exception {
             BatchStatement batchStatement = new BatchStatement();
-            batchStatement.add(new SimpleStatement(
+            batchStatement.add(session.newSimpleStatement(
                     "INSERT INTO test.users (id,  fname, lname) VALUES (100, 'f100', 'l100')"));
-            batchStatement.add(new SimpleStatement(
+            batchStatement.add(session.newSimpleStatement(
                     "INSERT INTO test.users (id,  fname, lname) VALUES (101, 'f101', 'l101')"));
             PreparedStatement preparedStatement =
                     session.prepare("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
@@ -211,7 +210,7 @@ public class CassandraAsyncTest {
                 boundStatement.bind(i, "f" + i, "l" + i);
                 batchStatement.add(boundStatement);
             }
-            batchStatement.add(new SimpleStatement(
+            batchStatement.add(session.newSimpleStatement(
                     "INSERT INTO test.users (id,  fname, lname) VALUES (300, 'f300', 'l300')"));
             session.executeAsync(batchStatement).get();
         }

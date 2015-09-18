@@ -1,13 +1,13 @@
 {
   "name": "glowroot",
   "dependencies": {
-    "angular": "1.4.5",
-    "angular-ui-bootstrap": "0.13.3",
+    "angular": "1.4.6",
+    "angular-ui-bootstrap": "0.13.4",
     "angular-ui-router": "0.2.15",
     "bootstrap": "3.3.5",
     "bootstrap-select": "1.7.3",
     "d3": "2.10.3",
-    "eonasdan-bootstrap-datetimepicker": "4.15.35",
+    "eonasdan-bootstrap-datetimepicker": "4.17.37",
     "flot": "trask/flot#glowroot-0.8.1",
     "flot.tooltip": "0.8.5",
     "fontawesome": "4.4.0",
