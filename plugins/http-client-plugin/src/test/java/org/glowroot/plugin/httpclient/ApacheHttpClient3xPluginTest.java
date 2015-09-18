@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,13 +72,13 @@ public class ApacheHttpClient3xPluginTest {
                 .isEqualTo("http client request: POST http://www.example.com/hello3");
     }
 
-    public static class ExecuteHttpGet implements AppUnderTest, TraceMarker {
+    public static class ExecuteHttpGet implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             HttpClient httpClient = new HttpClient();
             GetMethod httpGet = new GetMethod("http://www.example.com/hello1");
             httpClient.executeMethod(httpGet);
@@ -86,13 +86,13 @@ public class ApacheHttpClient3xPluginTest {
         }
     }
 
-    public static class ExecuteHttpPost implements AppUnderTest, TraceMarker {
+    public static class ExecuteHttpPost implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             HttpClient httpClient = new HttpClient();
             PostMethod httpPost = new PostMethod("http://www.example.com/hello3");
             httpClient.executeMethod(httpPost);

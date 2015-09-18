@@ -32,7 +32,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.aggregate.Query;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -229,20 +229,20 @@ public class BatchTest {
                         + " insert into employee (name) values ('pig will') => 2 rows");
     }
 
-    public static class ExecuteBatchPreparedStatement implements AppUnderTest, TraceMarker {
+    public static class ExecuteBatchPreparedStatement implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             connection.setAutoCommit(false);
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             PreparedStatement preparedStatement =
                     connection.prepareStatement("insert into employee (name) values (?)");
             try {
@@ -267,20 +267,20 @@ public class BatchTest {
     }
 
     public static class ExecuteBatchPreparedStatementWithoutClear
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             connection.setAutoCommit(false);
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             PreparedStatement preparedStatement =
                     connection.prepareStatement("insert into employee (name) values (?)");
             try {
@@ -301,20 +301,20 @@ public class BatchTest {
         }
     }
 
-    public static class ExecuteBatchStatement implements AppUnderTest, TraceMarker {
+    public static class ExecuteBatchStatement implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             connection.setAutoCommit(false);
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
                 statement.addBatch("insert into employee (name) values ('huckle')");
@@ -330,7 +330,7 @@ public class BatchTest {
         }
     }
 
-    public static class BatchStatementNull implements AppUnderTest, TraceMarker {
+    public static class BatchStatementNull implements AppUnderTest, TransactionMarker {
         private Connection delegatingConnection;
         @Override
         public void executeApp() throws Exception {
@@ -347,13 +347,13 @@ public class BatchTest {
                 }
             };
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = delegatingConnection.createStatement();
             try {
                 statement.addBatch(null);
@@ -364,20 +364,21 @@ public class BatchTest {
         }
     }
 
-    public static class ExecuteBatchStatementWithNoBatches implements AppUnderTest, TraceMarker {
+    public static class ExecuteBatchStatementWithNoBatches
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             connection.setAutoCommit(false);
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
                 statement.executeBatch();
@@ -387,20 +388,21 @@ public class BatchTest {
         }
     }
 
-    public static class ExecuteBatchStatementWithoutClear implements AppUnderTest, TraceMarker {
+    public static class ExecuteBatchStatementWithoutClear
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             connection.setAutoCommit(false);
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
                 statement.addBatch("insert into employee (name) values ('huckle')");

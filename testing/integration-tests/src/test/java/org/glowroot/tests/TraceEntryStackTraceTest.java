@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.trace.Trace;
@@ -78,13 +78,13 @@ public class TraceEntryStackTraceTest {
     }
 
     public static class ShouldGenerateTraceWithTraceEntryStackTrace
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws InterruptedException {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws InterruptedException {
+        public void transactionMarker() throws InterruptedException {
             new Pause().pauseOneMillisecond();
         }
     }

@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.config.AdvancedConfig;
 import org.glowroot.container.trace.Trace;
 
@@ -181,35 +181,35 @@ public class ThreadInfoTest {
         }
     }
 
-    public static class ThreadCpuTimeDisabledMid implements AppUnderTest, TraceMarker {
+    public static class ThreadCpuTimeDisabledMid implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() {
             boolean original = ManagementFactory.getThreadMXBean().isThreadCpuTimeEnabled();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(original);
             }
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(false);
         }
     }
 
-    public static class ThreadCpuTimeEnabledMid implements AppUnderTest, TraceMarker {
+    public static class ThreadCpuTimeEnabledMid implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() {
             boolean original = ManagementFactory.getThreadMXBean().isThreadCpuTimeEnabled();
             ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(false);
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(original);
             }
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         }
     }
@@ -228,37 +228,39 @@ public class ThreadInfoTest {
         }
     }
 
-    public static class ThreadContentionMonitoringDisabledMid implements AppUnderTest, TraceMarker {
+    public static class ThreadContentionMonitoringDisabledMid
+            implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() {
             boolean original =
                     ManagementFactory.getThreadMXBean().isThreadContentionMonitoringEnabled();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(original);
             }
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(false);
         }
     }
 
-    public static class ThreadContentionMonitoringEnabledMid implements AppUnderTest, TraceMarker {
+    public static class ThreadContentionMonitoringEnabledMid
+            implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() {
             boolean original =
                     ManagementFactory.getThreadMXBean().isThreadContentionMonitoringEnabled();
             ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(false);
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(original);
             }
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         }
     }

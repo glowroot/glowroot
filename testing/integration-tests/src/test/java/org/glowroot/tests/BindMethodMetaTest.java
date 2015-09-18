@@ -26,7 +26,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -77,14 +77,14 @@ public class BindMethodMetaTest {
         assertThat(entries.get(17).message()).isEqualTo("Coverage put: [7, 8, 9]");
     }
 
-    public static class ShouldCoverBindMethodMetas implements AppUnderTest, TraceMarker {
+    public static class ShouldCoverBindMethodMetas implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
 
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             CoverAllTypes target = new CoverAllTypes();
             target.getBoolean();
             target.getByte();

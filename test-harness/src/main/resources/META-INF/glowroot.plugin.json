@@ -3,8 +3,8 @@
   "id": "glowroot-test-container",
   "instrumentation": [
     {
-      "className": "org.glowroot.container.TraceMarker",
-      "methodName": "traceMarker",
+      "className": "org.glowroot.container.TransactionMarker",
+      "methodName": "transactionMarker",
       "methodParameterTypes": [ ],
       "captureKind": "transaction",
       "timerName": "mock trace marker",

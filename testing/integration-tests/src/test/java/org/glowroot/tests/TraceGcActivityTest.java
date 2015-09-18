@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.config.AdvancedConfig;
 import org.glowroot.container.trace.Trace;
 
@@ -77,13 +77,13 @@ public class TraceGcActivityTest {
         assertThat(collectionTime).isGreaterThanOrEqualTo(5);
     }
 
-    public static class ShouldGenerateGarbage implements AppUnderTest, TraceMarker {
+    public static class ShouldGenerateGarbage implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             long collectionCountStart = collectionCount();
             long collectionTimeStart = collectionTime();
             while (collectionCount() - collectionCountStart < 5

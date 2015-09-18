@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.trace.Trace;
 
@@ -94,13 +94,13 @@ public class Slf4jTest {
         assertThat(warnEntry.message()).isEqualTo("log warn: def_t");
         assertThat(warnEntry.error().get().message()).isEqualTo("456");
         assertThat(warnEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
         assertThat(errorEntry.message()).isEqualTo("log error: efg_t");
         assertThat(errorEntry.error().get().message()).isEqualTo("567");
         assertThat(errorEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
     }
 
     @Test
@@ -155,13 +155,13 @@ public class Slf4jTest {
         assertThat(warnEntry.message()).isEqualTo("log warn: def_1_t d");
         assertThat(warnEntry.error().get().message()).isEqualTo("456");
         assertThat(warnEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
         assertThat(errorEntry.message()).isEqualTo("log error: efg_1_t e");
         assertThat(errorEntry.error().get().message()).isEqualTo("567");
         assertThat(errorEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
     }
 
     @Test
@@ -210,13 +210,13 @@ public class Slf4jTest {
         assertThat(warnEntry.message()).isEqualTo("log warn: def_3_t d e f");
         assertThat(warnEntry.error().get().message()).isEqualTo("456");
         assertThat(warnEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
         assertThat(errorEntry.message()).isEqualTo("log error: efg_3_t e f g");
         assertThat(errorEntry.error().get().message()).isEqualTo("567");
         assertThat(errorEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
     }
 
     @Test
@@ -241,14 +241,14 @@ public class Slf4jTest {
         }
     }
 
-    public static class ShouldLog implements AppUnderTest, TraceMarker {
+    public static class ShouldLog implements AppUnderTest, TransactionMarker {
         private static final Logger logger = LoggerFactory.getLogger(ShouldLog.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             logger.trace("abc");
             logger.debug("bcd");
             logger.info("cde");
@@ -257,14 +257,14 @@ public class Slf4jTest {
         }
     }
 
-    public static class ShouldLogWithThrowable implements AppUnderTest, TraceMarker {
+    public static class ShouldLogWithThrowable implements AppUnderTest, TransactionMarker {
         private static final Logger logger = LoggerFactory.getLogger(ShouldLogWithThrowable.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             logger.trace("abc_t", new IllegalStateException("123"));
             logger.debug("bcd_t", new IllegalStateException("234"));
             logger.info("cde_t", new IllegalStateException("345"));
@@ -273,15 +273,15 @@ public class Slf4jTest {
         }
     }
 
-    public static class ShouldLogWithNullThrowable implements AppUnderTest, TraceMarker {
+    public static class ShouldLogWithNullThrowable implements AppUnderTest, TransactionMarker {
         private static final Logger logger =
                 LoggerFactory.getLogger(ShouldLogWithNullThrowable.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             logger.trace("abc_tnull", (Throwable) null);
             logger.debug("bcd_tnull", (Throwable) null);
             logger.info("cde_tnull", (Throwable) null);
@@ -290,15 +290,15 @@ public class Slf4jTest {
         }
     }
 
-    public static class ShouldLogWithOneParameter implements AppUnderTest, TraceMarker {
+    public static class ShouldLogWithOneParameter implements AppUnderTest, TransactionMarker {
         private static final Logger logger =
                 LoggerFactory.getLogger(ShouldLogWithOneParameter.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             logger.trace("abc_1 {}", "a");
             logger.debug("bcd_1 {}", "b");
             logger.info("cde_1 {}", "c");
@@ -307,15 +307,16 @@ public class Slf4jTest {
         }
     }
 
-    public static class ShouldLogWithOneParameterAndThrowable implements AppUnderTest, TraceMarker {
+    public static class ShouldLogWithOneParameterAndThrowable
+            implements AppUnderTest, TransactionMarker {
         private static final Logger logger =
                 LoggerFactory.getLogger(ShouldLogWithOneParameterAndThrowable.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             logger.trace("abc_1_t {}", "a", new IllegalStateException("123"));
             logger.debug("bcd_1_t {}", "b", new IllegalStateException("234"));
             logger.info("cde_1_t {}", "c", new IllegalStateException("345"));
@@ -324,15 +325,15 @@ public class Slf4jTest {
         }
     }
 
-    public static class ShouldLogWithTwoParameters implements AppUnderTest, TraceMarker {
+    public static class ShouldLogWithTwoParameters implements AppUnderTest, TransactionMarker {
         private static final Logger logger =
                 LoggerFactory.getLogger(ShouldLogWithTwoParameters.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             logger.trace("abc_2 {} {}", "a", "b");
             logger.debug("bcd_2 {} {}", "b", "c");
             logger.info("cde_2 {} {}", "c", "d");
@@ -341,15 +342,16 @@ public class Slf4jTest {
         }
     }
 
-    public static class ShouldLogWithMoreThanTwoParameters implements AppUnderTest, TraceMarker {
+    public static class ShouldLogWithMoreThanTwoParameters
+            implements AppUnderTest, TransactionMarker {
         private static final Logger logger =
                 LoggerFactory.getLogger(ShouldLogWithMoreThanTwoParameters.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             logger.trace("abc_3 {} {} {}", "a", "b", "c");
             logger.debug("bcd_3 {} {} {}", "b", "c", "d");
             logger.info("cde_3 {} {} {}", "c", "d", "e");
@@ -358,15 +360,16 @@ public class Slf4jTest {
         }
     }
 
-    public static class ShouldLogWithParametersAndThrowable implements AppUnderTest, TraceMarker {
+    public static class ShouldLogWithParametersAndThrowable
+            implements AppUnderTest, TransactionMarker {
         private static final Logger logger =
                 LoggerFactory.getLogger(ShouldLogWithParametersAndThrowable.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             logger.trace("abc_3_t {} {} {}", "a", "b", "c", new IllegalStateException("123"));
             logger.debug("bcd_3_t {} {} {}", "b", "c", "d", new IllegalStateException("234"));
             logger.info("cde_3_t {} {} {}", "c", "d", "e", new IllegalStateException("345"));

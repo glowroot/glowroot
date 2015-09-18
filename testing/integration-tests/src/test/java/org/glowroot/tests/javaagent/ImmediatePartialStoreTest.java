@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.config.AdvancedConfig;
 import org.glowroot.container.impl.JavaagentContainer;
 import org.glowroot.container.impl.LocalContainer;
@@ -94,13 +94,13 @@ public class ImmediatePartialStoreTest {
         executorService.shutdown();
     }
 
-    public static class ShouldGenerateActiveTrace implements AppUnderTest, TraceMarker {
+    public static class ShouldGenerateActiveTrace implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws InterruptedException {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws InterruptedException {
+        public void transactionMarker() throws InterruptedException {
             try {
                 Thread.sleep(Long.MAX_VALUE);
             } catch (InterruptedException e) {

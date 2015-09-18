@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.config.AdvancedConfig;
 import org.glowroot.container.trace.Trace;
 
@@ -137,13 +137,13 @@ public class MaxEntriesLimitTest {
         assertThat(entries.get(25).message()).isEqualTo("ERROR -- abc");
     }
 
-    public static class GenerateLotsOfEntries implements AppUnderTest, TraceMarker {
+    public static class GenerateLotsOfEntries implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             while (true) {
                 new LevelOne().call("a", "b");
                 if (Thread.interrupted()) {
@@ -153,13 +153,13 @@ public class MaxEntriesLimitTest {
         }
     }
 
-    public static class GenerateLimitBypassedEntries implements AppUnderTest, TraceMarker {
+    public static class GenerateLimitBypassedEntries implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             for (int i = 0; i < 1000; i++) {
                 new LevelOne().call("a", "b");
             }
@@ -167,13 +167,13 @@ public class MaxEntriesLimitTest {
         }
     }
 
-    public static class WarmupTrace implements AppUnderTest, TraceMarker {
+    public static class WarmupTrace implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws InterruptedException {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws InterruptedException {
+        public void transactionMarker() throws InterruptedException {
             Thread.sleep(1);
         }
     }

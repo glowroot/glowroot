@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.Threads;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.impl.JavaagentContainer;
 import org.glowroot.container.trace.ProfileTree;
@@ -77,13 +77,13 @@ public class TimerWrapperMethodsTest {
         assertThat(profileTree.unfilteredSampleCount()).isBetween(5L, 15L);
     }
 
-    public static class ShouldGenerateTraceWithProfile implements AppUnderTest, TraceMarker {
+    public static class ShouldGenerateTraceWithProfile implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws InterruptedException {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws InterruptedException {
+        public void transactionMarker() throws InterruptedException {
             Threads.moreAccurateSleep(200);
         }
     }

@@ -27,7 +27,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.junit.Test;
 
 import org.glowroot.container.AppUnderTest;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.impl.JavaagentContainer;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -78,7 +78,7 @@ public class DataSourceShutdownTest {
         executorService.shutdown();
     }
 
-    public static class ForceShutdownWhileStoringTraces implements AppUnderTest, TraceMarker {
+    public static class ForceShutdownWhileStoringTraces implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws InterruptedException {
             ThreadFactory daemonThreadFactory = new ThreadFactoryBuilder().setDaemon(true).build();
@@ -96,7 +96,7 @@ public class DataSourceShutdownTest {
                     // removed in order to put back the H2 jvm shutdown hook
                     for (int i = 0; i < 100; i++) {
                         try {
-                            traceMarker();
+                            transactionMarker();
                         } catch (InterruptedException e) {
                         }
                     }
@@ -104,7 +104,7 @@ public class DataSourceShutdownTest {
             });
         }
         @Override
-        public void traceMarker() throws InterruptedException {
+        public void transactionMarker() throws InterruptedException {
             Thread.sleep(1);
         }
     }

@@ -24,7 +24,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,13 +61,13 @@ public class PluginConfiguredInstrumentationTest {
         assertThat(header.entryCount()).isZero();
     }
 
-    public static class ShouldExecuteAAA implements AppUnderTest, TraceMarker {
+    public static class ShouldExecuteAAA implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             new AAA().execute("abc", new ParamObject("zzz"));
         }
     }

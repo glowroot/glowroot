@@ -23,10 +23,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
-import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
+import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,13 +61,14 @@ public class ExceptionalInstrumentationTest {
         assertThat(entries.get(0).error().get().message()).isEqualTo("This is exceptional");
     }
 
-    public static class ShouldGenerateTraceWithErrorEntry implements AppUnderTest, TraceMarker {
+    public static class ShouldGenerateTraceWithErrorEntry
+            implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             try {
                 new ExceptionalClass().aMethodThatThrowsAnException();
             } catch (RuntimeException e) {

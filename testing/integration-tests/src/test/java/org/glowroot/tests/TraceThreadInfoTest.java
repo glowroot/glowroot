@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.trace.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -84,13 +84,13 @@ public class TraceThreadInfoTest {
         assertThat(header.threadBlockedNanos().get()).isGreaterThanOrEqualTo(5);
     }
 
-    public static class ShouldUseCpu implements AppUnderTest, TraceMarker {
+    public static class ShouldUseCpu implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
             long start = threadBean.getCurrentThreadCpuTime();
             while (threadBean.getCurrentThreadCpuTime() - start < MILLISECONDS.toNanos(10)) {
@@ -101,13 +101,13 @@ public class TraceThreadInfoTest {
         }
     }
 
-    public static class ShouldWait implements AppUnderTest, TraceMarker {
+    public static class ShouldWait implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Object object = new Object();
             synchronized (object) {
                 object.wait(10);
@@ -115,13 +115,13 @@ public class TraceThreadInfoTest {
         }
     }
 
-    public static class ShouldBlock implements AppUnderTest, TraceMarker {
+    public static class ShouldBlock implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Object lock = new Object();
             Object notify = new Object();
             ExecutorService executor = Executors.newSingleThreadExecutor();

@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.trace.ProfileTree;
 import org.glowroot.container.trace.Trace;
@@ -133,13 +133,13 @@ public class ActiveTraceTest {
     }
 
     public static class ShouldGenerateActiveTraceStuckOnRootTimer
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             try {
                 Thread.sleep(Long.MAX_VALUE);
             } catch (InterruptedException e) {
@@ -148,13 +148,13 @@ public class ActiveTraceTest {
     }
 
     public static class ShouldGenerateActiveTraceStuckOnNonRootTimer
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws InterruptedException {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws InterruptedException {
+        public void transactionMarker() throws InterruptedException {
             new Pause().pauseOneMillisecond();
             try {
                 new Pause().pauseMaxMilliseconds();

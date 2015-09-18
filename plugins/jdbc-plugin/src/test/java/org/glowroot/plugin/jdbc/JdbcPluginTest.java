@@ -34,7 +34,7 @@ import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.AppUnderTestServices;
 import org.glowroot.container.Container;
 import org.glowroot.container.TraceEntryMarker;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.aggregate.Query;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.trace.Trace;
@@ -314,19 +314,20 @@ public class JdbcPluginTest {
         return false;
     }
 
-    public static class ExecuteStatementAndIterateOverResults implements AppUnderTest, TraceMarker {
+    public static class ExecuteStatementAndIterateOverResults
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
                 statement.execute("select * from employee");
@@ -341,19 +342,19 @@ public class JdbcPluginTest {
     }
 
     public static class ExecuteLotsOfStatementAndIterateOverResults
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
                 for (int i = 0; i < 4000; i++) {
@@ -370,20 +371,20 @@ public class JdbcPluginTest {
     }
 
     public static class IterateOverResultsUnderSeparateTraceEntry
-            implements AppUnderTest, TraceMarker, TraceEntryMarker {
+            implements AppUnderTest, TransactionMarker, TraceEntryMarker {
         private Connection connection;
         private Statement statement;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             statement = connection.createStatement();
             try {
                 statement.execute("select * from employee");
@@ -402,20 +403,20 @@ public class JdbcPluginTest {
     }
 
     public static class GetResultSetValueUnderSeparateTraceEntry
-            implements AppUnderTest, TraceMarker, TraceEntryMarker {
+            implements AppUnderTest, TransactionMarker, TraceEntryMarker {
         private Connection connection;
         private ResultSet rs;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
                 statement.execute("select * from employee");
@@ -434,19 +435,19 @@ public class JdbcPluginTest {
     }
 
     public static class ExecuteStatementAndIterateOverResultsUsingColumnName
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
                 statement.execute("select * from employee");
@@ -461,20 +462,20 @@ public class JdbcPluginTest {
     }
 
     public static class ExecuteStatementAndIterateOverResultsUsingColumnNameUnderSeparateTraceEntry
-            implements AppUnderTest, TraceMarker, TraceEntryMarker {
+            implements AppUnderTest, TransactionMarker, TraceEntryMarker {
         private Connection connection;
         private Statement statement;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             statement = connection.createStatement();
             try {
                 statement.execute("select * from employee");
@@ -492,19 +493,19 @@ public class JdbcPluginTest {
         }
     }
 
-    public static class ExecuteCallableStatement implements AppUnderTest, TraceMarker {
+    public static class ExecuteCallableStatement implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             CallableStatement callableStatement =
                     connection.prepareCall("insert into employee (name, misc) values (?, ?)");
             try {
@@ -517,39 +518,39 @@ public class JdbcPluginTest {
         }
     }
 
-    public static class AccessMetaData implements AppUnderTest, TraceMarker {
+    public static class AccessMetaData implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             connection.setAutoCommit(false);
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             connection.getMetaData().getTables(null, null, null, null);
         }
     }
 
     public static class ExecuteStatementDisableReEnableMidIterating
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private static final AppUnderTestServices services = AppUnderTestServices.get();
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             PreparedStatement preparedStatement =
                     connection.prepareStatement("select * from employee where name like ?");
             try {

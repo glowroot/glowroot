@@ -30,7 +30,7 @@ import org.junit.Test;
 
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.aggregate.Query;
 import org.glowroot.container.trace.Trace;
 
@@ -123,19 +123,19 @@ public class CassandraSyncTest {
                 + " INSERT INTO test.users (id,  fname, lname) VALUES (300, 'f300', 'l300')");
     }
 
-    public static class ExecuteStatement implements AppUnderTest, TraceMarker {
+    public static class ExecuteStatement implements AppUnderTest, TransactionMarker {
 
         private Session session;
 
         @Override
         public void executeApp() throws Exception {
             session = Sessions.createSession();
-            traceMarker();
+            transactionMarker();
             Sessions.closeSession(session);
         }
 
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             ResultSet results = session.execute("SELECT * FROM test.users");
             for (Row row : results) {
                 row.getInt("id");
@@ -143,19 +143,19 @@ public class CassandraSyncTest {
         }
     }
 
-    public static class IterateUsingOneAndAll implements AppUnderTest, TraceMarker {
+    public static class IterateUsingOneAndAll implements AppUnderTest, TransactionMarker {
 
         private Session session;
 
         @Override
         public void executeApp() throws Exception {
             session = Sessions.createSession();
-            traceMarker();
+            transactionMarker();
             Sessions.closeSession(session);
         }
 
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             ResultSet results = session.execute("SELECT * FROM test.users");
             results.one();
             results.one();
@@ -164,19 +164,19 @@ public class CassandraSyncTest {
         }
     }
 
-    public static class ExecuteBoundStatement implements AppUnderTest, TraceMarker {
+    public static class ExecuteBoundStatement implements AppUnderTest, TransactionMarker {
 
         private Session session;
 
         @Override
         public void executeApp() throws Exception {
             session = Sessions.createSession();
-            traceMarker();
+            transactionMarker();
             Sessions.closeSession(session);
         }
 
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             // cql comment is to avoid "re-preparing already prepared query" warning message
             // from com.datastax.driver.core.Cluster
             PreparedStatement preparedStatement =
@@ -187,19 +187,19 @@ public class CassandraSyncTest {
         }
     }
 
-    public static class ExecuteBatchStatement implements AppUnderTest, TraceMarker {
+    public static class ExecuteBatchStatement implements AppUnderTest, TransactionMarker {
 
         private Session session;
 
         @Override
         public void executeApp() throws Exception {
             session = Sessions.createSession();
-            traceMarker();
+            transactionMarker();
             Sessions.closeSession(session);
         }
 
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             BatchStatement batchStatement = new BatchStatement();
             batchStatement.add(session.newSimpleStatement(
                     "INSERT INTO test.users (id,  fname, lname) VALUES (100, 'f100', 'l100')"));

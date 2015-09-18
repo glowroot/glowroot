@@ -27,7 +27,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.plugin.api.Agent;
 import org.glowroot.plugin.api.transaction.TransactionService;
 
@@ -70,19 +70,19 @@ public class DataSourceCompactTest {
         assertThat(dbFile.length()).isLessThan(preCompactionDbSize);
     }
 
-    public static class GenerateLotsOfTraces implements AppUnderTest, TraceMarker {
+    public static class GenerateLotsOfTraces implements AppUnderTest, TransactionMarker {
 
         private static final TransactionService transactionService = Agent.getTransactionService();
 
         @Override
         public void executeApp() throws InterruptedException {
             for (int i = 0; i < 10000; i++) {
-                traceMarker();
+                transactionMarker();
             }
         }
 
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             // need to fill up h2 db enough or it won't compact
             transactionService.setTransactionName(Strings.repeat("a", 10000));
         }

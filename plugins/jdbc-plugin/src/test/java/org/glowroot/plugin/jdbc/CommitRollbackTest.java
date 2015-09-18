@@ -31,7 +31,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -148,14 +148,14 @@ public class CommitRollbackTest {
         assertThat(childTimerNames).containsOnly("jdbc execute", "jdbc rollback");
     }
 
-    public abstract static class ExecuteJdbcCommitBase implements AppUnderTest, TraceMarker {
+    public abstract static class ExecuteJdbcCommitBase implements AppUnderTest, TransactionMarker {
         protected Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             connection.setAutoCommit(false);
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
@@ -171,7 +171,7 @@ public class CommitRollbackTest {
     }
 
     public abstract static class ExecuteJdbcCommitThrowingBase
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         protected Connection connection;
         @Override
         public void executeApp() throws Exception {
@@ -187,7 +187,7 @@ public class CommitRollbackTest {
             };
             connection.setAutoCommit(false);
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
@@ -204,7 +204,7 @@ public class CommitRollbackTest {
 
     public static class ExecuteJdbcCommit extends ExecuteJdbcCommitBase {
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             executeInsert();
             connection.commit();
         }
@@ -212,7 +212,7 @@ public class CommitRollbackTest {
 
     public static class ExecuteJdbcRollback extends ExecuteJdbcCommitBase {
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             executeInsert();
             connection.rollback();
         }
@@ -220,7 +220,7 @@ public class CommitRollbackTest {
 
     public static class ExecuteJdbcCommitThrowing extends ExecuteJdbcCommitThrowingBase {
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             executeInsert();
             try {
                 connection.commit();
@@ -231,7 +231,7 @@ public class CommitRollbackTest {
 
     public static class ExecuteJdbcRollbackThrowing extends ExecuteJdbcCommitThrowingBase {
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             executeInsert();
             try {
                 connection.rollback();

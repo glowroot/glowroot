@@ -29,7 +29,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
 import org.glowroot.container.TempDirs;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.config.InstrumentationConfig;
 import org.glowroot.container.config.InstrumentationConfig.CaptureKind;
 import org.glowroot.container.config.InstrumentationConfig.MethodModifier;
@@ -203,24 +203,24 @@ public class ConfiguredInstrumentationTest {
         public void executeWithArgs(String one, int two, BasicMisc anotherMisc) {}
     }
 
-    public static class ShouldExecute1 implements AppUnderTest, TraceMarker {
+    public static class ShouldExecute1 implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             new BasicMisc().execute1();
         }
     }
 
-    public static class ShouldExecuteWithReturn implements AppUnderTest, TraceMarker {
+    public static class ShouldExecuteWithReturn implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             new BasicMisc().executeWithReturn();
         }
     }

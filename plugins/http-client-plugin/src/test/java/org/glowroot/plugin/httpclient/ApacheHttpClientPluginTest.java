@@ -30,7 +30,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -94,13 +94,13 @@ public class ApacheHttpClientPluginTest {
                 .isEqualTo("http client request: POST http://www.example.com/hello4");
     }
 
-    public static class ExecuteHttpGet implements AppUnderTest, TraceMarker {
+    public static class ExecuteHttpGet implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpGet httpGet = new HttpGet("http://www.example.com/hello1");
             httpClient.execute(httpGet);
@@ -108,13 +108,13 @@ public class ApacheHttpClientPluginTest {
         }
     }
 
-    public static class ExecuteHttpGetUsingHttpHostArg implements AppUnderTest, TraceMarker {
+    public static class ExecuteHttpGetUsingHttpHostArg implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpHost httpHost = new HttpHost("www.example.com");
             HttpGet httpGet = new HttpGet("/hello2");
@@ -123,13 +123,13 @@ public class ApacheHttpClientPluginTest {
         }
     }
 
-    public static class ExecuteHttpPost implements AppUnderTest, TraceMarker {
+    public static class ExecuteHttpPost implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpPost httpPost = new HttpPost("http://www.example.com/hello3");
             httpClient.execute(httpPost);
@@ -137,13 +137,13 @@ public class ApacheHttpClientPluginTest {
         }
     }
 
-    public static class ExecuteHttpPostUsingHttpHostArg implements AppUnderTest, TraceMarker {
+    public static class ExecuteHttpPostUsingHttpHostArg implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpHost httpHost = new HttpHost("www.example.com");
             HttpPost httpPost = new HttpPost("/hello4");

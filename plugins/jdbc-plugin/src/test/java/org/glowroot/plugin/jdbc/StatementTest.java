@@ -29,10 +29,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
-import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
+import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -204,19 +204,20 @@ public class StatementTest {
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 
-    public static class ExecuteStatementAndIterateOverResults implements AppUnderTest, TraceMarker {
+    public static class ExecuteStatementAndIterateOverResults
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
                 statement.execute("select * from employee");
@@ -231,19 +232,19 @@ public class StatementTest {
     }
 
     public static class ExecuteStatementQueryAndIterateOverResults
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
                 ResultSet rs = statement.executeQuery("select * from employee");
@@ -256,19 +257,19 @@ public class StatementTest {
         }
     }
 
-    public static class ExecuteStatementUpdate implements AppUnderTest, TraceMarker {
+    public static class ExecuteStatementUpdate implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = connection.createStatement();
             try {
                 statement.executeUpdate("update employee set name = 'nobody'");
@@ -278,7 +279,7 @@ public class StatementTest {
         }
     }
 
-    public static class ExecuteNullStatement implements AppUnderTest, TraceMarker {
+    public static class ExecuteNullStatement implements AppUnderTest, TransactionMarker {
         private Connection delegatingConnection;
         @Override
         public void executeApp() throws Exception {
@@ -295,13 +296,13 @@ public class StatementTest {
                 }
             };
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = delegatingConnection.createStatement();
             try {
                 statement.execute(null);
@@ -311,7 +312,7 @@ public class StatementTest {
         }
     }
 
-    public static class ExecuteStatementThrowing implements AppUnderTest, TraceMarker {
+    public static class ExecuteStatementThrowing implements AppUnderTest, TransactionMarker {
         private Connection delegatingConnection;
         @Override
         public void executeApp() throws Exception {
@@ -328,13 +329,13 @@ public class StatementTest {
                 }
             };
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = delegatingConnection.createStatement();
             try {
                 statement.execute("select * from employee");
@@ -345,19 +346,19 @@ public class StatementTest {
         }
     }
 
-    public static class ExecuteStatementAndUsePrevious implements AppUnderTest, TraceMarker {
+    public static class ExecuteStatementAndUsePrevious implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
                     ResultSet.CONCUR_READ_ONLY);
             try {
@@ -373,19 +374,20 @@ public class StatementTest {
         }
     }
 
-    public static class ExecuteStatementAndUseRelativeForward implements AppUnderTest, TraceMarker {
+    public static class ExecuteStatementAndUseRelativeForward
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
                     ResultSet.CONCUR_READ_ONLY);
             try {
@@ -405,19 +407,19 @@ public class StatementTest {
     }
 
     public static class ExecuteStatementAndUseRelativeBackward
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
                     ResultSet.CONCUR_READ_ONLY);
             try {
@@ -437,19 +439,19 @@ public class StatementTest {
         }
     }
 
-    public static class ExecuteStatementAndUseAbsolute implements AppUnderTest, TraceMarker {
+    public static class ExecuteStatementAndUseAbsolute implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
                     ResultSet.CONCUR_READ_ONLY);
             try {
@@ -462,19 +464,19 @@ public class StatementTest {
         }
     }
 
-    public static class ExecuteStatementAndUseFirst implements AppUnderTest, TraceMarker {
+    public static class ExecuteStatementAndUseFirst implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
                     ResultSet.CONCUR_READ_ONLY);
             try {
@@ -487,19 +489,19 @@ public class StatementTest {
         }
     }
 
-    public static class ExecuteStatementAndUseLast implements AppUnderTest, TraceMarker {
+    public static class ExecuteStatementAndUseLast implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,
                     ResultSet.CONCUR_READ_ONLY);
             try {

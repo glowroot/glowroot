@@ -24,7 +24,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.plugin.api.Agent;
 import org.glowroot.plugin.api.transaction.TransactionService;
@@ -87,28 +87,28 @@ public class SetTraceStoreThresholdTest {
         assertThat(header).isNotNull();
     }
 
-    public static class SetLargeTraceStoreThreshold implements AppUnderTest, TraceMarker {
+    public static class SetLargeTraceStoreThreshold implements AppUnderTest, TransactionMarker {
         private static final TransactionService transactionService = Agent.getTransactionService();
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             transactionService.setTransactionSlowThreshold(Long.MAX_VALUE, MILLISECONDS);
             new LevelOne().call("a", "b");
         }
     }
 
     public static class SetLargeAndThenSmallTraceStoreThreshold
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private static final TransactionService transactionService = Agent.getTransactionService();
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             transactionService.setTransactionSlowThreshold(Long.MAX_VALUE, MILLISECONDS);
             transactionService.setTransactionSlowThreshold(0, MILLISECONDS);
             new LevelOne().call("a", "b");
@@ -116,14 +116,14 @@ public class SetTraceStoreThresholdTest {
     }
 
     public static class SetSmallAndThenLargeTraceStoreThreshold
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private static final TransactionService transactionService = Agent.getTransactionService();
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             transactionService.setTransactionSlowThreshold(0, MILLISECONDS);
             transactionService.setTransactionSlowThreshold(Long.MAX_VALUE, MILLISECONDS);
             new LevelOne().call("a", "b");

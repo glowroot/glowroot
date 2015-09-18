@@ -35,7 +35,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -96,7 +96,7 @@ public class JmsPluginTest {
         }
     }
 
-    public static class SendMessage implements AppUnderTest, TraceMarker {
+    public static class SendMessage implements AppUnderTest, TransactionMarker {
 
         private Connection connection;
 
@@ -106,11 +106,11 @@ public class JmsPluginTest {
                     new ActiveMQConnectionFactory("vm://localhost?broker.persistent=false");
             connection = connectionFactory.createConnection();
             connection.start();
-            traceMarker();
+            transactionMarker();
         }
 
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             Queue queue = session.createQueue("a queue");
             MessageProducer producer = session.createProducer(queue);

@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.trace.Trace;
 
@@ -88,19 +88,19 @@ public class Log4jTest {
         assertThat(warnEntry.message()).isEqualTo("log warn: def_");
         assertThat(warnEntry.error().get().message()).isEqualTo("456");
         assertThat(warnEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
         assertThat(errorEntry.message()).isEqualTo("log error: efg_");
         assertThat(errorEntry.error().get().message()).isEqualTo("567");
         assertThat(errorEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
 
         Trace.Entry fatalEntry = entries.get(2);
         assertThat(fatalEntry.message()).isEqualTo("log fatal: fgh_");
         assertThat(fatalEntry.error().get().message()).isEqualTo("678");
         assertThat(fatalEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
     }
 
     @Test
@@ -159,19 +159,19 @@ public class Log4jTest {
         assertThat(warnEntry.message()).isEqualTo("log warn: def___");
         assertThat(warnEntry.error().get().message()).isEqualTo("456_");
         assertThat(warnEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
         assertThat(errorEntry.message()).isEqualTo("log error: efg___");
         assertThat(errorEntry.error().get().message()).isEqualTo("567_");
         assertThat(errorEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
 
         Trace.Entry fatalEntry = entries.get(2);
         assertThat(fatalEntry.message()).isEqualTo("log fatal: fgh___");
         assertThat(fatalEntry.error().get().message()).isEqualTo("678_");
         assertThat(fatalEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
     }
 
     @Test
@@ -213,13 +213,13 @@ public class Log4jTest {
         assertThat(warnEntry.message()).isEqualTo("log warn (localized): def____");
         assertThat(warnEntry.error().get().message()).isEqualTo("456__");
         assertThat(warnEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
         assertThat(errorEntry.message()).isEqualTo("log error (localized): efg____");
         assertThat(errorEntry.error().get().message()).isEqualTo("567__");
         assertThat(errorEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
 
         Trace.Entry fatalEntry = entries.get(2);
         assertThat(fatalEntry.message()).isEqualTo("log fatal (localized): fgh____");
@@ -265,21 +265,21 @@ public class Log4jTest {
         assertThat(warnEntry.message()).isEqualTo("log warn (localized): def____ [d, e, f]");
         assertThat(warnEntry.error().get().message()).isEqualTo("456__");
         assertThat(warnEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
         assertThat(errorEntry.message())
                 .isEqualTo("log error (localized): efg____ [e, f, g]");
         assertThat(errorEntry.error().get().message()).isEqualTo("567__");
         assertThat(errorEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
 
         Trace.Entry fatalEntry = entries.get(2);
         assertThat(fatalEntry.message())
                 .isEqualTo("log fatal (localized): fgh____ [f, g, h]");
         assertThat(fatalEntry.error().get().message()).isEqualTo("678__");
         assertThat(fatalEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
     }
 
     @Test
@@ -297,19 +297,19 @@ public class Log4jTest {
         assertThat(warnEntry.message()).isEqualTo("log warn (localized): def____");
         assertThat(warnEntry.error().get().message()).isEqualTo("456__");
         assertThat(warnEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
         assertThat(errorEntry.message()).isEqualTo("log error (localized): efg____");
         assertThat(errorEntry.error().get().message()).isEqualTo("567__");
         assertThat(errorEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
 
         Trace.Entry fatalEntry = entries.get(2);
         assertThat(fatalEntry.message()).isEqualTo("log fatal (localized): fgh____");
         assertThat(fatalEntry.error().get().message()).isEqualTo("678__");
         assertThat(fatalEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
     }
 
     @Test
@@ -392,14 +392,14 @@ public class Log4jTest {
         assertThat(header.entryCount()).isZero();
     }
 
-    public static class ShouldLog implements AppUnderTest, TraceMarker {
+    public static class ShouldLog implements AppUnderTest, TransactionMarker {
         private static final Logger logger = Logger.getLogger(ShouldLog.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             logger.trace("abc");
             logger.debug("bcd");
             logger.info("cde");
@@ -409,14 +409,14 @@ public class Log4jTest {
         }
     }
 
-    public static class ShouldLogWithThrowable implements AppUnderTest, TraceMarker {
+    public static class ShouldLogWithThrowable implements AppUnderTest, TransactionMarker {
         private static final Logger logger = Logger.getLogger(ShouldLogWithThrowable.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             logger.trace("abc_", new IllegalStateException("123"));
             logger.debug("bcd_", new IllegalStateException("234"));
             logger.info("cde_", new IllegalStateException("345"));
@@ -426,14 +426,14 @@ public class Log4jTest {
         }
     }
 
-    public static class ShouldLogWithNullThrowable implements AppUnderTest, TraceMarker {
+    public static class ShouldLogWithNullThrowable implements AppUnderTest, TransactionMarker {
         private static final Logger logger = Logger.getLogger(ShouldLogWithNullThrowable.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             logger.trace("abc_", null);
             logger.debug("bcd_", null);
             logger.info("cde_", null);
@@ -443,14 +443,14 @@ public class Log4jTest {
         }
     }
 
-    public static class ShouldLogWithPriority implements AppUnderTest, TraceMarker {
+    public static class ShouldLogWithPriority implements AppUnderTest, TransactionMarker {
         private static final Logger logger = Logger.getLogger(ShouldLogWithPriority.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             try {
                 logger.log(null, "abc__");
             } catch (NullPointerException e) {
@@ -468,15 +468,16 @@ public class Log4jTest {
         }
     }
 
-    public static class ShouldLogWithPriorityAndThrowable implements AppUnderTest, TraceMarker {
+    public static class ShouldLogWithPriorityAndThrowable
+            implements AppUnderTest, TransactionMarker {
         private static final Logger logger =
                 Logger.getLogger(ShouldLogWithPriorityAndThrowable.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             try {
                 logger.log(null, "abc___", new IllegalStateException("123_"));
             } catch (NullPointerException e) {
@@ -494,15 +495,16 @@ public class Log4jTest {
         }
     }
 
-    public static class ShouldLogWithPriorityAndNullThrowable implements AppUnderTest, TraceMarker {
+    public static class ShouldLogWithPriorityAndNullThrowable
+            implements AppUnderTest, TransactionMarker {
         private static final Logger logger =
                 Logger.getLogger(ShouldLogWithPriorityAndNullThrowable.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             logger.log(Level.TRACE, "abc___null", null);
             logger.log(Level.DEBUG, "bcd___null", null);
             logger.log(Level.INFO, "cde___null", null);
@@ -512,14 +514,14 @@ public class Log4jTest {
         }
     }
 
-    public static class ShouldLocalizedLog implements AppUnderTest, TraceMarker {
+    public static class ShouldLocalizedLog implements AppUnderTest, TransactionMarker {
         private static final Logger logger = Logger.getLogger(ShouldLocalizedLog.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             try {
                 logger.l7dlog(null, "abc____", new IllegalStateException("123__"));
             } catch (NullPointerException e) {
@@ -537,15 +539,16 @@ public class Log4jTest {
         }
     }
 
-    public static class ShouldLocalizedLogWithNullThrowable implements AppUnderTest, TraceMarker {
+    public static class ShouldLocalizedLogWithNullThrowable
+            implements AppUnderTest, TransactionMarker {
         private static final Logger logger =
                 Logger.getLogger(ShouldLocalizedLogWithNullThrowable.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             logger.l7dlog(Level.TRACE, "abc____null", null);
             logger.l7dlog(Level.DEBUG, "bcd____null", null);
             logger.l7dlog(Level.INFO, "cde____null", null);
@@ -555,15 +558,16 @@ public class Log4jTest {
         }
     }
 
-    public static class ShouldLocalizedLogWithParameters implements AppUnderTest, TraceMarker {
+    public static class ShouldLocalizedLogWithParameters
+            implements AppUnderTest, TransactionMarker {
         private static final Logger logger =
                 Logger.getLogger(ShouldLocalizedLogWithParameters.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             try {
                 logger.l7dlog(null, "abc____", new Object[] {"a", "b", "c"},
                         new IllegalStateException("123__"));
@@ -588,15 +592,16 @@ public class Log4jTest {
         }
     }
 
-    public static class ShouldLocalizedLogWithEmptyParameters implements AppUnderTest, TraceMarker {
+    public static class ShouldLocalizedLogWithEmptyParameters
+            implements AppUnderTest, TransactionMarker {
         private static final Logger logger =
                 Logger.getLogger(ShouldLocalizedLogWithEmptyParameters.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             try {
                 logger.l7dlog(null, "abc____", new Object[] {"a", "b", "c"},
                         new IllegalStateException("123__"));
@@ -622,15 +627,15 @@ public class Log4jTest {
     }
 
     public static class ShouldLocalizedLogWithParametersAndNullThrowable
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private static final Logger logger =
                 Logger.getLogger(ShouldLocalizedLogWithParametersAndNullThrowable.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             logger.l7dlog(Level.TRACE, "abc____null", new Object[] {"a_", "b_", "c_"}, null);
             logger.l7dlog(Level.DEBUG, "bcd____null", new Object[] {"b_", "c_", "d_"}, null);
             logger.l7dlog(Level.INFO, "cde____null", new Object[] {"c_", "d_", "e_"}, null);

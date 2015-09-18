@@ -15,7 +15,7 @@
  */
 package org.glowroot.container;
 
-public interface TraceMarker {
+public interface TransactionMarker {
 
-    void traceMarker() throws Exception;
+    void transactionMarker() throws Exception;
 }

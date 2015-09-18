@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 
 public class ThreadInterruptTest {
 
@@ -53,16 +53,16 @@ public class ThreadInterruptTest {
         container.getTraceService().getLastTrace();
     }
 
-    public static class ShouldInterrupt implements AppUnderTest, TraceMarker {
+    public static class ShouldInterrupt implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
             if (!Thread.interrupted()) {
                 throw new IllegalStateException("Interrupt was expected");
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Thread.currentThread().interrupt();
         }
     }

@@ -31,7 +31,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.tests.DetailMapTest.ShouldGenerateTraceWithNestedEntries;
 import org.glowroot.tests.ProfilingTest.ShouldGenerateTraceWithProfile;
@@ -115,13 +115,13 @@ public class ExportTest {
         container.interruptAppUnderTest();
     }
 
-    public static class ShouldWaitForInterrupt implements AppUnderTest, TraceMarker {
+    public static class ShouldWaitForInterrupt implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             try {
                 Thread.sleep(Long.MAX_VALUE);
             } catch (InterruptedException e) {

@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.config.TransactionConfig;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.tests.plugin.LogCauseAspect.LogCauseAdvice;
@@ -180,35 +180,36 @@ public class ErrorCaptureTest {
     }
 
     public static class ShouldCaptureErrorWithTraceEntryStackTrace
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             new LogError().addNestedErrorEntry();
         }
     }
 
-    public static class ShouldCaptureErrorWithCausalChain implements AppUnderTest, TraceMarker {
+    public static class ShouldCaptureErrorWithCausalChain
+            implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             new LogCause().log("abc");
         }
     }
 
-    public static class ShouldAddNestedErrorEntry implements AppUnderTest, TraceMarker {
+    public static class ShouldAddNestedErrorEntry implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             new LogError().addNestedErrorEntry();
         }
     }

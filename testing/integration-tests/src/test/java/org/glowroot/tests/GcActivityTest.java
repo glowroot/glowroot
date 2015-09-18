@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.config.AdvancedConfig;
 import org.glowroot.container.trace.Trace;
 
@@ -71,13 +71,13 @@ public class GcActivityTest {
         assertThat(header.gcActivities()).isEmpty();
     }
 
-    public static class GenerateTraceWithGc implements AppUnderTest, TraceMarker {
+    public static class GenerateTraceWithGc implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             System.gc();
         }
     }

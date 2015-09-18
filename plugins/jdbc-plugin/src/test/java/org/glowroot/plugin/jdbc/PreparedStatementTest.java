@@ -34,7 +34,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.aggregate.Query;
 import org.glowroot.container.trace.Trace;
 
@@ -391,19 +391,19 @@ public class PreparedStatementTest {
     }
 
     public static class ExecutePreparedStatementAndIterateOverResults
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             PreparedStatement preparedStatement =
                     connection.prepareStatement("select * from employee where name like ?");
             try {
@@ -420,19 +420,19 @@ public class PreparedStatementTest {
     }
 
     public static class ExecutePreparedStatementQueryAndIterateOverResults
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             PreparedStatement preparedStatement =
                     connection.prepareStatement("select * from employee where name like ?");
             try {
@@ -447,19 +447,19 @@ public class PreparedStatementTest {
         }
     }
 
-    public static class ExecutePreparedStatementUpdate implements AppUnderTest, TraceMarker {
+    public static class ExecutePreparedStatementUpdate implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             PreparedStatement preparedStatement =
                     connection.prepareStatement("update employee set name = ?");
             try {
@@ -472,19 +472,19 @@ public class PreparedStatementTest {
     }
 
     public static class ExecutePreparedStatementLargeParamSetFirst
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             String sql = "select * from employee where name like ?";
             for (int i = 0; i < 99; i++) {
                 sql += " and name like ?";
@@ -506,7 +506,7 @@ public class PreparedStatementTest {
         }
     }
 
-    public static class PreparedStatementNullSql implements AppUnderTest, TraceMarker {
+    public static class PreparedStatementNullSql implements AppUnderTest, TransactionMarker {
         private Connection delegatingConnection;
         @Override
         public void executeApp() throws Exception {
@@ -518,18 +518,19 @@ public class PreparedStatementTest {
                 }
             };
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             delegatingConnection.prepareStatement(null);
         }
     }
 
-    public static class ExecutePreparedStatementThrowing implements AppUnderTest, TraceMarker {
+    public static class ExecutePreparedStatementThrowing
+            implements AppUnderTest, TransactionMarker {
         private Connection delegatingConnection;
         @Override
         public void executeApp() throws Exception {
@@ -546,13 +547,13 @@ public class PreparedStatementTest {
                 }
             };
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             PreparedStatement preparedStatement = delegatingConnection
                     .prepareStatement("select * from employee where name like ?");
             try {
@@ -566,19 +567,19 @@ public class PreparedStatementTest {
     }
 
     public static class ExecutePreparedStatementWithTonsOfBindParametersAndIterateOverResults
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             StringBuilder sql = new StringBuilder("select * from employee where name like ?");
             for (int i = 0; i < 200; i++) {
                 sql.append(" and name like ?");
@@ -599,19 +600,20 @@ public class PreparedStatementTest {
         }
     }
 
-    public static class ExecutePreparedStatementWithSetNull implements AppUnderTest, TraceMarker {
+    public static class ExecutePreparedStatementWithSetNull
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             PreparedStatement preparedStatement =
                     connection.prepareStatement("insert into employee (name, misc) values (?, ?)");
             try {
@@ -624,7 +626,8 @@ public class PreparedStatementTest {
         }
     }
 
-    public static class ExecutePreparedStatementWithBinary implements AppUnderTest, TraceMarker {
+    public static class ExecutePreparedStatementWithBinary
+            implements AppUnderTest, TransactionMarker {
         static {
             JdbcPluginProperties.setDisplayBinaryParameterAsHex(
                     "insert into employee (name, misc) values (?, ?)", 2);
@@ -634,13 +637,13 @@ public class PreparedStatementTest {
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             byte[] bytes = new byte[10];
             for (int i = 0; i < 10; i++) {
                 bytes[i] = (byte) i;
@@ -664,7 +667,7 @@ public class PreparedStatementTest {
     }
 
     public static class ExecutePreparedStatementWithBinaryUsingSetObject
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         static {
             JdbcPluginProperties.setDisplayBinaryParameterAsHex(
                     "insert into employee (name, misc) values (?, ?)", 2);
@@ -674,13 +677,13 @@ public class PreparedStatementTest {
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             byte[] bytes = new byte[10];
             for (int i = 0; i < 10; i++) {
                 bytes[i] = (byte) i;
@@ -704,19 +707,19 @@ public class PreparedStatementTest {
     }
 
     public static class ExecutePreparedStatementWithBinaryStream
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             byte[] bytes = new byte[10];
             for (int i = 0; i < 10; i++) {
                 bytes[i] = (byte) i;
@@ -734,19 +737,19 @@ public class PreparedStatementTest {
     }
 
     public static class ExecutePreparedStatementWithCharacterStream
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             PreparedStatement preparedStatement =
                     connection.prepareStatement("insert into employee (name, misc2) values (?, ?)");
             try {
@@ -759,19 +762,20 @@ public class PreparedStatementTest {
         }
     }
 
-    public static class ExecutePreparedStatementWithClear implements AppUnderTest, TraceMarker {
+    public static class ExecutePreparedStatementWithClear
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             PreparedStatement preparedStatement =
                     connection.prepareStatement("select * from employee where name like ?");
             try {
@@ -790,19 +794,19 @@ public class PreparedStatementTest {
     }
 
     public static class ExecutePreparedStatementThatHasInternalGlowrootToken
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             PreparedStatement preparedStatement =
                     connection.prepareStatement("select * from employee where name like ?");
             try {

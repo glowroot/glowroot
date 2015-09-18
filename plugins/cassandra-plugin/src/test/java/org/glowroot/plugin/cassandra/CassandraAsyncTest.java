@@ -30,7 +30,7 @@ import org.junit.Test;
 
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.aggregate.Query;
 import org.glowroot.container.trace.Trace;
 
@@ -123,19 +123,19 @@ public class CassandraAsyncTest {
                 + " INSERT INTO test.users (id,  fname, lname) VALUES (300, 'f300', 'l300')");
     }
 
-    public static class ExecuteAsyncStatement implements AppUnderTest, TraceMarker {
+    public static class ExecuteAsyncStatement implements AppUnderTest, TransactionMarker {
 
         private Session session;
 
         @Override
         public void executeApp() throws Exception {
             session = Sessions.createSession();
-            traceMarker();
+            transactionMarker();
             Sessions.closeSession(session);
         }
 
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             ResultSet results = session.executeAsync("SELECT * FROM test.users").get();
             for (Row row : results) {
                 row.getInt("id");
@@ -143,19 +143,19 @@ public class CassandraAsyncTest {
         }
     }
 
-    public static class AsyncIterateUsingOneAndAll implements AppUnderTest, TraceMarker {
+    public static class AsyncIterateUsingOneAndAll implements AppUnderTest, TransactionMarker {
 
         private Session session;
 
         @Override
         public void executeApp() throws Exception {
             session = Sessions.createSession();
-            traceMarker();
+            transactionMarker();
             Sessions.closeSession(session);
         }
 
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             ResultSet results = session.executeAsync("SELECT * FROM test.users").get();
             results.one();
             results.one();
@@ -164,19 +164,19 @@ public class CassandraAsyncTest {
         }
     }
 
-    public static class AsyncExecuteBoundStatement implements AppUnderTest, TraceMarker {
+    public static class AsyncExecuteBoundStatement implements AppUnderTest, TransactionMarker {
 
         private Session session;
 
         @Override
         public void executeApp() throws Exception {
             session = Sessions.createSession();
-            traceMarker();
+            transactionMarker();
             Sessions.closeSession(session);
         }
 
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             PreparedStatement preparedStatement =
                     session.prepare("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
             BoundStatement boundStatement = new BoundStatement(preparedStatement);
@@ -185,19 +185,19 @@ public class CassandraAsyncTest {
         }
     }
 
-    public static class AsyncExecuteBatchStatement implements AppUnderTest, TraceMarker {
+    public static class AsyncExecuteBatchStatement implements AppUnderTest, TransactionMarker {
 
         private Session session;
 
         @Override
         public void executeApp() throws Exception {
             session = Sessions.createSession();
-            traceMarker();
+            transactionMarker();
             Sessions.closeSession(session);
         }
 
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             BatchStatement batchStatement = new BatchStatement();
             batchStatement.add(session.newSimpleStatement(
                     "INSERT INTO test.users (id,  fname, lname) VALUES (100, 'f100', 'l100')"));

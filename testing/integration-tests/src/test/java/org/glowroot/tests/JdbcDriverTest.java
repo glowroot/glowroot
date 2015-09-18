@@ -23,10 +23,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.Containers;
-import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
+import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -59,13 +59,14 @@ public class JdbcDriverTest {
         assertThat(entries.get(0).message()).isEqualTo("major version");
     }
 
-    public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest, TraceMarker {
+    public static class ShouldGenerateTraceWithNestedEntries
+            implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             new MockDriver().getMajorVersion();
         }
     }

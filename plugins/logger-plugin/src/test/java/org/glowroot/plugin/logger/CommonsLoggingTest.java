@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.config.PluginConfig;
 import org.glowroot.container.trace.Trace;
 
@@ -88,19 +88,19 @@ public class CommonsLoggingTest {
         assertThat(warnEntry.message()).isEqualTo("log warn: def_");
         assertThat(warnEntry.error().get().message()).isEqualTo("456");
         assertThat(warnEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
         assertThat(errorEntry.message()).isEqualTo("log error: efg_");
         assertThat(errorEntry.error().get().message()).isEqualTo("567");
         assertThat(errorEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
 
         Trace.Entry fatalEntry = entries.get(2);
         assertThat(fatalEntry.message()).isEqualTo("log fatal: fgh_");
         assertThat(fatalEntry.error().get().message()).isEqualTo("678");
         assertThat(fatalEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("traceMarker");
+                .contains("transactionMarker");
     }
 
     @Test
@@ -140,14 +140,14 @@ public class CommonsLoggingTest {
         assertThat(header.entryCount()).isZero();
     }
 
-    public static class ShouldLog implements AppUnderTest, TraceMarker {
+    public static class ShouldLog implements AppUnderTest, TransactionMarker {
         private static final Log log = LogFactory.getLog(ShouldLog.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             log.trace("abc");
             log.debug("bcd");
             log.info("cde");
@@ -157,14 +157,14 @@ public class CommonsLoggingTest {
         }
     }
 
-    public static class ShouldLogWithThrowable implements AppUnderTest, TraceMarker {
+    public static class ShouldLogWithThrowable implements AppUnderTest, TransactionMarker {
         private static final Log log = LogFactory.getLog(ShouldLogWithThrowable.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             log.trace("abc_", new IllegalStateException("123"));
             log.debug("bcd_", new IllegalStateException("234"));
             log.info("cde_", new IllegalStateException("345"));
@@ -174,14 +174,14 @@ public class CommonsLoggingTest {
         }
     }
 
-    public static class ShouldLogWithNullThrowable implements AppUnderTest, TraceMarker {
+    public static class ShouldLogWithNullThrowable implements AppUnderTest, TransactionMarker {
         private static final Log log = LogFactory.getLog(ShouldLogWithNullThrowable.class);
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             log.trace("abc_", null);
             log.debug("bcd_", null);
             log.info("cde_", null);

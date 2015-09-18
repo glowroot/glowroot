@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.glowroot.Containers;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.trace.Trace;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -102,41 +102,42 @@ public class TimerTest {
         executorService.shutdown();
     }
 
-    public static class ShouldGenerateTraceWithTimers implements AppUnderTest, TraceMarker {
+    public static class ShouldGenerateTraceWithTimers implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws InterruptedException {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws InterruptedException {
+        public void transactionMarker() throws InterruptedException {
             Thread.sleep(1);
         }
     }
 
     public static class ShouldGenerateTraceWithRootAndSelfNestedTimer
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private int nestingLevel = 0;
         @Override
         public void executeApp() throws InterruptedException {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws InterruptedException {
+        public void transactionMarker() throws InterruptedException {
             Thread.sleep(1);
             if (nestingLevel < 10) {
                 nestingLevel++;
-                traceMarker();
+                transactionMarker();
             }
         }
     }
 
-    public static class ShouldGenerateActiveTraceWithTimers implements AppUnderTest, TraceMarker {
+    public static class ShouldGenerateActiveTraceWithTimers
+            implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             try {
                 Thread.sleep(Long.MAX_VALUE);
             } catch (InterruptedException e) {

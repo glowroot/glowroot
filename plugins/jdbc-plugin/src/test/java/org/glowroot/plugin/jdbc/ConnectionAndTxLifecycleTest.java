@@ -32,7 +32,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -250,7 +250,7 @@ public class ConnectionAndTxLifecycleTest {
     }
 
     public static class ExecuteGetConnectionAndConnectionClose
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private BasicDataSource dataSource;
         @Override
         public void executeApp() throws Exception {
@@ -260,16 +260,16 @@ public class ConnectionAndTxLifecycleTest {
             // BasicDataSource opens and closes a test connection on first getConnection(),
             // so just getting that out of the way before starting transaction
             dataSource.getConnection().close();
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             dataSource.getConnection().close();
         }
     }
 
     public static class ExecuteGetConnectionOnThrowingDataSource
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private BasicDataSource dataSource;
         @Override
         public void executeApp() throws Exception {
@@ -281,10 +281,10 @@ public class ConnectionAndTxLifecycleTest {
             };
             dataSource.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
             dataSource.setUrl("jdbc:hsqldb:mem:test");
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             try {
                 dataSource.getConnection();
             } catch (SQLException e) {
@@ -293,7 +293,7 @@ public class ConnectionAndTxLifecycleTest {
     }
 
     public static class ExecuteCloseConnectionOnThrowingDataSource
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
         private BasicDataSource dataSource;
         @Override
         public void executeApp() throws Exception {
@@ -320,10 +320,10 @@ public class ConnectionAndTxLifecycleTest {
             // BasicDataSource opens and closes a test connection on first getConnection(),
             // so just getting that out of the way before starting transaction
             dataSource.getConnection().close();
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             try {
                 dataSource.getConnection().close();
             } catch (SQLException e) {
@@ -331,25 +331,25 @@ public class ConnectionAndTxLifecycleTest {
         }
     }
 
-    public static class ExecuteSetAutoCommit implements AppUnderTest, TraceMarker {
+    public static class ExecuteSetAutoCommit implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
             connection = Connections.createConnection();
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             connection.setAutoCommit(false);
             connection.setAutoCommit(true);
         }
     }
 
-    public static class ExecuteSetAutoCommitThrowing implements AppUnderTest, TraceMarker {
+    public static class ExecuteSetAutoCommitThrowing implements AppUnderTest, TransactionMarker {
         private Connection connection;
         @Override
         public void executeApp() throws Exception {
@@ -360,13 +360,13 @@ public class ConnectionAndTxLifecycleTest {
                 }
             };
             try {
-                traceMarker();
+                transactionMarker();
             } finally {
                 Connections.closeConnection(connection);
             }
         }
         @Override
-        public void traceMarker() {
+        public void transactionMarker() {
             try {
                 connection.setAutoCommit(false);
             } catch (SQLException e) {

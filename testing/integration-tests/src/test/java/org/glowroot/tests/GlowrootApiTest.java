@@ -24,7 +24,7 @@ import org.glowroot.Containers;
 import org.glowroot.api.Glowroot;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 import org.glowroot.container.trace.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -135,107 +135,108 @@ public class GlowrootApiTest {
         assertThat(header).isNull();
     }
 
-    public static class SetTransactionType implements AppUnderTest, TraceMarker {
+    public static class SetTransactionType implements AppUnderTest, TransactionMarker {
 
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
 
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Glowroot.setTransactionType("a type");
         }
     }
 
-    public static class SetTransactionName implements AppUnderTest, TraceMarker {
+    public static class SetTransactionName implements AppUnderTest, TransactionMarker {
 
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
 
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Glowroot.setTransactionName("a name");
         }
     }
 
-    public static class SetTransactionErrorWithThrowable implements AppUnderTest, TraceMarker {
+    public static class SetTransactionErrorWithThrowable
+            implements AppUnderTest, TransactionMarker {
 
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
 
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Glowroot.setTransactionError(new IllegalStateException("abc"));
         }
     }
 
-    public static class SetTransactionErrorWithMessage implements AppUnderTest, TraceMarker {
+    public static class SetTransactionErrorWithMessage implements AppUnderTest, TransactionMarker {
 
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
 
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Glowroot.setTransactionError("xyz");
         }
     }
 
     public static class SetTransactionErrorWithMessageAndThrowable
-            implements AppUnderTest, TraceMarker {
+            implements AppUnderTest, TransactionMarker {
 
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
 
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Glowroot.setTransactionError("efg", new IllegalStateException("tuv"));
         }
     }
 
-    public static class SetTransactionUser implements AppUnderTest, TraceMarker {
+    public static class SetTransactionUser implements AppUnderTest, TransactionMarker {
 
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
 
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Glowroot.setTransactionUser("a user");
         }
     }
 
-    public static class AddTransactionCustomAttribute implements AppUnderTest, TraceMarker {
+    public static class AddTransactionCustomAttribute implements AppUnderTest, TransactionMarker {
 
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
 
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Glowroot.addTransactionCustomAttribute("an attr", "a val");
         }
     }
 
-    public static class SetTransactionSlowThreshold implements AppUnderTest, TraceMarker {
+    public static class SetTransactionSlowThreshold implements AppUnderTest, TransactionMarker {
 
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
 
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             Glowroot.setTransactionSlowThreshold(Long.MAX_VALUE, MILLISECONDS);
         }
     }

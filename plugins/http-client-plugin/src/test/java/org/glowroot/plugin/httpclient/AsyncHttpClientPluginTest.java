@@ -27,7 +27,7 @@ import org.glowroot.Containers;
 import org.glowroot.container.trace.Trace;
 import org.glowroot.container.AppUnderTest;
 import org.glowroot.container.Container;
-import org.glowroot.container.TraceMarker;
+import org.glowroot.container.TransactionMarker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -70,26 +70,26 @@ public class AsyncHttpClientPluginTest {
                 .isEqualTo("http client request: POST http://www.example.com/hello2");
     }
 
-    public static class ExecuteHttpGet implements AppUnderTest, TraceMarker {
+    public static class ExecuteHttpGet implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
             asyncHttpClient.prepareGet("http://www.example.com/hello1").execute().get();
             asyncHttpClient.close();
         }
     }
 
-    public static class ExecuteHttpPost implements AppUnderTest, TraceMarker {
+    public static class ExecuteHttpPost implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            traceMarker();
+            transactionMarker();
         }
         @Override
-        public void traceMarker() throws Exception {
+        public void transactionMarker() throws Exception {
             AsyncHttpClient asyncHttpClient = new AsyncHttpClient();
             asyncHttpClient.preparePost("http://www.example.com/hello2").execute().get();
             asyncHttpClient.close();
