@@ -66,20 +66,20 @@ public interface AggregateRepository {
                     throws Exception;
 
     // captureTimeFrom is non-inclusive
+    void mergeInOverallProfiles(ProfileCollector mergedProfile, String transactionType,
+            long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception;
+
+    // captureTimeFrom is non-inclusive
+    void mergeInTransactionProfiles(ProfileCollector mergedProfile, String transactionType,
+            String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
+                    throws Exception;
+
+    // captureTimeFrom is non-inclusive
     void mergeInOverallQueries(QueryCollector mergedQueries, String transactionType,
             long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception;
 
     // captureTimeFrom is non-inclusive
     void mergeInTransactionQueries(QueryCollector mergedQueries, String transactionType,
-            String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
-                    throws Exception;
-
-    // captureTimeFrom is non-inclusive
-    void mergeInOverallProfile(ProfileCollector mergedProfile, String transactionType,
-            long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception;
-
-    // captureTimeFrom is non-inclusive
-    void mergeInTransactionProfile(ProfileCollector mergedProfile, String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
                     throws Exception;
 

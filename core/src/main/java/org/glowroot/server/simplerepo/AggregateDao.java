@@ -36,13 +36,15 @@ import com.google.protobuf.AbstractMessageLite;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import org.checkerframework.checker.tainting.qual.Untainted;
+import org.immutables.value.Value;
 
-import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
 import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType;
 import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
+import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common.util.Styles;
 import org.glowroot.live.ImmutableErrorPoint;
 import org.glowroot.live.ImmutableOverallErrorSummary;
 import org.glowroot.live.ImmutableOverallSummary;
@@ -320,14 +322,54 @@ class AggregateDao implements AggregateRepository {
 
     // captureTimeFrom is non-inclusive
     @Override
+    public void mergeInOverallProfiles(ProfileCollector mergedProfile, String transactionType,
+            long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception {
+        // get list of capped ids first since that is done under the data source lock
+        // then do the expensive part of reading and constructing the protobuf messages outside of
+        // the data source lock
+        ImmutableList<CappedId> cappedIds = dataSource.query(
+                "select capture_time, profile_tree_capped_id from overall_aggregate_rollup_"
+                        + castUntainted(rollupLevel)
+                        + " where transaction_type = ? and capture_time > ?"
+                        + " and capture_time <= ? and profile_tree_capped_id >= ?",
+                new CappedIdRowMapper(), transactionType, captureTimeFrom, captureTimeTo,
+                rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
+        mergeInProfiles(mergedProfile, rollupLevel, cappedIds);
+    }
+
+    // captureTimeFrom is non-inclusive
+    @Override
+    public void mergeInTransactionProfiles(ProfileCollector mergedProfile, String transactionType,
+            String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
+                    throws Exception {
+        // get list of capped ids first since that is done under the data source lock
+        // then do the expensive part of reading and constructing the protobuf messages outside of
+        // the data source lock
+        ImmutableList<CappedId> cappedIds = dataSource.query(
+                "select capture_time, profile_tree_capped_id from transaction_aggregate_rollup_"
+                        + castUntainted(rollupLevel) + " where transaction_type = ?"
+                        + " and transaction_name = ? and capture_time > ? and capture_time <= ?"
+                        + " and profile_tree_capped_id >= ?",
+                new CappedIdRowMapper(), transactionType, transactionName, captureTimeFrom,
+                captureTimeTo, rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
+        mergeInProfiles(mergedProfile, rollupLevel, cappedIds);
+    }
+
+    // captureTimeFrom is non-inclusive
+    @Override
     public void mergeInOverallQueries(QueryCollector mergedQueries, String transactionType,
             long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception {
-        dataSource.query("select capture_time, queries_capped_id from overall_aggregate_rollup_"
-                + castUntainted(rollupLevel) + " where transaction_type = ? and capture_time > ?"
-                + " and capture_time <= ? and queries_capped_id >= ?  order by capture_time",
-                new MergedQueriesResultSetExtractor(mergedQueries, rollupLevel), transactionType,
-                captureTimeFrom, captureTimeTo,
+        // get list of capped ids first since that is done under the data source lock
+        // then do the expensive part of reading and constructing the protobuf messages outside of
+        // the data source lock
+        ImmutableList<CappedId> cappedIds = dataSource.query(
+                "select capture_time, queries_capped_id from overall_aggregate_rollup_"
+                        + castUntainted(rollupLevel)
+                        + " where transaction_type = ? and capture_time > ?"
+                        + " and capture_time <= ? and queries_capped_id >= ? order by capture_time",
+                new CappedIdRowMapper(), transactionType, captureTimeFrom, captureTimeTo,
                 rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
+        mergeInQueries(mergedQueries, rollupLevel, cappedIds);
     }
 
     // captureTimeFrom is non-inclusive
@@ -335,44 +377,17 @@ class AggregateDao implements AggregateRepository {
     public void mergeInTransactionQueries(QueryCollector mergedQueries, String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
                     throws Exception {
-        dataSource.query(
+        // get list of capped ids first since that is done under the data source lock
+        // then do the expensive part of reading and constructing the protobuf messages outside of
+        // the data source lock
+        ImmutableList<CappedId> cappedIds = dataSource.query(
                 "select capture_time, queries_capped_id from transaction_aggregate_rollup_"
                         + castUntainted(rollupLevel) + " where transaction_type = ?"
                         + " and transaction_name = ? and capture_time > ? and capture_time <= ?"
                         + " and queries_capped_id >= ? order by capture_time",
-                new MergedQueriesResultSetExtractor(mergedQueries, rollupLevel), transactionType,
-                transactionName, captureTimeFrom, captureTimeTo,
-                rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
-    }
-
-    // captureTimeFrom is non-inclusive
-    @Override
-    public void mergeInOverallProfile(ProfileCollector mergedProfile, String transactionType,
-            long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception {
-        dataSource
-                .query("select capture_time, profile_tree_capped_id from overall_aggregate_rollup_"
-                        + castUntainted(rollupLevel)
-                        + " where transaction_type = ? and capture_time > ?"
-                        + " and capture_time <= ? and profile_tree_capped_id >= ?",
-                        new ProfileMergingResultSetExtractor(mergedProfile, rollupLevel),
-                        transactionType,
-                        captureTimeFrom, captureTimeTo,
-                        rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
-    }
-
-    // captureTimeFrom is non-inclusive
-    @Override
-    public void mergeInTransactionProfile(ProfileCollector mergedProfile, String transactionType,
-            String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
-                    throws Exception {
-        dataSource.query(
-                "select capture_time, profile_tree_capped_id from transaction_aggregate_rollup_"
-                        + castUntainted(rollupLevel) + " where transaction_type = ?"
-                        + " and transaction_name = ? and capture_time > ? and capture_time <= ?"
-                        + " and profile_tree_capped_id >= ?",
-                new ProfileMergingResultSetExtractor(mergedProfile, rollupLevel), transactionType,
-                transactionName, captureTimeFrom, captureTimeTo,
-                rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
+                new CappedIdRowMapper(), transactionType, transactionName, captureTimeFrom,
+                captureTimeTo, rollupCappedDatabases.get(rollupLevel).getSmallestNonExpiredId());
+        mergeInQueries(mergedQueries, rollupLevel, cappedIds);
     }
 
     @Override
@@ -630,6 +645,34 @@ class AggregateDao implements AggregateRepository {
                 new TransactionSummaryRowMapper(), query.transactionType(), query.from(),
                 lastRollupTime, query.transactionType(), lastRollupTime, query.to(),
                 query.limit() + 1);
+    }
+
+    private void mergeInProfiles(ProfileCollector mergedProfile, int rollupLevel,
+            ImmutableList<CappedId> cappedIds) throws IOException {
+        long captureTime = Long.MIN_VALUE;
+        for (CappedId cappedId : cappedIds) {
+            captureTime = Math.max(captureTime, cappedId.captureTime());
+            ProfileTree profileTree = rollupCappedDatabases.get(rollupLevel)
+                    .readMessage(cappedId.cappedId(), ProfileTree.parser());
+            if (profileTree != null) {
+                mergedProfile.mergeProfileTree(profileTree);
+                mergedProfile.updateLastCaptureTime(captureTime);
+            }
+        }
+    }
+
+    private void mergeInQueries(QueryCollector mergedQueries, int rollupLevel,
+            ImmutableList<CappedId> cappedIds) throws IOException {
+        long captureTime = Long.MIN_VALUE;
+        for (CappedId cappedId : cappedIds) {
+            captureTime = Math.max(captureTime, cappedId.captureTime());
+            List<Aggregate.QueriesByType> queries = rollupCappedDatabases.get(rollupLevel)
+                    .readMessages(cappedId.cappedId(), Aggregate.QueriesByType.parser());
+            if (queries != null) {
+                mergedQueries.mergeQueries(queries);
+                mergedQueries.updateLastCaptureTime(captureTime);
+            }
+        }
     }
 
     // captureTimeFrom is non-inclusive
@@ -943,60 +986,18 @@ class AggregateDao implements AggregateRepository {
         }
     }
 
-    private class ProfileMergingResultSetExtractor
-            implements ResultSetExtractor</*@Nullable*/Void> {
-
-        private final ProfileCollector mergedProfile;
-        private final int rollupLevel;
-
-        public ProfileMergingResultSetExtractor(ProfileCollector mergedProfile, int rollupLevel) {
-            this.mergedProfile = mergedProfile;
-            this.rollupLevel = rollupLevel;
-        }
-
+    private static class CappedIdRowMapper implements RowMapper<CappedId> {
         @Override
-        public @Nullable Void extractData(ResultSet resultSet) throws Exception {
-            if (!resultSet.next()) {
-                return null;
-            }
-            long captureTime = Long.MIN_VALUE;
-            while (resultSet.next()) {
-                captureTime = Math.max(captureTime, resultSet.getLong(1));
-                ProfileTree profileTree = rollupCappedDatabases.get(rollupLevel)
-                        .readMessage(resultSet.getLong(2), ProfileTree.parser());
-                if (profileTree != null) {
-                    mergedProfile.mergeProfileTree(profileTree);
-                    mergedProfile.updateLastCaptureTime(captureTime);
-                }
-            }
-            return null;
+        public CappedId mapRow(ResultSet resultSet) throws Exception {
+            return ImmutableCappedId.of(resultSet.getLong(1), resultSet.getLong(2));
         }
     }
 
-    private class MergedQueriesResultSetExtractor implements ResultSetExtractor</*@Nullable*/Void> {
-
-        private final QueryCollector mergedQueries;
-        private final int rollupLevel;
-
-        public MergedQueriesResultSetExtractor(QueryCollector mergedQueries, int rollupLevel) {
-            this.mergedQueries = mergedQueries;
-            this.rollupLevel = rollupLevel;
-        }
-
-        @Override
-        public @Nullable Void extractData(ResultSet resultSet) throws Exception {
-            long captureTime = Long.MIN_VALUE;
-            while (resultSet.next()) {
-                captureTime = Math.max(captureTime, resultSet.getLong(1));
-                List<Aggregate.QueriesByType> queries = rollupCappedDatabases.get(rollupLevel)
-                        .readMessages(resultSet.getLong(2), Aggregate.QueriesByType.parser());
-                if (queries != null) {
-                    mergedQueries.mergeQueries(queries);
-                    mergedQueries.updateLastCaptureTime(captureTime);
-                }
-            }
-            return null;
-        }
+    @Value.Immutable
+    @Styles.AllParameters
+    interface CappedId {
+        long captureTime();
+        long cappedId();
     }
 
     private static class LongRowMapper implements RowMapper<Long> {

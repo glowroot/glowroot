@@ -353,10 +353,10 @@ class TransactionCommonService {
             @Nullable String transactionName, long from, long to, int rollupLevel)
                     throws Exception {
         if (transactionName == null) {
-            aggregateRepository.mergeInOverallProfile(mergedProfile, transactionType, from, to,
+            aggregateRepository.mergeInOverallProfiles(mergedProfile, transactionType, from, to,
                     rollupLevel);
         } else {
-            aggregateRepository.mergeInTransactionProfile(mergedProfile, transactionType,
+            aggregateRepository.mergeInTransactionProfiles(mergedProfile, transactionType,
                     transactionName, from, to, rollupLevel);
         }
     }
