@@ -47,8 +47,6 @@ import org.glowroot.common.config.PluginDescriptor;
 import org.glowroot.common.config.PropertyDescriptor;
 import org.glowroot.common.util.ObjectMappers;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 @Value.Immutable
 public abstract class PluginCache {
 
@@ -67,7 +65,7 @@ public abstract class PluginCache {
     public abstract ImmutableList<PluginDescriptor> pluginDescriptors();
 
     public static PluginCache create(@Nullable File glowrootJarFile, boolean viewerModeEnabled)
-            throws URISyntaxException, IOException {
+            throws Exception {
         ImmutablePluginCache.Builder builder = ImmutablePluginCache.builder();
         List<URL> descriptorURLs = Lists.newArrayList();
         if (glowrootJarFile != null) {
@@ -179,9 +177,7 @@ public abstract class PluginCache {
     @VisibleForTesting
     static final class PluginDescriptorOrdering extends Ordering<PluginDescriptor> {
         @Override
-        public int compare(@Nullable PluginDescriptor left, @Nullable PluginDescriptor right) {
-            checkNotNull(left);
-            checkNotNull(right);
+        public int compare(PluginDescriptor left, PluginDescriptor right) {
             // conventionally plugin names ends with " Plugin", so strip this off when
             // comparing names so that, e.g., "Abc Plugin" will come before
             // "Abc Extra Plugin"

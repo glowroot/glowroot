@@ -6,14 +6,13 @@ package org_glowroot_collector_spi_model;
 
 option java_package = "org.glowroot.collector.spi.model";
 
+  // aggregates use double instead of int64 to avoid (unlikely) 292 year nanosecond rollover
 message Aggregate {
 
   int64 capture_time = 1;
-  // aggregates use double instead of int64 to avoid (unlikely) 292 year nanosecond rollover
   double total_nanos = 2;
   int64 transaction_count = 3;
   int64 error_count = 4;
-  // aggregates use double instead of int64 to avoid (unlikely) 292 year nanosecond rollover
   double total_cpu_nanos = 5; // -1 means N/A
   double total_blocked_nanos = 6; // -1 means N/A
   double total_waited_nanos = 7; // -1 means N/A
@@ -38,7 +37,6 @@ message Aggregate {
     // name is null for synthetic root
     string name = 1;
     bool extended = 2;
-    // aggregates use double instead of int64 to avoid (unlikely) 292 year nanosecond rollover
     double total_nanos = 3;
     int64 count = 4;
     repeated Timer child_timer = 5;
@@ -52,7 +50,6 @@ message Aggregate {
 
   message Query {
     string text = 1;
-    // aggregates use double instead of int64 to avoid (unlikely) 292 year nanosecond rollover
     double total_nanos = 2;
     int64 total_rows = 3;
     int64 execution_count = 4;

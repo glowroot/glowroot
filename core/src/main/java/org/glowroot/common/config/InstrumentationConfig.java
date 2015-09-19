@@ -84,7 +84,7 @@ public abstract class InstrumentationConfig {
         return "";
     }
 
-    public abstract Map<String, String> transactionCustomAttributeTemplates();
+    public abstract Map<String, String> transactionAttributeTemplates();
 
     public abstract @Nullable Long transactionSlowThresholdMillis();
 

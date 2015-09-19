@@ -55,7 +55,7 @@ public class QuartzPluginTest {
     @Test
     public void shouldCaptureJobExecution() throws Exception {
         container.executeAppUnderTest(ExecuteJob.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.transactionType()).isEqualTo("Background");
         assertThat(header.transactionName()).isEqualTo("Quartz job: ajob");
         assertThat(header.headline()).isEqualTo("Quartz job: ajob");

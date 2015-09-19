@@ -55,10 +55,7 @@ class TransactionCommonService {
     private static final Ordering<TransactionSummary> orderingByTotalTimeDesc =
             new Ordering<TransactionSummary>() {
                 @Override
-                public int compare(@Nullable TransactionSummary left,
-                        @Nullable TransactionSummary right) {
-                    checkNotNull(left);
-                    checkNotNull(right);
+                public int compare(TransactionSummary left, TransactionSummary right) {
                     return Doubles.compare(right.totalNanos(), left.totalNanos());
                 }
             };
@@ -66,10 +63,7 @@ class TransactionCommonService {
     private static final Ordering<TransactionSummary> orderingByAverageTimeDesc =
             new Ordering<TransactionSummary>() {
                 @Override
-                public int compare(@Nullable TransactionSummary left,
-                        @Nullable TransactionSummary right) {
-                    checkNotNull(left);
-                    checkNotNull(right);
+                public int compare(TransactionSummary left, TransactionSummary right) {
                     return Doubles.compare(right.totalNanos() / right.transactionCount(),
                             left.totalNanos() / left.transactionCount());
                 }
@@ -78,10 +72,7 @@ class TransactionCommonService {
     private static final Ordering<TransactionSummary> orderingByTransactionCountDesc =
             new Ordering<TransactionSummary>() {
                 @Override
-                public int compare(@Nullable TransactionSummary left,
-                        @Nullable TransactionSummary right) {
-                    checkNotNull(left);
-                    checkNotNull(right);
+                public int compare(TransactionSummary left, TransactionSummary right) {
                     return Longs.compare(right.transactionCount(), left.transactionCount());
                 }
             };

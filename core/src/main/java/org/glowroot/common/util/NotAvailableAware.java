@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.markers;
+package org.glowroot.common.util;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Target;
+public class NotAvailableAware {
 
-import static java.lang.annotation.ElementType.TYPE;
+    public static final int NA = -1;
 
-// this is helpful to know when refactoring and when running tools to find unused code
-@Documented
-@Target(TYPE)
-public @interface UsedByJsonBinding {}
+    private NotAvailableAware() {}
+
+    public static double add(double x, double y) {
+        if (isNA(x)) {
+            return y;
+        }
+        if (isNA(y)) {
+            return x;
+        }
+        return x + y;
+    }
+
+    public static boolean isNA(double value) {
+        return value == NA;
+    }
+}

@@ -55,7 +55,7 @@ public class BindMethodMetaTest {
         // when
         container.executeAppUnderTest(ShouldCoverBindMethodMetas.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries.get(0).message()).isEqualTo("Coverage get: false");
         assertThat(entries.get(1).message()).isEqualTo("Coverage get: 100");

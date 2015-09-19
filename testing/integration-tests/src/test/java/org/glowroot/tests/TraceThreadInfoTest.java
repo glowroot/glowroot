@@ -60,7 +60,7 @@ public class TraceThreadInfoTest {
         // when
         container.executeAppUnderTest(ShouldUseCpu.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.threadCpuNanos().get()).isGreaterThanOrEqualTo(MILLISECONDS.toNanos(10));
     }
 
@@ -70,7 +70,7 @@ public class TraceThreadInfoTest {
         // when
         container.executeAppUnderTest(ShouldWait.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.threadWaitedNanos().get()).isGreaterThanOrEqualTo(5);
     }
 
@@ -80,7 +80,7 @@ public class TraceThreadInfoTest {
         // when
         container.executeAppUnderTest(ShouldBlock.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.threadBlockedNanos().get()).isGreaterThanOrEqualTo(5);
     }
 

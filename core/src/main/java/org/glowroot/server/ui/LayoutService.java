@@ -125,9 +125,9 @@ class LayoutService {
         // add the rest alphabetical
         orderedTransactionTypes
                 .addAll(Ordering.from(String.CASE_INSENSITIVE_ORDER).sortedCopy(transactionTypes));
-        Set<String> transactionCustomAttributes = Sets.newTreeSet();
+        Set<String> transactionAttributes = Sets.newTreeSet();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            transactionCustomAttributes.addAll(pluginDescriptor.transactionCustomAttributes());
+            transactionAttributes.addAll(pluginDescriptor.transactionAttributes());
         }
         List<Long> rollupExpirationMillis = Lists.newArrayList();
         for (long hours : configRepository.getStorageConfig().rollupExpirationHours()) {
@@ -143,7 +143,7 @@ class LayoutService {
                 .addAllTransactionTypes(orderedTransactionTypes)
                 .defaultTransactionType(defaultDisplayedTransactionType)
                 .addAllDefaultPercentiles(userInterfaceConfig.defaultDisplayedPercentiles())
-                .addAllTransactionCustomAttributes(transactionCustomAttributes)
+                .addAllTransactionAttributes(transactionAttributes)
                 .addAllRollupConfigs(configRepository.getRollupConfigs())
                 .addAllRollupExpirationMillis(rollupExpirationMillis)
                 .gaugeCollectionIntervalMillis(configRepository.getGaugeCollectionIntervalMillis())
@@ -161,7 +161,7 @@ class LayoutService {
         abstract ImmutableList<String> transactionTypes();
         abstract String defaultTransactionType();
         abstract ImmutableList<Double> defaultPercentiles();
-        abstract ImmutableList<String> transactionCustomAttributes();
+        abstract ImmutableList<String> transactionAttributes();
         abstract ImmutableList<RollupConfig> rollupConfigs();
         abstract ImmutableList<Long> rollupExpirationMillis();
         abstract long gaugeCollectionIntervalMillis();

@@ -65,7 +65,7 @@ public class ResponseHeaderTest {
         // when
         container.executeAppUnderTest(SetStandardResponseHeaders.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
                 (Map<String, Object>) header.detail().get("Response headers");
@@ -83,7 +83,7 @@ public class ResponseHeaderTest {
         // when
         container.executeAppUnderTest(SetStandardResponseHeadersUsingSetHeader.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
                 (Map<String, Object>) header.detail().get("Response headers");
@@ -101,7 +101,7 @@ public class ResponseHeaderTest {
         // when
         container.executeAppUnderTest(SetStandardResponseHeadersUsingAddHeader.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
                 (Map<String, Object>) header.detail().get("Response headers");
@@ -119,7 +119,7 @@ public class ResponseHeaderTest {
         // when
         container.executeAppUnderTest(SetStandardResponseHeadersLowercase.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
                 (Map<String, Object>) header.detail().get("Response headers");
@@ -135,7 +135,7 @@ public class ResponseHeaderTest {
         // when
         container.executeAppUnderTest(SetStandardResponseHeaders.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.detail()).doesNotContainKey("Response headers");
     }
 
@@ -146,7 +146,7 @@ public class ResponseHeaderTest {
         // when
         container.executeAppUnderTest(SetStandardResponseHeaders.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.detail()).doesNotContainKey("Response headers");
     }
 
@@ -157,7 +157,7 @@ public class ResponseHeaderTest {
         // when
         container.executeAppUnderTest(SetStandardResponseHeadersUsingSetHeader.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.detail()).doesNotContainKey("Response headers");
     }
 
@@ -168,7 +168,7 @@ public class ResponseHeaderTest {
         // when
         container.executeAppUnderTest(SetStandardResponseHeadersUsingAddHeader.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.detail()).doesNotContainKey("Response headers");
     }
 
@@ -180,7 +180,7 @@ public class ResponseHeaderTest {
         // when
         container.executeAppUnderTest(SetLotsOfResponseHeaders.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         @SuppressWarnings("unchecked")
         Map<String, Object> responseHeaders =
                 (Map<String, Object>) header.detail().get("Response headers");
@@ -213,7 +213,7 @@ public class ResponseHeaderTest {
         // when
         container.executeAppUnderTest(SetStandardResponseHeadersOutsideServlet.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header).isNull();
         // basically just testing that it should not generate any errors
     }

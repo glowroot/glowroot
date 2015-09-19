@@ -39,7 +39,7 @@ glowroot.controller('TransactionAverageCtrl', [
       refreshData();
     });
 
-    $scope.clickTopRadioButton = function (item, event) {
+    $scope.clickTopRadioButton = function (item) {
       if (item === 'average') {
         $scope.$parent.chartRefresh++;
       } else {

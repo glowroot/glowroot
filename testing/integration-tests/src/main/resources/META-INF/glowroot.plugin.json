@@ -4,7 +4,7 @@
   "transactionTypes": [
     "Integration test"
   ],
-  "transactionCustomAttributes": [
+  "transactionAttributes": [
     "Zee One",
     "Yee Two",
     "Xee Three",
@@ -110,7 +110,7 @@
       "captureKind": "other",
       "transactionNameTemplate": "{{0}} {{1.nested.name}}",
       "transactionUserTemplate": "u{{1.nested.name}}",
-      "transactionCustomAttributeTemplates": {
+      "transactionAttributeTemplates": {
         "View": "v{{0}}",
         "Z": "z{{0}}"
       }

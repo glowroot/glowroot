@@ -32,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.GlowrootModule.BaseDirLockedException;
-import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.common.util.OnlyUsedByTests;
 
 public class MainEntryPoint {
 

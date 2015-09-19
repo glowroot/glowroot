@@ -63,7 +63,7 @@ public class JmsPluginTest {
     @Test
     public void shouldReceiveMessage() throws Exception {
         container.executeAppUnderTest(ReceiveMessage.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.transactionType()).isEqualTo("Background");
         assertThat(header.transactionName()).isEqualTo("JMS Message: TestMessageListener");
         assertThat(header.headline()).isEqualTo("JMS Message: TestMessageListener");
@@ -72,7 +72,7 @@ public class JmsPluginTest {
     @Test
     public void shouldSendMessage() throws Exception {
         container.executeAppUnderTest(SendMessage.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Timer> nestedTimers = header.rootTimer().childTimers();
         assertThat(nestedTimers).hasSize(1);
         assertThat(nestedTimers.get(0).name()).isEqualTo("jms send message");

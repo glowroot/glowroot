@@ -13,18 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.common.model;
+package org.glowroot.server.repo;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.Lists;
 
-import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
-import org.glowroot.markers.UsedByJsonBinding;
+import org.glowroot.common.util.UsedByJsonSerialization;
 
-@UsedByJsonBinding
 public class MutableTimer {
 
     private final String name;
@@ -47,22 +45,27 @@ public class MutableTimer {
         this.childTimers = Lists.newArrayList(nestedTimers);
     }
 
+    @UsedByJsonSerialization
     public String getName() {
         return name;
     }
 
+    @UsedByJsonSerialization
     public boolean isExtended() {
         return extended;
     }
 
+    @UsedByJsonSerialization
     public double getTotalNanos() {
         return totalNanos;
     }
 
+    @UsedByJsonSerialization
     public long getCount() {
         return count;
     }
 
+    @UsedByJsonSerialization
     public List<MutableTimer> getChildTimers() {
         return childTimers;
     }
@@ -76,7 +79,7 @@ public class MutableTimer {
             MutableTimer matchingChildTimer = null;
             for (MutableTimer childTimer : childTimers) {
                 if (toBeMergedChildTimerName.equals(childTimer.getName())
-                        && extended == childTimer.isExtended()) {
+                        && extended == childTimer.extended) {
                     matchingChildTimer = childTimer;
                     break;
                 }
@@ -90,30 +93,7 @@ public class MutableTimer {
         }
     }
 
-    public void merge(TimerImpl timer) {
-        count += timer.getCount();
-        totalNanos += timer.getTotalNanos();
-        for (TimerImpl toBeMergedChildTimer : timer.getChildTimers()) {
-            String toBeMergedChildTimerName = toBeMergedChildTimer.getName();
-            boolean extended = toBeMergedChildTimer.isExtended();
-            MutableTimer matchingChildTimer = null;
-            for (MutableTimer childTimer : childTimers) {
-                if (toBeMergedChildTimerName.equals(childTimer.getName())
-                        && extended == childTimer.isExtended()) {
-                    matchingChildTimer = childTimer;
-                    break;
-                }
-            }
-            if (matchingChildTimer == null) {
-                matchingChildTimer = new MutableTimer(toBeMergedChildTimer.getName(),
-                        toBeMergedChildTimer.isExtended(), 0, 0, new ArrayList<MutableTimer>());
-                childTimers.add(matchingChildTimer);
-            }
-            matchingChildTimer.merge(toBeMergedChildTimer);
-        }
-    }
-
-    public Aggregate.Timer toProtobuf() {
+    Aggregate.Timer toProtobuf() {
         Aggregate.Timer.Builder builder = Aggregate.Timer.newBuilder()
                 .setName(name)
                 .setExtended(extended)

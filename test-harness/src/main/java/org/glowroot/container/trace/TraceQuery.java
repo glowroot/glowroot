@@ -47,9 +47,9 @@ public abstract class TraceQuery {
     public abstract @Nullable String error();
     public abstract @Nullable StringComparator userComparator();
     public abstract @Nullable String user();
-    public abstract @Nullable String customAttributeName();
-    public abstract @Nullable StringComparator customAttributeValueComparator();
-    public abstract @Nullable String customAttributeValue();
+    public abstract @Nullable String attributeName();
+    public abstract @Nullable StringComparator attributeValueComparator();
+    public abstract @Nullable String attributeValue();
 
     @Value.Default
     public boolean errorOnly() {

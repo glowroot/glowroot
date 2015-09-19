@@ -51,10 +51,7 @@ class ErrorCommonService {
     static final Ordering<TransactionErrorSummary> orderingByErrorCountDesc =
             new Ordering<TransactionErrorSummary>() {
                 @Override
-                public int compare(@Nullable TransactionErrorSummary left,
-                        @Nullable TransactionErrorSummary right) {
-                    checkNotNull(left);
-                    checkNotNull(right);
+                public int compare(TransactionErrorSummary left, TransactionErrorSummary right) {
                     return Longs.compare(right.errorCount(), left.errorCount());
                 }
             };
@@ -63,10 +60,7 @@ class ErrorCommonService {
     static final Ordering<TransactionErrorSummary> orderingByErrorRateDesc =
             new Ordering<TransactionErrorSummary>() {
                 @Override
-                public int compare(@Nullable TransactionErrorSummary left,
-                        @Nullable TransactionErrorSummary right) {
-                    checkNotNull(left);
-                    checkNotNull(right);
+                public int compare(TransactionErrorSummary left, TransactionErrorSummary right) {
                     return Doubles.compare(right.errorCount() / (double) right.transactionCount(),
                             left.errorCount() / (double) left.transactionCount());
                 }

@@ -18,9 +18,7 @@ package org.glowroot.agent.live;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -82,20 +80,9 @@ public class LiveThreadDumpServiceImpl implements LiveThreadDumpService {
             }
         }
         // sort descending by total time
-        Collections.sort(matchedThreadInfos, new Comparator<ThreadInfo>() {
-            @Override
-            public int compare(ThreadInfo left, ThreadInfo right) {
-                Transaction leftTransaction = matchedTransactions.get(left.getThreadId());
-                Transaction rightTransaction = matchedTransactions.get(right.getThreadId());
-                // left and right are from matchedThreadInfos so have corresponding transactions
-                checkNotNull(leftTransaction);
-                checkNotNull(rightTransaction);
-                return Longs.compare(rightTransaction.getDurationNanos(),
-                        leftTransaction.getDurationNanos());
-            }
-        });
+        Collections.sort(matchedThreadInfos, new MatchedThreadInfoOrdering(matchedTransactions));
         // sort descending by stack trace length
-        Collections.sort(unmatchedThreadInfos, new ThreadInfoOrdering());
+        Collections.sort(unmatchedThreadInfos, new UnmatchedThreadInfoOrdering());
 
         List<OneThread> matchedThreads = Lists.newArrayList();
         for (ThreadInfo threadInfo : matchedThreadInfos) {
@@ -128,7 +115,9 @@ public class LiveThreadDumpServiceImpl implements LiveThreadDumpService {
         builder.name(threadInfo.getThreadName());
         builder.state(threadInfo.getThreadState().name());
         builder.lockName(threadInfo.getLockName());
-        builder.stackTrace(Arrays.asList(threadInfo.getStackTrace()));
+        for (StackTraceElement stackTraceElement : threadInfo.getStackTrace()) {
+            builder.addStackTraceElements(stackTraceElement.toString());
+        }
 
         if (matchedTransaction != null) {
             builder.transactionType(matchedTransaction.getTransactionType());
@@ -141,11 +130,29 @@ public class LiveThreadDumpServiceImpl implements LiveThreadDumpService {
         return builder.build();
     }
 
-    private static final class ThreadInfoOrdering extends Ordering<ThreadInfo> {
+    private static final class MatchedThreadInfoOrdering extends Ordering<ThreadInfo> {
+
+        private final Map<Long, Transaction> matchedTransactions;
+
+        private MatchedThreadInfoOrdering(Map<Long, Transaction> matchedTransactions) {
+            this.matchedTransactions = matchedTransactions;
+        }
+
         @Override
-        public int compare(@Nullable ThreadInfo left, @Nullable ThreadInfo right) {
-            checkNotNull(left);
-            checkNotNull(right);
+        public int compare(ThreadInfo left, ThreadInfo right) {
+            Transaction leftTransaction = matchedTransactions.get(left.getThreadId());
+            Transaction rightTransaction = matchedTransactions.get(right.getThreadId());
+            // left and right are from matchedThreadInfos so have corresponding transactions
+            checkNotNull(leftTransaction);
+            checkNotNull(rightTransaction);
+            return Longs.compare(rightTransaction.getDurationNanos(),
+                    leftTransaction.getDurationNanos());
+        }
+    }
+
+    private static final class UnmatchedThreadInfoOrdering extends Ordering<ThreadInfo> {
+        @Override
+        public int compare(ThreadInfo left, ThreadInfo right) {
             if (left.getThreadId() == Thread.currentThread().getId()) {
                 return 1;
             } else if (right.getThreadId() == Thread.currentThread().getId()) {

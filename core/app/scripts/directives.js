@@ -248,7 +248,7 @@ glowroot.directive('gtNavbarItem', [
       replace: true,
       transclude: true,
       templateUrl: 'template/gt-navbar-item.html',
-      link: function (scope, iElement, iAttrs) {
+      link: function (scope) {
         scope.isActive = function () {
           return scope.$parent.activeNavbarItem === scope.gtItemName;
         };

@@ -91,7 +91,7 @@ public class ActiveTraceTest {
         Trace.Header header = null;
         ProfileTree profileTree = null;
         while (stopwatch.elapsed(SECONDS) < 5) {
-            header = container.getTraceService().getActiveTrace(0, MILLISECONDS);
+            header = container.getTraceService().getActiveHeader(0, MILLISECONDS);
             if (header != null && header.profileSampleCount() > 0) {
                 profileTree = container.getTraceService().getProfile(header.id());
                 if (profileTree != null) {
@@ -104,7 +104,7 @@ public class ActiveTraceTest {
             // wait for trace to get into nested timer
             stopwatch = Stopwatch.createStarted();
             while (stopwatch.elapsed(SECONDS) < 5) {
-                header = container.getTraceService().getActiveTrace(0, MILLISECONDS);
+                header = container.getTraceService().getActiveHeader(0, MILLISECONDS);
                 if (!header.rootTimer().childTimers().isEmpty()) {
                     break;
                 }
@@ -112,7 +112,7 @@ public class ActiveTraceTest {
             }
         }
         Thread.sleep(20);
-        header = container.getTraceService().getActiveTrace(0, MILLISECONDS);
+        header = container.getTraceService().getActiveHeader(0, MILLISECONDS);
         assertThat(header).isNotNull();
         assertThat(header.partial().or(false)).isTrue();
         if (stuckOnNonRoot) {
@@ -125,7 +125,7 @@ public class ActiveTraceTest {
         container.interruptAppUnderTest();
         future.get();
         // should now be reported as complete (not partial)
-        header = container.getTraceService().getLastTrace();
+        header = container.getTraceService().getLastHeader();
         assertThat(header.partial().or(false)).isFalse();
         // cleanup
         executorService.shutdown();

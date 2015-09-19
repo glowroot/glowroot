@@ -63,7 +63,7 @@ public class RequestParameterTest {
         // when
         container.executeAppUnderTest(GetParameter.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         @SuppressWarnings("unchecked")
         Map<String, Object> requestParameters =
                 (Map<String, Object>) header.detail().get("Request parameters");
@@ -82,7 +82,7 @@ public class RequestParameterTest {
         // when
         container.executeAppUnderTest(GetParameter.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.detail()).hasSize(1);
         assertThat(header.detail()).containsKey("Request http method");
     }
@@ -93,7 +93,7 @@ public class RequestParameterTest {
         // when
         container.executeAppUnderTest(GetParameterMap.class);
         // then don't throw IllegalStateException (see MockCatalinaHttpServletRequest)
-        container.getTraceService().getLastTrace();
+        container.getTraceService().getLastHeader();
     }
 
     @Test
@@ -102,7 +102,7 @@ public class RequestParameterTest {
         // when
         container.executeAppUnderTest(GetBadParameterMap.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         @SuppressWarnings("unchecked")
         Map<String, Object> requestParameters =
                 (Map<String, Object>) header.detail().get("Request parameters");
@@ -116,7 +116,7 @@ public class RequestParameterTest {
         // when
         container.executeAppUnderTest(GetParameterOutsideServlet.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header).isNull();
         // basically just testing that it should not generate any errors
     }

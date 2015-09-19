@@ -45,11 +45,11 @@ class TracePointQueryBuilder {
         ParameterizedSqlBuilder builder = new ParameterizedSqlBuilder();
         builder.appendText("select trace.id, trace.capture_time, trace.duration_nanos, trace.error"
                 + " from trace");
-        ParameterizedSql criteria = getCustomAttributeCriteria();
+        ParameterizedSql criteria = getAttributeCriteria();
         if (criteria == null) {
             builder.appendText(" where");
         } else {
-            builder.appendText(", trace_custom_attribute attr where attr.trace_id = trace.id and"
+            builder.appendText(", trace_attribute attr where attr.trace_id = trace.id and"
                     + " attr.capture_time > ? and attr.capture_time <= ? and" + criteria.sql());
             builder.addArg(query.from());
             builder.addArg(query.to());
@@ -71,21 +71,20 @@ class TracePointQueryBuilder {
         return builder.build();
     }
 
-    private @Nullable ParameterizedSql getCustomAttributeCriteria() {
+    private @Nullable ParameterizedSql getAttributeCriteria() {
         String sql = "";
         List<Object> args = Lists.newArrayList();
-        String customAttributeName = query.customAttributeName();
-        if (!Strings.isNullOrEmpty(customAttributeName)) {
+        String attributeName = query.attributeName();
+        if (!Strings.isNullOrEmpty(attributeName)) {
             sql += " upper(attr.name) = ? and";
-            args.add(customAttributeName.toUpperCase(Locale.ENGLISH));
+            args.add(attributeName.toUpperCase(Locale.ENGLISH));
         }
-        StringComparator customAttributeValueComparator = query.customAttributeValueComparator();
-        String customAttributeValue = query.customAttributeValue();
-        if (customAttributeValueComparator != null
-                && !Strings.isNullOrEmpty(customAttributeValue)) {
-            sql += " upper(attr.value) " + customAttributeValueComparator.getComparator()
-                    + " ? and";
-            args.add(customAttributeValueComparator.formatParameter(customAttributeValue));
+        StringComparator attributeValueComparator = query.attributeValueComparator();
+        String attributeValue = query.attributeValue();
+        if (attributeValueComparator != null
+                && !Strings.isNullOrEmpty(attributeValue)) {
+            sql += " upper(attr.value) " + attributeValueComparator.getComparator() + " ? and";
+            args.add(attributeValueComparator.formatParameter(attributeValue));
         }
         if (sql.equals("")) {
             return null;

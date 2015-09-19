@@ -40,7 +40,7 @@ public interface LiveThreadDumpService {
         String state();
         @Nullable
         String lockName();
-        List<StackTraceElement> stackTrace();
+        List<String> stackTraceElements();
 
         @Nullable
         String transactionType();

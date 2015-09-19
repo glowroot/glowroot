@@ -49,9 +49,7 @@ class AlertJsonService {
     @VisibleForTesting
     static final Ordering<AlertConfig> orderingByName = new Ordering<AlertConfig>() {
         @Override
-        public int compare(@Nullable AlertConfig left, @Nullable AlertConfig right) {
-            checkNotNull(left);
-            checkNotNull(right);
+        public int compare(AlertConfig left, AlertConfig right) {
             return left.transactionType().compareToIgnoreCase(right.transactionType());
         }
     };

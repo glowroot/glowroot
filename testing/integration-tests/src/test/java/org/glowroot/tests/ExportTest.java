@@ -62,7 +62,7 @@ public class ExportTest {
         // given
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         // when
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         InputStream in = container.getTraceService().getTraceExport(header.id());
         // then should not bomb
         ZipInputStream zipIn = new ZipInputStream(in);
@@ -78,7 +78,7 @@ public class ExportTest {
         container.getConfigService().updateTransactionConfig(transactionConfig);
         container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
         // when
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         InputStream in = container.getTraceService().getTraceExport(header.id());
         // then should not bomb
         ZipInputStream zipIn = new ZipInputStream(in);
@@ -105,7 +105,7 @@ public class ExportTest {
             }
         });
         // when
-        Trace.Header header = container.getTraceService().getActiveTrace(5, SECONDS);
+        Trace.Header header = container.getTraceService().getActiveHeader(5, SECONDS);
         InputStream in = container.getTraceService().getTraceExport(header.id());
         // then should not bomb
         ZipInputStream zipIn = new ZipInputStream(in);

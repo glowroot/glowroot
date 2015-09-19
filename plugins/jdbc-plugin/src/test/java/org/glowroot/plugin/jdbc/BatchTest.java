@@ -64,7 +64,7 @@ public class BatchTest {
         // when
         container.executeAppUnderTest(ExecuteBatchPreparedStatement.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -87,7 +87,7 @@ public class BatchTest {
         // when
         container.executeAppUnderTest(ExecuteBatchPreparedStatement.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -108,7 +108,7 @@ public class BatchTest {
         // when
         container.executeAppUnderTest(ExecuteBatchPreparedStatementWithoutClear.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -130,7 +130,7 @@ public class BatchTest {
         // when
         container.executeAppUnderTest(ExecuteBatchPreparedStatementWithoutClear.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -151,7 +151,7 @@ public class BatchTest {
         // when
         container.executeAppUnderTest(ExecuteBatchStatement.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -174,7 +174,7 @@ public class BatchTest {
         // when
         container.executeAppUnderTest(BatchStatementNull.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -193,7 +193,7 @@ public class BatchTest {
         // when
         container.executeAppUnderTest(ExecuteBatchStatementWithNoBatches.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -212,7 +212,7 @@ public class BatchTest {
         // when
         container.executeAppUnderTest(ExecuteBatchStatementWithoutClear.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);

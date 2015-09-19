@@ -69,7 +69,7 @@ public class Slf4jTest {
         // when
         container.executeAppUnderTest(ShouldLog.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg");
         assertThat(entries).hasSize(2);
@@ -85,7 +85,7 @@ public class Slf4jTest {
         // when
         container.executeAppUnderTest(ShouldLogWithThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg_t");
         assertThat(entries).hasSize(2);
@@ -111,7 +111,7 @@ public class Slf4jTest {
         // when
         container.executeAppUnderTest(ShouldLogWithNullThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg_tnull");
         assertThat(entries).hasSize(2);
@@ -130,7 +130,7 @@ public class Slf4jTest {
         // when
         container.executeAppUnderTest(ShouldLogWithOneParameter.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
 
@@ -146,7 +146,7 @@ public class Slf4jTest {
         // when
         container.executeAppUnderTest(ShouldLogWithOneParameterAndThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg_1_t e");
         assertThat(entries).hasSize(2);
@@ -170,7 +170,7 @@ public class Slf4jTest {
         // when
         container.executeAppUnderTest(ShouldLogWithTwoParameters.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
 
@@ -186,7 +186,7 @@ public class Slf4jTest {
         // when
         container.executeAppUnderTest(ShouldLogWithMoreThanTwoParameters.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
 
@@ -202,7 +202,7 @@ public class Slf4jTest {
         // when
         container.executeAppUnderTest(ShouldLogWithParametersAndThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
 
@@ -228,7 +228,7 @@ public class Slf4jTest {
         // when
         container.executeAppUnderTest(ShouldLog.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.entryCount()).isZero();
     }
 

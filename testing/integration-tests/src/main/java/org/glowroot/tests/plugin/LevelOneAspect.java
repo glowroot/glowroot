@@ -105,12 +105,12 @@ public class LevelOneAspect {
             TraceEntry traceEntry = transactionService.startTransaction("Integration test",
                     "basic test", messageSupplier, timerName);
             // several trace attributes to test ordering
-            transactionService.addTransactionCustomAttribute("Zee One", String.valueOf(arg2));
-            transactionService.addTransactionCustomAttribute("Yee Two", "yy3");
-            transactionService.addTransactionCustomAttribute("Yee Two", "yy");
-            transactionService.addTransactionCustomAttribute("Yee Two", "Yy2");
-            transactionService.addTransactionCustomAttribute("Xee Three", "xx");
-            transactionService.addTransactionCustomAttribute("Wee Four", "ww");
+            transactionService.addTransactionAttribute("Zee One", String.valueOf(arg2));
+            transactionService.addTransactionAttribute("Yee Two", "yy3");
+            transactionService.addTransactionAttribute("Yee Two", "yy");
+            transactionService.addTransactionAttribute("Yee Two", "Yy2");
+            transactionService.addTransactionAttribute("Xee Three", "xx");
+            transactionService.addTransactionAttribute("Wee Four", "ww");
             return traceEntry;
         }
         @OnReturn

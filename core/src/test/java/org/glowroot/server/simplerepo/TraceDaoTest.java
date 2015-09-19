@@ -145,7 +145,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldReadTraceWithCustomAttributeQualifier() throws Exception {
+    public void shouldReadTraceWithAttributeQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(trace);
@@ -155,9 +155,9 @@ public class TraceDaoTest {
                 .durationNanosLow(0)
                 .durationNanosHigh(Long.MAX_VALUE)
                 .transactionType("unit test")
-                .customAttributeName("abc")
-                .customAttributeValueComparator(StringComparator.EQUALS)
-                .customAttributeValue("xyz")
+                .attributeName("abc")
+                .attributeValueComparator(StringComparator.EQUALS)
+                .attributeValue("xyz")
                 .errorOnly(false)
                 .limit(1)
                 .build();
@@ -168,7 +168,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldReadTraceWithCustomAttributeQualifier2() throws Exception {
+    public void shouldReadTraceWithAttributeQualifier2() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(trace);
@@ -178,9 +178,9 @@ public class TraceDaoTest {
                 .durationNanosLow(0)
                 .durationNanosHigh(Long.MAX_VALUE)
                 .transactionType("unit test")
-                .customAttributeName("abc")
-                .customAttributeValueComparator(null)
-                .customAttributeValue(null)
+                .attributeName("abc")
+                .attributeValueComparator(null)
+                .attributeValue(null)
                 .errorOnly(false)
                 .limit(1)
                 .build();
@@ -191,7 +191,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldReadTraceWithCustomAttributeQualifier3() throws Exception {
+    public void shouldReadTraceWithAttributeQualifier3() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(trace);
@@ -201,9 +201,9 @@ public class TraceDaoTest {
                 .durationNanosLow(0)
                 .durationNanosHigh(Long.MAX_VALUE)
                 .transactionType("unit test")
-                .customAttributeName(null)
-                .customAttributeValueComparator(StringComparator.EQUALS)
-                .customAttributeValue("xyz")
+                .attributeName(null)
+                .attributeValueComparator(StringComparator.EQUALS)
+                .attributeValue("xyz")
                 .errorOnly(false)
                 .limit(1)
                 .build();
@@ -214,7 +214,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldNotReadTraceWithNonMatchingCustomAttributeQualifier() throws Exception {
+    public void shouldNotReadTraceWithNonMatchingAttributeQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(trace);
@@ -224,9 +224,9 @@ public class TraceDaoTest {
                 .durationNanosLow(0)
                 .durationNanosHigh(Long.MAX_VALUE)
                 .transactionType("unit test")
-                .customAttributeName("abc")
-                .customAttributeValueComparator(StringComparator.EQUALS)
-                .customAttributeValue("abc")
+                .attributeName("abc")
+                .attributeValueComparator(StringComparator.EQUALS)
+                .attributeValue("abc")
                 .errorOnly(false)
                 .limit(1)
                 .build();
@@ -237,7 +237,7 @@ public class TraceDaoTest {
     }
 
     @Test
-    public void shouldNotReadTraceWithNonMatchingCustomAttributeQualifier2() throws Exception {
+    public void shouldNotReadTraceWithNonMatchingAttributeQualifier2() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
         traceDao.collect(trace);
@@ -247,9 +247,9 @@ public class TraceDaoTest {
                 .durationNanosLow(0)
                 .durationNanosHigh(Long.MAX_VALUE)
                 .transactionType("unit test")
-                .customAttributeName(null)
-                .customAttributeValueComparator(StringComparator.EQUALS)
-                .customAttributeValue("xyz1")
+                .attributeName(null)
+                .attributeValueComparator(StringComparator.EQUALS)
+                .attributeValue("xyz1")
                 .errorOnly(false)
                 .limit(1)
                 .build();

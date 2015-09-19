@@ -108,8 +108,8 @@ public class TransactionServiceImplDefensiveCheckTest {
     }
 
     @Test
-    public void testAddTransactionCustomAttribute() {
-        transactionService.addTransactionCustomAttribute(null, null);
+    public void testAddTransactionAttribute() {
+        transactionService.addTransactionAttribute(null, null);
     }
 
     @Test

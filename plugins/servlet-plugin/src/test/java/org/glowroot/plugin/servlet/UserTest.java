@@ -61,7 +61,7 @@ public class UserTest {
         // when
         container.executeAppUnderTest(HasRequestUserPrincipal.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.user()).isEqualTo("my name is mock");
     }
 
@@ -81,7 +81,7 @@ public class UserTest {
         // when
         container.executeAppUnderTest(HasSessionUserAttribute.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.user()).isEqualTo("abc");
     }
 
@@ -93,7 +93,7 @@ public class UserTest {
         // when
         container.executeAppUnderTest(SetSessionUserAttribute.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.user()).isEqualTo("abc");
     }
 
@@ -105,7 +105,7 @@ public class UserTest {
         // when
         container.executeAppUnderTest(SetSessionUserAttributeNull.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         // this is intentional, setting user attribute to null shouldn't clear out user for
         // that particular request (since the request was in fact, originally, for that user)
         assertThat(header.user()).isEqualTo("something");
@@ -119,7 +119,7 @@ public class UserTest {
         // when
         container.executeAppUnderTest(HasNestedSessionUserAttribute.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.user()).isEqualTo("xyz");
     }
 
@@ -131,7 +131,7 @@ public class UserTest {
         // when
         container.executeAppUnderTest(SetNestedSessionUserAttribute.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.user()).isEqualTo("xyz");
     }
 
@@ -143,7 +143,7 @@ public class UserTest {
         // when
         container.executeAppUnderTest(HasSessionUserAttribute.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.user()).isEmpty();
     }
 
@@ -155,7 +155,7 @@ public class UserTest {
         // when
         container.executeAppUnderTest(HasNestedSessionUserAttribute.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.user()).isEmpty();
     }
 

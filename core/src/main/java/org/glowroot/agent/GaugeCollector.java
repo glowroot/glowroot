@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -55,16 +54,13 @@ import org.glowroot.common.util.PatternObjectNameQueryExp;
 import org.glowroot.common.util.Reflections;
 import org.glowroot.common.util.ScheduledRunnable;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 class GaugeCollector extends ScheduledRunnable {
 
-    private final Logger logger;
+    private static final Logger logger = LoggerFactory.getLogger(GaugeCollector.class);
 
     private final ConfigService configService;
     private final Collector collector;
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
-    private final ScheduledExecutorService scheduledExecutor;
     private final Clock clock;
     private final long startTimeMillis;
 
@@ -80,19 +76,12 @@ class GaugeCollector extends ScheduledRunnable {
     private @MonotonicNonNull Map<String, GaugeValue> priorRawCounterValues;
 
     GaugeCollector(ConfigService configService, Collector collector,
-            LazyPlatformMBeanServer lazyPlatformMBeanServer,
-            ScheduledExecutorService scheduledExecutor, Clock clock, @Nullable Logger logger) {
+            LazyPlatformMBeanServer lazyPlatformMBeanServer, Clock clock) {
         this.configService = configService;
         this.collector = collector;
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
-        this.scheduledExecutor = scheduledExecutor;
         this.clock = clock;
         startTimeMillis = clock.currentTimeMillis();
-        if (logger == null) {
-            this.logger = LoggerFactory.getLogger(GaugeCollector.class);
-        } else {
-            this.logger = logger;
-        }
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
                 .setDaemon(true)
                 .setNameFormat("Glowroot-Gauge-Collector-%d")
@@ -110,7 +99,7 @@ class GaugeCollector extends ScheduledRunnable {
                     registerInternalMBeansMethod.invoke(null, mbeanServer);
                 } catch (Exception e) {
                     // checkNotNull is just to satisfy checker framework
-                    checkNotNull(GaugeCollector.this.logger).debug(e.getMessage(), e);
+                    logger.debug(e.getMessage(), e);
                 }
             }
         });
@@ -118,7 +107,7 @@ class GaugeCollector extends ScheduledRunnable {
 
     @Override
     protected void runInternal() throws Exception {
-        final Map<String, GaugeValue> gaugeValues = Maps.newHashMap();
+        Map<String, GaugeValue> gaugeValues = Maps.newHashMap();
         if (priorRawCounterValues == null) {
             // wait to now to initialize priorGaugeValues inside of the dedicated thread
             priorRawCounterValues = Maps.newHashMap();
@@ -127,24 +116,10 @@ class GaugeCollector extends ScheduledRunnable {
             gaugeValues.putAll(collectGaugeValues(gaugeConfig));
         }
         try {
-            scheduledExecutor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        collector.collectGaugeValues(gaugeValues);
-                    } catch (Throwable t) {
-                        // log and terminate successfully
-                        logger.error(t.getMessage(), t);
-                    }
-                }
-            });
-        } catch (RejectedExecutionException e) {
-            if (scheduledExecutor.isShutdown()) {
-                // ignore possible exception during shutdown
-                logger.debug(e.getMessage(), e);
-                return;
-            }
-            throw e;
+            collector.collectGaugeValues(gaugeValues);
+        } catch (Throwable t) {
+            // log and terminate successfully
+            logger.error(t.getMessage(), t);
         }
     }
 

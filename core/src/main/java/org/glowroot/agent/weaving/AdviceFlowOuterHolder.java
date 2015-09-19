@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.weaving;
 
-import org.glowroot.markers.UsedByGeneratedBytecode;
+import org.glowroot.common.util.UsedByGeneratedBytecode;
 
 @UsedByGeneratedBytecode
 public class AdviceFlowOuterHolder {

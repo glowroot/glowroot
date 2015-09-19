@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.agent.model.QueryData;
+import org.glowroot.agent.model.QueryEntryBase;
 import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.TimerNameImpl;
 import org.glowroot.agent.model.Transaction;
@@ -37,7 +38,6 @@ import org.glowroot.agent.model.Transaction.CompletionCallback;
 import org.glowroot.agent.model.Transaction.OverrideSource;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.config.AdvancedConfig;
-import org.glowroot.common.config.PluginConfig;
 import org.glowroot.common.util.Clock;
 import org.glowroot.plugin.api.config.ConfigListener;
 import org.glowroot.plugin.api.internal.NopTransactionService.NopQueryEntry;
@@ -74,7 +74,6 @@ public class TransactionServiceImpl implements TransactionService, ConfigListene
     private boolean captureGcActivity;
     private int maxAggregateQueriesPerQueryType;
     private int maxTraceEntriesPerTransaction;
-    private @MonotonicNonNull PluginConfig pluginConfig;
 
     public static TransactionServiceImpl create(TransactionRegistry transactionRegistry,
             TransactionCollector transactionCollector, ConfigService configService,
@@ -303,14 +302,14 @@ public class TransactionServiceImpl implements TransactionService, ConfigListene
     }
 
     @Override
-    public void addTransactionCustomAttribute(String name, @Nullable String value) {
+    public void addTransactionAttribute(String name, @Nullable String value) {
         if (name == null) {
-            logger.error("addTransactionCustomAttribute(): argument 'name' must be non-null");
+            logger.error("addTransactionAttribute(): argument 'name' must be non-null");
             return;
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
-            transaction.addCustomAttribute(name, value);
+            transaction.addAttribute(name, value);
         }
     }
 
@@ -413,7 +412,7 @@ public class TransactionServiceImpl implements TransactionService, ConfigListene
         }
     }
 
-    private class DummyTraceEntryOrQuery implements QueryEntry, Timer {
+    private class DummyTraceEntryOrQuery extends QueryEntryBase implements QueryEntry, Timer {
 
         private final TimerImpl timer;
         private final long startTick;
@@ -425,20 +424,14 @@ public class TransactionServiceImpl implements TransactionService, ConfigListene
         // only used by transaction thread
         private @MonotonicNonNull TimerImpl extendedTimer;
 
-        // queryData, currRow and maxRow are only used by query entries
-        private final @Nullable QueryData queryData;
-        // row numbers start at 1
-        private long currRow = -1;
-        private long maxRow;
-
         public DummyTraceEntryOrQuery(TimerImpl timer, long startTick, Transaction transaction,
                 MessageSupplier messageSupplier, @Nullable QueryData queryData,
                 long queryExecutionCount) {
+            super(queryData);
             this.timer = timer;
             this.startTick = startTick;
             this.transaction = transaction;
             this.messageSupplier = messageSupplier;
-            this.queryData = queryData;
             if (queryData != null) {
                 queryData.start(startTick, queryExecutionCount);
             }
@@ -497,9 +490,7 @@ public class TransactionServiceImpl implements TransactionService, ConfigListene
 
         private void endInternal(long endTick) {
             timer.end(endTick);
-            if (queryData != null) {
-                queryData.end(endTick);
-            }
+            endQueryData(endTick);
         }
 
         @Override
@@ -507,9 +498,7 @@ public class TransactionServiceImpl implements TransactionService, ConfigListene
             if (selfNestingLevel++ == 0) {
                 long currTick = ticker.read();
                 extendedTimer = timer.extend(currTick);
-                if (queryData != null) {
-                    queryData.extend(currTick);
-                }
+                extendQueryData(currTick);
             }
             return this;
         }
@@ -522,51 +511,13 @@ public class TransactionServiceImpl implements TransactionService, ConfigListene
                 long stopTick = ticker.read();
                 checkNotNull(extendedTimer);
                 extendedTimer.end(stopTick);
-                if (queryData != null) {
-                    queryData.end(stopTick);
-                }
+                endQueryData(stopTick);
             }
         }
 
         @Override
         public MessageSupplier getMessageSupplier() {
             return messageSupplier;
-        }
-
-        @Override
-        public void incrementCurrRow() {
-            if (currRow == -1) {
-                currRow = 1;
-                maxRow = 1;
-                if (queryData != null) {
-                    // queryData can be null here if the aggregated query limit is exceeded
-                    // (though typically query limit is larger than trace entry limit)
-                    queryData.incrementRowCount(1);
-                }
-            } else if (currRow == maxRow) {
-                currRow++;
-                maxRow = currRow;
-                if (queryData != null) {
-                    // queryData can be null here if the aggregated query limit is exceeded
-                    // (though typically query limit is larger than trace entry limit)
-                    queryData.incrementRowCount(1);
-                }
-            } else {
-                currRow++;
-            }
-        }
-
-        @Override
-        public void setCurrRow(long row) {
-            if (row > maxRow) {
-                if (queryData != null) {
-                    // queryData can be null here if the query limit is exceeded
-                    // (though typically query limit is larger than trace entry limit)
-                    queryData.incrementRowCount(row - maxRow);
-                }
-                maxRow = row;
-            }
-            currRow = row;
         }
     }
 }

@@ -41,7 +41,7 @@ import org.h2.jdbc.JdbcConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.server.simplerepo.util.Schemas.Column;
 import org.glowroot.server.simplerepo.util.Schemas.Index;
 
@@ -171,24 +171,7 @@ public class DataSource {
             ResultSet resultSet = preparedStatement.executeQuery();
             ResultSetCloser closer = new ResultSetCloser(resultSet);
             try {
-                List<T> mappedRows = Lists.newArrayList();
-                boolean errorLogged = false;
-                while (resultSet.next()) {
-                    try {
-                        mappedRows.add(rowMapper.mapRow(resultSet));
-                    } catch (Exception e) {
-                        // this can happen when copying h2 database while glowroot is running, and
-                        // h2 database is corrupted sometimes, then running h2 recover tool, and
-                        // then still see error when running java -jar glowroot.jar,
-                        // e.g. "Missing lob entry, block: 504196"
-                        if (!errorLogged) {
-                            // just log the first error
-                            logger.error(e.getMessage(), e);
-                            errorLogged = true;
-                        }
-                    }
-                }
-                return ImmutableList.copyOf(mappedRows);
+                return mapRows(resultSet, rowMapper);
             } catch (Throwable t) {
                 throw closer.rethrow(t);
             } finally {
@@ -415,6 +398,28 @@ public class DataSource {
                     + CACHE_SIZE;
             return new JdbcConnection(url, props);
         }
+    }
+
+    private static <T extends /*@NonNull*/Object> ImmutableList<T> mapRows(ResultSet resultSet,
+            RowMapper<T> rowMapper) throws SQLException {
+        List<T> mappedRows = Lists.newArrayList();
+        boolean errorLogged = false;
+        while (resultSet.next()) {
+            try {
+                mappedRows.add(rowMapper.mapRow(resultSet));
+            } catch (Exception e) {
+                // this can happen when copying h2 database while glowroot is running, and
+                // h2 database is corrupted sometimes, then running h2 recover tool, and
+                // then still see error when running java -jar glowroot.jar,
+                // e.g. "Missing lob entry, block: 504196"
+                if (!errorLogged) {
+                    // just log the first error
+                    logger.error(e.getMessage(), e);
+                    errorLogged = true;
+                }
+            }
+        }
+        return ImmutableList.copyOf(mappedRows);
     }
 
     private static void debug(String sql, @Nullable Object... args) {

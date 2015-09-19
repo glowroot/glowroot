@@ -158,49 +158,44 @@ public class TimerImpl implements Timer {
         return timerName.name();
     }
 
-    public boolean isExtended() {
+    boolean isExtended() {
         return timerName.extended();
     }
 
     // only called after transaction completion
-    public long getTotalNanos() {
+    long getTotalNanos() {
         return totalNanos;
     }
 
     // only called after transaction completion
-    public long getCount() {
+    long getCount() {
         return count;
     }
 
     // only called after transaction completion
     @JsonIgnore
-    public Iterable<TimerImpl> getChildTimers() {
+    public Iterator<TimerImpl> getChildTimers() {
         if (headChild == null) {
-            return ImmutableList.of();
+            return ImmutableList.<TimerImpl>of().iterator();
         } else {
-            return new Iterable<TimerImpl>() {
+            return new Iterator<TimerImpl>() {
+                private @Nullable TimerImpl next = headChild;
                 @Override
-                public Iterator<TimerImpl> iterator() {
-                    return new Iterator<TimerImpl>() {
-                        private @Nullable TimerImpl next = headChild;
-                        @Override
-                        public boolean hasNext() {
-                            return next != null;
-                        }
-                        @Override
-                        public TimerImpl next() {
-                            TimerImpl curr = next;
-                            if (curr == null) {
-                                throw new NoSuchElementException();
-                            }
-                            next = curr.nextSibling;
-                            return curr;
-                        }
-                        @Override
-                        public void remove() {
-                            throw new UnsupportedOperationException();
-                        }
-                    };
+                public boolean hasNext() {
+                    return next != null;
+                }
+                @Override
+                public TimerImpl next() {
+                    TimerImpl curr = next;
+                    if (curr == null) {
+                        throw new NoSuchElementException();
+                    }
+                    next = curr.nextSibling;
+                    return curr;
+                }
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException();
                 }
             };
         }

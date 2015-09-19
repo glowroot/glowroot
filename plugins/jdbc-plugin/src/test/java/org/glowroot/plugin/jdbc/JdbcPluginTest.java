@@ -69,7 +69,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteCallableStatement.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -90,7 +90,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
         assertThat(found).isFalse();
     }
@@ -102,7 +102,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
         assertThat(found).isFalse();
     }
@@ -113,7 +113,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(GetResultSetValueUnderSeparateTraceEntry.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
         assertThat(found).isFalse();
     }
@@ -125,7 +125,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(GetResultSetValueUnderSeparateTraceEntry.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
         assertThat(found).isTrue();
     }
@@ -137,7 +137,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResultsUsingColumnName.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
         assertThat(found).isFalse();
     }
@@ -150,7 +150,7 @@ public class JdbcPluginTest {
         container.executeAppUnderTest(
                 ExecuteStatementAndIterateOverResultsUsingColumnNameUnderSeparateTraceEntry.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
         assertThat(found).isTrue();
     }
@@ -161,7 +161,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
         assertThat(found).isFalse();
     }
@@ -172,7 +172,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(IterateOverResultsUnderSeparateTraceEntry.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
         assertThat(found).isTrue();
     }
@@ -185,7 +185,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(IterateOverResultsUnderSeparateTraceEntry.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
         assertThat(found).isFalse();
     }
@@ -199,7 +199,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementDisableReEnableMidIterating.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -218,7 +218,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -240,7 +240,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         Trace.Entry jdbcEntry = entries.get(0);
@@ -257,7 +257,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         Trace.Entry jdbcEntry = entries.get(0);
@@ -275,7 +275,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.entryCount()).isZero();
     }
 
@@ -285,7 +285,7 @@ public class JdbcPluginTest {
         // when
         container.executeAppUnderTest(ExecuteLotsOfStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         Trace.Timer jdbcExecuteTimer = null;
         for (Trace.Timer nestedTimer : header.rootTimer().childTimers()) {
             if (nestedTimer.name().equals("jdbc execute")) {

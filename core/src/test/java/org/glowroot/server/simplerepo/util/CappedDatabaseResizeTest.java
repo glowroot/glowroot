@@ -88,13 +88,13 @@ public class CappedDatabaseResizeTest {
                 cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
         cappedDatabase.resize(newSizeKb);
         // then
-        String text2 = cappedDatabase.read(cappedId, "").read();
+        String text2 = cappedDatabase.read(cappedId).read();
         assertThat(text2).isEqualTo(text);
 
         // also test close and re-open
         cappedDatabase.close();
         cappedDatabase = new CappedDatabase(tempFile, 2, Tickers.getTicker());
-        text2 = cappedDatabase.read(cappedId, "").read();
+        text2 = cappedDatabase.read(cappedId).read();
         assertThat(text2).isEqualTo(text);
     }
 
@@ -110,13 +110,13 @@ public class CappedDatabaseResizeTest {
         long cappedId =
                 cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
         // then
-        String text2 = cappedDatabase.read(cappedId, "").read();
+        String text2 = cappedDatabase.read(cappedId).read();
         assertThat(text2).isEqualTo(text);
 
         // also test close and re-open
         cappedDatabase.close();
         cappedDatabase = new CappedDatabase(tempFile, 2, Tickers.getTicker());
-        text2 = cappedDatabase.read(cappedId, "").read();
+        text2 = cappedDatabase.read(cappedId).read();
         assertThat(text2).isEqualTo(text);
     }
 

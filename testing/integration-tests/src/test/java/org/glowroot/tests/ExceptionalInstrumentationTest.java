@@ -55,7 +55,7 @@ public class ExceptionalInstrumentationTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithErrorEntry.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries.size()).isEqualTo(1);
         assertThat(entries.get(0).error().get().message()).isEqualTo("This is exceptional");

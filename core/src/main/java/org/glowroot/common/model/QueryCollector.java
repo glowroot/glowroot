@@ -27,7 +27,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Doubles;
 
-import org.glowroot.agent.model.QueryData;
 import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
 import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Query;
 
@@ -91,13 +90,14 @@ public class QueryCollector {
         }
     }
 
-    public void mergeQuery(String queryType, QueryData query) {
+    public void mergeQuery(String queryType, String queryText, long totalNanos, long executionCount,
+            long totalRows) {
         Map<String, MutableQuery> queriesForQueryType = queries.get(queryType);
         if (queriesForQueryType == null) {
             queriesForQueryType = Maps.newHashMap();
             queries.put(queryType, queriesForQueryType);
         }
-        mergeQuery(query, queriesForQueryType);
+        mergeQuery(queryText, totalNanos, executionCount, totalRows, queriesForQueryType);
     }
 
     private void mergeQuery(Aggregate.Query query, Map<String, MutableQuery> queriesForQueryType) {
@@ -115,19 +115,20 @@ public class QueryCollector {
         aggregateQuery.addToTotalRows(query.getTotalRows());
     }
 
-    private void mergeQuery(QueryData query, Map<String, MutableQuery> queriesForQueryType) {
-        MutableQuery aggregateQuery = queriesForQueryType.get(query.getQueryText());
+    private void mergeQuery(String queryText, long totalNanos, long executionCount, long totalRows,
+            Map<String, MutableQuery> queriesForQueryType) {
+        MutableQuery aggregateQuery = queriesForQueryType.get(queryText);
         if (aggregateQuery == null) {
             if (maxMultiplierWhileBuilding != 0
                     && queriesForQueryType.size() >= limit * maxMultiplierWhileBuilding) {
                 return;
             }
-            aggregateQuery = new MutableQuery(query.getQueryText());
-            queriesForQueryType.put(query.getQueryText(), aggregateQuery);
+            aggregateQuery = new MutableQuery(queryText);
+            queriesForQueryType.put(queryText, aggregateQuery);
         }
-        aggregateQuery.addToTotalNanos(query.getTotalNanos());
-        aggregateQuery.addToExecutionCount(query.getExecutionCount());
-        aggregateQuery.addToTotalRows(query.getTotalRows());
+        aggregateQuery.addToTotalNanos(totalNanos);
+        aggregateQuery.addToExecutionCount(executionCount);
+        aggregateQuery.addToTotalRows(totalRows);
     }
 
     private void order(List<Query> queries) {

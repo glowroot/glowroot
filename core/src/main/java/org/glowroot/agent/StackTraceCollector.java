@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.model.Transaction;
-import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.plugin.api.config.ConfigListener;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

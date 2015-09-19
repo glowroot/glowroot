@@ -55,7 +55,7 @@ public class GlowrootApiTest {
         // when
         container.executeAppUnderTest(SetTransactionType.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.transactionType()).isEqualTo("a type");
     }
 
@@ -65,7 +65,7 @@ public class GlowrootApiTest {
         // when
         container.executeAppUnderTest(SetTransactionName.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.transactionName()).isEqualTo("a name");
     }
 
@@ -75,7 +75,7 @@ public class GlowrootApiTest {
         // when
         container.executeAppUnderTest(SetTransactionErrorWithThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.error().get().message()).isEqualTo("abc");
         assertThat(header.error().get().exception().get().display())
                 .isEqualTo("java.lang.IllegalStateException: abc");
@@ -87,7 +87,7 @@ public class GlowrootApiTest {
         // when
         container.executeAppUnderTest(SetTransactionErrorWithMessage.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.error().get().message()).isEqualTo("xyz");
         assertThat(header.error().get().exception().isPresent()).isFalse();
     }
@@ -98,7 +98,7 @@ public class GlowrootApiTest {
         // when
         container.executeAppUnderTest(SetTransactionErrorWithMessageAndThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.error().get().message()).isEqualTo("efg");
         assertThat(header.error().get().exception().get().display())
                 .isEqualTo("java.lang.IllegalStateException: tuv");
@@ -110,17 +110,17 @@ public class GlowrootApiTest {
         // when
         container.executeAppUnderTest(SetTransactionUser.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.user()).isEqualTo("a user");
     }
 
     @Test
-    public void shouldAddTransactionCustomAttribute() throws Exception {
+    public void shouldAddTransactionAttribute() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(AddTransactionCustomAttribute.class);
+        container.executeAppUnderTest(AddTransactionAttribute.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.attributes().size()).isEqualTo(1);
         assertThat(header.attributes().get("an attr")).containsExactly("a val");
     }
@@ -131,7 +131,7 @@ public class GlowrootApiTest {
         // when
         container.executeAppUnderTest(SetTransactionSlowThreshold.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header).isNull();
     }
 
@@ -215,7 +215,7 @@ public class GlowrootApiTest {
         }
     }
 
-    public static class AddTransactionCustomAttribute implements AppUnderTest, TransactionMarker {
+    public static class AddTransactionAttribute implements AppUnderTest, TransactionMarker {
 
         @Override
         public void executeApp() throws Exception {
@@ -224,7 +224,7 @@ public class GlowrootApiTest {
 
         @Override
         public void transactionMarker() throws Exception {
-            Glowroot.addTransactionCustomAttribute("an attr", "a val");
+            Glowroot.addTransactionAttribute("an attr", "a val");
         }
     }
 

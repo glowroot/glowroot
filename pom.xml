@@ -66,6 +66,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
     <!-- use custom-built jdk6 compatible checker framework annotations by default except when
       actually running checker framework code quality tests -->
     <checker.qual.group.id>org.glowroot.misc</checker.qual.group.id>

@@ -67,7 +67,7 @@ public class QueryData implements Timer {
         return queryType;
     }
 
-    public String getQueryText() {
+    String getQueryText() {
         return queryText;
     }
 
@@ -90,31 +90,31 @@ public class QueryData implements Timer {
         }
     }
 
-    public void end(long endTick) {
+    void end(long endTick) {
         if (--selfNestingLevel == 0) {
             endInternal(endTick);
         }
     }
 
-    public void incrementRowCount(long inc) {
+    void incrementRowCount(long inc) {
         totalRows += inc;
     }
 
-    public double getTotalNanos() {
+    long getTotalNanos() {
         return totalNanos;
     }
 
     // only called after transaction completion
-    public long getExecutionCount() {
+    long getExecutionCount() {
         return executionCount;
     }
 
     // only called after transaction completion
-    public long getTotalRows() {
+    long getTotalRows() {
         return totalRows;
     }
 
-    public void extend(long startTick) {
+    void extend(long startTick) {
         if (selfNestingLevel++ == 0) {
             // restarting a previously stopped execution, so need to decrement count
             this.startTick = startTick;

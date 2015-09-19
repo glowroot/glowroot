@@ -42,7 +42,7 @@ public class NopGlowrootService implements GlowrootService {
     public void setTransactionUser(@Nullable String user) {}
 
     @Override
-    public void addTransactionCustomAttribute(String name, @Nullable String value) {}
+    public void addTransactionAttribute(String name, @Nullable String value) {}
 
     @Override
     public void setTransactionSlowThreshold(long threshold, TimeUnit unit) {}

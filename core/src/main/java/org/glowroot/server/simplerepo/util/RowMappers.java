@@ -22,7 +22,7 @@ import java.sql.Types;
 
 import javax.annotation.Nullable;
 
-import org.glowroot.collector.spi.Constants;
+import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.live.LiveTraceRepository.Existence;
 
 public class RowMappers {
@@ -51,24 +51,15 @@ public class RowMappers {
             throws SQLException {
         double value = resultSet.getDouble(columnIndex);
         if (resultSet.wasNull()) {
-            return Constants.THREAD_DATA_NOT_AVAILABLE;
+            return NotAvailableAware.NA;
         } else {
             return value;
         }
     }
 
-    public static void setNotAvailableAwareLong(PreparedStatement preparedStatement,
-            int columnIndex, long value) throws SQLException {
-        if (value == Constants.THREAD_DATA_NOT_AVAILABLE) {
-            preparedStatement.setNull(columnIndex, Types.BIGINT);
-        } else {
-            preparedStatement.setLong(columnIndex, value);
-        }
-    }
-
     public static void setNotAvailableAwareDouble(PreparedStatement preparedStatement,
             int columnIndex, double value) throws SQLException {
-        if (value == Constants.THREAD_DATA_NOT_AVAILABLE) {
+        if (NotAvailableAware.isNA(value)) {
             preparedStatement.setNull(columnIndex, Types.BIGINT);
         } else {
             preparedStatement.setDouble(columnIndex, value);

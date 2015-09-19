@@ -61,7 +61,7 @@ window.gtClipboard = function (clipboardSelector, textNodeFn, textFn) {
         title: 'Copy to clipboard',
         placement: 'bottom'
       });
-      client.on('ready', function (readyEvent) {
+      client.on('ready', function () {
         client.on('copy', function (event) {
           var text = textFn().trim();
           event.clipboardData.setData('text/plain', text + '\n');

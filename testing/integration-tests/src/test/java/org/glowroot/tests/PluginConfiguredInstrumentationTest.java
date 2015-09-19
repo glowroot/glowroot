@@ -53,7 +53,7 @@ public class PluginConfiguredInstrumentationTest {
         // when
         container.executeAppUnderTest(ShouldExecuteAAA.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.transactionName()).isEqualTo("abc zzz");
         assertThat(header.user()).isEqualTo("uzzz");
         assertThat(header.attributes().get("View")).containsExactly("vabc");

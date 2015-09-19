@@ -54,7 +54,7 @@ public class WeavingTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.headline()).isEqualTo("Level One");
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         Trace.Entry entry = entries.get(0);

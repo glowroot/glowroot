@@ -33,8 +33,8 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Styles;
-import org.glowroot.markers.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

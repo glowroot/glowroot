@@ -26,12 +26,12 @@ import org.immutables.builder.Builder;
 
 import org.glowroot.common.config.PluginDescriptor;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.live.LiveAggregateRepository;
 import org.glowroot.live.LiveJvmService;
 import org.glowroot.live.LiveThreadDumpService;
 import org.glowroot.live.LiveTraceRepository;
 import org.glowroot.live.LiveWeavingService;
-import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.server.repo.AggregateRepository;
 import org.glowroot.server.repo.ConfigRepository;
 import org.glowroot.server.repo.GaugeValueRepository;

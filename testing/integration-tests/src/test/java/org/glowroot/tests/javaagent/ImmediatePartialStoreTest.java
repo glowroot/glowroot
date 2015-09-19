@@ -87,7 +87,7 @@ public class ImmediatePartialStoreTest {
         Thread.sleep(1000);
         container = LocalContainer.createWithFileDb(baseDir);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header).isNotNull();
         assertThat(header.partial().or(false)).isTrue();
         // cleanup

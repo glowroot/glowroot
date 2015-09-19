@@ -267,7 +267,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $scope.exportToJson = function (deferred) {
+    $scope.exportToJson = function () {
       var data = angular.copy($scope.config);
       delete data.version;
       if (!data.methodReturnType) {

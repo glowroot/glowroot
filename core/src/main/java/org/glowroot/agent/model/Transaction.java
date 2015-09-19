@@ -60,10 +60,10 @@ public class Transaction {
     public static final int USE_GENERAL_STORE_THRESHOLD = -1;
 
     // initial capacity is very important, see ThreadSafeCollectionOfTenBenchmark
-    private static final int CUSTOM_ATTRIBUTE_KEYS_INITIAL_CAPACITY = 16;
+    private static final int ATTRIBUTE_KEYS_INITIAL_CAPACITY = 16;
 
     // this is just to limit memory (and also to limit display size of trace)
-    private static final long CUSTOM_ATTRIBUTE_VALUES_PER_KEY_LIMIT = 10000;
+    private static final long ATTRIBUTE_VALUES_PER_KEY_LIMIT = 10000;
 
     // a unique identifier
     private final TraceUniqueId id;
@@ -82,8 +82,8 @@ public class Transaction {
     private volatile @Nullable OverrideSource userOverrideSource;
 
     // lazy loaded to reduce memory when custom attributes are not used
-    @GuardedBy("customAttributes")
-    private volatile @MonotonicNonNull SetMultimap<String, String> customAttributes;
+    @GuardedBy("attributes")
+    private volatile @MonotonicNonNull SetMultimap<String, String> attributes;
 
     // trace-level error
     private volatile @Nullable ErrorMessage errorMessage;
@@ -205,19 +205,19 @@ public class Transaction {
         return Strings.nullToEmpty(user);
     }
 
-    public ImmutableSetMultimap<String, String> getCustomAttributes() {
-        if (customAttributes == null) {
+    public ImmutableSetMultimap<String, String> getAttributes() {
+        if (attributes == null) {
             return ImmutableSetMultimap.of();
         }
-        SetMultimap<String, String> orderedCustomAttributes =
+        SetMultimap<String, String> orderedAttributes =
                 TreeMultimap.create(String.CASE_INSENSITIVE_ORDER, String.CASE_INSENSITIVE_ORDER);
-        synchronized (customAttributes) {
-            orderedCustomAttributes.putAll(customAttributes);
+        synchronized (attributes) {
+            orderedAttributes.putAll(attributes);
         }
-        return ImmutableSetMultimap.copyOf(orderedCustomAttributes);
+        return ImmutableSetMultimap.copyOf(orderedAttributes);
     }
 
-    Map<String, ? extends /*@Nullable*/Object> getCustomDetail() {
+    Map<String, ? extends /*@Nullable*/Object> getDetail() {
         MessageSupplier messageSupplier = traceEntryComponent.getRootEntry().getMessageSupplier();
         // root trace entry messageSupplier is never be null
         checkNotNull(messageSupplier);
@@ -263,35 +263,30 @@ public class Transaction {
         return traceEntryComponent.getEntryCount();
     }
 
-    public Iterable<QueryData> getQueries() {
+    public Iterator<QueryData> getQueries() {
         // read memory barrier is for QueryData values
         readMemoryBarrier();
         if (headQueryData == null) {
-            return ImmutableList.of();
+            return ImmutableList.<QueryData>of().iterator();
         }
-        return new Iterable<QueryData>() {
+        return new Iterator<QueryData>() {
+            private @Nullable QueryData next = headQueryData;
             @Override
-            public Iterator<QueryData> iterator() {
-                return new Iterator<QueryData>() {
-                    private @Nullable QueryData next = headQueryData;
-                    @Override
-                    public boolean hasNext() {
-                        return next != null;
-                    }
-                    @Override
-                    public QueryData next() {
-                        QueryData curr = next;
-                        if (curr == null) {
-                            throw new NoSuchElementException();
-                        }
-                        next = curr.getNextQueryData();
-                        return curr;
-                    }
-                    @Override
-                    public void remove() {
-                        throw new UnsupportedOperationException();
-                    }
-                };
+            public boolean hasNext() {
+                return next != null;
+            }
+            @Override
+            public QueryData next() {
+                QueryData curr = next;
+                if (curr == null) {
+                    throw new NoSuchElementException();
+                }
+                next = curr.getNextQueryData();
+                return curr;
+            }
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException();
             }
         };
     }
@@ -301,7 +296,7 @@ public class Transaction {
         return traceEntryComponent.toProtobuf();
     }
 
-    public long getProfileSampleCount() {
+    long getProfileSampleCount() {
         if (profile == null) {
             return 0;
         } else {
@@ -369,15 +364,15 @@ public class Transaction {
         }
     }
 
-    public void addCustomAttribute(String name, @Nullable String value) {
-        if (customAttributes == null) {
+    public void addAttribute(String name, @Nullable String value) {
+        if (attributes == null) {
             // no race condition here since only transaction thread calls addAttribute()
-            customAttributes = HashMultimap.create(CUSTOM_ATTRIBUTE_KEYS_INITIAL_CAPACITY, 1);
+            attributes = HashMultimap.create(ATTRIBUTE_KEYS_INITIAL_CAPACITY, 1);
         }
         String val = Strings.nullToEmpty(value);
-        synchronized (customAttributes) {
-            Collection<String> values = customAttributes.get(name);
-            if (values.size() < CUSTOM_ATTRIBUTE_VALUES_PER_KEY_LIMIT) {
+        synchronized (attributes) {
+            Collection<String> values = attributes.get(name);
+            if (values.size() < ATTRIBUTE_VALUES_PER_KEY_LIMIT) {
                 values.add(val);
             }
         }

@@ -70,7 +70,7 @@ public class TimerWrapperMethodsTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.profileSampleCount()).isGreaterThan(0);
         // profiler should have captured about 10 stack traces
         ProfileTree profileTree = container.getTraceService().getProfile(header.id());

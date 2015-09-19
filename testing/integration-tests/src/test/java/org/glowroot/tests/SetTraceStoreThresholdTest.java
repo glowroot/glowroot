@@ -57,7 +57,7 @@ public class SetTraceStoreThresholdTest {
         // when
         container.executeAppUnderTest(SetLargeTraceStoreThreshold.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header).isNull();
     }
 
@@ -70,7 +70,7 @@ public class SetTraceStoreThresholdTest {
         // when
         container.executeAppUnderTest(SetLargeAndThenSmallTraceStoreThreshold.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header).isNotNull();
     }
 
@@ -83,7 +83,7 @@ public class SetTraceStoreThresholdTest {
         // when
         container.executeAppUnderTest(SetSmallAndThenLargeTraceStoreThreshold.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header).isNotNull();
     }
 

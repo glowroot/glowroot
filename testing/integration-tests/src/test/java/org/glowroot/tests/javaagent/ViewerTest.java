@@ -53,7 +53,7 @@ public class ViewerTest {
         Container container = new JavaagentContainer(baseDir, true, 0, false, false, true,
                 ImmutableList.<String>of());
         // when
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         // then
         try {

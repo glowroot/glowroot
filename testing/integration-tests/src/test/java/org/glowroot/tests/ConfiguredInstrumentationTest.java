@@ -76,7 +76,7 @@ public class ConfiguredInstrumentationTest {
         // when
         container.executeAppUnderTest(ShouldExecute1.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         assertThat(header.transactionType()).isEqualTo("test override type");
@@ -100,7 +100,7 @@ public class ConfiguredInstrumentationTest {
         // when
         container.executeAppUnderTest(ShouldExecuteWithReturn.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
         assertThat(header.rootTimer().childTimers()).hasSize(1);
         assertThat(header.rootTimer().childTimers().get(0).name())
@@ -116,7 +116,7 @@ public class ConfiguredInstrumentationTest {
         // when
         container.executeAppUnderTest(ShouldExecuteWithArgs.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.headline()).isEqualTo("executeWithArgs(): abc, 123, the name");
         assertThat(header.transactionType()).isEqualTo("Pointcut config test");
         assertThat(header.transactionName()).isEqualTo("Misc / executeWithArgs");

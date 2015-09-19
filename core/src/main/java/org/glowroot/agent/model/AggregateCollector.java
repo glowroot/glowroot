@@ -16,6 +16,7 @@
 package org.glowroot.agent.model;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -23,15 +24,14 @@ import javax.annotation.Nullable;
 import com.google.common.collect.Lists;
 
 import org.glowroot.agent.model.ThreadInfoComponent.ThreadInfoData;
-import org.glowroot.collector.spi.Constants;
 import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
 import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
 import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.common.model.MutableProfileTree;
-import org.glowroot.common.model.MutableTimer;
 import org.glowroot.common.model.QueryCollector;
+import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.live.ImmutableErrorPoint;
 import org.glowroot.live.ImmutableOverallErrorSummary;
@@ -58,10 +58,10 @@ class AggregateCollector {
     private long totalNanos;
     private long transactionCount;
     private long errorCount;
-    private long totalCpuNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
-    private long totalBlockedNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
-    private long totalWaitedNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
-    private long totalAllocatedBytes = Constants.THREAD_DATA_NOT_AVAILABLE;
+    private double totalCpuNanos = NotAvailableAware.NA;
+    private double totalBlockedNanos = NotAvailableAware.NA;
+    private double totalWaitedNanos = NotAvailableAware.NA;
+    private double totalAllocatedBytes = NotAvailableAware.NA;
     // histogram values are in nanoseconds, but with microsecond precision to reduce the number of
     // buckets (and memory) required
     private final LazyHistogram lazyHistogram = new LazyHistogram();
@@ -87,13 +87,13 @@ class AggregateCollector {
         }
         ThreadInfoData threadInfo = transaction.getThreadInfo();
         if (threadInfo != null) {
-            totalCpuNanos = notAvailableAwareAdd(totalCpuNanos, threadInfo.threadCpuNanos());
+            totalCpuNanos = NotAvailableAware.add(totalCpuNanos, threadInfo.threadCpuNanos());
             totalBlockedNanos =
-                    notAvailableAwareAdd(totalBlockedNanos, threadInfo.threadBlockedNanos());
+                    NotAvailableAware.add(totalBlockedNanos, threadInfo.threadBlockedNanos());
             totalWaitedNanos =
-                    notAvailableAwareAdd(totalWaitedNanos, threadInfo.threadWaitedNanos());
+                    NotAvailableAware.add(totalWaitedNanos, threadInfo.threadWaitedNanos());
             totalAllocatedBytes =
-                    notAvailableAwareAdd(totalAllocatedBytes, threadInfo.threadAllocatedBytes());
+                    NotAvailableAware.add(totalAllocatedBytes, threadInfo.threadAllocatedBytes());
         }
         lazyHistogram.add(totalNanos);
     }
@@ -111,9 +111,12 @@ class AggregateCollector {
         rootTimers.add(rootTimer);
     }
 
-    void mergeQueries(Iterable<QueryData> toBeMergedQueries) {
-        for (QueryData toBeMergedQuery : toBeMergedQueries) {
-            queries.mergeQuery(toBeMergedQuery.getQueryType(), toBeMergedQuery);
+    void mergeQueries(Iterator<QueryData> toBeMergedQueries) {
+        while (toBeMergedQueries.hasNext()) {
+            QueryData toBeMergedQuery = toBeMergedQueries.next();
+            queries.mergeQuery(toBeMergedQuery.getQueryType(), toBeMergedQuery.getQueryText(),
+                    toBeMergedQuery.getTotalNanos(), toBeMergedQuery.getExecutionCount(),
+                    toBeMergedQuery.getTotalRows());
         }
     }
 
@@ -223,15 +226,5 @@ class AggregateCollector {
             rootTimers.add(rootTimer.toProtobuf());
         }
         return rootTimers;
-    }
-
-    private static long notAvailableAwareAdd(long x, long y) {
-        if (x == Constants.THREAD_DATA_NOT_AVAILABLE) {
-            return y;
-        }
-        if (y == Constants.THREAD_DATA_NOT_AVAILABLE) {
-            return x;
-        }
-        return x + y;
     }
 }

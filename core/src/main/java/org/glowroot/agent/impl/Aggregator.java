@@ -31,8 +31,8 @@ import org.glowroot.agent.model.AggregateIntervalCollector;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.collector.spi.Collector;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Styles;
-import org.glowroot.markers.OnlyUsedByTests;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 

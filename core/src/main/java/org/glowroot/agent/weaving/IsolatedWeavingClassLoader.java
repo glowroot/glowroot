@@ -38,7 +38,7 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.plugin.api.Agent;
 
 import static com.google.common.base.Preconditions.checkNotNull;

@@ -122,7 +122,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
         return className.startsWith("org/glowroot/plugin/api/")
                 || className.startsWith("org/glowroot/agent/")
                 || className.startsWith("org/glowroot/common/")
-                || className.startsWith("org/glowroot/local/")
+                || className.startsWith("org/glowroot/live/")
                 || className.startsWith("org/glowroot/shaded/");
     }
 

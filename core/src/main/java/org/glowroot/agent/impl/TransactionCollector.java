@@ -34,8 +34,6 @@ import org.glowroot.agent.model.Transaction;
 import org.glowroot.collector.spi.Collector;
 import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.common.util.Clock;
-import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.UsedByReflection;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -44,11 +42,6 @@ public class TransactionCollector {
     private static final Logger logger = LoggerFactory.getLogger(TransactionCollector.class);
 
     private static final int PENDING_LIMIT = 100;
-
-    // this is only used for benchmarking overhead of trace storage
-    @OnlyUsedByTests
-    @UsedByReflection
-    private static boolean useSynchronousStore;
 
     private final ExecutorService executorService;
     private final ConfigService configService;
@@ -142,11 +135,7 @@ public class TransactionCollector {
                 }
             }
         };
-        if (useSynchronousStore) {
-            command.run();
-        } else {
-            executorService.execute(command);
-        }
+        executorService.execute(command);
     }
 
     // no need to throttle partial trace storage since throttling is handled upstream by using a

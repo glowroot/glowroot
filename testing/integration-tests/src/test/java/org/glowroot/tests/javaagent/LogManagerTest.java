@@ -70,7 +70,7 @@ public class LogManagerTest {
         // when
         container.executeAppUnderTest(ShouldUseCustomLogManager.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         // then
         assertThat(header.user()).isEqualTo(CustomLogManager.class.getName());
     }

@@ -46,6 +46,8 @@ public class DetailMapWriter {
         UNSHADED_GUAVA_OPTIONAL_CLASS_NAME = className;
     }
 
+    private DetailMapWriter() {}
+
     public static List<Trace.DetailEntry> toProtobufDetail(
             Map<String, ? extends /*@Nullable*/Object> detail) {
         return writeMap(detail);
@@ -65,58 +67,74 @@ public class DetailMapWriter {
                 // skip invalid data
                 continue;
             }
-            Trace.DetailEntry.Builder builder = Trace.DetailEntry.newBuilder()
-                    .setName(name);
-            writeValue(builder, entry.getValue(), false);
-            entries.add(builder.build());
+            entries.add(createDetailEntry(name, entry.getValue()));
         }
         return entries;
     }
 
-    private static void writeValue(Trace.DetailEntry.Builder builder, @Nullable Object value,
-            boolean insideList) {
+    private static Trace.DetailEntry createDetailEntry(String name, @Nullable Object value) {
+        if (value instanceof Map) {
+            return Trace.DetailEntry.newBuilder()
+                    .setName(name)
+                    .addAllChildEntry(writeMap((Map<?, ?>) value))
+                    .build();
+        } else if (value instanceof List) {
+            Trace.DetailEntry.Builder builder = Trace.DetailEntry.newBuilder()
+                    .setName(name);
+            for (Object v : (List<?>) value) {
+                addValue(builder, v);
+            }
+            return builder.build();
+        } else {
+            // simple value
+            Trace.DetailEntry.Builder builder = Trace.DetailEntry.newBuilder()
+                    .setName(name);
+            addValue(builder, value);
+            return builder.build();
+        }
+    }
+
+    private static void addValue(Trace.DetailEntry.Builder builder,
+            @Nullable Object possiblyOptionalValue) {
+        Object value = stripOptional(possiblyOptionalValue);
         if (value == null) {
             // add nothing (as a corollary, this will strip null/Optional.absent() items from lists)
         } else if (value instanceof String) {
-            builder.addValueBuilder().setSval((String) value);
+            builder.addValueBuilder().setSval((String) value).build();
         } else if (value instanceof Boolean) {
-            builder.addValueBuilder().setBval((Boolean) value);
+            builder.addValueBuilder().setBval((Boolean) value).build();
         } else if (value instanceof Long) {
-            builder.addValueBuilder().setLval((Long) value);
+            builder.addValueBuilder().setLval((Long) value).build();
         } else if (value instanceof Number) {
-            builder.addValueBuilder().setDval(((Number) value).doubleValue());
-        } else if (value instanceof Optional) {
+            builder.addValueBuilder().setDval(((Number) value).doubleValue()).build();
+        } else {
+            logger.warn("detail map has unexpected value type: {}", value.getClass().getName());
+            builder.addValueBuilder().setSval(Strings.nullToEmpty(value.toString())).build();
+        }
+    }
+
+    private static @Nullable Object stripOptional(@Nullable Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Optional) {
             Optional<?> val = (Optional<?>) value;
-            writeValue(builder, val.orNull(), insideList);
-        } else if (value instanceof Map) {
-            if (insideList) {
-                logger.warn("detail maps do not support maps inside of lists");
-            } else {
-                builder.addAllChildEntry(writeMap((Map<?, ?>) value));
-            }
-        } else if (value instanceof List) {
-            if (insideList) {
-                logger.warn("detail maps do not support lists inside of lists");
-            } else {
-                for (Object v : (List<?>) value) {
-                    writeValue(builder, v, true);
-                }
-            }
-        } else if (isUnshadedGuavaOptionalClass(value)) {
+            return val.orNull();
+        }
+        if (isUnshadedGuavaOptionalClass(value)) {
             // this is just for plugin tests that run against shaded glowroot-core
             Class<?> optionalClass = value.getClass().getSuperclass();
             // just tested that super class is not null in condition
             checkNotNull(optionalClass);
             try {
                 Method orNullMethod = optionalClass.getMethod("orNull");
-                writeValue(builder, orNullMethod.invoke(value), insideList);
+                return orNullMethod.invoke(value);
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
+                return null;
             }
-        } else {
-            logger.warn("detail map has unexpected value type: {}", value.getClass().getName());
-            builder.addValueBuilder().setSval(Strings.nullToEmpty(value.toString()));
         }
+        return value;
     }
 
     private static boolean isUnshadedGuavaOptionalClass(Object value) {

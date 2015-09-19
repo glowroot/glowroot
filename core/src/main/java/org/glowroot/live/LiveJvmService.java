@@ -27,9 +27,7 @@ import com.google.common.collect.Ordering;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
-import org.glowroot.markers.UsedByJsonBinding;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import org.glowroot.common.util.UsedByJsonSerialization;
 
 public interface LiveJvmService {
 
@@ -55,26 +53,22 @@ public interface LiveJvmService {
     Capabilities getCapabilities();
 
     @Value.Immutable
-    public interface MBeanTreeRequest {
+    interface MBeanTreeRequest {
         List<String> expanded();
     }
 
-    public interface MBeanTreeNode {
-
-        static final Ordering<MBeanTreeNode> ordering = new Ordering<MBeanTreeNode>() {
-            @Override
-            public int compare(@Nullable MBeanTreeNode left, @Nullable MBeanTreeNode right) {
-                checkNotNull(left);
-                checkNotNull(right);
-                return left.getNodeName().compareToIgnoreCase(right.getNodeName());
-            }
-        };
-
+    interface MBeanTreeNode {
         String getNodeName();
     }
 
-    @UsedByJsonBinding
-    public static class MBeanTreeInnerNode implements MBeanTreeNode {
+    static class MBeanTreeInnerNode implements MBeanTreeNode {
+
+        private static final Ordering<MBeanTreeNode> ordering = new Ordering<MBeanTreeNode>() {
+            @Override
+            public int compare(MBeanTreeNode left, MBeanTreeNode right) {
+                return left.getNodeName().compareToIgnoreCase(right.getNodeName());
+            }
+        };
 
         private final String name;
 
@@ -90,12 +84,14 @@ public interface LiveJvmService {
         }
 
         @Override
+        @UsedByJsonSerialization
         public String getNodeName() {
             return name;
         }
 
+        @UsedByJsonSerialization
         public List<MBeanTreeNode> getChildNodes() {
-            return MBeanTreeNode.ordering.sortedCopy(childNodes);
+            return ordering.sortedCopy(childNodes);
         }
 
         public MBeanTreeInnerNode getOrCreateNode(String name) {
@@ -113,8 +109,7 @@ public interface LiveJvmService {
         }
     }
 
-    @UsedByJsonBinding
-    public static class MBeanTreeLeafNode implements MBeanTreeNode {
+    static class MBeanTreeLeafNode implements MBeanTreeNode {
 
         // nodeName may not be unique
         private final String nodeName;
@@ -131,18 +126,22 @@ public interface LiveJvmService {
         }
 
         @Override
+        @UsedByJsonSerialization
         public String getNodeName() {
             return nodeName;
         }
 
+        @UsedByJsonSerialization
         public String getObjectName() {
             return objectName;
         }
 
+        @UsedByJsonSerialization
         public boolean isExpanded() {
             return expanded;
         }
 
+        @UsedByJsonSerialization
         public @Nullable Map<String, /*@Nullable*/Object> getAttributeMap() {
             return attributeMap;
         }
@@ -150,7 +149,7 @@ public interface LiveJvmService {
 
     @Value.Immutable
     @Styles.AllParameters
-    public interface MBeanMeta {
+    interface MBeanMeta {
         boolean unmatched();
         boolean unavailable();
         List<String> attributeNames();
@@ -158,13 +157,13 @@ public interface LiveJvmService {
 
     @Value.Immutable
     @Styles.AllParameters
-    public interface HeapFile {
+    interface HeapFile {
         String filename();
         long size();
     }
 
     @Value.Immutable
-    public interface ProcessInfo {
+    interface ProcessInfo {
         long startTime();
         long uptime();
         String pid();
@@ -177,7 +176,7 @@ public interface LiveJvmService {
     }
 
     @Value.Immutable
-    public interface Capabilities {
+    interface Capabilities {
         Availability threadCpuTime();
         Availability threadContentionTime();
         Availability threadAllocatedBytes();
@@ -186,7 +185,7 @@ public interface LiveJvmService {
 
     @Value.Immutable
     @Styles.AllParameters
-    public interface Availability {
+    interface Availability {
         boolean isAvailable();
         // reason only needed when available is false
         String getReason();

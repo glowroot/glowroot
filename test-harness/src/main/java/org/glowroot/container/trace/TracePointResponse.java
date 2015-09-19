@@ -27,7 +27,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.container.common.ObjectMappers.orEmpty;
 
 class TracePointResponse {
@@ -71,9 +70,7 @@ class TracePointResponse {
 
         static final Ordering<RawPoint> orderingByCaptureTime = new Ordering<RawPoint>() {
             @Override
-            public int compare(@Nullable RawPoint left, @Nullable RawPoint right) {
-                checkNotNull(left);
-                checkNotNull(right);
+            public int compare(RawPoint left, RawPoint right) {
                 return Longs.compare(left.captureTime, right.captureTime);
             }
         };

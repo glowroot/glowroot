@@ -58,7 +58,7 @@ public class CassandraSyncTest {
     @Test
     public void shouldExecuteStatement() throws Exception {
         container.executeAppUnderTest(ExecuteStatement.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -74,7 +74,7 @@ public class CassandraSyncTest {
     @Test
     public void shouldIterateUsingOneAndAll() throws Exception {
         container.executeAppUnderTest(IterateUsingOneAndAll.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -90,7 +90,7 @@ public class CassandraSyncTest {
     @Test
     public void shouldExecuteBoundStatement() throws Exception {
         container.executeAppUnderTest(ExecuteBoundStatement.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -107,7 +107,7 @@ public class CassandraSyncTest {
     @Test
     public void shouldExecuteBatchStatement() throws Exception {
         container.executeAppUnderTest(ExecuteBatchStatement.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -177,8 +177,6 @@ public class CassandraSyncTest {
 
         @Override
         public void transactionMarker() throws Exception {
-            // cql comment is to avoid "re-preparing already prepared query" warning message
-            // from com.datastax.driver.core.Cluster
             PreparedStatement preparedStatement =
                     session.prepare("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
             BoundStatement boundStatement = new BoundStatement(preparedStatement);

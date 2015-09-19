@@ -22,7 +22,7 @@ import org.glowroot.agent.advicegen.MessageTemplate.ConstantPart;
 import org.glowroot.agent.advicegen.MessageTemplate.Part;
 import org.glowroot.agent.advicegen.MessageTemplate.PartType;
 import org.glowroot.agent.advicegen.MessageTemplate.ValuePathPart;
-import org.glowroot.markers.UsedByGeneratedBytecode;
+import org.glowroot.common.util.UsedByGeneratedBytecode;
 import org.glowroot.plugin.api.transaction.Message;
 import org.glowroot.plugin.api.transaction.MessageSupplier;
 import org.glowroot.plugin.api.transaction.TraceEntry;

@@ -82,7 +82,7 @@ public class MaxEntriesLimitTest {
         Stopwatch stopwatch = Stopwatch.createStarted();
         Trace.Header header = null;
         while (stopwatch.elapsed(SECONDS) < 2) {
-            header = container.getTraceService().getActiveTrace(0, MILLISECONDS);
+            header = container.getTraceService().getActiveHeader(0, MILLISECONDS);
             if (header == null) {
                 continue;
             }
@@ -103,7 +103,7 @@ public class MaxEntriesLimitTest {
         container.getConfigService().updateAdvancedConfig(advancedConfig);
         stopwatch.stop().reset().start();
         while (stopwatch.elapsed(SECONDS) < 2) {
-            header = container.getTraceService().getActiveTrace(0, MILLISECONDS);
+            header = container.getTraceService().getActiveHeader(0, MILLISECONDS);
             if (header == null) {
                 continue;
             }
@@ -129,7 +129,7 @@ public class MaxEntriesLimitTest {
         // when
         container.executeAppUnderTest(GenerateLimitBypassedEntries.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.entryCount()).isEqualTo(101);
         assertThat(header.entryLimitExceeded().or(false)).isTrue();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());

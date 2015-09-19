@@ -37,7 +37,7 @@ import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.common.util.OnlyUsedByTests;
 
 // TODO if config.json file has unrecognized top-level node (something other than "transaction",
 // "userRecording", "advanced", etc) then log warning and remove that node

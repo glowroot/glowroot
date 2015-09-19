@@ -133,8 +133,8 @@ public class Glowroot {
      * 
      * {@code null} values are normalized to the empty string.
      */
-    public static void addTransactionCustomAttribute(String name, @Nullable String value) {
-        glowrootService.addTransactionCustomAttribute(name, value);
+    public static void addTransactionAttribute(String name, @Nullable String value) {
+        glowrootService.addTransactionAttribute(name, value);
     }
 
     /**

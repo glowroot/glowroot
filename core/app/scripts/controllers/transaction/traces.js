@@ -400,10 +400,9 @@ glowroot.controller('TracesCtrl', [
       appliedFilter.error = $location.search().error || '';
       appliedFilter.userComparator = $location.search()['user-comparator'] || 'begins';
       appliedFilter.user = $location.search().user || '';
-      appliedFilter.customAttributeName = $location.search()['custom-attribute-name'] || '';
-      appliedFilter.customAttributeValueComparator =
-          $location.search()['custom-attribute-value-comparator'] || 'begins';
-      appliedFilter.customAttributeValue = $location.search()['custom-attribute-value'] || '';
+      appliedFilter.attributeName = $location.search()['custom-attribute-name'] || '';
+      appliedFilter.attributeValueComparator = $location.search()['custom-attribute-value-comparator'] || 'begins';
+      appliedFilter.attributeValue = $location.search()['custom-attribute-value'] || '';
       appliedFilter.limit = Number($location.search().limit) || defaultFilterLimit;
 
       if (priorAppliedFilter !== undefined && !angular.equals(appliedFilter, priorAppliedFilter)) {
@@ -471,12 +470,12 @@ glowroot.controller('TracesCtrl', [
         query['user-comparator'] = appliedFilter.userComparator;
         query.user = appliedFilter.user;
       }
-      if (appliedFilter.customAttributeName) {
-        query['custom-attribute-name'] = appliedFilter.customAttributeName;
+      if (appliedFilter.attributeName) {
+        query['custom-attribute-name'] = appliedFilter.attributeName;
       }
-      if (appliedFilter.customAttributeValue) {
-        query['custom-attribute-value-comparator'] = appliedFilter.customAttributeValueComparator;
-        query['custom-attribute-value'] = appliedFilter.customAttributeValue;
+      if (appliedFilter.attributeValue) {
+        query['custom-attribute-value-comparator'] = appliedFilter.attributeValueComparator;
+        query['custom-attribute-value'] = appliedFilter.attributeValue;
       }
       if (Number(appliedFilter.limit) !== defaultFilterLimit) {
         query.limit = appliedFilter.limit;

@@ -60,10 +60,8 @@ import org.glowroot.common.config.PropertyValue;
 import org.glowroot.common.config.TransactionConfig;
 import org.glowroot.common.config.UserRecordingConfig;
 import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.plugin.api.config.ConfigListener;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 public class ConfigService {
 
@@ -415,9 +413,7 @@ public class ConfigService {
 
     private static final class PluginDescriptorOrdering extends Ordering<PluginDescriptor> {
         @Override
-        public int compare(@Nullable PluginDescriptor left, @Nullable PluginDescriptor right) {
-            checkNotNull(left);
-            checkNotNull(right);
+        public int compare(PluginDescriptor left, PluginDescriptor right) {
             return left.id().compareToIgnoreCase(right.id());
         }
     }

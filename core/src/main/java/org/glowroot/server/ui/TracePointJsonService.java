@@ -90,9 +90,9 @@ class TracePointJsonService {
                 .error(request.error())
                 .userComparator(request.userComparator())
                 .user(request.user())
-                .customAttributeName(request.customAttributeName())
-                .customAttributeValueComparator(request.customAttributeValueComparator())
-                .customAttributeValue(request.customAttributeValue())
+                .attributeName(request.attributeName())
+                .attributeValueComparator(request.attributeValueComparator())
+                .attributeValue(request.attributeValue())
                 .slowOnly(request.slowOnly())
                 .errorOnly(request.errorOnly())
                 .limit(request.limit())
@@ -276,9 +276,9 @@ class TracePointJsonService {
         public abstract @Nullable String error();
         public abstract @Nullable StringComparator userComparator();
         public abstract @Nullable String user();
-        public abstract @Nullable String customAttributeName();
-        public abstract @Nullable StringComparator customAttributeValueComparator();
-        public abstract @Nullable String customAttributeValue();
+        public abstract @Nullable String attributeName();
+        public abstract @Nullable StringComparator attributeValueComparator();
+        public abstract @Nullable String attributeValue();
 
         @Value.Default
         public boolean slowOnly() {

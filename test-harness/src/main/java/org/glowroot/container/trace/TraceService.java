@@ -64,7 +64,7 @@ public class TraceService {
         return httpClient.getAsStream("/export/trace/" + traceId);
     }
 
-    public @Nullable Trace.Header getLastTrace() throws Exception {
+    public @Nullable Trace.Header getLastHeader() throws Exception {
         String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
                 + "&response-time-millis-low=0&limit=1000");
         TracePointResponse response =
@@ -76,19 +76,19 @@ public class TraceService {
             return null;
         }
         RawPoint mostRecentCapturedPoint = RawPoint.orderingByCaptureTime.max(points);
-        return getTrace(mostRecentCapturedPoint.getId());
+        return getHeader(mostRecentCapturedPoint.getId());
     }
 
     // this method blocks for an active trace to be available because
     // sometimes need to give container enough time to start up and for the trace to hit its store
     // threshold
-    public @Nullable Trace.Header getActiveTrace(int timeout, TimeUnit unit) throws Exception {
+    public @Nullable Trace.Header getActiveHeader(int timeout, TimeUnit unit) throws Exception {
         Stopwatch stopwatch = Stopwatch.createStarted();
         Trace.Header header = null;
         // try at least once (e.g. in case timeoutMillis == 0)
         boolean first = true;
         while (first || stopwatch.elapsed(unit) < timeout) {
-            header = getActiveTrace();
+            header = getActiveHeader();
             if (header != null) {
                 break;
             }
@@ -98,7 +98,7 @@ public class TraceService {
         return header;
     }
 
-    public List<Trace.Header> getTraces(TraceQuery query) throws Exception {
+    public List<Trace.Header> getHeaders(TraceQuery query) throws Exception {
         StringBuilder sb = new StringBuilder();
         sb.append("from=");
         sb.append(query.from());
@@ -140,14 +140,14 @@ public class TraceService {
             sb.append("&user=");
             sb.append(query.user());
         }
-        if (query.customAttributeName() != null) {
-            sb.append("&custom-attribute-name=");
-            sb.append(query.customAttributeName());
-            if (query.customAttributeValue() != null) {
-                sb.append("&custom-attribute-value-comparator=");
-                sb.append(query.customAttributeValueComparator());
-                sb.append("&custom-attribute-value=");
-                sb.append(query.customAttributeValue());
+        if (query.attributeName() != null) {
+            sb.append("&attribute-name=");
+            sb.append(query.attributeName());
+            if (query.attributeValue() != null) {
+                sb.append("&attribute-value-comparator=");
+                sb.append(query.attributeValueComparator());
+                sb.append("&attribute-value=");
+                sb.append(query.attributeValue());
             }
         }
         sb.append("&error-only=");
@@ -159,13 +159,13 @@ public class TraceService {
                 ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
         List<Trace.Header> traces = Lists.newArrayList();
         for (RawPoint point : response.getNormalPoints()) {
-            traces.add(getTrace(point.getId()));
+            traces.add(getHeader(point.getId()));
         }
         for (RawPoint point : response.getErrorPoints()) {
-            traces.add(getTrace(point.getId()));
+            traces.add(getHeader(point.getId()));
         }
         for (RawPoint point : response.getActivePoints()) {
-            traces.add(getTrace(point.getId()));
+            traces.add(getHeader(point.getId()));
         }
         return traces;
     }
@@ -194,7 +194,7 @@ public class TraceService {
         throw new AssertionError("There are still active transactions");
     }
 
-    private @Nullable Trace.Header getActiveTrace() throws Exception {
+    private @Nullable Trace.Header getActiveHeader() throws Exception {
         String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
                 + "&response-time-millis-low=0&limit=1000");
         TracePointResponse response =
@@ -205,11 +205,11 @@ public class TraceService {
             throw new IllegalStateException("Unexpected number of active traces");
         } else {
             RawPoint point = response.getActivePoints().get(0);
-            return getTrace(point.getId());
+            return getHeader(point.getId());
         }
     }
 
-    private Trace.Header getTrace(String traceId) throws Exception {
+    private Trace.Header getHeader(String traceId) throws Exception {
         String content = httpClient.get("/backend/trace/header/" + traceId);
         return mapper.readValue(content, ImmutableHeader.class);
     }

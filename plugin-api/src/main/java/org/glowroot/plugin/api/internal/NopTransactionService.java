@@ -30,6 +30,8 @@ public class NopTransactionService implements TransactionService {
 
     public static final TransactionService INSTANCE = new NopTransactionService();
 
+    private NopTransactionService() {}
+
     @Override
     public TimerName getTimerName(Class<?> adviceClass) {
         return NopTimerName.INSTANCE;
@@ -91,7 +93,7 @@ public class NopTransactionService implements TransactionService {
     public void setTransactionUser(@Nullable String user) {}
 
     @Override
-    public void addTransactionCustomAttribute(String name, @Nullable String value) {}
+    public void addTransactionAttribute(String name, @Nullable String value) {}
 
     @Override
     public void setTransactionSlowThreshold(long threshold, TimeUnit unit) {}
@@ -150,6 +152,8 @@ public class NopTransactionService implements TransactionService {
 
         public static final NopTimer INSTANCE = new NopTimer();
 
+        private NopTimer() {}
+
         @Override
         public void stop() {}
     }
@@ -157,5 +161,7 @@ public class NopTransactionService implements TransactionService {
     private static class NopTimerName implements TimerName {
 
         private static final NopTimerName INSTANCE = new NopTimerName();
+
+        private NopTimerName() {}
     }
 }

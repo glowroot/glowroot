@@ -88,14 +88,6 @@ public class LazyHistogram {
         return histogram.getValueAtPercentile(percentile);
     }
 
-    public int getNeededByteBufferCapacity() {
-        if (histogram == null) {
-            return 8 + size * 8;
-        } else {
-            return 4 + histogram.getNeededByteBufferCapacity();
-        }
-    }
-
     @VisibleForTesting
     public void add(long value) {
         ensureCapacity(size + 1);

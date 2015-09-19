@@ -29,12 +29,6 @@ public abstract class ChunkSource {
 
     public abstract ChunkCopier getCopier(Writer writer) throws IOException;
 
-    void copyTo(Writer writer) throws IOException {
-        ChunkCopier copier = getCopier(writer);
-        while (copier.copyNext()) {
-        }
-    }
-
     public static ChunkSource from(final CharSource charSource) {
         return new ChunkSource() {
             @Override

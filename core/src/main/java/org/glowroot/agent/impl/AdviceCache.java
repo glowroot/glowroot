@@ -52,7 +52,7 @@ import org.glowroot.agent.weaving.MixinType;
 import org.glowroot.agent.weaving.ShimType;
 import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.config.PluginDescriptor;
-import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.plugin.api.weaving.Mixin;
 import org.glowroot.plugin.api.weaving.Pointcut;
 import org.glowroot.plugin.api.weaving.Shim;

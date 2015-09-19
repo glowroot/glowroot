@@ -28,7 +28,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
 import org.glowroot.common.model.MutableProfileTree;
 
-public class Profile {
+class Profile {
 
     private final Object lock = new Object();
     @GuardedBy("lock")

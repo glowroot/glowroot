@@ -34,11 +34,11 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
 import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.live.ImmutableTracePoint;
 import org.glowroot.live.LiveTraceRepository.Existence;
 import org.glowroot.live.LiveTraceRepository.TracePoint;
 import org.glowroot.live.LiveTraceRepository.TracePointQuery;
-import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.server.repo.ImmutableErrorMessageCount;
 import org.glowroot.server.repo.ImmutableHeaderPlus;
 import org.glowroot.server.repo.ImmutableTraceErrorPoint;
@@ -65,7 +65,7 @@ class TraceDao implements TraceRepository {
 
     private static final ImmutableList<Column> traceColumns = ImmutableList.<Column>of(
             ImmutableColumn.of("id", Types.VARCHAR).withPrimaryKey(true),
-            ImmutableColumn.of("partial", Types.BIGINT),
+            ImmutableColumn.of("partial", Types.BOOLEAN),
             ImmutableColumn.of("slow", Types.BOOLEAN),
             ImmutableColumn.of("error", Types.BOOLEAN),
             ImmutableColumn.of("start_time", Types.BIGINT),
@@ -77,11 +77,11 @@ class TraceDao implements TraceRepository {
             ImmutableColumn.of("user", Types.VARCHAR),
             ImmutableColumn.of("error_message", Types.VARCHAR),
             ImmutableColumn.of("header", Types.BLOB), // protobuf
-            ImmutableColumn.of("entries_capped_id", Types.VARCHAR), // protobuf
-            ImmutableColumn.of("profile_capped_id", Types.VARCHAR)); // protobuf
+            ImmutableColumn.of("entries_capped_id", Types.BIGINT),
+            ImmutableColumn.of("profile_capped_id", Types.BIGINT));
 
     // capture_time column is used for expiring records without using FK with on delete cascade
-    private static final ImmutableList<Column> transactionCustomAttributeColumns =
+    private static final ImmutableList<Column> transactionAttributeColumns =
             ImmutableList.<Column>of(ImmutableColumn.of("trace_id", Types.VARCHAR),
                     ImmutableColumn.of("name", Types.VARCHAR),
                     ImmutableColumn.of("value", Types.VARCHAR),
@@ -116,7 +116,7 @@ class TraceDao implements TraceRepository {
         upgradeTraceTable(dataSource);
         dataSource.syncTable("trace", traceColumns);
         dataSource.syncIndexes("trace", traceIndexes);
-        dataSource.syncTable("trace_custom_attribute", transactionCustomAttributeColumns);
+        dataSource.syncTable("trace_attribute", transactionAttributeColumns);
     }
 
     public void collect(final Trace trace) throws Exception {
@@ -129,7 +129,7 @@ class TraceDao implements TraceRepository {
         final Trace.Header header = trace.getHeader();
         if (header.getAttributeCount() > 0) {
             dataSource.batchUpdate(
-                    "insert into trace_custom_attribute (trace_id, name, value, capture_time)"
+                    "insert into trace_attribute (trace_id, name, value, capture_time)"
                             + " values (?, ?, ?, ?)",
                     new PreparedStatementBinder() {
                         @Override
@@ -252,12 +252,12 @@ class TraceDao implements TraceRepository {
 
     @Override
     public void deleteAll() throws SQLException {
-        dataSource.execute("truncate table trace_custom_attribute");
+        dataSource.execute("truncate table trace_attribute");
         dataSource.execute("truncate table trace");
     }
 
     void deleteBefore(long captureTime) throws SQLException {
-        dataSource.deleteBefore("trace_custom_attribute", captureTime);
+        dataSource.deleteBefore("trace_attribute", captureTime);
         dataSource.deleteBefore("trace", captureTime);
     }
 

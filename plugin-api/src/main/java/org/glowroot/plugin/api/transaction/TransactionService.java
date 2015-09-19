@@ -271,7 +271,7 @@ public interface TransactionService {
      * 
      * {@code null} values are normalized to the empty string.
      */
-    void addTransactionCustomAttribute(String name, @Nullable String value);
+    void addTransactionAttribute(String name, @Nullable String value);
 
     /**
      * Overrides the default slow trace threshold (Configuration &gt; General &gt; Slow trace

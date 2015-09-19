@@ -58,7 +58,7 @@ public class CassandraAsyncTest {
     @Test
     public void shouldAsyncExecuteStatement() throws Exception {
         container.executeAppUnderTest(ExecuteAsyncStatement.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -74,7 +74,7 @@ public class CassandraAsyncTest {
     @Test
     public void shouldAsyncIterateUsingOneAndAll() throws Exception {
         container.executeAppUnderTest(AsyncIterateUsingOneAndAll.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -90,7 +90,7 @@ public class CassandraAsyncTest {
     @Test
     public void shouldAsyncExecuteBoundStatement() throws Exception {
         container.executeAppUnderTest(AsyncExecuteBoundStatement.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -107,7 +107,7 @@ public class CassandraAsyncTest {
     @Test
     public void shouldAsyncExecuteBatchStatement() throws Exception {
         container.executeAppUnderTest(AsyncExecuteBatchStatement.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);

@@ -65,7 +65,7 @@ public class ConnectionAndTxLifecycleTest {
         // when
         container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
         Trace.Entry entry1 = entries.get(0);
@@ -82,7 +82,7 @@ public class ConnectionAndTxLifecycleTest {
         // when
         container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.rootTimer().childTimers()).isEmpty();
         assertThat(header.entryCount()).isZero();
     }
@@ -93,7 +93,7 @@ public class ConnectionAndTxLifecycleTest {
         // when
         container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.rootTimer().childTimers()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();
@@ -111,7 +111,7 @@ public class ConnectionAndTxLifecycleTest {
         // when
         container.executeAppUnderTest(ExecuteGetConnectionOnThrowingDataSource.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
@@ -127,7 +127,7 @@ public class ConnectionAndTxLifecycleTest {
         // when
         container.executeAppUnderTest(ExecuteGetConnectionOnThrowingDataSource.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.rootTimer().childTimers()).isEmpty();
         assertThat(header.entryCount()).isZero();
     }
@@ -138,7 +138,7 @@ public class ConnectionAndTxLifecycleTest {
         // when
         container.executeAppUnderTest(ExecuteGetConnectionOnThrowingDataSource.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.rootTimer().childTimers()).hasSize(1);
         assertThat(header.rootTimer().childTimers().get(0).name())
                 .isEqualTo("jdbc get connection");
@@ -153,7 +153,7 @@ public class ConnectionAndTxLifecycleTest {
         // when
         container.executeAppUnderTest(ExecuteCloseConnectionOnThrowingDataSource.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
         Trace.Entry entry1 = entries.get(0);
@@ -171,7 +171,7 @@ public class ConnectionAndTxLifecycleTest {
         // when
         container.executeAppUnderTest(ExecuteCloseConnectionOnThrowingDataSource.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.rootTimer().childTimers()).isEmpty();
         assertThat(header.entryCount()).isZero();
     }
@@ -182,7 +182,7 @@ public class ConnectionAndTxLifecycleTest {
         // when
         container.executeAppUnderTest(ExecuteCloseConnectionOnThrowingDataSource.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.rootTimer().childTimers()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();
@@ -200,7 +200,7 @@ public class ConnectionAndTxLifecycleTest {
         // when
         container.executeAppUnderTest(ExecuteSetAutoCommit.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries.size()).isBetween(2, 3);
         Trace.Entry entry1 = entries.get(0);
@@ -221,7 +221,7 @@ public class ConnectionAndTxLifecycleTest {
         // when
         container.executeAppUnderTest(ExecuteSetAutoCommitThrowing.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
         Trace.Entry entry1 = entries.get(0);
@@ -242,7 +242,7 @@ public class ConnectionAndTxLifecycleTest {
         // when
         container.executeAppUnderTest(ExecuteGetConnectionAndConnectionClose.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
         Trace.Entry entry = entries.get(0);

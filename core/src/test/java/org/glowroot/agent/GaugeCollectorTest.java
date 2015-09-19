@@ -15,8 +15,9 @@
  */
 package org.glowroot.agent;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
 
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
@@ -57,7 +58,7 @@ public class GaugeCollectorTest {
     private Logger logger;
 
     @Before
-    public void beforeEachTest() {
+    public void beforeEachTest() throws Exception {
         ConfigService configService = mock(ConfigService.class);
         AdvancedConfig advancedConfig =
                 ImmutableAdvancedConfig.builder().mbeanGaugeNotFoundDelaySeconds(60).build();
@@ -67,8 +68,9 @@ public class GaugeCollectorTest {
         lazyPlatformMBeanServer = mock(LazyPlatformMBeanServer.class);
         clock = mock(Clock.class);
         logger = mock(Logger.class);
-        gaugeCollector = new GaugeCollector(configService, collector, lazyPlatformMBeanServer,
-                mock(ScheduledExecutorService.class), clock, logger);
+        setLogger(GaugeCollector.class, logger);
+        gaugeCollector =
+                new GaugeCollector(configService, collector, lazyPlatformMBeanServer, clock);
     }
 
     @After
@@ -247,5 +249,14 @@ public class GaugeCollectorTest {
                 "MBean attribute value is not a number or string");
         verify(logger).warn("error accessing mbean attribute {} {}: {}", "xyz:aaa=bbb", "ddd",
                 "MBean attribute value is not a number or string");
+    }
+
+    private static void setLogger(Class<?> clazz, Logger logger) throws Exception {
+        Field loggerField = clazz.getDeclaredField("logger");
+        loggerField.setAccessible(true);
+        Field modifiersField = Field.class.getDeclaredField("modifiers");
+        modifiersField.setAccessible(true);
+        modifiersField.setInt(loggerField, loggerField.getModifiers() & ~Modifier.FINAL);
+        loggerField.set(null, logger);
     }
 }

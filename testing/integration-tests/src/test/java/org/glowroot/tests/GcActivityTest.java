@@ -54,7 +54,7 @@ public class GcActivityTest {
         // when
         container.executeAppUnderTest(GenerateTraceWithGc.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.gcActivities()).isNotEmpty();
     }
 
@@ -67,7 +67,7 @@ public class GcActivityTest {
         // when
         container.executeAppUnderTest(GenerateTraceWithGc.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.gcActivities()).isEmpty();
     }
 

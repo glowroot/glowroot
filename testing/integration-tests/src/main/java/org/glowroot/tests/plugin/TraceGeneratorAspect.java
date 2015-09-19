@@ -54,8 +54,8 @@ public class TraceGeneratorAspect {
             TraceEntry traceEntry = transactionService.startTransaction(
                     traceGenerator.transactionType(), traceGenerator.transactionName(),
                     MessageSupplier.from(traceGenerator.headline()), timerName);
-            for (Entry<String, String> entry : traceGenerator.customAttributes().entrySet()) {
-                transactionService.addTransactionCustomAttribute(entry.getKey(), entry.getValue());
+            for (Entry<String, String> entry : traceGenerator.attributes().entrySet()) {
+                transactionService.addTransactionAttribute(entry.getKey(), entry.getValue());
             }
             if (traceGenerator.error() != null) {
                 transactionService.setTransactionError(traceGenerator.error());

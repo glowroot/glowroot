@@ -25,7 +25,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.objectweb.asm.Type;
 
 import org.glowroot.common.util.Reflections;
-import org.glowroot.markers.UsedByGeneratedBytecode;
+import org.glowroot.common.util.UsedByGeneratedBytecode;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

@@ -61,7 +61,7 @@ public class StatementTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
@@ -75,7 +75,7 @@ public class StatementTest {
         // when
         container.executeAppUnderTest(ExecuteStatementQueryAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
@@ -89,7 +89,7 @@ public class StatementTest {
         // when
         container.executeAppUnderTest(ExecuteStatementUpdate.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
@@ -103,7 +103,7 @@ public class StatementTest {
         // when
         container.executeAppUnderTest(ExecuteNullStatement.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.entryCount()).isZero();
     }
 
@@ -113,7 +113,7 @@ public class StatementTest {
         // when
         container.executeAppUnderTest(ExecuteStatementThrowing.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
@@ -127,7 +127,7 @@ public class StatementTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndUsePrevious.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
@@ -141,7 +141,7 @@ public class StatementTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndUseRelativeForward.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
@@ -155,7 +155,7 @@ public class StatementTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndUseRelativeBackward.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
@@ -169,7 +169,7 @@ public class StatementTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndUseAbsolute.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
@@ -183,7 +183,7 @@ public class StatementTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndUseFirst.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
@@ -196,7 +196,7 @@ public class StatementTest {
         // when
         container.executeAppUnderTest(ExecuteStatementAndUseLast.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);

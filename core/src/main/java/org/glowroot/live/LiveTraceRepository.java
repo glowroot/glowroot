@@ -25,7 +25,7 @@ import org.immutables.value.Value;
 
 import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
 import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
-import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.common.util.OnlyUsedByTests;
 
 public interface LiveTraceRepository {
 
@@ -69,9 +69,9 @@ public interface LiveTraceRepository {
         public abstract @Nullable String error();
         public abstract @Nullable StringComparator userComparator();
         public abstract @Nullable String user();
-        public abstract @Nullable String customAttributeName();
-        public abstract @Nullable StringComparator customAttributeValueComparator();
-        public abstract @Nullable String customAttributeValue();
+        public abstract @Nullable String attributeName();
+        public abstract @Nullable StringComparator attributeValueComparator();
+        public abstract @Nullable String attributeValue();
 
         @Value.Default
         public boolean slowOnly() {

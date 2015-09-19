@@ -22,8 +22,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import javax.annotation.Nullable;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
@@ -43,8 +41,6 @@ import org.glowroot.live.LiveThreadDumpService;
 import org.glowroot.server.repo.ConfigRepository;
 import org.glowroot.server.repo.GaugeValueRepository;
 import org.glowroot.server.repo.GaugeValueRepository.Gauge;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 @JsonService
 class JvmJsonService {
@@ -269,9 +265,7 @@ class JvmJsonService {
 
     private static class GaugeOrdering extends Ordering<Gauge> {
         @Override
-        public int compare(@Nullable Gauge left, @Nullable Gauge right) {
-            checkNotNull(left);
-            checkNotNull(right);
+        public int compare(Gauge left, Gauge right) {
             return left.display().compareToIgnoreCase(right.display());
         }
     }

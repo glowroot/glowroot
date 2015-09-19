@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 
-import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.common.util.OnlyUsedByTests;
 
 // Needs to be externally synchronized around startBlock()/write()/endBlock().
 class CappedDatabaseOutputStream extends OutputStream {

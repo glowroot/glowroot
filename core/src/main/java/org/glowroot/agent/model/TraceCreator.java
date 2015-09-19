@@ -87,13 +87,13 @@ public class TraceCreator {
         builder.setTransactionName(transaction.getTransactionName());
         builder.setHeadline(transaction.getHeadline());
         builder.setUser(transaction.getUser());
-        for (Entry<String, Collection<String>> entry : transaction.getCustomAttributes().asMap()
+        for (Entry<String, Collection<String>> entry : transaction.getAttributes().asMap()
                 .entrySet()) {
             builder.addAttributeBuilder()
                     .setName(entry.getKey())
                     .addAllValue(entry.getValue());
         }
-        builder.addAllDetailEntry(DetailMapWriter.toProtobufDetail(transaction.getCustomDetail()));
+        builder.addAllDetailEntry(DetailMapWriter.toProtobufDetail(transaction.getDetail()));
         if (errorMessage != null) {
             Trace.Error.Builder errorBuilder = builder.getErrorBuilder();
             errorBuilder.setMessage(errorMessage.message());

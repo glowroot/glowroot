@@ -112,14 +112,14 @@ public class GlowrootServiceImpl implements GlowrootService {
     }
 
     @Override
-    public void addTransactionCustomAttribute(String name, @Nullable String value) {
+    public void addTransactionAttribute(String name, @Nullable String value) {
         if (name == null) {
-            logger.error("addTransactionCustomAttribute(): argument 'name' must be non-null");
+            logger.error("addTransactionAttribute(): argument 'name' must be non-null");
             return;
         }
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {
-            transaction.addCustomAttribute(name, value);
+            transaction.addAttribute(name, value);
         }
     }
 

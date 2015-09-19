@@ -62,12 +62,12 @@ import org.glowroot.api.internal.GlowrootService;
 import org.glowroot.collector.spi.Collector;
 import org.glowroot.common.config.PluginDescriptor;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.live.LiveAggregateRepository;
 import org.glowroot.live.LiveJvmService;
 import org.glowroot.live.LiveThreadDumpService;
 import org.glowroot.live.LiveTraceRepository;
 import org.glowroot.live.LiveWeavingService;
-import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.plugin.api.transaction.TransactionService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -86,7 +86,6 @@ public class AgentModule {
 
     private final PluginCache pluginCache;
     private final ConfigService configService;
-    private final @Nullable Instrumentation instrumentation;
     private final AnalyzedWorld analyzedWorld;
     private final TransactionRegistry transactionRegistry;
     private final AdviceCache adviceCache;
@@ -118,7 +117,6 @@ public class AgentModule {
             ScheduledExecutorService scheduledExecutor, boolean jbossModules) throws Exception {
         pluginCache = PluginCache.create(glowrootJarFile, false);
         configService = ConfigService.create(baseDir, pluginCache.pluginDescriptors());
-        this.instrumentation = instrumentation;
         transactionRegistry = new TransactionRegistry();
 
         ExtraBootResourceFinder extraBootResourceFinder =
@@ -183,8 +181,8 @@ public class AgentModule {
                 ServiceRegistryImpl.init(glowrootService, transactionService, configServiceFactory);
 
         lazyPlatformMBeanServer = new LazyPlatformMBeanServer(jbossModules);
-        gaugeCollector = new GaugeCollector(configService, collector, lazyPlatformMBeanServer,
-                scheduledExecutor, clock, null);
+        gaugeCollector =
+                new GaugeCollector(configService, collector, lazyPlatformMBeanServer, clock);
         // using fixed rate to keep gauge collections close to on the second mark
         long gaugeCollectionIntervalMillis = configService.getGaugeCollectionIntervalMillis();
         long initialDelay = gaugeCollectionIntervalMillis

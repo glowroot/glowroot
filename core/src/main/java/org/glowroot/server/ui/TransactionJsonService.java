@@ -185,9 +185,7 @@ class TransactionJsonService {
         }
         Collections.sort(queryList, new Comparator<Query>() {
             @Override
-            public int compare(@Nullable Query left, @Nullable Query right) {
-                checkNotNull(left);
-                checkNotNull(right);
+            public int compare(Query left, Query right) {
                 // sort descending
                 return Doubles.compare(right.totalNanos(), left.totalNanos());
             }

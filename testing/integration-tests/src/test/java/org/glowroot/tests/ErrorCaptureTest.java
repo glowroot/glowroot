@@ -62,7 +62,7 @@ public class ErrorCaptureTest {
         // when
         container.executeAppUnderTest(ShouldCaptureError.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.entryCount()).isEqualTo(3);
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         // the exception has no message, and no message is supplied in this test
@@ -85,7 +85,7 @@ public class ErrorCaptureTest {
         // when
         container.executeAppUnderTest(ShouldCaptureErrorWithTraceEntryStackTrace.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().isPresent()).isFalse();
         assertThat(entries).hasSize(1);
@@ -103,7 +103,7 @@ public class ErrorCaptureTest {
         // when
         container.executeAppUnderTest(ShouldCaptureErrorWithCausalChain.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().isPresent()).isFalse();
         assertThat(entries).hasSize(1);
@@ -145,7 +145,7 @@ public class ErrorCaptureTest {
         // when
         container.executeAppUnderTest(ShouldAddNestedErrorEntry.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().isPresent()).isFalse();
         assertThat(entries).hasSize(1);

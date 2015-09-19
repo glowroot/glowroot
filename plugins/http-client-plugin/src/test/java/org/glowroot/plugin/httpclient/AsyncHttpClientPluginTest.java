@@ -53,7 +53,7 @@ public class AsyncHttpClientPluginTest {
     @Test
     public void shouldCaptureHttpGet() throws Exception {
         container.executeAppUnderTest(ExecuteHttpGet.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).message())
@@ -63,7 +63,7 @@ public class AsyncHttpClientPluginTest {
     @Test
     public void shouldCaptureHttpPost() throws Exception {
         container.executeAppUnderTest(ExecuteHttpPost.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).message())

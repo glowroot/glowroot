@@ -18,10 +18,10 @@ package org.glowroot.server.ui;
 import java.io.IOException;
 import java.sql.SQLException;
 
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.live.LiveAggregateRepository;
 import org.glowroot.live.LiveTraceRepository;
 import org.glowroot.live.LiveWeavingService;
-import org.glowroot.markers.OnlyUsedByTests;
 import org.glowroot.server.repo.AggregateRepository;
 import org.glowroot.server.repo.ConfigRepository;
 import org.glowroot.server.repo.GaugeValueRepository;

@@ -41,10 +41,10 @@ import org.glowroot.agent.model.Transaction;
 import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
 import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.live.ImmutableTracePoint;
 import org.glowroot.live.LiveTraceRepository;
 import org.glowroot.live.StringComparator;
-import org.glowroot.markers.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -226,7 +226,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                 && matchesTransactionName(transaction, query)
                 && matchesError(transaction, query)
                 && matchesUser(transaction, query)
-                && matchesCustomAttribute(transaction, query);
+                && matchesAttribute(transaction, query);
     }
 
     private boolean matchesTotal(Transaction transaction, TracePointQuery query) {
@@ -275,25 +275,24 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                 transaction.getUser());
     }
 
-    private boolean matchesCustomAttribute(Transaction transaction, TracePointQuery query) {
-        if (Strings.isNullOrEmpty(query.customAttributeName())
-                && (query.customAttributeValueComparator() == null
-                        || Strings.isNullOrEmpty(query.customAttributeValue()))) {
+    private boolean matchesAttribute(Transaction transaction, TracePointQuery query) {
+        if (Strings.isNullOrEmpty(query.attributeName())
+                && (query.attributeValueComparator() == null
+                        || Strings.isNullOrEmpty(query.attributeValue()))) {
             // no custom attribute filter
             return true;
         }
-        ImmutableMap<String, Collection<String>> customAttributes =
-                transaction.getCustomAttributes().asMap();
-        for (Entry<String, Collection<String>> entry : customAttributes.entrySet()) {
-            String customAttributeName = entry.getKey();
-            if (!matchesUsingStringComparator(StringComparator.EQUALS, query.customAttributeName(),
-                    customAttributeName)) {
+        ImmutableMap<String, Collection<String>> attributes = transaction.getAttributes().asMap();
+        for (Entry<String, Collection<String>> entry : attributes.entrySet()) {
+            String attributeName = entry.getKey();
+            if (!matchesUsingStringComparator(StringComparator.EQUALS, query.attributeName(),
+                    attributeName)) {
                 // name doesn't match, no need to test values
                 continue;
             }
-            for (String customAttributeValue : entry.getValue()) {
-                if (matchesUsingStringComparator(query.customAttributeValueComparator(),
-                        query.customAttributeValue(), customAttributeValue)) {
+            for (String attributeValue : entry.getValue()) {
+                if (matchesUsingStringComparator(query.attributeValueComparator(),
+                        query.attributeValue(), attributeValue)) {
                     // found matching name and value
                     return true;
                 }

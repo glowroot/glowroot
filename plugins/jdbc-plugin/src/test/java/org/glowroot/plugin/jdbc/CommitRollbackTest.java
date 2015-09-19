@@ -61,7 +61,7 @@ public class CommitRollbackTest {
         // when
         container.executeAppUnderTest(ExecuteJdbcCommit.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
         Trace.Entry jdbcInsertEntry = entries.get(0);
@@ -84,7 +84,7 @@ public class CommitRollbackTest {
         // when
         container.executeAppUnderTest(ExecuteJdbcCommitThrowing.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
         Trace.Entry jdbcInsertEntry = entries.get(0);
@@ -108,7 +108,7 @@ public class CommitRollbackTest {
         // when
         container.executeAppUnderTest(ExecuteJdbcRollback.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
         Trace.Entry jdbcInsertEntry = entries.get(0);
@@ -131,7 +131,7 @@ public class CommitRollbackTest {
         // when
         container.executeAppUnderTest(ExecuteJdbcRollbackThrowing.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(2);
         Trace.Entry jdbcInsertEntry = entries.get(0);

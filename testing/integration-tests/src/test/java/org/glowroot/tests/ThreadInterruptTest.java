@@ -50,7 +50,7 @@ public class ThreadInterruptTest {
         // when
         container.executeAppUnderTest(ShouldInterrupt.class);
         // then
-        container.getTraceService().getLastTrace();
+        container.getTraceService().getLastHeader();
     }
 
     public static class ShouldInterrupt implements AppUnderTest, TransactionMarker {

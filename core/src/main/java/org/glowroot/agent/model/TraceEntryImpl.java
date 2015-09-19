@@ -38,7 +38,7 @@ import org.glowroot.plugin.api.transaction.internal.ReadableMessage;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 // this supports updating by a single thread and reading by multiple threads
-public class TraceEntryImpl implements QueryEntry, Timer {
+public class TraceEntryImpl extends QueryEntryBase implements QueryEntry, Timer {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceEntryImpl.class);
     private static final Ticker ticker = Tickers.getTicker();
@@ -69,18 +69,12 @@ public class TraceEntryImpl implements QueryEntry, Timer {
     // only used by transaction thread
     private @MonotonicNonNull TimerImpl extendedTimer;
 
-    // queryData, currRow and maxRow are only used by query entries
-    private final @Nullable QueryData queryData;
-    // row numbers start at 1
-    private long currRow = -1;
-    private long maxRow;
-
     TraceEntryImpl(@Nullable TraceEntryImpl parentTraceEntry,
             @Nullable MessageSupplier messageSupplier, @Nullable QueryData queryData,
             long queryExecutionCount, long startTick, @Nullable TimerImpl timer) {
+        super(queryData);
         this.parentTraceEntry = parentTraceEntry;
         this.messageSupplier = messageSupplier;
-        this.queryData = queryData;
         this.startTick = startTick;
         this.timer = timer;
         revisedStartTick = startTick;
@@ -212,9 +206,7 @@ public class TraceEntryImpl implements QueryEntry, Timer {
             long currTick = ticker.read();
             revisedStartTick = currTick - priorDurationNanos;
             extendedTimer = timer.extend(currTick);
-            if (queryData != null) {
-                queryData.extend(currTick);
-            }
+            extendQueryData(currTick);
         }
         return this;
     }
@@ -227,9 +219,7 @@ public class TraceEntryImpl implements QueryEntry, Timer {
             endTick = ticker.read();
             checkNotNull(extendedTimer);
             extendedTimer.end(endTick);
-            if (queryData != null) {
-                queryData.end(endTick);
-            }
+            endQueryData(endTick);
             if (stackTrace == null && stackTraceThreshold != 0
                     && endTick - revisedStartTick >= stackTraceThreshold) {
                 StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
@@ -242,56 +232,8 @@ public class TraceEntryImpl implements QueryEntry, Timer {
         }
     }
 
-    // TODO deal with copy paste between here and DummyTraceEntryOrQuery
-    @Override
-    public void incrementCurrRow() {
-        if (currRow == -1) {
-            currRow = 1;
-            maxRow = 1;
-            if (queryData != null) {
-                // queryData can be null here if the aggregated query limit is exceeded
-                // (though typically query limit is larger than trace entry limit)
-                queryData.incrementRowCount(1);
-            }
-        } else if (currRow == maxRow) {
-            currRow++;
-            maxRow = currRow;
-            if (queryData != null) {
-                // queryData can be null here if the query limit is exceeded
-                // (though typically query limit is larger than trace entry limit)
-                queryData.incrementRowCount(1);
-            }
-        } else {
-            currRow++;
-        }
-    }
-
-    // TODO deal with copy paste between here and DummyTraceEntryOrQuery
-    @Override
-    public void setCurrRow(long row) {
-        if (row > maxRow) {
-            if (queryData != null) {
-                // queryData can be null here if the aggregated query limit is exceeded
-                // (though typically query limit is larger than trace entry limit)
-                queryData.incrementRowCount(row - maxRow);
-            }
-            maxRow = row;
-        }
-        currRow = row;
-    }
-
     public void setStackTrace(ImmutableList<StackTraceElement> stackTrace) {
         this.stackTrace = stackTrace;
-    }
-
-    // row count -1 means no navigation has been attempted
-    // row count 0 means that navigation has been attempted but there were 0 rows
-    private boolean isQueryNavigationAttempted() {
-        return currRow != -1;
-    }
-
-    private long getRowCount() {
-        return maxRow;
     }
 
     @Nullable
@@ -336,9 +278,7 @@ public class TraceEntryImpl implements QueryEntry, Timer {
         checkNotNull(timer);
         Transaction transaction = timer.getTransaction();
         timer.end(endTick);
-        if (queryData != null) {
-            queryData.end(endTick);
-        }
+        endQueryData(endTick);
         setErrorMessage(errorMessage);
         setEndTick(endTick);
         transaction.popEntry(this, endTick);

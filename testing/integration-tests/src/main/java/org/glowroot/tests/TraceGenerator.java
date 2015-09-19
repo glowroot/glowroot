@@ -29,7 +29,7 @@ public abstract class TraceGenerator {
     public abstract String headline();
     public abstract @Nullable String error();
     public abstract @Nullable String user();
-    public abstract Map<String, String> customAttributes();
+    public abstract Map<String, String> attributes();
 
     public void call(boolean active) throws InterruptedException {
         if (active) {

@@ -50,7 +50,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
       refreshData();
     });
 
-    $scope.clickTopRadioButton = function (item, event) {
+    $scope.clickTopRadioButton = function (item) {
       if (item === 'percentiles') {
         $scope.$parent.chartRefresh++;
       } else {

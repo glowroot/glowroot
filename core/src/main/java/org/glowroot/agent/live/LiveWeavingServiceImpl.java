@@ -252,9 +252,7 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
     static class UiAnalyzedMethodOrdering extends Ordering<UiAnalyzedMethod> {
 
         @Override
-        public int compare(@Nullable UiAnalyzedMethod left, @Nullable UiAnalyzedMethod right) {
-            checkNotNull(left);
-            checkNotNull(right);
+        public int compare(UiAnalyzedMethod left, UiAnalyzedMethod right) {
             return ComparisonChain.start()
                     .compare(getAccessibility(left), getAccessibility(right))
                     .compare(left.name(), right.name())

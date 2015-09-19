@@ -63,7 +63,7 @@ public class TraceEntryStackTraceTest {
         container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithTraceEntryStackTrace.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         List<String> stackTrace = entries.get(0).locationStackTraceElements();

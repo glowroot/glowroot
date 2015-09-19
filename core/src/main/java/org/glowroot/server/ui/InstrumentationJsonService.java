@@ -220,7 +220,7 @@ class InstrumentationJsonService {
         abstract Optional<String> transactionType();
         abstract Optional<String> transactionNameTemplate();
         abstract Optional<String> transactionUserTemplate();
-        abstract Map<String, String> transactionCustomAttributeTemplates();
+        abstract Map<String, String> transactionAttributeTemplates();
         abstract @Nullable Long transactionSlowThresholdMillis();
         abstract Optional<String> enabledProperty();
         abstract Optional<String> traceEntryEnabledProperty();
@@ -242,8 +242,7 @@ class InstrumentationJsonService {
                     .transactionType(config.transactionType())
                     .transactionNameTemplate(config.transactionNameTemplate())
                     .transactionUserTemplate(config.transactionUserTemplate())
-                    .putAllTransactionCustomAttributeTemplates(
-                            config.transactionCustomAttributeTemplates())
+                    .putAllTransactionAttributeTemplates(config.transactionAttributeTemplates())
                     .transactionSlowThresholdMillis(config.transactionSlowThresholdMillis())
                     .enabledProperty(config.enabledProperty())
                     .traceEntryEnabledProperty(config.traceEntryEnabledProperty())
@@ -267,8 +266,7 @@ class InstrumentationJsonService {
                     .transactionType(transactionType().or(""))
                     .transactionNameTemplate(transactionNameTemplate().or(""))
                     .transactionUserTemplate(transactionUserTemplate().or(""))
-                    .putAllTransactionCustomAttributeTemplates(
-                            transactionCustomAttributeTemplates())
+                    .putAllTransactionAttributeTemplates(transactionAttributeTemplates())
                     .transactionSlowThresholdMillis(transactionSlowThresholdMillis())
                     .enabledProperty(enabledProperty().or(""))
                     .traceEntryEnabledProperty(traceEntryEnabledProperty().or(""))
@@ -279,10 +277,7 @@ class InstrumentationJsonService {
     @VisibleForTesting
     static class InstrumentationConfigOrdering extends Ordering<InstrumentationConfig> {
         @Override
-        public int compare(@Nullable InstrumentationConfig left,
-                @Nullable InstrumentationConfig right) {
-            checkNotNull(left);
-            checkNotNull(right);
+        public int compare(InstrumentationConfig left, InstrumentationConfig right) {
             int compare = left.className().compareToIgnoreCase(right.className());
             if (compare != 0) {
                 return compare;

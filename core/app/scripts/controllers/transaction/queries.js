@@ -40,7 +40,7 @@ glowroot.controller('TransactionQueriesCtrl', [
       refreshData();
     });
 
-    $scope.sort = function (attributeName) {
+    $scope.sort = function () {
       $location.search('sort-attribute', null);
       $location.search('sort-direction', null);
     };
@@ -67,7 +67,7 @@ glowroot.controller('TransactionQueriesCtrl', [
       }
     };
 
-    function onLocationChangeSuccess(loading) {
+    function onLocationChangeSuccess() {
       $scope.sortAttribute = $location.search()['sort-attribute'] || 'total-time';
       $scope.sortReverse = $location.search()['sort-direction'] === 'asc';
       if ($scope.sortAttribute === 'total-time') {
@@ -82,7 +82,7 @@ glowroot.controller('TransactionQueriesCtrl', [
     }
 
     $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
-    onLocationChangeSuccess(true);
+    onLocationChangeSuccess();
 
     $scope.showQueryModal = function (query) {
       // clear previous styling and content

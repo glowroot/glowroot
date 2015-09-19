@@ -33,7 +33,7 @@ public interface GlowrootService {
 
     void setTransactionUser(@Nullable String user);
 
-    void addTransactionCustomAttribute(String name, @Nullable String value);
+    void addTransactionAttribute(String name, @Nullable String value);
 
     void setTransactionSlowThreshold(long threshold, TimeUnit unit);
 }

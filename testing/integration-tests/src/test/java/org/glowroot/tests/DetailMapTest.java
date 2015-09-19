@@ -58,7 +58,7 @@ public class DetailMapTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.headline()).isEqualTo("Level One");
         assertThat(header.detail()).isEqualTo(ImmutableMap.of("arg1", "a", "arg2", "b", "nested1",
                 ImmutableMap.of("nestedkey11", "a", "nestedkey12", "b", "subnested1",
@@ -99,7 +99,7 @@ public class DetailMapTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithBooleans.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.headline()).isEqualTo("Level One");
         assertThat(header.detail())
                 .isEqualTo(ImmutableMap.of("arg1", false, "arg2", true, "nested1",
@@ -114,7 +114,7 @@ public class DetailMapTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNumbers.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.headline()).isEqualTo("Level One");
         assertThat(header.detail()).isEqualTo(ImmutableMap.of("arg1", 5.0, "arg2", 5.5, "nested1",
                 ImmutableMap.of("nestedkey11", 5.0, "nestedkey12", 5.5, "subnested1",
@@ -132,7 +132,7 @@ public class DetailMapTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithBadType.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.headline()).isEqualTo("Level One");
         assertThat(header.detail()).isEqualTo(ImmutableMap.of("arg1", "a", "arg2", "x", "nested1",
                 ImmutableMap.of("nestedkey11", "a", "nestedkey12", "x", "subnested1",
@@ -150,7 +150,7 @@ public class DetailMapTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNullKey.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.headline()).isEqualTo("Level One");
         Map<String, Object> map = Maps.newLinkedHashMap();
         map.put("arg1", "useArg2AsKeyAndValue");

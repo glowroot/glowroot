@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.jackrabbit.spi.commons.iterator.Iterators;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -65,12 +66,12 @@ public class AggregatorTest {
         Transaction transaction = mock(Transaction.class);
         TimerImpl timer = mock(TimerImpl.class);
         when(timer.getName()).thenReturn("test 123");
-        when(timer.getChildTimers()).thenReturn(ImmutableList.<TimerImpl>of());
+        when(timer.getChildTimers()).thenReturn(Iterators.<TimerImpl>empty());
         when(transaction.getTransactionType()).thenReturn("a type");
         when(transaction.getTransactionName()).thenReturn("a name");
         when(transaction.getDurationNanos()).thenReturn(MILLISECONDS.toNanos(123));
         when(transaction.getRootTimer()).thenReturn(timer);
-        when(transaction.getQueries()).thenReturn(ImmutableList.<QueryData>of());
+        when(transaction.getQueries()).thenReturn(ImmutableList.<QueryData>of().iterator());
         // when
         int count = 0;
         long firstCaptureTime = aggregator.add(transaction);

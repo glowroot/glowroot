@@ -27,6 +27,10 @@ public class Strings {
 /* ========================================================================== */
 package com.google.common.collect;
 
+public class Ordering<T extends @NonNull Object> {
+    public int compare(@NonNull T left, @NonNull T right);
+}
+
 public class Iterators {
     public static <T extends @Nullable Object> UnmodifiableIterator<T> forArray(T... array);
     public static <T extends @Nullable Object> Iterator<T> limit(Iterator<T> iterator,

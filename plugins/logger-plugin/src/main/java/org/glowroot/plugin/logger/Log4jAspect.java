@@ -268,12 +268,7 @@ public class Log4jAspect {
             }
             if (params != null && params.length > 0) {
                 StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < params.length; i++) {
-                    if (i > 0) {
-                        sb.append(", ");
-                    }
-                    sb.append(params[i]);
-                }
+                appendCsv(params, sb);
                 return transactionService.startTraceEntry(MessageSupplier
                         .from("log {} (localized): {} [{}]", level, key, sb.toString()), timerName);
             } else {
@@ -292,12 +287,7 @@ public class Log4jAspect {
                 sb.append(key);
                 if (params != null && params.length > 0) {
                     sb.append(" [");
-                    for (int i = 0; i < params.length; i++) {
-                        if (i > 0) {
-                            sb.append(", ");
-                        }
-                        sb.append(params[i]);
-                    }
+                    appendCsv(params, sb);
                     sb.append("]");
                 }
                 traceEntry.endWithError(sb.toString());
@@ -305,6 +295,14 @@ public class Log4jAspect {
                 // intentionally not passing message since it is already the trace entry message
                 // and this way it will also capture/display Throwable's root cause message
                 traceEntry.endWithError(t);
+            }
+        }
+        private static void appendCsv(@Nullable Object[] params, StringBuilder sb) {
+            for (int i = 0; i < params.length; i++) {
+                if (i > 0) {
+                    sb.append(", ");
+                }
+                sb.append(params[i]);
             }
         }
     }

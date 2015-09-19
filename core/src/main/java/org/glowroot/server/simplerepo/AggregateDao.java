@@ -90,8 +90,8 @@ class AggregateDao implements AggregateRepository {
                     ImmutableColumn.of("total_blocked_nanos", Types.BIGINT),
                     ImmutableColumn.of("total_waited_nanos", Types.BIGINT),
                     ImmutableColumn.of("total_allocated_bytes", Types.BIGINT),
-                    ImmutableColumn.of("queries_capped_id", Types.BIGINT), // protobuf
-                    ImmutableColumn.of("profile_tree_capped_id", Types.BIGINT), // protobuf
+                    ImmutableColumn.of("queries_capped_id", Types.BIGINT),
+                    ImmutableColumn.of("profile_tree_capped_id", Types.BIGINT),
                     ImmutableColumn.of("histogram", Types.BLOB), // protobuf
                     ImmutableColumn.of("root_timers", Types.BLOB)); // protobuf
 
@@ -106,8 +106,8 @@ class AggregateDao implements AggregateRepository {
                     ImmutableColumn.of("total_blocked_nanos", Types.BIGINT),
                     ImmutableColumn.of("total_waited_nanos", Types.BIGINT),
                     ImmutableColumn.of("total_allocated_bytes", Types.BIGINT),
-                    ImmutableColumn.of("queries_capped_id", Types.BIGINT), // protobuf
-                    ImmutableColumn.of("profile_tree_capped_id", Types.BIGINT), // protobuf
+                    ImmutableColumn.of("queries_capped_id", Types.BIGINT),
+                    ImmutableColumn.of("profile_tree_capped_id", Types.BIGINT),
                     ImmutableColumn.of("histogram", Types.BLOB), // protobuf
                     ImmutableColumn.of("root_timers", Types.BLOB)); // protobuf
 

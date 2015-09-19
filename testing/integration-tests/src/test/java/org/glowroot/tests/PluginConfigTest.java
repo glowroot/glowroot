@@ -126,7 +126,7 @@ public class PluginConfigTest {
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.headline()).isEqualTo("Level 1");
         assertThat(header.transactionName()).isEqualTo("basic test");
     }
@@ -141,7 +141,7 @@ public class PluginConfigTest {
         // when
         container.executeAppUnderTest(SimpleApp.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.headline()).isEqualTo("Level One*");
         assertThat(header.transactionName()).isEqualTo("basic test");
     }

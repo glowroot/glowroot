@@ -55,7 +55,7 @@ public class UpgradeTest {
                 .copyTo(Files.asByteSink(new File(dataDir, "trace-detail.capped.db")));
         Container container = Containers.createWithFileDb(baseDir);
         // when
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         // then
         try {

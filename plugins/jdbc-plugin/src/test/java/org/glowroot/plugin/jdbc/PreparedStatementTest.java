@@ -67,7 +67,7 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -87,7 +87,7 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementQueryAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -107,7 +107,7 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementUpdate.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -127,7 +127,7 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementLargeParamSetFirst.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -147,7 +147,7 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(PreparedStatementNullSql.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.entryCount()).isZero();
     }
 
@@ -157,7 +157,7 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementThrowing.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -179,7 +179,7 @@ public class PreparedStatementTest {
         container.executeAppUnderTest(
                 ExecutePreparedStatementWithTonsOfBindParametersAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -210,7 +210,7 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -231,7 +231,7 @@ public class PreparedStatementTest {
         // whens
         container.executeAppUnderTest(ExecutePreparedStatementWithSetNull.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -252,7 +252,7 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementWithBinary.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(2);
         Query query1 = queries.get(0);
@@ -282,7 +282,7 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementWithBinaryUsingSetObject.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(2);
         Query query1 = queries.get(0);
@@ -312,7 +312,7 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementWithBinaryStream.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -334,7 +334,7 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementWithCharacterStream.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -356,7 +356,7 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementWithClear.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);
@@ -376,7 +376,7 @@ public class PreparedStatementTest {
         // when
         container.executeAppUnderTest(ExecutePreparedStatementThatHasInternalGlowrootToken.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Query> queries = container.getAggregateService().getQueries();
         assertThat(queries).hasSize(1);
         Query query = queries.get(0);

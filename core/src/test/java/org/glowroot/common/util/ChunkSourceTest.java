@@ -22,6 +22,8 @@ import java.io.Writer;
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 
+import org.glowroot.common.util.ChunkSource.ChunkCopier;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ChunkSourceTest {
@@ -52,7 +54,9 @@ public class ChunkSourceTest {
                 EmptyChunkSource.INSTANCE));
         // then
         CharArrayWriter writer = new CharArrayWriter();
-        concat.copyTo(writer);
+        ChunkCopier copier = concat.getCopier(writer);
+        while (copier.copyNext()) {
+        }
         assertThat(writer.toString()).isEqualTo("123456789");
     }
 
@@ -81,7 +85,9 @@ public class ChunkSourceTest {
                 ChunkSource.wrap(""), ChunkSource.wrap(""), ChunkSource.wrap("")));
         // then
         CharArrayWriter writer = new CharArrayWriter();
-        concat.copyTo(writer);
+        ChunkCopier copier = concat.getCopier(writer);
+        while (copier.copyNext()) {
+        }
         assertThat(writer.toString()).isEqualTo("123456789");
     }
 

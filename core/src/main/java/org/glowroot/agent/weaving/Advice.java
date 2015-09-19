@@ -32,8 +32,6 @@ import org.objectweb.asm.commons.Method;
 
 import org.glowroot.plugin.api.weaving.Pointcut;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 @Value.Immutable
 public abstract class Advice {
 
@@ -103,9 +101,7 @@ public abstract class Advice {
 
     private static final class AdviceOrdering extends Ordering<Advice> {
         @Override
-        public int compare(@Nullable Advice left, @Nullable Advice right) {
-            checkNotNull(left);
-            checkNotNull(right);
+        public int compare(Advice left, Advice right) {
             int compare = Ints.compare(left.pointcut().priority(), right.pointcut().priority());
             if (compare != 0) {
                 return compare;

@@ -66,7 +66,7 @@ public class TraceGcActivityTest {
         // when
         container.executeAppUnderTest(ShouldGenerateGarbage.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         long collectionCount = 0;
         long collectionTime = 0;
         for (Trace.GarbageCollectionActivity gcActivity : header.gcActivities()) {

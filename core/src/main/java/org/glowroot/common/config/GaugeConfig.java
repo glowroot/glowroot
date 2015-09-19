@@ -17,8 +17,6 @@ package org.glowroot.common.config;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
@@ -28,16 +26,12 @@ import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 @Value.Immutable
 public abstract class GaugeConfig {
 
     public static final Ordering<GaugeConfig> orderingByName = new Ordering<GaugeConfig>() {
         @Override
-        public int compare(@Nullable GaugeConfig left, @Nullable GaugeConfig right) {
-            checkNotNull(left);
-            checkNotNull(right);
+        public int compare(GaugeConfig left, GaugeConfig right) {
             return display(left.mbeanObjectName())
                     .compareToIgnoreCase(display(right.mbeanObjectName()));
         }

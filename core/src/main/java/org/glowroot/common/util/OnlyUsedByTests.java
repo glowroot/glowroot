@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.collector.spi;
+package org.glowroot.common.util;
 
-public class Constants {
+import java.lang.annotation.Documented;
+import java.lang.annotation.Target;
 
-    public static final long THREAD_DATA_NOT_AVAILABLE = -1;
-}
+import static java.lang.annotation.ElementType.CONSTRUCTOR;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
+
+@Documented
+@Target({TYPE, METHOD, CONSTRUCTOR, FIELD})
+public @interface OnlyUsedByTests {}

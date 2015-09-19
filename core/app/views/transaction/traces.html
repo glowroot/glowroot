@@ -207,42 +207,42 @@
     </div>
     <div class="form-group">
       <label class="col-lg-4 control-label"
-             for="filterCustomAttributeName">
-        Custom attribute name
+             for="filterAttributeName">
+        Attribute name
       </label>
 
       <div class="col-lg-8">
-        <select ng-model="filter.customAttributeName"
+        <select ng-model="filter.attributeName"
                 class="form-control"
-                id="filterCustomAttributeName"
+                id="filterAttributeName"
                 style="width: 25em;">
           <option value=""></option>
-          <option ng-repeat="customAttributeName in layout.transactionCustomAttributes"
-                  value="{{customAttributeName}}"
-                  ng-selected="customAttributeName === filter.customAttributeName">
-            {{customAttributeName}}
+          <option ng-repeat="attributeName in layout.transactionAttributes"
+                  value="{{attributeName}}"
+                  ng-selected="attributeName === filter.attributeName">
+            {{attributeName}}
           </option>
         </select>
       </div>
     </div>
     <div class="form-group">
       <label class="col-lg-4 control-label"
-             for="filterCustomAttributeValue">
-        Custom attribute value
+             for="filterAttributeValue">
+        Attribute value
       </label>
 
       <div class="col-lg-8">
         <div class="input-group"
              style="width: 25em;">
           <div gt-input-group-dropdown
-               gt-model="filter.customAttributeValueComparator"
+               gt-model="filter.attributeValueComparator"
                gt-items="filterTextComparatorOptions"
                class="input-group-left">
           </div>
           <input type="text"
-                 ng-model="filter.customAttributeValue"
+                 ng-model="filter.attributeValue"
                  class="form-control"
-                 id="filterCustomAttributeValue">
+                 id="filterAttributeValue">
         </div>
       </div>
     </div>

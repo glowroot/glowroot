@@ -22,14 +22,13 @@ import java.util.zip.DataFormatException;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-import org.glowroot.collector.spi.Constants;
 import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
 import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.common.model.MutableProfileTree;
-import org.glowroot.common.model.MutableTimer;
 import org.glowroot.common.model.QueryCollector;
+import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.live.ImmutableOverviewAggregate;
 import org.glowroot.live.ImmutablePercentileAggregate;
@@ -43,10 +42,10 @@ public class MutableAggregate {
     private double totalNanos;
     private long transactionCount;
     private long errorCount;
-    private double totalCpuNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
-    private double totalBlockedNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
-    private double totalWaitedNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
-    private double totalAllocatedBytes = Constants.THREAD_DATA_NOT_AVAILABLE;
+    private double totalCpuNanos = NotAvailableAware.NA;
+    private double totalBlockedNanos = NotAvailableAware.NA;
+    private double totalWaitedNanos = NotAvailableAware.NA;
+    private double totalAllocatedBytes = NotAvailableAware.NA;
     private final LazyHistogram lazyHistogram = new LazyHistogram();
     private final List<MutableTimer> rootTimers = Lists.newArrayList();
     private QueryCollector queries;
@@ -71,20 +70,20 @@ public class MutableAggregate {
     }
 
     public void addTotalCpuNanos(double totalCpuNanos) {
-        this.totalCpuNanos = notAvailableAwareAdd(this.totalCpuNanos, totalCpuNanos);
+        this.totalCpuNanos = NotAvailableAware.add(this.totalCpuNanos, totalCpuNanos);
     }
 
     public void addTotalBlockedNanos(double totalBlockedNanos) {
-        this.totalBlockedNanos = notAvailableAwareAdd(this.totalBlockedNanos, totalBlockedNanos);
+        this.totalBlockedNanos = NotAvailableAware.add(this.totalBlockedNanos, totalBlockedNanos);
     }
 
     public void addTotalWaitedNanos(double totalWaitedNanos) {
-        this.totalWaitedNanos = notAvailableAwareAdd(this.totalWaitedNanos, totalWaitedNanos);
+        this.totalWaitedNanos = NotAvailableAware.add(this.totalWaitedNanos, totalWaitedNanos);
     }
 
     public void addTotalAllocatedBytes(double totalAllocatedBytes) {
         this.totalAllocatedBytes =
-                notAvailableAwareAdd(this.totalAllocatedBytes, totalAllocatedBytes);
+                NotAvailableAware.add(this.totalAllocatedBytes, totalAllocatedBytes);
     }
 
     public void mergeHistogram(Aggregate.Histogram toBeMergedHistogram) throws DataFormatException {
@@ -168,15 +167,5 @@ public class MutableAggregate {
             rootTimers.add(rootTimer.toProtobuf());
         }
         return rootTimers;
-    }
-
-    private static double notAvailableAwareAdd(double x, double y) {
-        if (x == Constants.THREAD_DATA_NOT_AVAILABLE) {
-            return y;
-        }
-        if (y == Constants.THREAD_DATA_NOT_AVAILABLE) {
-            return x;
-        }
-        return x + y;
     }
 }

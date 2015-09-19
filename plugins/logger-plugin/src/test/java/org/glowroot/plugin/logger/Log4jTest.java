@@ -62,7 +62,7 @@ public class Log4jTest {
         // when
         container.executeAppUnderTest(ShouldLog.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg");
         assertThat(entries).hasSize(3);
@@ -79,7 +79,7 @@ public class Log4jTest {
         // when
         container.executeAppUnderTest(ShouldLogWithThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg_");
         assertThat(entries).hasSize(3);
@@ -111,7 +111,7 @@ public class Log4jTest {
         // when
         container.executeAppUnderTest(ShouldLogWithNullThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg_");
         assertThat(entries).hasSize(3);
@@ -135,7 +135,7 @@ public class Log4jTest {
         // when
         container.executeAppUnderTest(ShouldLogWithPriority.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg__");
         assertThat(entries).hasSize(3);
@@ -150,7 +150,7 @@ public class Log4jTest {
         // when
         container.executeAppUnderTest(ShouldLogWithPriorityAndThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg___");
         assertThat(entries).hasSize(3);
@@ -182,7 +182,7 @@ public class Log4jTest {
         // when
         container.executeAppUnderTest(ShouldLogWithPriorityAndNullThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg___null");
         assertThat(entries).hasSize(3);
@@ -204,7 +204,7 @@ public class Log4jTest {
         // when
         container.executeAppUnderTest(ShouldLocalizedLog.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg____");
         assertThat(entries).hasSize(3);
@@ -234,7 +234,7 @@ public class Log4jTest {
         // when
         container.executeAppUnderTest(ShouldLocalizedLogWithNullThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg____null");
         assertThat(entries).hasSize(3);
@@ -256,7 +256,7 @@ public class Log4jTest {
         // when
         container.executeAppUnderTest(ShouldLocalizedLogWithParameters.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg____");
         assertThat(entries).hasSize(3);
@@ -288,7 +288,7 @@ public class Log4jTest {
         // when
         container.executeAppUnderTest(ShouldLocalizedLogWithEmptyParameters.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg____");
         assertThat(entries).hasSize(3);
@@ -320,7 +320,7 @@ public class Log4jTest {
         // when
         container.executeAppUnderTest(ShouldLocalizedLogWithParametersAndNullThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg____null");
         assertThat(entries).hasSize(3);
@@ -388,7 +388,7 @@ public class Log4jTest {
     }
 
     private static void assertNoLogTraceEntries() throws Exception {
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.entryCount()).isZero();
     }
 

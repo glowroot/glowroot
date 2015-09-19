@@ -6,17 +6,17 @@ Transaction duration: {{nanosToMillis transactionDuration}} milliseconds {{#if t
 &nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{state}}
 {{#ifBlocked state}}        - blocked on {{lockName}}
 {{/ifBlocked}}{{#ifWaiting state}}{{#if lockName}}        - waiting on {{lockName}}
-{{/if}}{{/ifWaiting}}{{#each stackTrace}}        {{.}}
+{{/if}}{{/ifWaiting}}{{#each stackTraceElements}}        {{.}}
 {{/each}}<br>{{/each}}{{/if}}{{#if unmatchedThreads}}<strong>Unmatched threads</strong> (this may possibly include currently executing transactions that just started or just ended):<br>
 {{#each unmatchedThreads}}"{{name}}"
 &nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{state}}
 {{#ifBlocked state}}        - blocked on {{lockName}}
 {{/ifBlocked}}{{#ifWaiting state}}{{#if lockName}}        - waiting on {{lockName}}
-{{/if}}{{/ifWaiting}}{{#each stackTrace}}        {{.}}
+{{/if}}{{/ifWaiting}}{{#each stackTraceElements}}        {{.}}
 {{/each}}<br>{{/each}}{{/if}}{{#if currentThread}}<strong>Thread dump request thread</strong> (producing this thread dump):<br>
 "{{currentThread/name}}"
 &nbsp;&nbsp;&nbsp;java.lang.Thread.State: {{currentThread/state}}
 {{#ifBlocked currentThread/state}}        - blocked on {{currentThread/lockName}}
 {{/ifBlocked}}{{#ifWaiting currentThread/state}}{{#if currentThread/lockName}}        - waiting on {{currentThread/lockName}}
-{{/if}}{{/ifWaiting}}{{#each currentThread/stackTrace}}        {{.}}
+{{/if}}{{/ifWaiting}}{{#each currentThread/stackTraceElements}}        {{.}}
 {{/each}}{{/if}}

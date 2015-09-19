@@ -24,7 +24,9 @@ import com.google.common.base.Charsets;
 import com.google.common.io.ByteSource;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.glowroot.common.util.Tickers;
 
@@ -34,6 +36,9 @@ public class CappedDatabaseTest {
 
     private File tempFile;
     private CappedDatabase cappedDatabase;
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @Before
     public void onBefore() throws IOException {
@@ -55,7 +60,7 @@ public class CappedDatabaseTest {
         long cappedId =
                 cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
         // then
-        String text2 = cappedDatabase.read(cappedId, "").read();
+        String text2 = cappedDatabase.read(cappedId).read();
         assertThat(text2).isEqualTo(text);
     }
 
@@ -67,7 +72,7 @@ public class CappedDatabaseTest {
         long cappedId =
                 cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
         // then
-        Reader in = cappedDatabase.read(cappedId, "").openStream();
+        Reader in = cappedDatabase.read(cappedId).openStream();
         assertThat((char) in.read()).isEqualTo('0');
         assertThat((char) in.read()).isEqualTo('1');
         assertThat((char) in.read()).isEqualTo('2');
@@ -96,7 +101,7 @@ public class CappedDatabaseTest {
         long cappedId =
                 cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
         // then
-        String text2 = cappedDatabase.read(cappedId, "").read();
+        String text2 = cappedDatabase.read(cappedId).read();
         assertThat(text2).isEqualTo(text);
     }
 
@@ -116,7 +121,7 @@ public class CappedDatabaseTest {
         long cappedId =
                 cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
         // then
-        String text2 = cappedDatabase.read(cappedId, "").read();
+        String text2 = cappedDatabase.read(cappedId).read();
         assertThat(text2).isEqualTo(text);
     }
 
@@ -136,8 +141,13 @@ public class CappedDatabaseTest {
         // when
         cappedDatabase.write(ByteSource.wrap(text.getBytes(Charsets.UTF_8)), "test");
         // then
-        // for now, overwritten blocks return empty byte array when read
-        String text2 = cappedDatabase.read(cappedId, "").read();
-        assertThat(text2).isEqualTo("");
+        String exceptionClassName = null;
+        try {
+            cappedDatabase.read(cappedId).read();
+        } catch (Exception e) {
+            exceptionClassName = e.getClass().getName();
+        }
+        assertThat(exceptionClassName).isEqualTo("org.glowroot.server.simplerepo.util"
+                + ".CappedDatabase$CappedBlockRolledOverMidReadException");
     }
 }

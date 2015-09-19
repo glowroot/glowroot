@@ -67,7 +67,7 @@ public class RequestHeaderTest {
         // when
         container.executeAppUnderTest(SetStandardRequestHeaders.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
                 (Map<String, Object>) header.detail().get("Request headers");
@@ -84,7 +84,7 @@ public class RequestHeaderTest {
         // when
         container.executeAppUnderTest(SetStandardRequestHeadersLowercase.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
                 (Map<String, Object>) header.detail().get("Request headers");
@@ -101,7 +101,7 @@ public class RequestHeaderTest {
         // when
         container.executeAppUnderTest(SetOtherRequestHeaders.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
                 (Map<String, Object>) header.detail().get("Request headers");
@@ -120,7 +120,7 @@ public class RequestHeaderTest {
         // when
         container.executeAppUnderTest(GetBadRequestHeaders.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
                 (Map<String, Object>) header.detail().get("Request headers");
@@ -135,7 +135,7 @@ public class RequestHeaderTest {
         // when
         container.executeAppUnderTest(GetBadRequestHeaders2.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
                 (Map<String, Object>) header.detail().get("Request headers");
@@ -149,7 +149,7 @@ public class RequestHeaderTest {
         // when
         container.executeAppUnderTest(SetTransactionNameOverrideRequestHeaders.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.transactionName()).isEqualTo("AbcXyz");
     }
 

@@ -20,13 +20,11 @@ import java.util.Locale;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -44,8 +42,6 @@ public class ObjectMappers {
 
         module.addSerializer(Enum.class, new EnumSerializer(Enum.class));
         module.setDeserializerModifier(new EnumDeserializerModifier());
-        module.addSerializer(StackTraceElement.class, new StackTraceElementSerializer());
-        module.addDeserializer(StackTraceElement.class, new StackTraceElementDeserializer());
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(module);
@@ -54,34 +50,6 @@ public class ObjectMappers {
             mapper.registerModule(extraModule);
         }
         return mapper;
-    }
-
-    private static final class StackTraceElementSerializer
-            extends JsonSerializer<StackTraceElement> {
-        @Override
-        public void serialize(StackTraceElement stackTraceElement, JsonGenerator jg,
-                SerializerProvider serializers) throws IOException, JsonProcessingException {
-            jg.writeStartArray();
-            jg.writeString(stackTraceElement.getClassName());
-            jg.writeString(stackTraceElement.getMethodName());
-            jg.writeString(stackTraceElement.getFileName());
-            jg.writeNumber(stackTraceElement.getLineNumber());
-            jg.writeEndArray();
-        }
-    }
-
-    private static final class StackTraceElementDeserializer
-            extends JsonDeserializer<StackTraceElement> {
-        @Override
-        public StackTraceElement deserialize(JsonParser p, DeserializationContext ctxt)
-                throws IOException {
-            String className = p.nextTextValue();
-            String methodName = p.nextTextValue();
-            String fileName = p.nextTextValue();
-            int lineNumber = p.nextIntValue(0);
-            p.nextValue();
-            return new StackTraceElement(className, methodName, fileName, lineNumber);
-        }
     }
 
     @SuppressWarnings({"rawtypes", "serial"})

@@ -99,8 +99,8 @@ public class TransactionServiceImplOutsideTxTest {
     }
 
     @Test
-    public void testAddTransactionCustomAttribute() {
-        transactionService.addTransactionCustomAttribute("x", null);
+    public void testAddTransactionAttribute() {
+        transactionService.addTransactionAttribute("x", null);
     }
 
     @Test

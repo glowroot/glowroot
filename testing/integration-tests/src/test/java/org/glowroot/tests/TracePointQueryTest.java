@@ -107,26 +107,26 @@ public class TracePointQueryTest {
     }
 
     private static void verifyOnce(Container container, boolean active) throws Exception {
-        List<Trace.Header> headers = container.getTraceService().getTraces(
+        List<Trace.Header> headers = container.getTraceService().getHeaders(
                 ImmutableTraceQuery.builder()
                         .transactionType("nomatch")
                         .build());
         assertThat(headers).isEmpty();
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .build());
         assertThat(headers).hasSize(2);
         verifyPartialStatus(headers, active);
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("nomatch")
                 .transactionNameComparator(StringComparator.BEGINS)
                 .build());
         assertThat(headers).isEmpty();
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -134,7 +134,7 @@ public class TracePointQueryTest {
         assertThat(headers).hasSize(2);
         verifyPartialStatus(headers, active);
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -143,7 +143,7 @@ public class TracePointQueryTest {
                 .build());
         assertThat(headers).isEmpty();
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -153,7 +153,7 @@ public class TracePointQueryTest {
         assertThat(headers).hasSize(2);
         verifyPartialStatus(headers, active);
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -164,7 +164,7 @@ public class TracePointQueryTest {
                 .build());
         assertThat(headers).isEmpty();
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -176,7 +176,7 @@ public class TracePointQueryTest {
         assertThat(headers).hasSize(2);
         verifyPartialStatus(headers, active);
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -184,11 +184,11 @@ public class TracePointQueryTest {
                 .headlineComparator(StringComparator.BEGINS)
                 .error("e1")
                 .errorComparator(StringComparator.BEGINS)
-                .customAttributeName("nomatch")
+                .attributeName("nomatch")
                 .build());
         assertThat(headers).isEmpty();
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -196,12 +196,12 @@ public class TracePointQueryTest {
                 .headlineComparator(StringComparator.BEGINS)
                 .error("e1")
                 .errorComparator(StringComparator.BEGINS)
-                .customAttributeName("can1")
+                .attributeName("can1")
                 .build());
         assertThat(headers).hasSize(2);
         verifyPartialStatus(headers, active);
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -209,13 +209,13 @@ public class TracePointQueryTest {
                 .headlineComparator(StringComparator.BEGINS)
                 .error("e1")
                 .errorComparator(StringComparator.BEGINS)
-                .customAttributeName("can1")
-                .customAttributeValue("nomatch")
-                .customAttributeValueComparator(StringComparator.BEGINS)
+                .attributeName("can1")
+                .attributeValue("nomatch")
+                .attributeValueComparator(StringComparator.BEGINS)
                 .build());
         assertThat(headers).isEmpty();
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.BEGINS)
@@ -223,23 +223,23 @@ public class TracePointQueryTest {
                 .headlineComparator(StringComparator.BEGINS)
                 .error("e1")
                 .errorComparator(StringComparator.BEGINS)
-                .customAttributeName("can1")
-                .customAttributeValue("cav1")
-                .customAttributeValueComparator(StringComparator.BEGINS)
+                .attributeName("can1")
+                .attributeValue("cav1")
+                .attributeValueComparator(StringComparator.BEGINS)
                 .build());
         assertThat(headers).hasSize(2);
         verifyPartialStatus(headers, active);
 
         // check different comparators
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx")
                 .transactionNameComparator(StringComparator.EQUALS)
                 .build());
         assertThat(headers).isEmpty();
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx1")
                 .transactionNameComparator(StringComparator.EQUALS)
@@ -247,14 +247,14 @@ public class TracePointQueryTest {
         assertThat(headers).hasSize(2);
         verifyPartialStatus(headers, active);
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("tnx")
                 .transactionNameComparator(StringComparator.ENDS)
                 .build());
         assertThat(headers).isEmpty();
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("nx1")
                 .transactionNameComparator(StringComparator.ENDS)
@@ -262,7 +262,7 @@ public class TracePointQueryTest {
         assertThat(headers).hasSize(2);
         verifyPartialStatus(headers, active);
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("nx")
                 .transactionNameComparator(StringComparator.CONTAINS)
@@ -270,14 +270,14 @@ public class TracePointQueryTest {
         assertThat(headers).hasSize(2);
         verifyPartialStatus(headers, active);
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("nomatch")
                 .transactionNameComparator(StringComparator.CONTAINS)
                 .build());
         assertThat(headers).isEmpty();
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("nomatch")
                 .transactionNameComparator(StringComparator.NOT_CONTAINS)
@@ -285,7 +285,7 @@ public class TracePointQueryTest {
         assertThat(headers).hasSize(2);
         verifyPartialStatus(headers, active);
 
-        headers = container.getTraceService().getTraces(ImmutableTraceQuery.builder()
+        headers = container.getTraceService().getHeaders(ImmutableTraceQuery.builder()
                 .transactionType("tt1")
                 .transactionName("nx")
                 .transactionNameComparator(StringComparator.NOT_CONTAINS)
@@ -306,7 +306,7 @@ public class TracePointQueryTest {
                 .headline("h1")
                 .error("e1")
                 .user("u1")
-                .putCustomAttributes("can1", "cav1")
+                .putAttributes("can1", "cav1")
                 .build()
                 .call(active);
     }
@@ -318,7 +318,7 @@ public class TracePointQueryTest {
                 .headline("h2")
                 .error("e2")
                 .user("u2")
-                .putCustomAttributes("can2", "cav2")
+                .putAttributes("can2", "cav2")
                 .build()
                 .call(active);
     }

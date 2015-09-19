@@ -59,7 +59,7 @@ public class TimerTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithTimers.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.rootTimer().childTimers()).isEmpty();
         assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
     }
@@ -70,7 +70,7 @@ public class TimerTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSelfNestedTimer.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.rootTimer().childTimers()).isEmpty();
         assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
         assertThat(header.rootTimer().count()).isEqualTo(1);
@@ -89,7 +89,7 @@ public class TimerTest {
             }
         });
         // then
-        Trace.Header header = container.getTraceService().getActiveTrace(5, SECONDS);
+        Trace.Header header = container.getTraceService().getActiveHeader(5, SECONDS);
         assertThat(header).isNotNull();
         assertThat(header.rootTimer().childTimers()).isEmpty();
         assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");

@@ -60,7 +60,7 @@ public class InstrumentationConfigEnabledPropertyTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.headline()).isEqualTo("Level One");
         assertThat(header.transactionName()).isEqualTo("basic test");
         assertThat(header.detail()).isEqualTo(mapOf("arg1", "a", "arg2", "b", "nested1",
@@ -103,7 +103,7 @@ public class InstrumentationConfigEnabledPropertyTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.headline()).isEqualTo("Level One");
         assertThat(header.transactionName()).isEqualTo("basic test");
         assertThat(header.detail()).isEqualTo(mapOf("arg1", "a", "arg2", "b", "nested1",

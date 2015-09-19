@@ -57,7 +57,7 @@ public class ApacheHttpClientPluginTest {
     @Test
     public void shouldCaptureHttpGet() throws Exception {
         container.executeAppUnderTest(ExecuteHttpGet.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).message())
@@ -67,7 +67,7 @@ public class ApacheHttpClientPluginTest {
     @Test
     public void shouldCaptureHttpGetUsingHttpHostArg() throws Exception {
         container.executeAppUnderTest(ExecuteHttpGetUsingHttpHostArg.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).message())
@@ -77,7 +77,7 @@ public class ApacheHttpClientPluginTest {
     @Test
     public void shouldCaptureHttpPost() throws Exception {
         container.executeAppUnderTest(ExecuteHttpPost.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).message())
@@ -87,7 +87,7 @@ public class ApacheHttpClientPluginTest {
     @Test
     public void shouldCaptureHttpPostUsingHttpHostArg() throws Exception {
         container.executeAppUnderTest(ExecuteHttpPostUsingHttpHostArg.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).message())

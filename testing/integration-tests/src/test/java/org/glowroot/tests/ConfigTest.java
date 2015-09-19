@@ -256,7 +256,7 @@ public class ConfigTest {
     @Test
     public void shouldInsertGauge() throws Exception {
         // given
-        List<? extends GaugeConfig> originalConfigs =
+        List<GaugeConfig> originalConfigs =
                 container.getConfigService().getGaugeConfigs();
         GaugeConfig config = createGauge();
         // when
@@ -271,7 +271,7 @@ public class ConfigTest {
     @Test
     public void shouldUpdateGauge() throws Exception {
         // given
-        List<? extends GaugeConfig> originalConfigs =
+        List<GaugeConfig> originalConfigs =
                 container.getConfigService().getGaugeConfigs();
         GaugeConfig config = createGauge();
         config = container.getConfigService().addGaugeConfig(config);
@@ -288,14 +288,14 @@ public class ConfigTest {
     @Test
     public void shouldDeleteGauge() throws Exception {
         // given
-        List<? extends GaugeConfig> originalConfigs =
+        List<GaugeConfig> originalConfigs =
                 container.getConfigService().getGaugeConfigs();
         GaugeConfig config = createGauge();
         config = container.getConfigService().addGaugeConfig(config);
         // when
         container.getConfigService().removeGaugeConfig(config.getVersion());
         // then
-        List<? extends GaugeConfig> configs = container.getConfigService().getGaugeConfigs();
+        List<GaugeConfig> configs = container.getConfigService().getGaugeConfigs();
         assertThat(configs).isEqualTo(originalConfigs);
     }
 
@@ -460,10 +460,10 @@ public class ConfigTest {
             config.setTransactionSlowThresholdMillis(transactionSlowThresholdMillis + 10);
         }
         config.setTransactionUserTemplate(config.getTransactionUserTemplate() + "i");
-        Map<String, String> transactionCustomAttributeTemplates =
-                Maps.newHashMap(config.getTransactionCustomAttributeTemplates());
-        transactionCustomAttributeTemplates.put("Test attr name", "Test attr value");
-        config.setTransactionCustomAttributeTemplates(transactionCustomAttributeTemplates);
+        Map<String, String> transactionAttributeTemplates =
+                Maps.newHashMap(config.getTransactionAttributeTemplates());
+        transactionAttributeTemplates.put("Test attr name", "Test attr value");
+        config.setTransactionAttributeTemplates(transactionAttributeTemplates);
         config.setEnabledProperty(config.getEnabledProperty() + "k");
         config.setTraceEntryEnabledProperty(config.getTraceEntryEnabledProperty() + "l");
     }

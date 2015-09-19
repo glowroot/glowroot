@@ -54,7 +54,7 @@ public class JdbcDriverTest {
         // given
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(entries.get(0).message()).isEqualTo("major version");
     }

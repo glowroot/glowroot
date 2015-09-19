@@ -23,13 +23,11 @@ import com.google.common.cache.LoadingCache;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import org.glowroot.api.internal.GlowrootService;
-import org.glowroot.markers.OnlyUsedByTests;
-import org.glowroot.markers.UsedByReflection;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.plugin.api.config.ConfigService;
 import org.glowroot.plugin.api.internal.ServiceRegistry;
 import org.glowroot.plugin.api.transaction.TransactionService;
 
-@UsedByReflection
 public class ServiceRegistryImpl implements ServiceRegistry {
 
     private static volatile @MonotonicNonNull ServiceRegistryImpl INSTANCE;
@@ -39,7 +37,8 @@ public class ServiceRegistryImpl implements ServiceRegistry {
 
     private final LoadingCache<String, ConfigService> configServices;
 
-    ServiceRegistryImpl(GlowrootService glowrootService, TransactionService transactionService,
+    private ServiceRegistryImpl(GlowrootService glowrootService,
+            TransactionService transactionService,
             final ConfigServiceFactory configServiceFactory) {
         this.glowrootService = glowrootService;
         this.transactionService = transactionService;
@@ -63,14 +62,12 @@ public class ServiceRegistryImpl implements ServiceRegistry {
 
     // called via reflection from org.glowroot.plugin.api.Agent
     // also called via reflection from generated pointcut config advice
-    @UsedByReflection
     public static @Nullable ServiceRegistry getInstance() {
         return INSTANCE;
     }
 
     // called via reflection from org.glowroot.api.Glowroot
     // also called via reflection from generated pointcut config advice
-    @UsedByReflection
     public static @Nullable GlowrootService getGlowrootService() {
         return INSTANCE == null ? null : INSTANCE.glowrootService;
     }

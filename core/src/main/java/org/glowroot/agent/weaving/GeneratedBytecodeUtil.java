@@ -17,7 +17,7 @@ package org.glowroot.agent.weaving;
 
 import java.lang.reflect.Array;
 
-import org.glowroot.markers.UsedByGeneratedBytecode;
+import org.glowroot.common.util.UsedByGeneratedBytecode;
 
 @UsedByGeneratedBytecode
 public class GeneratedBytecodeUtil {

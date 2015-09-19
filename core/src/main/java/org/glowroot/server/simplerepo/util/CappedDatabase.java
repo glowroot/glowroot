@@ -45,7 +45,7 @@ import com.ning.compress.lzf.LZFOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.markers.OnlyUsedByTests;
+import org.glowroot.common.util.OnlyUsedByTests;
 
 public class CappedDatabase {
 
@@ -139,10 +139,20 @@ public class CappedDatabase {
     public <T extends /*@NonNull*/Object> /*@Nullable*/ T readMessage(long cappedId,
             Parser<T> parser) throws IOException {
         boolean overwritten;
+        boolean inTheFuture;
         synchronized (lock) {
             overwritten = out.isOverwritten(cappedId);
+            inTheFuture = cappedId >= out.getCurrIndex();
         }
         if (overwritten) {
+            return null;
+        }
+        if (inTheFuture) {
+            // this can happen when the glowroot folder is copied for analysis without shutting down
+            // the JVM and glowroot.capped.db is copied first, then new data is written to
+            // glowroot.capped.db and the new capped ids are written to glowroot.h2.db and then
+            // glowroot.h2.db is copied with capped ids that do not exist in the copied
+            // glowroot.capped.db
             return null;
         }
         // it's important to wrap CappedBlockInputStream in a BufferedInputStream to prevent
@@ -165,10 +175,20 @@ public class CappedDatabase {
     public <T extends /*@NonNull*/Object> List<T> readMessages(long cappedId, Parser<T> parser)
             throws IOException {
         boolean overwritten;
+        boolean inTheFuture;
         synchronized (lock) {
             overwritten = out.isOverwritten(cappedId);
+            inTheFuture = cappedId >= out.getCurrIndex();
         }
         if (overwritten) {
+            return ImmutableList.of();
+        }
+        if (inTheFuture) {
+            // this can happen when the glowroot folder is copied for analysis without shutting down
+            // the JVM and glowroot.capped.db is copied first, then new data is written to
+            // glowroot.capped.db and the new capped ids are written to glowroot.h2.db and then
+            // glowroot.h2.db is copied with capped ids that do not exist in the copied
+            // glowroot.capped.db
             return ImmutableList.of();
         }
         // it's important to wrap CappedBlockInputStream in a BufferedInputStream to prevent
@@ -193,20 +213,9 @@ public class CappedDatabase {
         return messages;
     }
 
-    CharSource read(long cappedId, String overwrittenResponse) {
-        boolean inTheFuture;
-        synchronized (lock) {
-            inTheFuture = cappedId >= out.getCurrIndex();
-        }
-        if (inTheFuture) {
-            // this can happen when the glowroot folder is copied for analysis without shutting down
-            // the JVM and glowroot.capped.db is copied first, then new data is written to
-            // glowroot.capped.db and the new capped ids are written to glowroot.h2.db and then
-            // glowroot.h2.db is copied with capped ids that do not exist in the copied
-            // glowroot.capped.db
-            return CharSource.wrap(overwrittenResponse);
-        }
-        return new CappedBlockCharSource(cappedId, overwrittenResponse);
+    @OnlyUsedByTests
+    CharSource read(long cappedId) {
+        return new CappedBlockCharSource(cappedId);
     }
 
     boolean isExpired(long cappedId) {
@@ -242,25 +251,17 @@ public class CappedDatabase {
         Runtime.getRuntime().removeShutdownHook(shutdownHookThread);
     }
 
+    @OnlyUsedByTests
     private class CappedBlockCharSource extends CharSource {
 
         private final long cappedId;
-        private final String overwrittenResponse;
 
-        private CappedBlockCharSource(long cappedId, String overwrittenResponse) {
+        private CappedBlockCharSource(long cappedId) {
             this.cappedId = cappedId;
-            this.overwrittenResponse = overwrittenResponse;
         }
 
         @Override
         public Reader openStream() throws IOException {
-            boolean overwritten;
-            synchronized (lock) {
-                overwritten = out.isOverwritten(cappedId);
-            }
-            if (overwritten) {
-                return CharSource.wrap(overwrittenResponse).openStream();
-            }
             // it's important to wrap CappedBlockInputStream in a BufferedInputStream to prevent
             // lots of small reads from the underlying RandomAccessFile
             final int bufferSize = 32768;

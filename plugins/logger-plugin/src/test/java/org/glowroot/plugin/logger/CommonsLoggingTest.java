@@ -62,7 +62,7 @@ public class CommonsLoggingTest {
         // when
         container.executeAppUnderTest(ShouldLog.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg");
         assertThat(entries).hasSize(3);
@@ -79,7 +79,7 @@ public class CommonsLoggingTest {
         // when
         container.executeAppUnderTest(ShouldLogWithThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg_");
         assertThat(entries).hasSize(3);
@@ -111,7 +111,7 @@ public class CommonsLoggingTest {
         // when
         container.executeAppUnderTest(ShouldLogWithNullThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
         assertThat(header.error().get().message()).isEqualTo("efg_");
         assertThat(entries).hasSize(3);
@@ -136,7 +136,7 @@ public class CommonsLoggingTest {
         // when
         container.executeAppUnderTest(ShouldLog.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         assertThat(header.entryCount()).isZero();
     }
 

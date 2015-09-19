@@ -21,14 +21,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
-import org.glowroot.collector.spi.Constants;
 import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
 import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer;
 import org.glowroot.common.model.LazyHistogram;
-import org.glowroot.common.model.MutableTimer;
+import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.server.repo.MutableTimer;
 import org.glowroot.server.repo.Utils;
 
 class AggregateMerging {
@@ -76,18 +76,17 @@ class AggregateMerging {
     }
 
     static ThreadInfoAggregate getThreadInfoAggregate(List<OverviewAggregate> overviewAggregates) {
-        double totalCpuNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
-        double totalBlockedNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
-        double totalWaitedNanos = Constants.THREAD_DATA_NOT_AVAILABLE;
-        double totalAllocatedBytes = Constants.THREAD_DATA_NOT_AVAILABLE;
+        double totalCpuNanos = NotAvailableAware.NA;
+        double totalBlockedNanos = NotAvailableAware.NA;
+        double totalWaitedNanos = NotAvailableAware.NA;
+        double totalAllocatedBytes = NotAvailableAware.NA;
         for (OverviewAggregate overviewAggregate : overviewAggregates) {
-            totalCpuNanos =
-                    notAvailableAwareAdd(totalCpuNanos, overviewAggregate.totalCpuNanos());
-            totalBlockedNanos = notAvailableAwareAdd(totalBlockedNanos,
-                    overviewAggregate.totalBlockedNanos());
+            totalCpuNanos = NotAvailableAware.add(totalCpuNanos, overviewAggregate.totalCpuNanos());
+            totalBlockedNanos =
+                    NotAvailableAware.add(totalBlockedNanos, overviewAggregate.totalBlockedNanos());
             totalWaitedNanos =
-                    notAvailableAwareAdd(totalWaitedNanos, overviewAggregate.totalWaitedNanos());
-            totalAllocatedBytes = notAvailableAwareAdd(totalAllocatedBytes,
+                    NotAvailableAware.add(totalWaitedNanos, overviewAggregate.totalWaitedNanos());
+            totalAllocatedBytes = NotAvailableAware.add(totalAllocatedBytes,
                     overviewAggregate.totalAllocatedBytes());
         }
         return ImmutableThreadInfoAggregate.builder()
@@ -116,16 +115,6 @@ class AggregateMerging {
                 toBeMergedRootTimer.getExtended());
         rootTimer.merge(toBeMergedRootTimer);
         rootTimers.add(rootTimer);
-    }
-
-    private static double notAvailableAwareAdd(double x, double y) {
-        if (x == Constants.THREAD_DATA_NOT_AVAILABLE) {
-            return y;
-        }
-        if (y == Constants.THREAD_DATA_NOT_AVAILABLE) {
-            return x;
-        }
-        return x + y;
     }
 
     @Value.Immutable
@@ -159,10 +148,10 @@ class AggregateMerging {
         abstract double totalAllocatedBytes(); // -1 means N/A
 
         boolean isEmpty() {
-            return totalCpuNanos() == Constants.THREAD_DATA_NOT_AVAILABLE
-                    && totalBlockedNanos() == Constants.THREAD_DATA_NOT_AVAILABLE
-                    && totalWaitedNanos() == Constants.THREAD_DATA_NOT_AVAILABLE
-                    && totalAllocatedBytes() == Constants.THREAD_DATA_NOT_AVAILABLE;
+            return NotAvailableAware.isNA(totalCpuNanos())
+                    && NotAvailableAware.isNA(totalBlockedNanos())
+                    && NotAvailableAware.isNA(totalWaitedNanos())
+                    && NotAvailableAware.isNA(totalAllocatedBytes());
         }
     }
 }

@@ -5,7 +5,7 @@
     "Sandbox",
     "Background"
   ],
-  "transactionCustomAttributes": [
+  "transactionAttributes": [
     "My First Attribute",
     "Second",
     "A Very Long Attribute Value",

@@ -51,7 +51,7 @@ public class InstrumentationConfig {
     private @Nullable String transactionType;
     private @Nullable String transactionNameTemplate;
     private @Nullable String transactionUserTemplate;
-    private @Nullable Map<String, String> transactionCustomAttributeTemplates;
+    private @Nullable Map<String, String> transactionAttributeTemplates;
 
     private @Nullable Long transactionSlowThresholdMillis;
 
@@ -65,14 +65,14 @@ public class InstrumentationConfig {
     public InstrumentationConfig() {
         methodParameterTypes = ImmutableList.of();
         methodModifiers = ImmutableList.of();
-        transactionCustomAttributeTemplates = ImmutableMap.of();
+        transactionAttributeTemplates = ImmutableMap.of();
         version = null;
     }
 
     private InstrumentationConfig(String version) {
         methodParameterTypes = ImmutableList.of();
         methodModifiers = ImmutableList.of();
-        transactionCustomAttributeTemplates = ImmutableMap.of();
+        transactionAttributeTemplates = ImmutableMap.of();
         this.version = version;
     }
 
@@ -188,13 +188,13 @@ public class InstrumentationConfig {
         this.transactionUserTemplate = transactionUserTemplate;
     }
 
-    public @Nullable Map<String, String> getTransactionCustomAttributeTemplates() {
-        return transactionCustomAttributeTemplates;
+    public @Nullable Map<String, String> getTransactionAttributeTemplates() {
+        return transactionAttributeTemplates;
     }
 
-    public void setTransactionCustomAttributeTemplates(
-            Map<String, String> transactionCustomAttributeTemplates) {
-        this.transactionCustomAttributeTemplates = transactionCustomAttributeTemplates;
+    public void setTransactionAttributeTemplates(
+            Map<String, String> transactionAttributeTemplates) {
+        this.transactionAttributeTemplates = transactionAttributeTemplates;
     }
 
     public @Nullable Long getTransactionSlowThresholdMillis() {
@@ -247,8 +247,8 @@ public class InstrumentationConfig {
                     && Objects.equal(transactionType, that.transactionType)
                     && Objects.equal(transactionNameTemplate, that.transactionNameTemplate)
                     && Objects.equal(transactionUserTemplate, that.transactionUserTemplate)
-                    && Objects.equal(transactionCustomAttributeTemplates,
-                            that.transactionCustomAttributeTemplates)
+                    && Objects.equal(transactionAttributeTemplates,
+                            that.transactionAttributeTemplates)
                     && Objects.equal(transactionSlowThresholdMillis,
                             that.transactionSlowThresholdMillis)
                     && Objects.equal(enabledProperty, that.enabledProperty)
@@ -266,7 +266,7 @@ public class InstrumentationConfig {
                 methodReturnType, methodModifiers, captureKind, timerName, traceEntryTemplate,
                 traceEntryStackThresholdMillis, traceEntryCaptureSelfNested, transactionType,
                 transactionNameTemplate, transactionUserTemplate,
-                transactionCustomAttributeTemplates, transactionSlowThresholdMillis,
+                transactionAttributeTemplates, transactionSlowThresholdMillis,
                 enabledProperty,
                 traceEntryEnabledProperty);
     }
@@ -288,7 +288,7 @@ public class InstrumentationConfig {
                 .add("transactionType", transactionType)
                 .add("transactionNameTemplate", transactionNameTemplate)
                 .add("transactionUserTemplate", transactionUserTemplate)
-                .add("transactionCustomAttributeTemplates", transactionCustomAttributeTemplates)
+                .add("transactionAttributeTemplates", transactionAttributeTemplates)
                 .add("transactionSlowThresholdMillis", transactionSlowThresholdMillis)
                 .add("enabledProperty", enabledProperty)
                 .add("traceEntryEnabledProperty", traceEntryEnabledProperty)
@@ -312,7 +312,7 @@ public class InstrumentationConfig {
             @JsonProperty("transactionType") @Nullable String transactionType,
             @JsonProperty("transactionNameTemplate") @Nullable String transactionNameTemplate,
             @JsonProperty("transactionUserTemplate") @Nullable String transactionUserTemplate,
-            @JsonProperty("transactionCustomAttributeTemplates") @Nullable Map<String, /*@Nullable*/String> uncheckedTransactionCustomAttributeTemplates,
+            @JsonProperty("transactionAttributeTemplates") @Nullable Map<String, /*@Nullable*/String> uncheckedTransactionAttributeTemplates,
             @JsonProperty("transactionSlowThresholdMillis") @Nullable Long transactionSlowThresholdMillis,
             @JsonProperty("enabledProperty") @Nullable String enabledProperty,
             @JsonProperty("traceEntryEnabledProperty") @Nullable String traceEntryEnabledProperty,
@@ -323,9 +323,9 @@ public class InstrumentationConfig {
         List<String> methodParameterTypes =
                 orEmpty(uncheckedMethodParameterTypes, "methodParameterTypes");
         List<MethodModifier> methodModifiers = orEmpty(uncheckedMethodModifiers, "methodModifiers");
-        Map<String, String> transactionCustomAttributeTemplates =
-                checkNotNullValuesForProperty(uncheckedTransactionCustomAttributeTemplates,
-                        "transactionCustomAttributeTemplates");
+        Map<String, String> transactionAttributeTemplates =
+                checkNotNullValuesForProperty(uncheckedTransactionAttributeTemplates,
+                        "transactionAttributeTemplates");
         checkRequiredProperty(className, "className");
         checkRequiredProperty(declaringClassName, "declaringClassName");
         checkRequiredProperty(methodName, "methodName");
@@ -337,8 +337,8 @@ public class InstrumentationConfig {
         checkRequiredProperty(transactionType, "transactionType");
         checkRequiredProperty(transactionNameTemplate, "transactionNameTemplate");
         checkRequiredProperty(transactionUserTemplate, "transactionUserTemplate");
-        checkRequiredProperty(transactionCustomAttributeTemplates,
-                "transactionCustomAttributeTemplates");
+        checkRequiredProperty(transactionAttributeTemplates,
+                "transactionAttributeTemplates");
         checkRequiredProperty(enabledProperty, "enabledProperty");
         checkRequiredProperty(traceEntryEnabledProperty, "traceEntryEnabledProperty");
         checkRequiredProperty(version, "version");
@@ -357,7 +357,7 @@ public class InstrumentationConfig {
         config.setTransactionType(transactionType);
         config.setTransactionNameTemplate(transactionNameTemplate);
         config.setTransactionUserTemplate(transactionUserTemplate);
-        config.setTransactionCustomAttributeTemplates(transactionCustomAttributeTemplates);
+        config.setTransactionAttributeTemplates(transactionAttributeTemplates);
         config.setTransactionSlowThresholdMillis(transactionSlowThresholdMillis);
         config.setEnabledProperty(enabledProperty);
         config.setTraceEntryEnabledProperty(traceEntryEnabledProperty);

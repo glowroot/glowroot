@@ -31,7 +31,7 @@ import org.glowroot.container.trace.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TransactionCustomAttributesTest {
+public class TransactionAttributesTest {
 
     private static Container container;
 
@@ -56,7 +56,7 @@ public class TransactionCustomAttributesTest {
         // when
         container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
         // then
-        Trace.Header header = container.getTraceService().getLastTrace();
+        Trace.Header header = container.getTraceService().getLastHeader();
         Iterator<Map.Entry<String, List<String>>> i = header.attributes().entrySet().iterator();
         Map.Entry<String, List<String>> entry = i.next();
         assertThat(entry.getKey()).isEqualTo("Wee Four");

@@ -105,7 +105,7 @@ public class AdviceGenerator {
         adviceInternalName = "org/glowroot/agent/advicegen/GeneratedAdvice" + uniqueNum;
         if (config.isTraceEntryOrGreater() || !config.transactionNameTemplate().isEmpty()
                 || !config.transactionUserTemplate().isEmpty()
-                || !config.transactionCustomAttributeTemplates().isEmpty()) {
+                || !config.transactionAttributeTemplates().isEmpty()) {
             // templates are used, so method meta is needed
             methodMetaInternalName = "org/glowroot/agent/advicegen/GeneratedMethodMeta" + uniqueNum;
         } else {
@@ -501,19 +501,19 @@ public class AdviceGenerator {
                     true);
         }
         int i = 0;
-        for (String attrName : config.transactionCustomAttributeTemplates().keySet()) {
+        for (String attrName : config.transactionAttributeTemplates().keySet()) {
             mv.visitFieldInsn(GETSTATIC,
                     adviceInternalName,
                     "transactionService",
                     "Lorg/glowroot/plugin/api/transaction/TransactionService;");
             mv.visitLdcInsn(attrName);
             mv.visitVarInsn(ALOAD, 3);
-            // methodMetaInternalName is non-null when transactionCustomAttributeTemplates is
+            // methodMetaInternalName is non-null when transactionAttributeTemplates is
             // non-empty
             checkNotNull(methodMetaInternalName);
             mv.visitMethodInsn(INVOKEVIRTUAL,
                     methodMetaInternalName,
-                    "getTransactionCustomAttributeTemplate" + i++,
+                    "getTransactionAttributeTemplate" + i++,
                     "()Lorg/glowroot/agent/advicegen/MessageTemplate;",
                     false);
             mv.visitVarInsn(ALOAD, 0);
@@ -530,7 +530,7 @@ public class AdviceGenerator {
                     "getMessageText", "()Ljava/lang/String;", false);
             mv.visitMethodInsn(INVOKEINTERFACE,
                     "org/glowroot/plugin/api/transaction/TransactionService",
-                    "addTransactionCustomAttribute",
+                    "addTransactionAttribute",
                     "(Ljava/lang/String;Ljava/lang/String;)V",
                     true);
         }
@@ -679,8 +679,8 @@ public class AdviceGenerator {
                     "Lorg/glowroot/agent/advicegen/MessageTemplate;", null, null)
                     .visitEnd();
         }
-        for (int i = 0; i < config.transactionCustomAttributeTemplates().size(); i++) {
-            cw.visitField(ACC_PRIVATE + ACC_FINAL, "transactionCustomAttributeTemplate" + i,
+        for (int i = 0; i < config.transactionAttributeTemplates().size(); i++) {
+            cw.visitField(ACC_PRIVATE + ACC_FINAL, "transactionAttributeTemplate" + i,
                     "Lorg/glowroot/agent/advicegen/MessageTemplate;", null, null)
                     .visitEnd();
         }
@@ -692,9 +692,9 @@ public class AdviceGenerator {
         if (!config.transactionUserTemplate().isEmpty()) {
             generateMethodMetaGetter(cw, "transactionUserTemplate", "getTransactionUserTemplate");
         }
-        for (int i = 0; i < config.transactionCustomAttributeTemplates().size(); i++) {
-            generateMethodMetaGetter(cw, "transactionCustomAttributeTemplate" + i,
-                    "getTransactionCustomAttributeTemplate" + i);
+        for (int i = 0; i < config.transactionAttributeTemplates().size(); i++) {
+            generateMethodMetaGetter(cw, "transactionAttributeTemplate" + i,
+                    "getTransactionAttributeTemplate" + i);
         }
         cw.visitEnd();
         return ImmutableLazyDefinedClass.builder()
@@ -767,7 +767,7 @@ public class AdviceGenerator {
                     "Lorg/glowroot/agent/advicegen/MessageTemplate;");
         }
         int i = 0;
-        for (String attrTemplate : config.transactionCustomAttributeTemplates().values()) {
+        for (String attrTemplate : config.transactionAttributeTemplates().values()) {
             mv.visitVarInsn(ALOAD, 0);
             mv.visitLdcInsn(attrTemplate);
             mv.visitVarInsn(ALOAD, 1);
@@ -781,7 +781,7 @@ public class AdviceGenerator {
                     false);
             mv.visitFieldInsn(PUTFIELD,
                     methodMetaInternalName,
-                    "transactionCustomAttributeTemplate" + i++,
+                    "transactionAttributeTemplate" + i++,
                     "Lorg/glowroot/agent/advicegen/MessageTemplate;");
         }
         mv.visitInsn(RETURN);
