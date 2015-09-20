@@ -31,7 +31,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.protobuf.AbstractMessageLite;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
@@ -515,52 +514,26 @@ class AggregateDao implements AggregateRepository {
 
     private void rollupOneInterval(long rollupTime, long fixedIntervalMillis, int toRollupLevel,
             int fromRollupLevel) throws Exception {
-        Map<String, MutableAggregate> overallAggregates = dataSource.query(
+
+        dataSource.query(
                 "select transaction_type, total_nanos, transaction_count, error_count,"
                         + " total_cpu_nanos, total_blocked_nanos, total_waited_nanos,"
                         + " total_allocated_bytes, queries_capped_id, profile_tree_capped_id,"
                         + " histogram, root_timers from overall_aggregate_rollup_"
                         + castUntainted(fromRollupLevel)
-                        + " where capture_time > ? and capture_time <= ?",
-                new OverallRollupResultSetExtractor(rollupTime, fromRollupLevel),
+                        + " where capture_time > ? and capture_time <= ? order by transaction_type",
+                new RollupOverallAggregates(rollupTime, fromRollupLevel, toRollupLevel),
                 rollupTime - fixedIntervalMillis, rollupTime);
-        if (overallAggregates == null) {
-            // data source is closing
-            return;
-        }
-        Map<String, Map<String, MutableAggregate>> transactionAggregates = dataSource.query(
+        dataSource.query(
                 "select transaction_type, transaction_name, total_nanos, transaction_count,"
                         + " error_count, total_cpu_nanos, total_blocked_nanos, total_waited_nanos,"
                         + " total_allocated_bytes, queries_capped_id, profile_tree_capped_id,"
                         + " histogram, root_timers from transaction_aggregate_rollup_"
                         + castUntainted(fromRollupLevel)
-                        + " where capture_time > ? and capture_time <= ?",
-                new TransactionRollupResultSetExtractor(rollupTime, fromRollupLevel),
+                        + " where capture_time > ? and capture_time <= ?"
+                        + " order by transaction_type, transaction_name",
+                new RollupTransactionAggregates(rollupTime, fromRollupLevel, toRollupLevel),
                 rollupTime - fixedIntervalMillis, rollupTime);
-        if (transactionAggregates == null) {
-            // data source is closing
-            return;
-        }
-        storeMergedAggregatesAtRollupLevel(overallAggregates, transactionAggregates, toRollupLevel);
-    }
-
-    private void storeMergedAggregatesAtRollupLevel(Map<String, MutableAggregate> overallAggregates,
-            Map<String, Map<String, MutableAggregate>> transactionAggregates, int rollupLevel)
-                    throws Exception {
-        // intentionally not using batch update as that could cause memory spike while preparing a
-        // large batch
-        ScratchBuffer scratchBuffer = new ScratchBuffer();
-        for (Entry<String, MutableAggregate> entry : overallAggregates.entrySet()) {
-            storeOverallAggregate(rollupLevel, entry.getKey(),
-                    entry.getValue().toAggregate(scratchBuffer));
-        }
-        for (Entry<String, Map<String, MutableAggregate>> outerEntry : transactionAggregates
-                .entrySet()) {
-            for (Entry<String, MutableAggregate> innerEntry : outerEntry.getValue().entrySet()) {
-                storeTransactionAggregate(rollupLevel, outerEntry.getKey(), innerEntry.getKey(),
-                        innerEntry.getValue().toAggregate(scratchBuffer));
-            }
-        }
     }
 
     private void storeTransactionAggregate(int rollupLevel, String transactionType,
@@ -1007,67 +980,97 @@ class AggregateDao implements AggregateRepository {
         }
     }
 
-    private class OverallRollupResultSetExtractor
-            implements ResultSetExtractor<Map<String, MutableAggregate>> {
+    private class RollupOverallAggregates implements ResultSetExtractor</*@Nullable*/Void> {
 
         private final long rollupCaptureTime;
         private final int fromRollupLevel;
+        private final int toRollupLevel;
+        private final ScratchBuffer scratchBuffer = new ScratchBuffer();
 
-        private OverallRollupResultSetExtractor(long rollupCaptureTime, int fromRollupLevel) {
+        private RollupOverallAggregates(long rollupCaptureTime, int fromRollupLevel,
+                int toRollupLevel) {
             this.rollupCaptureTime = rollupCaptureTime;
             this.fromRollupLevel = fromRollupLevel;
+            this.toRollupLevel = toRollupLevel;
         }
 
         @Override
-        public Map<String, MutableAggregate> extractData(ResultSet resultSet) throws Exception {
-            Map<String, MutableAggregate> mergedAggregates = Maps.newHashMap();
+        public @Nullable Void extractData(ResultSet resultSet) throws Exception {
+            OverallAggregate curr = null;
             while (resultSet.next()) {
                 String transactionType = checkNotNull(resultSet.getString(1));
-                MutableAggregate mergedAggregate = mergedAggregates.get(transactionType);
-                if (mergedAggregate == null) {
-                    mergedAggregate = new MutableAggregate(rollupCaptureTime,
-                            configRepository.getAdvancedConfig().maxAggregateQueriesPerQueryType());
-                    mergedAggregates.put(transactionType, mergedAggregate);
+                if (curr == null || transactionType != curr.transactionType()) {
+                    if (curr != null) {
+                        storeOverallAggregate(toRollupLevel, curr.transactionType(),
+                                curr.aggregate().toAggregate(scratchBuffer));
+                    }
+                    curr = ImmutableOverallAggregate.of(transactionType,
+                            new MutableAggregate(rollupCaptureTime, configRepository
+                                    .getAdvancedConfig().maxAggregateQueriesPerQueryType()));
                 }
-                merge(mergedAggregate, resultSet, 2, fromRollupLevel);
+                merge(curr.aggregate(), resultSet, 2, fromRollupLevel);
             }
-            return mergedAggregates;
+            if (curr != null) {
+                storeOverallAggregate(toRollupLevel, curr.transactionType(),
+                        curr.aggregate().toAggregate(scratchBuffer));
+            }
+            return null;
         }
     }
 
-    private class TransactionRollupResultSetExtractor
-            implements ResultSetExtractor<Map<String, Map<String, MutableAggregate>>> {
+    private class RollupTransactionAggregates implements ResultSetExtractor</*@Nullable*/Void> {
 
         private final long rollupCaptureTime;
         private final int fromRollupLevel;
+        private final int toRollupLevel;
+        private final ScratchBuffer scratchBuffer = new ScratchBuffer();
 
-        private TransactionRollupResultSetExtractor(long rollupCaptureTime, int fromRollupLevel) {
+        private RollupTransactionAggregates(long rollupCaptureTime, int fromRollupLevel,
+                int toRollupLevel) {
             this.rollupCaptureTime = rollupCaptureTime;
             this.fromRollupLevel = fromRollupLevel;
+            this.toRollupLevel = toRollupLevel;
         }
 
         @Override
-        public Map<String, Map<String, MutableAggregate>> extractData(ResultSet resultSet)
-                throws Exception {
-            Map<String, Map<String, MutableAggregate>> mergedAggregates = Maps.newHashMap();
+        public @Nullable Void extractData(ResultSet resultSet) throws Exception {
+            TransactionAggregate curr = null;
             while (resultSet.next()) {
                 String transactionType = checkNotNull(resultSet.getString(1));
                 String transactionName = checkNotNull(resultSet.getString(2));
-                Map<String, MutableAggregate> mergedAggregateMap =
-                        mergedAggregates.get(transactionType);
-                if (mergedAggregateMap == null) {
-                    mergedAggregateMap = Maps.newHashMap();
-                    mergedAggregates.put(transactionType, mergedAggregateMap);
+                if (curr == null || transactionType != curr.transactionType()
+                        || transactionName != curr.transactionName()) {
+                    if (curr != null) {
+                        storeTransactionAggregate(toRollupLevel, curr.transactionType(),
+                                curr.transactionName(),
+                                curr.aggregate().toAggregate(scratchBuffer));
+                    }
+                    curr = ImmutableTransactionAggregate.of(transactionType, transactionName,
+                            new MutableAggregate(rollupCaptureTime, configRepository
+                                    .getAdvancedConfig().maxAggregateQueriesPerQueryType()));
                 }
-                MutableAggregate mergedAggregate = mergedAggregateMap.get(transactionName);
-                if (mergedAggregate == null) {
-                    mergedAggregate = new MutableAggregate(rollupCaptureTime,
-                            configRepository.getAdvancedConfig().maxAggregateQueriesPerQueryType());
-                    mergedAggregateMap.put(transactionName, mergedAggregate);
-                }
-                merge(mergedAggregate, resultSet, 3, fromRollupLevel);
+                merge(curr.aggregate(), resultSet, 3, fromRollupLevel);
             }
-            return mergedAggregates;
+            if (curr != null) {
+                storeTransactionAggregate(toRollupLevel, curr.transactionType(),
+                        curr.transactionName(), curr.aggregate().toAggregate(scratchBuffer));
+            }
+            return null;
         }
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface OverallAggregate {
+        String transactionType();
+        MutableAggregate aggregate();
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface TransactionAggregate {
+        String transactionType();
+        String transactionName();
+        MutableAggregate aggregate();
     }
 }
