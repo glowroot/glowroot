@@ -557,6 +557,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void addListener(ConfigListener listener) {
         configListeners.add(listener);
+        configService.addConfigListener(listener);
         listener.onChange();
     }
 
