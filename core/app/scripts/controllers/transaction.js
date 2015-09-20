@@ -41,7 +41,9 @@ glowroot.controller('TransactionCtrl', [
         query['transaction-type'] = transactionType;
       }
       if ($scope.last) {
-        query.last = $scope.last;
+        if ($scope.last !== 4 * 60 * 60 * 1000) {
+          query.last = $scope.last;
+        }
       } else {
         query.from = $scope.chartFrom;
         query.to = $scope.chartTo;

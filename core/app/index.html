@@ -89,19 +89,19 @@
           <div gt-navbar-item
                gt-display="Transactions"
                gt-item-name="transaction"
-               gt-url="transaction/average{{activeNavbarItem === 'transaction' ? '' : queryString()}}"
+               gt-url="transaction/average{{queryString()}}"
                gt-state="transaction.detail.average">
           </div>
           <div gt-navbar-item
                gt-display="Errors"
                gt-item-name="error"
-               gt-url="error/messages{{activeNavbarItem === 'error' ? '' : queryString()}}"
+               gt-url="error/messages{{queryString()}}"
                gt-state="error.detail.messages">
           </div>
           <div gt-navbar-item
                gt-display="JVM"
                gt-item-name="jvm"
-               gt-url="jvm/gauges{{activeNavbarItem === 'jvm' ? '' : queryString()}}"
+               gt-url="jvm/gauges{{queryString()}}"
                gt-state="jvm.gauges">
           </div>
         </ul>

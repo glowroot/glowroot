@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, gtParseIncludesExcludes, $ */
+/* global glowroot, gtParseIncludesExcludes, $, moment */
 
 glowroot.controller('TransactionFlameGraphCtrl', [
   '$scope',
@@ -27,11 +27,22 @@ glowroot.controller('TransactionFlameGraphCtrl', [
     document.title = 'Transactions \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = 'transaction';
 
-    $scope.from = $location.search().from;
-    $scope.to = $location.search().to;
+    $scope.from = Number($location.search().from);
+    $scope.to = Number($location.search().to);
+    $scope.last = Number($location.search().last);
     $scope.transactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
     $scope.transactionName = $location.search()['transaction-name'];
     $scope.filter = $location.search().filter;
+
+    if (!$scope.last && (!$scope.from || !$scope.to)) {
+      $scope.last = 4 * 60 * 60 * 1000;
+    }
+
+    if ($scope.last) {
+      var now = moment().startOf('second').valueOf();
+      $scope.from = now - $scope.last;
+      $scope.to = now + $scope.last / 10;
+    }
 
     var parseResult = gtParseIncludesExcludes($scope.filter);
 
