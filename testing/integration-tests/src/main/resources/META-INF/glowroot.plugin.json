@@ -76,7 +76,7 @@
       ],
       "captureKind": "trace-entry",
       "timerName": "level four",
-      "traceEntryTemplate": "Level Four: {{0}}, {{1}}"
+      "traceEntryMessageTemplate": "Level Four: {{0}}, {{1}}"
     },
     {
       "className": "org.glowroot.tests.LevelFive",
@@ -87,7 +87,7 @@
       ],
       "captureKind": "trace-entry",
       "timerName": "level five",
-      "traceEntryTemplate": "Level Five: {{0}}, {{1}}",
+      "traceEntryMessageTemplate": "Level Five: {{0}}, {{1}}",
       "enabledProperty": "levelFiveEnabled",
       "traceEntryEnabledProperty": "levelFiveEntryEnabled"
     },
@@ -98,7 +98,7 @@
       ],
       "captureKind": "trace-entry",
       "timerName": "exceptional",
-      "traceEntryTemplate": "Exceptional entry"
+      "traceEntryMessageTemplate": "Exceptional entry"
     },
     {
       "className": "org.glowroot.tests.AAA",
@@ -121,7 +121,7 @@
       "methodParameterTypes": [],
       "captureKind": "trace-entry",
       "timerName": "coverage",
-      "traceEntryTemplate": "Coverage get: {{_}}"
+      "traceEntryMessageTemplate": "Coverage get: {{_}}"
     },
     {
       "className": "org.glowroot.tests.CoverAllTypes",
@@ -131,7 +131,7 @@
       ],
       "captureKind": "trace-entry",
       "timerName": "coverage",
-      "traceEntryTemplate": "Coverage put: {{0}}"
+      "traceEntryMessageTemplate": "Coverage put: {{0}}"
     }
   ],
   "aspects": [

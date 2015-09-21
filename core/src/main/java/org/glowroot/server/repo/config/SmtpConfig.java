@@ -20,6 +20,8 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import org.immutables.value.Value;
 
 import org.glowroot.common.config.Versions;
@@ -28,30 +30,47 @@ import org.glowroot.common.config.Versions;
 public abstract class SmtpConfig {
 
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public String fromEmailAddress() {
         return "";
     }
+
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public String fromDisplayName() {
         return "";
     }
+
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public String host() {
         return "";
     }
+
+    // need to write zero since it is treated different from null
+    // (although in this case zero is not a valid value)
+    @JsonInclude(value = Include.NON_NULL)
     public abstract @Nullable Integer port();
+
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public boolean ssl() {
         return false;
     }
+
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public String username() {
         return "";
     }
+
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public String encryptedPassword() {
         return "";
     }
+
+    @JsonInclude(value = Include.NON_EMPTY)
     public abstract Map<String, String> additionalProperties();
 
     @Value.Derived

@@ -21,12 +21,8 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
-
-import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class StorageConfig {
 
@@ -37,7 +33,8 @@ public class StorageConfig {
 
     private final String version;
 
-    private StorageConfig(String version) {
+    @JsonCreator
+    private StorageConfig(@JsonProperty("version") String version) {
         this.version = version;
     }
 
@@ -99,36 +96,5 @@ public class StorageConfig {
         // server
         return Objects.hashCode(rollupExpirationHours, traceExpirationHours,
                 rollupCappedDatabaseSizesMb, traceCappedDatabaseSizeMb);
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("rollupExpirationHours", rollupExpirationHours)
-                .add("traceExpirationHours", traceExpirationHours)
-                .add("rollupCappedDatabaseSizesMb", rollupCappedDatabaseSizesMb)
-                .add("traceCappedDatabaseSizeMb", traceCappedDatabaseSizeMb)
-                .add("version", version)
-                .toString();
-    }
-
-    @JsonCreator
-    static StorageConfig readValue(
-            @JsonProperty("rollupExpirationHours") @Nullable List<Integer> rollupExpirationHours,
-            @JsonProperty("traceExpirationHours") @Nullable Integer traceExpirationHours,
-            @JsonProperty("rollupCappedDatabaseSizesMb") @Nullable List<Integer> rollupCappedDatabaseSizesMb,
-            @JsonProperty("traceCappedDatabaseSizeMb") @Nullable Integer traceCappedDatabaseSizeMb,
-            @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(rollupExpirationHours, "rollupExpirationHours");
-        checkRequiredProperty(traceExpirationHours, "traceExpirationHours");
-        checkRequiredProperty(rollupCappedDatabaseSizesMb, "rollupCappedDatabaseSizesMb");
-        checkRequiredProperty(traceCappedDatabaseSizeMb, "traceCappedDatabaseSizeMb");
-        checkRequiredProperty(version, "version");
-        StorageConfig config = new StorageConfig(version);
-        config.setRollupExpirationHours(rollupExpirationHours);
-        config.setTraceExpirationHours(traceExpirationHours);
-        config.setRollupCappedDatabaseSizesMb(rollupCappedDatabaseSizesMb);
-        config.setTraceCappedDatabaseSizeMb(traceCappedDatabaseSizeMb);
-        return config;
     }
 }

@@ -713,14 +713,14 @@ public class AdviceGenerator {
         mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
         mv.visitVarInsn(ALOAD, 0);
         if (config.isTraceEntryOrGreater()) {
-            String traceEntryTemplate = config.traceEntryTemplate();
-            if (traceEntryTemplate.isEmpty() && config.isTransaction()) {
-                traceEntryTemplate = config.transactionNameTemplate();
+            String messageTemplate = config.traceEntryMessageTemplate();
+            if (messageTemplate.isEmpty() && config.isTransaction()) {
+                messageTemplate = config.transactionNameTemplate();
             }
-            if (traceEntryTemplate.isEmpty()) {
+            if (messageTemplate.isEmpty()) {
                 mv.visitLdcInsn("<no message template provided>");
             } else {
-                mv.visitLdcInsn(traceEntryTemplate);
+                mv.visitLdcInsn(messageTemplate);
             }
             mv.visitVarInsn(ALOAD, 1);
             mv.visitVarInsn(ALOAD, 2);

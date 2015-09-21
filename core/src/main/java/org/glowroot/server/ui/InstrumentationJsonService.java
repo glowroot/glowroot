@@ -214,7 +214,7 @@ class InstrumentationJsonService {
         abstract ImmutableList<MethodModifier> methodModifiers();
         abstract CaptureKind captureKind();
         abstract Optional<String> timerName();
-        abstract Optional<String> traceEntryTemplate();
+        abstract Optional<String> traceEntryMessageTemplate();
         abstract @Nullable Long traceEntryStackThresholdMillis();
         abstract Optional<Boolean> traceEntryCaptureSelfNested();
         abstract Optional<String> transactionType();
@@ -236,7 +236,7 @@ class InstrumentationJsonService {
                     .addAllMethodModifiers(config.methodModifiers())
                     .captureKind(config.captureKind())
                     .timerName(config.timerName())
-                    .traceEntryTemplate(config.traceEntryTemplate())
+                    .traceEntryMessageTemplate(config.traceEntryMessageTemplate())
                     .traceEntryStackThresholdMillis(config.traceEntryStackThresholdMillis())
                     .traceEntryCaptureSelfNested(config.traceEntryCaptureSelfNested())
                     .transactionType(config.transactionType())
@@ -260,7 +260,7 @@ class InstrumentationJsonService {
                     .addAllMethodModifiers(methodModifiers())
                     .captureKind(captureKind())
                     .timerName(timerName().or(""))
-                    .traceEntryTemplate(traceEntryTemplate().or(""))
+                    .traceEntryMessageTemplate(traceEntryMessageTemplate().or(""))
                     .traceEntryStackThresholdMillis(traceEntryStackThresholdMillis())
                     .traceEntryCaptureSelfNested(traceEntryCaptureSelfNested().or(false))
                     .transactionType(transactionType().or(""))

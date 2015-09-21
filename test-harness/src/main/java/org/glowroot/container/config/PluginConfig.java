@@ -21,12 +21,8 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
-
-import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class PluginConfig {
 
@@ -35,7 +31,8 @@ public class PluginConfig {
 
     private final String version;
 
-    private PluginConfig(String version) {
+    @JsonCreator
+    private PluginConfig(@JsonProperty("version") String version) {
         properties = Maps.newHashMap();
         this.version = version;
     }
@@ -88,27 +85,5 @@ public class PluginConfig {
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(enabled, properties);
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("enabled", enabled)
-                .add("properties", properties)
-                .add("version", version)
-                .toString();
-    }
-
-    @JsonCreator
-    static PluginConfig readValue(@JsonProperty("enabled") @Nullable Boolean enabled,
-            @JsonProperty("properties") @Nullable Map<String, /*@Nullable*/Object> properties,
-            @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(enabled, "enabled");
-        checkRequiredProperty(properties, "properties");
-        checkRequiredProperty(version, "version");
-        PluginConfig config = new PluginConfig(version);
-        config.setEnabled(enabled);
-        config.properties.putAll(properties);
-        return config;
     }
 }

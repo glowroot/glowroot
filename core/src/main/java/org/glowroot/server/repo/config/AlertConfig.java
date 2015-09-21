@@ -16,6 +16,8 @@
 package org.glowroot.server.repo.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
@@ -24,6 +26,7 @@ import org.glowroot.common.config.Versions;
 @Value.Immutable
 public abstract class AlertConfig {
 
+    @JsonInclude(value = Include.NON_EMPTY)
     public abstract String transactionType();
     public abstract double percentile();
     public abstract int timePeriodMinutes();

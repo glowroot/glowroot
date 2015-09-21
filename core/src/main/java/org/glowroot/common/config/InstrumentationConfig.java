@@ -21,6 +21,8 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.immutables.value.Value;
@@ -33,6 +35,7 @@ public abstract class InstrumentationConfig {
     public abstract String className();
 
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public String declaringClassName() {
         return "";
     }
@@ -43,61 +46,74 @@ public abstract class InstrumentationConfig {
     public abstract ImmutableList<String> methodParameterTypes();
 
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public String methodReturnType() {
         return "";
     }
 
     // currently unused, but will have a purpose soon, e.g. to capture all public methods
+    @JsonInclude(value = Include.NON_EMPTY)
     public abstract ImmutableList<MethodModifier> methodModifiers();
 
     public abstract CaptureKind captureKind();
 
     @Value.Default
-    public String timerName() {
-        return "";
-    }
-
-    @Value.Default
-    public String traceEntryTemplate() {
-        return "";
-    }
-
-    public abstract @Nullable Long traceEntryStackThresholdMillis();
-
-    @Value.Default
-    public boolean traceEntryCaptureSelfNested() {
-        return false;
-    }
-
-    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public String transactionType() {
         return "";
     }
 
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public String transactionNameTemplate() {
         return "";
     }
 
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public String transactionUserTemplate() {
         return "";
     }
 
+    @JsonInclude(value = Include.NON_EMPTY)
     public abstract Map<String, String> transactionAttributeTemplates();
 
+    // need to write zero since it is treated different from null
+    @JsonInclude(value = Include.NON_NULL)
     public abstract @Nullable Long transactionSlowThresholdMillis();
 
-    // TODO ignore this property when writing to config.json
-    // it is only for plugin authors (to be used in glowroot.plugin.json)
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public String traceEntryMessageTemplate() {
+        return "";
+    }
+
+    // need to write zero since it is treated different from null
+    @JsonInclude(value = Include.NON_NULL)
+    public abstract @Nullable Long traceEntryStackThresholdMillis();
+
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public boolean traceEntryCaptureSelfNested() {
+        return false;
+    }
+
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
+    public String timerName() {
+        return "";
+    }
+
+    // this is only for plugin authors (to be used in glowroot.plugin.json)
+    @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public String enabledProperty() {
         return "";
     }
 
-    // TODO ignore this property when writing to config.json
-    // it is only for plugin authors (to be used in glowroot.plugin.json)
+    // this is only for plugin authors (to be used in glowroot.plugin.json)
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public String traceEntryEnabledProperty() {
         return "";
     }
@@ -140,8 +156,8 @@ public abstract class InstrumentationConfig {
         if (isTimerOrGreater() && timerName().isEmpty()) {
             errors.add("timerName is empty");
         }
-        if (captureKind() == CaptureKind.TRACE_ENTRY && traceEntryTemplate().isEmpty()) {
-            errors.add("traceEntryTemplate is empty");
+        if (captureKind() == CaptureKind.TRACE_ENTRY && traceEntryMessageTemplate().isEmpty()) {
+            errors.add("traceEntryMessageTemplate is empty");
         }
         if (isTransaction() && transactionType().isEmpty()) {
             errors.add("transactionType is empty");
@@ -156,6 +172,6 @@ public abstract class InstrumentationConfig {
     }
 
     public enum CaptureKind {
-        TIMER, TRACE_ENTRY, TRANSACTION, OTHER
+        TRANSACTION, TRACE_ENTRY, TIMER, OTHER
     }
 }

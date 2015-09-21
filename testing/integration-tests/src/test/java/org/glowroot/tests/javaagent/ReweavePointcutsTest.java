@@ -62,8 +62,8 @@ public class ReweavePointcutsTest extends ConfiguredInstrumentationTest {
 
     @Override
     @Test
-    public void shouldRenderTraceEntryTemplateWithReturnValue() throws Exception {
-        super.shouldRenderTraceEntryTemplateWithReturnValue();
+    public void shouldRenderTraceEntryMessageTemplateWithReturnValue() throws Exception {
+        super.shouldRenderTraceEntryMessageTemplateWithReturnValue();
     }
 
     @Override

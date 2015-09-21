@@ -144,14 +144,15 @@
       </fieldset>
       <fieldset>
         <legend style="margin-bottom: 15px;">What to capture</legend>
-        <div class="form-group">
+        <div class="form-group"
+             style="margin-bottom: 40px;">
           <div class="col-lg-offset-3 col-lg-9">
             <div class="radio">
               <label>
                 <input type="radio"
                        ng-model="config.captureKind"
-                       value="timer">
-                Timer
+                       value="transaction">
+                Transaction
               </label>
             </div>
             <div class="radio">
@@ -166,8 +167,8 @@
               <label>
                 <input type="radio"
                        ng-model="config.captureKind"
-                       value="transaction">
-                Transaction
+                       value="timer">
+                Timer
               </label>
             </div>
             <div class="radio">
@@ -181,22 +182,39 @@
           </div>
         </div>
         <div gt-form-group
-             gt-label="{{captureKindTransaction ? 'Root timer name' : 'Timer name'}}"
-             gt-model="config.timerName"
-             gt-pattern="/^[a-zA-Z0-9 ]*$/"
-             gt-required="loaded && showTimer"
-             gt-width="20em"
-             ng-show="showTimer"
-             style="margin-top: 40px;">
+             gt-label="Transaction type"
+             gt-model="config.transactionType"
+             gt-width="40em"
+             gt-required="captureKindTransaction"
+             ng-show="captureKindTransaction">
           <div class="help-block">
-            Multiple instrumentation definitions can share the same timer name,
-            in which case their timers are aggregated together.
+            The transaction type is used for aggregation and filtering.
+          </div>
+          <div class="help-block">
+            This can be one of the current transaction types ({{layout.transactionTypes.join(', ')}})
+            or a new transaction type.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Transaction name"
+             gt-model="config.transactionNameTemplate"
+             gt-width="40em"
+             gt-required="captureKindTransaction"
+             ng-show="captureKindTransaction">
+          <div class="help-block">
+            The transaction name is used for aggregation and filtering.
+          </div>
+          <div ng-non-bindable
+               class="help-block">
+            This is a template which can be populated with values from the method invocation.
+            The same rules apply as for the trace headline (see below), except that the return value {{_}} cannot be
+            used.
           </div>
         </div>
         <div gt-form-group
              gt-type="textarea"
-             gt-label="{{captureKindTransaction ? 'Root trace entry' : 'Trace entry'}}"
-             gt-model="config.traceEntryTemplate"
+             gt-label="{{captureKindTransaction ? 'Trace headline' : 'Trace entry'}}"
+             gt-model="config.traceEntryMessageTemplate"
              gt-required="showTraceEntry"
              gt-width="40em"
              gt-rows="2"
@@ -234,6 +252,18 @@
           </div>
         </div>
         <div gt-form-group
+             gt-label="Timer name"
+             gt-model="config.timerName"
+             gt-pattern="/^[a-zA-Z0-9 ]*$/"
+             gt-required="loaded && showTimer"
+             gt-width="20em"
+             ng-show="showTimer">
+          <div class="help-block">
+            Multiple instrumentation definitions can share the same timer name,
+            in which case their timers are aggregated together.
+          </div>
+        </div>
+        <div gt-form-group
              gt-label="Self nesting"
              gt-checkbox-label="Capture self nested trace entries"
              gt-model="config.traceEntryCaptureSelfNested"
@@ -258,35 +288,6 @@
             Any trace entry that exceeds this threshold will have a stack trace captured and attached to it
             in order to help identify the source of this trace entry.
             Empty means never capture a stack trace for this trace entry.
-          </div>
-        </div>
-        <div gt-form-group
-             gt-label="Transaction type"
-             gt-model="config.transactionType"
-             gt-width="40em"
-             gt-required="captureKindTransaction"
-             ng-show="captureKindTransaction">
-          <div class="help-block">
-            The transaction type is used for aggregation and filtering.
-          </div>
-          <div class="help-block">
-            This can be one of the current transaction types ({{layout.transactionTypes.join(', ')}})
-            or a new transaction type.
-          </div>
-        </div>
-        <div gt-form-group
-             gt-label="Transaction name"
-             gt-model="config.transactionNameTemplate"
-             gt-width="40em"
-             gt-required="captureKindTransaction"
-             ng-show="captureKindTransaction">
-          <div class="help-block">
-            The transaction name is used for aggregation and filtering.
-          </div>
-          <div ng-non-bindable
-               class="help-block">
-            This is a template which can be populated with values from the method invocation.
-            The same rules apply as for the root trace entry, except that the return value {{_}} cannot be used.
           </div>
         </div>
       </fieldset>

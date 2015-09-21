@@ -18,6 +18,8 @@ package org.glowroot.common.config;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -60,8 +62,14 @@ public abstract class GaugeConfig {
 
     @Value.Immutable
     @Styles.AllParameters
-    public interface MBeanAttribute {
-        String name();
-        boolean counter();
+    public static abstract class MBeanAttribute {
+
+        public abstract String name();
+
+        @Value.Default
+        @JsonInclude(value = Include.NON_EMPTY)
+        public boolean counter() {
+            return false;
+        }
     }
 }

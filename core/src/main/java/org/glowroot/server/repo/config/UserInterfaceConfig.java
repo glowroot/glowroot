@@ -16,6 +16,8 @@
 package org.glowroot.server.repo.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
@@ -30,6 +32,7 @@ public abstract class UserInterfaceConfig {
     }
 
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public String defaultDisplayedTransactionType() {
         return "";
     }
@@ -40,11 +43,13 @@ public abstract class UserInterfaceConfig {
     }
 
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public String adminPasswordHash() {
         return "";
     }
 
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public String readOnlyPasswordHash() {
         return "";
     }

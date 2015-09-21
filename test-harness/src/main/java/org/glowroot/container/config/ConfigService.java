@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import org.glowroot.container.common.HttpClient;
@@ -129,7 +130,10 @@ public class ConfigService {
     public List<InstrumentationConfig> getInstrumentationConfigs() throws Exception {
         String response = httpClient.get("/backend/config/instrumentation");
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        JsonNode configsNode = ObjectMappers.getRequiredChildNode(rootNode, "configs");
+        JsonNode configsNode = rootNode.get("configs");
+        if (configsNode == null) {
+            return ImmutableList.of();
+        }
         return mapper.readValue(mapper.treeAsTokens(configsNode),
                 new TypeReference<List<InstrumentationConfig>>() {});
     }

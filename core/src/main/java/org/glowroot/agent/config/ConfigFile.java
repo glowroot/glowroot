@@ -17,6 +17,7 @@ package org.glowroot.agent.config;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -29,6 +30,7 @@ import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ContainerNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
 import com.google.common.base.StandardSystemProperty;
@@ -37,6 +39,7 @@ import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 // TODO if config.json file has unrecognized top-level node (something other than "transaction",
@@ -44,7 +47,7 @@ import org.glowroot.common.util.OnlyUsedByTests;
 class ConfigFile {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigFile.class);
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final String NEWLINE;
 
@@ -154,8 +157,7 @@ class ConfigFile {
             String existingContent = Files.toString(file, Charsets.UTF_8);
             if (content.equals(existingContent)) {
                 // it's nice to preserve the correct modification stamp on the file to track when it
-                // was
-                // last really changed
+                // was last really changed
                 return;
             }
         }
@@ -170,6 +172,16 @@ class ConfigFile {
     }
 
     private String writeConfigAsString() throws IOException {
+        ObjectNode rootObjectNode = this.rootObjectNode.deepCopy();
+        Iterator<Entry<String, JsonNode>> i = rootObjectNode.fields();
+        while (i.hasNext()) {
+            Entry<String, JsonNode> entry = i.next();
+            JsonNode value = entry.getValue();
+            if (value instanceof ContainerNode && ((ContainerNode<?>) value).size() == 0) {
+                // remove empty nodes, e.g. unused "smtp" and "alerts" nodes
+                i.remove();
+            }
+        }
         CustomPrettyPrinter prettyPrinter = new CustomPrettyPrinter();
         prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
         StringBuilder sb = new StringBuilder();

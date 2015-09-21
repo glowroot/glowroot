@@ -30,7 +30,7 @@ public class InstrumentationConfigValidationTest {
             .methodReturnType("")
             .captureKind(CaptureKind.TIMER)
             .timerName("t")
-            .traceEntryTemplate("")
+            .traceEntryMessageTemplate("")
             .traceEntryCaptureSelfNested(false)
             .transactionType("")
             .transactionNameTemplate("")
@@ -96,7 +96,7 @@ public class InstrumentationConfigValidationTest {
                 .captureKind(CaptureKind.TRACE_ENTRY).build();
         // when
         // then
-        assertThat(config.validationErrors()).containsExactly("traceEntryTemplate is empty");
+        assertThat(config.validationErrors()).containsExactly("traceEntryMessageTemplate is empty");
     }
 
     @Test

@@ -16,24 +16,31 @@
 package org.glowroot.common.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import org.immutables.value.Value;
 
 @Value.Immutable
 public abstract class UserRecordingConfig {
 
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public boolean enabled() {
         return false;
     }
 
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public String user() {
         return "";
     }
 
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public int profileIntervalMillis() {
-        return 10;
+        // default is currently 0 so that default configuration won't get written back to
+        // config.json, if this feature becomes "public" then change the default back to 10
+        return 0;
     }
 
     @Value.Derived

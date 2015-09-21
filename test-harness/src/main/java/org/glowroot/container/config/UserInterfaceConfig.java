@@ -21,12 +21,8 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
-
-import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class UserInterfaceConfig {
 
@@ -47,7 +43,8 @@ public class UserInterfaceConfig {
 
     private final String version;
 
-    private UserInterfaceConfig(String version) {
+    @JsonCreator
+    private UserInterfaceConfig(@JsonProperty("version") String version) {
         this.version = version;
     }
 
@@ -168,51 +165,6 @@ public class UserInterfaceConfig {
         return Objects.hashCode(defaultDisplayedTransactionType, defaultDisplayedPercentiles, port,
                 adminPasswordEnabled, readOnlyPasswordEnabled, anonymousAccess,
                 sessionTimeoutMinutes);
-    }
-
-    @Override
-    public String toString() {
-        // leaving off currentAdminPassword, newAdminPassword and newReadOnlyPassword since those
-        // are plain text passwords
-        return MoreObjects.toStringHelper(this)
-                .add("defaultDisplayedTransactionType", defaultDisplayedTransactionType)
-                .add("defaultDisplayedPercentiles", defaultDisplayedPercentiles)
-                .add("port", port)
-                .add("adminPasswordEnabled", adminPasswordEnabled)
-                .add("passwordEnabled", adminPasswordEnabled)
-                .add("anonymousAccess", anonymousAccess)
-                .add("sessionTimeoutMinutes", sessionTimeoutMinutes)
-                .add("version", version)
-                .toString();
-    }
-
-    @JsonCreator
-    static UserInterfaceConfig readValue(
-            @JsonProperty("defaultDisplayedTransactionType") @Nullable String defaultDisplayedTransactionType,
-            @JsonProperty("defaultDisplayedPercentiles") @Nullable List<Double> defaultDisplayedPercentiles,
-            @JsonProperty("port") @Nullable Integer port,
-            @JsonProperty("adminPasswordEnabled") @Nullable Boolean adminPasswordEnabled,
-            @JsonProperty("readOnlyPasswordEnabled") @Nullable Boolean readOnlyPasswordEnabled,
-            @JsonProperty("anonymousAccess") @Nullable AnonymousAccess anonymousAccess,
-            @JsonProperty("sessionTimeoutMinutes") @Nullable Integer sessionTimeoutMinutes,
-            @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(defaultDisplayedTransactionType, "defaultDisplayedTransactionType");
-        checkRequiredProperty(defaultDisplayedPercentiles, "defaultDisplayedPercentiles");
-        checkRequiredProperty(port, "port");
-        checkRequiredProperty(adminPasswordEnabled, "adminPasswordEnabled");
-        checkRequiredProperty(readOnlyPasswordEnabled, "readOnlyPasswordEnabled");
-        checkRequiredProperty(anonymousAccess, "anonymousAccess");
-        checkRequiredProperty(sessionTimeoutMinutes, "sessionTimeoutMinutes");
-        checkRequiredProperty(version, "version");
-        UserInterfaceConfig config = new UserInterfaceConfig(version);
-        config.setDefaultDisplayedTransactionType(defaultDisplayedTransactionType);
-        config.setDefaultDisplayedPercentiles(defaultDisplayedPercentiles);
-        config.setPort(port);
-        config.setAdminPasswordEnabled(adminPasswordEnabled);
-        config.setReadOnlyPasswordEnabled(readOnlyPasswordEnabled);
-        config.setAnonymousAccess(anonymousAccess);
-        config.setSessionTimeoutMinutes(sessionTimeoutMinutes);
-        return config;
     }
 
     public enum AnonymousAccess {

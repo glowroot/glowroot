@@ -20,7 +20,6 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.MoreObjects;
 
 import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
@@ -65,18 +64,6 @@ public class Query {
 
     public boolean isActive() {
         return active;
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("queryType", queryType)
-                .add("queryText", queryText)
-                .add("totalNanos", totalNanos)
-                .add("executionCount", executionCount)
-                .add("totalRows", totalRows)
-                .add("active", active)
-                .toString();
     }
 
     @JsonCreator

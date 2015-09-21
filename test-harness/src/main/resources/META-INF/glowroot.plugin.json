@@ -17,7 +17,7 @@
       "methodParameterTypes": [ ],
       "captureKind": "trace-entry",
       "timerName": "mock trace entry marker",
-      "traceEntryTemplate": "trace entry marker / {{this.class.simpleName}}"
+      "traceEntryMessageTemplate": "trace entry marker / {{this.class.simpleName}}"
     }
   ]
 }

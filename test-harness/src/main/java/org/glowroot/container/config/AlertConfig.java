@@ -21,12 +21,8 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
-
-import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class AlertConfig {
 
@@ -45,7 +41,8 @@ public class AlertConfig {
         version = null;
     }
 
-    private AlertConfig(String version) {
+    @JsonCreator
+    private AlertConfig(@JsonProperty("version") String version) {
         this.version = version;
     }
 
@@ -125,44 +122,5 @@ public class AlertConfig {
         // server
         return Objects.hashCode(transactionType, percentile, timePeriodMinutes, thresholdMillis,
                 minTransactionCount, emailAddresses);
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("transactionType", transactionType)
-                .add("percentile", percentile)
-                .add("timePeriodMinutes", timePeriodMinutes)
-                .add("thresholdMillis", thresholdMillis)
-                .add("minTransactionCount", minTransactionCount)
-                .add("emailAddresses", emailAddresses)
-                .add("version", version)
-                .toString();
-    }
-
-    @JsonCreator
-    static AlertConfig readValue(
-            @JsonProperty("transactionType") @Nullable String transactionType,
-            @JsonProperty("percentile") @Nullable Double percentile,
-            @JsonProperty("timePeriodMinutes") @Nullable Integer timePeriodMinutes,
-            @JsonProperty("thresholdMillis") @Nullable Integer thresholdMillis,
-            @JsonProperty("minTransactionCount") @Nullable Integer minTransactionCount,
-            @JsonProperty("emailAddresses") @Nullable List<String> emailAddresses,
-            @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(transactionType, "transactionType");
-        checkRequiredProperty(percentile, "percentile");
-        checkRequiredProperty(timePeriodMinutes, "timePeriodMinutes");
-        checkRequiredProperty(thresholdMillis, "thresholdMillis");
-        checkRequiredProperty(minTransactionCount, "minTransactionCount");
-        checkRequiredProperty(emailAddresses, "emailAddresses");
-        checkRequiredProperty(version, "version");
-        AlertConfig config = new AlertConfig(version);
-        config.setTransactionType(transactionType);
-        config.setPercentile(percentile);
-        config.setTimePeriodMinutes(timePeriodMinutes);
-        config.setThresholdMillis(thresholdMillis);
-        config.setMinTransactionCount(minTransactionCount);
-        config.setEmailAddresses(emailAddresses);
-        return config;
     }
 }

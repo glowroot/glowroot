@@ -19,11 +19,7 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
-
-import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class UserRecordingConfig {
 
@@ -33,7 +29,8 @@ public class UserRecordingConfig {
 
     private final String version;
 
-    private UserRecordingConfig(String version) {
+    @JsonCreator
+    private UserRecordingConfig(@JsonProperty("version") String version) {
         this.version = version;
     }
 
@@ -85,31 +82,5 @@ public class UserRecordingConfig {
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(enabled, user, profileIntervalMillis);
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("enabled", enabled)
-                .add("user", user)
-                .add("profileIntervalMillis", profileIntervalMillis)
-                .add("version", version)
-                .toString();
-    }
-
-    @JsonCreator
-    static UserRecordingConfig readValue(
-            @JsonProperty("enabled") @Nullable Boolean enabled,
-            @JsonProperty("user") @Nullable String user,
-            @JsonProperty("profileIntervalMillis") @Nullable Integer profileIntervalMillis,
-            @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(enabled, "enabled");
-        checkRequiredProperty(profileIntervalMillis, "profileIntervalMillis");
-        checkRequiredProperty(version, "version");
-        UserRecordingConfig config = new UserRecordingConfig(version);
-        config.setEnabled(enabled);
-        config.setUser(user);
-        config.setProfileIntervalMillis(profileIntervalMillis);
-        return config;
     }
 }

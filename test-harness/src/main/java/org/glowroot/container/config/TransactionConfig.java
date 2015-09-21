@@ -19,11 +19,7 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
-
-import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class TransactionConfig {
 
@@ -32,7 +28,8 @@ public class TransactionConfig {
 
     private final String version;
 
-    private TransactionConfig(String version) {
+    @JsonCreator
+    private TransactionConfig(@JsonProperty("version") String version) {
         this.version = version;
     }
 
@@ -75,28 +72,5 @@ public class TransactionConfig {
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(slowThresholdMillis, profilingIntervalMillis);
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("slowThresholdMillis", slowThresholdMillis)
-                .add("profilingIntervalMillis", profilingIntervalMillis)
-                .add("version", version)
-                .toString();
-    }
-
-    @JsonCreator
-    static TransactionConfig readValue(
-            @JsonProperty("slowThresholdMillis") @Nullable Integer slowThresholdMillis,
-            @JsonProperty("profilingIntervalMillis") @Nullable Integer profilingIntervalMillis,
-            @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(slowThresholdMillis, "slowThresholdMillis");
-        checkRequiredProperty(profilingIntervalMillis, "profilingIntervalMillis");
-        checkRequiredProperty(version, "version");
-        TransactionConfig config = new TransactionConfig(version);
-        config.setSlowThresholdMillis(slowThresholdMillis);
-        config.setProfilingIntervalMillis(profilingIntervalMillis);
-        return config;
     }
 }

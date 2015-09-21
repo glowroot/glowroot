@@ -94,7 +94,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       $scope.loaded = true;
       onNewData({
         config: {
-          captureKind: 'timer'
+          captureKind: 'transaction'
         }
       });
     }
@@ -279,8 +279,8 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       if (!data.timerName) {
         delete data.timerName;
       }
-      if (!data.traceEntryTemplate) {
-        delete data.traceEntryTemplate;
+      if (!data.traceEntryMessageTemplate) {
+        delete data.traceEntryMessageTemplate;
       }
       if (!data.traceEntryStackThresholdMillis) {
         delete data.traceEntryStackThresholdMillis;
@@ -361,7 +361,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
         $scope.config.timerName = '';
       }
       if (!$scope.showTraceEntry) {
-        $scope.config.traceEntryTemplate = '';
+        $scope.config.traceEntryMessageTemplate = '';
         $scope.config.traceEntryCaptureSelfNested = false;
       }
       if (!$scope.showTraceEntryStackThreshold) {

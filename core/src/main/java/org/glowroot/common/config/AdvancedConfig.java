@@ -16,6 +16,8 @@
 package org.glowroot.common.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -25,11 +27,13 @@ public abstract class AdvancedConfig {
     public static final int TRANSACTION_AGGREGATE_QUERIES_HARD_LIMIT_MULTIPLIER = 2;
 
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public boolean timerWrapperMethods() {
         return false;
     }
 
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public boolean weavingTimer() {
         return false;
     }
@@ -65,11 +69,13 @@ public abstract class AdvancedConfig {
     }
 
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public boolean captureThreadInfo() {
         return true;
     }
 
     @Value.Default
+    @JsonInclude(value = Include.NON_EMPTY)
     public boolean captureGcActivity() {
         return true;
     }

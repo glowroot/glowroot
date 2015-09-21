@@ -417,7 +417,7 @@ public class ConfigTest {
         config.setMethodReturnType("void");
         config.setCaptureKind(CaptureKind.TRANSACTION);
         config.setTimerName("yako");
-        config.setTraceEntryTemplate("yak(): {{0}}, {{1}} => {{?}}");
+        config.setTraceEntryMessageTemplate("yak(): {{0}}, {{1}} => {{?}}");
         config.setTransactionType("ttype");
         config.setTransactionNameTemplate("tname");
         config.setTransactionUserTemplate("");
@@ -443,7 +443,7 @@ public class ConfigTest {
             config.setCaptureKind(CaptureKind.TIMER);
         }
         config.setTimerName(config.getTimerName() + "e");
-        config.setTraceEntryTemplate(config.getTraceEntryTemplate() + "f");
+        config.setTraceEntryMessageTemplate(config.getTraceEntryMessageTemplate() + "f");
         config.setTraceEntryCaptureSelfNested(!config.isTraceEntryCaptureSelfNested());
         Long traceEntryStackThresholdMillis = config.getTraceEntryStackThresholdMillis();
         if (traceEntryStackThresholdMillis == null) {

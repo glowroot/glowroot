@@ -75,8 +75,8 @@ public class InstrumentationConfigPage {
         return withWait(xpath("//div[@gt-model='config.timerName']//input"));
     }
 
-    public WebElement getTraceEntryTemplateTextField() {
-        return withWait(xpath("//div[@gt-model='config.traceEntryTemplate']//textarea"));
+    public WebElement getTraceEntryMessageTemplateTextField() {
+        return withWait(xpath("//div[@gt-model='config.traceEntryMessageTemplate']//textarea"));
     }
 
     public WebElement getTraceEntryStackThresholdTextField() {

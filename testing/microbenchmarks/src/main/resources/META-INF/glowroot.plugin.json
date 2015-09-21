@@ -19,7 +19,7 @@
       "methodParameterTypes": [ ],
       "captureKind": "trace-entry",
       "timerName": "trace entry worthy",
-      "traceEntryTemplate": "trace entry worthy: {{this.name}}"
+      "traceEntryMessageTemplate": "trace entry worthy: {{this.name}}"
     },
     {
       "className": "org.glowroot.microbenchmarks.core.support.TimerWorthy",

@@ -16,6 +16,7 @@
 package org.glowroot.common.util;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.Locale;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -25,11 +26,15 @@ import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
+import com.fasterxml.jackson.databind.jsonFormatVisitors.JsonFormatVisitorWrapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.NonTypedScalarSerializerBase;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 
@@ -40,6 +45,7 @@ public class ObjectMappers {
     public static ObjectMapper create(Module... extraModules) {
         SimpleModule module = new SimpleModule();
 
+        module.addSerializer(Boolean.class, new BooleanSerializer(Boolean.class));
         module.addSerializer(Enum.class, new EnumSerializer(Enum.class));
         module.setDeserializerModifier(new EnumDeserializerModifier());
 
@@ -50,6 +56,35 @@ public class ObjectMappers {
             mapper.registerModule(extraModule);
         }
         return mapper;
+    }
+
+    // com.fasterxml.jackson.databind.ser.std.BooleanSerializer is final so cannot subclass
+    // this is the same, plus implements isEmpty() to not write Boolean.FALSE
+    @SuppressWarnings("serial")
+    private static class BooleanSerializer extends NonTypedScalarSerializerBase<Boolean> {
+        private BooleanSerializer(Class<Boolean> t) {
+            super(t);
+        }
+        @Override
+        public void serialize(Boolean value, JsonGenerator jgen, SerializerProvider provider)
+                throws IOException {
+            jgen.writeBoolean(value.booleanValue());
+        }
+        @Override
+        public JsonNode getSchema(SerializerProvider provider, Type typeHint) {
+            return createSchemaNode("boolean", true);
+        }
+        @Override
+        public void acceptJsonFormatVisitor(JsonFormatVisitorWrapper visitor, JavaType typeHint)
+                throws JsonMappingException {
+            if (visitor != null) {
+                visitor.expectBooleanFormat(typeHint);
+            }
+        }
+        @Override
+        public boolean isEmpty(SerializerProvider provider, Boolean value) {
+            return value == null || !value;
+        }
     }
 
     @SuppressWarnings({"rawtypes", "serial"})

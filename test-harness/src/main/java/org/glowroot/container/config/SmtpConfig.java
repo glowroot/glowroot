@@ -21,12 +21,8 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
-
-import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class SmtpConfig {
 
@@ -47,7 +43,8 @@ public class SmtpConfig {
 
     private final String version;
 
-    private SmtpConfig(String version) {
+    @JsonCreator
+    private SmtpConfig(@JsonProperty("version") String version) {
         this.version = version;
     }
 
@@ -161,53 +158,5 @@ public class SmtpConfig {
         // server
         return Objects.hashCode(fromEmailAddress, fromDisplayName, host, port, ssl, username,
                 passwordExists, additionalProperties);
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("fromEmailAddress", fromEmailAddress)
-                .add("fromDisplayName", fromDisplayName)
-                .add("host", host)
-                .add("port", port)
-                .add("ssl", ssl)
-                .add("username", username)
-                .add("passwordExists", passwordExists)
-                .add("additionalProperties", additionalProperties)
-                .add("newPassword", newPassword)
-                .add("testEmailRecipient", testEmailRecipient)
-                .add("version", version)
-                .toString();
-    }
-
-    @JsonCreator
-    static SmtpConfig readValue(
-            @JsonProperty("fromEmailAddress") @Nullable String fromEmailAddress,
-            @JsonProperty("fromDisplayName") @Nullable String fromDisplayName,
-            @JsonProperty("host") @Nullable String host,
-            @JsonProperty("port") @Nullable Integer port,
-            @JsonProperty("ssl") @Nullable Boolean ssl,
-            @JsonProperty("username") @Nullable String username,
-            @JsonProperty("passwordExists") @Nullable Boolean passwordExists,
-            @JsonProperty("additionalProperties") @Nullable Map<String, String> additionalProperties,
-            @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(fromEmailAddress, "fromEmailAddress");
-        checkRequiredProperty(fromDisplayName, "fromDisplayName");
-        checkRequiredProperty(host, "host");
-        checkRequiredProperty(ssl, "ssl");
-        checkRequiredProperty(username, "username");
-        checkRequiredProperty(passwordExists, "passwordExists");
-        checkRequiredProperty(additionalProperties, "additionalProperties");
-        checkRequiredProperty(version, "version");
-        SmtpConfig config = new SmtpConfig(version);
-        config.setFromEmailAddress(fromEmailAddress);
-        config.setFromDisplayName(fromDisplayName);
-        config.setHost(host);
-        config.setPort(port);
-        config.setSsl(ssl);
-        config.setUsername(username);
-        config.setPasswordExists(passwordExists);
-        config.setAdditionalProperties(additionalProperties);
-        return config;
     }
 }

@@ -86,16 +86,15 @@ public class ConfiguredInstrumentationTest {
         assertThat(header.rootTimer().childTimers().get(0).name())
                 .isEqualTo("execute one");
         assertThat(header.rootTimer().childTimers().get(0).childTimers()).hasSize(1);
-        assertThat(header.rootTimer().childTimers().get(0).childTimers().get(0)
-                .name())
-                        .isEqualTo("execute one timer only");
+        assertThat(header.rootTimer().childTimers().get(0).childTimers().get(0).name())
+                .isEqualTo("execute one timer only");
         Trace.Entry entry = entries.get(0);
         assertThat(entry.message()).isEqualTo("execute1() => void");
         assertThat(entry.locationStackTraceElements()).isNotEmpty();
     }
 
     @Test
-    public void shouldRenderTraceEntryTemplateWithReturnValue() throws Exception {
+    public void shouldRenderTraceEntryMessageTemplateWithReturnValue() throws Exception {
         // given
         // when
         container.executeAppUnderTest(ShouldExecuteWithReturn.class);
@@ -134,7 +133,7 @@ public class ConfiguredInstrumentationTest {
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setCaptureKind(CaptureKind.TRACE_ENTRY);
         config.setTimerName("execute one");
-        config.setTraceEntryTemplate("execute1() => {{_}}");
+        config.setTraceEntryMessageTemplate("execute1() => {{_}}");
         config.setTraceEntryStackThresholdMillis(0L);
         config.setTransactionType("test override type");
         config.setTransactionNameTemplate("test override name");
@@ -163,7 +162,7 @@ public class ConfiguredInstrumentationTest {
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setCaptureKind(CaptureKind.TRACE_ENTRY);
         config.setTimerName("execute with return");
-        config.setTraceEntryTemplate("executeWithReturn() => {{_}}");
+        config.setTraceEntryMessageTemplate("executeWithReturn() => {{_}}");
         container.getConfigService().addInstrumentationConfig(config);
     }
 
@@ -177,7 +176,7 @@ public class ConfiguredInstrumentationTest {
         config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
         config.setCaptureKind(CaptureKind.TRANSACTION);
         config.setTimerName("execute with args");
-        config.setTraceEntryTemplate("executeWithArgs(): {{0}}, {{1}}, {{2.name}}");
+        config.setTraceEntryMessageTemplate("executeWithArgs(): {{0}}, {{1}}, {{2.name}}");
         config.setTransactionType("Pointcut config test");
         config.setTransactionNameTemplate("Misc / {{methodName}}");
         container.getConfigService().addInstrumentationConfig(config);

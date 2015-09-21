@@ -19,11 +19,7 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
-
-import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class AdvancedConfig {
 
@@ -40,7 +36,8 @@ public class AdvancedConfig {
 
     private final String version;
 
-    private AdvancedConfig(String version) {
+    @JsonCreator
+    private AdvancedConfig(@JsonProperty("version") String version) {
         this.version = version;
     }
 
@@ -168,66 +165,5 @@ public class AdvancedConfig {
                 maxAggregateQueriesPerQueryType, maxTraceEntriesPerTransaction,
                 maxStackTraceSamplesPerTransaction, captureThreadInfo, captureGcActivity,
                 mbeanGaugeNotFoundDelaySeconds);
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects
-                .toStringHelper(this)
-                .add("timerWrapperMethods", timerWrapperMethods)
-                .add("weavingTimer", weavingTimer)
-                .add("immediatePartialStoreThresholdSeconds", immediatePartialStoreThresholdSeconds)
-                .add("maxAggregateTransactionsPerTransactionType",
-                        maxAggregateTransactionsPerTransactionType)
-                .add("maxAggregateQueriesPerQueryType", maxAggregateQueriesPerQueryType)
-                .add("maxTraceEntriesPerTransaction", maxTraceEntriesPerTransaction)
-                .add("maxStackTraceSamplesPerTransaction", maxStackTraceSamplesPerTransaction)
-                .add("captureThreadInfo", captureThreadInfo)
-                .add("captureGcActivity", captureGcActivity)
-                .add("mbeanGaugeNotFoundDelaySeconds", mbeanGaugeNotFoundDelaySeconds)
-                .add("version", version)
-                .toString();
-    }
-
-    @JsonCreator
-    static AdvancedConfig readValue(
-            @JsonProperty("timerWrapperMethods") @Nullable Boolean timerWrapperMethods,
-            @JsonProperty("weavingTimer") @Nullable Boolean weavingTimer,
-            @JsonProperty("immediatePartialStoreThresholdSeconds") @Nullable Integer immediatePartialStoreThresholdSeconds,
-            @JsonProperty("maxAggregateTransactionsPerTransactionType") @Nullable Integer maxAggregateTransactionsPerTransactionType,
-            @JsonProperty("maxAggregateQueriesPerQueryType") @Nullable Integer maxAggregateQueriesPerQueryType,
-            @JsonProperty("maxTraceEntriesPerTransaction") @Nullable Integer maxTraceEntriesPerTransaction,
-            @JsonProperty("maxStackTraceSamplesPerTransaction") @Nullable Integer maxStackTraceSamplesPerTransaction,
-            @JsonProperty("captureThreadInfo") @Nullable Boolean captureThreadInfo,
-            @JsonProperty("captureGcActivity") @Nullable Boolean captureGcActivity,
-            @JsonProperty("mbeanGaugeNotFoundDelaySeconds") @Nullable Integer mbeanGaugeNotFoundDelaySeconds,
-            @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(timerWrapperMethods, "timerWrapperMethods");
-        checkRequiredProperty(weavingTimer, "weavingTimer");
-        checkRequiredProperty(immediatePartialStoreThresholdSeconds,
-                "immediatePartialStoreThresholdSeconds");
-        checkRequiredProperty(maxAggregateTransactionsPerTransactionType,
-                "maxAggregateTransactionsPerTransactionType");
-        checkRequiredProperty(maxAggregateQueriesPerQueryType, "maxAggregateQueriesPerQueryType");
-        checkRequiredProperty(maxTraceEntriesPerTransaction, "maxTraceEntriesPerTransaction");
-        checkRequiredProperty(maxStackTraceSamplesPerTransaction,
-                "maxStackTraceSamplesPerTransaction");
-        checkRequiredProperty(captureThreadInfo, "captureThreadInfo");
-        checkRequiredProperty(captureGcActivity, "captureGcActivity");
-        checkRequiredProperty(mbeanGaugeNotFoundDelaySeconds, "mbeanGaugeNotFoundDelaySeconds");
-        checkRequiredProperty(version, "version");
-        AdvancedConfig config = new AdvancedConfig(version);
-        config.setTimerWrapperMethods(timerWrapperMethods);
-        config.setWeavingTimer(weavingTimer);
-        config.setImmediatePartialStoreThresholdSeconds(immediatePartialStoreThresholdSeconds);
-        config.setMaxAggregateTransactionsPerTransactionType(
-                maxAggregateTransactionsPerTransactionType);
-        config.setMaxAggregateQueriesPerQueryType(maxAggregateQueriesPerQueryType);
-        config.setMaxTraceEntriesPerTransaction(maxTraceEntriesPerTransaction);
-        config.setMaxStackTraceSamplesPerTransaction(maxStackTraceSamplesPerTransaction);
-        config.setCaptureThreadInfo(captureThreadInfo);
-        config.setCaptureGcActivity(captureGcActivity);
-        config.setMBeanGaugeNotFoundDelaySeconds(mbeanGaugeNotFoundDelaySeconds);
-        return config;
     }
 }

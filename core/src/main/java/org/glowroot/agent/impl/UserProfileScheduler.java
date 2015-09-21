@@ -53,6 +53,9 @@ public class UserProfileScheduler {
         // immediately, if the transaction's total time already exceeds configured collection
         // interval)
         int intervalMillis = userRecordingConfig.profileIntervalMillis();
+        if (intervalMillis <= 0) {
+            intervalMillis = 10;
+        }
         ScheduledRunnable userProfileRunnable = new UserProfileRunnable(transaction, configService);
         long initialDelay =
                 Math.max(0, intervalMillis - NANOSECONDS.toMillis(transaction.getDurationNanos()));

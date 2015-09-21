@@ -55,7 +55,7 @@ public class InstrumentationConfigTest extends WebDriverTest {
                 .isEqualTo("executeAppUnderTest");
         assertThat(configPage.getCaptureKindTransactionRadioButton().isSelected()).isTrue();
         assertThat(configPage.getTimerNameTextField().getAttribute("value")).isEqualTo("a timer");
-        assertThat(configPage.getTraceEntryTemplateTextField().getAttribute("value"))
+        assertThat(configPage.getTraceEntryMessageTemplateTextField().getAttribute("value"))
                 .isEqualTo("a trace entry");
         assertThat(configPage.getTransactionTypeTextField().getAttribute("value"))
                 .isEqualTo("a type");
@@ -118,7 +118,7 @@ public class InstrumentationConfigTest extends WebDriverTest {
                 .isEqualTo("executeAppUnderTest");
         assertThat(configPage.getCaptureKindTraceEntryRadioButton().isSelected()).isTrue();
         assertThat(configPage.getTimerNameTextField().getAttribute("value")).isEqualTo("a timer");
-        assertThat(configPage.getTraceEntryTemplateTextField().getAttribute("value"))
+        assertThat(configPage.getTraceEntryMessageTemplateTextField().getAttribute("value"))
                 .isEqualTo("a trace entry");
         assertThat(configPage.getTraceEntryStackThresholdTextField().getAttribute("value"))
                 .isEqualTo("");
@@ -163,8 +163,8 @@ public class InstrumentationConfigTest extends WebDriverTest {
         configPage.getCaptureKindTransactionRadioButton().click();
         configPage.getTimerNameTextField().clear();
         configPage.getTimerNameTextField().sendKeys("a timer");
-        configPage.getTraceEntryTemplateTextField().clear();
-        configPage.getTraceEntryTemplateTextField().sendKeys("a trace entry");
+        configPage.getTraceEntryMessageTemplateTextField().clear();
+        configPage.getTraceEntryMessageTemplateTextField().sendKeys("a trace entry");
         configPage.getTransactionTypeTextField().clear();
         configPage.getTransactionTypeTextField().sendKeys("a type");
         configPage.getTransactionNameTemplateTextField().clear();
@@ -192,8 +192,8 @@ public class InstrumentationConfigTest extends WebDriverTest {
         configPage.getCaptureKindTraceEntryRadioButton().click();
         configPage.getTimerNameTextField().clear();
         configPage.getTimerNameTextField().sendKeys("a timer");
-        configPage.getTraceEntryTemplateTextField().clear();
-        configPage.getTraceEntryTemplateTextField().sendKeys("a trace entry");
+        configPage.getTraceEntryMessageTemplateTextField().clear();
+        configPage.getTraceEntryMessageTemplateTextField().sendKeys("a trace entry");
         configPage.clickAddButton();
     }
 

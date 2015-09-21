@@ -21,12 +21,8 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
-
-import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
 
 public class GaugeConfig {
 
@@ -43,7 +39,9 @@ public class GaugeConfig {
         version = null;
     }
 
-    private GaugeConfig(String display, String version) {
+    @JsonCreator
+    private GaugeConfig(@JsonProperty("display") String display,
+            @JsonProperty("version") String version) {
         this.display = display;
         this.version = version;
     }
@@ -93,31 +91,6 @@ public class GaugeConfig {
         return Objects.hashCode(mbeanObjectName, mbeanAttributes);
     }
 
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("mbeanObjectName", mbeanObjectName)
-                .add("mbeanAttributes", mbeanAttributes)
-                .add("version", version)
-                .toString();
-    }
-
-    @JsonCreator
-    static GaugeConfig readValue(
-            @JsonProperty("display") @Nullable String display,
-            @JsonProperty("mbeanObjectName") @Nullable String mbeanObjectName,
-            @JsonProperty("mbeanAttributes") @Nullable List<MBeanAttribute> mbeanAttributes,
-            @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        checkRequiredProperty(display, "display");
-        checkRequiredProperty(mbeanObjectName, "mbeanObjectName");
-        checkRequiredProperty(mbeanAttributes, "mbeanAttributes");
-        checkRequiredProperty(version, "version");
-        GaugeConfig config = new GaugeConfig(display, version);
-        config.setMBeanObjectName(mbeanObjectName);
-        config.setMBeanAttributes(mbeanAttributes);
-        return config;
-    }
-
     public static class MBeanAttribute {
 
         private @Nullable String name;
@@ -152,26 +125,6 @@ public class GaugeConfig {
         @Override
         public int hashCode() {
             return Objects.hashCode(name, counter);
-        }
-
-        @Override
-        public String toString() {
-            return MoreObjects.toStringHelper(this)
-                    .add("name", name)
-                    .add("counter", counter)
-                    .toString();
-        }
-
-        @JsonCreator
-        static MBeanAttribute readValue(@JsonProperty("name") @Nullable String name,
-                @JsonProperty("counter") @Nullable Boolean counter)
-                        throws JsonMappingException {
-            checkRequiredProperty(name, "name");
-            checkRequiredProperty(counter, "counter");
-            MBeanAttribute mbeanAttribute = new MBeanAttribute();
-            mbeanAttribute.setName(name);
-            mbeanAttribute.setCounter(counter);
-            return mbeanAttribute;
         }
     }
 }

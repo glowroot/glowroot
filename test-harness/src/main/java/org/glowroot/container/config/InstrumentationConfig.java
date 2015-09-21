@@ -22,15 +22,9 @@ import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-
-import static org.glowroot.container.common.ObjectMappers.checkNotNullValuesForProperty;
-import static org.glowroot.container.common.ObjectMappers.checkRequiredProperty;
-import static org.glowroot.container.common.ObjectMappers.orEmpty;
 
 public class InstrumentationConfig {
 
@@ -44,7 +38,7 @@ public class InstrumentationConfig {
 
     private @Nullable String timerName;
 
-    private @Nullable String traceEntryTemplate;
+    private @Nullable String traceEntryMessageTemplate;
     private @Nullable Long traceEntryStackThresholdMillis;
     private boolean traceEntryCaptureSelfNested;
 
@@ -69,7 +63,8 @@ public class InstrumentationConfig {
         version = null;
     }
 
-    private InstrumentationConfig(String version) {
+    @JsonCreator
+    private InstrumentationConfig(@JsonProperty("version") String version) {
         methodParameterTypes = ImmutableList.of();
         methodModifiers = ImmutableList.of();
         transactionAttributeTemplates = ImmutableMap.of();
@@ -140,12 +135,12 @@ public class InstrumentationConfig {
         this.timerName = timerName;
     }
 
-    public @Nullable String getTraceEntryTemplate() {
-        return traceEntryTemplate;
+    public @Nullable String getTraceEntryMessageTemplate() {
+        return traceEntryMessageTemplate;
     }
 
-    public void setTraceEntryTemplate(String traceEntryTemplate) {
-        this.traceEntryTemplate = traceEntryTemplate;
+    public void setTraceEntryMessageTemplate(String traceEntryMessageTemplate) {
+        this.traceEntryMessageTemplate = traceEntryMessageTemplate;
     }
 
     public @Nullable Long getTraceEntryStackThresholdMillis() {
@@ -240,7 +235,7 @@ public class InstrumentationConfig {
                     && Objects.equal(methodModifiers, that.methodModifiers)
                     && Objects.equal(captureKind, that.captureKind)
                     && Objects.equal(timerName, that.timerName)
-                    && Objects.equal(traceEntryTemplate, that.traceEntryTemplate)
+                    && Objects.equal(traceEntryMessageTemplate, that.traceEntryMessageTemplate)
                     && Objects.equal(traceEntryStackThresholdMillis,
                             that.traceEntryStackThresholdMillis)
                     && Objects.equal(traceEntryCaptureSelfNested, that.traceEntryCaptureSelfNested)
@@ -263,105 +258,13 @@ public class InstrumentationConfig {
         // sending to the server, and represents the current version hash when receiving from the
         // server
         return Objects.hashCode(className, declaringClassName, methodName, methodParameterTypes,
-                methodReturnType, methodModifiers, captureKind, timerName, traceEntryTemplate,
+                methodReturnType, methodModifiers, captureKind, timerName,
+                traceEntryMessageTemplate,
                 traceEntryStackThresholdMillis, traceEntryCaptureSelfNested, transactionType,
                 transactionNameTemplate, transactionUserTemplate,
                 transactionAttributeTemplates, transactionSlowThresholdMillis,
                 enabledProperty,
                 traceEntryEnabledProperty);
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("className", className)
-                .add("declaringClassName", declaringClassName)
-                .add("methodName", methodName)
-                .add("methodParameterTypes", methodParameterTypes)
-                .add("methodReturnType", methodReturnType)
-                .add("methodModifiers", methodModifiers)
-                .add("captureKind", captureKind)
-                .add("timerName", timerName)
-                .add("traceEntryTemplate", traceEntryTemplate)
-                .add("traceEntryStackThresholdMillis", traceEntryStackThresholdMillis)
-                .add("traceEntryCaptureSelfNested", traceEntryCaptureSelfNested)
-                .add("transactionType", transactionType)
-                .add("transactionNameTemplate", transactionNameTemplate)
-                .add("transactionUserTemplate", transactionUserTemplate)
-                .add("transactionAttributeTemplates", transactionAttributeTemplates)
-                .add("transactionSlowThresholdMillis", transactionSlowThresholdMillis)
-                .add("enabledProperty", enabledProperty)
-                .add("traceEntryEnabledProperty", traceEntryEnabledProperty)
-                .add("version", version)
-                .toString();
-    }
-
-    @JsonCreator
-    static InstrumentationConfig readValue(
-            @JsonProperty("className") @Nullable String className,
-            @JsonProperty("declaringClassName") @Nullable String declaringClassName,
-            @JsonProperty("methodName") @Nullable String methodName,
-            @JsonProperty("methodParameterTypes") @Nullable List</*@Nullable*/String> uncheckedMethodParameterTypes,
-            @JsonProperty("methodReturnType") @Nullable String methodReturnType,
-            @JsonProperty("methodModifiers") @Nullable List</*@Nullable*/MethodModifier> uncheckedMethodModifiers,
-            @JsonProperty("captureKind") @Nullable CaptureKind captureKind,
-            @JsonProperty("timerName") @Nullable String timerName,
-            @JsonProperty("traceEntryTemplate") @Nullable String traceEntryTemplate,
-            @JsonProperty("traceEntryStackThresholdMillis") @Nullable Long traceEntryStackThresholdMillis,
-            @JsonProperty("traceEntryCaptureSelfNested") @Nullable Boolean traceEntryCaptureSelfNested,
-            @JsonProperty("transactionType") @Nullable String transactionType,
-            @JsonProperty("transactionNameTemplate") @Nullable String transactionNameTemplate,
-            @JsonProperty("transactionUserTemplate") @Nullable String transactionUserTemplate,
-            @JsonProperty("transactionAttributeTemplates") @Nullable Map<String, /*@Nullable*/String> uncheckedTransactionAttributeTemplates,
-            @JsonProperty("transactionSlowThresholdMillis") @Nullable Long transactionSlowThresholdMillis,
-            @JsonProperty("enabledProperty") @Nullable String enabledProperty,
-            @JsonProperty("traceEntryEnabledProperty") @Nullable String traceEntryEnabledProperty,
-            @JsonProperty("version") @Nullable String version) throws JsonMappingException {
-        // methodParameterTypes is required (does not default to empty list) since it is ambiguous
-        // whether default should be {} or {".."}
-        checkRequiredProperty(uncheckedMethodParameterTypes, "methodParameterTypes");
-        List<String> methodParameterTypes =
-                orEmpty(uncheckedMethodParameterTypes, "methodParameterTypes");
-        List<MethodModifier> methodModifiers = orEmpty(uncheckedMethodModifiers, "methodModifiers");
-        Map<String, String> transactionAttributeTemplates =
-                checkNotNullValuesForProperty(uncheckedTransactionAttributeTemplates,
-                        "transactionAttributeTemplates");
-        checkRequiredProperty(className, "className");
-        checkRequiredProperty(declaringClassName, "declaringClassName");
-        checkRequiredProperty(methodName, "methodName");
-        checkRequiredProperty(methodReturnType, "methodReturnType");
-        checkRequiredProperty(captureKind, "captureKind");
-        checkRequiredProperty(timerName, "timerName");
-        checkRequiredProperty(traceEntryTemplate, "traceEntryTemplate");
-        checkRequiredProperty(traceEntryCaptureSelfNested, "traceEntryCaptureSelfNested");
-        checkRequiredProperty(transactionType, "transactionType");
-        checkRequiredProperty(transactionNameTemplate, "transactionNameTemplate");
-        checkRequiredProperty(transactionUserTemplate, "transactionUserTemplate");
-        checkRequiredProperty(transactionAttributeTemplates,
-                "transactionAttributeTemplates");
-        checkRequiredProperty(enabledProperty, "enabledProperty");
-        checkRequiredProperty(traceEntryEnabledProperty, "traceEntryEnabledProperty");
-        checkRequiredProperty(version, "version");
-        InstrumentationConfig config = new InstrumentationConfig(version);
-        config.setClassName(className);
-        config.setDeclaringClassName(declaringClassName);
-        config.setMethodName(methodName);
-        config.setMethodParameterTypes(methodParameterTypes);
-        config.setMethodReturnType(methodReturnType);
-        config.setMethodModifiers(methodModifiers);
-        config.setCaptureKind(captureKind);
-        config.setTimerName(timerName);
-        config.setTraceEntryTemplate(traceEntryTemplate);
-        config.setTraceEntryStackThresholdMillis(traceEntryStackThresholdMillis);
-        config.setTraceEntryCaptureSelfNested(traceEntryCaptureSelfNested);
-        config.setTransactionType(transactionType);
-        config.setTransactionNameTemplate(transactionNameTemplate);
-        config.setTransactionUserTemplate(transactionUserTemplate);
-        config.setTransactionAttributeTemplates(transactionAttributeTemplates);
-        config.setTransactionSlowThresholdMillis(transactionSlowThresholdMillis);
-        config.setEnabledProperty(enabledProperty);
-        config.setTraceEntryEnabledProperty(traceEntryEnabledProperty);
-        return config;
     }
 
     public enum MethodModifier {
