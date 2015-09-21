@@ -27,6 +27,10 @@
 
 var HandlebarsRendering;
 
+// showing ellipsed node markers makes the rendered profile tree much much larger since it cannot contract otherwise
+// identical branches, and this makes navigation more difficult, as well as makes rendering much slower
+var SHOW_ELLIPSED_NODE_MARKERS = false;
+
 HandlebarsRendering = (function () {
   // indent1 must be sync'd with $indent1 variable in common-trace.less
   var indent1 = 1; // em
@@ -845,7 +849,8 @@ HandlebarsRendering = (function () {
           return '';
         }
         var nodes = [node];
-        while (node.childNodes && node.childNodes.length === 1 && !node.leafThreadState && !node.ellipsedSampleCount) {
+        while (node.childNodes && node.childNodes.length === 1 && !node.leafThreadState
+        && (!SHOW_ELLIPSED_NODE_MARKERS || !node.ellipsedSampleCount)) {
           node = node.childNodes[0];
           nodes.push(node);
         }
@@ -900,7 +905,7 @@ HandlebarsRendering = (function () {
             ret += curr(childNodes[i], level + 1);
           }
         }
-        if (node.ellipsedSampleCount) {
+        if (SHOW_ELLIPSED_NODE_MARKERS && node.ellipsedSampleCount) {
           var ellipsedSamplePercentage = (node.ellipsedSampleCount / rootNode.sampleCount) * 100;
           ret += '<div id="gtProfileNodeEllipsed' + node.id + '">';
           ret += '<span class="gt-inline-block" style="width: 4em; margin-left: ' + (level + 1) + 'em;"></span>';
