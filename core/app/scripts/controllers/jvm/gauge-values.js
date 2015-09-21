@@ -37,6 +37,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     var gaugeScales = {};
 
     var gaugeShortDisplayMap = {};
+    var counterGauges = {};
 
     $scope.gaugeFilter = '';
 
@@ -179,6 +180,9 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           angular.forEach(data, function (gauge) {
             allGaugeNames.push(gauge.name);
             gaugeShortDisplayMap[gauge.name] = gauge.shortDisplay;
+            if (gauge.counter) {
+              counterGauges[gauge.name] = true;
+            }
           });
           refreshData();
         })
@@ -425,6 +429,40 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       },
       tooltipOpts: {
         content: function (label, xval, yval, flotItem) {
+
+          function unitFromLabel(label) {
+            // TODO units should be configurable per gauge config
+            var unit = '';
+            if (label.match(/java.lang:type=Memory,(Non)?HeapMemoryUsage\/(init|used|committed|max)/)) {
+              unit = ' bytes';
+            }
+            if (label.match(/java.lang:type=OperatingSystem,(Free|Total)(Physical|Swap)MemorySize/)) {
+              unit = ' bytes';
+            }
+            if (label.match(/java.lang:type=Runtime,Uptime/)) {
+              unit = ' milliseconds';
+            }
+            if (label.match(/java.lang:type=Threading,CurrentThread(Cpu|User)Time/)) {
+              unit = ' nanoseconds';
+            }
+            if (label.match(/java.lang:type=MemoryPool,name=[a-zA-Z0-9 ]+,(Peak)?Usage\/(init|used|committed|max)/)) {
+              unit = ' bytes';
+            }
+            if (label.match(/java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+,LastGcInfo\/duration/)) {
+              unit = ' milliseconds';
+            }
+            if (label.match(/java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+,CollectionTime/)) {
+              unit = ' milliseconds';
+            }
+            if (label.match(/java.lang:type=Compilation,TotalCompilationTime/)) {
+              unit = ' milliseconds';
+            }
+            if (counterGauges[label]) {
+              unit += ' per second';
+            }
+            return unit;
+          }
+
           var rollupConfig0 = $scope.layout.rollupConfigs[0];
           if (charts.getDataPointIntervalMillis($scope.chartFrom, $scope.chartTo) === rollupConfig0.intervalMillis
               && $scope.chartTo - $scope.chartFrom < rollupConfig0.viewThresholdMillis) {
@@ -434,7 +472,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
             tooltip += '</td></tr><tr><td style="padding-right: 10px;">Time:</td><td style="font-weight: 400;">';
             tooltip += moment(xval).format('h:mm:ss.SSS a (Z)') + '</td></tr>';
             tooltip += '<tr><td style="padding-right: 10px;">Value:</td><td style="font-weight: 600;">';
-            tooltip += $filter('number')(nonScaledValue) + '</td></tr>';
+            tooltip += $filter('number')(nonScaledValue) + unitFromLabel(label) + '</td></tr>';
             tooltip += '</table>';
             return tooltip;
           }
@@ -445,8 +483,8 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           return charts.renderTooltipHtml(from, to, undefined, flotItem.dataIndex, flotItem.seriesIndex,
               chartState.plot, function (value, label) {
                 var nonScaledValue = yvalMaps[label][xval];
-                return displaySixDigitsOfPrecision(nonScaledValue);
-              });
+                return displaySixDigitsOfPrecision(nonScaledValue) + unitFromLabel(label);
+              }, ' (average value over this interval)');
         }
       }
     };

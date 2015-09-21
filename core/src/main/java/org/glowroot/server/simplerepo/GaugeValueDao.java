@@ -154,7 +154,8 @@ class GaugeValueDao implements GaugeValueRepository {
             for (String mbeanObjectName : mbeanObjectNames) {
                 for (MBeanAttribute mbeanAttribute : gaugeConfig.mbeanAttributes()) {
                     gauges.add(ImmutableGauge.of(mbeanObjectName + "," + mbeanAttribute.name(),
-                            GaugeConfig.display(mbeanObjectName) + '/' + mbeanAttribute.name()));
+                            GaugeConfig.display(mbeanObjectName) + '/' + mbeanAttribute.name(),
+                            mbeanAttribute.counter()));
                 }
             }
         }

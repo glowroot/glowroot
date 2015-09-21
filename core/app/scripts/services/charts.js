@@ -311,7 +311,8 @@ glowroot.factory('charts', [
       }
     }
 
-    function renderTooltipHtml(from, to, transactionCount, dataIndex, highlightSeriesIndex, plot, display) {
+    function renderTooltipHtml(from, to, transactionCount, dataIndex, highlightSeriesIndex, plot, display,
+                               headerSuffix) {
       function smartFormat(millis) {
         if (millis % 60000 === 0) {
           return moment(millis).format('LT');
@@ -324,6 +325,9 @@ glowroot.factory('charts', [
       html += smartFormat(from);
       html += ' to ';
       html += smartFormat(to);
+      if (headerSuffix) {
+        html += '<span style="font-weight: 400;">' + headerSuffix + '</span>';
+      }
       html += '</td></tr>';
       if (transactionCount !== undefined) {
         html += '<tr><td colspan="3">';
