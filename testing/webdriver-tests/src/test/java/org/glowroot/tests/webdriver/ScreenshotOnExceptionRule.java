@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.glowroot.tests.webdriver;
 import java.io.File;
 import java.io.IOException;
 
+import com.google.common.io.BaseEncoding;
 import com.google.common.io.Files;
 import org.junit.rules.MethodRule;
 import org.junit.runners.model.FrameworkMethod;
@@ -51,15 +52,20 @@ public class ScreenshotOnExceptionRule implements MethodRule {
                         throw t;
                     }
                     byte[] bytes = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
-                    File file;
-                    try {
-                        file = File.createTempFile(
-                                "glowroot-webdriver-test-" + method.getName() + "-", ".png");
-                        Files.write(bytes, file);
-                        logger.info("screenshot captured and written to: {}",
-                                file.getAbsolutePath());
-                    } catch (IOException e) {
-                        logger.error(e.getMessage(), e);
+                    if (System.getenv("TRAVIS") == null) {
+                        File file;
+                        try {
+                            file = File.createTempFile(
+                                    "glowroot-webdriver-test-" + method.getName() + "-", ".png");
+                            Files.write(bytes, file);
+                            logger.info("screenshot captured and written to: {}",
+                                    file.getAbsolutePath());
+                        } catch (IOException e) {
+                            logger.error(e.getMessage(), e);
+                        }
+                    } else {
+                        logger.info("screenshot captured and base64 encoded: {}",
+                                BaseEncoding.base64().omitPadding().encode(bytes));
                     }
                     // rethrow to allow the failure to be reported to JUnit
                     throw t;
