@@ -86,7 +86,7 @@ public class MaxEntriesLimitTest {
             if (header == null) {
                 continue;
             }
-            if (header.entryCount() == 100) {
+            if (header.entryCount() == 100 && header.entryLimitExceeded().or(false)) {
                 break;
             }
             // otherwise continue
@@ -107,7 +107,7 @@ public class MaxEntriesLimitTest {
             if (header == null) {
                 continue;
             }
-            if (header.entryCount() == 200) {
+            if (header.entryCount() == 200 && header.entryLimitExceeded().or(false)) {
                 break;
             }
             // otherwise continue
