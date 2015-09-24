@@ -29,7 +29,6 @@ import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
-import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +79,7 @@ public class AlertingService {
         // don't want to include the aggregate at startTime, so add 1
         startTime++;
         int rollupLevel = aggregateRepository.getRollupLevelForView(startTime, endTime);
-        ImmutableList<PercentileAggregate> percentileAggregates =
+        List<PercentileAggregate> percentileAggregates =
                 aggregateRepository.readOverallPercentileAggregates(alertConfig.transactionType(),
                         startTime, endTime, rollupLevel);
         long transactionCount = 0;

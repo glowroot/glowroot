@@ -18,7 +18,6 @@ package org.glowroot.server.repo;
 import java.sql.SQLException;
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 import org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue;
@@ -28,7 +27,7 @@ public interface GaugeValueRepository {
 
     List<Gauge> getGauges() throws InterruptedException;
 
-    ImmutableList<GaugeValue> readGaugeValues(String gaugeName, long captureTimeFrom,
+    List<GaugeValue> readGaugeValues(String gaugeName, long captureTimeFrom,
             long captureTimeTo, int rollupLevel) throws Exception;
 
     List<GaugeValue> readManuallyRolledUpGaugeValues(long from, long to, String gaugeName,

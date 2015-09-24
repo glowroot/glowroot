@@ -46,7 +46,7 @@ public interface TraceRepository {
     long readTransactionErrorCount(String transactionType, String transactionName,
             long captureTimeFrom, long captureTimeTo) throws Exception;
 
-    ImmutableList<TraceErrorPoint> readErrorPoints(ErrorMessageQuery query, long resolutionMillis,
+    List<TraceErrorPoint> readErrorPoints(ErrorMessageQuery query, long resolutionMillis,
             long liveCaptureTime) throws Exception;
 
     Result<ErrorMessageCount> readErrorMessageCounts(ErrorMessageQuery query) throws Exception;

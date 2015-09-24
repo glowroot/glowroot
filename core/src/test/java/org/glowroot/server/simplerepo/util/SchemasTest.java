@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableList;
 import org.h2.jdbc.JdbcConnection;
 import org.junit.Test;
 
-import org.glowroot.server.simplerepo.util.Schemas.Index;
+import org.glowroot.server.simplerepo.util.Schema.Index;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,7 +38,7 @@ public class SchemasTest {
         statement.execute("create table tab (a varchar, b bigint)");
         statement.execute("create index tab_idx on tab (a)");
         // when
-        Set<Index> indexes = Schemas.getIndexes("tab", connection);
+        Set<Index> indexes = Schema.getIndexes("tab", connection);
         // then
         assertThat(indexes).hasSize(1);
         assertThat(indexes.iterator().next())

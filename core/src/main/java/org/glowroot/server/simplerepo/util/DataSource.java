@@ -17,23 +17,19 @@ package org.glowroot.server.simplerepo.util;
 
 import java.io.File;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.ExecutionException;
 
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
-import com.google.common.base.Throwables;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.tainting.qual.Untainted;
@@ -42,10 +38,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.OnlyUsedByTests;
-import org.glowroot.server.simplerepo.util.Schemas.Column;
-import org.glowroot.server.simplerepo.util.Schemas.Index;
+import org.glowroot.server.simplerepo.util.ConnectionPool.ConnectionFactory;
+import org.glowroot.server.simplerepo.util.ConnectionPool.PreparedStatementCallback;
+import org.glowroot.server.simplerepo.util.ConnectionPool.StatementCallback;
 
 public class DataSource {
+
+    private static final boolean POSTGRES = false;
 
     private static final Logger logger = LoggerFactory.getLogger(DataSource.class);
 
@@ -57,208 +56,151 @@ public class DataSource {
 
     // null means use memDb
     private final @Nullable File dbFile;
-    private final Thread shutdownHookThread;
-    private final Object lock = new Object();
-    @GuardedBy("lock")
-    private Connection connection;
-    private volatile boolean closing = false;
 
-    @GuardedBy("lock")
-    private final LoadingCache</*@Untainted*/String, PreparedStatement> preparedStatementCache =
-            CacheBuilder.newBuilder().weakValues()
-                    .build(new CacheLoader</*@Untainted*/String, PreparedStatement>() {
-                        @Override
-                        public PreparedStatement load(@Untainted String sql) throws SQLException {
-                            return connection.prepareStatement(sql);
-                        }
-                    });
+    private final ConnectionPool connectionPool;
 
     // creates an in-memory database
     public DataSource() throws SQLException {
         dbFile = null;
-        connection = createConnection(null);
-        shutdownHookThread = new ShutdownHookThread();
-        Runtime.getRuntime().addShutdownHook(shutdownHookThread);
+        connectionPool = new ConnectionPool(new ConnectionFactoryImpl(null));
     }
 
     public DataSource(File dbFile) throws SQLException {
         this.dbFile = dbFile;
-        connection = createConnection(dbFile);
-        shutdownHookThread = new ShutdownHookThread();
-        Runtime.getRuntime().addShutdownHook(shutdownHookThread);
+        connectionPool = new ConnectionPool(new ConnectionFactoryImpl(dbFile));
+    }
+
+    public Schema getSchema() {
+        return new Schema(connectionPool, POSTGRES);
     }
 
     public void defrag() throws SQLException {
-        if (dbFile == null) {
+        if (dbFile == null || POSTGRES) {
             return;
         }
-        synchronized (lock) {
-            if (closing) {
-                return;
+        debug("shutdown defrag");
+        connectionPool.executeAndReleaseAll(new StatementCallback() {
+            @Override
+            public void doWithStatement(Statement statement) throws SQLException {
+                statement.execute("shutdown defrag");
             }
-            execute("shutdown defrag");
-            preparedStatementCache.invalidateAll();
-            connection = createConnection(dbFile);
-        }
+        });
     }
 
-    public void execute(@Untainted String sql) throws SQLException {
+    public void execute(final @Untainted String sql) throws SQLException {
         debug(sql);
-        synchronized (lock) {
-            if (closing) {
-                return;
-            }
-            Statement statement = connection.createStatement();
-            StatementCloser closer = new StatementCloser(statement);
-            try {
+        connectionPool.execute(new StatementCallback() {
+            @Override
+            public void doWithStatement(Statement statement) throws SQLException {
                 statement.execute(sql);
-            } catch (Throwable t) {
-                throw closer.rethrow(t);
-            } finally {
-                closer.close();
             }
-        }
+        });
     }
 
-    public long queryForLong(final @Untainted String sql, Object... args) throws Exception {
-        debug(sql, args);
-        synchronized (lock) {
-            if (closing) {
-                return 0;
-            }
-            return queryUnderLock(sql, args, new ResultSetExtractor<Long>() {
-                @Override
-                public Long extractData(ResultSet resultSet) throws SQLException {
-                    if (resultSet.next()) {
-                        return resultSet.getLong(1);
-                    } else {
-                        logger.warn("query didn't return any results: {}", sql);
-                        return 0L;
-                    }
+    public long queryForLong(final @Untainted String sql, Object... args) throws SQLException {
+        Long value = query(sql, new ResultSetExtractor<Long>() {
+            @Override
+            public Long extractData(ResultSet resultSet) throws SQLException {
+                if (resultSet.next()) {
+                    return resultSet.getLong(1);
+                } else {
+                    logger.warn("query didn't return any results: {}", sql);
+                    return 0L;
                 }
-            });
-        }
+            }
+        }, args);
+        return MoreObjects.firstNonNull(value, 0L);
     }
 
-    public boolean queryForExists(final @Untainted String sql, Object... args) throws Exception {
-        debug(sql, args);
-        synchronized (lock) {
-            if (closing) {
-                return false;
+    public boolean queryForExists(final @Untainted String sql, Object... args) throws SQLException {
+        Boolean exists = query(sql, new ResultSetExtractor<Boolean>() {
+            @Override
+            public Boolean extractData(ResultSet resultSet) throws SQLException {
+                return resultSet.next();
             }
-            return queryUnderLock(sql, args, new ResultSetExtractor<Boolean>() {
-                @Override
-                public Boolean extractData(ResultSet resultSet) throws SQLException {
-                    return resultSet.next();
-                }
-            });
-        }
+        }, args);
+        return MoreObjects.firstNonNull(exists, false);
     }
 
-    public <T extends /*@NonNull*/Object> ImmutableList<T> query(@Untainted String sql,
-            RowMapper<T> rowMapper, Object... args) throws Exception {
-        debug(sql, args);
-        synchronized (lock) {
-            if (closing) {
-                return ImmutableList.of();
-            }
-            PreparedStatement preparedStatement = prepareStatement(sql);
-            for (int i = 0; i < args.length; i++) {
-                preparedStatement.setObject(i + 1, args[i]);
-            }
-            // setQueryTimeout() affects all statements of this connection (at least with h2)
-            preparedStatement.setQueryTimeout(QUERY_TIMEOUT_SECONDS);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            ResultSetCloser closer = new ResultSetCloser(resultSet);
-            try {
+    public <T extends /*@NonNull*/Object> List<T> query(final @Untainted String sql,
+            final RowMapper<T> rowMapper, final Object... args) throws SQLException {
+        List<T> list = query(sql, new ResultSetExtractor<List<T>>() {
+            @Override
+            public List<T> extractData(ResultSet resultSet) throws SQLException {
                 return mapRows(resultSet, rowMapper);
-            } catch (Throwable t) {
-                throw closer.rethrow(t);
-            } finally {
-                closer.close();
             }
-            // don't need to close statement since they are all cached and used under lock
-        }
+        }, args);
+        return list == null ? ImmutableList.<T>of() : list;
     }
 
-    public <T> /*@Nullable*/T query(@Untainted String sql, ResultSetExtractor<T> rse,
-            Object... args) throws Exception {
+    public <T> /*@Nullable*/T query(final @Untainted String sql, final ResultSetExtractor<T> rse,
+            final Object... args) throws SQLException {
         debug(sql, args);
-        synchronized (lock) {
-            if (closing) {
+        return connectionPool.execute(sql, new PreparedStatementCallback</*@Nullable*/T>() {
+            @Override
+            public T doWithPreparedStatement(PreparedStatement preparedStatement)
+                    throws SQLException {
+                preparedStatement.setQueryTimeout(QUERY_TIMEOUT_SECONDS);
+                for (int i = 0; i < args.length; i++) {
+                    preparedStatement.setObject(i + 1, args[i]);
+                }
+                debug(sql, args);
+                ResultSet resultSet = preparedStatement.executeQuery();
+                ResultSetCloser closer = new ResultSetCloser(resultSet);
+                try {
+                    return rse.extractData(resultSet);
+                } catch (Throwable t) {
+                    throw closer.rethrow(t);
+                } finally {
+                    closer.close();
+                }
+            }
+        }, null);
+    }
+
+    public int update(final @Untainted String sql, final @Nullable Object... args)
+            throws SQLException {
+        debug(sql, args);
+        return connectionPool.execute(sql, new PreparedStatementCallback<Integer>() {
+            @Override
+            public Integer doWithPreparedStatement(PreparedStatement preparedStatement)
+                    throws SQLException {
+                preparedStatement.setQueryTimeout(0);
+                for (int i = 0; i < args.length; i++) {
+                    preparedStatement.setObject(i + 1, args[i]);
+                }
+                return preparedStatement.executeUpdate();
+            }
+        }, 0);
+    }
+
+    public int update(final @Untainted String sql, final PreparedStatementBinder binder)
+            throws SQLException {
+        debug(sql);
+        return connectionPool.execute(sql, new PreparedStatementCallback<Integer>() {
+            @Override
+            public Integer doWithPreparedStatement(PreparedStatement preparedStatement)
+                    throws SQLException {
+                preparedStatement.setQueryTimeout(0);
+                binder.bind(preparedStatement);
+                return preparedStatement.executeUpdate();
+            }
+        }, 0);
+    }
+
+    public void batchUpdate(final @Untainted String sql, final PreparedStatementBinder binder)
+            throws SQLException {
+        debug(sql);
+        connectionPool.execute(sql, new PreparedStatementCallback</*@Nullable*/Void>() {
+            @Override
+            public @Nullable Void doWithPreparedStatement(PreparedStatement preparedStatement)
+                    throws SQLException {
+                preparedStatement.setQueryTimeout(0);
+                binder.bind(preparedStatement);
+                preparedStatement.executeBatch();
                 return null;
             }
-            return queryUnderLock(sql, args, rse);
-        }
-    }
-
-    public int update(@Untainted String sql, @Nullable Object... args) throws SQLException {
-        debug(sql, args);
-        if (closing) {
-            // this can get called a lot inserting traces, and these can get backlogged
-            // on the lock below during jvm shutdown without pre-checking here (and backlogging
-            // ends up generating warning messages from
-            // TransactionCollectorImpl.logPendingLimitWarning())
-            return 0;
-        }
-        synchronized (lock) {
-            if (closing) {
-                return 0;
-            }
-            PreparedStatement preparedStatement = prepareStatement(sql);
-            for (int i = 0; i < args.length; i++) {
-                preparedStatement.setObject(i + 1, args[i]);
-            }
-            // setQueryTimeout() affects all statements of this connection (at least with h2)
-            preparedStatement.setQueryTimeout(0);
-            return preparedStatement.executeUpdate();
-            // don't need to close statement since they are all cached and used under lock
-        }
-    }
-
-    public int update(@Untainted String sql, PreparedStatementBinder binder) throws Exception {
-        debug(sql);
-        if (closing) {
-            // this can get called a lot inserting traces, and these can get backlogged
-            // on the lock below during jvm shutdown without pre-checking here (and backlogging
-            // ends up generating warning messages from
-            // TransactionCollectorImpl.logPendingLimitWarning())
-            return 0;
-        }
-        synchronized (lock) {
-            if (closing) {
-                return 0;
-            }
-            PreparedStatement preparedStatement = prepareStatement(sql);
-            binder.bind(preparedStatement);
-            // setQueryTimeout() affects all statements of this connection (at least with h2)
-            preparedStatement.setQueryTimeout(0);
-            return preparedStatement.executeUpdate();
-            // don't need to close statement since they are all cached and used under lock
-        }
-    }
-
-    public int[] batchUpdate(@Untainted String sql, PreparedStatementBinder binder)
-            throws Exception {
-        debug(sql);
-        if (closing) {
-            // this can get called a lot inserting traces, and these can get backlogged
-            // on the lock below during jvm shutdown without pre-checking here (and backlogging
-            // ends up generating warning messages from
-            // TransactionCollectorImpl.logPendingLimitWarning())
-            return new int[0];
-        }
-        synchronized (lock) {
-            if (closing) {
-                return new int[0];
-            }
-            PreparedStatement preparedStatement = prepareStatement(sql);
-            binder.bind(preparedStatement);
-            // setQueryTimeout() affects all statements of this connection (at least with h2)
-            preparedStatement.setQueryTimeout(0);
-            return preparedStatement.executeBatch();
-            // don't need to close statement since they are all cached and used under lock
-        }
+        }, null);
     }
 
     public void deleteBefore(@Untainted String tableName, long captureTime) throws SQLException {
@@ -266,115 +208,24 @@ public class DataSource {
         // lock the single jdbc connection for one large chunk of time
         int deleted;
         do {
-            deleted = update("delete from " + tableName + " where capture_time < ? limit 100",
-                    captureTime);
+            if (POSTGRES) {
+                deleted = update("delete from " + tableName
+                        + " where ctid = any(array(select ctid from " + tableName
+                        + " where capture_time < ? limit 100))", captureTime);
+            } else {
+                deleted = update("delete from " + tableName + " where capture_time < ? limit 100",
+                        captureTime);
+            }
         } while (deleted != 0);
-    }
-
-    public void syncTable(@Untainted String tableName, List<Column> columns) throws SQLException {
-        synchronized (lock) {
-            if (closing) {
-                return;
-            }
-            Schemas.syncTable(tableName, columns, connection);
-        }
-    }
-
-    public void syncIndexes(@Untainted String tableName, List<Index> indexes)
-            throws SQLException {
-        synchronized (lock) {
-            if (closing) {
-                return;
-            }
-            Schemas.syncIndexes(tableName, indexes, connection);
-        }
-    }
-
-    public ImmutableList<Column> getColumns(String tableName) throws SQLException {
-        synchronized (lock) {
-            if (closing) {
-                return ImmutableList.of();
-            }
-            return Schemas.getColumns(tableName, connection);
-        }
-    }
-
-    public boolean tableExists(String tableName) throws SQLException {
-        synchronized (lock) {
-            return !closing && Schemas.tableExists(tableName, connection);
-        }
     }
 
     long getDbFileSize() {
         return dbFile == null ? 0 : dbFile.length();
     }
 
-    // helpful for upgrading schema
-    void renameTable(@Untainted String oldTableName, @Untainted String newTableName)
-            throws SQLException {
-        synchronized (lock) {
-            if (Schemas.tableExists(oldTableName, connection)) {
-                execute("alter table " + oldTableName + " rename to " + newTableName);
-            }
-        }
-    }
-
-    // helpful for upgrading schema
-    void renameColumn(@Untainted String tableName, @Untainted String oldColumnName,
-            @Untainted String newColumnName) throws SQLException {
-        synchronized (lock) {
-            if (Schemas.columnExists(tableName, oldColumnName, connection)) {
-                execute("alter table " + tableName + " alter column " + oldColumnName
-                        + " rename to " + newColumnName);
-            }
-        }
-    }
-
     @OnlyUsedByTests
     public void close() throws SQLException {
-        synchronized (lock) {
-            if (closing) {
-                return;
-            }
-            closing = true;
-            connection.close();
-        }
-        Runtime.getRuntime().removeShutdownHook(shutdownHookThread);
-    }
-
-    @GuardedBy("lock")
-    private <T extends /*@Nullable*/Object> T queryUnderLock(@Untainted String sql, Object[] args,
-            ResultSetExtractor<T> rse) throws Exception {
-        PreparedStatement preparedStatement = prepareStatement(sql);
-        for (int i = 0; i < args.length; i++) {
-            preparedStatement.setObject(i + 1, args[i]);
-        }
-        // setQueryTimeout() affects all statements of this connection (at least with h2)
-        preparedStatement.setQueryTimeout(QUERY_TIMEOUT_SECONDS);
-        ResultSet resultSet = preparedStatement.executeQuery();
-        ResultSetCloser closer = new ResultSetCloser(resultSet);
-        try {
-            return rse.extractData(resultSet);
-        } catch (Throwable t) {
-            throw closer.rethrow(t);
-        } finally {
-            closer.close();
-        }
-        // don't need to close statement since they are all cached and used under lock
-    }
-
-    @GuardedBy("lock")
-    private PreparedStatement prepareStatement(@Untainted String sql) throws SQLException {
-        try {
-            return preparedStatementCache.get(sql);
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            Throwables.propagateIfPossible(cause, SQLException.class);
-            // it should not really be possible to get here since the only checked exception that
-            // preparedStatementCache's CacheLoader throws is SQLException
-            logger.error(e.getMessage(), e);
-            throw new SQLException(e);
-        }
+        connectionPool.close();
     }
 
     private static Connection createConnection(@Nullable File dbFile) throws SQLException {
@@ -400,7 +251,7 @@ public class DataSource {
         }
     }
 
-    private static <T extends /*@NonNull*/Object> ImmutableList<T> mapRows(ResultSet resultSet,
+    private static <T extends /*@NonNull*/Object> List<T> mapRows(ResultSet resultSet,
             RowMapper<T> rowMapper) throws SQLException {
         List<T> mappedRows = Lists.newArrayList();
         boolean errorLogged = false;
@@ -448,8 +299,32 @@ public class DataSource {
         logger.debug("{} [{}]", sql, Joiner.on(", ").join(argStrings));
     }
 
+    private static class ConnectionFactoryImpl implements ConnectionFactory {
+
+        private final @Nullable File dbFile;
+
+        private ConnectionFactoryImpl(@Nullable File dbFile) {
+            this.dbFile = dbFile;
+        }
+
+        @Override
+        public Connection createConnection() throws SQLException {
+            if (POSTGRES) {
+                try {
+                    Class.forName("org.postgresql.Driver");
+                } catch (ClassNotFoundException e) {
+                    throw new SQLException(e);
+                }
+                return DriverManager.getConnection("jdbc:postgresql://localhost/glowroot",
+                        "glowroot", "glowroot");
+            } else {
+                return DataSource.createConnection(dbFile);
+            }
+        }
+    }
+
     public interface PreparedStatementBinder {
-        void bind(PreparedStatement preparedStatement) throws Exception;
+        void bind(PreparedStatement preparedStatement) throws SQLException;
     }
 
     public interface RowMapper<T> {
@@ -458,25 +333,5 @@ public class DataSource {
 
     public interface ResultSetExtractor<T extends /*@Nullable*/Object> {
         T extractData(ResultSet resultSet) throws Exception;
-    }
-
-    // this replaces H2's default shutdown hook (see jdbc connection db_close_on_exit=false above)
-    // in order to prevent exceptions from occurring (and getting logged) during shutdown in the
-    // case that there are still traces being written
-    private class ShutdownHookThread extends Thread {
-        @Override
-        public void run() {
-            try {
-                // update flag outside of lock in case there is a backlog of threads already
-                // waiting on the lock (once the flag is set, any threads in the backlog that
-                // haven't acquired the lock will abort quickly once they do obtain the lock)
-                closing = true;
-                synchronized (lock) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                logger.warn(e.getMessage(), e);
-            }
-        }
     }
 }

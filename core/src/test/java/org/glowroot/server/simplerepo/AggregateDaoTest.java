@@ -44,6 +44,7 @@ import org.glowroot.server.repo.Result;
 import org.glowroot.server.repo.config.ImmutableStorageConfig;
 import org.glowroot.server.simplerepo.util.CappedDatabase;
 import org.glowroot.server.simplerepo.util.DataSource;
+import org.glowroot.server.simplerepo.util.Schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -60,10 +61,11 @@ public class AggregateDaoTest {
     @Before
     public void beforeEachTest() throws Exception {
         dataSource = new DataSource();
-        if (dataSource.tableExists("overall_point")) {
+        Schema schema = dataSource.getSchema();
+        if (schema.tableExists("overall_point")) {
             dataSource.execute("drop table overall_point");
         }
-        if (dataSource.tableExists("transaction_point")) {
+        if (schema.tableExists("transaction_point")) {
             dataSource.execute("drop table transaction_point");
         }
         cappedFile = File.createTempFile("glowroot-test-", ".capped.db");

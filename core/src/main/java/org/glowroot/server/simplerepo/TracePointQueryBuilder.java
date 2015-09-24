@@ -162,7 +162,8 @@ class TracePointQueryBuilder {
         StringComparator userComparator = query.userComparator();
         String user = query.user();
         if (userComparator != null && !Strings.isNullOrEmpty(user)) {
-            builder.appendText(" and upper(trace.user) " + userComparator.getComparator() + " ?");
+            builder.appendText(
+                    " and upper(trace.user_id) " + userComparator.getComparator() + " ?");
             builder.addArg(userComparator.formatParameter(user));
         }
     }

@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.List;
 import java.util.Locale;
 
@@ -53,8 +52,10 @@ import org.glowroot.server.simplerepo.util.DataSource.RowMapper;
 import org.glowroot.server.simplerepo.util.ImmutableColumn;
 import org.glowroot.server.simplerepo.util.ImmutableIndex;
 import org.glowroot.server.simplerepo.util.RowMappers;
-import org.glowroot.server.simplerepo.util.Schemas.Column;
-import org.glowroot.server.simplerepo.util.Schemas.Index;
+import org.glowroot.server.simplerepo.util.Schema;
+import org.glowroot.server.simplerepo.util.Schema.Column;
+import org.glowroot.server.simplerepo.util.Schema.ColumnType;
+import org.glowroot.server.simplerepo.util.Schema.Index;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.server.simplerepo.util.Checkers.castUntainted;
@@ -64,28 +65,28 @@ class TraceDao implements TraceRepository {
     private static final Logger logger = LoggerFactory.getLogger(TraceDao.class);
 
     private static final ImmutableList<Column> traceColumns = ImmutableList.<Column>of(
-            ImmutableColumn.of("id", Types.VARCHAR).withPrimaryKey(true),
-            ImmutableColumn.of("partial", Types.BOOLEAN),
-            ImmutableColumn.of("slow", Types.BOOLEAN),
-            ImmutableColumn.of("error", Types.BOOLEAN),
-            ImmutableColumn.of("start_time", Types.BIGINT),
-            ImmutableColumn.of("capture_time", Types.BIGINT),
-            ImmutableColumn.of("duration_nanos", Types.BIGINT), // nanoseconds
-            ImmutableColumn.of("transaction_type", Types.VARCHAR),
-            ImmutableColumn.of("transaction_name", Types.VARCHAR),
-            ImmutableColumn.of("headline", Types.VARCHAR),
-            ImmutableColumn.of("user", Types.VARCHAR),
-            ImmutableColumn.of("error_message", Types.VARCHAR),
-            ImmutableColumn.of("header", Types.BLOB), // protobuf
-            ImmutableColumn.of("entries_capped_id", Types.BIGINT),
-            ImmutableColumn.of("profile_capped_id", Types.BIGINT));
+            ImmutableColumn.of("id", ColumnType.VARCHAR).withPrimaryKey(true),
+            ImmutableColumn.of("partial", ColumnType.BOOLEAN),
+            ImmutableColumn.of("slow", ColumnType.BOOLEAN),
+            ImmutableColumn.of("error", ColumnType.BOOLEAN),
+            ImmutableColumn.of("start_time", ColumnType.BIGINT),
+            ImmutableColumn.of("capture_time", ColumnType.BIGINT),
+            ImmutableColumn.of("duration_nanos", ColumnType.BIGINT), // nanoseconds
+            ImmutableColumn.of("transaction_type", ColumnType.VARCHAR),
+            ImmutableColumn.of("transaction_name", ColumnType.VARCHAR),
+            ImmutableColumn.of("headline", ColumnType.VARCHAR),
+            ImmutableColumn.of("user_id", ColumnType.VARCHAR), // user is a postgres reserved word
+            ImmutableColumn.of("error_message", ColumnType.VARCHAR),
+            ImmutableColumn.of("header", ColumnType.VARBINARY), // protobuf
+            ImmutableColumn.of("entries_capped_id", ColumnType.BIGINT),
+            ImmutableColumn.of("profile_capped_id", ColumnType.BIGINT));
 
     // capture_time column is used for expiring records without using FK with on delete cascade
     private static final ImmutableList<Column> transactionAttributeColumns =
-            ImmutableList.<Column>of(ImmutableColumn.of("trace_id", Types.VARCHAR),
-                    ImmutableColumn.of("name", Types.VARCHAR),
-                    ImmutableColumn.of("value", Types.VARCHAR),
-                    ImmutableColumn.of("capture_time", Types.BIGINT));
+            ImmutableList.<Column>of(ImmutableColumn.of("trace_id", ColumnType.VARCHAR),
+                    ImmutableColumn.of("name", ColumnType.VARCHAR),
+                    ImmutableColumn.of("value", ColumnType.VARCHAR),
+                    ImmutableColumn.of("capture_time", ColumnType.BIGINT));
 
     private static final ImmutableList<Index> traceIndexes = ImmutableList.<Index>of(
             // duration_nanos, id and error columns are included so h2 can return the result set
@@ -113,19 +114,32 @@ class TraceDao implements TraceRepository {
     TraceDao(DataSource dataSource, CappedDatabase traceCappedDatabase) throws SQLException {
         this.dataSource = dataSource;
         this.traceCappedDatabase = traceCappedDatabase;
-        upgradeTraceTable(dataSource);
-        dataSource.syncTable("trace", traceColumns);
-        dataSource.syncIndexes("trace", traceIndexes);
-        dataSource.syncTable("trace_attribute", transactionAttributeColumns);
+        Schema schema = dataSource.getSchema();
+        schema.syncTable("trace", traceColumns);
+        schema.syncIndexes("trace", traceIndexes);
+        schema.syncTable("trace_attribute", transactionAttributeColumns);
     }
 
     public void collect(final Trace trace) throws Exception {
-        dataSource.update(
-                "merge into trace (id, partial, slow, error, start_time, capture_time,"
-                        + " duration_nanos, transaction_type, transaction_name, headline, user,"
-                        + " error_message, header, entries_capped_id, profile_capped_id)"
-                        + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                new TraceBinder(trace));
+        boolean exists = dataSource.queryForExists("select 1 from trace where id = ?",
+                trace.getHeader().getId());
+        if (exists) {
+            dataSource.update(
+                    "update trace set partial = ?, slow = ?, error = ?, start_time = ?,"
+                            + " capture_time = ?, duration_nanos = ?, transaction_type = ?,"
+                            + " transaction_name = ?, headline = ?, user_id = ?, error_message = ?,"
+                            + " header = ?, entries_capped_id = ?, profile_capped_id = ?"
+                            + " where id = ?",
+                    new TraceBinder(trace));
+        } else {
+            dataSource.update(
+                    "insert into trace (partial, slow, error, start_time, capture_time,"
+                            + " duration_nanos, transaction_type, transaction_name, headline,"
+                            + " user_id, error_message, header, entries_capped_id,"
+                            + " profile_capped_id, id)"
+                            + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    new TraceBinder(trace));
+        }
         final Trace.Header header = trace.getHeader();
         if (header.getAttributeCount() > 0) {
             dataSource.batchUpdate(
@@ -151,7 +165,7 @@ class TraceDao implements TraceRepository {
     @Override
     public Result<TracePoint> readPoints(TracePointQuery query) throws Exception {
         ParameterizedSql parameterizedSql = new TracePointQueryBuilder(query).getParameterizedSql();
-        ImmutableList<TracePoint> points = dataSource.query(parameterizedSql.sql(),
+        List<TracePoint> points = dataSource.query(parameterizedSql.sql(),
                 new TracePointRowMapper(), parameterizedSql.argsAsArray());
         // one extra record over the limit is fetched above to identify if the limit was hit
         return Result.from(points, query.limit());
@@ -194,7 +208,7 @@ class TraceDao implements TraceRepository {
     }
 
     @Override
-    public ImmutableList<TraceErrorPoint> readErrorPoints(ErrorMessageQuery query,
+    public List<TraceErrorPoint> readErrorPoints(ErrorMessageQuery query,
             long resolutionMillis, long liveCaptureTime) throws Exception {
         // need ".0" to force double result
         String captureTimeSql = castUntainted(
@@ -212,7 +226,7 @@ class TraceDao implements TraceRepository {
         ParameterizedSql parameterizedSql =
                 buildErrorMessageQuery(query, "select error_message, count(*) from trace",
                         "group by error_message order by count(*) desc");
-        ImmutableList<ErrorMessageCount> points = dataSource.query(parameterizedSql.sql(),
+        List<ErrorMessageCount> points = dataSource.query(parameterizedSql.sql(),
                 new ErrorMessageCountRowMapper(), parameterizedSql.argsAsArray());
         // one extra record over the limit is fetched above to identify if the limit was hit
         return Result.from(points, query.limit());
@@ -295,12 +309,6 @@ class TraceDao implements TraceRepository {
         return ImmutableParameterizedSql.of(sql, args);
     }
 
-    private static void upgradeTraceTable(DataSource dataSource) throws SQLException {
-        if (!dataSource.tableExists("trace")) {
-            return;
-        }
-    }
-
     private class EntriesResultExtractor implements ResultSetExtractor<List<Trace.Entry>> {
         @Override
         public List<Trace.Entry> extractData(ResultSet resultSet) throws Exception {
@@ -360,9 +368,8 @@ class TraceDao implements TraceRepository {
 
         // minimal work inside this method as it is called with active connection
         @Override
-        public void bind(PreparedStatement preparedStatement) throws Exception {
+        public void bind(PreparedStatement preparedStatement) throws SQLException {
             int i = 1;
-            preparedStatement.setString(i++, header.getId());
             preparedStatement.setBoolean(i++, header.getPartial());
             preparedStatement.setBoolean(i++, header.getSlow());
             preparedStatement.setBoolean(i++, header.hasError());
@@ -377,6 +384,7 @@ class TraceDao implements TraceRepository {
             preparedStatement.setBytes(i++, header.toByteArray());
             RowMappers.setLong(preparedStatement, i++, entriesId);
             RowMappers.setLong(preparedStatement, i++, profileId);
+            preparedStatement.setString(i++, header.getId());
         }
     }
 

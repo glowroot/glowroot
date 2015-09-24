@@ -210,7 +210,7 @@ class JvmJsonService {
 
     private List<GaugeValue> getGaugeValues(long from, long to, String gaugeName, int rollupLevel,
             long liveCaptureTime) throws Exception {
-        ImmutableList<GaugeValue> gaugeValues =
+        List<GaugeValue> gaugeValues =
                 gaugeValueRepository.readGaugeValues(gaugeName, from, to, rollupLevel);
         if (rollupLevel == 0) {
             return gaugeValues;

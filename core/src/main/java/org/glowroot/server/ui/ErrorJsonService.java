@@ -98,7 +98,7 @@ class ErrorJsonService {
                 transactionCountMap.put(unfilteredErrorPoint.captureTime(),
                         unfilteredErrorPoint.transactionCount());
             }
-            ImmutableList<TraceErrorPoint> traceErrorPoints = traceRepository.readErrorPoints(query,
+            List<TraceErrorPoint> traceErrorPoints = traceRepository.readErrorPoints(query,
                     aggregateRepository.getDataPointIntervalMillis(query.from(), query.to()),
                     liveCaptureTime);
             List<ErrorPoint> errorPoints = Lists.newArrayList();

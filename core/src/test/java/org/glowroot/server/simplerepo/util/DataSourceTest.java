@@ -16,14 +16,10 @@
 package org.glowroot.server.simplerepo.util;
 
 import java.sql.SQLException;
-import java.util.List;
 
 import org.junit.Test;
 import org.slf4j.Logger;
 
-import org.glowroot.server.simplerepo.util.Schemas.Column;
-
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -96,19 +92,5 @@ public class DataSourceTest {
         verify(logger).debug("{} [{}]", "select x from y where a = ? and b = ? and c = ?",
                 "'aaa', NULL, 99");
         verifyNoMoreInteractions(logger);
-    }
-
-    @Test
-    public void shouldGetColumns() throws Exception {
-        // given
-        DataSource dataSource = new DataSource();
-        dataSource.execute("create table tab (a varchar, b bigint)");
-        dataSource.execute("create index tab_idx on tab (a)");
-        // when
-        List<Column> columns = dataSource.getColumns("tab");
-        // then
-        assertThat(columns).hasSize(2);
-        assertThat(columns.get(0).name()).isEqualTo("a");
-        assertThat(columns.get(1).name()).isEqualTo("b");
     }
 }

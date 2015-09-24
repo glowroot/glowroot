@@ -16,8 +16,8 @@
 package org.glowroot.server.repo;
 
 import java.sql.SQLException;
+import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 import org.glowroot.common.model.QueryCollector;
@@ -48,20 +48,20 @@ public interface AggregateRepository {
             int rollupLevel) throws Exception;
 
     // captureTimeFrom is INCLUSIVE
-    ImmutableList<OverviewAggregate> readOverallOverviewAggregates(String transactionType,
+    List<OverviewAggregate> readOverallOverviewAggregates(String transactionType,
             long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception;
 
     // captureTimeFrom is INCLUSIVE
-    ImmutableList<PercentileAggregate> readOverallPercentileAggregates(String transactionType,
+    List<PercentileAggregate> readOverallPercentileAggregates(String transactionType,
             long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception;
 
     // captureTimeFrom is INCLUSIVE
-    ImmutableList<OverviewAggregate> readTransactionOverviewAggregates(String transactionType,
+    List<OverviewAggregate> readTransactionOverviewAggregates(String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
                     throws Exception;
 
     // captureTimeFrom is INCLUSIVE
-    ImmutableList<PercentileAggregate> readTransactionPercentileAggregates(String transactionType,
+    List<PercentileAggregate> readTransactionPercentileAggregates(String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
                     throws Exception;
 
@@ -83,10 +83,10 @@ public interface AggregateRepository {
             String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
                     throws Exception;
 
-    ImmutableList<ErrorPoint> readOverallErrorPoints(String transactionType, long captureTimeFrom,
+    List<ErrorPoint> readOverallErrorPoints(String transactionType, long captureTimeFrom,
             long captureTimeTo, int rollupLevel) throws Exception;
 
-    ImmutableList<ErrorPoint> readTransactionErrorPoints(String transactionType,
+    List<ErrorPoint> readTransactionErrorPoints(String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
                     throws Exception;
 

@@ -16,7 +16,6 @@
 package org.glowroot.server.simplerepo;
 
 import java.sql.SQLException;
-import java.sql.Types;
 
 import com.google.common.collect.ImmutableList;
 
@@ -24,14 +23,16 @@ import org.glowroot.server.repo.TriggeredAlertRepository;
 import org.glowroot.server.simplerepo.util.DataSource;
 import org.glowroot.server.simplerepo.util.ImmutableColumn;
 import org.glowroot.server.simplerepo.util.ImmutableIndex;
-import org.glowroot.server.simplerepo.util.Schemas.Column;
-import org.glowroot.server.simplerepo.util.Schemas.Index;
+import org.glowroot.server.simplerepo.util.Schema;
+import org.glowroot.server.simplerepo.util.Schema.Column;
+import org.glowroot.server.simplerepo.util.Schema.ColumnType;
+import org.glowroot.server.simplerepo.util.Schema.Index;
 
 class TriggeredAlertDao implements TriggeredAlertRepository {
 
     private static final ImmutableList<Column> triggeredAlertColumns = ImmutableList.<Column>of(
-            ImmutableColumn.of("alert_config_version", Types.VARCHAR),
-            ImmutableColumn.of("end_time", Types.BIGINT));
+            ImmutableColumn.of("alert_config_version", ColumnType.VARCHAR),
+            ImmutableColumn.of("end_time", ColumnType.BIGINT));
 
     private static final ImmutableList<Index> triggeredAlertIndexes = ImmutableList.<Index>of(
             ImmutableIndex.of("triggered_alert_idx", ImmutableList.of("alert_config_version")));
@@ -40,8 +41,9 @@ class TriggeredAlertDao implements TriggeredAlertRepository {
 
     TriggeredAlertDao(DataSource dataSource) throws SQLException {
         this.dataSource = dataSource;
-        dataSource.syncTable("triggered_alert", triggeredAlertColumns);
-        dataSource.syncIndexes("triggered_alert", triggeredAlertIndexes);
+        Schema schema = dataSource.getSchema();
+        schema.syncTable("triggered_alert", triggeredAlertColumns);
+        schema.syncIndexes("triggered_alert", triggeredAlertIndexes);
     }
 
     @Override

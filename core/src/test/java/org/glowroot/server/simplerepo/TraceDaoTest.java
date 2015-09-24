@@ -43,7 +43,7 @@ public class TraceDaoTest {
     @Before
     public void beforeEachTest() throws Exception {
         dataSource = new DataSource();
-        if (dataSource.tableExists("trace")) {
+        if (dataSource.getSchema().tableExists("trace")) {
             dataSource.execute("drop table trace");
         }
         cappedFile = File.createTempFile("glowroot-test-", ".capped.db");

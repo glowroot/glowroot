@@ -33,7 +33,7 @@ public class TriggeredAlertDaoTest {
     @Before
     public void beforeEachTest() throws SQLException {
         dataSource = new DataSource();
-        if (dataSource.tableExists("triggered_alert")) {
+        if (dataSource.getSchema().tableExists("triggered_alert")) {
             dataSource.execute("drop table triggered_alert");
         }
         triggeredAlertDao = new TriggeredAlertDao(dataSource);

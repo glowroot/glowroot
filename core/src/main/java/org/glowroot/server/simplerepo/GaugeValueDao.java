@@ -19,7 +19,6 @@ import java.lang.management.ManagementFactory;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -52,8 +51,10 @@ import org.glowroot.server.simplerepo.util.DataSource.ResultSetExtractor;
 import org.glowroot.server.simplerepo.util.DataSource.RowMapper;
 import org.glowroot.server.simplerepo.util.ImmutableColumn;
 import org.glowroot.server.simplerepo.util.ImmutableIndex;
-import org.glowroot.server.simplerepo.util.Schemas.Column;
-import org.glowroot.server.simplerepo.util.Schemas.Index;
+import org.glowroot.server.simplerepo.util.Schema;
+import org.glowroot.server.simplerepo.util.Schema.Column;
+import org.glowroot.server.simplerepo.util.Schema.ColumnType;
+import org.glowroot.server.simplerepo.util.Schema.Index;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 import static org.glowroot.server.simplerepo.util.Checkers.castUntainted;
@@ -61,15 +62,15 @@ import static org.glowroot.server.simplerepo.util.Checkers.castUntainted;
 class GaugeValueDao implements GaugeValueRepository {
 
     private static final ImmutableList<Column> gaugeValueRollup0Columns = ImmutableList.<Column>of(
-            ImmutableColumn.of("gauge_id", Types.BIGINT),
-            ImmutableColumn.of("capture_time", Types.BIGINT),
-            ImmutableColumn.of("value", Types.DOUBLE));
+            ImmutableColumn.of("gauge_id", ColumnType.BIGINT),
+            ImmutableColumn.of("capture_time", ColumnType.BIGINT),
+            ImmutableColumn.of("value", ColumnType.DOUBLE));
 
     private static final ImmutableList<Column> gaugeValueRollupColumns = ImmutableList.<Column>of(
-            ImmutableColumn.of("gauge_id", Types.BIGINT),
-            ImmutableColumn.of("capture_time", Types.BIGINT),
-            ImmutableColumn.of("value", Types.DOUBLE),
-            ImmutableColumn.of("count", Types.DOUBLE)); // count is needed for further rollups
+            ImmutableColumn.of("gauge_id", ColumnType.BIGINT),
+            ImmutableColumn.of("capture_time", ColumnType.BIGINT),
+            ImmutableColumn.of("value", ColumnType.DOUBLE),
+            ImmutableColumn.of("count", ColumnType.DOUBLE)); // count is needed for further rollups
 
     private static final ImmutableList<Index> gaugeValueRollup0Indexes =
             ImmutableList.<Index>of(ImmutableIndex.of("gauge_point_rollup_0_idx",
@@ -103,20 +104,21 @@ class GaugeValueDao implements GaugeValueRepository {
         this.clock = clock;
         this.rollupConfigs = configRepository.getRollupConfigs();
 
-        dataSource.syncTable("gauge_point_rollup_0", gaugeValueRollup0Columns);
-        dataSource.syncIndexes("gauge_point_rollup_0", gaugeValueRollup0Indexes);
+        Schema schema = dataSource.getSchema();
+        schema.syncTable("gauge_point_rollup_0", gaugeValueRollup0Columns);
+        schema.syncIndexes("gauge_point_rollup_0", gaugeValueRollup0Indexes);
         for (int i = 1; i <= rollupConfigs.size(); i++) {
-            dataSource.syncTable("gauge_point_rollup_" + castUntainted(i), gaugeValueRollupColumns);
-            dataSource.syncIndexes("gauge_point_rollup_" + castUntainted(i),
+            schema.syncTable("gauge_point_rollup_" + castUntainted(i), gaugeValueRollupColumns);
+            schema.syncIndexes("gauge_point_rollup_" + castUntainted(i),
                     ImmutableList.<Index>of(
                             ImmutableIndex.of("gauge_point_rollup_" + castUntainted(i) + "_idx",
                                     ImmutableList.of("gauge_id", "capture_time", "value"))));
         }
         List<Column> columns = Lists.newArrayList();
         for (int i = 1; i <= rollupConfigs.size(); i++) {
-            columns.add(ImmutableColumn.of("last_rollup_" + i + "_time", Types.BIGINT));
+            columns.add(ImmutableColumn.of("last_rollup_" + i + "_time", ColumnType.BIGINT));
         }
-        dataSource.syncTable("gauge_point_last_rollup_times", columns);
+        schema.syncTable("gauge_point_last_rollup_times", columns);
 
         List<String> columnNames = Lists.newArrayList();
         for (int i = 1; i <= rollupConfigs.size(); i++) {
@@ -169,7 +171,7 @@ class GaugeValueDao implements GaugeValueRepository {
         dataSource.batchUpdate("insert into gauge_point_rollup_0 (gauge_id, capture_time,"
                 + " value) values (?, ?, ?)", new PreparedStatementBinder() {
                     @Override
-                    public void bind(PreparedStatement preparedStatement) throws Exception {
+                    public void bind(PreparedStatement preparedStatement) throws SQLException {
                         for (Entry<String, GaugeValue> entry : gaugeValues.entrySet()) {
                             long gaugeId = gaugeMetaDao.getOrCreateGaugeId(entry.getKey());
                             if (gaugeId == -1) {
@@ -212,7 +214,7 @@ class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public ImmutableList<GaugeValue> readGaugeValues(String gaugeName, long captureTimeFrom,
+    public List<GaugeValue> readGaugeValues(String gaugeName, long captureTimeFrom,
             long captureTimeTo, int rollupLevel) throws Exception {
         String tableName = "gauge_point_rollup_" + castUntainted(rollupLevel);
         Long gaugeId = gaugeMetaDao.getGaugeId(gaugeName);
@@ -241,7 +243,7 @@ class GaugeValueDao implements GaugeValueRepository {
         // need ".0" to force double result
         String captureTimeSql = castUntainted(
                 "ceil(capture_time / " + fixedIntervalMillis + ".0) * " + fixedIntervalMillis);
-        ImmutableList<GaugeValue> gaugeValues = dataSource.query(
+        List<GaugeValue> gaugeValues = dataSource.query(
                 "select " + captureTimeSql + " ceil_capture_time, avg(value)"
                         + " from gauge_point_rollup_0 where gauge_id = ? and capture_time > ?"
                         + " and capture_time <= ? group by ceil_capture_time"
@@ -289,6 +291,7 @@ class GaugeValueDao implements GaugeValueRepository {
         for (int i = 1; i <= configRepository.getRollupConfigs().size(); i++) {
             dataSource.execute("truncate table gauge_point_rollup_" + castUntainted(i));
         }
+        dataSource.execute("truncate table gauge_meta");
     }
 
     void deleteBefore(long captureTime, int rollupLevel) throws SQLException {

@@ -17,7 +17,6 @@ package org.glowroot.server.simplerepo;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -30,8 +29,10 @@ import org.glowroot.server.simplerepo.util.DataSource;
 import org.glowroot.server.simplerepo.util.DataSource.RowMapper;
 import org.glowroot.server.simplerepo.util.ImmutableColumn;
 import org.glowroot.server.simplerepo.util.ImmutableIndex;
-import org.glowroot.server.simplerepo.util.Schemas.Column;
-import org.glowroot.server.simplerepo.util.Schemas.Index;
+import org.glowroot.server.simplerepo.util.Schema;
+import org.glowroot.server.simplerepo.util.Schema.Column;
+import org.glowroot.server.simplerepo.util.Schema.ColumnType;
+import org.glowroot.server.simplerepo.util.Schema.Index;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -39,8 +40,8 @@ import static java.util.concurrent.TimeUnit.HOURS;
 class GaugeMetaDao {
 
     private static final ImmutableList<Column> gaugeColumns = ImmutableList.<Column>of(
-            ImmutableColumn.of("gauge_id", Types.BIGINT).withIdentity(true),
-            ImmutableColumn.of("gauge_name", Types.VARCHAR));
+            ImmutableColumn.of("gauge_id", ColumnType.AUTO_IDENTITY),
+            ImmutableColumn.of("gauge_name", ColumnType.VARCHAR));
 
     private static final ImmutableList<Index> gaugeIndexes = ImmutableList
             .<Index>of(ImmutableIndex.of("gauge_meta_idx", ImmutableList.of("gauge_name")));
@@ -55,11 +56,12 @@ class GaugeMetaDao {
 
     GaugeMetaDao(DataSource dataSource) throws SQLException {
         this.dataSource = dataSource;
-        dataSource.syncTable("gauge_meta", gaugeColumns);
-        dataSource.syncIndexes("gauge_meta", gaugeIndexes);
+        Schema schema = dataSource.getSchema();
+        schema.syncTable("gauge_meta", gaugeColumns);
+        schema.syncIndexes("gauge_meta", gaugeIndexes);
     }
 
-    long getOrCreateGaugeId(String gaugeName) throws Exception {
+    long getOrCreateGaugeId(String gaugeName) throws SQLException {
         synchronized (lock) {
             Long gaugeId = gaugeIds.getIfPresent(gaugeName);
             if (gaugeId != null) {
@@ -95,7 +97,7 @@ class GaugeMetaDao {
         return gaugeId;
     }
 
-    private @Nullable Long readGaugeId(String gaugeName) throws Exception {
+    private @Nullable Long readGaugeId(String gaugeName) throws SQLException {
         List<Long> gaugeIds =
                 dataSource.query("select gauge_id from gauge_meta where gauge_name = ?",
                         new GaugeIdRowMapper(), gaugeName);
