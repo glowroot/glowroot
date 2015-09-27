@@ -366,6 +366,7 @@ HandlebarsRendering = (function () {
         renderNext(traceEntries, 0);
       } else {
         // this is not an export file
+        var serverId = $traceParent.data('gtServerId');
         var traceId = $traceParent.data('gtTraceId');
         $selector.data('gtLoading', true);
         var loaded;
@@ -376,7 +377,7 @@ HandlebarsRendering = (function () {
             spinner = Glowroot.showSpinner($button.parent().find('.gt-trace-detail-spinner'));
           }
         }, 100);
-        $.get('backend/trace/entries?trace-id=' + traceId)
+        $.get('backend/trace/entries?server-id=' + serverId + '&trace-id=' + traceId)
             .done(function (data) {
               if (data.overwritten) {
                 $('#sps').append('<div style="padding: 1em;">The trace entries have expired, see' +
@@ -419,7 +420,9 @@ HandlebarsRendering = (function () {
     var profile = $traceParent.data('gtProfile');
     var url;
     if (!profile) {
-      url = 'backend/trace/profile' + '?trace-id=' + $traceParent.data('gtTraceId');
+      var serverId = $traceParent.data('gtServerId');
+      var traceId = $traceParent.data('gtTraceId');
+      url = 'backend/trace/profile' + '?server-id=' + serverId + '&trace-id=' + traceId;
     }
     profileToggle($button, '#profileOuter', profile, url);
   });
@@ -1170,16 +1173,19 @@ HandlebarsRendering = (function () {
   }
 
   return {
-    renderTrace: function (trace, $selector) {
+    renderTrace: function (trace, serverId, $selector) {
       var html = JST.trace(trace);
       $selector.html(html);
       $selector.addClass('gt-trace-parent');
-      $selector.data('gtTraceId', trace.id);
+      if (serverId !== undefined) {
+        $selector.data('gtServerId', serverId);
+        $selector.data('gtTraceId', trace.id);
+      }
     },
     renderTraceFromExport: function (trace, $selector, traceEntries, profile) {
       $selector.data('gtTraceEntries', traceEntries);
       $selector.data('gtProfile', profile);
-      this.renderTrace(trace, $selector);
+      this.renderTrace(trace, undefined, $selector);
     },
     formatBytes: formatBytes,
     formatMillis: formatMillis,

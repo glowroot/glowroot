@@ -101,10 +101,11 @@ glowroot.controller('TransactionProfileCtrl', [
         return;
       }
       var query = {
-        from: $scope.chartFrom,
-        to: $scope.chartTo,
+        serverId: $scope.serverId,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
+        from: $scope.chartFrom,
+        to: $scope.chartTo,
         include: parseResult.includes,
         exclude: parseResult.excludes,
         truncateLeafPercentage: 0.001

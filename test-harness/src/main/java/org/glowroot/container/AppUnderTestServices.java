@@ -26,6 +26,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class AppUnderTestServices {
 
+    private static final long SERVER_ID = 0;
+
     public static AppUnderTestServices get() {
         return new AppUnderTestServices();
     }
@@ -34,13 +36,13 @@ public class AppUnderTestServices {
 
     public void setPluginEnabled(String pluginId, boolean enabled) throws Exception {
         ConfigRepository configRepository = getConfigRepository();
-        PluginConfig config = configRepository.getPluginConfig(pluginId);
+        PluginConfig config = configRepository.getPluginConfig(SERVER_ID, pluginId);
         if (config == null) {
             throw new IllegalStateException("Plugin not found for pluginId: " + pluginId);
         }
         PluginConfig updatedConfig =
                 ImmutablePluginConfig.builder().copyFrom(config).enabled(enabled).build();
-        configRepository.updatePluginConfig(updatedConfig, config.version());
+        configRepository.updatePluginConfig(SERVER_ID, updatedConfig, config.version());
     }
 
     private static ConfigRepository getConfigRepository() {

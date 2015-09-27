@@ -23,7 +23,7 @@ glowroot.controller('ConfigAlertListCtrl', [
   'httpErrors',
   function ($scope, $location, $http, httpErrors) {
 
-    $http.get('backend/config/alerts')
+    $http.get('backend/config/alerts?server-id=' + $scope.serverId)
         .success(function (data) {
           $scope.loaded = true;
           $scope.alerts = data;

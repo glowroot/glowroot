@@ -73,6 +73,7 @@ class ErrorJsonService {
         ErrorMessageRequest request = QueryStrings.decode(queryString, ErrorMessageRequest.class);
 
         ErrorMessageQuery query = ImmutableErrorMessageQuery.builder()
+                .serverId(request.serverId())
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
@@ -86,8 +87,8 @@ class ErrorJsonService {
         long liveCaptureTime = clock.currentTimeMillis();
         Result<ErrorMessageCount> queryResult = traceRepository.readErrorMessageCounts(query);
         List<ErrorPoint> unfilteredErrorPoints =
-                errorCommonService.readErrorPoints(query.transactionType(), query.transactionName(),
-                        query.from(), query.to(), liveCaptureTime);
+                errorCommonService.readErrorPoints(query.serverId(), query.transactionType(),
+                        query.transactionName(), query.from(), query.to(), liveCaptureTime);
         DataSeries dataSeries = new DataSeries(null);
         Map<Long, Long[]> dataSeriesExtra = Maps.newHashMap();
         if (query.includes().isEmpty() && query.excludes().isEmpty()) {
@@ -99,7 +100,8 @@ class ErrorJsonService {
                         unfilteredErrorPoint.transactionCount());
             }
             List<TraceErrorPoint> traceErrorPoints = traceRepository.readErrorPoints(query,
-                    aggregateRepository.getDataPointIntervalMillis(query.from(), query.to()),
+                    aggregateRepository.getDataPointIntervalMillis(query.serverId(), query.from(),
+                            query.to()),
                     liveCaptureTime);
             List<ErrorPoint> errorPoints = Lists.newArrayList();
             for (TraceErrorPoint traceErrorPoint : traceErrorPoints) {
@@ -129,10 +131,11 @@ class ErrorJsonService {
     String getSummaries(String queryString) throws Exception {
         ErrorSummaryRequest request = QueryStrings.decode(queryString, ErrorSummaryRequest.class);
 
-        OverallErrorSummary overallSummary = errorCommonService
-                .readOverallErrorSummary(request.transactionType(), request.from(), request.to());
+        OverallErrorSummary overallSummary = errorCommonService.readOverallErrorSummary(
+                request.serverId(), request.transactionType(), request.from(), request.to());
 
         ErrorSummaryQuery query = ImmutableErrorSummaryQuery.builder()
+                .serverId(request.serverId())
                 .transactionType(request.transactionType())
                 .from(request.from())
                 .to(request.to())
@@ -162,11 +165,11 @@ class ErrorJsonService {
         String transactionName = request.transactionName();
         long traceCount;
         if (transactionName == null) {
-            traceCount = traceRepository.readOverallErrorCount(request.transactionType(),
-                    request.from(), request.to());
+            traceCount = traceRepository.readOverallErrorCount(request.serverId(),
+                    request.transactionType(), request.from(), request.to());
         } else {
-            traceCount = traceRepository.readTransactionErrorCount(request.transactionType(),
-                    transactionName, request.from(), request.to());
+            traceCount = traceRepository.readTransactionErrorCount(request.serverId(),
+                    request.transactionType(), transactionName, request.from(), request.to());
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -179,8 +182,8 @@ class ErrorJsonService {
 
     private void populateDataSeries(ErrorMessageQuery request, List<ErrorPoint> errorPoints,
             DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra) {
-        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock,
-                aggregateRepository.getDataPointIntervalMillis(request.from(), request.to()));
+        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock, aggregateRepository
+                .getDataPointIntervalMillis(request.serverId(), request.from(), request.to()));
         ErrorPoint lastErrorPoint = null;
         for (ErrorPoint errorPoint : errorPoints) {
             if (lastErrorPoint == null) {
@@ -206,29 +209,32 @@ class ErrorJsonService {
 
     @Value.Immutable
     interface ErrorSummaryRequest {
+        long serverId();
+        String transactionType();
         long from();
         long to();
-        String transactionType();
         AggregateRepository.ErrorSummarySortOrder sortOrder();
         int limit();
     }
 
     @Value.Immutable
     interface TabBarDataRequest {
-        long from();
-        long to();
+        long serverId();
         String transactionType();
         @Nullable
         String transactionName();
+        long from();
+        long to();
     }
 
     @Value.Immutable
     interface ErrorMessageRequest {
-        long from();
-        long to();
+        long serverId();
         String transactionType();
         @Nullable
         String transactionName();
+        long from();
+        long to();
         // intentionally not plural since maps from query string
         ImmutableList<String> include();
         // intentionally not plural since maps from query string

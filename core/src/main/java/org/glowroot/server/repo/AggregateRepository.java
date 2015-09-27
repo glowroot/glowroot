@@ -32,7 +32,7 @@ import org.glowroot.live.LiveAggregateRepository.TransactionSummary;
 public interface AggregateRepository {
 
     // captureTimeFrom is non-inclusive
-    OverallSummary readOverallSummary(String transactionType, long captureTimeFrom,
+    OverallSummary readOverallSummary(long serverId, String transactionType, long captureTimeFrom,
             long captureTimeTo) throws Exception;
 
     // query.from() is non-inclusive
@@ -40,81 +40,82 @@ public interface AggregateRepository {
             throws Exception;
 
     // captureTimeFrom is non-inclusive
-    OverallErrorSummary readOverallErrorSummary(String transactionType, long captureTimeFrom,
-            long captureTimeTo, int rollupLevel) throws Exception;
+    OverallErrorSummary readOverallErrorSummary(long serverId, String transactionType,
+            long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception;
 
     // captureTimeFrom is non-inclusive
     Result<TransactionErrorSummary> readTransactionErrorSummaries(ErrorSummaryQuery query,
             int rollupLevel) throws Exception;
 
     // captureTimeFrom is INCLUSIVE
-    List<OverviewAggregate> readOverallOverviewAggregates(String transactionType,
+    List<OverviewAggregate> readOverallOverviewAggregates(long serverId, String transactionType,
             long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception;
 
     // captureTimeFrom is INCLUSIVE
-    List<PercentileAggregate> readOverallPercentileAggregates(String transactionType,
+    List<PercentileAggregate> readOverallPercentileAggregates(long serverId, String transactionType,
             long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception;
 
     // captureTimeFrom is INCLUSIVE
-    List<OverviewAggregate> readTransactionOverviewAggregates(String transactionType,
+    List<OverviewAggregate> readTransactionOverviewAggregates(long serverId, String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
                     throws Exception;
 
     // captureTimeFrom is INCLUSIVE
-    List<PercentileAggregate> readTransactionPercentileAggregates(String transactionType,
-            String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
-                    throws Exception;
-
-    // captureTimeFrom is non-inclusive
-    void mergeInOverallProfiles(ProfileCollector mergedProfile, String transactionType,
-            long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception;
-
-    // captureTimeFrom is non-inclusive
-    void mergeInTransactionProfiles(ProfileCollector mergedProfile, String transactionType,
-            String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
-                    throws Exception;
-
-    // captureTimeFrom is non-inclusive
-    void mergeInOverallQueries(QueryCollector mergedQueries, String transactionType,
-            long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception;
-
-    // captureTimeFrom is non-inclusive
-    void mergeInTransactionQueries(QueryCollector mergedQueries, String transactionType,
-            String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
-                    throws Exception;
-
-    List<ErrorPoint> readOverallErrorPoints(String transactionType, long captureTimeFrom,
+    List<PercentileAggregate> readTransactionPercentileAggregates(long serverId,
+            String transactionType, String transactionName, long captureTimeFrom,
             long captureTimeTo, int rollupLevel) throws Exception;
 
-    List<ErrorPoint> readTransactionErrorPoints(String transactionType,
+    // captureTimeFrom is non-inclusive
+    void mergeInOverallProfiles(ProfileCollector mergedProfile, long serverId,
+            String transactionType, long captureTimeFrom, long captureTimeTo, int rollupLevel)
+                    throws Exception;
+
+    // captureTimeFrom is non-inclusive
+    void mergeInTransactionProfiles(ProfileCollector mergedProfile, long serverId,
+            String transactionType, String transactionName, long captureTimeFrom,
+            long captureTimeTo, int rollupLevel) throws Exception;
+
+    // captureTimeFrom is non-inclusive
+    void mergeInOverallQueries(QueryCollector mergedQueries, long serverId, String transactionType,
+            long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception;
+
+    // captureTimeFrom is non-inclusive
+    void mergeInTransactionQueries(QueryCollector mergedQueries, long serverId,
+            String transactionType, String transactionName, long captureTimeFrom,
+            long captureTimeTo, int rollupLevel) throws Exception;
+
+    List<ErrorPoint> readOverallErrorPoints(long serverId, String transactionType,
+            long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception;
+
+    List<ErrorPoint> readTransactionErrorPoints(long serverId, String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo, int rollupLevel)
                     throws Exception;
 
     // captureTimeFrom is non-inclusive
-    boolean shouldHaveOverallQueries(String transactionType, long captureTimeFrom,
+    boolean shouldHaveOverallQueries(long serverId, String transactionType, long captureTimeFrom,
             long captureTimeTo) throws Exception;
 
     // captureTimeFrom is non-inclusive
-    boolean shouldHaveTransactionQueries(String transactionType, String transactionName,
-            long captureTimeFrom, long captureTimeTo) throws Exception;
+    boolean shouldHaveTransactionQueries(long serverId, String transactionType,
+            String transactionName, long captureTimeFrom, long captureTimeTo) throws Exception;
 
     // captureTimeFrom is non-inclusive
-    boolean shouldHaveOverallProfile(String transactionType, long captureTimeFrom,
+    boolean shouldHaveOverallProfile(long serverId, String transactionType, long captureTimeFrom,
             long captureTimeTo) throws Exception;
 
     // captureTimeFrom is non-inclusive
-    boolean shouldHaveTransactionProfile(String transactionType, String transactionName,
-            long captureTimeFrom, long captureTimeTo) throws Exception;
+    boolean shouldHaveTransactionProfile(long serverId, String transactionType,
+            String transactionName, long captureTimeFrom, long captureTimeTo) throws Exception;
 
-    long getDataPointIntervalMillis(long captureTimeFrom, long captureTimeTo);
+    long getDataPointIntervalMillis(long serverId, long captureTimeFrom, long captureTimeTo);
 
-    int getRollupLevelForView(long captureTimeFrom, long captureTimeTo);
+    int getRollupLevelForView(long serverId, long captureTimeFrom, long captureTimeTo);
 
-    // only supported by local storage implementation
-    void deleteAll() throws SQLException;
+    void deleteAll(long serverId) throws SQLException;
 
     @Value.Immutable
     public interface TransactionSummaryQuery {
+        long serverId();
         String transactionType();
         // from is non-inclusive
         long from();
@@ -125,6 +126,7 @@ public interface AggregateRepository {
 
     @Value.Immutable
     public interface ErrorSummaryQuery {
+        long serverId();
         String transactionType();
         // from is non-inclusive
         long from();

@@ -24,21 +24,22 @@ import org.immutables.value.Value;
 
 public interface LiveWeavingService {
 
-    GlobalMeta getGlobalMeta();
+    GlobalMeta getGlobalMeta(long serverId);
 
-    void preloadClasspathCache();
+    void preloadClasspathCache(long serverId);
 
-    List<String> getMatchingClassNames(String partialClassName, int limit);
+    List<String> getMatchingClassNames(long serverId, String partialClassName, int limit);
 
-    List<String> getMatchingMethodNames(String className, String partialMethodName, int limit);
+    List<String> getMatchingMethodNames(long serverId, String className, String partialMethodName,
+            int limit);
 
-    List<MethodSignature> getMethodSignatures(String className, String methodName);
+    List<MethodSignature> getMethodSignatures(long serverId, String className, String methodName);
 
-    int reweave() throws Exception;
+    int reweave(long serverId) throws Exception;
 
     // null means unknown
     @Nullable
-    Boolean isTimerWrapperMethodsActive();
+    Boolean isTimerWrapperMethodsActive(long serverId);
 
     @Value.Immutable
     public interface GlobalMeta {
@@ -57,7 +58,7 @@ public interface LiveWeavingService {
     public class LiveWeavingServiceNop implements LiveWeavingService {
 
         @Override
-        public GlobalMeta getGlobalMeta() {
+        public GlobalMeta getGlobalMeta(long serverId) {
             return ImmutableGlobalMeta.builder()
                     .jvmOutOfSync(false)
                     .jvmRetransformClassesSupported(false)
@@ -65,31 +66,33 @@ public interface LiveWeavingService {
         }
 
         @Override
-        public void preloadClasspathCache() {}
+        public void preloadClasspathCache(long serverId) {}
 
         @Override
-        public List<String> getMatchingClassNames(String partialClassName, int limit) {
-            return ImmutableList.of();
-        }
-
-        @Override
-        public List<String> getMatchingMethodNames(String className, String partialMethodName,
+        public List<String> getMatchingClassNames(long serverId, String partialClassName,
                 int limit) {
             return ImmutableList.of();
         }
 
         @Override
-        public List<MethodSignature> getMethodSignatures(String className, String methodName) {
+        public List<String> getMatchingMethodNames(long serverId, String className,
+                String partialMethodName, int limit) {
             return ImmutableList.of();
         }
 
         @Override
-        public int reweave() throws Exception {
+        public List<MethodSignature> getMethodSignatures(long serverId, String className,
+                String methodName) {
+            return ImmutableList.of();
+        }
+
+        @Override
+        public int reweave(long serverId) throws Exception {
             return 0;
         }
 
         @Override
-        public @Nullable Boolean isTimerWrapperMethodsActive() {
+        public @Nullable Boolean isTimerWrapperMethodsActive(long serverId) {
             return null;
         }
     }

@@ -63,7 +63,7 @@ public class UiModule {
             List<PluginDescriptor> pluginDescriptors) { // TODO UI should not depend on this
 
         LayoutService layoutService =
-                new LayoutService(version, configRepository, pluginDescriptors, liveJvmService);
+                new LayoutService(version, configRepository, pluginDescriptors);
         HttpSessionManager httpSessionManager =
                 new HttpSessionManager(configRepository, clock, layoutService);
         IndexHtmlHttpService indexHtmlHttpService =
@@ -92,8 +92,7 @@ public class UiModule {
         JvmJsonService jvmJsonService = new JvmJsonService(gaugeValueRepository, configRepository,
                 liveJvmService, liveThreadDumpService, clock);
         ConfigJsonService configJsonService = new ConfigJsonService(configRepository, repoAdmin,
-                pluginDescriptors, httpSessionManager, new MailService(),
-                liveWeavingService.isTimerWrapperMethodsActive());
+                pluginDescriptors, httpSessionManager, new MailService(), liveWeavingService);
         InstrumentationJsonService instrumentationJsonService =
                 new InstrumentationJsonService(configRepository, liveWeavingService);
         GaugeJsonService gaugeJsonService = new GaugeJsonService(configRepository, liveJvmService);

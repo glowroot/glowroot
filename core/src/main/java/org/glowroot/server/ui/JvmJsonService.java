@@ -68,7 +68,8 @@ class JvmJsonService {
     @GET("/backend/jvm/gauge-values")
     String getGaugeValues(String queryString) throws Exception {
         GaugeValueRequest request = QueryStrings.decode(queryString, GaugeValueRequest.class);
-        int rollupLevel = gaugeValueRepository.getRollupLevelForView(request.from(), request.to());
+        int rollupLevel = gaugeValueRepository.getRollupLevelForView(request.serverId(),
+                request.from(), request.to());
         long intervalMillis;
         if (rollupLevel == 0) {
             intervalMillis = configRepository.getGaugeCollectionIntervalMillis();
@@ -84,8 +85,8 @@ class JvmJsonService {
         long liveCaptureTime = clock.currentTimeMillis();
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         for (String gaugeName : request.gaugeNames()) {
-            List<GaugeValue> gaugeValues =
-                    getGaugeValues(revisedFrom, revisedTo, gaugeName, rollupLevel, liveCaptureTime);
+            List<GaugeValue> gaugeValues = getGaugeValues(request.serverId(), revisedFrom,
+                    revisedTo, gaugeName, rollupLevel, liveCaptureTime);
             if (!gaugeValues.isEmpty()) {
                 dataSeriesList.add(convertToDataSeriesWithGaps(gaugeName, gaugeValues, gapMillis));
             }
@@ -101,8 +102,9 @@ class JvmJsonService {
     }
 
     @GET("/backend/jvm/all-gauges")
-    String getAllGaugeNames() throws Exception {
-        List<Gauge> gauges = gaugeValueRepository.getGauges();
+    String getAllGaugeNames(String queryString) throws Exception {
+        long serverId = getServerId(queryString);
+        List<Gauge> gauges = gaugeValueRepository.getGauges(serverId);
         ImmutableList<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
         return mapper.writeValueAsString(sortedGauges);
     }
@@ -117,8 +119,8 @@ class JvmJsonService {
     String getMBeanAttributeMap(String queryString) throws Exception {
         MBeanAttributeMapRequest request =
                 QueryStrings.decode(queryString, MBeanAttributeMapRequest.class);
-        return mapper.writeValueAsString(
-                liveJvmService.getMBeanSortedAttributeMap(request.objectName()));
+        return mapper.writeValueAsString(liveJvmService
+                .getMBeanSortedAttributeMap(request.serverId(), request.objectName()));
     }
 
     @POST("/backend/jvm/perform-gc")
@@ -134,16 +136,17 @@ class JvmJsonService {
     }
 
     @GET("/backend/jvm/heap-dump-default-dir")
-    String getHeapDumpDefaultDir() throws Exception {
-        return mapper.writeValueAsString(liveJvmService.getHeapDumpDefaultDirectory());
+    String getHeapDumpDefaultDir(String queryString) throws Exception {
+        long serverId = getServerId(queryString);
+        return mapper.writeValueAsString(liveJvmService.getHeapDumpDefaultDirectory(serverId));
     }
 
     @POST("/backend/jvm/available-disk-space")
     String getAvailableDiskSpace(String content) throws IOException {
-        RequestWithDirectory request =
-                mapper.readValue(content, ImmutableRequestWithDirectory.class);
+        HeapDumpRequest request = mapper.readValue(content, ImmutableHeapDumpRequest.class);
         try {
-            return Long.toString(liveJvmService.getAvailableDiskSpace(request.directory()));
+            return Long.toString(
+                    liveJvmService.getAvailableDiskSpace(request.serverId(), request.directory()));
         } catch (IOException e) {
             logger.debug(e.getMessage(), e);
             // this is for specific common errors, e.g. "Directory doesn't exist"
@@ -159,10 +162,10 @@ class JvmJsonService {
 
     @POST("/backend/jvm/dump-heap")
     String dumpHeap(String content) throws Exception {
-        RequestWithDirectory request =
-                mapper.readValue(content, ImmutableRequestWithDirectory.class);
+        HeapDumpRequest request = mapper.readValue(content, ImmutableHeapDumpRequest.class);
         try {
-            return mapper.writeValueAsString(liveJvmService.dumpHeap(request.directory()));
+            return mapper.writeValueAsString(
+                    liveJvmService.dumpHeap(request.serverId(), request.directory()));
         } catch (IOException e) {
             logger.debug(e.getMessage(), e);
             // this is for specific common errors, e.g. "Directory doesn't exist"
@@ -177,17 +180,19 @@ class JvmJsonService {
     }
 
     @GET("/backend/jvm/process-info")
-    String getProcessInfo() throws Exception {
-        return mapper.writeValueAsString(liveJvmService.getProcessInfo());
+    String getProcessInfo(String queryString) throws Exception {
+        long serverId = getServerId(queryString);
+        return mapper.writeValueAsString(liveJvmService.getProcessInfo(serverId));
     }
 
     @GET("/backend/jvm/system-properties")
-    String getSystemProperties() throws IOException {
+    String getSystemProperties(String queryString) throws Exception {
+        long serverId = getServerId(queryString);
         // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
         // see https://code.google.com/p/guava-libraries/issues/detail?id=635
         Map<String, String> sortedProperties =
                 new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
-        sortedProperties.putAll(liveJvmService.getSystemProperties());
+        sortedProperties.putAll(liveJvmService.getSystemProperties(serverId));
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -204,14 +209,15 @@ class JvmJsonService {
     }
 
     @GET("/backend/jvm/capabilities")
-    String getCapabilities() throws IOException {
-        return mapper.writeValueAsString(liveJvmService.getCapabilities());
+    String getCapabilities(String queryString) throws Exception {
+        long serverId = getServerId(queryString);
+        return mapper.writeValueAsString(liveJvmService.getCapabilities(serverId));
     }
 
-    private List<GaugeValue> getGaugeValues(long from, long to, String gaugeName, int rollupLevel,
-            long liveCaptureTime) throws Exception {
+    private List<GaugeValue> getGaugeValues(long serverId, long from, long to, String gaugeName,
+            int rollupLevel, long liveCaptureTime) throws Exception {
         List<GaugeValue> gaugeValues =
-                gaugeValueRepository.readGaugeValues(gaugeName, from, to, rollupLevel);
+                gaugeValueRepository.readGaugeValues(serverId, gaugeName, from, to, rollupLevel);
         if (rollupLevel == 0) {
             return gaugeValues;
         }
@@ -221,8 +227,8 @@ class JvmJsonService {
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<GaugeValue> allGaugeValues = Lists.newArrayList(gaugeValues);
-        allGaugeValues.addAll(gaugeValueRepository.readManuallyRolledUpGaugeValues(nonRolledUpFrom,
-                to, gaugeName, rollupLevel, liveCaptureTime));
+        allGaugeValues.addAll(gaugeValueRepository.readManuallyRolledUpGaugeValues(serverId,
+                nonRolledUpFrom, to, gaugeName, rollupLevel, liveCaptureTime));
         return allGaugeValues;
     }
 
@@ -241,26 +247,28 @@ class JvmJsonService {
         return dataSeries;
     }
 
+    private static long getServerId(String queryString) throws Exception {
+        return Long.parseLong(queryString.substring("server-id".length() + 1));
+    }
+
     @Value.Immutable
     interface GaugeValueRequest {
+        long serverId();
         long from();
         long to();
         ImmutableList<String> gaugeNames();
     }
 
     @Value.Immutable
-    abstract static class MBeanAttributeMapRequest {
-        abstract String objectName();
+    interface MBeanAttributeMapRequest {
+        long serverId();
+        String objectName();
     }
 
     @Value.Immutable
-    abstract static class RequestWithDirectory {
-        abstract String directory();
-    }
-
-    @Value.Immutable
-    abstract static class ThreadDumpItem {
-        abstract String objectName();
+    interface HeapDumpRequest {
+        long serverId();
+        String directory();
     }
 
     private static class GaugeOrdering extends Ordering<Gauge> {

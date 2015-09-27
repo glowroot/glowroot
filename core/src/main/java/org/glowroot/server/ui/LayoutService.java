@@ -34,7 +34,6 @@ import org.immutables.value.Value;
 import org.glowroot.common.config.PluginDescriptor;
 import org.glowroot.common.config.Versions;
 import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.live.LiveJvmService;
 import org.glowroot.plugin.api.config.ConfigListener;
 import org.glowroot.server.repo.ConfigRepository;
 import org.glowroot.server.repo.ConfigRepository.RollupConfig;
@@ -51,16 +50,14 @@ class LayoutService {
     private final String version;
     private final ConfigRepository configRepository;
     private final ImmutableList<PluginDescriptor> pluginDescriptors;
-    private final LiveJvmService liveJvmService;
 
     private volatile @Nullable Layout layout;
 
     LayoutService(String version, ConfigRepository configRepository,
-            List<PluginDescriptor> pluginDescriptors, LiveJvmService liveJvmService) {
+            List<PluginDescriptor> pluginDescriptors) {
         this.version = version;
         this.configRepository = configRepository;
         this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
-        this.liveJvmService = liveJvmService;
         ConfigListener listener = new ConfigListener() {
             @Override
             public void onChange() {
@@ -73,8 +70,7 @@ class LayoutService {
     String getLayout() throws IOException {
         Layout localLayout = layout;
         if (localLayout == null) {
-            localLayout = buildLayout(version, configRepository, pluginDescriptors,
-                    liveJvmService.getCapabilities().heapDump().isAvailable());
+            localLayout = buildLayout(version, configRepository, pluginDescriptors);
             layout = localLayout;
         }
         return mapper.writeValueAsString(localLayout);
@@ -83,8 +79,7 @@ class LayoutService {
     String getLayoutVersion() {
         Layout localLayout = layout;
         if (localLayout == null) {
-            localLayout = buildLayout(version, configRepository, pluginDescriptors,
-                    liveJvmService.getCapabilities().heapDump().isAvailable());
+            localLayout = buildLayout(version, configRepository, pluginDescriptors);
             layout = localLayout;
         }
         return localLayout.version();
@@ -105,12 +100,16 @@ class LayoutService {
     }
 
     private static Layout buildLayout(String version, ConfigRepository configRepository,
-            List<PluginDescriptor> pluginDescriptors, boolean heapDumpAvailable) {
+            List<PluginDescriptor> pluginDescriptors) {
+
+        // FIXME
+        long serverId = 0;
+
         // use linked hash set to maintain ordering in case there is no default transaction type
         List<String> transactionTypes =
-                Lists.newArrayList(configRepository.getAllTransactionTypes());
+                Lists.newArrayList(configRepository.getAllTransactionTypes(serverId));
         String defaultDisplayedTransactionType =
-                configRepository.getDefaultDisplayedTransactionType();
+                configRepository.getDefaultDisplayedTransactionType(serverId);
         List<String> orderedTransactionTypes = Lists.newArrayList();
         if (transactionTypes.isEmpty()) {
             defaultDisplayedTransactionType = "NO TRANSACTION TYPES DEFINED";
@@ -135,7 +134,6 @@ class LayoutService {
         }
         UserInterfaceConfig userInterfaceConfig = configRepository.getUserInterfaceConfig();
         return ImmutableLayout.builder()
-                .jvmHeapDump(heapDumpAvailable)
                 .footerMessage("Glowroot version " + version)
                 .adminPasswordEnabled(userInterfaceConfig.adminPasswordEnabled())
                 .readOnlyPasswordEnabled(userInterfaceConfig.readOnlyPasswordEnabled())
@@ -153,7 +151,6 @@ class LayoutService {
     @Value.Immutable
     abstract static class Layout {
 
-        abstract boolean jvmHeapDump();
         abstract String footerMessage();
         abstract boolean adminPasswordEnabled();
         abstract boolean readOnlyPasswordEnabled();

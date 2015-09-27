@@ -72,14 +72,14 @@ public class ChangePortTest {
         boolean oldPortDead = false;
         try {
             asyncHttpClient.prepareGet("http://localhost:" + oldPort
-                    + "/backend/admin/num-active-transactions").execute().get();
+                    + "/backend/admin/num-active-transactions?server-id=0").execute().get();
         } catch (ExecutionException e) {
             if (e.getCause() instanceof ConnectException) {
                 oldPortDead = true;
             }
         }
         Response response = asyncHttpClient.prepareGet("http://localhost:" + newPort
-                + "/backend/admin/num-active-transactions").execute().get();
+                + "/backend/admin/num-active-transactions?server-id=0").execute().get();
         int numActiveTransactions = Integer.parseInt(response.getResponseBody());
 
         assertThat(oldPortDead).isTrue();

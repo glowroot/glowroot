@@ -35,6 +35,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TraceDaoTest {
 
+    private static final long SERVER_ID = 0;
+
     private DataSource dataSource;
     private File cappedFile;
     private CappedDatabase cappedDatabase;
@@ -62,8 +64,9 @@ public class TraceDaoTest {
     public void shouldReadTrace() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(trace);
+        traceDao.collect(SERVER_ID, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
+                .serverId(0)
                 .from(0)
                 .to(100)
                 .durationNanosLow(0)
@@ -73,7 +76,8 @@ public class TraceDaoTest {
                 .limit(1)
                 .build();
         Result<TracePoint> queryResult = traceDao.readPoints(query);
-        Trace.Header header = traceDao.readHeader(queryResult.records().get(0).id()).header();
+        Trace.Header header =
+                traceDao.readHeader(SERVER_ID, queryResult.records().get(0).traceId()).header();
         // then
         assertThat(header.getId()).isEqualTo(trace.getHeader().getId());
         assertThat(header.getPartial()).isEqualTo(trace.getHeader().getPartial());
@@ -88,8 +92,9 @@ public class TraceDaoTest {
     public void shouldReadTraceWithTotalNanosQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(trace);
+        traceDao.collect(SERVER_ID, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
+                .serverId(0)
                 .from(0)
                 .to(100)
                 .durationNanosLow(trace.getHeader().getDurationNanos())
@@ -108,8 +113,9 @@ public class TraceDaoTest {
     public void shouldNotReadTraceWithHighTotalNanosQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(trace);
+        traceDao.collect(SERVER_ID, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
+                .serverId(0)
                 .from(0)
                 .to(0)
                 .durationNanosLow(trace.getHeader().getDurationNanos() + 1)
@@ -128,8 +134,9 @@ public class TraceDaoTest {
     public void shouldNotReadTraceWithLowTotalNanosQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(trace);
+        traceDao.collect(SERVER_ID, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
+                .serverId(0)
                 .from(0)
                 .to(0)
                 .durationNanosLow(trace.getHeader().getDurationNanos() - 2)
@@ -148,8 +155,9 @@ public class TraceDaoTest {
     public void shouldReadTraceWithAttributeQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(trace);
+        traceDao.collect(SERVER_ID, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
+                .serverId(0)
                 .from(0)
                 .to(100)
                 .durationNanosLow(0)
@@ -171,8 +179,9 @@ public class TraceDaoTest {
     public void shouldReadTraceWithAttributeQualifier2() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(trace);
+        traceDao.collect(SERVER_ID, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
+                .serverId(0)
                 .from(0)
                 .to(100)
                 .durationNanosLow(0)
@@ -194,8 +203,9 @@ public class TraceDaoTest {
     public void shouldReadTraceWithAttributeQualifier3() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(trace);
+        traceDao.collect(SERVER_ID, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
+                .serverId(0)
                 .from(0)
                 .to(100)
                 .durationNanosLow(0)
@@ -217,8 +227,9 @@ public class TraceDaoTest {
     public void shouldNotReadTraceWithNonMatchingAttributeQualifier() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(trace);
+        traceDao.collect(SERVER_ID, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
+                .serverId(0)
                 .from(0)
                 .to(100)
                 .durationNanosLow(0)
@@ -240,8 +251,9 @@ public class TraceDaoTest {
     public void shouldNotReadTraceWithNonMatchingAttributeQualifier2() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(trace);
+        traceDao.collect(SERVER_ID, trace);
         TracePointQuery query = ImmutableTracePointQuery.builder()
+                .serverId(0)
                 .from(0)
                 .to(100)
                 .durationNanosLow(0)
@@ -263,10 +275,10 @@ public class TraceDaoTest {
     public void shouldDeletedTrace() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace();
-        traceDao.collect(trace);
+        traceDao.collect(SERVER_ID, trace);
         // when
-        traceDao.deleteBefore(100);
+        traceDao.deleteBefore(SERVER_ID, 100);
         // then
-        assertThat(traceDao.count()).isEqualTo(0);
+        assertThat(traceDao.count(SERVER_ID)).isEqualTo(0);
     }
 }

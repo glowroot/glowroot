@@ -25,18 +25,17 @@ import org.glowroot.common.util.Styles;
 
 public interface GaugeValueRepository {
 
-    List<Gauge> getGauges() throws InterruptedException;
+    List<Gauge> getGauges(long serverId) throws InterruptedException;
 
-    List<GaugeValue> readGaugeValues(String gaugeName, long captureTimeFrom,
+    List<GaugeValue> readGaugeValues(long serverId, String gaugeName, long captureTimeFrom,
             long captureTimeTo, int rollupLevel) throws Exception;
 
-    List<GaugeValue> readManuallyRolledUpGaugeValues(long from, long to, String gaugeName,
-            int rollupLevel, long liveCaptureTime) throws Exception;
+    List<GaugeValue> readManuallyRolledUpGaugeValues(long serverId, long from, long to,
+            String gaugeName, int rollupLevel, long liveCaptureTime) throws Exception;
 
-    int getRollupLevelForView(long from, long to);
+    int getRollupLevelForView(long serverId, long from, long to);
 
-    // only supported by local storage implementation
-    void deleteAll() throws SQLException;
+    void deleteAll(long serverId) throws SQLException;
 
     @Value.Immutable
     @Styles.AllParameters

@@ -32,6 +32,8 @@ public class TraceDaoPerformanceMain {
 
     private static final Logger logger = LoggerFactory.getLogger(TraceDaoPerformanceMain.class);
 
+    private static final long SERVER_ID = 0;
+
     private TraceDaoPerformanceMain() {}
 
     public static void main(String... args) throws Exception {
@@ -43,9 +45,9 @@ public class TraceDaoPerformanceMain {
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (int i = 0; i < 1000; i++) {
             Trace trace = TraceTestData.createTrace();
-            traceDao.collect(trace);
+            traceDao.collect(SERVER_ID, trace);
         }
         logger.info("elapsed time: {}", stopwatch.elapsed(MILLISECONDS));
-        logger.info("num traces: {}", traceDao.count());
+        logger.info("num traces: {}", traceDao.count(SERVER_ID));
     }
 }

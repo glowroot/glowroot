@@ -87,9 +87,9 @@ class TransactionJsonService {
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
 
         long liveCaptureTime = clock.currentTimeMillis();
-        List<OverviewAggregate> overviewAggregates =
-                transactionCommonService.getOverviewAggregates(request.transactionType(),
-                        request.transactionName(), request.from(), request.to(), liveCaptureTime);
+        List<OverviewAggregate> overviewAggregates = transactionCommonService.getOverviewAggregates(
+                request.serverId(), request.transactionType(), request.transactionName(),
+                request.from(), request.to(), liveCaptureTime);
         List<DataSeries> dataSeriesList = getDataSeriesForTimersChart(request, overviewAggregates);
         Map<Long, Long> transactionCounts = getTransactionCounts(overviewAggregates);
         if (!overviewAggregates.isEmpty()
@@ -123,8 +123,8 @@ class TransactionJsonService {
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
 
         long liveCaptureTime = clock.currentTimeMillis();
-        List<PercentileAggregate> percentileAggregates =
-                transactionCommonService.getPercentileAggregates(request.transactionType(),
+        List<PercentileAggregate> percentileAggregates = transactionCommonService
+                .getPercentileAggregates(request.serverId(), request.transactionType(),
                         request.transactionName(), request.from(), request.to(), liveCaptureTime);
         List<DataSeries> dataSeriesList = getDataSeriesForPercentileChart(request,
                 percentileAggregates, request.percentile());
@@ -154,12 +154,14 @@ class TransactionJsonService {
         TransactionProfileRequest request =
                 QueryStrings.decode(queryString, TransactionProfileRequest.class);
         MutableProfileTree profileTree = transactionCommonService.getMergedProfile(
-                request.transactionType(), request.transactionName(), request.from(), request.to(),
-                request.include(), request.exclude(), request.truncateLeafPercentage());
+                request.serverId(), request.transactionType(), request.transactionName(),
+                request.from(), request.to(), request.include(), request.exclude(),
+                request.truncateLeafPercentage());
         if (profileTree.getSampleCount() == 0 && request.include().isEmpty()
                 && request.exclude().isEmpty()
-                && transactionCommonService.shouldHaveProfile(request.transactionType(),
-                        request.transactionName(), request.from(), request.to())) {
+                && transactionCommonService.shouldHaveProfile(request.serverId(),
+                        request.transactionType(), request.transactionName(), request.from(),
+                        request.to())) {
             return "{\"overwritten\":true}";
         }
         return profileTree.toJson();
@@ -170,7 +172,8 @@ class TransactionJsonService {
         TransactionDataRequest request =
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
         List<Aggregate.QueriesByType> queries = transactionCommonService.getMergedQueries(
-                request.transactionType(), request.transactionName(), request.from(), request.to());
+                request.serverId(), request.transactionType(), request.transactionName(),
+                request.from(), request.to());
         List<Query> queryList = Lists.newArrayList();
         for (Aggregate.QueriesByType queriesByType : queries) {
             for (Aggregate.Query query : queriesByType.getQueryList()) {
@@ -191,8 +194,9 @@ class TransactionJsonService {
             }
         });
         if (queryList.isEmpty()
-                && transactionCommonService.shouldHaveQueries(request.transactionType(),
-                        request.transactionName(), request.from(), request.to())) {
+                && transactionCommonService.shouldHaveQueries(request.serverId(),
+                        request.transactionType(), request.transactionName(), request.from(),
+                        request.to())) {
             return "{\"overwritten\":true}";
         }
         StringBuilder sb = new StringBuilder();
@@ -207,10 +211,11 @@ class TransactionJsonService {
         TransactionSummaryRequest request =
                 QueryStrings.decode(queryString, TransactionSummaryRequest.class);
 
-        OverallSummary overallSummary = transactionCommonService
-                .readOverallSummary(request.transactionType(), request.from(), request.to());
+        OverallSummary overallSummary = transactionCommonService.readOverallSummary(
+                request.serverId(), request.transactionType(), request.from(), request.to());
 
         TransactionSummaryQuery query = ImmutableTransactionSummaryQuery.builder()
+                .serverId(request.serverId())
                 .transactionType(request.transactionType())
                 .from(request.from())
                 .to(request.to())
@@ -241,16 +246,16 @@ class TransactionJsonService {
         String transactionName = request.transactionName();
         long traceCount;
         if (transactionName == null) {
-            traceCount = traceRepository.readOverallSlowCount(request.transactionType(),
-                    request.from(), request.to());
+            traceCount = traceRepository.readOverallSlowCount(request.serverId(),
+                    request.transactionType(), request.from(), request.to());
         } else {
-            traceCount = traceRepository.readTransactionSlowCount(request.transactionType(),
-                    transactionName, request.from(), request.to());
+            traceCount = traceRepository.readTransactionSlowCount(request.serverId(),
+                    request.transactionType(), transactionName, request.from(), request.to());
         }
         boolean includeActiveTraces = shouldIncludeActiveTraces(request);
         if (includeActiveTraces) {
-            traceCount += liveTraceRepository.getMatchingTraceCount(request.transactionType(),
-                    request.transactionName());
+            traceCount += liveTraceRepository.getMatchingTraceCount(request.serverId(),
+                    request.transactionType(), request.transactionName());
         }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -265,8 +270,9 @@ class TransactionJsonService {
     String getFlameGraph(String queryString) throws Exception {
         FlameGraphRequest request = QueryStrings.decode(queryString, FlameGraphRequest.class);
         MutableProfileTree profileTree = transactionCommonService.getMergedProfile(
-                request.transactionType(), request.transactionName(), request.from(), request.to(),
-                request.include(), request.exclude(), request.truncateLeafPercentage());
+                request.serverId(), request.transactionType(), request.transactionName(),
+                request.from(), request.to(), request.include(), request.exclude(),
+                request.truncateLeafPercentage());
         return profileTree.toFlameGraphJson();
     }
 
@@ -294,8 +300,8 @@ class TransactionJsonService {
         if (percentileAggregates.isEmpty()) {
             return Lists.newArrayList();
         }
-        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock,
-                aggregateRepository.getDataPointIntervalMillis(request.from(), request.to()));
+        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock, aggregateRepository
+                .getDataPointIntervalMillis(request.serverId(), request.from(), request.to()));
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         for (double percentile : percentiles) {
             dataSeriesList
@@ -343,8 +349,8 @@ class TransactionJsonService {
 
     private List<DataSeries> getTimerDataSeries(TransactionDataRequest request,
             List<StackedPoint> stackedPoints) {
-        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock,
-                aggregateRepository.getDataPointIntervalMillis(request.from(), request.to()));
+        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock, aggregateRepository
+                .getDataPointIntervalMillis(request.serverId(), request.from(), request.to()));
         final int topX = 5;
         List<String> timerNames = getTopTimerNames(stackedPoints, topX + 1);
         List<DataSeries> dataSeriesList = Lists.newArrayList();
@@ -502,31 +508,34 @@ class TransactionJsonService {
 
     @Value.Immutable
     interface TransactionSummaryRequest {
+        long serverId();
+        String transactionType();
         long from();
         long to();
-        String transactionType();
         TransactionSummarySortOrder sortOrder();
         int limit();
     }
 
     @Value.Immutable
     interface TransactionDataRequest {
-        long from();
-        long to();
+        long serverId();
         String transactionType();
         @Nullable
         String transactionName();
+        long from();
+        long to();
         // singular because this is used in query string
         ImmutableList<Double> percentile();
     }
 
     @Value.Immutable
     interface TransactionProfileRequest {
-        long from();
-        long to();
+        long serverId();
         String transactionType();
         @Nullable
         String transactionName();
+        long from();
+        long to();
         // intentionally not plural since maps from query string
         ImmutableList<String> include();
         // intentionally not plural since maps from query string
@@ -536,11 +545,12 @@ class TransactionJsonService {
 
     @Value.Immutable
     interface FlameGraphRequest {
-        long from();
-        long to();
+        long serverId();
         String transactionType();
         @Nullable
         String transactionName();
+        long from();
+        long to();
         // intentionally not plural since maps from query string
         ImmutableList<String> include();
         // intentionally not plural since maps from query string

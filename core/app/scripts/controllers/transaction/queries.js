@@ -188,10 +188,11 @@ glowroot.controller('TransactionQueriesCtrl', [
 
     function refreshData() {
       var query = {
-        from: $scope.chartFrom,
-        to: $scope.chartTo,
+        serverId: $scope.serverId,
         transactionType: $scope.transactionType,
-        transactionName: $scope.transactionName
+        transactionName: $scope.transactionName,
+        from: $scope.chartFrom,
+        to: $scope.chartTo
       };
 
       $scope.showSpinner++;

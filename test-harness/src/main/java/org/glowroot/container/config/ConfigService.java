@@ -19,6 +19,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,11 +54,144 @@ public class ConfigService {
     }
 
     public TransactionConfig getTransactionConfig() throws Exception {
-        return getConfig("/backend/config/transaction", TransactionConfig.class);
+        return getConfig("/backend/config/transaction?server-id=0", TransactionConfig.class);
     }
 
     public void updateTransactionConfig(TransactionConfig config) throws Exception {
-        httpClient.post("/backend/config/transaction", mapper.writeValueAsString(config));
+        httpClient.post("/backend/config/transaction", toJson(config));
+    }
+
+    public UserRecordingConfig getUserRecordingConfig() throws Exception {
+        return getConfig("/backend/config/user-recording?server-id=0", UserRecordingConfig.class);
+    }
+
+    public void updateUserRecordingConfig(UserRecordingConfig config) throws Exception {
+        httpClient.post("/backend/config/user-recording", toJson(config));
+    }
+
+    public AdvancedConfig getAdvancedConfig() throws Exception {
+        return getConfig("/backend/config/advanced?server-id=0", AdvancedConfig.class);
+    }
+
+    public void updateAdvancedConfig(AdvancedConfig config) throws Exception {
+        httpClient.post("/backend/config/advanced", toJson(config));
+    }
+
+    public @Nullable PluginConfig getPluginConfig(String pluginId) throws Exception {
+        return getConfig("/backend/config/plugins?server-id=0&plugin-id=" + pluginId,
+                PluginConfig.class);
+    }
+
+    public void updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
+        ObjectNode node = mapper.valueToTree(config);
+        node.put("serverId", 0);
+        node.put("pluginId", pluginId);
+        httpClient.post("/backend/config/plugins", mapper.writeValueAsString(node));
+    }
+
+    public InstrumentationConfig getInstrumentationConfig(String version) throws Exception {
+        String response =
+                httpClient.get("/backend/config/instrumentation?server-id=0&version=" + version);
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
+        return mapper.readValue(mapper.treeAsTokens(configNode),
+                new TypeReference<InstrumentationConfig>() {});
+    }
+
+    public List<InstrumentationConfig> getInstrumentationConfigs() throws Exception {
+        String response = httpClient.get("/backend/config/instrumentation?server-id=0");
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        JsonNode configsNode = rootNode.get("configs");
+        if (configsNode == null) {
+            return ImmutableList.of();
+        }
+        return mapper.readValue(mapper.treeAsTokens(configsNode),
+                new TypeReference<List<InstrumentationConfig>>() {});
+    }
+
+    // returns new version
+    public InstrumentationConfig addInstrumentationConfig(InstrumentationConfig config)
+            throws Exception {
+        String response = httpClient.post("/backend/config/instrumentation/add", toJson(config));
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
+        return mapper.readValue(mapper.treeAsTokens(configNode), InstrumentationConfig.class);
+    }
+
+    public InstrumentationConfig updateInstrumentationConfig(InstrumentationConfig config)
+            throws Exception {
+        String response = httpClient.post("/backend/config/instrumentation/update", toJson(config));
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
+        return mapper.readValue(mapper.treeAsTokens(configNode), InstrumentationConfig.class);
+    }
+
+    public void removeInstrumentationConfig(String version) throws Exception {
+        httpClient.post("/backend/config/instrumentation/remove", toJson(version));
+    }
+
+    public GaugeConfig getGaugeConfig(String version) throws Exception {
+        String response = httpClient.get("/backend/config/gauges?server-id=0&version=" + version);
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
+        return mapper.readValue(mapper.treeAsTokens(configNode),
+                new TypeReference<GaugeConfig>() {});
+    }
+
+    public List<GaugeConfig> getGaugeConfigs() throws Exception {
+        String response = httpClient.get("/backend/config/gauges?server-id=0");
+        ArrayNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ArrayNode.class);
+        List<GaugeConfig> configs = Lists.newArrayList();
+        for (JsonNode childNode : rootNode) {
+            ObjectNode configNode =
+                    (ObjectNode) ObjectMappers.getRequiredChildNode(childNode, "config");
+            configs.add(mapper.readValue(mapper.treeAsTokens(configNode), GaugeConfig.class));
+        }
+        return configs;
+    }
+
+    // returns new version
+    public GaugeConfig addGaugeConfig(GaugeConfig config) throws Exception {
+        String response = httpClient.post("/backend/config/gauges/add", toJson(config));
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
+        return mapper.readValue(mapper.treeAsTokens(configNode), GaugeConfig.class);
+    }
+
+    public GaugeConfig updateGaugeConfig(GaugeConfig config) throws Exception {
+        String response = httpClient.post("/backend/config/gauges/update", toJson(config));
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
+        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
+        return mapper.readValue(mapper.treeAsTokens(configNode), GaugeConfig.class);
+    }
+
+    public void removeGaugeConfig(String version) throws Exception {
+        httpClient.post("/backend/config/gauges/remove", toJson(version));
+    }
+
+    public AlertConfig getAlertConfig(String version) throws Exception {
+        String response = httpClient.get("/backend/config/alerts?server-id=0&version=" + version);
+        return mapper.readValue(response, new TypeReference<AlertConfig>() {});
+    }
+
+    public List<AlertConfig> getAlertConfigs() throws Exception {
+        String response = httpClient.get("/backend/config/alerts?server-id=0");
+        return mapper.readValue(response, new TypeReference<List<AlertConfig>>() {});
+    }
+
+    // returns new version
+    public AlertConfig addAlertConfig(AlertConfig config) throws Exception {
+        String response = httpClient.post("/backend/config/alerts/add", toJson(config));
+        return ObjectMappers.readRequiredValue(mapper, response, AlertConfig.class);
+    }
+
+    public AlertConfig updateAlertConfig(AlertConfig config) throws Exception {
+        String response = httpClient.post("/backend/config/alerts/update", toJson(config));
+        return ObjectMappers.readRequiredValue(mapper, response, AlertConfig.class);
+    }
+
+    public void removeAlertConfig(String version) throws Exception {
+        httpClient.post("/backend/config/alerts/remove", toJson(version));
     }
 
     public UserInterfaceConfig getUserInterfaceConfig() throws Exception {
@@ -95,143 +229,8 @@ public class ConfigService {
         httpClient.post("/backend/config/smtp", mapper.writeValueAsString(config));
     }
 
-    public UserRecordingConfig getUserRecordingConfig() throws Exception {
-        return getConfig("/backend/config/user-recording", UserRecordingConfig.class);
-    }
-
-    public void updateUserRecordingConfig(UserRecordingConfig config) throws Exception {
-        httpClient.post("/backend/config/user-recording", mapper.writeValueAsString(config));
-    }
-
-    public AdvancedConfig getAdvancedConfig() throws Exception {
-        return getConfig("/backend/config/advanced", AdvancedConfig.class);
-    }
-
-    public void updateAdvancedConfig(AdvancedConfig config) throws Exception {
-        httpClient.post("/backend/config/advanced", mapper.writeValueAsString(config));
-    }
-
-    public @Nullable PluginConfig getPluginConfig(String pluginId) throws Exception {
-        return getConfig("/backend/config/plugin/" + pluginId, PluginConfig.class);
-    }
-
-    public void updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
-        httpClient.post("/backend/config/plugin/" + pluginId, mapper.writeValueAsString(config));
-    }
-
-    public InstrumentationConfig getInstrumentationConfig(String version) throws Exception {
-        String response = httpClient.get("/backend/config/instrumentation/" + version);
-        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
-        return mapper.readValue(mapper.treeAsTokens(configNode),
-                new TypeReference<InstrumentationConfig>() {});
-    }
-
-    public List<InstrumentationConfig> getInstrumentationConfigs() throws Exception {
-        String response = httpClient.get("/backend/config/instrumentation");
-        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        JsonNode configsNode = rootNode.get("configs");
-        if (configsNode == null) {
-            return ImmutableList.of();
-        }
-        return mapper.readValue(mapper.treeAsTokens(configsNode),
-                new TypeReference<List<InstrumentationConfig>>() {});
-    }
-
-    // returns new version
-    public InstrumentationConfig addInstrumentationConfig(InstrumentationConfig config)
-            throws Exception {
-        String response = httpClient.post("/backend/config/instrumentation/add",
-                mapper.writeValueAsString(config));
-        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
-        return mapper.readValue(mapper.treeAsTokens(configNode), InstrumentationConfig.class);
-    }
-
-    public InstrumentationConfig updateInstrumentationConfig(InstrumentationConfig config)
-            throws Exception {
-        String response = httpClient.post("/backend/config/instrumentation/update",
-                mapper.writeValueAsString(config));
-        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
-        return mapper.readValue(mapper.treeAsTokens(configNode), InstrumentationConfig.class);
-    }
-
-    public void removeInstrumentationConfig(String version) throws Exception {
-        httpClient.post("/backend/config/instrumentation/remove",
-                mapper.writeValueAsString(version));
-    }
-
-    public GaugeConfig getGaugeConfig(String version) throws Exception {
-        String response = httpClient.get("/backend/config/gauges/" + version);
-        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
-        return mapper.readValue(mapper.treeAsTokens(configNode),
-                new TypeReference<GaugeConfig>() {});
-    }
-
-    public List<GaugeConfig> getGaugeConfigs() throws Exception {
-        String response = httpClient.get("/backend/config/gauges");
-        ArrayNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ArrayNode.class);
-        List<GaugeConfig> configs = Lists.newArrayList();
-        for (JsonNode childNode : rootNode) {
-            ObjectNode configNode =
-                    (ObjectNode) ObjectMappers.getRequiredChildNode(childNode, "config");
-            configs.add(mapper.readValue(mapper.treeAsTokens(configNode), GaugeConfig.class));
-        }
-        return configs;
-    }
-
-    // returns new version
-    public GaugeConfig addGaugeConfig(GaugeConfig config) throws Exception {
-        String response =
-                httpClient.post("/backend/config/gauges/add", mapper.writeValueAsString(config));
-        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
-        return mapper.readValue(mapper.treeAsTokens(configNode), GaugeConfig.class);
-    }
-
-    public GaugeConfig updateGaugeConfig(GaugeConfig config) throws Exception {
-        String response =
-                httpClient.post("/backend/config/gauges/update", mapper.writeValueAsString(config));
-        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
-        ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
-        return mapper.readValue(mapper.treeAsTokens(configNode), GaugeConfig.class);
-    }
-
-    public void removeGaugeConfig(String version) throws Exception {
-        httpClient.post("/backend/config/gauges/remove", mapper.writeValueAsString(version));
-    }
-
-    public AlertConfig getAlertConfig(String version) throws Exception {
-        String response = httpClient.get("/backend/config/alerts/" + version);
-        return mapper.readValue(response, new TypeReference<AlertConfig>() {});
-    }
-
-    public List<AlertConfig> getAlertConfigs() throws Exception {
-        String response = httpClient.get("/backend/config/alerts");
-        return mapper.readValue(response, new TypeReference<List<AlertConfig>>() {});
-    }
-
-    // returns new version
-    public AlertConfig addAlertConfig(AlertConfig config) throws Exception {
-        String response =
-                httpClient.post("/backend/config/alerts/add", mapper.writeValueAsString(config));
-        return ObjectMappers.readRequiredValue(mapper, response, AlertConfig.class);
-    }
-
-    public AlertConfig updateAlertConfig(AlertConfig config) throws Exception {
-        String response =
-                httpClient.post("/backend/config/alerts/update", mapper.writeValueAsString(config));
-        return ObjectMappers.readRequiredValue(mapper, response, AlertConfig.class);
-    }
-
-    public void removeAlertConfig(String version) throws Exception {
-        httpClient.post("/backend/config/alerts/remove", mapper.writeValueAsString(version));
-    }
-
     public int reweave() throws Exception {
-        String response = httpClient.post("/backend/admin/reweave", "");
+        String response = httpClient.post("/backend/admin/reweave", "{\"serverId\":0}");
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
         JsonNode classesNode = ObjectMappers.getRequiredChildNode(rootNode, "classes");
         return classesNode.asInt();
@@ -242,7 +241,7 @@ public class ConfigService {
     }
 
     public void resetAllConfig() throws Exception {
-        httpClient.post("/backend/admin/reset-all-config", "");
+        httpClient.post("/backend/admin/reset-all-config", "{\"serverId\":0}");
         // slowThresholdMillis=0 is by far the most useful setting for testing
         setTransactionSlowThresholdMillis(0);
     }
@@ -261,6 +260,16 @@ public class ConfigService {
             configNode = rootNode;
         }
         return mapper.treeToValue(configNode, valueType);
+    }
+
+    private String toJson(Object config) throws JsonProcessingException {
+        ObjectNode node = mapper.valueToTree(config);
+        node.put("serverId", 0);
+        return mapper.writeValueAsString(node);
+    }
+
+    private String toJson(String version) {
+        return "{\"serverId\":0,\"version\":\"" + version + "\"}";
     }
 
     public interface GetUiPortCommand {

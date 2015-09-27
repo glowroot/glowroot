@@ -39,6 +39,7 @@ import io.netty.handler.codec.http.HttpHeaders.Names;
 import io.netty.handler.codec.http.HttpHeaders.Values;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.stream.ChunkedInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.util.ChunkSource;
 import org.glowroot.server.ui.TraceCommonService.TraceExport;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
@@ -66,12 +68,17 @@ class TraceExportHttpService implements HttpService {
     @Override
     public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
             throws Exception {
-        String uri = request.getUri();
-        String id = uri.substring(uri.lastIndexOf('/') + 1);
-        logger.debug("handleRequest(): id={}", id);
-        TraceExport traceExport = traceCommonService.getExport(id);
+        QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
+        List<String> serverIds = decoder.parameters().get("server-id");
+        checkNotNull(serverIds, "Missing server id in query string: %s", request.getUri());
+        long serverId = Long.parseLong(serverIds.get(0));
+        List<String> traceIds = decoder.parameters().get("trace-id");
+        checkNotNull(traceIds, "Missing trace id in query string: %s", request.getUri());
+        String traceId = traceIds.get(0);
+        logger.debug("handleRequest(): serverId={}, traceId={}", serverId, traceId);
+        TraceExport traceExport = traceCommonService.getExport(serverId, traceId);
         if (traceExport == null) {
-            logger.warn("no trace found for id: {}", id);
+            logger.warn("no trace found for id: {}", traceId);
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         ChunkedInput<HttpContent> in = getExportChunkedInput(traceExport);

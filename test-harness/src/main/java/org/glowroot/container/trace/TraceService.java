@@ -61,12 +61,12 @@ public class TraceService {
     }
 
     public InputStream getTraceExport(String traceId) throws Exception {
-        return httpClient.getAsStream("/export/trace/" + traceId);
+        return httpClient.getAsStream("/export/trace?server-id=0&trace-id=" + traceId);
     }
 
     public @Nullable Trace.Header getLastHeader() throws Exception {
-        String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
-                + "&response-time-millis-low=0&limit=1000");
+        String content = httpClient.get("/backend/trace/points?server-id=0&from=0&to="
+                + Long.MAX_VALUE + "&response-time-millis-low=0&limit=1000");
         TracePointResponse response =
                 ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
         List<RawPoint> points = Lists.newArrayList();
@@ -100,7 +100,7 @@ public class TraceService {
 
     public List<Trace.Header> getHeaders(TraceQuery query) throws Exception {
         StringBuilder sb = new StringBuilder();
-        sb.append("from=");
+        sb.append("server-id=0&from=");
         sb.append(query.from());
         sb.append("&to=");
         sb.append(query.to());
@@ -171,12 +171,12 @@ public class TraceService {
     }
 
     public List<Trace.Entry> getEntries(String traceId) throws Exception {
-        String content = httpClient.get("/backend/trace/entries?trace-id=" + traceId);
+        String content = httpClient.get("/backend/trace/entries?server-id=0&trace-id=" + traceId);
         return mapper.readValue(content, new TypeReference<List<Trace.Entry>>() {});
     }
 
     public ProfileTree getProfile(String traceId) throws Exception {
-        String content = httpClient.get("/backend/trace/profile?trace-id=" + traceId);
+        String content = httpClient.get("/backend/trace/profile?server-id=0&trace-id=" + traceId);
         return mapper.readValue(content, ImmutableProfileTree.class);
     }
 
@@ -185,8 +185,8 @@ public class TraceService {
         // if interruptAppUnderTest() was used to terminate an active transaction, it may take a few
         // milliseconds to interrupt the thread and end the active transaction
         while (stopwatch.elapsed(SECONDS) < 2) {
-            int numActiveTransactions =
-                    Integer.parseInt(httpClient.get("/backend/admin/num-active-transactions"));
+            int numActiveTransactions = Integer
+                    .parseInt(httpClient.get("/backend/admin/num-active-transactions?server-id=0"));
             if (numActiveTransactions == 0) {
                 return;
             }
@@ -195,8 +195,8 @@ public class TraceService {
     }
 
     private @Nullable Trace.Header getActiveHeader() throws Exception {
-        String content = httpClient.get("/backend/trace/points?from=0&to=" + Long.MAX_VALUE
-                + "&response-time-millis-low=0&limit=1000");
+        String content = httpClient.get("/backend/trace/points?server-id=0&from=0&to="
+                + Long.MAX_VALUE + "&response-time-millis-low=0&limit=1000");
         TracePointResponse response =
                 ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
         if (response.getActivePoints().isEmpty()) {
@@ -210,7 +210,7 @@ public class TraceService {
     }
 
     private Trace.Header getHeader(String traceId) throws Exception {
-        String content = httpClient.get("/backend/trace/header/" + traceId);
+        String content = httpClient.get("/backend/trace/header?server-id=0&trace-id=" + traceId);
         return mapper.readValue(content, ImmutableHeader.class);
     }
 }

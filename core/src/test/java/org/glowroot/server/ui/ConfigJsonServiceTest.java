@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.common.config.PluginDescriptor;
+import org.glowroot.live.LiveWeavingService;
 import org.glowroot.server.repo.ConfigRepository;
 import org.glowroot.server.repo.RepoAdmin;
 import org.glowroot.server.ui.ConfigJsonService.SmtpConfigDto;
@@ -35,20 +36,15 @@ import static org.mockito.Mockito.mock;
 
 public class ConfigJsonServiceTest {
 
-    private ConfigRepository configRepository;
-    private RepoAdmin repoAdmin;
-    private HttpSessionManager httpSessionManager;
     private MockMailService mailService;
     private ConfigJsonService configJsonService;
 
     @Before
     public void beforeEachTest() {
-        configRepository = mock(ConfigRepository.class);
-        repoAdmin = mock(RepoAdmin.class);
-        httpSessionManager = mock(HttpSessionManager.class);
         mailService = new MockMailService();
-        configJsonService = new ConfigJsonService(configRepository, repoAdmin,
-                ImmutableList.<PluginDescriptor>of(), httpSessionManager, mailService, false);
+        configJsonService = new ConfigJsonService(mock(ConfigRepository.class),
+                mock(RepoAdmin.class), ImmutableList.<PluginDescriptor>of(),
+                mock(HttpSessionManager.class), mailService, mock(LiveWeavingService.class));
     }
 
     @Test

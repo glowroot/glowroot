@@ -51,10 +51,11 @@ glowroot.controller('TransactionFlameGraphCtrl', [
       $scope.loaded = true;
     } else {
       var query = {
-        from: $scope.from,
-        to: $scope.to,
+        serverId: $scope.serverId,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
+        from: $scope.from,
+        to: $scope.to,
         include: parseResult.includes,
         exclude: parseResult.excludes,
         // svg flame graph is very slow with finer grained leafs

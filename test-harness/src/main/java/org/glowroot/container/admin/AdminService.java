@@ -26,14 +26,15 @@ public class AdminService {
     }
 
     public int getNumPendingCompleteTransactions() throws Exception {
-        return Integer.parseInt(httpClient.get("/backend/admin/num-pending-complete-transactions"));
+        return Integer.parseInt(
+                httpClient.get("/backend/admin/num-pending-complete-transactions?server-id=0"));
     }
 
     public long getNumTraces() throws Exception {
-        return Long.parseLong(httpClient.get("/backend/admin/num-traces"));
+        return Long.parseLong(httpClient.get("/backend/admin/num-traces?server-id=0"));
     }
 
     public void deleteAllData() throws Exception {
-        httpClient.post("/backend/admin/delete-all-data", "");
+        httpClient.post("/backend/admin/delete-all-data", "{\"serverId\":0}");
     }
 }

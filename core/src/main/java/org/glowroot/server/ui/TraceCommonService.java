@@ -49,14 +49,14 @@ class TraceCommonService {
     }
 
     @Nullable
-    String getHeaderJson(String traceId) throws Exception {
+    String getHeaderJson(long serverId, String traceId) throws Exception {
         // check active/pending traces first, and lastly stored traces to make sure that the trace
         // is not missed if it is in transition between these states
-        Trace.Header header = liveTraceRepository.getHeader(traceId);
+        Trace.Header header = liveTraceRepository.getHeader(serverId, traceId);
         if (header != null) {
             return toJsonLiveHeader(header);
         }
-        HeaderPlus headerPlus = traceRepository.readHeader(traceId);
+        HeaderPlus headerPlus = traceRepository.readHeader(serverId, traceId);
         if (headerPlus != null) {
             return toJsonRepoHeader(headerPlus);
         }
@@ -67,12 +67,12 @@ class TraceCommonService {
     // overwritten entries will return {"overwritten":true}
     // expired (not found) trace will return {"expired":true}
     @Nullable
-    String getEntriesJson(String traceId) throws Exception {
+    String getEntriesJson(long serverId, String traceId) throws Exception {
         // check active/pending traces first, and lastly stored traces to make sure that the trace
         // is not missed if it is in transition between these states
-        List<Trace.Entry> entries = liveTraceRepository.getEntries(traceId);
+        List<Trace.Entry> entries = liveTraceRepository.getEntries(serverId, traceId);
         if (entries.isEmpty()) {
-            entries = traceRepository.readEntries(traceId);
+            entries = traceRepository.readEntries(serverId, traceId);
         }
         return toJson(entries);
     }
@@ -80,21 +80,21 @@ class TraceCommonService {
     // overwritten profile will return {"overwritten":true}
     // expired (not found) trace will return {"expired":true}
     @Nullable
-    String getProfileTreeJson(String traceId) throws Exception {
+    String getProfileTreeJson(long serverId, String traceId) throws Exception {
         // check active/pending traces first, and lastly stored traces to make sure that the trace
         // is not missed if it is in transition between these states
-        ProfileTree profileTree = liveTraceRepository.getProfileTree(traceId);
+        ProfileTree profileTree = liveTraceRepository.getProfileTree(serverId, traceId);
         if (profileTree == null) {
-            profileTree = traceRepository.readProfileTree(traceId);
+            profileTree = traceRepository.readProfileTree(serverId, traceId);
         }
         return toJson(profileTree);
     }
 
     @Nullable
-    TraceExport getExport(String traceId) throws Exception {
+    TraceExport getExport(long serverId, String traceId) throws Exception {
         // check active/pending traces first, and lastly stored traces to make sure that the trace
         // is not missed if it is in transition between these states
-        Trace trace = liveTraceRepository.getFullTrace(traceId);
+        Trace trace = liveTraceRepository.getFullTrace(serverId, traceId);
         if (trace != null) {
             Trace.Header header = trace.getHeader();
             return ImmutableTraceExport.builder()
@@ -105,7 +105,7 @@ class TraceCommonService {
                     .build();
         }
 
-        HeaderPlus header = traceRepository.readHeader(traceId);
+        HeaderPlus header = traceRepository.readHeader(serverId, traceId);
         if (header == null) {
             return null;
         }
@@ -113,10 +113,10 @@ class TraceCommonService {
                 .fileName(getFilename(header.header()))
                 .headerJson(toJsonRepoHeader(header));
         if (header.entriesExistence() == Existence.YES) {
-            builder.entriesJson(toJson(traceRepository.readEntries(traceId)));
+            builder.entriesJson(toJson(traceRepository.readEntries(serverId, traceId)));
         }
         if (header.profileExistence() == Existence.YES) {
-            builder.profileTreeJson(toJson(traceRepository.readProfileTree(traceId)));
+            builder.profileTreeJson(toJson(traceRepository.readProfileTree(serverId, traceId)));
         }
         return builder.build();
     }

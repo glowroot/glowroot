@@ -38,6 +38,8 @@ import static org.mockito.Mockito.when;
 
 public class TransactionCommonServiceTest {
 
+    private static final long SERVER_ID = 0;
+
     private AggregateDaoTest aggregateDaoTest;
     private AggregateRepository aggregateRepository;
 
@@ -62,7 +64,7 @@ public class TransactionCommonServiceTest {
                 .rollupExpirationHours(
                         ImmutableList.of(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE))
                 .build());
-        when(configRepository.getAdvancedConfig())
+        when(configRepository.getAdvancedConfig(SERVER_ID))
                 .thenReturn(ImmutableAdvancedConfig.builder().build());
         ImmutableList<RollupConfig> rollupConfigs = ImmutableList.<RollupConfig>of(
                 ImmutableRollupConfig.of(1000, 0), ImmutableRollupConfig.of(15000, 3600000),
@@ -73,7 +75,7 @@ public class TransactionCommonServiceTest {
                 aggregateRepository, liveAggregateRepository, configRepository);
         // when
         List<OverviewAggregate> aggregates = transactionCommonService
-                .getOverviewAggregates("a type", null, 0, 3600001, Long.MAX_VALUE);
+                .getOverviewAggregates(SERVER_ID, "a type", null, 0, 3600001, Long.MAX_VALUE);
         // then
         assertThat(aggregates).hasSize(2);
         OverviewAggregate aggregate1 = aggregates.get(0);

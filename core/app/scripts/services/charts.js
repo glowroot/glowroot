@@ -236,10 +236,11 @@ glowroot.factory('charts', [
       var chartFrom = $scope.chartFrom;
       var chartTo = $scope.chartTo;
       var query = {
-        from: chartFrom,
-        to: chartTo,
+        serverId: $scope.serverId,
         transactionType: $scope.transactionType,
-        transactionName: $scope.transactionName
+        transactionName: $scope.transactionName,
+        from: chartFrom,
+        to: chartTo
       };
       if (addToQuery) {
         addToQuery(query);

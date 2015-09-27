@@ -41,11 +41,13 @@ class GaugeMetaDao {
 
     private static final ImmutableList<Column> gaugeColumns = ImmutableList.<Column>of(
             ImmutableColumn.of("gauge_id", ColumnType.AUTO_IDENTITY),
+            ImmutableColumn.of("server_id", ColumnType.BIGINT),
             ImmutableColumn.of("gauge_name", ColumnType.VARCHAR));
 
-    private static final ImmutableList<Index> gaugeIndexes = ImmutableList
-            .<Index>of(ImmutableIndex.of("gauge_meta_idx", ImmutableList.of("gauge_name")));
+    private static final ImmutableList<Index> gaugeIndexes = ImmutableList.<Index>of(
+            ImmutableIndex.of("gauge_meta_idx", ImmutableList.of("server_id", "gauge_name")));
 
+    // key is "server_id:gauge_name"
     // expire after 1 hour to avoid retaining deleted gauge configs indefinitely
     private final Cache<String, Long> gaugeIds =
             CacheBuilder.newBuilder().expireAfterAccess(1, HOURS).build();
@@ -61,46 +63,49 @@ class GaugeMetaDao {
         schema.syncIndexes("gauge_meta", gaugeIndexes);
     }
 
-    long getOrCreateGaugeId(String gaugeName) throws SQLException {
+    long getOrCreateGaugeId(long serverId, String gaugeName) throws SQLException {
+        String gaugeKey = serverId + ':' + gaugeName;
         synchronized (lock) {
-            Long gaugeId = gaugeIds.getIfPresent(gaugeName);
+            Long gaugeId = gaugeIds.getIfPresent(gaugeKey);
             if (gaugeId != null) {
                 return gaugeId;
             }
-            gaugeId = readGaugeId(gaugeName);
+            gaugeId = readGaugeId(serverId, gaugeName);
             if (gaugeId != null) {
                 return gaugeId;
             }
-            dataSource.update("insert into gauge_meta (gauge_name) values (?)", gaugeName);
-            gaugeId = readGaugeId(gaugeName);
+            dataSource.update("insert into gauge_meta (server_id, gauge_name) values (?, ?)",
+                    serverId, gaugeName);
+            gaugeId = readGaugeId(serverId, gaugeName);
             if (gaugeId == null) {
                 // it's only possible for this to occur if the data source closing flag has just
                 // been set which causes the readGaugeId() to read empty list and return null
                 return -1;
             }
-            gaugeIds.put(gaugeName, gaugeId);
+            gaugeIds.put(gaugeKey, gaugeId);
             return gaugeId;
         }
     }
 
     @Nullable
-    Long getGaugeId(String gaugeName) throws Exception {
-        Long gaugeId = gaugeIds.getIfPresent(gaugeName);
+    Long getGaugeId(long serverId, String gaugeName) throws Exception {
+        String gaugeKey = serverId + ':' + gaugeName;
+        Long gaugeId = gaugeIds.getIfPresent(gaugeKey);
         if (gaugeId != null) {
             return gaugeId;
         }
-        gaugeId = readGaugeId(gaugeName);
+        gaugeId = readGaugeId(serverId, gaugeName);
         if (gaugeId == null) {
             return null;
         }
-        gaugeIds.put(gaugeName, gaugeId);
+        gaugeIds.put(gaugeKey, gaugeId);
         return gaugeId;
     }
 
-    private @Nullable Long readGaugeId(String gaugeName) throws SQLException {
-        List<Long> gaugeIds =
-                dataSource.query("select gauge_id from gauge_meta where gauge_name = ?",
-                        new GaugeIdRowMapper(), gaugeName);
+    private @Nullable Long readGaugeId(long serverId, String gaugeName) throws SQLException {
+        List<Long> gaugeIds = dataSource.query(
+                "select gauge_id from gauge_meta where server_id = ? and gauge_name = ?",
+                new GaugeIdRowMapper(), serverId, gaugeName);
         if (gaugeIds.isEmpty()) {
             return null;
         }

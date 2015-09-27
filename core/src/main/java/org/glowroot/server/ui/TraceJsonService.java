@@ -15,6 +15,7 @@
  */
 package org.glowroot.server.ui;
 
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,14 +30,22 @@ class TraceJsonService {
         this.traceCommonService = traceCommonService;
     }
 
-    @GET("/backend/trace/header/(.+)")
-    String getHeader(String id) throws Exception {
-        String headerJson = traceCommonService.getHeaderJson(id);
+    @GET("/backend/trace/header")
+    String getHeader(String queryString) throws Exception {
+        HeaderRequest request = QueryStrings.decode(queryString, HeaderRequest.class);
+        String headerJson = traceCommonService.getHeaderJson(request.serverId(), request.traceId());
         if (headerJson == null) {
-            logger.debug("no trace found for id: {}", id);
+            logger.debug("no trace found for server id '{}' and trace id '{}'", request.serverId(),
+                    request.traceId());
             return "{\"expired\":true}";
         } else {
             return headerJson;
         }
+    }
+
+    @Value.Immutable
+    interface HeaderRequest {
+        long serverId();
+        String traceId();
     }
 }

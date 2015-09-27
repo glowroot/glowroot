@@ -77,6 +77,7 @@ class TracePointJsonService {
         }
 
         TracePointQuery query = ImmutableTracePointQuery.builder()
+                .serverId(request.serverId())
                 .from(request.from())
                 .to(request.to())
                 .durationNanosLow(durationNanosLow)
@@ -164,7 +165,7 @@ class TracePointJsonService {
             // check if duplicate and capture insertion index at the same time
             for (int i = 0; i < orderedPoints.size(); i++) {
                 TracePoint point = orderedPoints.get(i);
-                if (pendingPoint.id().equals(point.id())) {
+                if (pendingPoint.traceId().equals(point.traceId())) {
                     duplicateIndex = i;
                     break;
                 }
@@ -194,7 +195,7 @@ class TracePointJsonService {
                 TracePoint activeTracePoint = i.next();
                 for (Iterator<TracePoint> j = points.iterator(); j.hasNext();) {
                     TracePoint point = j.next();
-                    if (!activeTracePoint.id().equals(point.id())) {
+                    if (!activeTracePoint.traceId().equals(point.traceId())) {
                         continue;
                     }
                     if (activeTracePoint.durationNanos() > point.durationNanos()) {
@@ -222,7 +223,7 @@ class TracePointJsonService {
                     jg.writeStartArray();
                     jg.writeNumber(point.captureTime());
                     jg.writeNumber(point.durationNanos() / NANOSECONDS_PER_MILLISECOND);
-                    jg.writeString(point.id());
+                    jg.writeString(point.traceId());
                     jg.writeEndArray();
                 }
             }
@@ -233,7 +234,7 @@ class TracePointJsonService {
                     jg.writeStartArray();
                     jg.writeNumber(point.captureTime());
                     jg.writeNumber(point.durationNanos() / NANOSECONDS_PER_MILLISECOND);
-                    jg.writeString(point.id());
+                    jg.writeString(point.traceId());
                     jg.writeEndArray();
                 }
             }
@@ -243,7 +244,7 @@ class TracePointJsonService {
                 jg.writeStartArray();
                 jg.writeNumber(activePoint.captureTime());
                 jg.writeNumber(activePoint.durationNanos() / NANOSECONDS_PER_MILLISECOND);
-                jg.writeString(activePoint.id());
+                jg.writeString(activePoint.traceId());
                 jg.writeEndArray();
             }
             jg.writeEndArray();
@@ -263,6 +264,7 @@ class TracePointJsonService {
     @Value.Immutable
     public abstract static class TracePointRequest {
 
+        public abstract long serverId();
         public abstract long from();
         public abstract long to();
         public abstract double responseTimeMillisLow();

@@ -66,7 +66,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     // checks active traces first, then pending traces (and finally caller should check stored
     // traces) to make sure that the trace is not missed if it is in transition between these states
     @Override
-    public @Nullable Trace.Header getHeader(String traceId) throws IOException {
+    public @Nullable Trace.Header getHeader(long serverId, String traceId) throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
@@ -77,7 +77,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public List<Trace.Entry> getEntries(String traceId) {
+    public List<Trace.Entry> getEntries(long serverId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
@@ -88,7 +88,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable ProfileTree getProfileTree(String traceId) throws IOException {
+    public @Nullable ProfileTree getProfileTree(long serverId, String traceId) throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
@@ -99,7 +99,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable Trace getFullTrace(String traceId) throws IOException {
+    public @Nullable Trace getFullTrace(long serverId, String traceId) throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {
@@ -110,7 +110,8 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public int getMatchingTraceCount(String transactionType, @Nullable String transactionName) {
+    public int getMatchingTraceCount(long serverId, String transactionType,
+            @Nullable String transactionName) {
         // include active traces, this is mostly for the case where there is just a single very
         // long running active trace and it would be misleading to display Traces (0) on the tab
         int count = 0;
@@ -132,7 +133,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
             long startTick = transaction.getStartTick();
             if (matches(transaction, query) && startTick < captureTick) {
                 activeTracePoints.add(ImmutableTracePoint.builder()
-                        .id(transaction.getId())
+                        .traceId(transaction.getId())
                         .captureTime(captureTime)
                         .durationNanos(captureTick - startTick)
                         .error(transaction.getErrorMessage() != null)
@@ -159,7 +160,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         for (Transaction transaction : transactionCollector.getPendingTransactions()) {
             if (matches(transaction, query)) {
                 points.add(ImmutableTracePoint.builder()
-                        .id(transaction.getId())
+                        .traceId(transaction.getId())
                         .captureTime(captureTime)
                         .durationNanos(transaction.getDurationNanos())
                         .error(transaction.getErrorMessage() != null)
@@ -171,13 +172,13 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
 
     @Override
     @OnlyUsedByTests
-    public int getTransactionCount() {
+    public int getTransactionCount(long serverId) {
         return transactionRegistry.getTransactions().size();
     }
 
     @Override
     @OnlyUsedByTests
-    public int getPendingTransactionCount() {
+    public int getPendingTransactionCount(long serverId) {
         return transactionCollector.getPendingTransactions().size();
     }
 

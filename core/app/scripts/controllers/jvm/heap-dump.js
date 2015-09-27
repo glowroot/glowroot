@@ -22,9 +22,13 @@ glowroot.controller('JvmHeapDumpCtrl', [
   'httpErrors',
   function ($scope, $http, httpErrors) {
     $scope.checkDiskSpace = function (deferred) {
+      var postData = {
+        serverId: $scope.serverId,
+        directory: $scope.directory
+      };
       $scope.availableDiskSpace = false;
       $scope.heapDumpResponse = false;
-      $http.post('backend/jvm/available-disk-space', {directory: $scope.directory})
+      $http.post('backend/jvm/available-disk-space', postData)
           .success(function (data) {
             if (data.error) {
               deferred.reject(data.error);
@@ -37,9 +41,13 @@ glowroot.controller('JvmHeapDumpCtrl', [
     };
 
     $scope.dumpHeap = function (deferred) {
+      var postData = {
+        serverId: $scope.serverId,
+        directory: $scope.directory
+      };
       $scope.availableDiskSpace = false;
       $scope.heapDumpResponse = false;
-      $http.post('backend/jvm/dump-heap', {directory: $scope.directory})
+      $http.post('backend/jvm/dump-heap', postData)
           .success(function (data) {
             if (data.error) {
               deferred.reject(data.error);
@@ -51,7 +59,7 @@ glowroot.controller('JvmHeapDumpCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get('backend/jvm/heap-dump-default-dir')
+    $http.get('backend/jvm/heap-dump-default-dir?server-id=' + $scope.serverId)
         .success(function (directory) {
           $scope.loaded = true;
           $scope.directory = directory;

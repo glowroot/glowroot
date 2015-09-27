@@ -94,10 +94,11 @@ glowroot.controller('TransactionTabCtrl', [
 
     function updateTabBarData() {
       var query = {
-        from: $scope.chartFrom,
-        to: $scope.chartTo,
+        serverId: $scope.serverId,
         transactionType: $scope.transactionType,
-        transactionName: $scope.transactionName
+        transactionName: $scope.transactionName,
+        from: $scope.chartFrom,
+        to: $scope.chartTo
       };
       concurrentUpdateCount++;
       $http.get('backend/' + shortName + '/tab-bar-data' + queryStrings.encodeObject(query))

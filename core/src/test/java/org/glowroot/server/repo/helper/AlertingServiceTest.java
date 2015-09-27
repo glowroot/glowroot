@@ -43,6 +43,8 @@ import static org.mockito.Mockito.when;
 
 public class AlertingServiceTest {
 
+    private static final long SERVER_ID = 0;
+
     private ConfigRepository configRepository;
     private TriggeredAlertRepository triggeredAlertRepository;
     private AggregateRepository aggregateRepository;
@@ -65,7 +67,8 @@ public class AlertingServiceTest {
                 .putAdditionalProperties("b", "y")
                 .build();
         when(configRepository.getSmtpConfig()).thenReturn(smtpConfig);
-        when(configRepository.getAllTransactionTypes()).thenReturn(ImmutableList.of("tt", "uu"));
+        when(configRepository.getAllTransactionTypes(SERVER_ID))
+                .thenReturn(ImmutableList.of("tt", "uu"));
     }
 
     @Test
@@ -147,8 +150,8 @@ public class AlertingServiceTest {
                 .transactionCount(1)
                 .histogram(lazyHistogram.toProtobuf(new ScratchBuffer()))
                 .build();
-        when(configRepository.getAlertConfigs()).thenReturn(ImmutableList.of(alertConfig));
-        when(aggregateRepository.readOverallPercentileAggregates("tt", 60001, 120000, 0))
+        when(configRepository.getAlertConfigs(SERVER_ID)).thenReturn(ImmutableList.of(alertConfig));
+        when(aggregateRepository.readOverallPercentileAggregates(SERVER_ID, "tt", 60001, 120000, 0))
                 .thenReturn(ImmutableList.of(aggregate));
     }
 

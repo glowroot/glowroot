@@ -1,14 +1,11 @@
 {
   "ui": {
     "port": 0,
-    "defaultDisplayedTransactionType": "",
     "defaultDisplayedPercentiles": [
       50.0,
       95.0,
       99.0
     ],
-    "adminPasswordHash": "",
-    "readOnlyPasswordHash": "",
     "anonymousAccess": "admin",
     "sessionTimeoutMinutes": 30
   },
@@ -16,14 +13,7 @@
     "profilingIntervalMillis": 1000,
     "slowThresholdMillis": 0
   },
-  "userRecording": {
-    "enabled": false,
-    "user": "",
-    "profileIntervalMillis": 10
-  },
   "advanced": {
-    "timerWrapperMethods": false,
-    "weavingTimer": false,
     "immediatePartialStoreThresholdSeconds": 60,
     "maxAggregateTransactionsPerTransactionType": 500,
     "maxAggregateQueriesPerQueryType": 500,
@@ -60,8 +50,7 @@
       "mbeanObjectName": "java.lang:type=Memory",
       "mbeanAttributes": [
         {
-          "name": "HeapMemoryUsage/used",
-          "counter": false
+          "name": "HeapMemoryUsage/used"
         }
       ]
     },
@@ -82,8 +71,7 @@
       "mbeanObjectName": "java.lang:type=MemoryPool,name=*",
       "mbeanAttributes": [
         {
-          "name": "Usage/used",
-          "counter": false
+          "name": "Usage/used"
         }
       ]
     },
@@ -91,13 +79,11 @@
       "mbeanObjectName": "java.lang:type=OperatingSystem",
       "mbeanAttributes": [
         {
-          "name": "FreePhysicalMemorySize",
-          "counter": false
+          "name": "FreePhysicalMemorySize"
         }
       ]
     }
   ],
-  "instrumentation": [ ],
   "storage": {
     "rollupExpirationHours": [
       2147483647,
@@ -111,16 +97,5 @@
       500
     ],
     "traceCappedDatabaseSizeMb": 500
-  },
-  "smtp": {
-    "fromEmailAddress": "",
-    "fromDisplayName": "",
-    "host": "",
-    "port": null,
-    "ssl": false,
-    "username": "",
-    "encryptedPassword": "",
-    "additionalProperties": { }
-  },
-  "alerts": [ ]
+  }
 }

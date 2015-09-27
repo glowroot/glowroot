@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Locale;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.BeanDescription;
@@ -55,6 +56,7 @@ public class ObjectMappers {
         for (Module extraModule : extraModules) {
             mapper.registerModule(extraModule);
         }
+        mapper.setSerializationInclusion(Include.NON_ABSENT);
         return mapper;
     }
 

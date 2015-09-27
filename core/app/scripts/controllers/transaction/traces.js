@@ -92,6 +92,7 @@ glowroot.controller('TracesCtrl', [
       if (errorOnly) {
         query.errorOnly = true;
       }
+      query.serverId = $scope.serverId;
       $scope.showChartSpinner++;
       $http.get('backend/trace/points' + queryStrings.encodeObject(query))
           .success(function (data) {
@@ -427,7 +428,7 @@ glowroot.controller('TracesCtrl', [
       if (modalTraceId) {
         highlightedTraceId = modalTraceId;
         $('#traceModal').data('location-query', 'modal-trace-id');
-        traceModal.displayModal(modalTraceId);
+        traceModal.displayModal($scope.serverId, modalTraceId);
       } else {
         $('#traceModal').modal('hide');
       }

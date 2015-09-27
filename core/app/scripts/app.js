@@ -97,6 +97,9 @@ glowroot.run([
   'login',
   function ($rootScope, $http, $location, $state, login) {
 
+    // FIXME
+    $rootScope.serverId = 0;
+
     $rootScope.showSignIn = function () {
       return !$rootScope.authenticatedUser && $rootScope.layout && $rootScope.layout.adminPasswordEnabled;
     };

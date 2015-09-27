@@ -29,42 +29,42 @@ public interface LiveAggregateRepository {
 
     // non-inclusive
     @Nullable
-    LiveResult<OverallSummary> getLiveOverallSummary(String transactionType, long from, long to)
-            throws Exception;
+    LiveResult<OverallSummary> getLiveOverallSummary(long serverId, String transactionType,
+            long from, long to) throws Exception;
 
     // non-inclusive
     @Nullable
-    LiveResult<List<TransactionSummary>> getLiveTransactionSummaries(String transactionType,
-            long from, long to) throws Exception;
-
-    @Nullable
-    LiveResult<OverviewAggregate> getLiveOverviewAggregates(String transactionType,
-            @Nullable String transactionName, long from, long to, long liveCaptureTime)
-                    throws Exception;
-
-    @Nullable
-    LiveResult<PercentileAggregate> getLivePercentileAggregates(String transactionType,
-            @Nullable String transactionName, long from, long to, long liveCaptureTime)
-                    throws Exception;
-
-    @Nullable
-    LiveResult<ProfileTree> getLiveProfileTree(String transactionType,
-            @Nullable String transactionName, long from, long to) throws Exception;
-
-    @Nullable
-    LiveResult<List<Aggregate.QueriesByType>> getLiveQueries(String transactionType,
-            @Nullable String transactionName, long from, long to) throws Exception;
-
-    @Nullable
-    LiveResult<OverallErrorSummary> getLiveOverallErrorSummary(String transactionType, long from,
-            long to) throws Exception;
-
-    @Nullable
-    LiveResult<List<TransactionErrorSummary>> getLiveTransactionErrorSummaries(
+    LiveResult<List<TransactionSummary>> getLiveTransactionSummaries(long serverId,
             String transactionType, long from, long to) throws Exception;
 
     @Nullable
-    LiveResult<ErrorPoint> getLiveErrorPoints(String transactionType,
+    LiveResult<OverviewAggregate> getLiveOverviewAggregates(long serverId, String transactionType,
+            @Nullable String transactionName, long from, long to, long liveCaptureTime)
+                    throws Exception;
+
+    @Nullable
+    LiveResult<PercentileAggregate> getLivePercentileAggregates(long serverId,
+            String transactionType, @Nullable String transactionName, long from, long to,
+            long liveCaptureTime) throws Exception;
+
+    @Nullable
+    LiveResult<ProfileTree> getLiveProfileTree(long serverId, String transactionType,
+            @Nullable String transactionName, long from, long to) throws Exception;
+
+    @Nullable
+    LiveResult<List<Aggregate.QueriesByType>> getLiveQueries(long serverId, String transactionType,
+            @Nullable String transactionName, long from, long to) throws Exception;
+
+    @Nullable
+    LiveResult<OverallErrorSummary> getLiveOverallErrorSummary(long serverId,
+            String transactionType, long from, long to) throws Exception;
+
+    @Nullable
+    LiveResult<List<TransactionErrorSummary>> getLiveTransactionErrorSummaries(long serverId,
+            String transactionType, long from, long to) throws Exception;
+
+    @Nullable
+    LiveResult<ErrorPoint> getLiveErrorPoints(long serverId, String transactionType,
             @Nullable String transactionName, long from, long to, long liveCaptureTime)
                     throws Exception;
 
@@ -150,58 +150,59 @@ public interface LiveAggregateRepository {
     public class LiveAggregateRepositoryNop implements LiveAggregateRepository {
 
         @Override
-        public @Nullable LiveResult<OverallSummary> getLiveOverallSummary(String transactionType,
-                long from, long to) {
-            return null;
-        }
-
-        @Override
-        public @Nullable LiveResult<List<TransactionSummary>> getLiveTransactionSummaries(
+        public @Nullable LiveResult<OverallSummary> getLiveOverallSummary(long serverId,
                 String transactionType, long from, long to) {
             return null;
         }
 
         @Override
-        public @Nullable LiveResult<OverviewAggregate> getLiveOverviewAggregates(
+        public @Nullable LiveResult<List<TransactionSummary>> getLiveTransactionSummaries(
+                long serverId, String transactionType, long from, long to) {
+            return null;
+        }
+
+        @Override
+        public @Nullable LiveResult<OverviewAggregate> getLiveOverviewAggregates(long serverId,
                 String transactionType, @Nullable String transactionName, long from, long to,
                 long liveCaptureTime) {
             return null;
         }
 
         @Override
-        public @Nullable LiveResult<PercentileAggregate> getLivePercentileAggregates(
+        public @Nullable LiveResult<PercentileAggregate> getLivePercentileAggregates(long serverId,
                 String transactionType, @Nullable String transactionName, long from, long to,
                 long liveCaptureTime) {
             return null;
         }
 
         @Override
-        public @Nullable LiveResult<ProfileTree> getLiveProfileTree(String transactionType,
-                @Nullable String transactionName, long from, long to) {
-            return null;
-        }
-
-        @Override
-        public @Nullable LiveResult<List<Aggregate.QueriesByType>> getLiveQueries(
+        public @Nullable LiveResult<ProfileTree> getLiveProfileTree(long serverId,
                 String transactionType, @Nullable String transactionName, long from, long to) {
             return null;
         }
 
         @Override
-        public @Nullable LiveResult<OverallErrorSummary> getLiveOverallErrorSummary(
+        public @Nullable LiveResult<List<Aggregate.QueriesByType>> getLiveQueries(long serverId,
+                String transactionType, @Nullable String transactionName, long from, long to) {
+            return null;
+        }
+
+        @Override
+        public @Nullable LiveResult<OverallErrorSummary> getLiveOverallErrorSummary(long serverId,
                 String transactionType, long from, long to) {
             return null;
         }
 
         @Override
         public @Nullable LiveResult<List<TransactionErrorSummary>> getLiveTransactionErrorSummaries(
-                String transactionType, long from, long to) {
+                long serverId, String transactionType, long from, long to) {
             return null;
         }
 
         @Override
-        public @Nullable LiveResult<ErrorPoint> getLiveErrorPoints(String transactionType,
-                @Nullable String transactionName, long from, long to, long liveCaptureTime) {
+        public @Nullable LiveResult<ErrorPoint> getLiveErrorPoints(long serverId,
+                String transactionType, @Nullable String transactionName, long from, long to,
+                long liveCaptureTime) {
             return null;
         }
 

@@ -18,7 +18,11 @@
 
 $(document).ready(function () {
   var header = JSON.parse($('#headerJson').html());
-  var entries = JSON.parse($('#entriesJson').html());
+  var entriesJson = $('#entriesJson').html();
+  var entries;
+  if (entriesJson) {
+    entries = JSON.parse(entriesJson);
+  }
   var profileJson = $('#profileJson').html();
   var profile;
   if (profileJson) {

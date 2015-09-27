@@ -23,7 +23,7 @@ glowroot.controller('ConfigPluginListCtrl', [
   'httpErrors',
   function ($scope, $location, $http, httpErrors) {
 
-    $http.get('backend/config/plugins')
+    $http.get('backend/config/plugins?server-id=' + $scope.serverId)
         .success(function (data) {
           $scope.loaded = true;
           $scope.plugins = data;

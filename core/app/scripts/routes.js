@@ -303,7 +303,7 @@ glowroot.config([
     $stateProvider.state('config.transaction', {
       url: '/transaction',
       templateUrl: 'views/config/transaction.html',
-      controller: 'ConfigTransactionCtrl',
+      controller: 'ConfigCommonCtrl',
       resolve: {
         backendUrl: function () {
           return 'backend/config/transaction';

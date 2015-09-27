@@ -55,10 +55,11 @@ glowroot.controller('ErrorMessagesCtrl', [
         return;
       }
       var query = {
-        from: $scope.chartFrom,
-        to: $scope.chartTo,
+        serverId: $scope.serverId,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
+        from: $scope.chartFrom,
+        to: $scope.chartTo,
         include: parseResult.includes,
         exclude: parseResult.excludes,
         errorMessageLimit: errorMessageLimit
@@ -117,12 +118,12 @@ glowroot.controller('ErrorMessagesCtrl', [
       query.from = $scope.chartFrom;
       query.to = $scope.chartTo;
       if (errorMessage.message.length <= 1000) {
-        query.error = errorMessage.message;
         query.errorComparator = 'equals';
+        query.error = errorMessage.message;
       } else {
+        query.errorComparator = 'begins';
         // this keeps url length under control
         query.error = errorMessage.message.substring(0, 1000);
-        query.errorComparator = 'begins';
       }
       return queryStrings.encodeObject(query);
     };

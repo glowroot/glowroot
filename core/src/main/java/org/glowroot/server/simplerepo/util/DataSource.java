@@ -45,6 +45,7 @@ import org.glowroot.server.simplerepo.util.ConnectionPool.StatementCallback;
 public class DataSource {
 
     private static final boolean POSTGRES = false;
+    private static final boolean SINGLE_SERVER = true;
 
     private static final Logger logger = LoggerFactory.getLogger(DataSource.class);
 
@@ -203,18 +204,32 @@ public class DataSource {
         }, null);
     }
 
-    public void deleteBefore(@Untainted String tableName, long captureTime) throws SQLException {
+    public void deleteAll(@Untainted String tableName, long serverId) throws SQLException {
+        if (SINGLE_SERVER) {
+            execute("truncate table " + tableName);
+        } else {
+            batchDelete(tableName, "server_id = ?", serverId);
+        }
+    }
+
+    public void deleteBefore(@Untainted String tableName, long serverId, long captureTime)
+            throws SQLException {
+        batchDelete(tableName, "server_id = ? and capture_time < ?", serverId, captureTime);
+    }
+
+    public void batchDelete(@Untainted String tableName, @Untainted String whereClause,
+            Object... args) throws SQLException {
         // delete 100 at a time, which is both faster than deleting all at once, and doesn't
         // lock the single jdbc connection for one large chunk of time
         int deleted;
         do {
             if (POSTGRES) {
                 deleted = update("delete from " + tableName
-                        + " where ctid = any(array(select ctid from " + tableName
-                        + " where capture_time < ? limit 100))", captureTime);
+                        + " where ctid = any(array(select ctid from " + tableName + " where "
+                        + whereClause + " limit 100))", args);
             } else {
-                deleted = update("delete from " + tableName + " where capture_time < ? limit 100",
-                        captureTime);
+                deleted = update(
+                        "delete from " + tableName + " where " + whereClause + " limit 100", args);
             }
         } while (deleted != 0);
     }

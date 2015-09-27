@@ -34,16 +34,16 @@ public interface TraceRepository {
 
     Result<TracePoint> readPoints(TracePointQuery query) throws Exception;
 
-    long readOverallSlowCount(String transactionType, long captureTimeFrom, long captureTimeTo)
-            throws Exception;
+    long readOverallSlowCount(long serverId, String transactionType, long captureTimeFrom,
+            long captureTimeTo) throws Exception;
 
-    long readTransactionSlowCount(String transactionType, String transactionName,
+    long readTransactionSlowCount(long serverId, String transactionType, String transactionName,
             long captureTimeFrom, long captureTimeTo) throws Exception;
 
-    long readOverallErrorCount(String transactionType, long captureTimeFrom, long captureTimeTo)
-            throws Exception;
+    long readOverallErrorCount(long serverId, String transactionType, long captureTimeFrom,
+            long captureTimeTo) throws Exception;
 
-    long readTransactionErrorCount(String transactionType, String transactionName,
+    long readTransactionErrorCount(long serverId, String transactionType, String transactionName,
             long captureTimeFrom, long captureTimeTo) throws Exception;
 
     List<TraceErrorPoint> readErrorPoints(ErrorMessageQuery query, long resolutionMillis,
@@ -52,17 +52,16 @@ public interface TraceRepository {
     Result<ErrorMessageCount> readErrorMessageCounts(ErrorMessageQuery query) throws Exception;
 
     @Nullable
-    HeaderPlus readHeader(String traceId) throws Exception;
+    HeaderPlus readHeader(long serverId, String traceId) throws Exception;
 
-    List<Trace.Entry> readEntries(String traceId) throws Exception;
+    List<Trace.Entry> readEntries(long serverId, String traceId) throws Exception;
 
     @Nullable
-    ProfileTree readProfileTree(String traceId) throws Exception;
+    ProfileTree readProfileTree(long serverId, String traceId) throws Exception;
 
-    // only supported by local storage implementation
-    void deleteAll() throws SQLException;
+    void deleteAll(long serverId) throws SQLException;
 
-    long count() throws Exception;
+    long count(long serverId) throws Exception;
 
     @Value.Immutable
     public interface ErrorMessageCount {
@@ -72,6 +71,7 @@ public interface TraceRepository {
 
     @Value.Immutable
     public interface ErrorMessageQuery {
+        long serverId();
         String transactionType();
         @Nullable
         String transactionName();

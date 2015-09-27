@@ -30,17 +30,18 @@ import org.glowroot.common.util.OnlyUsedByTests;
 public interface LiveTraceRepository {
 
     @Nullable
-    Trace.Header getHeader(String traceId) throws IOException;
+    Trace.Header getHeader(long serverId, String traceId) throws IOException;
 
-    List<Trace.Entry> getEntries(String traceId) throws IOException;
-
-    @Nullable
-    ProfileTree getProfileTree(String traceId) throws IOException;
+    List<Trace.Entry> getEntries(long serverId, String traceId) throws IOException;
 
     @Nullable
-    Trace getFullTrace(String traceId) throws IOException;
+    ProfileTree getProfileTree(long serverId, String traceId) throws IOException;
 
-    int getMatchingTraceCount(String transactionType, @Nullable String transactionName);
+    @Nullable
+    Trace getFullTrace(long serverId, String traceId) throws IOException;
+
+    int getMatchingTraceCount(long serverId, String transactionType,
+            @Nullable String transactionName);
 
     List<TracePoint> getMatchingActiveTracePoints(long captureTime, long captureTick,
             TracePointQuery query);
@@ -48,14 +49,15 @@ public interface LiveTraceRepository {
     List<TracePoint> getMatchingPendingPoints(long captureTime, TracePointQuery query);
 
     @OnlyUsedByTests
-    int getTransactionCount();
+    int getTransactionCount(long serverId);
 
     @OnlyUsedByTests
-    int getPendingTransactionCount();
+    int getPendingTransactionCount(long serverId);
 
     @Value.Immutable
     public abstract static class TracePointQuery {
 
+        public abstract long serverId();
         public abstract long from();
         public abstract long to();
         public abstract long durationNanosLow();
@@ -88,7 +90,7 @@ public interface LiveTraceRepository {
 
     @Value.Immutable
     public interface TracePoint {
-        String id();
+        String traceId();
         long captureTime();
         long durationNanos();
         boolean error();
@@ -101,27 +103,28 @@ public interface LiveTraceRepository {
     public class LiveTraceRepositoryNop implements LiveTraceRepository {
 
         @Override
-        public @Nullable Trace.Header getHeader(String traceId) {
+        public @Nullable Trace.Header getHeader(long serverId, String traceId) {
             return null;
         }
 
         @Override
-        public List<Trace.Entry> getEntries(String traceId) {
+        public List<Trace.Entry> getEntries(long serverId, String traceId) {
             return ImmutableList.of();
         }
 
         @Override
-        public @Nullable ProfileTree getProfileTree(String traceId) {
+        public @Nullable ProfileTree getProfileTree(long serverId, String traceId) {
             return null;
         }
 
         @Override
-        public @Nullable Trace getFullTrace(String traceId) {
+        public @Nullable Trace getFullTrace(long serverId, String traceId) {
             return null;
         }
 
         @Override
-        public int getMatchingTraceCount(String transactionType, @Nullable String transactionName) {
+        public int getMatchingTraceCount(long serverId, String transactionType,
+                @Nullable String transactionName) {
             return 0;
         }
 
@@ -137,12 +140,12 @@ public interface LiveTraceRepository {
         }
 
         @Override
-        public int getTransactionCount() {
+        public int getTransactionCount(long serverId) {
             return 0;
         }
 
         @Override
-        public int getPendingTransactionCount() {
+        public int getPendingTransactionCount(long serverId) {
             return 0;
         }
     }

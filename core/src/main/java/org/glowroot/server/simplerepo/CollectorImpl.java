@@ -25,6 +25,8 @@ import org.glowroot.server.repo.helper.AlertingService;
 
 class CollectorImpl implements Collector {
 
+    private static final long SERVER_ID = 0;
+
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
     private final GaugeValueDao gaugeValueDao;
@@ -42,17 +44,17 @@ class CollectorImpl implements Collector {
     public void collectAggregates(Map<String, Aggregate> overallAggregates,
             Map<String, Map<String, Aggregate>> transactionAggregates,
             long captureTime) throws Exception {
-        aggregateDao.store(overallAggregates, transactionAggregates, captureTime);
+        aggregateDao.store(SERVER_ID, overallAggregates, transactionAggregates, captureTime);
         alertingService.checkAlerts(captureTime);
     }
 
     @Override
     public void collectTrace(Trace trace) throws Exception {
-        traceDao.collect(trace);
+        traceDao.collect(SERVER_ID, trace);
     }
 
     @Override
     public void collectGaugeValues(Map<String, GaugeValue> gaugeValues) throws Exception {
-        gaugeValueDao.store(gaugeValues);
+        gaugeValueDao.store(SERVER_ID, gaugeValues);
     }
 }

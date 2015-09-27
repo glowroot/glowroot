@@ -18,6 +18,10 @@ package org.glowroot.server.ui;
 import java.io.IOException;
 import java.sql.SQLException;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.immutables.value.Value;
+
+import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.live.LiveAggregateRepository;
 import org.glowroot.live.LiveTraceRepository;
@@ -30,6 +34,8 @@ import org.glowroot.server.repo.TraceRepository;
 
 @JsonService
 class AdminJsonService {
+
+    private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final AggregateRepository aggregateRepository;
     private final TraceRepository traceRepository;
@@ -56,21 +62,23 @@ class AdminJsonService {
     }
 
     @POST("/backend/admin/delete-all-data")
-    void deleteAllData() throws SQLException {
+    void deleteAllData(String content) throws Exception {
+        long serverId = mapper.readValue(content, ImmutableRequestWithServerId.class).serverId();
         // clear in-memory aggregates first
         if (liveAggregateRepository != null) {
             liveAggregateRepository.clearAll();
         }
         // TODO optimize by just deleting and re-creating h2 db
-        traceRepository.deleteAll();
-        gaugeValueRepository.deleteAll();
-        aggregateRepository.deleteAll();
+        traceRepository.deleteAll(serverId);
+        gaugeValueRepository.deleteAll(serverId);
+        aggregateRepository.deleteAll(serverId);
         repoAdmin.defrag();
     }
 
     @POST("/backend/admin/reweave")
-    String reweave() throws Exception {
-        int count = liveWeavingService.reweave();
+    String reweave(String content) throws Exception {
+        long serverId = mapper.readValue(content, ImmutableRequestWithServerId.class).serverId();
+        int count = liveWeavingService.reweave(serverId);
         return "{\"classes\":" + count + "}";
     }
 
@@ -81,25 +89,38 @@ class AdminJsonService {
 
     @OnlyUsedByTests
     @POST("/backend/admin/reset-all-config")
-    void resetAllConfig() throws IOException {
-        configRepository.resetAllConfig();
+    void resetAllConfig(String content) throws IOException {
+        long serverId = mapper.readValue(content, ImmutableRequestWithServerId.class).serverId();
+        configRepository.resetAllConfig(serverId);
     }
 
     @OnlyUsedByTests
     @GET("/backend/admin/num-active-transactions")
-    String getNumActiveTransactions() {
-        return Integer.toString(liveTraceRepository.getTransactionCount());
+    String getNumActiveTransactions(String queryString) throws Exception {
+        long serverId = getServerId(queryString);
+        return Integer.toString(liveTraceRepository.getTransactionCount(serverId));
     }
 
     @OnlyUsedByTests
     @GET("/backend/admin/num-pending-complete-transactions")
-    String getNumPendingCompleteTransactions() {
-        return Integer.toString(liveTraceRepository.getPendingTransactionCount());
+    String getNumPendingCompleteTransactions(String queryString) throws Exception {
+        long serverId = getServerId(queryString);
+        return Integer.toString(liveTraceRepository.getPendingTransactionCount(serverId));
     }
 
     @OnlyUsedByTests
     @GET("/backend/admin/num-traces")
-    String getNumTraces() throws Exception {
-        return Long.toString(traceRepository.count());
+    String getNumTraces(String queryString) throws Exception {
+        long serverId = getServerId(queryString);
+        return Long.toString(traceRepository.count(serverId));
+    }
+
+    private static long getServerId(String queryString) throws Exception {
+        return QueryStrings.decode(queryString, RequestWithServerId.class).serverId();
+    }
+
+    @Value.Immutable
+    interface RequestWithServerId {
+        long serverId();
     }
 }

@@ -17,29 +17,29 @@
 /* global glowroot, Glowroot, HandlebarsRendering, $ */
 
 glowroot.factory('traceModal', [
-  '$rootScope',
   '$http',
   'modals',
-  function ($rootScope, $http, modals) {
+  function ($http, modals) {
 
-    function displayModal(traceId) {
+    function displayModal(serverId, traceId) {
 
       var spinner;
       var $modalContent = $('#traceModal .modal-body');
 
       modals.display('#traceModal');
-      $http.get('backend/trace/header/' + traceId)
+      $http.get('backend/trace/header?server-id=' + serverId + '&trace-id=' + traceId)
           .success(function (data) {
             spinner.stop();
             if (data.expired) {
               $modalContent.html('expired');
             } else {
               data.showExport = true;
-              HandlebarsRendering.renderTrace(data, $modalContent);
+              HandlebarsRendering.renderTrace(data, serverId, $modalContent);
               $('#traceModal .modal-body button.download-trace').click(function () {
                 var $traceParent = $(this).parents('.gt-trace-parent');
                 var traceId = $traceParent.data('gtTraceId');
-                window.location = document.getElementsByTagName('base')[0].href + 'export/trace/' + traceId;
+                window.location = document.getElementsByTagName('base')[0].href + 'export/trace?server-id=' + serverId
+                    + '&trace-id=' + traceId;
               });
             }
           })
@@ -50,7 +50,7 @@ glowroot.factory('traceModal', [
 
       // padding is same as for trace once it loads
       $modalContent.html('<div style="position: relative; display: inline-block;' +
-      ' padding-left: 40px; padding-top: 60px;"></div>');
+          ' padding-left: 40px; padding-top: 60px;"></div>');
       spinner = Glowroot.showSpinner($modalContent.children().first());
     }
 

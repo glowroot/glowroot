@@ -53,6 +53,8 @@ import static org.mockito.Mockito.when;
 @Styles.Private
 public class AggregateDaoTest {
 
+    private static final long SERVER_ID = 0;
+
     private DataSource dataSource;
     private File cappedFile;
     private CappedDatabase cappedDatabase;
@@ -75,7 +77,7 @@ public class AggregateDaoTest {
                 .rollupExpirationHours(
                         ImmutableList.of(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE))
                 .build());
-        when(configRepository.getAdvancedConfig())
+        when(configRepository.getAdvancedConfig(SERVER_ID))
                 .thenReturn(ImmutableAdvancedConfig.builder().build());
         ImmutableList<RollupConfig> rollupConfigs = ImmutableList.<RollupConfig>of(
                 ImmutableRollupConfig.of(1000, 0), ImmutableRollupConfig.of(15000, 3600000),
@@ -98,8 +100,9 @@ public class AggregateDaoTest {
         populateAggregates();
         // when
         List<OverviewAggregate> overallAggregates =
-                aggregateDao.readOverallOverviewAggregates("a type", 0, 100000, 0);
+                aggregateDao.readOverallOverviewAggregates(SERVER_ID, "a type", 0, 100000, 0);
         TransactionSummaryQuery query = ImmutableTransactionSummaryQuery.builder()
+                .serverId(SERVER_ID)
                 .transactionType("a type")
                 .from(0)
                 .to(100000)
@@ -168,7 +171,7 @@ public class AggregateDaoTest {
                 .setTotalAllocatedBytes(-1)
                 .setTotalNanosHistogram(getFakeHistogram())
                 .build());
-        aggregateDao.store(ImmutableMap.of("a type", overallAggregate),
+        aggregateDao.store(SERVER_ID, ImmutableMap.of("a type", overallAggregate),
                 ImmutableMap.of("a type", transactionAggregates), 10000);
 
         Aggregate overallAggregate2 = Aggregate.newBuilder()
@@ -216,7 +219,7 @@ public class AggregateDaoTest {
                 .setTotalAllocatedBytes(-1)
                 .setTotalNanosHistogram(getFakeHistogram())
                 .build());
-        aggregateDao.store(ImmutableMap.of("a type", overallAggregate2),
+        aggregateDao.store(SERVER_ID, ImmutableMap.of("a type", overallAggregate2),
                 ImmutableMap.of("a type", transactionAggregates2), 20000);
     }
 

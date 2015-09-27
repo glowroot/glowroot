@@ -23,6 +23,7 @@ glowroot.controller('ConfigCommonCtrl', [
   'confirmIfHasChanges',
   'httpErrors',
   function ($scope, $http, backendUrl, confirmIfHasChanges, httpErrors) {
+
     $scope.hasChanges = function () {
       return $scope.originalConfig && !angular.equals($scope.config, $scope.originalConfig);
     };
@@ -42,7 +43,9 @@ glowroot.controller('ConfigCommonCtrl', [
     }
 
     $scope.save = function (deferred) {
-      $http.post(backendUrl, $scope.config)
+      var postData = angular.copy($scope.config);
+      postData.serverId = $scope.serverId;
+      $http.post(backendUrl, postData)
           .success(function (data) {
             onNewData(data);
             deferred.resolve('Saved');
@@ -50,7 +53,7 @@ glowroot.controller('ConfigCommonCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get(backendUrl)
+    $http.get(backendUrl + '?server-id=' + $scope.serverId)
         .success(onNewData)
         .error(httpErrors.handler($scope));
   }
