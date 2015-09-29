@@ -13,12 +13,22 @@ public final class GaugeValueOuterClass {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>optional int64 capture_time = 1;</code>
+     * <code>optional string gauge_name = 1;</code>
+     */
+    java.lang.String getGaugeName();
+    /**
+     * <code>optional string gauge_name = 1;</code>
+     */
+    com.google.protobuf.ByteString
+        getGaugeNameBytes();
+
+    /**
+     * <code>optional int64 capture_time = 2;</code>
      */
     long getCaptureTime();
 
     /**
-     * <code>optional double value = 2;</code>
+     * <code>optional double value = 3;</code>
      */
     double getValue();
   }
@@ -34,6 +44,7 @@ public final class GaugeValueOuterClass {
       super(builder);
     }
     private GaugeValue() {
+      gaugeName_ = "";
       captureTime_ = 0L;
       value_ = 0D;
     }
@@ -62,12 +73,18 @@ public final class GaugeValueOuterClass {
               }
               break;
             }
-            case 8: {
+            case 10: {
+              String s = input.readStringRequireUtf8();
+
+              gaugeName_ = s;
+              break;
+            }
+            case 16: {
 
               captureTime_ = input.readInt64();
               break;
             }
-            case 17: {
+            case 25: {
 
               value_ = input.readDouble();
               break;
@@ -96,19 +113,53 @@ public final class GaugeValueOuterClass {
               org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue.class, org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue.Builder.class);
     }
 
-    public static final int CAPTURE_TIME_FIELD_NUMBER = 1;
+    public static final int GAUGE_NAME_FIELD_NUMBER = 1;
+    private volatile java.lang.Object gaugeName_;
+    /**
+     * <code>optional string gauge_name = 1;</code>
+     */
+    public java.lang.String getGaugeName() {
+      java.lang.Object ref = gaugeName_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        gaugeName_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>optional string gauge_name = 1;</code>
+     */
+    public com.google.protobuf.ByteString
+        getGaugeNameBytes() {
+      java.lang.Object ref = gaugeName_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        gaugeName_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int CAPTURE_TIME_FIELD_NUMBER = 2;
     private long captureTime_;
     /**
-     * <code>optional int64 capture_time = 1;</code>
+     * <code>optional int64 capture_time = 2;</code>
      */
     public long getCaptureTime() {
       return captureTime_;
     }
 
-    public static final int VALUE_FIELD_NUMBER = 2;
+    public static final int VALUE_FIELD_NUMBER = 3;
     private double value_;
     /**
-     * <code>optional double value = 2;</code>
+     * <code>optional double value = 3;</code>
      */
     public double getValue() {
       return value_;
@@ -126,11 +177,14 @@ public final class GaugeValueOuterClass {
 
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
+      if (!getGaugeNameBytes().isEmpty()) {
+        com.google.protobuf.GeneratedMessage.writeString(output, 1, gaugeName_);
+      }
       if (captureTime_ != 0L) {
-        output.writeInt64(1, captureTime_);
+        output.writeInt64(2, captureTime_);
       }
       if (value_ != 0D) {
-        output.writeDouble(2, value_);
+        output.writeDouble(3, value_);
       }
     }
 
@@ -139,13 +193,16 @@ public final class GaugeValueOuterClass {
       if (size != -1) return size;
 
       size = 0;
+      if (!getGaugeNameBytes().isEmpty()) {
+        size += com.google.protobuf.GeneratedMessage.computeStringSize(1, gaugeName_);
+      }
       if (captureTime_ != 0L) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(1, captureTime_);
+          .computeInt64Size(2, captureTime_);
       }
       if (value_ != 0D) {
         size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(2, value_);
+          .computeDoubleSize(3, value_);
       }
       memoizedSize = size;
       return size;
@@ -258,6 +315,8 @@ public final class GaugeValueOuterClass {
       }
       public Builder clear() {
         super.clear();
+        gaugeName_ = "";
+
         captureTime_ = 0L;
 
         value_ = 0D;
@@ -284,6 +343,7 @@ public final class GaugeValueOuterClass {
 
       public org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue buildPartial() {
         org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue result = new org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue(this);
+        result.gaugeName_ = gaugeName_;
         result.captureTime_ = captureTime_;
         result.value_ = value_;
         onBuilt();
@@ -301,6 +361,10 @@ public final class GaugeValueOuterClass {
 
       public Builder mergeFrom(org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue other) {
         if (other == org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue.getDefaultInstance()) return this;
+        if (!other.getGaugeName().isEmpty()) {
+          gaugeName_ = other.gaugeName_;
+          onChanged();
+        }
         if (other.getCaptureTime() != 0L) {
           setCaptureTime(other.getCaptureTime());
         }
@@ -333,15 +397,84 @@ public final class GaugeValueOuterClass {
         return this;
       }
 
+      private java.lang.Object gaugeName_ = "";
+      /**
+       * <code>optional string gauge_name = 1;</code>
+       */
+      public java.lang.String getGaugeName() {
+        java.lang.Object ref = gaugeName_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          gaugeName_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string gauge_name = 1;</code>
+       */
+      public com.google.protobuf.ByteString
+          getGaugeNameBytes() {
+        java.lang.Object ref = gaugeName_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          gaugeName_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string gauge_name = 1;</code>
+       */
+      public Builder setGaugeName(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        gaugeName_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string gauge_name = 1;</code>
+       */
+      public Builder clearGaugeName() {
+        
+        gaugeName_ = getDefaultInstance().getGaugeName();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string gauge_name = 1;</code>
+       */
+      public Builder setGaugeNameBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        gaugeName_ = value;
+        onChanged();
+        return this;
+      }
+
       private long captureTime_ ;
       /**
-       * <code>optional int64 capture_time = 1;</code>
+       * <code>optional int64 capture_time = 2;</code>
        */
       public long getCaptureTime() {
         return captureTime_;
       }
       /**
-       * <code>optional int64 capture_time = 1;</code>
+       * <code>optional int64 capture_time = 2;</code>
        */
       public Builder setCaptureTime(long value) {
         
@@ -350,7 +483,7 @@ public final class GaugeValueOuterClass {
         return this;
       }
       /**
-       * <code>optional int64 capture_time = 1;</code>
+       * <code>optional int64 capture_time = 2;</code>
        */
       public Builder clearCaptureTime() {
         
@@ -361,13 +494,13 @@ public final class GaugeValueOuterClass {
 
       private double value_ ;
       /**
-       * <code>optional double value = 2;</code>
+       * <code>optional double value = 3;</code>
        */
       public double getValue() {
         return value_;
       }
       /**
-       * <code>optional double value = 2;</code>
+       * <code>optional double value = 3;</code>
        */
       public Builder setValue(double value) {
         
@@ -376,7 +509,7 @@ public final class GaugeValueOuterClass {
         return this;
       }
       /**
-       * <code>optional double value = 2;</code>
+       * <code>optional double value = 3;</code>
        */
       public Builder clearValue() {
         
@@ -457,9 +590,10 @@ public final class GaugeValueOuterClass {
   static {
     java.lang.String[] descriptorData = {
       "\n\020GaugeValue.proto\022 org_glowroot_collect" +
-      "or_spi_model\"1\n\nGaugeValue\022\024\n\014capture_ti" +
-      "me\030\001 \001(\003\022\r\n\005value\030\002 \001(\001B\"\n org.glowroot." +
-      "collector.spi.modelb\006proto3"
+      "or_spi_model\"E\n\nGaugeValue\022\022\n\ngauge_name" +
+      "\030\001 \001(\t\022\024\n\014capture_time\030\002 \001(\003\022\r\n\005value\030\003 " +
+      "\001(\001B\"\n org.glowroot.collector.spi.modelb" +
+      "\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -478,7 +612,7 @@ public final class GaugeValueOuterClass {
     internal_static_org_glowroot_collector_spi_model_GaugeValue_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_collector_spi_model_GaugeValue_descriptor,
-        new java.lang.String[] { "CaptureTime", "Value", });
+        new java.lang.String[] { "GaugeName", "CaptureTime", "Value", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

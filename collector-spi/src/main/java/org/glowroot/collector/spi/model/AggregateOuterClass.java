@@ -8,32 +8,1428 @@ public final class AggregateOuterClass {
   public static void registerAllExtensions(
       com.google.protobuf.ExtensionRegistry registry) {
   }
+  public interface OverallAggregateOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:org_glowroot_collector_spi_model.OverallAggregate)
+      com.google.protobuf.MessageOrBuilder {
+
+    /**
+     * <code>optional string transaction_type = 1;</code>
+     */
+    java.lang.String getTransactionType();
+    /**
+     * <code>optional string transaction_type = 1;</code>
+     */
+    com.google.protobuf.ByteString
+        getTransactionTypeBytes();
+
+    /**
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 2;</code>
+     */
+    boolean hasAggregate();
+    /**
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 2;</code>
+     */
+    org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate getAggregate();
+    /**
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 2;</code>
+     */
+    org.glowroot.collector.spi.model.AggregateOuterClass.AggregateOrBuilder getAggregateOrBuilder();
+  }
+  /**
+   * Protobuf type {@code org_glowroot_collector_spi_model.OverallAggregate}
+   */
+  public  static final class OverallAggregate extends
+      com.google.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:org_glowroot_collector_spi_model.OverallAggregate)
+      OverallAggregateOrBuilder {
+    // Use OverallAggregate.newBuilder() to construct.
+    private OverallAggregate(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+    }
+    private OverallAggregate() {
+      transactionType_ = "";
+    }
+
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+    getUnknownFields() {
+      return com.google.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
+    private OverallAggregate(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry) {
+      this();
+      int mutable_bitField0_ = 0;
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!input.skipField(tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 10: {
+              String s = input.readStringRequireUtf8();
+
+              transactionType_ = s;
+              break;
+            }
+            case 18: {
+              org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Builder subBuilder = null;
+              if (aggregate_ != null) {
+                subBuilder = aggregate_.toBuilder();
+              }
+              aggregate_ = input.readMessage(org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.parser(), extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(aggregate_);
+                aggregate_ = subBuilder.buildPartial();
+              }
+
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw new RuntimeException(e.setUnfinishedMessage(this));
+      } catch (java.io.IOException e) {
+        throw new RuntimeException(
+            new com.google.protobuf.InvalidProtocolBufferException(
+                e.getMessage()).setUnfinishedMessage(this));
+      } finally {
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return org.glowroot.collector.spi.model.AggregateOuterClass.internal_static_org_glowroot_collector_spi_model_OverallAggregate_descriptor;
+    }
+
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return org.glowroot.collector.spi.model.AggregateOuterClass.internal_static_org_glowroot_collector_spi_model_OverallAggregate_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate.class, org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate.Builder.class);
+    }
+
+    public static final int TRANSACTION_TYPE_FIELD_NUMBER = 1;
+    private volatile java.lang.Object transactionType_;
+    /**
+     * <code>optional string transaction_type = 1;</code>
+     */
+    public java.lang.String getTransactionType() {
+      java.lang.Object ref = transactionType_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        transactionType_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>optional string transaction_type = 1;</code>
+     */
+    public com.google.protobuf.ByteString
+        getTransactionTypeBytes() {
+      java.lang.Object ref = transactionType_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        transactionType_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int AGGREGATE_FIELD_NUMBER = 2;
+    private org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate aggregate_;
+    /**
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 2;</code>
+     */
+    public boolean hasAggregate() {
+      return aggregate_ != null;
+    }
+    /**
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 2;</code>
+     */
+    public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate getAggregate() {
+      return aggregate_ == null ? org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.getDefaultInstance() : aggregate_;
+    }
+    /**
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 2;</code>
+     */
+    public org.glowroot.collector.spi.model.AggregateOuterClass.AggregateOrBuilder getAggregateOrBuilder() {
+      return getAggregate();
+    }
+
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (!getTransactionTypeBytes().isEmpty()) {
+        com.google.protobuf.GeneratedMessage.writeString(output, 1, transactionType_);
+      }
+      if (aggregate_ != null) {
+        output.writeMessage(2, getAggregate());
+      }
+    }
+
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (!getTransactionTypeBytes().isEmpty()) {
+        size += com.google.protobuf.GeneratedMessage.computeStringSize(1, transactionType_);
+      }
+      if (aggregate_ != null) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(2, getAggregate());
+      }
+      memoizedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code org_glowroot_collector_spi_model.OverallAggregate}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:org_glowroot_collector_spi_model.OverallAggregate)
+        org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregateOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.glowroot.collector.spi.model.AggregateOuterClass.internal_static_org_glowroot_collector_spi_model_OverallAggregate_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.glowroot.collector.spi.model.AggregateOuterClass.internal_static_org_glowroot_collector_spi_model_OverallAggregate_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate.class, org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate.Builder.class);
+      }
+
+      // Construct using org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      public Builder clear() {
+        super.clear();
+        transactionType_ = "";
+
+        if (aggregateBuilder_ == null) {
+          aggregate_ = null;
+        } else {
+          aggregate_ = null;
+          aggregateBuilder_ = null;
+        }
+        return this;
+      }
+
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return org.glowroot.collector.spi.model.AggregateOuterClass.internal_static_org_glowroot_collector_spi_model_OverallAggregate_descriptor;
+      }
+
+      public org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate getDefaultInstanceForType() {
+        return org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate.getDefaultInstance();
+      }
+
+      public org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate build() {
+        org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate buildPartial() {
+        org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate result = new org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate(this);
+        result.transactionType_ = transactionType_;
+        if (aggregateBuilder_ == null) {
+          result.aggregate_ = aggregate_;
+        } else {
+          result.aggregate_ = aggregateBuilder_.build();
+        }
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate) {
+          return mergeFrom((org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate other) {
+        if (other == org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate.getDefaultInstance()) return this;
+        if (!other.getTransactionType().isEmpty()) {
+          transactionType_ = other.transactionType_;
+          onChanged();
+        }
+        if (other.hasAggregate()) {
+          mergeAggregate(other.getAggregate());
+        }
+        onChanged();
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        return true;
+      }
+
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+
+      private java.lang.Object transactionType_ = "";
+      /**
+       * <code>optional string transaction_type = 1;</code>
+       */
+      public java.lang.String getTransactionType() {
+        java.lang.Object ref = transactionType_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          transactionType_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string transaction_type = 1;</code>
+       */
+      public com.google.protobuf.ByteString
+          getTransactionTypeBytes() {
+        java.lang.Object ref = transactionType_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          transactionType_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string transaction_type = 1;</code>
+       */
+      public Builder setTransactionType(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        transactionType_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string transaction_type = 1;</code>
+       */
+      public Builder clearTransactionType() {
+        
+        transactionType_ = getDefaultInstance().getTransactionType();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string transaction_type = 1;</code>
+       */
+      public Builder setTransactionTypeBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        transactionType_ = value;
+        onChanged();
+        return this;
+      }
+
+      private org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate aggregate_ = null;
+      private com.google.protobuf.SingleFieldBuilder<
+          org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Builder, org.glowroot.collector.spi.model.AggregateOuterClass.AggregateOrBuilder> aggregateBuilder_;
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 2;</code>
+       */
+      public boolean hasAggregate() {
+        return aggregateBuilder_ != null || aggregate_ != null;
+      }
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 2;</code>
+       */
+      public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate getAggregate() {
+        if (aggregateBuilder_ == null) {
+          return aggregate_ == null ? org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.getDefaultInstance() : aggregate_;
+        } else {
+          return aggregateBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 2;</code>
+       */
+      public Builder setAggregate(org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate value) {
+        if (aggregateBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          aggregate_ = value;
+          onChanged();
+        } else {
+          aggregateBuilder_.setMessage(value);
+        }
+
+        return this;
+      }
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 2;</code>
+       */
+      public Builder setAggregate(
+          org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Builder builderForValue) {
+        if (aggregateBuilder_ == null) {
+          aggregate_ = builderForValue.build();
+          onChanged();
+        } else {
+          aggregateBuilder_.setMessage(builderForValue.build());
+        }
+
+        return this;
+      }
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 2;</code>
+       */
+      public Builder mergeAggregate(org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate value) {
+        if (aggregateBuilder_ == null) {
+          if (aggregate_ != null) {
+            aggregate_ =
+              org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.newBuilder(aggregate_).mergeFrom(value).buildPartial();
+          } else {
+            aggregate_ = value;
+          }
+          onChanged();
+        } else {
+          aggregateBuilder_.mergeFrom(value);
+        }
+
+        return this;
+      }
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 2;</code>
+       */
+      public Builder clearAggregate() {
+        if (aggregateBuilder_ == null) {
+          aggregate_ = null;
+          onChanged();
+        } else {
+          aggregate_ = null;
+          aggregateBuilder_ = null;
+        }
+
+        return this;
+      }
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 2;</code>
+       */
+      public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Builder getAggregateBuilder() {
+        
+        onChanged();
+        return getAggregateFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 2;</code>
+       */
+      public org.glowroot.collector.spi.model.AggregateOuterClass.AggregateOrBuilder getAggregateOrBuilder() {
+        if (aggregateBuilder_ != null) {
+          return aggregateBuilder_.getMessageOrBuilder();
+        } else {
+          return aggregate_ == null ?
+              org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.getDefaultInstance() : aggregate_;
+        }
+      }
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 2;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Builder, org.glowroot.collector.spi.model.AggregateOuterClass.AggregateOrBuilder> 
+          getAggregateFieldBuilder() {
+        if (aggregateBuilder_ == null) {
+          aggregateBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Builder, org.glowroot.collector.spi.model.AggregateOuterClass.AggregateOrBuilder>(
+                  getAggregate(),
+                  getParentForChildren(),
+                  isClean());
+          aggregate_ = null;
+        }
+        return aggregateBuilder_;
+      }
+      public final Builder setUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return this;
+      }
+
+      public final Builder mergeUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return this;
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:org_glowroot_collector_spi_model.OverallAggregate)
+    }
+
+    // @@protoc_insertion_point(class_scope:org_glowroot_collector_spi_model.OverallAggregate)
+    private static final org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate();
+    }
+
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static final com.google.protobuf.Parser<OverallAggregate>
+        PARSER = new com.google.protobuf.AbstractParser<OverallAggregate>() {
+      public OverallAggregate parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        try {
+          return new OverallAggregate(input, extensionRegistry);
+        } catch (RuntimeException e) {
+          if (e.getCause() instanceof
+              com.google.protobuf.InvalidProtocolBufferException) {
+            throw (com.google.protobuf.InvalidProtocolBufferException)
+                e.getCause();
+          }
+          throw e;
+        }
+      }
+    };
+
+    public static com.google.protobuf.Parser<OverallAggregate> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<OverallAggregate> getParserForType() {
+      return PARSER;
+    }
+
+    public org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
+  public interface TransactionAggregateOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:org_glowroot_collector_spi_model.TransactionAggregate)
+      com.google.protobuf.MessageOrBuilder {
+
+    /**
+     * <code>optional string transaction_type = 1;</code>
+     */
+    java.lang.String getTransactionType();
+    /**
+     * <code>optional string transaction_type = 1;</code>
+     */
+    com.google.protobuf.ByteString
+        getTransactionTypeBytes();
+
+    /**
+     * <code>optional string transaction_name = 2;</code>
+     */
+    java.lang.String getTransactionName();
+    /**
+     * <code>optional string transaction_name = 2;</code>
+     */
+    com.google.protobuf.ByteString
+        getTransactionNameBytes();
+
+    /**
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 3;</code>
+     */
+    boolean hasAggregate();
+    /**
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 3;</code>
+     */
+    org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate getAggregate();
+    /**
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 3;</code>
+     */
+    org.glowroot.collector.spi.model.AggregateOuterClass.AggregateOrBuilder getAggregateOrBuilder();
+  }
+  /**
+   * Protobuf type {@code org_glowroot_collector_spi_model.TransactionAggregate}
+   */
+  public  static final class TransactionAggregate extends
+      com.google.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:org_glowroot_collector_spi_model.TransactionAggregate)
+      TransactionAggregateOrBuilder {
+    // Use TransactionAggregate.newBuilder() to construct.
+    private TransactionAggregate(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+    }
+    private TransactionAggregate() {
+      transactionType_ = "";
+      transactionName_ = "";
+    }
+
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+    getUnknownFields() {
+      return com.google.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
+    private TransactionAggregate(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry) {
+      this();
+      int mutable_bitField0_ = 0;
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!input.skipField(tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 10: {
+              String s = input.readStringRequireUtf8();
+
+              transactionType_ = s;
+              break;
+            }
+            case 18: {
+              String s = input.readStringRequireUtf8();
+
+              transactionName_ = s;
+              break;
+            }
+            case 26: {
+              org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Builder subBuilder = null;
+              if (aggregate_ != null) {
+                subBuilder = aggregate_.toBuilder();
+              }
+              aggregate_ = input.readMessage(org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.parser(), extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(aggregate_);
+                aggregate_ = subBuilder.buildPartial();
+              }
+
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw new RuntimeException(e.setUnfinishedMessage(this));
+      } catch (java.io.IOException e) {
+        throw new RuntimeException(
+            new com.google.protobuf.InvalidProtocolBufferException(
+                e.getMessage()).setUnfinishedMessage(this));
+      } finally {
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return org.glowroot.collector.spi.model.AggregateOuterClass.internal_static_org_glowroot_collector_spi_model_TransactionAggregate_descriptor;
+    }
+
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return org.glowroot.collector.spi.model.AggregateOuterClass.internal_static_org_glowroot_collector_spi_model_TransactionAggregate_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate.class, org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate.Builder.class);
+    }
+
+    public static final int TRANSACTION_TYPE_FIELD_NUMBER = 1;
+    private volatile java.lang.Object transactionType_;
+    /**
+     * <code>optional string transaction_type = 1;</code>
+     */
+    public java.lang.String getTransactionType() {
+      java.lang.Object ref = transactionType_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        transactionType_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>optional string transaction_type = 1;</code>
+     */
+    public com.google.protobuf.ByteString
+        getTransactionTypeBytes() {
+      java.lang.Object ref = transactionType_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        transactionType_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int TRANSACTION_NAME_FIELD_NUMBER = 2;
+    private volatile java.lang.Object transactionName_;
+    /**
+     * <code>optional string transaction_name = 2;</code>
+     */
+    public java.lang.String getTransactionName() {
+      java.lang.Object ref = transactionName_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        transactionName_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>optional string transaction_name = 2;</code>
+     */
+    public com.google.protobuf.ByteString
+        getTransactionNameBytes() {
+      java.lang.Object ref = transactionName_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        transactionName_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int AGGREGATE_FIELD_NUMBER = 3;
+    private org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate aggregate_;
+    /**
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 3;</code>
+     */
+    public boolean hasAggregate() {
+      return aggregate_ != null;
+    }
+    /**
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 3;</code>
+     */
+    public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate getAggregate() {
+      return aggregate_ == null ? org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.getDefaultInstance() : aggregate_;
+    }
+    /**
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 3;</code>
+     */
+    public org.glowroot.collector.spi.model.AggregateOuterClass.AggregateOrBuilder getAggregateOrBuilder() {
+      return getAggregate();
+    }
+
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (!getTransactionTypeBytes().isEmpty()) {
+        com.google.protobuf.GeneratedMessage.writeString(output, 1, transactionType_);
+      }
+      if (!getTransactionNameBytes().isEmpty()) {
+        com.google.protobuf.GeneratedMessage.writeString(output, 2, transactionName_);
+      }
+      if (aggregate_ != null) {
+        output.writeMessage(3, getAggregate());
+      }
+    }
+
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (!getTransactionTypeBytes().isEmpty()) {
+        size += com.google.protobuf.GeneratedMessage.computeStringSize(1, transactionType_);
+      }
+      if (!getTransactionNameBytes().isEmpty()) {
+        size += com.google.protobuf.GeneratedMessage.computeStringSize(2, transactionName_);
+      }
+      if (aggregate_ != null) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(3, getAggregate());
+      }
+      memoizedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code org_glowroot_collector_spi_model.TransactionAggregate}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:org_glowroot_collector_spi_model.TransactionAggregate)
+        org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregateOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.glowroot.collector.spi.model.AggregateOuterClass.internal_static_org_glowroot_collector_spi_model_TransactionAggregate_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.glowroot.collector.spi.model.AggregateOuterClass.internal_static_org_glowroot_collector_spi_model_TransactionAggregate_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate.class, org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate.Builder.class);
+      }
+
+      // Construct using org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      public Builder clear() {
+        super.clear();
+        transactionType_ = "";
+
+        transactionName_ = "";
+
+        if (aggregateBuilder_ == null) {
+          aggregate_ = null;
+        } else {
+          aggregate_ = null;
+          aggregateBuilder_ = null;
+        }
+        return this;
+      }
+
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return org.glowroot.collector.spi.model.AggregateOuterClass.internal_static_org_glowroot_collector_spi_model_TransactionAggregate_descriptor;
+      }
+
+      public org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate getDefaultInstanceForType() {
+        return org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate.getDefaultInstance();
+      }
+
+      public org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate build() {
+        org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate buildPartial() {
+        org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate result = new org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate(this);
+        result.transactionType_ = transactionType_;
+        result.transactionName_ = transactionName_;
+        if (aggregateBuilder_ == null) {
+          result.aggregate_ = aggregate_;
+        } else {
+          result.aggregate_ = aggregateBuilder_.build();
+        }
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate) {
+          return mergeFrom((org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate other) {
+        if (other == org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate.getDefaultInstance()) return this;
+        if (!other.getTransactionType().isEmpty()) {
+          transactionType_ = other.transactionType_;
+          onChanged();
+        }
+        if (!other.getTransactionName().isEmpty()) {
+          transactionName_ = other.transactionName_;
+          onChanged();
+        }
+        if (other.hasAggregate()) {
+          mergeAggregate(other.getAggregate());
+        }
+        onChanged();
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        return true;
+      }
+
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+
+      private java.lang.Object transactionType_ = "";
+      /**
+       * <code>optional string transaction_type = 1;</code>
+       */
+      public java.lang.String getTransactionType() {
+        java.lang.Object ref = transactionType_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          transactionType_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string transaction_type = 1;</code>
+       */
+      public com.google.protobuf.ByteString
+          getTransactionTypeBytes() {
+        java.lang.Object ref = transactionType_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          transactionType_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string transaction_type = 1;</code>
+       */
+      public Builder setTransactionType(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        transactionType_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string transaction_type = 1;</code>
+       */
+      public Builder clearTransactionType() {
+        
+        transactionType_ = getDefaultInstance().getTransactionType();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string transaction_type = 1;</code>
+       */
+      public Builder setTransactionTypeBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        transactionType_ = value;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object transactionName_ = "";
+      /**
+       * <code>optional string transaction_name = 2;</code>
+       */
+      public java.lang.String getTransactionName() {
+        java.lang.Object ref = transactionName_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          transactionName_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string transaction_name = 2;</code>
+       */
+      public com.google.protobuf.ByteString
+          getTransactionNameBytes() {
+        java.lang.Object ref = transactionName_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          transactionName_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string transaction_name = 2;</code>
+       */
+      public Builder setTransactionName(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        transactionName_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string transaction_name = 2;</code>
+       */
+      public Builder clearTransactionName() {
+        
+        transactionName_ = getDefaultInstance().getTransactionName();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string transaction_name = 2;</code>
+       */
+      public Builder setTransactionNameBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        transactionName_ = value;
+        onChanged();
+        return this;
+      }
+
+      private org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate aggregate_ = null;
+      private com.google.protobuf.SingleFieldBuilder<
+          org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Builder, org.glowroot.collector.spi.model.AggregateOuterClass.AggregateOrBuilder> aggregateBuilder_;
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 3;</code>
+       */
+      public boolean hasAggregate() {
+        return aggregateBuilder_ != null || aggregate_ != null;
+      }
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 3;</code>
+       */
+      public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate getAggregate() {
+        if (aggregateBuilder_ == null) {
+          return aggregate_ == null ? org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.getDefaultInstance() : aggregate_;
+        } else {
+          return aggregateBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 3;</code>
+       */
+      public Builder setAggregate(org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate value) {
+        if (aggregateBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          aggregate_ = value;
+          onChanged();
+        } else {
+          aggregateBuilder_.setMessage(value);
+        }
+
+        return this;
+      }
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 3;</code>
+       */
+      public Builder setAggregate(
+          org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Builder builderForValue) {
+        if (aggregateBuilder_ == null) {
+          aggregate_ = builderForValue.build();
+          onChanged();
+        } else {
+          aggregateBuilder_.setMessage(builderForValue.build());
+        }
+
+        return this;
+      }
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 3;</code>
+       */
+      public Builder mergeAggregate(org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate value) {
+        if (aggregateBuilder_ == null) {
+          if (aggregate_ != null) {
+            aggregate_ =
+              org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.newBuilder(aggregate_).mergeFrom(value).buildPartial();
+          } else {
+            aggregate_ = value;
+          }
+          onChanged();
+        } else {
+          aggregateBuilder_.mergeFrom(value);
+        }
+
+        return this;
+      }
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 3;</code>
+       */
+      public Builder clearAggregate() {
+        if (aggregateBuilder_ == null) {
+          aggregate_ = null;
+          onChanged();
+        } else {
+          aggregate_ = null;
+          aggregateBuilder_ = null;
+        }
+
+        return this;
+      }
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 3;</code>
+       */
+      public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Builder getAggregateBuilder() {
+        
+        onChanged();
+        return getAggregateFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 3;</code>
+       */
+      public org.glowroot.collector.spi.model.AggregateOuterClass.AggregateOrBuilder getAggregateOrBuilder() {
+        if (aggregateBuilder_ != null) {
+          return aggregateBuilder_.getMessageOrBuilder();
+        } else {
+          return aggregate_ == null ?
+              org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.getDefaultInstance() : aggregate_;
+        }
+      }
+      /**
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate aggregate = 3;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Builder, org.glowroot.collector.spi.model.AggregateOuterClass.AggregateOrBuilder> 
+          getAggregateFieldBuilder() {
+        if (aggregateBuilder_ == null) {
+          aggregateBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Builder, org.glowroot.collector.spi.model.AggregateOuterClass.AggregateOrBuilder>(
+                  getAggregate(),
+                  getParentForChildren(),
+                  isClean());
+          aggregate_ = null;
+        }
+        return aggregateBuilder_;
+      }
+      public final Builder setUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return this;
+      }
+
+      public final Builder mergeUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return this;
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:org_glowroot_collector_spi_model.TransactionAggregate)
+    }
+
+    // @@protoc_insertion_point(class_scope:org_glowroot_collector_spi_model.TransactionAggregate)
+    private static final org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate();
+    }
+
+    public static org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static final com.google.protobuf.Parser<TransactionAggregate>
+        PARSER = new com.google.protobuf.AbstractParser<TransactionAggregate>() {
+      public TransactionAggregate parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        try {
+          return new TransactionAggregate(input, extensionRegistry);
+        } catch (RuntimeException e) {
+          if (e.getCause() instanceof
+              com.google.protobuf.InvalidProtocolBufferException) {
+            throw (com.google.protobuf.InvalidProtocolBufferException)
+                e.getCause();
+          }
+          throw e;
+        }
+      }
+    };
+
+    public static com.google.protobuf.Parser<TransactionAggregate> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<TransactionAggregate> getParserForType() {
+      return PARSER;
+    }
+
+    public org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
   public interface AggregateOrBuilder extends
       // @@protoc_insertion_point(interface_extends:org_glowroot_collector_spi_model.Aggregate)
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>optional int64 capture_time = 1;</code>
-     */
-    long getCaptureTime();
-
-    /**
-     * <code>optional double total_nanos = 2;</code>
+     * <code>optional double total_nanos = 1;</code>
      */
     double getTotalNanos();
 
     /**
-     * <code>optional int64 transaction_count = 3;</code>
+     * <code>optional int64 transaction_count = 2;</code>
      */
     long getTransactionCount();
 
     /**
-     * <code>optional int64 error_count = 4;</code>
+     * <code>optional int64 error_count = 3;</code>
      */
     long getErrorCount();
 
     /**
-     * <code>optional double total_cpu_nanos = 5;</code>
+     * <code>optional double total_cpu_nanos = 4;</code>
      *
      * <pre>
      * -1 means N/A
@@ -42,7 +1438,7 @@ public final class AggregateOuterClass {
     double getTotalCpuNanos();
 
     /**
-     * <code>optional double total_blocked_nanos = 6;</code>
+     * <code>optional double total_blocked_nanos = 5;</code>
      *
      * <pre>
      * -1 means N/A
@@ -51,7 +1447,7 @@ public final class AggregateOuterClass {
     double getTotalBlockedNanos();
 
     /**
-     * <code>optional double total_waited_nanos = 7;</code>
+     * <code>optional double total_waited_nanos = 6;</code>
      *
      * <pre>
      * -1 means N/A
@@ -60,7 +1456,7 @@ public final class AggregateOuterClass {
     double getTotalWaitedNanos();
 
     /**
-     * <code>optional double total_allocated_bytes = 8;</code>
+     * <code>optional double total_allocated_bytes = 7;</code>
      *
      * <pre>
      * -1 means N/A
@@ -69,76 +1465,76 @@ public final class AggregateOuterClass {
     double getTotalAllocatedBytes();
 
     /**
-     * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 9;</code>
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 8;</code>
      */
     boolean hasTotalNanosHistogram();
     /**
-     * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 9;</code>
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 8;</code>
      */
     org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Histogram getTotalNanosHistogram();
     /**
-     * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 9;</code>
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 8;</code>
      */
     org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.HistogramOrBuilder getTotalNanosHistogramOrBuilder();
 
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
      */
     java.util.List<org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer> 
         getRootTimerList();
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
      */
     org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer getRootTimer(int index);
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
      */
     int getRootTimerCount();
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
      */
     java.util.List<? extends org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.TimerOrBuilder> 
         getRootTimerOrBuilderList();
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
      */
     org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.TimerOrBuilder getRootTimerOrBuilder(
         int index);
 
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
      */
     java.util.List<org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType> 
         getQueriesByTypeList();
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
      */
     org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType getQueriesByType(int index);
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
      */
     int getQueriesByTypeCount();
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
      */
     java.util.List<? extends org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByTypeOrBuilder> 
         getQueriesByTypeOrBuilderList();
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
      */
     org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByTypeOrBuilder getQueriesByTypeOrBuilder(
         int index);
 
     /**
-     * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 12;</code>
+     * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 11;</code>
      */
     boolean hasProfileTree();
     /**
-     * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 12;</code>
+     * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 11;</code>
      */
     org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree getProfileTree();
     /**
-     * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 12;</code>
+     * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 11;</code>
      */
     org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTreeOrBuilder getProfileTreeOrBuilder();
   }
@@ -158,7 +1554,6 @@ public final class AggregateOuterClass {
       super(builder);
     }
     private Aggregate() {
-      captureTime_ = 0L;
       totalNanos_ = 0D;
       transactionCount_ = 0L;
       errorCount_ = 0L;
@@ -194,47 +1589,42 @@ public final class AggregateOuterClass {
               }
               break;
             }
-            case 8: {
-
-              captureTime_ = input.readInt64();
-              break;
-            }
-            case 17: {
+            case 9: {
 
               totalNanos_ = input.readDouble();
               break;
             }
-            case 24: {
+            case 16: {
 
               transactionCount_ = input.readInt64();
               break;
             }
-            case 32: {
+            case 24: {
 
               errorCount_ = input.readInt64();
               break;
             }
-            case 41: {
+            case 33: {
 
               totalCpuNanos_ = input.readDouble();
               break;
             }
-            case 49: {
+            case 41: {
 
               totalBlockedNanos_ = input.readDouble();
               break;
             }
-            case 57: {
+            case 49: {
 
               totalWaitedNanos_ = input.readDouble();
               break;
             }
-            case 65: {
+            case 57: {
 
               totalAllocatedBytes_ = input.readDouble();
               break;
             }
-            case 74: {
+            case 66: {
               org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Histogram.Builder subBuilder = null;
               if (totalNanosHistogram_ != null) {
                 subBuilder = totalNanosHistogram_.toBuilder();
@@ -247,23 +1637,23 @@ public final class AggregateOuterClass {
 
               break;
             }
-            case 82: {
-              if (!((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
+            case 74: {
+              if (!((mutable_bitField0_ & 0x00000100) == 0x00000100)) {
                 rootTimer_ = new java.util.ArrayList<org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer>();
-                mutable_bitField0_ |= 0x00000200;
+                mutable_bitField0_ |= 0x00000100;
               }
               rootTimer_.add(input.readMessage(org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer.parser(), extensionRegistry));
               break;
             }
-            case 90: {
-              if (!((mutable_bitField0_ & 0x00000400) == 0x00000400)) {
+            case 82: {
+              if (!((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
                 queriesByType_ = new java.util.ArrayList<org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType>();
-                mutable_bitField0_ |= 0x00000400;
+                mutable_bitField0_ |= 0x00000200;
               }
               queriesByType_.add(input.readMessage(org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType.parser(), extensionRegistry));
               break;
             }
-            case 98: {
+            case 90: {
               org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree.Builder subBuilder = null;
               if (profileTree_ != null) {
                 subBuilder = profileTree_.toBuilder();
@@ -285,10 +1675,10 @@ public final class AggregateOuterClass {
             new com.google.protobuf.InvalidProtocolBufferException(
                 e.getMessage()).setUnfinishedMessage(this));
       } finally {
-        if (((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
+        if (((mutable_bitField0_ & 0x00000100) == 0x00000100)) {
           rootTimer_ = java.util.Collections.unmodifiableList(rootTimer_);
         }
-        if (((mutable_bitField0_ & 0x00000400) == 0x00000400)) {
+        if (((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
           queriesByType_ = java.util.Collections.unmodifiableList(queriesByType_);
         }
         makeExtensionsImmutable();
@@ -3444,46 +4834,37 @@ public final class AggregateOuterClass {
     }
 
     private int bitField0_;
-    public static final int CAPTURE_TIME_FIELD_NUMBER = 1;
-    private long captureTime_;
-    /**
-     * <code>optional int64 capture_time = 1;</code>
-     */
-    public long getCaptureTime() {
-      return captureTime_;
-    }
-
-    public static final int TOTAL_NANOS_FIELD_NUMBER = 2;
+    public static final int TOTAL_NANOS_FIELD_NUMBER = 1;
     private double totalNanos_;
     /**
-     * <code>optional double total_nanos = 2;</code>
+     * <code>optional double total_nanos = 1;</code>
      */
     public double getTotalNanos() {
       return totalNanos_;
     }
 
-    public static final int TRANSACTION_COUNT_FIELD_NUMBER = 3;
+    public static final int TRANSACTION_COUNT_FIELD_NUMBER = 2;
     private long transactionCount_;
     /**
-     * <code>optional int64 transaction_count = 3;</code>
+     * <code>optional int64 transaction_count = 2;</code>
      */
     public long getTransactionCount() {
       return transactionCount_;
     }
 
-    public static final int ERROR_COUNT_FIELD_NUMBER = 4;
+    public static final int ERROR_COUNT_FIELD_NUMBER = 3;
     private long errorCount_;
     /**
-     * <code>optional int64 error_count = 4;</code>
+     * <code>optional int64 error_count = 3;</code>
      */
     public long getErrorCount() {
       return errorCount_;
     }
 
-    public static final int TOTAL_CPU_NANOS_FIELD_NUMBER = 5;
+    public static final int TOTAL_CPU_NANOS_FIELD_NUMBER = 4;
     private double totalCpuNanos_;
     /**
-     * <code>optional double total_cpu_nanos = 5;</code>
+     * <code>optional double total_cpu_nanos = 4;</code>
      *
      * <pre>
      * -1 means N/A
@@ -3493,10 +4874,10 @@ public final class AggregateOuterClass {
       return totalCpuNanos_;
     }
 
-    public static final int TOTAL_BLOCKED_NANOS_FIELD_NUMBER = 6;
+    public static final int TOTAL_BLOCKED_NANOS_FIELD_NUMBER = 5;
     private double totalBlockedNanos_;
     /**
-     * <code>optional double total_blocked_nanos = 6;</code>
+     * <code>optional double total_blocked_nanos = 5;</code>
      *
      * <pre>
      * -1 means N/A
@@ -3506,10 +4887,10 @@ public final class AggregateOuterClass {
       return totalBlockedNanos_;
     }
 
-    public static final int TOTAL_WAITED_NANOS_FIELD_NUMBER = 7;
+    public static final int TOTAL_WAITED_NANOS_FIELD_NUMBER = 6;
     private double totalWaitedNanos_;
     /**
-     * <code>optional double total_waited_nanos = 7;</code>
+     * <code>optional double total_waited_nanos = 6;</code>
      *
      * <pre>
      * -1 means N/A
@@ -3519,10 +4900,10 @@ public final class AggregateOuterClass {
       return totalWaitedNanos_;
     }
 
-    public static final int TOTAL_ALLOCATED_BYTES_FIELD_NUMBER = 8;
+    public static final int TOTAL_ALLOCATED_BYTES_FIELD_NUMBER = 7;
     private double totalAllocatedBytes_;
     /**
-     * <code>optional double total_allocated_bytes = 8;</code>
+     * <code>optional double total_allocated_bytes = 7;</code>
      *
      * <pre>
      * -1 means N/A
@@ -3532,113 +4913,113 @@ public final class AggregateOuterClass {
       return totalAllocatedBytes_;
     }
 
-    public static final int TOTAL_NANOS_HISTOGRAM_FIELD_NUMBER = 9;
+    public static final int TOTAL_NANOS_HISTOGRAM_FIELD_NUMBER = 8;
     private org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Histogram totalNanosHistogram_;
     /**
-     * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 9;</code>
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 8;</code>
      */
     public boolean hasTotalNanosHistogram() {
       return totalNanosHistogram_ != null;
     }
     /**
-     * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 9;</code>
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 8;</code>
      */
     public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Histogram getTotalNanosHistogram() {
       return totalNanosHistogram_ == null ? org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Histogram.getDefaultInstance() : totalNanosHistogram_;
     }
     /**
-     * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 9;</code>
+     * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 8;</code>
      */
     public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.HistogramOrBuilder getTotalNanosHistogramOrBuilder() {
       return getTotalNanosHistogram();
     }
 
-    public static final int ROOT_TIMER_FIELD_NUMBER = 10;
+    public static final int ROOT_TIMER_FIELD_NUMBER = 9;
     private java.util.List<org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer> rootTimer_;
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
      */
     public java.util.List<org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer> getRootTimerList() {
       return rootTimer_;
     }
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
      */
     public java.util.List<? extends org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.TimerOrBuilder> 
         getRootTimerOrBuilderList() {
       return rootTimer_;
     }
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
      */
     public int getRootTimerCount() {
       return rootTimer_.size();
     }
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
      */
     public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer getRootTimer(int index) {
       return rootTimer_.get(index);
     }
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
      */
     public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.TimerOrBuilder getRootTimerOrBuilder(
         int index) {
       return rootTimer_.get(index);
     }
 
-    public static final int QUERIES_BY_TYPE_FIELD_NUMBER = 11;
+    public static final int QUERIES_BY_TYPE_FIELD_NUMBER = 10;
     private java.util.List<org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType> queriesByType_;
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
      */
     public java.util.List<org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType> getQueriesByTypeList() {
       return queriesByType_;
     }
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
      */
     public java.util.List<? extends org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByTypeOrBuilder> 
         getQueriesByTypeOrBuilderList() {
       return queriesByType_;
     }
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
      */
     public int getQueriesByTypeCount() {
       return queriesByType_.size();
     }
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
      */
     public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType getQueriesByType(int index) {
       return queriesByType_.get(index);
     }
     /**
-     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+     * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
      */
     public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByTypeOrBuilder getQueriesByTypeOrBuilder(
         int index) {
       return queriesByType_.get(index);
     }
 
-    public static final int PROFILE_TREE_FIELD_NUMBER = 12;
+    public static final int PROFILE_TREE_FIELD_NUMBER = 11;
     private org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree profileTree_;
     /**
-     * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 12;</code>
+     * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 11;</code>
      */
     public boolean hasProfileTree() {
       return profileTree_ != null;
     }
     /**
-     * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 12;</code>
+     * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 11;</code>
      */
     public org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree getProfileTree() {
       return profileTree_ == null ? org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree.getDefaultInstance() : profileTree_;
     }
     /**
-     * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 12;</code>
+     * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 11;</code>
      */
     public org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTreeOrBuilder getProfileTreeOrBuilder() {
       return getProfileTree();
@@ -3656,41 +5037,38 @@ public final class AggregateOuterClass {
 
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      if (captureTime_ != 0L) {
-        output.writeInt64(1, captureTime_);
-      }
       if (totalNanos_ != 0D) {
-        output.writeDouble(2, totalNanos_);
+        output.writeDouble(1, totalNanos_);
       }
       if (transactionCount_ != 0L) {
-        output.writeInt64(3, transactionCount_);
+        output.writeInt64(2, transactionCount_);
       }
       if (errorCount_ != 0L) {
-        output.writeInt64(4, errorCount_);
+        output.writeInt64(3, errorCount_);
       }
       if (totalCpuNanos_ != 0D) {
-        output.writeDouble(5, totalCpuNanos_);
+        output.writeDouble(4, totalCpuNanos_);
       }
       if (totalBlockedNanos_ != 0D) {
-        output.writeDouble(6, totalBlockedNanos_);
+        output.writeDouble(5, totalBlockedNanos_);
       }
       if (totalWaitedNanos_ != 0D) {
-        output.writeDouble(7, totalWaitedNanos_);
+        output.writeDouble(6, totalWaitedNanos_);
       }
       if (totalAllocatedBytes_ != 0D) {
-        output.writeDouble(8, totalAllocatedBytes_);
+        output.writeDouble(7, totalAllocatedBytes_);
       }
       if (totalNanosHistogram_ != null) {
-        output.writeMessage(9, getTotalNanosHistogram());
+        output.writeMessage(8, getTotalNanosHistogram());
       }
       for (int i = 0; i < rootTimer_.size(); i++) {
-        output.writeMessage(10, rootTimer_.get(i));
+        output.writeMessage(9, rootTimer_.get(i));
       }
       for (int i = 0; i < queriesByType_.size(); i++) {
-        output.writeMessage(11, queriesByType_.get(i));
+        output.writeMessage(10, queriesByType_.get(i));
       }
       if (profileTree_ != null) {
-        output.writeMessage(12, getProfileTree());
+        output.writeMessage(11, getProfileTree());
       }
     }
 
@@ -3699,53 +5077,49 @@ public final class AggregateOuterClass {
       if (size != -1) return size;
 
       size = 0;
-      if (captureTime_ != 0L) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(1, captureTime_);
-      }
       if (totalNanos_ != 0D) {
         size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(2, totalNanos_);
+          .computeDoubleSize(1, totalNanos_);
       }
       if (transactionCount_ != 0L) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(3, transactionCount_);
+          .computeInt64Size(2, transactionCount_);
       }
       if (errorCount_ != 0L) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(4, errorCount_);
+          .computeInt64Size(3, errorCount_);
       }
       if (totalCpuNanos_ != 0D) {
         size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(5, totalCpuNanos_);
+          .computeDoubleSize(4, totalCpuNanos_);
       }
       if (totalBlockedNanos_ != 0D) {
         size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(6, totalBlockedNanos_);
+          .computeDoubleSize(5, totalBlockedNanos_);
       }
       if (totalWaitedNanos_ != 0D) {
         size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(7, totalWaitedNanos_);
+          .computeDoubleSize(6, totalWaitedNanos_);
       }
       if (totalAllocatedBytes_ != 0D) {
         size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(8, totalAllocatedBytes_);
+          .computeDoubleSize(7, totalAllocatedBytes_);
       }
       if (totalNanosHistogram_ != null) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(9, getTotalNanosHistogram());
+          .computeMessageSize(8, getTotalNanosHistogram());
       }
       for (int i = 0; i < rootTimer_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(10, rootTimer_.get(i));
+          .computeMessageSize(9, rootTimer_.get(i));
       }
       for (int i = 0; i < queriesByType_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(11, queriesByType_.get(i));
+          .computeMessageSize(10, queriesByType_.get(i));
       }
       if (profileTree_ != null) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(12, getProfileTree());
+          .computeMessageSize(11, getProfileTree());
       }
       memoizedSize = size;
       return size;
@@ -3864,8 +5238,6 @@ public final class AggregateOuterClass {
       }
       public Builder clear() {
         super.clear();
-        captureTime_ = 0L;
-
         totalNanos_ = 0D;
 
         transactionCount_ = 0L;
@@ -3888,13 +5260,13 @@ public final class AggregateOuterClass {
         }
         if (rootTimerBuilder_ == null) {
           rootTimer_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000200);
+          bitField0_ = (bitField0_ & ~0x00000100);
         } else {
           rootTimerBuilder_.clear();
         }
         if (queriesByTypeBuilder_ == null) {
           queriesByType_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000400);
+          bitField0_ = (bitField0_ & ~0x00000200);
         } else {
           queriesByTypeBuilder_.clear();
         }
@@ -3928,7 +5300,6 @@ public final class AggregateOuterClass {
         org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate result = new org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
-        result.captureTime_ = captureTime_;
         result.totalNanos_ = totalNanos_;
         result.transactionCount_ = transactionCount_;
         result.errorCount_ = errorCount_;
@@ -3942,18 +5313,18 @@ public final class AggregateOuterClass {
           result.totalNanosHistogram_ = totalNanosHistogramBuilder_.build();
         }
         if (rootTimerBuilder_ == null) {
-          if (((bitField0_ & 0x00000200) == 0x00000200)) {
+          if (((bitField0_ & 0x00000100) == 0x00000100)) {
             rootTimer_ = java.util.Collections.unmodifiableList(rootTimer_);
-            bitField0_ = (bitField0_ & ~0x00000200);
+            bitField0_ = (bitField0_ & ~0x00000100);
           }
           result.rootTimer_ = rootTimer_;
         } else {
           result.rootTimer_ = rootTimerBuilder_.build();
         }
         if (queriesByTypeBuilder_ == null) {
-          if (((bitField0_ & 0x00000400) == 0x00000400)) {
+          if (((bitField0_ & 0x00000200) == 0x00000200)) {
             queriesByType_ = java.util.Collections.unmodifiableList(queriesByType_);
-            bitField0_ = (bitField0_ & ~0x00000400);
+            bitField0_ = (bitField0_ & ~0x00000200);
           }
           result.queriesByType_ = queriesByType_;
         } else {
@@ -3980,9 +5351,6 @@ public final class AggregateOuterClass {
 
       public Builder mergeFrom(org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate other) {
         if (other == org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.getDefaultInstance()) return this;
-        if (other.getCaptureTime() != 0L) {
-          setCaptureTime(other.getCaptureTime());
-        }
         if (other.getTotalNanos() != 0D) {
           setTotalNanos(other.getTotalNanos());
         }
@@ -4011,7 +5379,7 @@ public final class AggregateOuterClass {
           if (!other.rootTimer_.isEmpty()) {
             if (rootTimer_.isEmpty()) {
               rootTimer_ = other.rootTimer_;
-              bitField0_ = (bitField0_ & ~0x00000200);
+              bitField0_ = (bitField0_ & ~0x00000100);
             } else {
               ensureRootTimerIsMutable();
               rootTimer_.addAll(other.rootTimer_);
@@ -4024,7 +5392,7 @@ public final class AggregateOuterClass {
               rootTimerBuilder_.dispose();
               rootTimerBuilder_ = null;
               rootTimer_ = other.rootTimer_;
-              bitField0_ = (bitField0_ & ~0x00000200);
+              bitField0_ = (bitField0_ & ~0x00000100);
               rootTimerBuilder_ = 
                 com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                    getRootTimerFieldBuilder() : null;
@@ -4037,7 +5405,7 @@ public final class AggregateOuterClass {
           if (!other.queriesByType_.isEmpty()) {
             if (queriesByType_.isEmpty()) {
               queriesByType_ = other.queriesByType_;
-              bitField0_ = (bitField0_ & ~0x00000400);
+              bitField0_ = (bitField0_ & ~0x00000200);
             } else {
               ensureQueriesByTypeIsMutable();
               queriesByType_.addAll(other.queriesByType_);
@@ -4050,7 +5418,7 @@ public final class AggregateOuterClass {
               queriesByTypeBuilder_.dispose();
               queriesByTypeBuilder_ = null;
               queriesByType_ = other.queriesByType_;
-              bitField0_ = (bitField0_ & ~0x00000400);
+              bitField0_ = (bitField0_ & ~0x00000200);
               queriesByTypeBuilder_ = 
                 com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                    getQueriesByTypeFieldBuilder() : null;
@@ -4089,41 +5457,15 @@ public final class AggregateOuterClass {
       }
       private int bitField0_;
 
-      private long captureTime_ ;
-      /**
-       * <code>optional int64 capture_time = 1;</code>
-       */
-      public long getCaptureTime() {
-        return captureTime_;
-      }
-      /**
-       * <code>optional int64 capture_time = 1;</code>
-       */
-      public Builder setCaptureTime(long value) {
-        
-        captureTime_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional int64 capture_time = 1;</code>
-       */
-      public Builder clearCaptureTime() {
-        
-        captureTime_ = 0L;
-        onChanged();
-        return this;
-      }
-
       private double totalNanos_ ;
       /**
-       * <code>optional double total_nanos = 2;</code>
+       * <code>optional double total_nanos = 1;</code>
        */
       public double getTotalNanos() {
         return totalNanos_;
       }
       /**
-       * <code>optional double total_nanos = 2;</code>
+       * <code>optional double total_nanos = 1;</code>
        */
       public Builder setTotalNanos(double value) {
         
@@ -4132,7 +5474,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>optional double total_nanos = 2;</code>
+       * <code>optional double total_nanos = 1;</code>
        */
       public Builder clearTotalNanos() {
         
@@ -4143,13 +5485,13 @@ public final class AggregateOuterClass {
 
       private long transactionCount_ ;
       /**
-       * <code>optional int64 transaction_count = 3;</code>
+       * <code>optional int64 transaction_count = 2;</code>
        */
       public long getTransactionCount() {
         return transactionCount_;
       }
       /**
-       * <code>optional int64 transaction_count = 3;</code>
+       * <code>optional int64 transaction_count = 2;</code>
        */
       public Builder setTransactionCount(long value) {
         
@@ -4158,7 +5500,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>optional int64 transaction_count = 3;</code>
+       * <code>optional int64 transaction_count = 2;</code>
        */
       public Builder clearTransactionCount() {
         
@@ -4169,13 +5511,13 @@ public final class AggregateOuterClass {
 
       private long errorCount_ ;
       /**
-       * <code>optional int64 error_count = 4;</code>
+       * <code>optional int64 error_count = 3;</code>
        */
       public long getErrorCount() {
         return errorCount_;
       }
       /**
-       * <code>optional int64 error_count = 4;</code>
+       * <code>optional int64 error_count = 3;</code>
        */
       public Builder setErrorCount(long value) {
         
@@ -4184,7 +5526,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>optional int64 error_count = 4;</code>
+       * <code>optional int64 error_count = 3;</code>
        */
       public Builder clearErrorCount() {
         
@@ -4195,7 +5537,7 @@ public final class AggregateOuterClass {
 
       private double totalCpuNanos_ ;
       /**
-       * <code>optional double total_cpu_nanos = 5;</code>
+       * <code>optional double total_cpu_nanos = 4;</code>
        *
        * <pre>
        * -1 means N/A
@@ -4205,7 +5547,7 @@ public final class AggregateOuterClass {
         return totalCpuNanos_;
       }
       /**
-       * <code>optional double total_cpu_nanos = 5;</code>
+       * <code>optional double total_cpu_nanos = 4;</code>
        *
        * <pre>
        * -1 means N/A
@@ -4218,7 +5560,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>optional double total_cpu_nanos = 5;</code>
+       * <code>optional double total_cpu_nanos = 4;</code>
        *
        * <pre>
        * -1 means N/A
@@ -4233,7 +5575,7 @@ public final class AggregateOuterClass {
 
       private double totalBlockedNanos_ ;
       /**
-       * <code>optional double total_blocked_nanos = 6;</code>
+       * <code>optional double total_blocked_nanos = 5;</code>
        *
        * <pre>
        * -1 means N/A
@@ -4243,7 +5585,7 @@ public final class AggregateOuterClass {
         return totalBlockedNanos_;
       }
       /**
-       * <code>optional double total_blocked_nanos = 6;</code>
+       * <code>optional double total_blocked_nanos = 5;</code>
        *
        * <pre>
        * -1 means N/A
@@ -4256,7 +5598,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>optional double total_blocked_nanos = 6;</code>
+       * <code>optional double total_blocked_nanos = 5;</code>
        *
        * <pre>
        * -1 means N/A
@@ -4271,7 +5613,7 @@ public final class AggregateOuterClass {
 
       private double totalWaitedNanos_ ;
       /**
-       * <code>optional double total_waited_nanos = 7;</code>
+       * <code>optional double total_waited_nanos = 6;</code>
        *
        * <pre>
        * -1 means N/A
@@ -4281,7 +5623,7 @@ public final class AggregateOuterClass {
         return totalWaitedNanos_;
       }
       /**
-       * <code>optional double total_waited_nanos = 7;</code>
+       * <code>optional double total_waited_nanos = 6;</code>
        *
        * <pre>
        * -1 means N/A
@@ -4294,7 +5636,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>optional double total_waited_nanos = 7;</code>
+       * <code>optional double total_waited_nanos = 6;</code>
        *
        * <pre>
        * -1 means N/A
@@ -4309,7 +5651,7 @@ public final class AggregateOuterClass {
 
       private double totalAllocatedBytes_ ;
       /**
-       * <code>optional double total_allocated_bytes = 8;</code>
+       * <code>optional double total_allocated_bytes = 7;</code>
        *
        * <pre>
        * -1 means N/A
@@ -4319,7 +5661,7 @@ public final class AggregateOuterClass {
         return totalAllocatedBytes_;
       }
       /**
-       * <code>optional double total_allocated_bytes = 8;</code>
+       * <code>optional double total_allocated_bytes = 7;</code>
        *
        * <pre>
        * -1 means N/A
@@ -4332,7 +5674,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>optional double total_allocated_bytes = 8;</code>
+       * <code>optional double total_allocated_bytes = 7;</code>
        *
        * <pre>
        * -1 means N/A
@@ -4349,13 +5691,13 @@ public final class AggregateOuterClass {
       private com.google.protobuf.SingleFieldBuilder<
           org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Histogram, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Histogram.Builder, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.HistogramOrBuilder> totalNanosHistogramBuilder_;
       /**
-       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 9;</code>
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 8;</code>
        */
       public boolean hasTotalNanosHistogram() {
         return totalNanosHistogramBuilder_ != null || totalNanosHistogram_ != null;
       }
       /**
-       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 9;</code>
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 8;</code>
        */
       public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Histogram getTotalNanosHistogram() {
         if (totalNanosHistogramBuilder_ == null) {
@@ -4365,7 +5707,7 @@ public final class AggregateOuterClass {
         }
       }
       /**
-       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 9;</code>
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 8;</code>
        */
       public Builder setTotalNanosHistogram(org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Histogram value) {
         if (totalNanosHistogramBuilder_ == null) {
@@ -4381,7 +5723,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 9;</code>
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 8;</code>
        */
       public Builder setTotalNanosHistogram(
           org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Histogram.Builder builderForValue) {
@@ -4395,7 +5737,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 9;</code>
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 8;</code>
        */
       public Builder mergeTotalNanosHistogram(org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Histogram value) {
         if (totalNanosHistogramBuilder_ == null) {
@@ -4413,7 +5755,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 9;</code>
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 8;</code>
        */
       public Builder clearTotalNanosHistogram() {
         if (totalNanosHistogramBuilder_ == null) {
@@ -4427,7 +5769,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 9;</code>
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 8;</code>
        */
       public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Histogram.Builder getTotalNanosHistogramBuilder() {
         
@@ -4435,7 +5777,7 @@ public final class AggregateOuterClass {
         return getTotalNanosHistogramFieldBuilder().getBuilder();
       }
       /**
-       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 9;</code>
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 8;</code>
        */
       public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.HistogramOrBuilder getTotalNanosHistogramOrBuilder() {
         if (totalNanosHistogramBuilder_ != null) {
@@ -4446,7 +5788,7 @@ public final class AggregateOuterClass {
         }
       }
       /**
-       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 9;</code>
+       * <code>optional .org_glowroot_collector_spi_model.Aggregate.Histogram total_nanos_histogram = 8;</code>
        */
       private com.google.protobuf.SingleFieldBuilder<
           org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Histogram, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Histogram.Builder, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.HistogramOrBuilder> 
@@ -4465,9 +5807,9 @@ public final class AggregateOuterClass {
       private java.util.List<org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer> rootTimer_ =
         java.util.Collections.emptyList();
       private void ensureRootTimerIsMutable() {
-        if (!((bitField0_ & 0x00000200) == 0x00000200)) {
+        if (!((bitField0_ & 0x00000100) == 0x00000100)) {
           rootTimer_ = new java.util.ArrayList<org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer>(rootTimer_);
-          bitField0_ |= 0x00000200;
+          bitField0_ |= 0x00000100;
          }
       }
 
@@ -4475,7 +5817,7 @@ public final class AggregateOuterClass {
           org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer.Builder, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.TimerOrBuilder> rootTimerBuilder_;
 
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public java.util.List<org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer> getRootTimerList() {
         if (rootTimerBuilder_ == null) {
@@ -4485,7 +5827,7 @@ public final class AggregateOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public int getRootTimerCount() {
         if (rootTimerBuilder_ == null) {
@@ -4495,7 +5837,7 @@ public final class AggregateOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer getRootTimer(int index) {
         if (rootTimerBuilder_ == null) {
@@ -4505,7 +5847,7 @@ public final class AggregateOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public Builder setRootTimer(
           int index, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer value) {
@@ -4522,7 +5864,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public Builder setRootTimer(
           int index, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer.Builder builderForValue) {
@@ -4536,7 +5878,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public Builder addRootTimer(org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer value) {
         if (rootTimerBuilder_ == null) {
@@ -4552,7 +5894,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public Builder addRootTimer(
           int index, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer value) {
@@ -4569,7 +5911,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public Builder addRootTimer(
           org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer.Builder builderForValue) {
@@ -4583,7 +5925,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public Builder addRootTimer(
           int index, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer.Builder builderForValue) {
@@ -4597,7 +5939,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public Builder addAllRootTimer(
           java.lang.Iterable<? extends org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer> values) {
@@ -4612,12 +5954,12 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public Builder clearRootTimer() {
         if (rootTimerBuilder_ == null) {
           rootTimer_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000200);
+          bitField0_ = (bitField0_ & ~0x00000100);
           onChanged();
         } else {
           rootTimerBuilder_.clear();
@@ -4625,7 +5967,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public Builder removeRootTimer(int index) {
         if (rootTimerBuilder_ == null) {
@@ -4638,14 +5980,14 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer.Builder getRootTimerBuilder(
           int index) {
         return getRootTimerFieldBuilder().getBuilder(index);
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.TimerOrBuilder getRootTimerOrBuilder(
           int index) {
@@ -4655,7 +5997,7 @@ public final class AggregateOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public java.util.List<? extends org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.TimerOrBuilder> 
            getRootTimerOrBuilderList() {
@@ -4666,14 +6008,14 @@ public final class AggregateOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer.Builder addRootTimerBuilder() {
         return getRootTimerFieldBuilder().addBuilder(
             org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer.getDefaultInstance());
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer.Builder addRootTimerBuilder(
           int index) {
@@ -4681,7 +6023,7 @@ public final class AggregateOuterClass {
             index, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer.getDefaultInstance());
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 10;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.Timer root_timer = 9;</code>
        */
       public java.util.List<org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer.Builder> 
            getRootTimerBuilderList() {
@@ -4694,7 +6036,7 @@ public final class AggregateOuterClass {
           rootTimerBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
               org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.Timer.Builder, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.TimerOrBuilder>(
                   rootTimer_,
-                  ((bitField0_ & 0x00000200) == 0x00000200),
+                  ((bitField0_ & 0x00000100) == 0x00000100),
                   getParentForChildren(),
                   isClean());
           rootTimer_ = null;
@@ -4705,9 +6047,9 @@ public final class AggregateOuterClass {
       private java.util.List<org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType> queriesByType_ =
         java.util.Collections.emptyList();
       private void ensureQueriesByTypeIsMutable() {
-        if (!((bitField0_ & 0x00000400) == 0x00000400)) {
+        if (!((bitField0_ & 0x00000200) == 0x00000200)) {
           queriesByType_ = new java.util.ArrayList<org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType>(queriesByType_);
-          bitField0_ |= 0x00000400;
+          bitField0_ |= 0x00000200;
          }
       }
 
@@ -4715,7 +6057,7 @@ public final class AggregateOuterClass {
           org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType.Builder, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByTypeOrBuilder> queriesByTypeBuilder_;
 
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public java.util.List<org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType> getQueriesByTypeList() {
         if (queriesByTypeBuilder_ == null) {
@@ -4725,7 +6067,7 @@ public final class AggregateOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public int getQueriesByTypeCount() {
         if (queriesByTypeBuilder_ == null) {
@@ -4735,7 +6077,7 @@ public final class AggregateOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType getQueriesByType(int index) {
         if (queriesByTypeBuilder_ == null) {
@@ -4745,7 +6087,7 @@ public final class AggregateOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public Builder setQueriesByType(
           int index, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType value) {
@@ -4762,7 +6104,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public Builder setQueriesByType(
           int index, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType.Builder builderForValue) {
@@ -4776,7 +6118,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public Builder addQueriesByType(org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType value) {
         if (queriesByTypeBuilder_ == null) {
@@ -4792,7 +6134,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public Builder addQueriesByType(
           int index, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType value) {
@@ -4809,7 +6151,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public Builder addQueriesByType(
           org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType.Builder builderForValue) {
@@ -4823,7 +6165,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public Builder addQueriesByType(
           int index, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType.Builder builderForValue) {
@@ -4837,7 +6179,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public Builder addAllQueriesByType(
           java.lang.Iterable<? extends org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType> values) {
@@ -4852,12 +6194,12 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public Builder clearQueriesByType() {
         if (queriesByTypeBuilder_ == null) {
           queriesByType_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000400);
+          bitField0_ = (bitField0_ & ~0x00000200);
           onChanged();
         } else {
           queriesByTypeBuilder_.clear();
@@ -4865,7 +6207,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public Builder removeQueriesByType(int index) {
         if (queriesByTypeBuilder_ == null) {
@@ -4878,14 +6220,14 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType.Builder getQueriesByTypeBuilder(
           int index) {
         return getQueriesByTypeFieldBuilder().getBuilder(index);
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByTypeOrBuilder getQueriesByTypeOrBuilder(
           int index) {
@@ -4895,7 +6237,7 @@ public final class AggregateOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public java.util.List<? extends org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByTypeOrBuilder> 
            getQueriesByTypeOrBuilderList() {
@@ -4906,14 +6248,14 @@ public final class AggregateOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType.Builder addQueriesByTypeBuilder() {
         return getQueriesByTypeFieldBuilder().addBuilder(
             org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType.getDefaultInstance());
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType.Builder addQueriesByTypeBuilder(
           int index) {
@@ -4921,7 +6263,7 @@ public final class AggregateOuterClass {
             index, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType.getDefaultInstance());
       }
       /**
-       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 11;</code>
+       * <code>repeated .org_glowroot_collector_spi_model.Aggregate.QueriesByType queries_by_type = 10;</code>
        */
       public java.util.List<org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType.Builder> 
            getQueriesByTypeBuilderList() {
@@ -4934,7 +6276,7 @@ public final class AggregateOuterClass {
           queriesByTypeBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
               org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType.Builder, org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByTypeOrBuilder>(
                   queriesByType_,
-                  ((bitField0_ & 0x00000400) == 0x00000400),
+                  ((bitField0_ & 0x00000200) == 0x00000200),
                   getParentForChildren(),
                   isClean());
           queriesByType_ = null;
@@ -4946,13 +6288,13 @@ public final class AggregateOuterClass {
       private com.google.protobuf.SingleFieldBuilder<
           org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree, org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree.Builder, org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTreeOrBuilder> profileTreeBuilder_;
       /**
-       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 12;</code>
+       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 11;</code>
        */
       public boolean hasProfileTree() {
         return profileTreeBuilder_ != null || profileTree_ != null;
       }
       /**
-       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 12;</code>
+       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 11;</code>
        */
       public org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree getProfileTree() {
         if (profileTreeBuilder_ == null) {
@@ -4962,7 +6304,7 @@ public final class AggregateOuterClass {
         }
       }
       /**
-       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 12;</code>
+       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 11;</code>
        */
       public Builder setProfileTree(org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree value) {
         if (profileTreeBuilder_ == null) {
@@ -4978,7 +6320,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 12;</code>
+       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 11;</code>
        */
       public Builder setProfileTree(
           org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree.Builder builderForValue) {
@@ -4992,7 +6334,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 12;</code>
+       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 11;</code>
        */
       public Builder mergeProfileTree(org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree value) {
         if (profileTreeBuilder_ == null) {
@@ -5010,7 +6352,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 12;</code>
+       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 11;</code>
        */
       public Builder clearProfileTree() {
         if (profileTreeBuilder_ == null) {
@@ -5024,7 +6366,7 @@ public final class AggregateOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 12;</code>
+       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 11;</code>
        */
       public org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree.Builder getProfileTreeBuilder() {
         
@@ -5032,7 +6374,7 @@ public final class AggregateOuterClass {
         return getProfileTreeFieldBuilder().getBuilder();
       }
       /**
-       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 12;</code>
+       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 11;</code>
        */
       public org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTreeOrBuilder getProfileTreeOrBuilder() {
         if (profileTreeBuilder_ != null) {
@@ -5043,7 +6385,7 @@ public final class AggregateOuterClass {
         }
       }
       /**
-       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 12;</code>
+       * <code>optional .org_glowroot_collector_spi_model.ProfileTree profile_tree = 11;</code>
        */
       private com.google.protobuf.SingleFieldBuilder<
           org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree, org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree.Builder, org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTreeOrBuilder> 
@@ -5117,6 +6459,16 @@ public final class AggregateOuterClass {
   }
 
   private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_org_glowroot_collector_spi_model_OverallAggregate_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_org_glowroot_collector_spi_model_OverallAggregate_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_org_glowroot_collector_spi_model_TransactionAggregate_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_org_glowroot_collector_spi_model_TransactionAggregate_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_org_glowroot_collector_spi_model_Aggregate_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
@@ -5151,32 +6503,37 @@ public final class AggregateOuterClass {
   static {
     java.lang.String[] descriptorData = {
       "\n\017Aggregate.proto\022 org_glowroot_collecto" +
-      "r_spi_model\032\021ProfileTree.proto\"\234\007\n\tAggre" +
-      "gate\022\024\n\014capture_time\030\001 \001(\003\022\023\n\013total_nano" +
-      "s\030\002 \001(\001\022\031\n\021transaction_count\030\003 \001(\003\022\023\n\013er" +
-      "ror_count\030\004 \001(\003\022\027\n\017total_cpu_nanos\030\005 \001(\001" +
-      "\022\033\n\023total_blocked_nanos\030\006 \001(\001\022\032\n\022total_w" +
-      "aited_nanos\030\007 \001(\001\022\035\n\025total_allocated_byt" +
-      "es\030\010 \001(\001\022T\n\025total_nanos_histogram\030\t \001(\0132" +
-      "5.org_glowroot_collector_spi_model.Aggre" +
-      "gate.Histogram\022E\n\nroot_timer\030\n \003(\01321.org",
-      "_glowroot_collector_spi_model.Aggregate." +
-      "Timer\022R\n\017queries_by_type\030\013 \003(\01329.org_glo" +
-      "wroot_collector_spi_model.Aggregate.Quer" +
-      "iesByType\022C\n\014profile_tree\030\014 \001(\0132-.org_gl" +
-      "owroot_collector_spi_model.ProfileTree\032=" +
-      "\n\tHistogram\022\031\n\021ordered_raw_value\030\001 \003(\003\022\025" +
-      "\n\rencoded_bytes\030\002 \001(\014\032\223\001\n\005Timer\022\014\n\004name\030" +
-      "\001 \001(\t\022\020\n\010extended\030\002 \001(\010\022\023\n\013total_nanos\030\003" +
-      " \001(\001\022\r\n\005count\030\004 \001(\003\022F\n\013child_timer\030\005 \003(\013" +
-      "21.org_glowroot_collector_spi_model.Aggr",
-      "egate.Timer\032_\n\rQueriesByType\022\014\n\004type\030\001 \001" +
-      "(\t\022@\n\005query\030\002 \003(\01321.org_glowroot_collect" +
-      "or_spi_model.Aggregate.Query\032W\n\005Query\022\014\n" +
-      "\004text\030\001 \001(\t\022\023\n\013total_nanos\030\002 \001(\001\022\022\n\ntota" +
-      "l_rows\030\003 \001(\003\022\027\n\017execution_count\030\004 \001(\003B\"\n" +
-      " org.glowroot.collector.spi.modelb\006proto" +
-      "3"
+      "r_spi_model\032\021ProfileTree.proto\"l\n\020Overal" +
+      "lAggregate\022\030\n\020transaction_type\030\001 \001(\t\022>\n\t" +
+      "aggregate\030\002 \001(\0132+.org_glowroot_collector" +
+      "_spi_model.Aggregate\"\212\001\n\024TransactionAggr" +
+      "egate\022\030\n\020transaction_type\030\001 \001(\t\022\030\n\020trans" +
+      "action_name\030\002 \001(\t\022>\n\taggregate\030\003 \001(\0132+.o" +
+      "rg_glowroot_collector_spi_model.Aggregat" +
+      "e\"\206\007\n\tAggregate\022\023\n\013total_nanos\030\001 \001(\001\022\031\n\021" +
+      "transaction_count\030\002 \001(\003\022\023\n\013error_count\030\003",
+      " \001(\003\022\027\n\017total_cpu_nanos\030\004 \001(\001\022\033\n\023total_b" +
+      "locked_nanos\030\005 \001(\001\022\032\n\022total_waited_nanos" +
+      "\030\006 \001(\001\022\035\n\025total_allocated_bytes\030\007 \001(\001\022T\n" +
+      "\025total_nanos_histogram\030\010 \001(\01325.org_glowr" +
+      "oot_collector_spi_model.Aggregate.Histog" +
+      "ram\022E\n\nroot_timer\030\t \003(\01321.org_glowroot_c" +
+      "ollector_spi_model.Aggregate.Timer\022R\n\017qu" +
+      "eries_by_type\030\n \003(\01329.org_glowroot_colle" +
+      "ctor_spi_model.Aggregate.QueriesByType\022C" +
+      "\n\014profile_tree\030\013 \001(\0132-.org_glowroot_coll",
+      "ector_spi_model.ProfileTree\032=\n\tHistogram" +
+      "\022\031\n\021ordered_raw_value\030\001 \003(\003\022\025\n\rencoded_b" +
+      "ytes\030\002 \001(\014\032\223\001\n\005Timer\022\014\n\004name\030\001 \001(\t\022\020\n\010ex" +
+      "tended\030\002 \001(\010\022\023\n\013total_nanos\030\003 \001(\001\022\r\n\005cou" +
+      "nt\030\004 \001(\003\022F\n\013child_timer\030\005 \003(\01321.org_glow" +
+      "root_collector_spi_model.Aggregate.Timer" +
+      "\032_\n\rQueriesByType\022\014\n\004type\030\001 \001(\t\022@\n\005query" +
+      "\030\002 \003(\01321.org_glowroot_collector_spi_mode" +
+      "l.Aggregate.Query\032W\n\005Query\022\014\n\004text\030\001 \001(\t" +
+      "\022\023\n\013total_nanos\030\002 \001(\001\022\022\n\ntotal_rows\030\003 \001(",
+      "\003\022\027\n\017execution_count\030\004 \001(\003B\"\n org.glowro" +
+      "ot.collector.spi.modelb\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -5191,12 +6548,24 @@ public final class AggregateOuterClass {
         new com.google.protobuf.Descriptors.FileDescriptor[] {
           org.glowroot.collector.spi.model.ProfileTreeOuterClass.getDescriptor(),
         }, assigner);
-    internal_static_org_glowroot_collector_spi_model_Aggregate_descriptor =
+    internal_static_org_glowroot_collector_spi_model_OverallAggregate_descriptor =
       getDescriptor().getMessageTypes().get(0);
+    internal_static_org_glowroot_collector_spi_model_OverallAggregate_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_org_glowroot_collector_spi_model_OverallAggregate_descriptor,
+        new java.lang.String[] { "TransactionType", "Aggregate", });
+    internal_static_org_glowroot_collector_spi_model_TransactionAggregate_descriptor =
+      getDescriptor().getMessageTypes().get(1);
+    internal_static_org_glowroot_collector_spi_model_TransactionAggregate_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_org_glowroot_collector_spi_model_TransactionAggregate_descriptor,
+        new java.lang.String[] { "TransactionType", "TransactionName", "Aggregate", });
+    internal_static_org_glowroot_collector_spi_model_Aggregate_descriptor =
+      getDescriptor().getMessageTypes().get(2);
     internal_static_org_glowroot_collector_spi_model_Aggregate_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_collector_spi_model_Aggregate_descriptor,
-        new java.lang.String[] { "CaptureTime", "TotalNanos", "TransactionCount", "ErrorCount", "TotalCpuNanos", "TotalBlockedNanos", "TotalWaitedNanos", "TotalAllocatedBytes", "TotalNanosHistogram", "RootTimer", "QueriesByType", "ProfileTree", });
+        new java.lang.String[] { "TotalNanos", "TransactionCount", "ErrorCount", "TotalCpuNanos", "TotalBlockedNanos", "TotalWaitedNanos", "TotalAllocatedBytes", "TotalNanosHistogram", "RootTimer", "QueriesByType", "ProfileTree", });
     internal_static_org_glowroot_collector_spi_model_Aggregate_Histogram_descriptor =
       internal_static_org_glowroot_collector_spi_model_Aggregate_descriptor.getNestedTypes().get(0);
     internal_static_org_glowroot_collector_spi_model_Aggregate_Histogram_fieldAccessorTable = new

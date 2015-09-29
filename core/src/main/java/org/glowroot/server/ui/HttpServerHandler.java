@@ -55,11 +55,11 @@ import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpHeaders.Names;
-import io.netty.handler.codec.http.HttpHeaders.Values;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import org.h2.api.ErrorCode;
@@ -186,7 +186,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         FullHttpRequest request = (FullHttpRequest) msg;
-        logger.debug("messageReceived(): request.uri={}", request.getUri());
+        logger.debug("messageReceived(): request.uri={}", request.uri());
         Channel channel = ctx.channel();
         currentChannel.set(channel);
         try {
@@ -208,14 +208,14 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     @SuppressWarnings("argument.type.incompatible")
     private void sendFullResponse(ChannelHandlerContext ctx, FullHttpRequest request,
             FullHttpResponse response) {
-        boolean keepAlive = HttpHeaders.isKeepAlive(request);
+        boolean keepAlive = HttpUtil.isKeepAlive(request);
         if (httpSessionManager.getSessionId(request) != null
                 && httpSessionManager.getAuthenticatedUser(request) == null
                 && !response.headers().contains("Set-Cookie")) {
             httpSessionManager.deleteSessionCookie(response);
         }
         response.headers().add("Glowroot-Layout-Version", layoutService.getLayoutVersion());
-        if (response.headers().get("Glowroot-Port-Changed") != null) {
+        if (response.headers().contains("Glowroot-Port-Changed")) {
             // current connection is the only open channel on the old port, keepAlive=false will add
             // the listener below to close the channel after the response completes
             //
@@ -224,9 +224,9 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             response.headers().add("Connection", "close");
             keepAlive = false;
         }
-        response.headers().add(Names.CONTENT_LENGTH, response.content().readableBytes());
-        if (keepAlive && !request.getProtocolVersion().isKeepAliveDefault()) {
-            response.headers().set(Names.CONNECTION, Values.KEEP_ALIVE);
+        response.headers().add(HttpHeaderNames.CONTENT_LENGTH, response.content().readableBytes());
+        if (keepAlive && !request.protocolVersion().isKeepAliveDefault()) {
+            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
         }
         ChannelFuture f = ctx.write(response);
         if (!keepAlive) {
@@ -244,8 +244,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     private @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx,
             FullHttpRequest request) throws Exception {
-        logger.debug("handleRequest(): request.uri={}", request.getUri());
-        QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
+        logger.debug("handleRequest(): request.uri={}", request.uri());
+        QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         String path = decoder.path();
         logger.debug("handleRequest(): path={}", path);
         FullHttpResponse response = handleIfLoginOrLogoutRequest(path, request);
@@ -307,7 +307,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 && !(httpService instanceof UnauthenticatedHttpService)) {
             return handleNotAuthenticated(request);
         }
-        boolean isGetRequest = request.getMethod().name().equals(HttpMethod.GET.name());
+        boolean isGetRequest = request.method().name().equals(HttpMethod.GET.name());
         if (!isGetRequest && !httpSessionManager.hasAdminAccess(request)) {
             return handleNotAuthorized();
         }
@@ -317,7 +317,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     private @Nullable JsonServiceMatcher getJsonServiceMatcher(FullHttpRequest request,
             String path) {
         for (JsonServiceMapping jsonServiceMapping : jsonServiceMappings) {
-            if (!jsonServiceMapping.httpMethod().name().equals(request.getMethod().name())) {
+            if (!jsonServiceMapping.httpMethod().name().equals(request.method().name())) {
                 continue;
             }
             Matcher matcher = jsonServiceMapping.pattern().matcher(path);
@@ -333,7 +333,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         if (!httpSessionManager.hasReadAccess(request)) {
             return handleNotAuthenticated(request);
         }
-        boolean isGetRequest = request.getMethod().name().equals(HttpMethod.GET.name());
+        boolean isGetRequest = request.method().name().equals(HttpMethod.GET.name());
         if (!isGetRequest && !httpSessionManager.hasAdminAccess(request)) {
             return handleNotAuthorized();
         }
@@ -370,7 +370,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
                     responseObject.getClass().getName());
             return new DefaultFullHttpResponse(HTTP_1_1, INTERNAL_SERVER_ERROR);
         }
-        response.headers().add(Names.CONTENT_TYPE, MediaType.JSON_UTF_8);
+        response.headers().add(HttpHeaderNames.CONTENT_TYPE, MediaType.JSON_UTF_8);
         HttpServices.preventCaching(response);
         return response;
     }
@@ -396,7 +396,7 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         Date expires = getExpiresForPath(path);
-        if (request.headers().contains(Names.IF_MODIFIED_SINCE) && expires == null) {
+        if (request.headers().contains(HttpHeaderNames.IF_MODIFIED_SINCE) && expires == null) {
             // all static resources without explicit expires are versioned and can be safely
             // cached forever
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_MODIFIED);
@@ -404,10 +404,11 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         ByteBuf content = Unpooled.copiedBuffer(Resources.toByteArray(url));
         FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, content);
         if (expires != null) {
-            response.headers().add(Names.EXPIRES, expires);
+            response.headers().add(HttpHeaderNames.EXPIRES, expires);
         } else {
-            response.headers().add(Names.LAST_MODIFIED, new Date(0));
-            response.headers().add(Names.EXPIRES, new Date(System.currentTimeMillis() + TEN_YEARS));
+            response.headers().add(HttpHeaderNames.LAST_MODIFIED, new Date(0));
+            response.headers().add(HttpHeaderNames.EXPIRES,
+                    new Date(System.currentTimeMillis() + TEN_YEARS));
         }
         int extensionStartIndex = path.lastIndexOf('.');
         checkState(extensionStartIndex != -1, "found path under %s with no extension: %s",
@@ -416,8 +417,8 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
         MediaType mediaType = mediaTypes.get(extension);
         checkNotNull(mediaType, "found extension under %s with no media type: %s", RESOURCE_BASE,
                 extension);
-        response.headers().add(Names.CONTENT_TYPE, mediaType);
-        response.headers().add(Names.CONTENT_LENGTH, Resources.toByteArray(url).length);
+        response.headers().add(HttpHeaderNames.CONTENT_TYPE, mediaType);
+        response.headers().add(HttpHeaderNames.CONTENT_LENGTH, Resources.toByteArray(url).length);
         return response;
     }
 
@@ -558,14 +559,14 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     private static String getRequestText(FullHttpRequest request) {
-        if (request.getMethod() == io.netty.handler.codec.http.HttpMethod.POST) {
+        if (request.method() == io.netty.handler.codec.http.HttpMethod.POST) {
             return request.content().toString(Charsets.ISO_8859_1);
         } else {
-            int index = request.getUri().indexOf('?');
+            int index = request.uri().indexOf('?');
             if (index == -1) {
                 return "";
             } else {
-                return request.getUri().substring(index + 1);
+                return request.uri().substring(index + 1);
             }
         }
     }

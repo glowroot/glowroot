@@ -17,7 +17,7 @@ package org.glowroot.agent;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.Map;
+import java.util.List;
 
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
@@ -81,11 +81,11 @@ public class GaugeCollectorTest {
     @Test
     public void shouldHandleInvalidMBeanObjectName() throws InterruptedException {
         // given
-        GaugeConfig gaugeConfigs = ImmutableGaugeConfig.builder()
+        GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
                 .mbeanObjectName("invalid mbean object name")
                 .build();
         // when
-        Map<String, GaugeValue> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfigs);
+        List<GaugeValue> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfig);
         // then
         assertThat(gaugeValues).isEmpty();
         verify(logger).debug(anyString(), any(Exception.class));
@@ -97,7 +97,7 @@ public class GaugeCollectorTest {
     @SuppressWarnings("unchecked")
     public void shouldHandleMBeanInstanceNotFoundBeforeLoggingDelay() throws Exception {
         // given
-        GaugeConfig gaugeConfigs = ImmutableGaugeConfig.builder()
+        GaugeConfig gaugeConfig = ImmutableGaugeConfig.builder()
                 .mbeanObjectName("xyz:aaa=bbb")
                 .addMbeanAttributes(ImmutableMBeanAttribute.of("ccc", false))
                 .addMbeanAttributes(ImmutableMBeanAttribute.of("ddd", false))
@@ -106,7 +106,7 @@ public class GaugeCollectorTest {
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(InstanceNotFoundException.class);
         // when
-        Map<String, GaugeValue> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfigs);
+        List<GaugeValue> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfig);
         // then
         assertThat(gaugeValues).isEmpty();
         verify(logger).debug(anyString(), any(Exception.class));
@@ -125,7 +125,7 @@ public class GaugeCollectorTest {
         when(lazyPlatformMBeanServer.getAttribute(any(ObjectName.class), anyString()))
                 .thenThrow(InstanceNotFoundException.class);
         // when
-        Map<String, GaugeValue> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfig);
+        List<GaugeValue> gaugeValues = gaugeCollector.collectGaugeValues(gaugeConfig);
         // then
         assertThat(gaugeValues).isEmpty();
         verify(logger).debug(anyString(), any(Exception.class));

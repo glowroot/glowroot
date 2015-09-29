@@ -75,6 +75,17 @@ class ChunkedInputs {
         @Override
         public void close() throws IOException {}
 
+        @Override
+        public long length() {
+            // negative value means unknown
+            return -1;
+        }
+
+        @Override
+        public long progress() {
+            return -1;
+        }
+
         protected abstract @Nullable ByteBuf readNextChunk() throws IOException;
     }
 

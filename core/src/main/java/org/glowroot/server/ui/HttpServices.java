@@ -28,7 +28,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaders.Names;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.util.concurrent.GenericFutureListener;
@@ -52,15 +52,16 @@ class HttpServices {
         // prevent caching of dynamic json data, using 'definitive' minimum set of headers from
         // http://stackoverflow.com/questions/49547/
         // making-sure-a-web-page-is-not-cached-across-all-browsers/2068407#2068407
-        response.headers().set(Names.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
-        response.headers().set(Names.PRAGMA, "no-cache");
-        response.headers().set(Names.EXPIRES, new Date(0));
+        response.headers().set(HttpHeaderNames.CACHE_CONTROL,
+                "no-cache, no-store, must-revalidate");
+        response.headers().set(HttpHeaderNames.PRAGMA, "no-cache");
+        response.headers().set(HttpHeaderNames.EXPIRES, new Date(0));
     }
 
     static FullHttpResponse createJsonResponse(String content, HttpResponseStatus status) {
         ByteBuf byteBuf = Unpooled.copiedBuffer(content, Charsets.ISO_8859_1);
         DefaultFullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, status, byteBuf);
-        response.headers().add(Names.CONTENT_TYPE, MediaType.JSON_UTF_8);
+        response.headers().add(HttpHeaderNames.CONTENT_TYPE, MediaType.JSON_UTF_8);
         HttpServices.preventCaching(response);
         return response;
     }

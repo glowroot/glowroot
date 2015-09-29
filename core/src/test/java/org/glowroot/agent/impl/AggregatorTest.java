@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.impl;
 
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.collect.ImmutableList;
@@ -29,7 +29,8 @@ import org.glowroot.agent.model.QueryData;
 import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.collector.spi.Collector;
-import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue;
 import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.common.config.ImmutableAdvancedConfig;
@@ -106,19 +107,18 @@ public class AggregatorTest {
         }
 
         @Override
-        public void collectAggregates(Map<String, Aggregate> overallAggregates,
-                Map<String, Map<String, Aggregate>> transactionAggregates, long captureTime)
-                        throws Exception {
+        public void collectAggregates(long captureTime, List<OverallAggregate> overallAggregates,
+                List<TransactionAggregate> transactionAggregates) throws Exception {
             // only capture first non-zero value
             if (totalNanos == 0 && !overallAggregates.isEmpty()) {
-                totalNanos = overallAggregates.values().iterator().next().getTotalNanos();
+                totalNanos = overallAggregates.iterator().next().getAggregate().getTotalNanos();
             }
         }
 
         @Override
-        public void collectTrace(Trace trace) throws Exception {}
+        public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {}
 
         @Override
-        public void collectGaugeValues(Map<String, GaugeValue> gaugeValues) throws Exception {}
+        public void collectTrace(Trace trace) throws Exception {}
     }
 }

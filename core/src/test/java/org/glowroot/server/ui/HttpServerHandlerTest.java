@@ -41,7 +41,7 @@ public class HttpServerHandlerTest {
         // then
         String content = httpResponse.content().toString(Charsets.ISO_8859_1);
         assertThat(content).isEqualTo("{\"message\":\"\"}");
-        assertThat(httpResponse.getStatus()).isEqualTo(HttpResponseStatus.PRECONDITION_FAILED);
+        assertThat(httpResponse.status()).isEqualTo(HttpResponseStatus.PRECONDITION_FAILED);
     }
 
     @Test
@@ -53,7 +53,7 @@ public class HttpServerHandlerTest {
         // then
         String content = httpResponse.content().toString(Charsets.ISO_8859_1);
         assertThat(content).isEqualTo("{\"message\":\"A message\"}");
-        assertThat(httpResponse.getStatus()).isEqualTo(HttpResponseStatus.PRECONDITION_FAILED);
+        assertThat(httpResponse.status()).isEqualTo(HttpResponseStatus.PRECONDITION_FAILED);
     }
 
     @Test
@@ -67,7 +67,7 @@ public class HttpServerHandlerTest {
         // then
         String content = httpResponse.content().toString(Charsets.ISO_8859_1);
         assertThat(content).isEqualTo("{\"message\":\"\"}");
-        assertThat(httpResponse.getStatus()).isEqualTo(HttpResponseStatus.PRECONDITION_FAILED);
+        assertThat(httpResponse.status()).isEqualTo(HttpResponseStatus.PRECONDITION_FAILED);
     }
 
     @Test
@@ -80,7 +80,7 @@ public class HttpServerHandlerTest {
         // then
         String content = httpResponse.content().toString(Charsets.ISO_8859_1);
         assertThat(content).isEqualTo("{\"message\":\"A message\"}");
-        assertThat(httpResponse.getStatus()).isEqualTo(HttpResponseStatus.PRECONDITION_FAILED);
+        assertThat(httpResponse.status()).isEqualTo(HttpResponseStatus.PRECONDITION_FAILED);
     }
 
     @Test
@@ -93,7 +93,7 @@ public class HttpServerHandlerTest {
         String content = httpResponse.content().toString(Charsets.ISO_8859_1);
         assertThat(content).isEqualTo("{\"message\":"
                 + "\"Query timed out (timeout is configurable under Configuration > Advanced)\"}");
-        assertThat(httpResponse.getStatus()).isEqualTo(HttpResponseStatus.REQUEST_TIMEOUT);
+        assertThat(httpResponse.status()).isEqualTo(HttpResponseStatus.REQUEST_TIMEOUT);
     }
 
     @Test
@@ -107,7 +107,7 @@ public class HttpServerHandlerTest {
         ObjectNode node = (ObjectNode) new ObjectMapper().readTree(content);
         assertThat(node.get("message").asText()).isEqualTo("Another message");
         assertThat(node.get("stackTrace")).isNotNull();
-        assertThat(httpResponse.getStatus()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+        assertThat(httpResponse.status()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Test
@@ -121,7 +121,7 @@ public class HttpServerHandlerTest {
         ObjectNode node = (ObjectNode) new ObjectMapper().readTree(content);
         assertThat(node.get("message").asText()).isEqualTo("Banother message");
         assertThat(node.get("stackTrace")).isNotNull();
-        assertThat(httpResponse.getStatus()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+        assertThat(httpResponse.status()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Test
@@ -135,6 +135,6 @@ public class HttpServerHandlerTest {
         ObjectNode node = (ObjectNode) new ObjectMapper().readTree(content);
         assertThat(node.get("message").asText()).isEqualTo("Wrapped message");
         assertThat(node.get("stackTrace")).isNotNull();
-        assertThat(httpResponse.getStatus()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+        assertThat(httpResponse.status()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }
 }

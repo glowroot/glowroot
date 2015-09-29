@@ -17,16 +17,16 @@ package org.glowroot.server.simplerepo;
 
 import java.io.File;
 import java.util.List;
-import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
+import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.common.config.ImmutableAdvancedConfig;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Styles;
@@ -126,101 +126,123 @@ public class AggregateDaoTest {
 
     // also used by TransactionCommonServiceTest
     public void populateAggregates() throws Exception {
-        Aggregate overallAggregate = Aggregate.newBuilder()
-                .setCaptureTime(10000)
-                .setTotalNanos(1000000)
-                .setErrorCount(0)
-                .setTransactionCount(10)
-                .setTotalCpuNanos(-1)
-                .setTotalBlockedNanos(-1)
-                .setTotalWaitedNanos(-1)
-                .setTotalAllocatedBytes(-1)
-                .setTotalNanosHistogram(getFakeHistogram())
+        OverallAggregate overallAggregate = OverallAggregate.newBuilder()
+                .setTransactionType("a type")
+                .setAggregate(Aggregate.newBuilder()
+                        .setTotalNanos(1000000)
+                        .setErrorCount(0)
+                        .setTransactionCount(10)
+                        .setTotalCpuNanos(-1)
+                        .setTotalBlockedNanos(-1)
+                        .setTotalWaitedNanos(-1)
+                        .setTotalAllocatedBytes(-1)
+                        .setTotalNanosHistogram(getFakeHistogram())
+                        .build())
                 .build();
-        Map<String, Aggregate> transactionAggregates = Maps.newHashMap();
-        transactionAggregates.put("one", Aggregate.newBuilder()
-                .setCaptureTime(10000)
-                .setTotalNanos(100000)
-                .setErrorCount(0)
-                .setTransactionCount(1)
-                .setTotalCpuNanos(-1)
-                .setTotalBlockedNanos(-1)
-                .setTotalWaitedNanos(-1)
-                .setTotalAllocatedBytes(-1)
-                .setTotalNanosHistogram(getFakeHistogram())
+        List<TransactionAggregate> transactionAggregates = Lists.newArrayList();
+        transactionAggregates.add(TransactionAggregate.newBuilder()
+                .setTransactionType("a type")
+                .setTransactionName("one")
+                .setAggregate(Aggregate.newBuilder()
+                        .setTotalNanos(100000)
+                        .setErrorCount(0)
+                        .setTransactionCount(1)
+                        .setTotalCpuNanos(-1)
+                        .setTotalBlockedNanos(-1)
+                        .setTotalWaitedNanos(-1)
+                        .setTotalAllocatedBytes(-1)
+                        .setTotalNanosHistogram(getFakeHistogram())
+                        .build())
                 .build());
-        transactionAggregates.put("two", Aggregate.newBuilder()
-                .setCaptureTime(10000)
-                .setTotalNanos(300000)
-                .setErrorCount(0)
-                .setTransactionCount(2)
-                .setTotalCpuNanos(-1)
-                .setTotalBlockedNanos(-1)
-                .setTotalWaitedNanos(-1)
-                .setTotalAllocatedBytes(-1)
-                .setTotalNanosHistogram(getFakeHistogram())
+        transactionAggregates.add(TransactionAggregate.newBuilder()
+                .setTransactionType("a type")
+                .setTransactionName("two")
+                .setAggregate(Aggregate.newBuilder()
+                        .setTotalNanos(300000)
+                        .setErrorCount(0)
+                        .setTransactionCount(2)
+                        .setTotalCpuNanos(-1)
+                        .setTotalBlockedNanos(-1)
+                        .setTotalWaitedNanos(-1)
+                        .setTotalAllocatedBytes(-1)
+                        .setTotalNanosHistogram(getFakeHistogram())
+                        .build())
                 .build());
-        transactionAggregates.put("seven", Aggregate.newBuilder()
-                .setCaptureTime(10000)
-                .setTotalNanos(1400000)
-                .setErrorCount(0)
-                .setTransactionCount(7)
-                .setTotalCpuNanos(-1)
-                .setTotalBlockedNanos(-1)
-                .setTotalWaitedNanos(-1)
-                .setTotalAllocatedBytes(-1)
-                .setTotalNanosHistogram(getFakeHistogram())
+        transactionAggregates.add(TransactionAggregate.newBuilder()
+                .setTransactionType("a type")
+                .setTransactionName("seven")
+                .setAggregate(Aggregate.newBuilder()
+                        .setTotalNanos(1400000)
+                        .setErrorCount(0)
+                        .setTransactionCount(7)
+                        .setTotalCpuNanos(-1)
+                        .setTotalBlockedNanos(-1)
+                        .setTotalWaitedNanos(-1)
+                        .setTotalAllocatedBytes(-1)
+                        .setTotalNanosHistogram(getFakeHistogram())
+                        .build())
                 .build());
-        aggregateDao.store(SERVER_ID, ImmutableMap.of("a type", overallAggregate),
-                ImmutableMap.of("a type", transactionAggregates), 10000);
+        aggregateDao.store(SERVER_ID, 10000, ImmutableList.of(overallAggregate),
+                transactionAggregates);
 
-        Aggregate overallAggregate2 = Aggregate.newBuilder()
-                .setCaptureTime(20000)
-                .setTotalNanos(1000000)
-                .setErrorCount(0)
-                .setTransactionCount(10)
-                .setTotalCpuNanos(-1)
-                .setTotalBlockedNanos(-1)
-                .setTotalWaitedNanos(-1)
-                .setTotalAllocatedBytes(-1)
-                .setTotalNanosHistogram(getFakeHistogram())
+        OverallAggregate overallAggregate2 = OverallAggregate.newBuilder()
+                .setTransactionType("a type")
+                .setAggregate(Aggregate.newBuilder()
+                        .setTotalNanos(1000000)
+                        .setErrorCount(0)
+                        .setTransactionCount(10)
+                        .setTotalCpuNanos(-1)
+                        .setTotalBlockedNanos(-1)
+                        .setTotalWaitedNanos(-1)
+                        .setTotalAllocatedBytes(-1)
+                        .setTotalNanosHistogram(getFakeHistogram())
+                        .build())
                 .build();
-        Map<String, Aggregate> transactionAggregates2 = Maps.newHashMap();
-        transactionAggregates2.put("one", Aggregate.newBuilder()
-                .setCaptureTime(20000)
-                .setTotalNanos(100000)
-                .setErrorCount(0)
-                .setTransactionCount(1)
-                .setTotalCpuNanos(-1)
-                .setTotalBlockedNanos(-1)
-                .setTotalWaitedNanos(-1)
-                .setTotalAllocatedBytes(-1)
-                .setTotalNanosHistogram(getFakeHistogram())
+        List<TransactionAggregate> transactionAggregates2 = Lists.newArrayList();
+        transactionAggregates2.add(TransactionAggregate.newBuilder()
+                .setTransactionType("a type")
+                .setTransactionName("one")
+                .setAggregate(Aggregate.newBuilder()
+                        .setTotalNanos(100000)
+                        .setErrorCount(0)
+                        .setTransactionCount(1)
+                        .setTotalCpuNanos(-1)
+                        .setTotalBlockedNanos(-1)
+                        .setTotalWaitedNanos(-1)
+                        .setTotalAllocatedBytes(-1)
+                        .setTotalNanosHistogram(getFakeHistogram())
+                        .build())
                 .build());
-        transactionAggregates2.put("two", Aggregate.newBuilder()
-                .setCaptureTime(20000)
-                .setTotalNanos(300000)
-                .setErrorCount(0)
-                .setTransactionCount(2)
-                .setTotalCpuNanos(-1)
-                .setTotalBlockedNanos(-1)
-                .setTotalWaitedNanos(-1)
-                .setTotalAllocatedBytes(-1)
-                .setTotalNanosHistogram(getFakeHistogram())
+        transactionAggregates2.add(TransactionAggregate.newBuilder()
+                .setTransactionType("a type")
+                .setTransactionName("two")
+                .setAggregate(Aggregate.newBuilder()
+                        .setTotalNanos(300000)
+                        .setErrorCount(0)
+                        .setTransactionCount(2)
+                        .setTotalCpuNanos(-1)
+                        .setTotalBlockedNanos(-1)
+                        .setTotalWaitedNanos(-1)
+                        .setTotalAllocatedBytes(-1)
+                        .setTotalNanosHistogram(getFakeHistogram())
+                        .build())
                 .build());
-        transactionAggregates2.put("seven", Aggregate.newBuilder()
-                .setCaptureTime(20000)
-                .setTotalNanos(1400000)
-                .setErrorCount(0)
-                .setTransactionCount(7)
-                .setTotalCpuNanos(-1)
-                .setTotalBlockedNanos(-1)
-                .setTotalWaitedNanos(-1)
-                .setTotalAllocatedBytes(-1)
-                .setTotalNanosHistogram(getFakeHistogram())
+        transactionAggregates2.add(TransactionAggregate.newBuilder()
+                .setTransactionType("a type")
+                .setTransactionName("seven")
+                .setAggregate(Aggregate.newBuilder()
+                        .setTotalNanos(1400000)
+                        .setErrorCount(0)
+                        .setTransactionCount(7)
+                        .setTotalCpuNanos(-1)
+                        .setTotalBlockedNanos(-1)
+                        .setTotalWaitedNanos(-1)
+                        .setTotalAllocatedBytes(-1)
+                        .setTotalNanosHistogram(getFakeHistogram())
+                        .build())
                 .build());
-        aggregateDao.store(SERVER_ID, ImmutableMap.of("a type", overallAggregate2),
-                ImmutableMap.of("a type", transactionAggregates2), 20000);
+        aggregateDao.store(SERVER_ID, 20000, ImmutableList.of(overallAggregate2),
+                transactionAggregates2);
     }
 
     // used by TransactionCommonServiceTest

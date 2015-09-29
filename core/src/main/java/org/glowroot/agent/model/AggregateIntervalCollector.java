@@ -31,6 +31,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.collector.spi.Collector;
 import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.live.LiveAggregateRepository.ErrorPoint;
@@ -71,24 +73,20 @@ public class AggregateIntervalCollector {
     }
 
     public void flush(Collector collector) throws Exception {
-        Map<String, Aggregate> overallAggregates = Maps.newHashMap();
-        Map<String, Map<String, Aggregate>> transactionAggregates = Maps.newHashMap();
+        List<OverallAggregate> overallAggregates = Lists.newArrayList();
+        List<TransactionAggregate> transactionAggregates = Lists.newArrayList();
         ScratchBuffer scratchBuffer = new ScratchBuffer();
         for (Entry<String, IntervalTypeCollector> e : typeCollectors.entrySet()) {
             IntervalTypeCollector intervalTypeCollector = e.getValue();
-            overallAggregates.put(e.getKey(),
-                    build(intervalTypeCollector.overallAggregateCollector, scratchBuffer));
+            overallAggregates.add(buildOverallAggregate(e.getKey(),
+                    intervalTypeCollector.overallAggregateCollector, scratchBuffer));
             for (Entry<String, AggregateCollector> f : intervalTypeCollector.transactionAggregateCollectors
                     .entrySet()) {
-                Map<String, Aggregate> map = transactionAggregates.get(e.getKey());
-                if (map == null) {
-                    map = Maps.newHashMap();
-                    transactionAggregates.put(e.getKey(), map);
-                }
-                map.put(f.getKey(), build(f.getValue(), scratchBuffer));
+                transactionAggregates.add(buildTransactionAggregate(e.getKey(), f.getKey(),
+                        f.getValue(), scratchBuffer));
             }
         }
-        collector.collectAggregates(overallAggregates, transactionAggregates, captureTime);
+        collector.collectAggregates(captureTime, overallAggregates, transactionAggregates);
     }
 
     public @Nullable OverallSummary getLiveOverallSummary(String transactionType) {
@@ -222,10 +220,25 @@ public class AggregateIntervalCollector {
         return typeCollector;
     }
 
-    private Aggregate build(AggregateCollector aggregateCollector, ScratchBuffer scratchBuffer)
-            throws IOException {
+    private OverallAggregate buildOverallAggregate(String transactionType,
+            AggregateCollector aggregateCollector, ScratchBuffer scratchBuffer) throws IOException {
         synchronized (aggregateCollector) {
-            return aggregateCollector.build(captureTime, scratchBuffer);
+            return OverallAggregate.newBuilder()
+                    .setTransactionType(transactionType)
+                    .setAggregate(aggregateCollector.build(scratchBuffer))
+                    .build();
+        }
+    }
+
+    private TransactionAggregate buildTransactionAggregate(String transactionType,
+            String transactionName, AggregateCollector aggregateCollector,
+            ScratchBuffer scratchBuffer) throws IOException {
+        synchronized (aggregateCollector) {
+            return TransactionAggregate.newBuilder()
+                    .setTransactionType(transactionType)
+                    .setTransactionName(transactionName)
+                    .setAggregate(aggregateCollector.build(scratchBuffer))
+                    .build();
         }
     }
 

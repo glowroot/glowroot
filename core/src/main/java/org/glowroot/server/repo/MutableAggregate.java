@@ -38,7 +38,6 @@ import org.glowroot.live.LiveAggregateRepository.PercentileAggregate;
 @Styles.Private
 public class MutableAggregate {
 
-    private final long captureTime;
     private double totalNanos;
     private long transactionCount;
     private long errorCount;
@@ -52,8 +51,7 @@ public class MutableAggregate {
     // lazy instantiated to reduce memory footprint
     private @MonotonicNonNull MutableProfileTree profileTree;
 
-    public MutableAggregate(long captureTime, int maxAggregateQueriesPerQueryType) {
-        this.captureTime = captureTime;
+    public MutableAggregate(int maxAggregateQueriesPerQueryType) {
         queries = new QueryCollector(maxAggregateQueriesPerQueryType, 0);
     }
 
@@ -111,7 +109,6 @@ public class MutableAggregate {
 
     public Aggregate toAggregate(ScratchBuffer scratchBuffer) throws IOException {
         Aggregate.Builder builder = Aggregate.newBuilder()
-                .setCaptureTime(captureTime)
                 .setTotalNanos(totalNanos)
                 .setTransactionCount(transactionCount)
                 .setErrorCount(errorCount)
@@ -128,7 +125,7 @@ public class MutableAggregate {
         return builder.build();
     }
 
-    public OverviewAggregate toOverviewAggregate() throws IOException {
+    public OverviewAggregate toOverviewAggregate(long captureTime) throws IOException {
         return ImmutableOverviewAggregate.builder()
                 .captureTime(captureTime)
                 .totalNanos(totalNanos)
@@ -141,7 +138,7 @@ public class MutableAggregate {
                 .build();
     }
 
-    public PercentileAggregate toPercentileAggregate() throws IOException {
+    public PercentileAggregate toPercentileAggregate(long captureTime) throws IOException {
         return ImmutablePercentileAggregate.builder()
                 .captureTime(captureTime)
                 .totalNanos(totalNanos)

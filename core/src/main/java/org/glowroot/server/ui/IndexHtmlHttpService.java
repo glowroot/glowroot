@@ -27,7 +27,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaders.Names;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpRequest;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
@@ -98,8 +98,8 @@ class IndexHtmlHttpService implements UnauthenticatedHttpService {
         ByteBuf content = Unpooled.copiedBuffer(indexHtml, Charsets.ISO_8859_1);
         FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, content);
         HttpServices.preventCaching(response);
-        response.headers().set(Names.CONTENT_TYPE, "text/html; charset=UTF-8");
-        response.headers().set(Names.CONTENT_LENGTH, indexHtml.length());
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
+        response.headers().set(HttpHeaderNames.CONTENT_LENGTH, indexHtml.length());
         // X-UA-Compatible must be set via header (as opposed to via meta tag)
         // see https://github.com/h5bp/html5-boilerplate/blob/master/doc/html.md#x-ua-compatible
         response.headers().set("X-UA-Compatible", "IE=edge");

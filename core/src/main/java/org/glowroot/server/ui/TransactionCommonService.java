@@ -393,13 +393,12 @@ class TransactionCommonService {
             long rollupTime = Utils.getNextRollupTime(nonRolledUpOverviewAggregate.captureTime(),
                     fixedIntervalMillis);
             if (rollupTime != currRollupTime && currMergedAggregate != null) {
-                rolledUpOverviewAggregates.add(currMergedAggregate.toOverviewAggregate());
-                currMergedAggregate = new MutableAggregate(Math.min(rollupTime, liveCaptureTime),
-                        maxAggregateQueriesPerQueryType);
+                rolledUpOverviewAggregates.add(currMergedAggregate
+                        .toOverviewAggregate(Math.min(currRollupTime, liveCaptureTime)));
+                currMergedAggregate = new MutableAggregate(maxAggregateQueriesPerQueryType);
             }
             if (currMergedAggregate == null) {
-                currMergedAggregate = new MutableAggregate(Math.min(rollupTime, liveCaptureTime),
-                        maxAggregateQueriesPerQueryType);
+                currMergedAggregate = new MutableAggregate(maxAggregateQueriesPerQueryType);
             }
             currRollupTime = rollupTime;
             currMergedAggregate.addTotalNanos(nonRolledUpOverviewAggregate.totalNanos());
@@ -416,7 +415,8 @@ class TransactionCommonService {
         }
         if (currMergedAggregate != null) {
             // roll up final one
-            rolledUpOverviewAggregates.add(currMergedAggregate.toOverviewAggregate());
+            rolledUpOverviewAggregates.add(currMergedAggregate
+                    .toOverviewAggregate(Math.min(currRollupTime, liveCaptureTime)));
         }
         return rolledUpOverviewAggregates;
     }
@@ -435,13 +435,12 @@ class TransactionCommonService {
             long rollupTime = Utils.getNextRollupTime(nonRolledUpPercentileAggregate.captureTime(),
                     fixedIntervalMillis);
             if (rollupTime != currRollupTime && currMergedAggregate != null) {
-                rolledUpPercentileAggregates.add(currMergedAggregate.toPercentileAggregate());
-                currMergedAggregate = new MutableAggregate(Math.min(rollupTime, liveCaptureTime),
-                        maxAggregateQueriesPerQueryType);
+                rolledUpPercentileAggregates.add(currMergedAggregate
+                        .toPercentileAggregate(Math.min(currRollupTime, liveCaptureTime)));
+                currMergedAggregate = new MutableAggregate(maxAggregateQueriesPerQueryType);
             }
             if (currMergedAggregate == null) {
-                currMergedAggregate = new MutableAggregate(Math.min(rollupTime, liveCaptureTime),
-                        maxAggregateQueriesPerQueryType);
+                currMergedAggregate = new MutableAggregate(maxAggregateQueriesPerQueryType);
             }
             currRollupTime = rollupTime;
             currMergedAggregate.addTotalNanos(nonRolledUpPercentileAggregate.totalNanos());
@@ -451,7 +450,8 @@ class TransactionCommonService {
         }
         if (currMergedAggregate != null) {
             // roll up final one
-            rolledUpPercentileAggregates.add(currMergedAggregate.toPercentileAggregate());
+            rolledUpPercentileAggregates.add(currMergedAggregate
+                    .toPercentileAggregate(Math.min(currRollupTime, liveCaptureTime)));
         }
         return rolledUpPercentileAggregates;
     }

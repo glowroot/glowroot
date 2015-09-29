@@ -84,7 +84,8 @@ public class Threads {
             // Glowroot-Http-Boss
             // Glowroot-Http-Worker-0
             // Generate Seed
-            if (rogueThreads.isEmpty() && nonPreExistingThreads.size() <= 7) {
+            // threadDeathWatcher-2-1
+            if (rogueThreads.isEmpty() && nonPreExistingThreads.size() <= 8) {
                 // success
                 return;
             }
@@ -148,10 +149,13 @@ public class Threads {
     private static boolean isRogueThread(Thread thread) {
         if (!thread.isDaemon()) {
             return true;
-        } else if (isShaded() && !thread.getName().startsWith("Glowroot-")) {
+        } else if (isShaded() && !thread.getName().startsWith("Glowroot-")
+                && !thread.getName().startsWith("threadDeathWatcher-2-1")) {
             return true;
         } else if (!isShaded()
                 && !thread.getName().startsWith("Glowroot-")
+                // TODO submit netty issue to customize threadDeathWatcher thread name
+                && !thread.getName().startsWith("threadDeathWatcher-2-1")
                 && !thread.getName().startsWith("H2 File Lock Watchdog ")
                 && !thread.getName().startsWith("H2 Log Writer ")
                 && !thread.getName().equals("Generate Seed")) {

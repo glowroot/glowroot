@@ -31,6 +31,7 @@ import com.google.common.collect.Maps;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.cookie.Cookie;
@@ -44,8 +45,6 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.server.repo.ConfigRepository;
 import org.glowroot.server.repo.config.UserInterfaceConfig.AnonymousAccess;
 
-import static io.netty.handler.codec.http.HttpHeaders.Names.COOKIE;
-import static io.netty.handler.codec.http.HttpHeaders.Names.SET_COOKIE;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -158,7 +157,8 @@ class HttpSessionManager {
         Cookie cookie = new DefaultCookie("GLOWROOT_SESSION_ID", sessionId);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
-        response.headers().add(SET_COOKIE, ServerCookieEncoder.STRICT.encode(cookie));
+        response.headers().add(HttpHeaderNames.SET_COOKIE,
+                ServerCookieEncoder.STRICT.encode(cookie));
         purgeExpiredSessions();
     }
 
@@ -167,7 +167,8 @@ class HttpSessionManager {
         cookie.setHttpOnly(true);
         cookie.setMaxAge(0);
         cookie.setPath("/");
-        response.headers().add(SET_COOKIE, ServerCookieEncoder.STRICT.encode(cookie));
+        response.headers().add(HttpHeaderNames.SET_COOKIE,
+                ServerCookieEncoder.STRICT.encode(cookie));
     }
 
     void clearAllSessions() {
@@ -177,7 +178,7 @@ class HttpSessionManager {
 
     @Nullable
     String getSessionId(HttpRequest request) {
-        String cookieHeader = request.headers().get(COOKIE);
+        String cookieHeader = request.headers().getAsString(HttpHeaderNames.COOKIE);
         if (cookieHeader == null) {
             return null;
         }

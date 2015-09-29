@@ -24,11 +24,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpHeaders.Names;
-import io.netty.handler.codec.http.HttpHeaders.Values;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,14 +53,14 @@ class TraceDetailHttpService implements HttpService {
     @Override
     public @Nullable FullHttpResponse handleRequest(ChannelHandlerContext ctx, HttpRequest request)
             throws Exception {
-        QueryStringDecoder decoder = new QueryStringDecoder(request.getUri());
+        QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         String path = decoder.path();
         String traceComponent = path.substring(path.lastIndexOf('/') + 1);
         List<String> serverIds = decoder.parameters().get("server-id");
-        checkNotNull(serverIds, "Missing server id in query string: %s", request.getUri());
+        checkNotNull(serverIds, "Missing server id in query string: %s", request.uri());
         long serverId = Long.parseLong(serverIds.get(0));
         List<String> traceIds = decoder.parameters().get("trace-id");
-        checkNotNull(traceIds, "Missing trace id in query string: %s", request.getUri());
+        checkNotNull(traceIds, "Missing trace id in query string: %s", request.uri());
         String traceId = traceIds.get(0);
         logger.debug("handleRequest(): traceComponent={}, serverId={}, traceId={}", traceComponent,
                 serverId, traceId);
@@ -70,11 +70,11 @@ class TraceDetailHttpService implements HttpService {
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
         }
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        response.headers().set(Names.TRANSFER_ENCODING, Values.CHUNKED);
-        response.headers().set(Names.CONTENT_TYPE, "application/json; charset=UTF-8");
-        boolean keepAlive = HttpHeaders.isKeepAlive(request);
-        if (keepAlive && !request.getProtocolVersion().isKeepAliveDefault()) {
-            response.headers().set(Names.CONNECTION, Values.KEEP_ALIVE);
+        response.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=UTF-8");
+        boolean keepAlive = HttpUtil.isKeepAlive(request);
+        if (keepAlive && !request.protocolVersion().isKeepAliveDefault()) {
+            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
         }
         HttpServices.preventCaching(response);
         ctx.write(response);

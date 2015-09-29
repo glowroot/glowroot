@@ -26,11 +26,11 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpHeaders.Names;
-import io.netty.handler.codec.http.HttpHeaders.Values;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpUtil;
 
 import org.glowroot.common.util.ChunkSource;
 
@@ -53,11 +53,11 @@ class GlowrootLogHttpService implements UnauthenticatedHttpService {
         CharSource glowrootLogCharSource = Files.asCharSource(glowrootLogFile, Charsets.UTF_8);
 
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        response.headers().set(Names.TRANSFER_ENCODING, Values.CHUNKED);
-        response.headers().set(Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
-        boolean keepAlive = HttpHeaders.isKeepAlive(request);
-        if (keepAlive && !request.getProtocolVersion().isKeepAliveDefault()) {
-            response.headers().set(Names.CONNECTION, Values.KEEP_ALIVE);
+        response.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
+        boolean keepAlive = HttpUtil.isKeepAlive(request);
+        if (keepAlive && !request.protocolVersion().isKeepAliveDefault()) {
+            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
         }
         HttpServices.preventCaching(response);
         ctx.write(response);

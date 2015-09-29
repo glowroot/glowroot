@@ -15,22 +15,19 @@
  */
 package org.glowroot.collector.spi;
 
-import java.util.Map;
+import java.util.List;
 
-import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue;
 import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 
 public interface Collector {
 
+    void collectAggregates(long captureTime, List<OverallAggregate> overallAggregates,
+            List<TransactionAggregate> transactionAggregates) throws Exception;
+
+    void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception;
+
     void collectTrace(Trace trace) throws Exception;
-
-    // overallAggregates map key is transaction type
-    // transactionAggregates map keys are transaction type and then transaction name
-    void collectAggregates(Map<String, Aggregate> overallAggregates,
-            Map<String, Map<String, Aggregate>> transactionAggregates, long captureTime)
-                    throws Exception;
-
-    // gaugeValues map key is gauge name
-    void collectGaugeValues(Map<String, GaugeValue> gaugeValues) throws Exception;
 }

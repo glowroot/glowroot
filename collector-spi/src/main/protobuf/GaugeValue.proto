@@ -5,6 +5,7 @@ package org_glowroot_collector_spi_model;
 option java_package = "org.glowroot.collector.spi.model";
 
 message GaugeValue {
-  int64 capture_time = 1;
-  double value = 2;
+  string gauge_name = 1;
+  int64 capture_time = 2;
+  double value = 3;
 }

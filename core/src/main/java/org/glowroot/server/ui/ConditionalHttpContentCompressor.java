@@ -19,16 +19,15 @@ import javax.annotation.Nullable;
 
 import com.google.common.net.MediaType;
 import io.netty.handler.codec.http.HttpContentCompressor;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponse;
-
-import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 
 class ConditionalHttpContentCompressor extends HttpContentCompressor {
 
     @Override
     protected @Nullable Result beginEncode(HttpResponse response, String acceptEncoding)
             throws Exception {
-        String contentType = response.headers().get(CONTENT_TYPE);
+        String contentType = response.headers().getAsString(HttpHeaderNames.CONTENT_TYPE);
         if (contentType != null && contentType.equals(MediaType.ZIP.toString())) {
             // don't compress already zipped content
             return null;

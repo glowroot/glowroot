@@ -15,10 +15,11 @@
  */
 package org.glowroot.server.simplerepo;
 
-import java.util.Map;
+import java.util.List;
 
 import org.glowroot.collector.spi.Collector;
-import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue;
 import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.server.repo.helper.AlertingService;
@@ -41,20 +42,19 @@ class CollectorImpl implements Collector {
     }
 
     @Override
-    public void collectAggregates(Map<String, Aggregate> overallAggregates,
-            Map<String, Map<String, Aggregate>> transactionAggregates,
-            long captureTime) throws Exception {
-        aggregateDao.store(SERVER_ID, overallAggregates, transactionAggregates, captureTime);
+    public void collectAggregates(long captureTime, List<OverallAggregate> overallAggregates,
+            List<TransactionAggregate> transactionAggregates) throws Exception {
+        aggregateDao.store(SERVER_ID, captureTime, overallAggregates, transactionAggregates);
         alertingService.checkAlerts(captureTime);
+    }
+
+    @Override
+    public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {
+        gaugeValueDao.store(SERVER_ID, gaugeValues);
     }
 
     @Override
     public void collectTrace(Trace trace) throws Exception {
         traceDao.collect(SERVER_ID, trace);
-    }
-
-    @Override
-    public void collectGaugeValues(Map<String, GaugeValue> gaugeValues) throws Exception {
-        gaugeValueDao.store(SERVER_ID, gaugeValues);
     }
 }

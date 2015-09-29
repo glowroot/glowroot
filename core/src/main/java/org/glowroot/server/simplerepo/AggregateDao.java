@@ -22,8 +22,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLongArray;
 
 import javax.annotation.Nullable;
@@ -38,6 +36,8 @@ import org.immutables.value.Value;
 
 import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
 import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate.QueriesByType;
+import org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.collector.spi.model.ProfileTreeOuterClass.ProfileTree;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.common.model.QueryCollector;
@@ -173,20 +173,19 @@ class AggregateDao implements AggregateRepository {
         // TODO initial rollup in case store is not called in a reasonable time
     }
 
-    void store(long serverId, Map<String, Aggregate> overallAggregates,
-            Map<String, Map<String, Aggregate>> transactionAggregates,
-            long captureTime) throws Exception {
+    void store(long serverId, long captureTime, List<OverallAggregate> overallAggregates,
+            List<TransactionAggregate> transactionAggregates) throws Exception {
         // intentionally not using batch update as that could cause memory spike while preparing a
         // large batch
-        for (Entry<String, Aggregate> entry : overallAggregates.entrySet()) {
-            storeOverallAggregate(serverId, entry.getKey(), entry.getValue(), 0);
+        for (OverallAggregate overallAggregate : overallAggregates) {
+            storeOverallAggregate(serverId, captureTime, overallAggregate.getTransactionType(),
+                    overallAggregate.getAggregate(), 0);
         }
-        for (Entry<String, Map<String, Aggregate>> outerEntry : transactionAggregates
-                .entrySet()) {
-            for (Entry<String, Aggregate> innerEntry : outerEntry.getValue().entrySet()) {
-                storeTransactionAggregate(serverId, outerEntry.getKey(), innerEntry.getKey(),
-                        innerEntry.getValue(), 0);
-            }
+        for (TransactionAggregate transactionAggregate : transactionAggregates) {
+            storeTransactionAggregate(serverId, captureTime,
+                    transactionAggregate.getTransactionType(),
+                    transactionAggregate.getTransactionName(), transactionAggregate.getAggregate(),
+                    0);
         }
         synchronized (rollupLock) {
             ImmutableList<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
@@ -553,7 +552,7 @@ class AggregateDao implements AggregateRepository {
                 serverId, rollupTime - fixedIntervalMillis, rollupTime);
     }
 
-    private void storeTransactionAggregate(long serverId, String transactionType,
+    private void storeTransactionAggregate(long serverId, long captureTime, String transactionType,
             String transactionName, Aggregate aggregate, int rollupLevel) throws Exception {
         dataSource.update(
                 "insert into transaction_aggregate_rollup_" + castUntainted(rollupLevel)
@@ -562,12 +561,12 @@ class AggregateDao implements AggregateRepository {
                         + " total_blocked_nanos, total_waited_nanos, total_allocated_bytes,"
                         + " queries_capped_id, profile_tree_capped_id, histogram, root_timers)"
                         + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                new TransactionAggregateBinder(serverId, transactionType, transactionName,
-                        aggregate, rollupLevel));
+                new TransactionAggregateBinder(serverId, captureTime, transactionType,
+                        transactionName, aggregate, rollupLevel));
     }
 
-    private void storeOverallAggregate(long serverId, String transactionType, Aggregate aggregate,
-            int rollupLevel) throws Exception {
+    private void storeOverallAggregate(long serverId, long captureTime, String transactionType,
+            Aggregate aggregate, int rollupLevel) throws Exception {
         dataSource.update(
                 "insert into overall_aggregate_rollup_" + castUntainted(rollupLevel)
                         + " (server_id, transaction_type, capture_time, total_nanos,"
@@ -575,7 +574,8 @@ class AggregateDao implements AggregateRepository {
                         + " total_waited_nanos, total_allocated_bytes, queries_capped_id,"
                         + " profile_tree_capped_id, histogram, root_timers)"
                         + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                new OverallAggregateBinder(serverId, transactionType, aggregate, rollupLevel));
+                new OverallAggregateBinder(serverId, captureTime, transactionType, aggregate,
+                        rollupLevel));
     }
 
     // captureTimeFrom is non-inclusive
@@ -784,13 +784,16 @@ class AggregateDao implements AggregateRepository {
 
     private class AggregateBinder {
 
+        private final long captureTime;
         private final Aggregate aggregate;
         private final @Nullable Long queriesCappedId;
         private final @Nullable Long profileCappedId;
         private final byte[] histogramBytes;
         private final byte[] rootTimers;
 
-        private AggregateBinder(Aggregate aggregate, int rollupLevel) throws IOException {
+        private AggregateBinder(long captureTime, Aggregate aggregate, int rollupLevel)
+                throws IOException {
+            this.captureTime = captureTime;
             this.aggregate = aggregate;
 
             List<QueriesByType> queries = aggregate.getQueriesByTypeList();
@@ -814,7 +817,7 @@ class AggregateDao implements AggregateRepository {
         // minimal work inside this method as it is called with active connection
         void bindCommon(PreparedStatement preparedStatement, int startIndex) throws SQLException {
             int i = startIndex;
-            preparedStatement.setLong(i++, aggregate.getCaptureTime());
+            preparedStatement.setLong(i++, captureTime);
             preparedStatement.setDouble(i++, aggregate.getTotalNanos());
             preparedStatement.setLong(i++, aggregate.getTransactionCount());
             preparedStatement.setLong(i++, aggregate.getErrorCount());
@@ -840,9 +843,9 @@ class AggregateDao implements AggregateRepository {
         private final long serverId;
         private final String transactionType;
 
-        private OverallAggregateBinder(long serverId, String transactionType, Aggregate aggregate,
-                int rollupLevel) throws IOException {
-            super(aggregate, rollupLevel);
+        private OverallAggregateBinder(long serverId, long captureTime, String transactionType,
+                Aggregate aggregate, int rollupLevel) throws IOException {
+            super(captureTime, aggregate, rollupLevel);
             this.serverId = serverId;
             this.transactionType = transactionType;
         }
@@ -863,9 +866,9 @@ class AggregateDao implements AggregateRepository {
         private final String transactionType;
         private final String transactionName;
 
-        private TransactionAggregateBinder(long serverId, String transactionType,
+        private TransactionAggregateBinder(long serverId, long captureTime, String transactionType,
                 String transactionName, Aggregate aggregate, int rollupLevel) throws IOException {
-            super(aggregate, rollupLevel);
+            super(captureTime, aggregate, rollupLevel);
             this.serverId = serverId;
             this.transactionType = transactionType;
             this.transactionName = transactionName;
@@ -1028,21 +1031,21 @@ class AggregateDao implements AggregateRepository {
         public @Nullable Void extractData(ResultSet resultSet) throws Exception {
             int maxAggregateQueriesPerQueryType =
                     configRepository.getAdvancedConfig(serverId).maxAggregateQueriesPerQueryType();
-            OverallAggregate curr = null;
+            MutableOverallAggregate curr = null;
             while (resultSet.next()) {
                 String transactionType = checkNotNull(resultSet.getString(1));
                 if (curr == null || transactionType != curr.transactionType()) {
                     if (curr != null) {
-                        storeOverallAggregate(serverId, curr.transactionType(),
+                        storeOverallAggregate(serverId, rollupCaptureTime, curr.transactionType(),
                                 curr.aggregate().toAggregate(scratchBuffer), toRollupLevel);
                     }
-                    curr = ImmutableOverallAggregate.of(transactionType, new MutableAggregate(
-                            rollupCaptureTime, maxAggregateQueriesPerQueryType));
+                    curr = ImmutableMutableOverallAggregate.of(transactionType,
+                            new MutableAggregate(maxAggregateQueriesPerQueryType));
                 }
                 merge(curr.aggregate(), resultSet, 2, fromRollupLevel);
             }
             if (curr != null) {
-                storeOverallAggregate(serverId, curr.transactionType(),
+                storeOverallAggregate(serverId, rollupCaptureTime, curr.transactionType(),
                         curr.aggregate().toAggregate(scratchBuffer), toRollupLevel);
             }
             return null;
@@ -1069,26 +1072,26 @@ class AggregateDao implements AggregateRepository {
         public @Nullable Void extractData(ResultSet resultSet) throws Exception {
             int maxAggregateQueriesPerQueryType =
                     configRepository.getAdvancedConfig(serverId).maxAggregateQueriesPerQueryType();
-            TransactionAggregate curr = null;
+            MutableTransactionAggregate curr = null;
             while (resultSet.next()) {
                 String transactionType = checkNotNull(resultSet.getString(1));
                 String transactionName = checkNotNull(resultSet.getString(2));
                 if (curr == null || transactionType != curr.transactionType()
                         || transactionName != curr.transactionName()) {
                     if (curr != null) {
-                        storeTransactionAggregate(serverId, curr.transactionType(),
-                                curr.transactionName(), curr.aggregate().toAggregate(scratchBuffer),
-                                toRollupLevel);
+                        storeTransactionAggregate(serverId, rollupCaptureTime,
+                                curr.transactionType(), curr.transactionName(),
+                                curr.aggregate().toAggregate(scratchBuffer), toRollupLevel);
                     }
-                    curr = ImmutableTransactionAggregate.of(transactionType, transactionName,
-                            new MutableAggregate(rollupCaptureTime,
-                                    maxAggregateQueriesPerQueryType));
+                    curr = ImmutableMutableTransactionAggregate.of(transactionType, transactionName,
+                            new MutableAggregate(maxAggregateQueriesPerQueryType));
                 }
                 merge(curr.aggregate(), resultSet, 3, fromRollupLevel);
             }
             if (curr != null) {
-                storeTransactionAggregate(serverId, curr.transactionType(), curr.transactionName(),
-                        curr.aggregate().toAggregate(scratchBuffer), toRollupLevel);
+                storeTransactionAggregate(serverId, rollupCaptureTime, curr.transactionType(),
+                        curr.transactionName(), curr.aggregate().toAggregate(scratchBuffer),
+                        toRollupLevel);
             }
             return null;
         }
@@ -1096,14 +1099,14 @@ class AggregateDao implements AggregateRepository {
 
     @Value.Immutable
     @Styles.AllParameters
-    interface OverallAggregate {
+    interface MutableOverallAggregate {
         String transactionType();
         MutableAggregate aggregate();
     }
 
     @Value.Immutable
     @Styles.AllParameters
-    interface TransactionAggregate {
+    interface MutableTransactionAggregate {
         String transactionType();
         String transactionName();
         MutableAggregate aggregate();

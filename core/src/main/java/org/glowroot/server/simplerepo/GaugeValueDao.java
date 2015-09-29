@@ -20,8 +20,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLongArray;
@@ -164,8 +162,7 @@ class GaugeValueDao implements GaugeValueRepository {
         return gauges;
     }
 
-    public void store(final long serverId, final Map<String, GaugeValue> gaugeValues)
-            throws Exception {
+    public void store(final long serverId, final List<GaugeValue> gaugeValues) throws Exception {
         if (gaugeValues.isEmpty()) {
             return;
         }
@@ -173,16 +170,15 @@ class GaugeValueDao implements GaugeValueRepository {
                 + " value) values (?, ?, ?)", new PreparedStatementBinder() {
                     @Override
                     public void bind(PreparedStatement preparedStatement) throws SQLException {
-                        for (Entry<String, GaugeValue> entry : gaugeValues.entrySet()) {
-                            long gaugeId =
-                                    gaugeMetaDao.getOrCreateGaugeId(serverId, entry.getKey());
+                        for (GaugeValue gaugeValue : gaugeValues) {
+                            long gaugeId = gaugeMetaDao.getOrCreateGaugeId(serverId,
+                                    gaugeValue.getGaugeName());
                             if (gaugeId == -1) {
                                 // data source is closing and a new gauge id was needed, but could
                                 // not insert it, but this bind is already inside of the data source
                                 // lock so any inserts here will succeed, thus the break
                                 break;
                             }
-                            GaugeValue gaugeValue = entry.getValue();
                             preparedStatement.setLong(1, gaugeId);
                             preparedStatement.setLong(2, gaugeValue.getCaptureTime());
                             preparedStatement.setDouble(3, gaugeValue.getValue());

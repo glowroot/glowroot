@@ -55,7 +55,8 @@ import org.glowroot.agent.ViewerAgentModule;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.SpyingLogbackFilter;
 import org.glowroot.collector.spi.Collector;
-import org.glowroot.collector.spi.model.AggregateOuterClass.Aggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.OverallAggregate;
+import org.glowroot.collector.spi.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.collector.spi.model.GaugeValueOuterClass.GaugeValue;
 import org.glowroot.collector.spi.model.TraceOuterClass.Trace;
 import org.glowroot.common.util.Clock;
@@ -434,25 +435,24 @@ public class GlowrootModule {
         private volatile @MonotonicNonNull Collector instance;
 
         @Override
+        public void collectAggregates(long captureTime, List<OverallAggregate> overallAggregates,
+                List<TransactionAggregate> transactionAggregates) throws Exception {
+            if (instance != null) {
+                instance.collectAggregates(captureTime, overallAggregates, transactionAggregates);
+            }
+        }
+
+        @Override
+        public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {
+            if (instance != null) {
+                instance.collectGaugeValues(gaugeValues);
+            }
+        }
+
+        @Override
         public void collectTrace(Trace trace) throws Exception {
             if (instance != null) {
                 instance.collectTrace(trace);
-            }
-        }
-
-        @Override
-        public void collectAggregates(Map<String, Aggregate> overallAggregates,
-                Map<String, Map<String, Aggregate>> transactionAggregates,
-                long captureTime) throws Exception {
-            if (instance != null) {
-                instance.collectAggregates(overallAggregates, transactionAggregates, captureTime);
-            }
-        }
-
-        @Override
-        public void collectGaugeValues(Map<String, GaugeValue> gaugeValues) throws Exception {
-            if (instance != null) {
-                instance.collectGaugeValues(gaugeValues);
             }
         }
 

@@ -59,6 +59,11 @@ http://fontawesome.io
 SIL Open Font License 1.1 (font)
 MIT License (code)
 
+gRPC
+Copyright 2014, Google Inc.
+https://github.com/grpc/grpc-java
+BSD 3-Clause License
+
 Guava
 Copyright The Guava Authors
 https://github.com/google/guava
@@ -80,6 +85,11 @@ Copyright 2014 Michael Barker
 Copyright 2014 Matt Warren
 http://hdrhistogram.github.io/HdrHistogram
 BSD 2-Clause License
+
+HPACK
+Copyright 2013 Twitter, Inc
+https://github.com/twitter/hpack
+Apache License, Version 2.0
 
 Immutables
 Copyright 2013-2014 Immutables.org authors

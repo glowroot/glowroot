@@ -124,9 +124,8 @@ class AggregateCollector {
         toBeMergedProfile.mergeIntoProfileTree(profileTree);
     }
 
-    Aggregate build(long captureTime, ScratchBuffer scratchBuffer) throws IOException {
+    Aggregate build(ScratchBuffer scratchBuffer) throws IOException {
         return Aggregate.newBuilder()
-                .setCaptureTime(captureTime)
                 .setTotalNanos(totalNanos)
                 .setTransactionCount(transactionCount)
                 .setErrorCount(errorCount)
