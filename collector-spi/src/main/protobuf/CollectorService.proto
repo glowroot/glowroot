@@ -12,7 +12,7 @@ service CollectorService {
   rpc collectAggregates(AggregateMessage) returns (EmptyMessage);
   rpc collectGaugeValues(GaugeValueMessage) returns (EmptyMessage);
   rpc collectTrace(TraceMessage) returns (EmptyMessage);
-  rpc getConfig(EmptyMessage) returns (Config);
+  rpc getConfig(EmptyMessage) returns (ConfigMessage);
 }
 
 message AggregateMessage {
@@ -31,5 +31,6 @@ message TraceMessage {
 
 message EmptyMessage {}
 
-message Config {
+message ConfigMessage {
+  string json;
 }
