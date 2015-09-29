@@ -4,17 +4,17 @@ Copyright 2011-2015 Glowroot contributors
 Glowroot includes the following software:
 
 AngularJS
-Copyright 2010-2014 Google, Inc
-http://angularjs.org
+Copyright 2010-2015 Google, Inc
+https://github.com/angular/angular.js
 MIT License
 
 AngularUI Bootstrap
-Copyright 2012-2014 The AngularUI Team
-http://angular-ui.github.io/bootstrap
+Copyright 2012-2015 The AngularUI Team
+https://github.com/angular-ui/bootstrap
 MIT License
 
 AngularUI Router
-Copyright 2014 The AngularUI Team, Karsten Sperling
+Copyright 2013-2015 The AngularUI Team, Karsten Sperling
 https://github.com/angular-ui/ui-router
 MIT License
 
@@ -24,28 +24,28 @@ http://asm.ow2.org
 BSD 3-Clause License
 
 Bootstrap
-Copyright 2014 Twitter, Inc
-http://getbootstrap.com
+Copyright 2011-2015 Twitter, Inc
+https://github.com/twbs/bootstrap
 MIT License
 
 bootstrap-datetimepicker
 Copyright 2015 Jonathan Peterson (@Eonasdan)
-http://eonasdan.github.io/bootstrap-datetimepicker
+https://github.com/Eonasdan/bootstrap-datetimepicker
 MIT License
 
 bootstrap-select
-Copyright 2013-2014 bootstrap-select
-http://silviomoreto.github.io/bootstrap-select
+Copyright 2013-2015 bootstrap-select
+https://github.com/silviomoreto/bootstrap-select
 MIT License
 
 D3
 Copyright 2012 Michael Bostock
-http://d3js.org
+https://github.com/mbostock/d3
 BSD 3-Clause License
 
 Flot
 Copyright 2007-2014 IOLA and Ole Laursen
-http://www.flotcharts.org
+https://github.com/flot/flot
 MIT License
 
 Flot Tooltip
@@ -55,7 +55,7 @@ MIT License
 
 Font Awesome
 Copyright @davegandy
-http://fontawesome.io
+https://github.com/FortAwesome/Font-Awesome
 SIL Open Font License 1.1 (font)
 MIT License (code)
 
@@ -75,15 +75,15 @@ http://www.h2database.com
 Eclipse Public License, Version 1.0
 
 handlebars
-Copyright 2011-2014 Yehuda Katz
-http://handlebarsjs.com
+Copyright 2011-2015 Yehuda Katz
+https://github.com/wycats/handlebars.js
 MIT License
 
 HdrHistogram
 Copyright 2012, 2013, 2014 Gil Tene
 Copyright 2014 Michael Barker
 Copyright 2014 Matt Warren
-http://hdrhistogram.github.io/HdrHistogram
+https://github.com/HdrHistogram/HdrHistogram
 BSD 2-Clause License
 
 HPACK
@@ -93,7 +93,7 @@ Apache License, Version 2.0
 
 Immutables
 Copyright 2013-2014 Immutables.org authors
-http://immutables.github.io
+https://github.com/immutables/immutables
 Apache License, Version 2.0
 
 Jackson
@@ -107,8 +107,8 @@ https://javamail.java.net
 Common Development and Distribution License, Version 1.0
 
 jQuery
-Copyright 2014 jQuery Foundation and other contributors
-http://jquery.com
+Copyright 2005, 2014 jQuery Foundation, Inc. and other contributors
+https://github.com/jquery/jquery
 MIT License
 
 jQuery Mouse Wheel
@@ -117,18 +117,18 @@ https://github.com/brandonaaron/jquery-mousewheel
 MIT License
 
 Logback
-Copyright 1999-2012 QOS.ch
-http://logback.qos.ch
+Copyright 1999-2015 QOS.ch
+https://github.com/qos-ch/logback
 Eclipse Public License, Version 1.0
 
 Moment.js
-Copyright 2011-2014 Tim Wood, Iskren Chernev, Moment.js contributors
-http://momentjs.com
+Copyright 2011-2015 Tim Wood, Iskren Chernev, Moment.js contributors
+https://github.com/moment/moment
 MIT License
 
 Netty
-Copyright The Netty Project
-http://netty.io
+Copyright 2014 The Netty Project
+https://github.com/netty/netty
 Apache License, Version 2.0
 
 Ning Compress
@@ -138,7 +138,7 @@ Apache License, Version 2.0
 
 Node Stackvis
 Copyright 2013 Joyent, Inc
-https://github.com/davepacheco/node-stackvis
+https://github.com/joyent/node-stackvis
 MIT License
 
 Open Sans Font
@@ -157,16 +157,16 @@ https://github.com/camilojd/sequeljs
 MIT License
 
 SLF4J
-Copyright 2004-2013 QOS.ch
-http://www.slf4j.org
+Copyright 2004-2014 QOS.ch
+https://github.com/qos-ch/slf4j
 MIT License
 
 spin.js
 Copyright 2011-2014 Felix Gnass [fgnass at neteye dot de]
-http://fgnass.github.io/spin.js
+https://github.com/fgnass/spin.js
 MIT License
 
 ZeroClipboard
 Copyright 2009-2014 Jon Rohan, James M. Greene
-http://zeroclipboard.org
+https://github.com/zeroclipboard/zeroclipboard
 MIT License
