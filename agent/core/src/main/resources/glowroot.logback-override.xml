@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <appender name="CONSOLE" class="org.glowroot.agent.shaded.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <appender name="FILE" class="org.glowroot.agent.shaded.qos.logback.core.rolling.RollingFileAppender">
+    <file>${glowroot.base.dir}/glowroot.log</file>
+    <rollingPolicy class="org.glowroot.agent.shaded.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <fileNamePattern>glowroot.%i.log</fileNamePattern>
+      <minIndex>1</minIndex>
+      <maxIndex>1</maxIndex>
+    </rollingPolicy>
+    <triggeringPolicy class="org.glowroot.agent.shaded.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <maxFileSize>5MB</maxFileSize>
+    </triggeringPolicy>
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <logger name="org.glowroot.agent.shaded" level="warn" />
+  <root level="info">
+    <appender-ref ref="CONSOLE" />
+    <appender-ref ref="FILE" />
+  </root>
+</configuration>

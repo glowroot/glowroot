@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+import "ProfileTree.proto";
+
+package org_glowroot_wire_api_model;
+
+option java_package = "org.glowroot.wire.api.model";
+
+message Trace {
+
+  Header header = 1;
+
+  // each entry can have child entries (and each child entry can have child entries, etc)
+  repeated Entry entry = 2;
+
+  ProfileTree profile_tree = 3;
+
+  message Header {
+    string id = 1;
+    bool partial = 2;
+    bool slow = 3;
+    int64 start_time = 4;
+    int64 capture_time = 5;
+    int64 duration_nanos = 6;
+    string transaction_type = 7;
+    string transaction_name = 8;
+    string headline = 9;
+    string user = 10;
+    repeated Attribute attribute = 11;
+    repeated DetailEntry detail_entry = 12;
+    Error error = 13;
+    Timer root_timer = 14;
+    sint64 thread_cpu_nanos = 15; // -1 means N/A
+    sint64 thread_blocked_nanos = 16; // -1 means N/A
+    sint64 thread_waited_nanos = 17; // -1 means N/A
+    sint64 thread_allocated_bytes = 18; // -1 means N/A
+    repeated GarbageCollectionActivity gc_activity = 19;
+    int32 entry_count = 20;
+    bool entry_limit_exceeded = 21;
+    int64 profile_sample_count = 22;
+    bool profile_sample_limit_exceeded = 23;
+  }
+
+  message Attribute {
+    string name = 1;
+    repeated string value = 2;
+  }
+
+  message DetailEntry {
+    string name = 1;
+    // one of these two (or neither for an empty value)
+    repeated DetailValue value = 2;
+    repeated DetailEntry child_entry = 3;
+  }
+
+  message DetailValue {
+    oneof val {
+      string sval = 1;
+      double dval = 2;
+      int64 lval = 3;
+      bool bval = 4;
+    }
+  }
+
+  message Error {
+    string message = 1;
+    Throwable exception = 2;
+  }
+
+  message Throwable {
+    // display is java.lang.Throwable.toString() instead of java.lang.Throwable.getMessage()
+    // so it includes the exception class name
+    string display = 1;
+    // for inner "cause" throwable, stack trace only includes frames not in common with the
+    // enclosing throwable
+    repeated StackTraceElement element = 2;
+    // this is for printing '... 18 more' at end of inner "cause" instead of the entire stack trace
+    int32 frames_in_common_with_enclosing = 3;
+    Throwable cause = 4;
+  }
+
+  message Timer {
+    string name = 1;
+    bool extended = 2;
+    int64 total_nanos = 3;
+    int64 count = 4;
+    // whether timer was active at the time of a partial trace capture
+    bool active = 5;
+    repeated Timer child_timer = 6;
+  }
+
+  message GarbageCollectionActivity {
+    string collector_name = 1;
+    int64 total_millis = 2;
+    int64 count = 3;
+  }
+
+  message Entry {
+    // start time relative to trace start
+    int64 start_offset_nanos = 1;
+    int64 duration_nanos = 2;
+    // whether entry was active at the time of a partial trace capture
+    bool active = 3;
+    // message is empty for trace entries added using addErrorEntry()
+    string message = 4;
+    repeated DetailEntry detail_entry = 5;
+    repeated StackTraceElement location_stack_trace_element = 6;
+    Error error = 7;
+    repeated Entry child_entry = 8;
+  }
+
+  message StackTraceElement {
+    string class_name = 1;
+    string method_name = 2;
+    string file_name = 3;
+    // sint since can be negative
+    sint32 line_number = 4;
+  }
+}

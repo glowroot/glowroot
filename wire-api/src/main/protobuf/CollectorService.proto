@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+import "Trace.proto";
+import "Aggregate.proto";
+import "GaugeValue.proto";
+
+package org_glowroot_wire_api_model;
+
+option java_package = "org.glowroot.wire.api.model";
+
+service CollectorService {
+  rpc collectAggregates(AggregateMessage) returns (EmptyMessage);
+  rpc collectGaugeValues(GaugeValueMessage) returns (EmptyMessage);
+  rpc collectTrace(TraceMessage) returns (EmptyMessage);
+  rpc getConfig(EmptyMessage) returns (ConfigMessage);
+}
+
+message AggregateMessage {
+  int64 capture_time = 1;
+  repeated OverallAggregate overall_aggregate = 2;
+  repeated TransactionAggregate transaction_aggregate = 3;
+}
+
+message GaugeValueMessage {
+  repeated GaugeValue gauge_values = 1;
+}
+
+message TraceMessage {
+  Trace trace = 1;
+}
+
+message EmptyMessage {}
+
+message ConfigMessage {
+  string json = 1;
+}

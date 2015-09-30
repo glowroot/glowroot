@@ -1,0 +1,53 @@
+{
+  "name": "Servlet Plugin",
+  "id": "servlet",
+  "transactionTypes": [
+    "Servlet"
+  ],
+  "properties": [
+    {
+      "name": "sessionUserAttribute",
+      "type": "string",
+      "label": "Session user attribute",
+      "description": "Session attribute to capture as the user of the trace. Traces can be filtered by user in the explorer. Nested paths are supported, e.g. something.user.username. The attribute value is converted into a String if necessary via toString()."
+    },
+    {
+      "name": "captureSessionAttributes",
+      "type": "string",
+      "label": "Session attributes",
+      "description": "Comma-separated list of servlet session attributes to capture in the root trace entry. Nested paths are supported, e.g. mainObject.nestedObject.displayName. '*' at the end of a path is supported, e.g. mainObject.nestedObject.*, meaning capture all properties of mainObject.nestedObject (via reflection, looking at methods that begin with \"get[A-Z]\" or \"is[A-Z]\"). '*' by itself means capture all session attributes. Values are converted into Strings if necessary via toString()."
+    },
+    {
+      "name": "captureRequestParameters",
+      "type": "string",
+      "default": "*",
+      "label": "Capture request parameters",
+      "description": "Comma-separated list of request parameters to capture in the root trace entry. The wildcard '*' is supported anywhere in the parameter."
+    },
+    {
+      "name": "maskRequestParameters",
+      "type": "string",
+      "default": "*password*",
+      "label": "Mask request parameters",
+      "description": "Comma-separated list of sensitive request parameters to mask, e.g. passwords. The wildcard '*' is supported anywhere in the parameter."
+    },
+    {
+      "name": "captureRequestHeaders",
+      "type": "string",
+      "label": "Capture request headers",
+      "description": "Comma-separated list of request headers to capture in the root trace entry. The wildcard '*' is supported anywhere in the parameter."
+    },
+    {
+      "name": "captureResponseHeaders",
+      "type": "string",
+      "label": "Capture response headers",
+      "description": "Comma-separated list of response headers to capture in the root trace entry. The wildcard '*' is supported anywhere in the parameter."
+    }
+  ],
+  "aspects": [
+    "org.glowroot.agent.plugin.servlet.ServletAspect",
+    "org.glowroot.agent.plugin.servlet.RequestParameterAspect",
+    "org.glowroot.agent.plugin.servlet.ResponseHeaderAspect",
+    "org.glowroot.agent.plugin.servlet.SessionAspect"
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "name": "Jdbc Plugin",
+  "id": "jdbc",
+  "properties": [
+    {
+      "name": "captureBindParameters",
+      "type": "boolean",
+      "default": true,
+      "label": "Bind parameters",
+      "checkboxLabel": "Capture jdbc bind parameters",
+      "description": "Capture jdbc bind parameters for PreparedStatement executions."
+    },
+    {
+      "name": "captureResultSetNavigate",
+      "type": "boolean",
+      "default": true,
+      "label": "ResultSet navigation",
+      "checkboxLabel": "Capture timings for ResultSet navigation",
+      "description": "Capture timings for executions of ResultSet.next()/previous()/relative()/etc to read the next record in a result set. This defaults to true since the timing for this timer is a good indication of jdbc fetch size issues and database latency, but it can be disabled if it is common to return millions of records and the overhead of System.nanoTime() becomes relevant."
+    },
+    {
+      "name": "captureResultSetGet",
+      "type": "boolean",
+      "label": "ResultSet values",
+      "checkboxLabel": "Capture timings for ResultSet value retrieval",
+      "description": "Capture timings for executions of ResultSet.get*() to read the individual column values out of a result set record. This defaults to false since the number of calls can be excessive and generally ResultSet.next() captures more interesting info with less overhead."
+    },
+    {
+      "name": "captureGetConnection",
+      "type": "boolean",
+      "default": true,
+      "label": "Get connection",
+      "checkboxLabel": "Capture timings for DataSource.getConnection()",
+      "description": "Capture timings for executions of DataSource.getConnection()."
+    },
+    {
+      "name": "captureConnectionClose",
+      "type": "boolean",
+      "default": true,
+      "label": "Connection close",
+      "checkboxLabel": "Capture timings for Connection.close()",
+      "description": "Capture timings for executions of Connection.close()."
+    },
+    {
+      "name": "capturePreparedStatementCreation",
+      "type": "boolean",
+      "label": "Prepared statement creation",
+      "checkboxLabel": "Capture timings for Connection.prepare*()",
+      "description": "Capture timings for executions of Connection.prepareStatement() and Connection.prepareCall()."
+    },
+    {
+      "name": "captureStatementClose",
+      "type": "boolean",
+      "label": "Statement close",
+      "checkboxLabel": "Capture timings for Statement.close()",
+      "description": "Capture timings for executions of Statement.close()."
+    },
+    {
+      "name": "captureTransactionLifecycleTraceEntries",
+      "type": "boolean",
+      "label": "Transaction lifecycle",
+      "checkboxLabel": "Capture trace entries for Connection.setAutoCommit()",
+      "description": "Capture trace entries for executions of Connection.setAutoCommit()"
+    },
+    {
+      "name": "captureConnectionLifecycleTraceEntries",
+      "type": "boolean",
+      "label": "Connection lifecycle",
+      "checkboxLabel": "Capture trace entries for Connection opening and closing",
+      "description": "Capture trace entries for executions of DataSource.getConnection() and Connection.close()"
+    },
+    {
+      "name": "stackTraceThresholdMillis",
+      "type": "double",
+      "default": 1000.0,
+      "label": "Stack trace threshold (millis)",
+      "description": "Any jdbc call that exceeds this threshold will have a stack trace captured and attached to it. An empty value will not collect any stack traces, a zero value will collect a stack trace for every jdbc call."
+    }
+  ],
+  "aspects": [
+    "org.glowroot.agent.plugin.jdbc.StatementAspect",
+    "org.glowroot.agent.plugin.jdbc.ResultSetAspect",
+    "org.glowroot.agent.plugin.jdbc.ConnectionAspect",
+    "org.glowroot.agent.plugin.jdbc.DataSourceAspect"
+  ]
+}

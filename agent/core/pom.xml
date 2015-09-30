@@ -1,0 +1,395 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.glowroot</groupId>
+    <artifactId>glowroot-parent</artifactId>
+    <version>0.8.5-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
+  </parent>
+
+  <artifactId>glowroot-agent-core</artifactId>
+
+  <name>Glowroot Agent Core</name>
+  <description>Glowroot Agent Core</description>
+
+  <properties>
+    <asm.version>5.0.4</asm.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-plugin-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-wire-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.immutables</groupId>
+      <artifactId>value</artifactId>
+      <!-- immutables is only needed at compile time -->
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-commons</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-tree</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <!-- org.objectweb.asm.util.CheckClassAdapter.verify() is used when woven byte code
+        verification is enabled via -Dglowroot.weaving.verify=true -->
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-util</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <!-- this is an optional dependency of asm-util -->
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-analysis</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-guava</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.hdrhistogram</groupId>
+      <artifactId>HdrHistogram</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <!-- needed for compiling org.glowroot.testing.SpyingLogbackFilter and needed during shading,
+        but optional as a transitive dependency of unshaded core -->
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>${checker.qual.group.id}</groupId>
+      <artifactId>${checker.qual.artifact.id}</artifactId>
+      <version>${checker.qual.version}</version>
+      <!-- don't need this dependency at runtime since only annotations -->
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+      <!-- don't need this dependency at runtime since only annotations -->
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-netty</artifactId>
+    </dependency>
+    <dependency>
+      <!-- this is included to test weaving against jdk 1.3 bytecode -->
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+      <!-- this is the latest version compiled to jdk 1.3 bytecode -->
+      <version>2.6</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is included to test weaving against JSR bytecode that ends up being inlined via
+        JSRInlinerAdapter -->
+      <groupId>org.apache.jackrabbit</groupId>
+      <artifactId>jackrabbit-core</artifactId>
+      <!-- this is the latest version compiled to jdk 5 and therefore the latest version to include
+        JSR bytecode since JSR bytecode was deprecated in jdk 6 -->
+      <version>2.5.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- dependency of jackrabbit-core that is marked "provided" so not transitively inherited -->
+      <groupId>javax.jcr</groupId>
+      <artifactId>jcr</artifactId>
+      <version>2.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is included to test weaving against jdk 1.7 bytecode -->
+      <groupId>io.undertow</groupId>
+      <artifactId>undertow-core</artifactId>
+      <version>1.3.0.CR2</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <configuration>
+          <dependencyReducedPomLocation>
+            ${project.build.directory}/dependency-reduced-pom.xml
+          </dependencyReducedPomLocation>
+          <createSourcesJar>true</createSourcesJar>
+          <shadeSourcesContent>true</shadeSourcesContent>
+          <artifactSet>
+            <excludes>
+              <!-- don't need these dependencies at runtime since only annotations -->
+              <exclude>${checker.qual.group.id}:${checker.qual.artifact.id}</exclude>
+              <exclude>com.google.code.findbugs:jsr305</exclude>
+            </excludes>
+          </artifactSet>
+          <filters>
+            <filter>
+              <artifact>com.google.guava:guava</artifact>
+              <excludes>
+                <exclude>META-INF/beans.xml</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.google.protobuf:protobuf-java</artifact>
+              <excludes>
+                <exclude>google/protobuf/*.proto</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>io.grpc:grpc-netty</artifact>
+              <excludes>
+                <exclude>META-INF/services/io.grpc.ManagedChannelProvider</exclude>
+                <exclude>META-INF/services/io.grpc.ServerProvider</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>io.netty:netty-*</artifact>
+              <excludes>
+                <exclude>META-INF/io.netty.versions.properties</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.fasterxml.jackson.core:jackson-core</artifact>
+              <excludes>
+                <exclude>META-INF/services/com.fasterxml.jackson.core.JsonFactory</exclude>
+                <exclude>META-INF/LICENSE</exclude>
+                <exclude>META-INF/NOTICE</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.fasterxml.jackson.core:jackson-databind</artifact>
+              <excludes>
+                <exclude>META-INF/services/com.fasterxml.jackson.core.ObjectCodec</exclude>
+                <exclude>META-INF/LICENSE</exclude>
+                <exclude>META-INF/NOTICE</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.fasterxml.jackson.core:jackson-annotations</artifact>
+              <excludes>
+                <exclude>META-INF/LICENSE</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.fasterxml.jackson.datatype:jackson-datatype-guava</artifact>
+              <excludes>
+                <exclude>META-INF/services/com.fasterxml.jackson.databind.Module</exclude>
+                <exclude>META-INF/LICENSE</exclude>
+              </excludes>
+            </filter>
+          </filters>
+          <relocations>
+            <relocation>
+              <pattern>org.objectweb.asm</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.objectweb.asm</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.google.common</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.google.common</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.google.protobuf</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.google.protobuf</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- a couple of classes in guava are under this package name -->
+              <pattern>com.google.thirdparty</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.google.thirdparty</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>io.grpc</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.grpc</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.twitter.hpack</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.twitter.hpack</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.HdrHistogram</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.HdrHistogram</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.fasterxml.jackson</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.fasterxml.jackson</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>io.netty</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.netty</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.slf4j</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.slf4j</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- this shades guava's internal use of java util logging which is needed to prevent
+                java util logging from being initialized early (e.g. in the case of wildfly which
+                wants to do some setup before jul is initialized) -->
+              <pattern>java.util.logging</pattern>
+              <shadedPattern>org.glowroot.agent.core.jul</shadedPattern>
+              <excludes>
+                <!-- don't shade the system property key "java.util.logging.manager"
+                  (unshaded string is needed in LazyPlatformMBeanServer) -->
+                <exclude>java.util.logging.manager</exclude>
+              </excludes>
+            </relocation>
+            <relocation>
+              <pattern>ch.qos.logback.core</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.qos.logback.core</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>ch.qos.logback.classic</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.qos.logback.classic</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- shades logback internal constant, see
+                ch.qos.logback.classic.util.ContextInitializer -->
+              <rawString>true</rawString>
+              <pattern>^logback.configurationFile$</pattern>
+              <shadedPattern>glowroot.logback.configurationFile</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- shades logback internal constant, see
+                ch.qos.logback.classic.util.ContextInitializer -->
+              <rawString>true</rawString>
+              <pattern>^logback.groovy$</pattern>
+              <shadedPattern>glowroot.logback.groovy</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- shades logback internal constant, see ch.qos.logback.classic.ClassicConstants -->
+              <rawString>true</rawString>
+              <pattern>^logback(-test)?.xml$</pattern>
+              <shadedPattern>glowroot.logback$1.xml</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- shades logback internal constant, see ch.qos.logback.classic.ClassicConstants -->
+              <rawString>true</rawString>
+              <pattern>^logback.ContextSelector$</pattern>
+              <shadedPattern>glowroot.logback.ContextSelector</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- shades logback internal constant, see ch.qos.logback.classic.ClassicConstants -->
+              <rawString>true</rawString>
+              <pattern>^java:comp/env/logback/configuration-resource$</pattern>
+              <shadedPattern>
+                java:comp/env/glowroot.logback/configuration-resource
+              </shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- shades logback internal constant, see ch.qos.logback.classic.ClassicConstants -->
+              <rawString>true</rawString>
+              <pattern>^java:comp/env/logback/context-name$</pattern>
+              <shadedPattern>java:comp/env/glowroot.logback/context-name</shadedPattern>
+            </relocation>
+          </relocations>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!-- maven-failsafe-plugin is used to execute JarFileShadingIT since it needs to run after
+          the packaging phase so that glowroot-agent.jar will be available -->
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-jar-plugin</artifactId>
+          <configuration>
+            <archive>
+              <manifestEntries>
+                <Build-Time>${maven.build.timestamp}</Build-Time>
+                <Premain-Class>org.glowroot.agent.AgentPremain</Premain-Class>
+                <Can-Redefine-Classes>true</Can-Redefine-Classes>
+                <Can-Retransform-Classes>true</Can-Retransform-Classes>
+              </manifestEntries>
+            </archive>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

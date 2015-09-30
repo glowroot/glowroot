@@ -1,0 +1,447 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.glowroot</groupId>
+    <artifactId>glowroot-parent</artifactId>
+    <version>0.8.5-SNAPSHOT</version>
+    <relativePath>../../</relativePath>
+  </parent>
+
+  <artifactId>glowroot-fat-agent-core</artifactId>
+
+  <name>Glowroot Fat Agent Core</name>
+  <description>Glowroot Fat Agent Core</description>
+
+  <properties>
+    <asm.version>5.0.4</asm.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-storage</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-ui</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.immutables</groupId>
+      <artifactId>value</artifactId>
+      <!-- immutables is only needed at compile time -->
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-guava</artifactId>
+    </dependency>
+    <!--dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-cassandra-plugin</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-http-client-plugin</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-jdbc-plugin</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-jms-plugin</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-logger-plugin</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-quartz-plugin</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent-servlet-plugin</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency-->
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <!-- needed for compiling org.glowroot.testing.SpyingLogbackFilter and needed during shading,
+        but optional as a transitive dependency of unshaded core -->
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>${checker.qual.group.id}</groupId>
+      <artifactId>${checker.qual.artifact.id}</artifactId>
+      <version>${checker.qual.version}</version>
+      <!-- don't need this dependency at runtime since only annotations -->
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+      <!-- don't need this dependency at runtime since only annotations -->
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- asm is needed for PreInitialize*Classes tests -->
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <version>${asm.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- asm is needed for PreInitialize*Classes tests -->
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-commons</artifactId>
+      <version>${asm.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- asm is needed for PreInitialize*Classes tests -->
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-tree</artifactId>
+      <version>${asm.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <configuration>
+          <dependencyReducedPomLocation>
+            ${project.build.directory}/dependency-reduced-pom.xml
+          </dependencyReducedPomLocation>
+          <createSourcesJar>true</createSourcesJar>
+          <shadeSourcesContent>true</shadeSourcesContent>
+          <artifactSet>
+            <excludes>
+              <!-- don't need these dependencies at runtime since only annotations -->
+              <exclude>${checker.qual.group.id}:${checker.qual.artifact.id}</exclude>
+              <exclude>com.google.code.findbugs:jsr305</exclude>
+              <!-- these are already shaded and included inside glowroot-agent -->
+              <exclude>org.glowroot:glowroot-agent-api</exclude>
+              <exclude>org.glowroot:glowroot-agent-plugin-api</exclude>
+              <exclude>org.glowroot:glowroot-wire-api</exclude>
+              <exclude>org.glowroot:glowroot-common</exclude>
+              <!-- these are already shaded and included inside glowroot-agent as well, and should
+                not get re-included here since the glowroot-agent creates a dependency reduced pom,
+                and this works correctly(?) in maven 2.2.5, but does not work in maven 3.3.1 and
+                maven 3.3.3 (currently the latest version) under which these artifacts will get
+                re-included without these exclusions, see MSHADE-206 -->
+              <exclude>org.ow2.asm:asm-*</exclude>
+              <exclude>io.grpc:grpc-*</exclude>
+              <exclude>com.twitter:hpack</exclude>
+            </excludes>
+          </artifactSet>
+          <filters>
+            <filter>
+              <artifact>com.google.guava:guava</artifact>
+              <excludes>
+                <exclude>META-INF/beans.xml</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.google.protobuf:protobuf-java</artifact>
+              <excludes>
+                <exclude>google/protobuf/*.proto</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.h2database:h2</artifact>
+              <excludes>
+                <exclude>META-INF/services/java.sql.Driver</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>io.netty:netty-*</artifact>
+              <excludes>
+                <exclude>META-INF/io.netty.versions.properties</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.fasterxml.jackson.core:jackson-core</artifact>
+              <excludes>
+                <exclude>META-INF/services/com.fasterxml.jackson.core.JsonFactory</exclude>
+                <exclude>META-INF/LICENSE</exclude>
+                <exclude>META-INF/NOTICE</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.fasterxml.jackson.core:jackson-databind</artifact>
+              <excludes>
+                <exclude>META-INF/services/com.fasterxml.jackson.core.ObjectCodec</exclude>
+                <exclude>META-INF/LICENSE</exclude>
+                <exclude>META-INF/NOTICE</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.fasterxml.jackson.core:jackson-annotations</artifact>
+              <excludes>
+                <exclude>META-INF/LICENSE</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.fasterxml.jackson.datatype:jackson-datatype-guava</artifact>
+              <excludes>
+                <exclude>META-INF/services/com.fasterxml.jackson.databind.Module</exclude>
+                <exclude>META-INF/LICENSE</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.sun.mail:mailapi</artifact>
+              <excludes>
+                <exclude>META-INF/gfprobe-provider.xml</exclude>
+                <exclude>META-INF/javamail.charset.map</exclude>
+                <exclude>META-INF/mailcap</exclude>
+                <exclude>META-INF/LICENSE.txt</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.sun.mail:smtp</artifact>
+              <excludes>
+                <!-- javamail.address.map and javamail.providers are replaced with
+                  glowroot.javamail.address.map and glowroot.javamail.providers -->
+                <exclude>META-INF/javamail.address.map</exclude>
+                <exclude>META-INF/javamail.providers</exclude>
+                <exclude>META-INF/LICENSE.txt</exclude>
+              </excludes>
+            </filter>
+          </filters>
+          <relocations>
+            <relocation>
+              <pattern>org.h2</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.h2</shadedPattern>
+              <excludes>
+                <!-- these resource files are actually read from org/h2/util/data.zip whose
+                  internals do not get shaded -->
+                <exclude>/org/h2/res/*</exclude>
+                <exclude>/org/h2/server/web/res/*</exclude>
+              </excludes>
+            </relocation>
+            <relocation>
+              <!-- shade thread names to make it easy to identify glowroot threads -->
+              <rawString>true</rawString>
+              <pattern>H2 File Lock Watchdog</pattern>
+              <shadedPattern>Glowroot-H2 File Lock Watchdog</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- shade thread names to make it easy to identify glowroot threads -->
+              <rawString>true</rawString>
+              <pattern>H2 Log Writer</pattern>
+              <shadedPattern>Glowroot-H2 Log Writer</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- shade thread names to make it easy to identify glowroot threads -->
+              <rawString>true</rawString>
+              <pattern>Generate Seed</pattern>
+              <shadedPattern>Glowroot-H2 Generate Seed</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.ning.compress</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.ning.compress</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.google.common</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.google.common</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.google.protobuf</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.google.protobuf</shadedPattern>
+            </relocation>
+            <relocation>
+              <!-- a couple of classes in guava are under this package name -->
+              <pattern>com.google.thirdparty</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.google.thirdparty</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.HdrHistogram</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.HdrHistogram</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.fasterxml.jackson</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.fasterxml.jackson</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>io.netty</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.netty</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.jcraft.jzlib</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.jcraft.jzlib</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>javax.mail</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.javax.mail</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.sun.mail</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.sun.mail</shadedPattern>
+            </relocation>
+            <relocation>
+              <rawString>true</rawString>
+              <pattern>^META-INF/javamail.address.map$</pattern>
+              <shadedPattern>META-INF/glowroot.javamail.address.map</shadedPattern>
+            </relocation>
+            <relocation>
+              <rawString>true</rawString>
+              <pattern>^META-INF/javamail.providers$</pattern>
+              <shadedPattern>META-INF/glowroot.javamail.providers</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.slf4j</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.slf4j</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>ch.qos.logback.core</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.qos.logback.core</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>ch.qos.logback.classic</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.qos.logback.classic</shadedPattern>
+            </relocation>
+          </relocations>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!-- maven-failsafe-plugin is used to execute JarFileShadingIT since it needs to run after
+          the packaging phase so that glowroot-fat-agent.jar will be available -->
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <descriptors>
+            <descriptor>${basedir}/dist.xml</descriptor>
+          </descriptors>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-jar-plugin</artifactId>
+          <configuration>
+            <archive>
+              <manifestEntries>
+                <Build-Time>${maven.build.timestamp}</Build-Time>
+                <Main-Class>org.glowroot.agent.fat.Viewer</Main-Class>
+                <Premain-Class>org.glowroot.agent.core.AgentPremain</Premain-Class>
+                <Can-Redefine-Classes>true</Can-Redefine-Classes>
+                <Can-Retransform-Classes>true</Can-Retransform-Classes>
+              </manifestEntries>
+            </archive>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <profiles>
+    <profile>
+      <!-- TODO revisit whether this profile is needed after MSHADE-206 is resolved -->
+      <id>checker</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.ow2.asm</groupId>
+          <artifactId>asm</artifactId>
+          <version>${asm.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.ow2.asm</groupId>
+          <artifactId>asm-commons</artifactId>
+          <version>${asm.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.ow2.asm</groupId>
+          <artifactId>asm-tree</artifactId>
+          <version>${asm.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+</project>

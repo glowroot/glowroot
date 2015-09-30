@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+import "ProfileTree.proto";
+
+package org_glowroot_wire_api_model;
+
+option java_package = "org.glowroot.wire.api.model";
+
+message OverallAggregate {
+  string transaction_type = 1;
+  Aggregate aggregate = 2;
+}
+
+message TransactionAggregate {
+  string transaction_type = 1;
+  string transaction_name = 2;
+  Aggregate aggregate = 3;
+}
+
+// aggregate uses double instead of int64 to avoid (unlikely) 292 year nanosecond rollover
+message Aggregate {
+
+  double total_nanos = 1;
+  int64 transaction_count = 2;
+  int64 error_count = 3;
+  double total_cpu_nanos = 4; // -1 means N/A
+  double total_blocked_nanos = 5; // -1 means N/A
+  double total_waited_nanos = 6; // -1 means N/A
+  double total_allocated_bytes = 7; // -1 means N/A
+  Histogram total_nanos_histogram = 8;
+
+  repeated Timer root_timer = 9;
+
+  repeated QueriesByType queries_by_type = 10;
+
+  ProfileTree profile_tree = 11;
+
+  message Histogram {
+    // for smaller numbers of transactions, the individual raw values are stored directly
+    // these values are ordered for fast percentile calculation on retrieval
+    repeated int64 ordered_raw_value = 1;
+    // for larger numbers of transactions, the histogram is tracked and encoded using HdrHistogram
+    bytes encoded_bytes = 2;
+  }
+
+  message Timer {
+    // name is null for synthetic root
+    string name = 1;
+    bool extended = 2;
+    double total_nanos = 3;
+    int64 count = 4;
+    repeated Timer child_timer = 5;
+  }
+
+  message QueriesByType {
+    // e.g. "SQL", "CQL"
+    string type = 1;
+    repeated Query query = 2;
+  }
+
+  message Query {
+    string text = 1;
+    double total_nanos = 2;
+    int64 total_rows = 3;
+    int64 execution_count = 4;
+  }
+}

@@ -37,25 +37,28 @@
   <modules>
     <module>misc/license-resource-bundle</module>
     <module>misc/checker-qual-jdk6</module>
-    <module>api</module>
-    <module>plugin-api</module>
-    <module>collector-spi</module>
-    <module>core</module>
-    <module>test-harness</module>
-    <module>testing/integration-tests</module>
-    <module>testing/webdriver-tests</module>
-    <module>testing/microbenchmarks</module>
-    <module>testing/ui-sandbox</module>
-    <module>plugins/cassandra-plugin</module>
-    <module>plugins/http-client-plugin</module>
-    <module>plugins/jdbc-plugin</module>
-    <module>plugins/jdbc-plugin-microbenchmarks</module>
-    <module>plugins/jms-plugin</module>
-    <module>plugins/logger-plugin</module>
-    <module>plugins/quartz-plugin</module>
-    <module>plugins/servlet-plugin</module>
-    <module>plugins/servlet-plugin-microbenchmarks</module>
-    <module>distribution</module>
+    <module>common</module>
+    <module>wire-api</module>
+    <module>agent/api</module>
+    <module>agent/plugin-api</module>
+    <module>agent/core</module>
+    <module>agent/test-harness</module>
+    <module>agent/integration-tests</module>
+    <module>agent/plugins/cassandra-plugin</module>
+    <module>agent/plugins/http-client-plugin</module>
+    <module>agent/plugins/jdbc-plugin</module>
+    <module>agent/plugins/jms-plugin</module>
+    <module>agent/plugins/logger-plugin</module>
+    <module>agent/plugins/quartz-plugin</module>
+    <module>agent/plugins/servlet-plugin</module>
+    <module>agent/benchmarks</module>
+    <module>agent/distribution</module>
+    <module>storage</module>
+    <module>ui</module>
+    <module>fat-agent/core</module>
+    <module>fat-agent/distribution</module>
+    <module>webdriver-tests</module>
+    <module>ui-sandbox</module>
   </modules>
 
   <scm>
@@ -65,7 +68,15 @@
   </scm>
 
   <properties>
+    <grpc.version>0.9.0</grpc.version>
+    <netty.version>4.1.0.Beta7</netty.version>
+    <jackson.version>2.6.2</jackson.version>
+    <logback.version>1.1.3</logback.version>
+    <immutables.version>2.0.21</immutables.version>
+    <javax.mail.version>1.5.4</javax.mail.version>
+    <jmh.version>1.11.1</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
     <!-- use custom-built jdk6 compatible checker framework annotations by default except when
       actually running checker framework code quality tests -->
@@ -82,12 +93,64 @@
       <dependency>
         <groupId>org.immutables</groupId>
         <artifactId>value</artifactId>
-        <version>2.0.21</version>
+        <version>${immutables.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.immutables</groupId>
+        <artifactId>builder</artifactId>
+        <version>${immutables.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-java</artifactId>
+        <version>3.0.0-beta-1</version>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-core</artifactId>
+        <version>${grpc.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-stub</artifactId>
+        <version>${grpc.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-protobuf</artifactId>
+        <version>${grpc.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-netty</artifactId>
+        <version>${grpc.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.twitter</groupId>
+        <artifactId>hpack</artifactId>
+        <!-- transitive dependency of grpc-netty at multiple depths with conflicting versions
+          (0.10.1 and 0.11.0) -->
+        <version>0.11.0</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
-        <artifactId>netty-all</artifactId>
-        <version>4.1.0.Beta6</version>
+        <artifactId>netty-buffer</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-transport</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-codec-http</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-handler</artifactId>
+        <version>${netty.version}</version>
       </dependency>
       <dependency>
         <groupId>com.google.code.findbugs</groupId>
@@ -102,12 +165,12 @@
       <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-core</artifactId>
-        <version>1.1.3</version>
+        <version>${logback.version}</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
-        <version>1.1.3</version>
+        <version>${logback.version}</version>
       </dependency>
       <dependency>
         <groupId>junit</groupId>
@@ -120,24 +183,53 @@
         <version>19.0-rc2</version>
       </dependency>
       <dependency>
+        <groupId>org.hdrhistogram</groupId>
+        <artifactId>HdrHistogram</artifactId>
+        <version>2.1.7</version>
+      </dependency>
+      <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-core</artifactId>
-        <version>2.6.2</version>
+        <version>${jackson.version}</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>2.6.2</version>
+        <version>${jackson.version}</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-annotations</artifactId>
-        <version>2.6.2</version>
+        <version>${jackson.version}</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.datatype</groupId>
         <artifactId>jackson-datatype-guava</artifactId>
-        <version>2.6.2</version>
+        <version>${jackson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.sun.mail</groupId>
+        <artifactId>mailapi</artifactId>
+        <version>${javax.mail.version}</version>
+        <exclusions>
+          <exclusion>
+            <!-- JAF included in Java SE 6+ -->
+            <groupId>javax.activation</groupId>
+            <artifactId>activation</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>com.sun.mail</groupId>
+        <artifactId>smtp</artifactId>
+        <version>${javax.mail.version}</version>
+        <exclusions>
+          <exclusion>
+            <!-- JAF included in Java SE 6+ -->
+            <groupId>javax.activation</groupId>
+            <artifactId>activation</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.assertj</groupId>
@@ -164,12 +256,12 @@
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-core</artifactId>
-        <version>1.11.1</version>
+        <version>${jmh.version}</version>
       </dependency>
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-generator-annprocess</artifactId>
-        <version>1.11.1</version>
+        <version>${jmh.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -252,6 +344,14 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>2.5.5</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>2.6.1</version>
+        </plugin>
+        <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.3</version>
           <configuration>
@@ -261,10 +361,6 @@
               see http://immutables.github.io/getstarted.html -->
             <useIncrementalCompilation>false</useIncrementalCompilation>
           </configuration>
-        </plugin>
-        <plugin>
-          <artifactId>maven-clean-plugin</artifactId>
-          <version>2.6.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-deploy-plugin</artifactId>
@@ -512,7 +608,7 @@
         <dependency>
           <groupId>org.checkerframework</groupId>
           <artifactId>checker</artifactId>
-          <version>1.9.4</version>
+          <version>${checker.qual.version}</version>
           <optional>true</optional>
         </dependency>
         <dependency>
@@ -520,7 +616,7 @@
             the classpath for the explicit annotation processing setup below -->
           <groupId>org.immutables</groupId>
           <artifactId>value</artifactId>
-          <version>2.0.21</version>
+          <version>${immutables.version}</version>
         </dependency>
       </dependencies>
       <build>

@@ -1,0 +1,44 @@
+{
+  "name": "HTTP Client Plugin",
+  "id": "http-client",
+  "instrumentation": [
+    {
+      "className": "org.apache.http.client.HttpClient",
+      "methodName": "execute",
+      "methodParameterTypes": [
+        "org.apache.http.client.methods.HttpUriRequest",
+        ".."
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "http client request",
+      "traceEntryMessageTemplate": "http client request: {{0.method}} {{0.URI}}"
+    },
+    {
+      "className": "org.apache.http.client.HttpClient",
+      "methodName": "execute",
+      "methodParameterTypes": [
+        "org.apache.http.HttpHost",
+        "org.apache.http.HttpRequest",
+        ".."
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "http client request",
+      "traceEntryMessageTemplate": "http client request: {{1.requestLine.method}} {{0.toURI}}{{1.requestLine.uri}}"
+    },
+    {
+      "className": "org.apache.commons.httpclient.HttpClient",
+      "methodName": "executeMethod",
+      "methodParameterTypes": [
+        "org.apache.commons.httpclient.HostConfiguration",
+        "org.apache.commons.httpclient.HttpMethod",
+        "org.apache.commons.httpclient.HttpState"
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "http client request",
+      "traceEntryMessageTemplate": "http client request: {{1.name}} {{1.URI}}"
+    }
+  ],
+  "aspects": [
+    "org.glowroot.agent.plugin.httpclient.AsyncHttpClientAspect"
+  ]
+}

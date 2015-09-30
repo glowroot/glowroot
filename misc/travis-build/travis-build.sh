@@ -8,8 +8,8 @@ surefire_jvm_args="-Xmx512m -Djava.security.egd=file:/dev/./urandom"
 case "$1" in
 
        "test") # shading is done during the package phase, so 'mvn test' is used to run tests
-               # against unshaded glowroot-core and 'mvn package' is used to run tests against
-               # shaded glowroot-core
+               # against unshaded glowroot-agent and 'mvn package' is used to run tests against
+               # shaded glowroot-agent
                if [[ "$GLOWROOT_UNSHADED" == "true" ]]
                then
                  mvn clean test -Dglowroot.test.harness=$GLOWROOT_HARNESS \
@@ -20,17 +20,17 @@ case "$1" in
                  mvn clean install -Dglowroot.test.harness=$GLOWROOT_HARNESS \
                                    -DargLine="$surefire_jvm_args" \
                                    -B
-                 mvn clean test -pl plugins/jdbc-plugin \
+                 mvn clean test -pl agent/plugins/jdbc-plugin \
                                 -Dglowroot.test.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=H2 \
                                 -DargLine="$surefire_jvm_args" \
                                 -B
-                 mvn clean test -pl plugins/jdbc-plugin \
+                 mvn clean test -pl agent/plugins/jdbc-plugin \
                                 -Dglowroot.test.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=COMMONS_DBCP_WRAPPED \
                                 -DargLine="$surefire_jvm_args" \
                                 -B
-                 mvn clean test -pl plugins/jdbc-plugin \
+                 mvn clean test -pl agent/plugins/jdbc-plugin \
                                 -Dglowroot.test.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=TOMCAT_JDBC_POOL_WRAPPED \
                                 -DargLine="$surefire_jvm_args" \
@@ -50,8 +50,8 @@ case "$1" in
                version=`mvn help:evaluate -Dexpression=project.version | grep -v '\['`
                if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" && "$version" == *-SNAPSHOT ]]
                then
-                 # deploy only parent, api, plugin-api, collector-spi and test-harness artifacts to maven repository
-                 mvn clean deploy -pl .,api,plugin-api,collector-spi,test-harness \
+                 # deploy only parent, agent/api, agent/plugin-api, and agent/test-harness artifacts to maven repository
+                 mvn clean deploy -pl .,agent/api,agent/plugin-api,agent/test-harness \
                                   -Pjavadoc \
                                   -Dglowroot.ui.skip=true \
                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
@@ -80,8 +80,8 @@ case "$1" in
                  # IsolatedWeavingClassLoader to construct the class ids
                  #
                  # shading is done during the package phase, so 'mvn test' is used to run tests
-                 # against unshaded glowroot-core and 'mvn package' is used to run tests against
-                 # shaded glowroot-core
+                 # against unshaded glowroot-agent and 'mvn package' is used to run tests against
+                 # shaded glowroot-agent
                  mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent test \
                                  -Dglowroot.test.harness=javaagent \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
@@ -93,7 +93,7 @@ case "$1" in
                  # also running integration-tests with (default) local test harness to capture a
                  # couple methods exercised only by the local test harness
                  mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent test \
-                                 -pl testing/integration-tests \
+                                 -pl agent/integration-tests \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
                                  -Djacoco.propertyName=jacocoArgLine \
                                  -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
@@ -102,7 +102,7 @@ case "$1" in
                  # code coverage for Slf4jTest and Slf4jMarkerTest
                  # (see comments in those classes for more detail)
                  mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent package \
-                                 -pl api,plugin-api,core,plugins/logger-plugin \
+                                 -pl agent/plugins/logger-plugin \
                                  -Dglowroot.test.harness=javaagent \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
                                  -Djacoco.propertyName=jacocoArgLine \
@@ -112,7 +112,7 @@ case "$1" in
                  # the sonar.jdbc.password system property is set in the pom.xml using the
                  # environment variable SONAR_DB_PASSWORD (instead of setting the system
                  # property on the command line which which would make it visible to ps)
-                 mvn sonar:sonar -pl .,api,plugin-api,core,plugins/cassandra-plugin,plugins/jdbc-plugin,plugins/logger-plugin,plugins/servlet-plugin \
+                 mvn sonar:sonar -pl .,common,agent/api,agent/plugin-api,agent/core,agent/plugins/cassandra-plugin,agent/plugins/jdbc-plugin,agent/plugins/logger-plugin,agent/plugins/servlet-plugin,storage,ui,fat-agent/core \
                                  -Dsonar.jdbc.url=$SONAR_JDBC_URL \
                                  -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \
                                  -Dsonar.host.url=$SONAR_HOST_URL \
@@ -151,9 +151,9 @@ case "$1" in
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@Untainted\*/|/*@org.checkerframework.checker.tainting.qual.Untainted*/|g'
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@\([A-Za-z]*\)\*/|/*@org.checkerframework.checker.nullness.qual.\1*/|g'
 
-               # omitting collector-spi from checker framework validation as it contains (mostly) generated code which does not pass
-               mvn clean install -am -pl collector-spi
-               mvn clean compile -pl .,misc/license-resource-bundle,api,plugin-api,core,test-harness,plugins/cassandra-plugin,plugins/jdbc-plugin,plugins/logger-plugin,plugins/servlet-plugin \
+               # omitting wire-api from checker framework validation as it contains (mostly) generated code which does not pass
+               mvn clean install -am -pl wire-api
+               mvn clean compile -pl .,misc/license-resource-bundle,common,agent/api,agent/plugin-api,agent/core,agent/test-harness,agent/plugins/cassandra-plugin,agent/plugins/jdbc-plugin,agent/plugins/logger-plugin,agent/plugins/servlet-plugin,storage,ui,fat-agent/core \
                                  -Pchecker \
                                  -Dchecker.install.dir=$HOME/checker-framework \
                                  -Dchecker.stubs.dir=$PWD/misc/checker-stubs \
@@ -171,7 +171,7 @@ case "$1" in
                then
                  mvn clean install -DskipTests=true \
                                    -B
-                 cd testing/webdriver-tests
+                 cd webdriver-tests
                  mvn clean test -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \
                                 -Dsaucelabs.browser.name=$SAUCELABS_BROWSER_NAME \
                                 -Dsaucelabs.browser.version=$SAUCELABS_BROWSER_VERSION \
