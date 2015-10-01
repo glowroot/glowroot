@@ -135,7 +135,8 @@ case "$1" in
                  mv $HOME/checker-framework-* $HOME/checker-framework
                  # need to limit memory of all JVM forks for travis docker build
                  # see https://github.com/travis-ci/travis-ci/issues/3396
-                 sed -i 's#"java" "-jar" "${mydir}"/../dist/checker.jar#"java" "-Xmx512m" "-jar" "${mydir}"/../dist/checker.jar -J-Xmx512m#' $HOME/checker-framework/checker/bin/javac
+                 sed -i 's#/bin/sh#/bin/bash#' $HOME/checker-framework/checker/bin/javac
+                 sed -i 's#"java" "-jar" "${mydir}"/../dist/checker.jar "$@"#"java" "-Xmx512m" "-jar" "${mydir}"/../dist/checker.jar -J-Xmx512m "$@" 2>\&1 | tee /tmp/checker.out ; test ${PIPESTATUS[0]} -eq 0#' $HOME/checker-framework/checker/bin/javac
                fi
 
                set +e
@@ -164,7 +165,11 @@ case "$1" in
                # preserve exit status from mvn (needed because of pipe to sed)
                mvn_status=${PIPESTATUS[0]}
                git checkout -- .
-               test $mvn_status -eq 0
+               if [ $mvn_status -ne 0 ]
+               then
+                 cat /tmp/checker.out
+                 exit $mvn_status
+               fi
                ;;
 
   "saucelabs") if [[ $SAUCE_USERNAME ]]
