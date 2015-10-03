@@ -54,16 +54,16 @@ class TraceDetailHttpService implements HttpService {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         String path = decoder.path();
         String traceComponent = path.substring(path.lastIndexOf('/') + 1);
-        List<String> serverIds = decoder.parameters().get("server-id");
-        checkNotNull(serverIds, "Missing server id in query string: %s", request.uri());
-        long serverId = Long.parseLong(serverIds.get(0));
+        List<String> servers = decoder.parameters().get("server");
+        checkNotNull(servers, "Missing server in query string: %s", request.uri());
+        String server = servers.get(0);
         List<String> traceIds = decoder.parameters().get("trace-id");
         checkNotNull(traceIds, "Missing trace id in query string: %s", request.uri());
         String traceId = traceIds.get(0);
-        logger.debug("handleRequest(): traceComponent={}, serverId={}, traceId={}", traceComponent,
-                serverId, traceId);
+        logger.debug("handleRequest(): traceComponent={}, servers={}, traceId={}", traceComponent,
+                server, traceId);
 
-        ChunkSource detail = getDetailChunkSource(traceComponent, serverId, traceId);
+        ChunkSource detail = getDetailChunkSource(traceComponent, server, traceId);
         if (detail == null) {
             return new DefaultFullHttpResponse(HTTP_1_1, NOT_FOUND);
         }
@@ -86,10 +86,10 @@ class TraceDetailHttpService implements HttpService {
         return null;
     }
 
-    private @Nullable ChunkSource getDetailChunkSource(String traceComponent, long serverId,
+    private @Nullable ChunkSource getDetailChunkSource(String traceComponent, String serverName,
             String traceId) throws Exception {
         if (traceComponent.equals("entries")) {
-            String entriesJson = traceCommonService.getEntriesJson(serverId, traceId);
+            String entriesJson = traceCommonService.getEntriesJson(serverName, traceId);
             if (entriesJson == null) {
                 // this includes trace was found but the trace had no trace entries
                 // caller should check trace.entry_count
@@ -98,7 +98,7 @@ class TraceDetailHttpService implements HttpService {
             return ChunkSource.wrap(entriesJson);
         }
         if (traceComponent.equals("profile")) {
-            String profileJson = traceCommonService.getProfileTreeJson(serverId, traceId);
+            String profileJson = traceCommonService.getProfileTreeJson(serverName, traceId);
             if (profileJson == null) {
                 return null;
             }

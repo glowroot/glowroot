@@ -44,7 +44,7 @@ glowroot.controller('ConfigCommonCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      postData.serverId = $scope.serverId;
+      postData.server = $scope.server;
       $http.post(backendUrl, postData)
           .success(function (data) {
             onNewData(data);
@@ -53,7 +53,7 @@ glowroot.controller('ConfigCommonCtrl', [
           .error(httpErrors.handler($scope, deferred));
     };
 
-    $http.get(backendUrl + '?server-id=' + $scope.serverId)
+    $http.get(backendUrl + '?server=' + $scope.server)
         .success(onNewData)
         .error(httpErrors.handler($scope));
   }

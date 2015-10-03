@@ -78,22 +78,21 @@ class ErrorCommonService {
     }
 
     // from is non-inclusive
-    OverallErrorSummary readOverallErrorSummary(long serverId, String transactionType, long from,
-            long to)
-                    throws Exception {
-        int rollupLevel = aggregateRepository.getRollupLevelForView(serverId, from, to);
-        LiveResult<OverallErrorSummary> liveResult =
-                liveAggregateRepository.getLiveOverallErrorSummary(serverId, transactionType, from,
-                        to);
+    OverallErrorSummary readOverallErrorSummary(String serverGroup, String transactionType,
+            long from, long to) throws Exception {
+        int rollupLevel = aggregateRepository.getRollupLevelForView(serverGroup, from, to);
+        LiveResult<OverallErrorSummary> liveResult = liveAggregateRepository
+                .getLiveOverallErrorSummary(serverGroup, transactionType, from, to);
         if (liveResult == null) {
-            return aggregateRepository.readOverallErrorSummary(serverId, transactionType, from, to,
-                    rollupLevel);
+            return aggregateRepository.readOverallErrorSummary(serverGroup, transactionType, from,
+                    to, rollupLevel);
         }
         // -1 since query 'to' is inclusive
         // this way don't need to worry about de-dupping between live and stored aggregates
         long revisedTo = liveResult.initialCaptureTime() - 1;
-        OverallErrorSummary overallSummary = aggregateRepository.readOverallErrorSummary(serverId,
-                transactionType, from, revisedTo, rollupLevel);
+        OverallErrorSummary overallSummary =
+                aggregateRepository.readOverallErrorSummary(serverGroup,
+                        transactionType, from, revisedTo, rollupLevel);
         for (OverallErrorSummary liveOverallErrorSummary : liveResult.get()) {
             overallSummary = combineOverallErrorSummaries(overallSummary, liveOverallErrorSummary);
         }
@@ -103,10 +102,10 @@ class ErrorCommonService {
     // query.from() is non-inclusive
     Result<TransactionErrorSummary> readTransactionErrorSummaries(ErrorSummaryQuery query)
             throws Exception {
-        int rollupLevel = aggregateRepository.getRollupLevelForView(query.serverId(), query.from(),
-                query.to());
+        int rollupLevel = aggregateRepository.getRollupLevelForView(query.serverGroup(),
+                query.from(), query.to());
         LiveResult<List<TransactionErrorSummary>> liveResult =
-                liveAggregateRepository.getLiveTransactionErrorSummaries(query.serverId(),
+                liveAggregateRepository.getLiveTransactionErrorSummaries(query.serverGroup(),
                         query.transactionType(), query.from(), query.to());
         if (liveResult == null) {
             return aggregateRepository.readTransactionErrorSummaries(query, rollupLevel);
@@ -121,16 +120,16 @@ class ErrorCommonService {
         return mergeInLiveTransactionErrorSummaries(revisedQuery, queryResult, liveResult.get());
     }
 
-    List<ErrorPoint> readErrorPoints(long serverId, String transactionType,
+    List<ErrorPoint> readErrorPoints(String serverGroup, String transactionType,
             @Nullable String transactionName, long from, long to, long liveCaptureTime)
                     throws Exception {
-        int rollupLevel = aggregateRepository.getRollupLevelForView(serverId, from, to);
-        LiveResult<ErrorPoint> liveResult = liveAggregateRepository.getLiveErrorPoints(serverId,
+        int rollupLevel = aggregateRepository.getRollupLevelForView(serverGroup, from, to);
+        LiveResult<ErrorPoint> liveResult = liveAggregateRepository.getLiveErrorPoints(serverGroup,
                 transactionType, transactionName, from, to, liveCaptureTime);
         // -1 since query 'to' is inclusive
         // this way don't need to worry about de-dupping between live and stored aggregates
         long revisedTo = liveResult == null ? to : liveResult.initialCaptureTime() - 1;
-        List<ErrorPoint> errorPoints = readErrorPointsFromDao(serverId, transactionType,
+        List<ErrorPoint> errorPoints = readErrorPointsFromDao(serverGroup, transactionType,
                 transactionName, from, revisedTo, rollupLevel);
         if (rollupLevel == 0) {
             errorPoints = Lists.newArrayList(errorPoints);
@@ -145,7 +144,7 @@ class ErrorCommonService {
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
         List<ErrorPoint> orderedNonRolledUpErrorPoints = Lists.newArrayList();
-        orderedNonRolledUpErrorPoints.addAll(readErrorPointsFromDao(serverId, transactionType,
+        orderedNonRolledUpErrorPoints.addAll(readErrorPointsFromDao(serverGroup, transactionType,
                 transactionName, nonRolledUpFrom, revisedTo, 0));
         if (liveResult != null) {
             orderedNonRolledUpErrorPoints.addAll(liveResult.get());
@@ -184,14 +183,14 @@ class ErrorCommonService {
         return rolledUpErrorPoints;
     }
 
-    private List<ErrorPoint> readErrorPointsFromDao(long serverId, String transactionType,
+    private List<ErrorPoint> readErrorPointsFromDao(String serverGroup, String transactionType,
             @Nullable String transactionName, long from, long to, int rollupLevel)
                     throws Exception {
         if (transactionName == null) {
-            return aggregateRepository.readOverallErrorPoints(serverId, transactionType, from, to,
-                    rollupLevel);
+            return aggregateRepository.readOverallErrorPoints(serverGroup, transactionType, from,
+                    to, rollupLevel);
         } else {
-            return aggregateRepository.readTransactionErrorPoints(serverId, transactionType,
+            return aggregateRepository.readTransactionErrorPoints(serverGroup, transactionType,
                     transactionName, from, to, rollupLevel);
         }
     }

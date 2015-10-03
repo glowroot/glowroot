@@ -24,7 +24,9 @@ import javax.annotation.Nullable;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
+import org.immutables.value.Value;
 
+import org.glowroot.common.util.Styles;
 import org.glowroot.storage.simplerepo.util.DataSource;
 import org.glowroot.storage.simplerepo.util.DataSource.RowMapper;
 import org.glowroot.storage.simplerepo.util.ImmutableColumn;
@@ -41,15 +43,14 @@ class GaugeMetaDao {
 
     private static final ImmutableList<Column> gaugeColumns = ImmutableList.<Column>of(
             ImmutableColumn.of("gauge_id", ColumnType.AUTO_IDENTITY),
-            ImmutableColumn.of("server_id", ColumnType.BIGINT),
+            ImmutableColumn.of("server_group", ColumnType.VARCHAR),
             ImmutableColumn.of("gauge_name", ColumnType.VARCHAR));
 
     private static final ImmutableList<Index> gaugeIndexes = ImmutableList.<Index>of(
-            ImmutableIndex.of("gauge_meta_idx", ImmutableList.of("server_id", "gauge_name")));
+            ImmutableIndex.of("gauge_meta_idx", ImmutableList.of("server_group", "gauge_name")));
 
-    // key is "server_id:gauge_name"
     // expire after 1 hour to avoid retaining deleted gauge configs indefinitely
-    private final Cache<String, Long> gaugeIds =
+    private final Cache<GaugeKey, Long> gaugeIds =
             CacheBuilder.newBuilder().expireAfterAccess(1, HOURS).build();
 
     private final DataSource dataSource;
@@ -63,20 +64,20 @@ class GaugeMetaDao {
         schema.syncIndexes("gauge_meta", gaugeIndexes);
     }
 
-    long getOrCreateGaugeId(long serverId, String gaugeName) throws SQLException {
-        String gaugeKey = serverId + ':' + gaugeName;
+    long getOrCreateGaugeId(String serverGroup, String gaugeName) throws SQLException {
+        GaugeKey gaugeKey = ImmutableGaugeKey.of(serverGroup, gaugeName);
         synchronized (lock) {
             Long gaugeId = gaugeIds.getIfPresent(gaugeKey);
             if (gaugeId != null) {
                 return gaugeId;
             }
-            gaugeId = readGaugeId(serverId, gaugeName);
+            gaugeId = readGaugeId(gaugeKey);
             if (gaugeId != null) {
                 return gaugeId;
             }
-            dataSource.update("insert into gauge_meta (server_id, gauge_name) values (?, ?)",
-                    serverId, gaugeName);
-            gaugeId = readGaugeId(serverId, gaugeName);
+            dataSource.update("insert into gauge_meta (server_group, gauge_name) values (?, ?)",
+                    serverGroup, gaugeName);
+            gaugeId = readGaugeId(gaugeKey);
             if (gaugeId == null) {
                 // it's only possible for this to occur if the data source closing flag has just
                 // been set which causes the readGaugeId() to read empty list and return null
@@ -88,13 +89,13 @@ class GaugeMetaDao {
     }
 
     @Nullable
-    Long getGaugeId(long serverId, String gaugeName) throws Exception {
-        String gaugeKey = serverId + ':' + gaugeName;
+    Long getGaugeId(String serverGroup, String gaugeName) throws Exception {
+        GaugeKey gaugeKey = ImmutableGaugeKey.of(serverGroup, gaugeName);
         Long gaugeId = gaugeIds.getIfPresent(gaugeKey);
         if (gaugeId != null) {
             return gaugeId;
         }
-        gaugeId = readGaugeId(serverId, gaugeName);
+        gaugeId = readGaugeId(gaugeKey);
         if (gaugeId == null) {
             return null;
         }
@@ -102,15 +103,22 @@ class GaugeMetaDao {
         return gaugeId;
     }
 
-    private @Nullable Long readGaugeId(long serverId, String gaugeName) throws SQLException {
+    private @Nullable Long readGaugeId(GaugeKey gaugeKey) throws SQLException {
         List<Long> gaugeIds = dataSource.query(
-                "select gauge_id from gauge_meta where server_id = ? and gauge_name = ?",
-                new GaugeIdRowMapper(), serverId, gaugeName);
+                "select gauge_id from gauge_meta where server_group = ? and gauge_name = ?",
+                new GaugeIdRowMapper(), gaugeKey.serverGroup(), gaugeKey.gaugeName());
         if (gaugeIds.isEmpty()) {
             return null;
         }
         checkState(gaugeIds.size() == 1);
         return gaugeIds.get(0);
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface GaugeKey {
+        String serverGroup();
+        String gaugeName();
     }
 
     private static class GaugeIdRowMapper implements RowMapper<Long> {

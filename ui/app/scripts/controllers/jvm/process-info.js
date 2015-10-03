@@ -21,7 +21,7 @@ glowroot.controller('JvmProcessInfoCtrl', [
   '$http',
   'httpErrors',
   function ($scope, $http, httpErrors) {
-    $http.get('backend/jvm/process-info?server-id=' + $scope.serverId)
+    $http.get('backend/jvm/process-info?server=' + $scope.server)
         .success(function (data) {
           $scope.loaded = true;
           $scope.data = data;

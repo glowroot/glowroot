@@ -24,7 +24,8 @@ message ClientResponse {
 }
 
 message Hello {
-  int64 server_id = 1;
+  string server = 1;
+  repeated string server_group = 2;
 }
 
 message MBeanTreeRequest {

@@ -154,32 +154,33 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public TransactionConfig getTransactionConfig(long serverId) {
+    public TransactionConfig getTransactionConfig(String server) {
         return configService.getTransactionConfig();
     }
 
     @Override
-    public UserRecordingConfig getUserRecordingConfig(long serverId) {
+    public UserRecordingConfig getUserRecordingConfig(String server) {
         return configService.getUserRecordingConfig();
     }
 
     @Override
-    public AdvancedConfig getAdvancedConfig(long serverId) {
+    public AdvancedConfig getAdvancedConfig(String server) {
         return configService.getAdvancedConfig();
     }
 
     @Override
-    public @Nullable PluginConfig getPluginConfig(long serverId, String pluginId) {
+    public @Nullable PluginConfig getPluginConfig(String server, String pluginId) {
         return configService.getPluginConfig(pluginId);
     }
 
     @Override
-    public List<InstrumentationConfig> getInstrumentationConfigs(long serverId) {
+    public List<InstrumentationConfig> getInstrumentationConfigs(String server) {
         return configService.getInstrumentationConfigs();
     }
 
     @Override
-    public @Nullable InstrumentationConfig getInstrumentationConfig(long serverId, String version) {
+    public @Nullable InstrumentationConfig getInstrumentationConfig(String server,
+            String version) {
         for (InstrumentationConfig instrumentationConfig : configService
                 .getInstrumentationConfigs()) {
             if (instrumentationConfig.version().equals(version)) {
@@ -190,12 +191,12 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<GaugeConfig> getGaugeConfigs(long serverId) {
+    public List<GaugeConfig> getGaugeConfigs(String server) {
         return configService.getGaugeConfigs();
     }
 
     @Override
-    public @Nullable GaugeConfig getGaugeConfig(long serverId, String version) {
+    public @Nullable GaugeConfig getGaugeConfig(String server, String version) {
         for (GaugeConfig gaugeConfig : configService.getGaugeConfigs()) {
             if (gaugeConfig.version().equals(version)) {
                 return gaugeConfig;
@@ -205,12 +206,12 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<AlertConfig> getAlertConfigs(long serverId) {
+    public List<AlertConfig> getAlertConfigs(String server) {
         return alertConfigs;
     }
 
     @Override
-    public @Nullable AlertConfig getAlertConfig(long serverId, String version) {
+    public @Nullable AlertConfig getAlertConfig(String server, String version) {
         for (AlertConfig alertConfig : alertConfigs) {
             if (alertConfig.version().equals(version)) {
                 return alertConfig;
@@ -235,7 +236,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String updateTransactionConfig(long serverId, TransactionConfig updatedConfig,
+    public String updateTransactionConfig(String server, TransactionConfig updatedConfig,
             String priorVersion) throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(configService.getTransactionConfig().version(), priorVersion);
@@ -246,8 +247,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String updateUserRecordingConfig(long serverId, UserRecordingConfig userRecordingConfig,
-            String priorVersion) throws Exception {
+    public String updateUserRecordingConfig(String server,
+            UserRecordingConfig userRecordingConfig, String priorVersion) throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(configService.getUserRecordingConfig().version(), priorVersion);
             configService.updateUserRecordingConfig(userRecordingConfig);
@@ -257,7 +258,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String updateAdvancedConfig(long serverId, AdvancedConfig advancedConfig,
+    public String updateAdvancedConfig(String server, AdvancedConfig advancedConfig,
             String priorVersion) throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(configService.getAdvancedConfig().version(), priorVersion);
@@ -268,8 +269,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String updatePluginConfig(long serverId, PluginConfig pluginConfig, String priorVersion)
-            throws Exception {
+    public String updatePluginConfig(String server, PluginConfig pluginConfig,
+            String priorVersion) throws Exception {
         synchronized (writeLock) {
             List<PluginConfig> configs =
                     Lists.newArrayList(configService.getPluginConfigs());
@@ -291,7 +292,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String insertInstrumentationConfig(long serverId,
+    public String insertInstrumentationConfig(String server,
             InstrumentationConfig instrumentationConfig) throws IOException {
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
@@ -304,7 +305,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String updateInstrumentationConfig(long serverId,
+    public String updateInstrumentationConfig(String server,
             InstrumentationConfig instrumentationConfig, String priorVersion) throws IOException {
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
@@ -325,7 +326,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void deleteInstrumentationConfig(long serverId, String version) throws IOException {
+    public void deleteInstrumentationConfig(String server, String version) throws IOException {
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
                     Lists.newArrayList(configService.getInstrumentationConfigs());
@@ -344,7 +345,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String insertGaugeConfig(long serverId, GaugeConfig gaugeConfig) throws Exception {
+    public String insertGaugeConfig(String server, GaugeConfig gaugeConfig) throws Exception {
         synchronized (writeLock) {
             List<GaugeConfig> configs = Lists.newArrayList(configService.getGaugeConfigs());
             // check for duplicate mbeanObjectName
@@ -361,7 +362,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String updateGaugeConfig(long serverId, GaugeConfig gaugeConfig, String priorVersion)
+    public String updateGaugeConfig(String server, GaugeConfig gaugeConfig, String priorVersion)
             throws Exception {
         synchronized (writeLock) {
             List<GaugeConfig> configs = Lists.newArrayList(configService.getGaugeConfigs());
@@ -384,7 +385,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void deleteGaugeConfig(long serverId, String version) throws IOException {
+    public void deleteGaugeConfig(String server, String version) throws IOException {
         synchronized (writeLock) {
             List<GaugeConfig> configs = Lists.newArrayList(configService.getGaugeConfigs());
             boolean found = false;
@@ -402,7 +403,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String insertAlertConfig(long serverId, AlertConfig alertConfig) throws Exception {
+    public String insertAlertConfig(String server, AlertConfig alertConfig) throws Exception {
         synchronized (writeLock) {
             List<AlertConfig> configs = Lists.newArrayList(alertConfigs);
             configs.add(alertConfig);
@@ -414,7 +415,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String updateAlertConfig(long serverId, AlertConfig alertConfig, String priorVersion)
+    public String updateAlertConfig(String server, AlertConfig alertConfig, String priorVersion)
             throws IOException {
         synchronized (writeLock) {
             List<AlertConfig> configs = Lists.newArrayList(alertConfigs);
@@ -435,7 +436,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void deleteAlertConfig(long serverId, String version) throws IOException {
+    public void deleteAlertConfig(String server, String version) throws IOException {
         synchronized (writeLock) {
             List<AlertConfig> configs = Lists.newArrayList(alertConfigs);
             boolean found = false;
@@ -490,7 +491,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String getDefaultDisplayedTransactionType(long serverId) {
+    public String getDefaultDisplayedTransactionType(String server) {
         String defaultDisplayedTransactionType =
                 userInterfaceConfig.defaultDisplayedTransactionType();
         if (!defaultDisplayedTransactionType.isEmpty()) {
@@ -500,17 +501,17 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public ImmutableList<String> getAllTransactionTypes(long serverId) {
+    public ImmutableList<String> getAllTransactionTypes(String server) {
         Set<String> transactionTypes = Sets.newLinkedHashSet();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            PluginConfig pluginConfig = getPluginConfig(serverId, pluginDescriptor.id());
+            PluginConfig pluginConfig = getPluginConfig(server, pluginDescriptor.id());
             if (pluginConfig != null && pluginConfig.enabled()) {
                 transactionTypes.addAll(pluginDescriptor.transactionTypes());
                 addInstrumentationTransactionTypes(pluginDescriptor.instrumentationConfigs(),
                         transactionTypes, pluginConfig);
             }
         }
-        addInstrumentationTransactionTypes(getInstrumentationConfigs(serverId), transactionTypes,
+        addInstrumentationTransactionTypes(getInstrumentationConfigs(server), transactionTypes,
                 null);
         return ImmutableList.copyOf(transactionTypes);
     }
@@ -554,7 +555,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     @OnlyUsedByTests
-    public void resetAllConfig(long serverId) throws IOException {
+    public void resetAllConfig(String server) throws IOException {
         userInterfaceConfig = ImmutableUserInterfaceConfig.builder().build();
         storageConfig = ImmutableStorageConfig.builder().build();
         smtpConfig = ImmutableSmtpConfig.builder().build();

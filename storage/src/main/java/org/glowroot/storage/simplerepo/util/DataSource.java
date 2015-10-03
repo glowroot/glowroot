@@ -204,17 +204,18 @@ public class DataSource {
         }, null);
     }
 
-    public void deleteAll(@Untainted String tableName, long serverId) throws SQLException {
+    public void deleteAll(@Untainted String tableName, @Untainted String columnName,
+            String serverGroup) throws SQLException {
         if (SINGLE_SERVER) {
             execute("truncate table " + tableName);
         } else {
-            batchDelete(tableName, "server_id = ?", serverId);
+            batchDelete(tableName, columnName + " = ?", serverGroup);
         }
     }
 
-    public void deleteBefore(@Untainted String tableName, long serverId, long captureTime)
-            throws SQLException {
-        batchDelete(tableName, "server_id = ? and capture_time < ?", serverId, captureTime);
+    public void deleteBefore(@Untainted String tableName, @Untainted String columnName,
+            String columnValue, long captureTime) throws SQLException {
+        batchDelete(tableName, columnName + " = ? and capture_time < ?", columnValue, captureTime);
     }
 
     public void batchDelete(@Untainted String tableName, @Untainted String whereClause,

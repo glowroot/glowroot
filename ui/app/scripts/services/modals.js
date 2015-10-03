@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, $ */
+/* global glowroot, angular, $ */
 
 glowroot.factory('modals', [
   '$timeout',
@@ -41,7 +41,11 @@ glowroot.factory('modals', [
         // using $timeout as this may be reached inside angular digest or not
         $timeout(function () {
           var query = $selector.data('location-query');
-          if (query) {
+          if (angular.isArray(query)) {
+            angular.forEach(query, function (q) {
+              $location.search(q, null);
+            });
+          } else if (query) {
             $location.search(query, null);
           }
         });

@@ -41,7 +41,7 @@ glowroot.controller('ConfigAlertCtrl', [
     }
 
     if (version) {
-      $http.get('backend/config/alerts?server-id=' + $scope.serverId + '&version=' + version)
+      $http.get('backend/config/alerts?server=' + $scope.server + '&version=' + version)
           .success(function (data) {
             $scope.loaded = true;
             onNewData(data);
@@ -75,7 +75,7 @@ glowroot.controller('ConfigAlertCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      postData.serverId = $scope.serverId;
+      postData.server = $scope.server;
       var url;
       if (version) {
         url = 'backend/config/alerts/update';
@@ -102,7 +102,7 @@ glowroot.controller('ConfigAlertCtrl', [
 
     $scope.delete = function (deferred) {
       var postData = {
-        serverId: $scope.serverId,
+        server: $scope.server,
         version: $scope.config.version
       };
       $http.post('backend/config/alerts/remove', postData)

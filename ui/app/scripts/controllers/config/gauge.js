@@ -84,7 +84,7 @@ glowroot.controller('ConfigGaugeCtrl', [
     }
 
     if (version) {
-      $http.get('backend/config/gauges?server-id=' + $scope.serverId + '&version=' + version)
+      $http.get('backend/config/gauges?server=' + $scope.server + '&version=' + version)
           .success(function (data) {
             $scope.loaded = true;
             onNewData(data);
@@ -131,7 +131,7 @@ glowroot.controller('ConfigGaugeCtrl', [
         return [suggestion];
       }
       var queryData = {
-        serverId: $scope.serverId,
+        server: $scope.server,
         partialMBeanObjectName: suggestion,
         limit: 10
       };
@@ -169,7 +169,7 @@ glowroot.controller('ConfigGaugeCtrl', [
 
     function fetchMBeanAttributes(mbeanObjectName) {
       var queryData = {
-        serverId: $scope.serverId,
+        server: $scope.server,
         mbeanObjectName: mbeanObjectName,
         gaugeVersion: $scope.config.version || ''
       };
@@ -208,7 +208,7 @@ glowroot.controller('ConfigGaugeCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      postData.serverId = $scope.serverId;
+      postData.server = $scope.server;
       postData.mbeanAttributes = $scope.config.mbeanAttributes;
       var url;
       if (version) {
@@ -241,7 +241,7 @@ glowroot.controller('ConfigGaugeCtrl', [
 
     $scope.delete = function (deferred) {
       var postData = {
-        serverId: $scope.serverId,
+        server: $scope.server,
         version: $scope.config.version
       };
       $http.post('backend/config/gauges/remove', postData)

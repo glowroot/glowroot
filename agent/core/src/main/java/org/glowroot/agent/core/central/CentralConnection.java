@@ -39,7 +39,7 @@ class CentralConnection {
     private final ManagedChannel channel;
     private final StreamObserver<ClientResponse> responseObserver;
 
-    CentralConnection(long serverId, String host, int port) throws Exception {
+    CentralConnection(String server, String host, int port) throws Exception {
 
         channel = NettyChannelBuilder.forAddress(host, port)
                 .negotiationType(NegotiationType.PLAINTEXT)
@@ -50,7 +50,7 @@ class CentralConnection {
         RequestObserver requestObserver = new RequestObserver();
         responseObserver = asyncStub.connect(requestObserver);
         responseObserver.onNext(ClientResponse.newBuilder()
-                .setHello(Hello.newBuilder().setServerId(serverId))
+                .setHello(Hello.newBuilder().setServer(server))
                 .build());
     }
 

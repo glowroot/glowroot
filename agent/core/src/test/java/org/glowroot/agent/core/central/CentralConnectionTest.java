@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class CentralConnectionTest {
 
-    private static final long SERVER_ID = 123123;
+    private static final String SERVER_NAME = "abc xyz";
 
     private TestDownstreamService downstreamService;
     private Server server;
@@ -57,7 +57,7 @@ public class CentralConnectionTest {
                 .addService(CollectorServiceGrpc.bindService(new TestCollectorService()))
                 .addService(DownstreamServiceGrpc.bindService(downstreamService))
                 .build().start();
-        centralConnection = new CentralConnection(SERVER_ID, "localhost", 8025);
+        centralConnection = new CentralConnection(SERVER_NAME, "localhost", 8025);
     }
 
     @After
@@ -72,7 +72,7 @@ public class CentralConnectionTest {
         Stopwatch stopwatch = Stopwatch.createStarted();
         StreamObserver<ServerRequest> requestObserver = null;
         while (stopwatch.elapsed(SECONDS) < 5) {
-            requestObserver = downstreamService.clients.get(SERVER_ID);
+            requestObserver = downstreamService.clients.get(SERVER_NAME);
             if (requestObserver != null) {
                 break;
             }
@@ -117,7 +117,7 @@ public class CentralConnectionTest {
 
     private static class TestDownstreamService implements DownstreamService {
 
-        private final ConcurrentMap<Long, StreamObserver<ServerRequest>> clients =
+        private final ConcurrentMap<String, StreamObserver<ServerRequest>> clients =
                 Maps.newConcurrentMap();
 
         @Override
@@ -130,10 +130,10 @@ public class CentralConnectionTest {
     private static class TestResponseObserver implements StreamObserver<ClientResponse> {
 
         private final StreamObserver<ServerRequest> requestObserver;
-        private final ConcurrentMap<Long, StreamObserver<ServerRequest>> clients;
+        private final ConcurrentMap<String, StreamObserver<ServerRequest>> clients;
 
         private TestResponseObserver(StreamObserver<ServerRequest> requestObserver,
-                ConcurrentMap<Long, StreamObserver<ServerRequest>> clients) {
+                ConcurrentMap<String, StreamObserver<ServerRequest>> clients) {
             this.requestObserver = requestObserver;
             this.clients = clients;
         }
@@ -142,11 +142,11 @@ public class CentralConnectionTest {
         public void onNext(ClientResponse value) {
             switch (value.getMessageCase()) {
                 case HELLO:
-                    long serverId = value.getHello().getServerId();
-                    if (serverId == 0) {
+                    String server = value.getHello().getServer();
+                    if (server.isEmpty()) {
                         throw new IllegalStateException();
                     }
-                    clients.put(serverId, requestObserver);
+                    clients.put(server, requestObserver);
                     break;
                 case MBEAN_TREE_RESPONSE:
                     break;

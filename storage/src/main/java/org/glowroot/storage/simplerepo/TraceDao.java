@@ -65,7 +65,7 @@ public class TraceDao implements TraceRepository {
     private static final Logger logger = LoggerFactory.getLogger(TraceDao.class);
 
     private static final ImmutableList<Column> traceColumns = ImmutableList.<Column>of(
-            ImmutableColumn.of("server_id", ColumnType.BIGINT),
+            ImmutableColumn.of("server", ColumnType.VARCHAR),
             ImmutableColumn.of("trace_id", ColumnType.VARCHAR),
             ImmutableColumn.of("partial", ColumnType.BOOLEAN),
             ImmutableColumn.of("slow", ColumnType.BOOLEAN),
@@ -83,31 +83,39 @@ public class TraceDao implements TraceRepository {
             ImmutableColumn.of("profile_capped_id", ColumnType.BIGINT));
 
     // capture_time column is used for expiring records without using FK with on delete cascade
-    private static final ImmutableList<Column> transactionAttributeColumns =
-            ImmutableList.<Column>of(ImmutableColumn.of("server_id", ColumnType.BIGINT),
+    private static final ImmutableList<Column> traceAttributeColumns =
+            ImmutableList.<Column>of(ImmutableColumn.of("server", ColumnType.VARCHAR),
                     ImmutableColumn.of("trace_id", ColumnType.VARCHAR),
                     ImmutableColumn.of("name", ColumnType.VARCHAR),
                     ImmutableColumn.of("value", ColumnType.VARCHAR),
                     ImmutableColumn.of("capture_time", ColumnType.BIGINT));
 
     private static final ImmutableList<Index> traceIndexes = ImmutableList.<Index>of(
-            // duration_nanos, trace_id and error columns are included so h2 can return the result
-            // set directly from the index without having to reference the table for each row
+            // duration_nanos, trace_id and error columns are included so database can return the
+            // result set directly from the index without having to reference the table for each row
             //
             // trace_slow_idx is for slow trace point query and for readOverallSlowCount()
-            ImmutableIndex.of("trace_slow_idx", ImmutableList.of("server_id", "transaction_type",
+            ImmutableIndex.of("trace_slow_idx", ImmutableList.of("server", "transaction_type",
                     "slow", "capture_time", "duration_nanos", "error", "trace_id")),
-            // trace_slow_idx is for slow trace point query and for readTransactionSlowCount()
+            // trace_transaction_slow_idx is for slow trace point query and for
+            // readTransactionSlowCount()
             ImmutableIndex.of("trace_transaction_slow_idx",
-                    ImmutableList.of("server_id", "transaction_type", "transaction_name", "slow",
+                    ImmutableList.of("server", "transaction_type", "transaction_name", "slow",
                             "capture_time", "duration_nanos", "error", "trace_id")),
             // trace_error_idx is for error trace point query and for readOverallErrorCount()
-            ImmutableIndex.of("trace_error_idx", ImmutableList.of("server_id", "transaction_type",
-                    "error", "capture_time", "duration_nanos", "error", "trace_id")),
-            // trace_error_idx is for error trace point query and for readTransactionErrorCount()
+            ImmutableIndex.of("trace_error_idx",
+                    ImmutableList.of("server", "transaction_type", "error", "capture_time",
+                            "duration_nanos", "error", "trace_id")),
+            // trace_transaction_error_idx is for error trace point query and for
+            // readTransactionErrorCount()
             ImmutableIndex.of("trace_transaction_error_idx",
-                    ImmutableList.of("server_id", "transaction_type", "transaction_name", "error",
-                            "capture_time", "duration_nanos", "trace_id")));
+                    ImmutableList.of("server", "transaction_type", "transaction_name",
+                            "error", "capture_time", "duration_nanos", "trace_id")),
+            // trace_idx is for trace header lookup
+            ImmutableIndex.of("trace_idx", ImmutableList.of("server", "trace_id")));
+
+    private static final ImmutableList<Index> traceAttributeIndexes = ImmutableList.<Index>of(
+            ImmutableIndex.of("trace_attribute_idx", ImmutableList.of("server", "trace_id")));
 
     private final DataSource dataSource;
     private final CappedDatabase traceCappedDatabase;
@@ -118,45 +126,45 @@ public class TraceDao implements TraceRepository {
         Schema schema = dataSource.getSchema();
         schema.syncTable("trace", traceColumns);
         schema.syncIndexes("trace", traceIndexes);
-        schema.syncTable("trace_attribute", transactionAttributeColumns);
+        schema.syncTable("trace_attribute", traceAttributeColumns);
+        schema.syncIndexes("trace_attribute", traceAttributeIndexes);
     }
 
     @Override
-    public void collect(final long serverId, Trace trace) throws Exception {
+    public void collect(final String server, Trace trace) throws Exception {
         final Trace.Header header = trace.getHeader();
-        boolean exists = dataSource.queryForExists("select 1 from trace where server_id = ?"
-                + " and trace_id = ?", serverId, header.getId());
+        boolean exists = dataSource.queryForExists("select 1 from trace where server = ?"
+                + " and trace_id = ?", server, header.getId());
         if (exists) {
             dataSource.update(
                     "update trace set partial = ?, slow = ?, error = ?, start_time = ?,"
                             + " capture_time = ?, duration_nanos = ?, transaction_type = ?,"
                             + " transaction_name = ?, headline = ?, user_id = ?, error_message = ?,"
                             + " header = ?, entries_capped_id = ?, profile_capped_id = ?"
-                            + " where server_id = ? and trace_id = ?",
-                    new TraceBinder(serverId, trace));
+                            + " where server = ? and trace_id = ?",
+                    new TraceBinder(server, trace));
         } else {
             dataSource.update(
                     "insert into trace (partial, slow, error, start_time, capture_time,"
                             + " duration_nanos, transaction_type, transaction_name, headline,"
                             + " user_id, error_message, header, entries_capped_id,"
-                            + " profile_capped_id, server_id, trace_id)"
+                            + " profile_capped_id, server, trace_id)"
                             + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    new TraceBinder(serverId, trace));
+                    new TraceBinder(server, trace));
         }
         if (header.getAttributeCount() > 0) {
             if (exists) {
-                dataSource.update("delete from trace_attribute where server_id = ?"
-                        + " and trace_id = ?", serverId, header.getId());
+                dataSource.update("delete from trace_attribute where server = ? and trace_id = ?",
+                        server, header.getId());
             }
-            dataSource.batchUpdate(
-                    "insert into trace_attribute (server_id, trace_id, name, value, capture_time)"
-                            + " values (?, ?, ?, ?, ?)",
+            dataSource.batchUpdate("insert into trace_attribute (server, trace_id, name, value,"
+                    + " capture_time) values (?, ?, ?, ?, ?)",
                     new PreparedStatementBinder() {
                         @Override
                         public void bind(PreparedStatement preparedStatement) throws SQLException {
                             for (Trace.Attribute attribute : header.getAttributeList()) {
                                 for (String value : attribute.getValueList()) {
-                                    preparedStatement.setLong(1, serverId);
+                                    preparedStatement.setString(1, server);
                                     preparedStatement.setString(2, header.getId());
                                     preparedStatement.setString(3, attribute.getName());
                                     preparedStatement.setString(4, value);
@@ -179,41 +187,43 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public long readOverallSlowCount(long serverId, String transactionType, long captureTimeFrom,
-            long captureTimeTo) throws Exception {
+    public long readOverallSlowCount(String server, String transactionType,
+            long captureTimeFrom, long captureTimeTo) throws Exception {
         return dataSource.queryForLong(
-                "select count(*) from trace where server_id = ? and transaction_type = ?"
+                "select count(*) from trace where server = ? and transaction_type = ?"
                         + " and capture_time > ? and capture_time <= ? and slow = ?",
-                serverId, transactionType, captureTimeFrom, captureTimeTo, true);
+                server, transactionType, captureTimeFrom, captureTimeTo, true);
     }
 
     @Override
-    public long readTransactionSlowCount(long serverId, String transactionType,
+    public long readTransactionSlowCount(String server, String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo) throws Exception {
         return dataSource.queryForLong(
-                "select count(*) from trace where server_id = ? and transaction_type = ?"
+                "select count(*) from trace where server = ? and transaction_type = ?"
                         + " and transaction_name = ? and capture_time > ? and capture_time <= ?"
                         + " and slow = ?",
-                serverId, transactionType, transactionName, captureTimeFrom, captureTimeTo, true);
+                server, transactionType, transactionName, captureTimeFrom, captureTimeTo,
+                true);
     }
 
     @Override
-    public long readOverallErrorCount(long serverId, String transactionType, long captureTimeFrom,
-            long captureTimeTo) throws Exception {
+    public long readOverallErrorCount(String server, String transactionType,
+            long captureTimeFrom, long captureTimeTo) throws Exception {
         return dataSource.queryForLong(
-                "select count(*) from trace where server_id = ? and transaction_type = ?"
+                "select count(*) from trace where server = ? and transaction_type = ?"
                         + " and capture_time > ? and capture_time <= ? and error = ?",
-                serverId, transactionType, captureTimeFrom, captureTimeTo, true);
+                server, transactionType, captureTimeFrom, captureTimeTo, true);
     }
 
     @Override
-    public long readTransactionErrorCount(long serverId, String transactionType,
+    public long readTransactionErrorCount(String server, String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo) throws Exception {
         return dataSource.queryForLong(
-                "select count(*) from trace where server_id = ? and transaction_type = ?"
+                "select count(*) from trace where server = ? and transaction_type = ?"
                         + " and transaction_name = ? and capture_time > ? and capture_time <= ?"
                         + " and error = ?",
-                serverId, transactionType, transactionName, captureTimeFrom, captureTimeTo, true);
+                server, transactionType, transactionName, captureTimeFrom, captureTimeTo,
+                true);
     }
 
     @Override
@@ -242,27 +252,25 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable HeaderPlus readHeader(long serverId, String traceId) throws Exception {
-        List<HeaderPlus> traces = dataSource.query(
-                "select header, entries_capped_id, profile_capped_id from trace where server_id = ?"
-                        + " and trace_id = ?",
-                new TraceHeaderRowMapper(), serverId, traceId);
+    public @Nullable HeaderPlus readHeader(String server, String traceId) throws Exception {
+        List<HeaderPlus> traces = dataSource.query("select header, entries_capped_id,"
+                + " profile_capped_id from trace where server = ? and trace_id = ?",
+                new TraceHeaderRowMapper(), server, traceId);
         if (traces.isEmpty()) {
             return null;
         }
         if (traces.size() > 1) {
-            logger.error("multiple records returned for server id '{}' and trace id '{}'",
-                    serverId, traceId);
+            logger.error("multiple records returned for server '{}' and trace id '{}'", server,
+                    traceId);
         }
         return traces.get(0);
     }
 
     @Override
-    public List<Trace.Entry> readEntries(long serverId, String traceId) throws Exception {
+    public List<Trace.Entry> readEntries(String server, String traceId) throws Exception {
         List<Trace.Entry> entries =
-                dataSource.query("select entries_capped_id from trace where server_id = ?"
-                        + " and trace_id = ?",
-                        new EntriesResultExtractor(), serverId, traceId);
+                dataSource.query("select entries_capped_id from trace where server = ?"
+                        + " and trace_id = ?", new EntriesResultExtractor(), server, traceId);
         if (entries == null) {
             // data source is closing
             return ImmutableList.of();
@@ -271,35 +279,37 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable ProfileTree readProfileTree(long serverId, String traceId) throws Exception {
-        return dataSource.query("select profile_capped_id from trace where server_id = ?"
-                + " and trace_id = ?",
-                new ProfileTreeResultExtractor(), serverId, traceId);
+    public @Nullable ProfileTree readProfileTree(String server, String traceId)
+            throws Exception {
+        return dataSource.query("select profile_capped_id from trace where server = ?"
+                + " and trace_id = ?", new ProfileTreeResultExtractor(), server, traceId);
     }
 
     @Override
-    public void deleteAll(long serverId) throws SQLException {
-        dataSource.deleteAll("trace_attribute", serverId);
-        dataSource.deleteAll("trace", serverId);
+    public void deleteAll(String server) throws SQLException {
+        dataSource.deleteAll("trace", "server", server);
+        dataSource.deleteAll("trace_attribute", "server", server);
     }
 
-    void deleteBefore(long serverId, long captureTime) throws SQLException {
-        dataSource.deleteBefore("trace_attribute", serverId, captureTime);
-        dataSource.deleteBefore("trace", serverId, captureTime);
+    void deleteBefore(String server, long captureTime) throws SQLException {
+        dataSource.deleteBefore("trace", "server", server, captureTime);
+        dataSource.deleteBefore("trace_attribute", "server", server, captureTime);
     }
 
     @Override
     @OnlyUsedByTests
-    public long count(long serverId) throws Exception {
-        return dataSource.queryForLong("select count(*) from trace where server_id = ?", serverId);
+    public long count(String server) throws Exception {
+        return dataSource.queryForLong("select count(*) from trace where server = ?", server);
     }
 
     private ParameterizedSql buildErrorMessageQuery(ErrorMessageQuery query,
             @Untainted String selectClause, @Untainted String groupByClause) {
         String sql = selectClause;
         List<Object> args = Lists.newArrayList();
-        sql += " where server_id = ?";
-        args.add(query.serverId());
+        // FIXME maintain table of server/server_group associations and join that here
+        // (maintain this table on agent "Hello", wipe out prior associations and add new ones)
+        sql += " where server = ?";
+        args.add(query.serverGroup());
         sql += " and error = ?";
         args.add(true);
         sql += " and transaction_type = ?";
@@ -357,13 +367,13 @@ public class TraceDao implements TraceRepository {
 
     private class TraceBinder implements PreparedStatementBinder {
 
-        private final long serverId;
+        private final String server;
         private final Trace.Header header;
         private final @Nullable Long entriesId;
         private final @Nullable Long profileId;
 
-        private TraceBinder(long serverId, Trace trace) throws IOException {
-            this.serverId = serverId;
+        private TraceBinder(String server, Trace trace) throws IOException {
+            this.server = server;
             this.header = trace.getHeader();
 
             List<Trace.Entry> entries = trace.getEntryList();
@@ -401,7 +411,7 @@ public class TraceDao implements TraceRepository {
             preparedStatement.setBytes(i++, header.toByteArray());
             RowMappers.setLong(preparedStatement, i++, entriesId);
             RowMappers.setLong(preparedStatement, i++, profileId);
-            preparedStatement.setLong(i++, serverId);
+            preparedStatement.setString(i++, server);
             preparedStatement.setString(i++, header.getId());
         }
     }
@@ -409,14 +419,14 @@ public class TraceDao implements TraceRepository {
     private static class TracePointRowMapper implements RowMapper<TracePoint> {
         @Override
         public TracePoint mapRow(ResultSet resultSet) throws SQLException {
-            String traceId = resultSet.getString(1);
-            // this checkNotNull is safe since trace_id is the primary key and cannot be null
-            checkNotNull(traceId);
+            String server = checkNotNull(resultSet.getString(1));
+            String traceId = checkNotNull(resultSet.getString(2));
             return ImmutableTracePoint.builder()
+                    .server(server)
                     .traceId(traceId)
-                    .captureTime(resultSet.getLong(2))
-                    .durationNanos(resultSet.getLong(3))
-                    .error(resultSet.getBoolean(4))
+                    .captureTime(resultSet.getLong(3))
+                    .durationNanos(resultSet.getLong(4))
+                    .error(resultSet.getBoolean(5))
                     .build();
         }
     }

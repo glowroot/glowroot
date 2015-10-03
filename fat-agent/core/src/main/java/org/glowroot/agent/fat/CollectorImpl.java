@@ -29,7 +29,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 class CollectorImpl implements Collector {
 
-    private static final long SERVER_ID = 0;
+    private static final String SERVER_NAME = "";
 
     private final AggregateRepository aggregateRepository;
     private final TraceRepository traceRepository;
@@ -48,17 +48,18 @@ class CollectorImpl implements Collector {
     @Override
     public void collectAggregates(long captureTime, List<OverallAggregate> overallAggregates,
             List<TransactionAggregate> transactionAggregates) throws Exception {
-        aggregateRepository.store(SERVER_ID, captureTime, overallAggregates, transactionAggregates);
+        aggregateRepository.store(SERVER_NAME, captureTime, overallAggregates,
+                transactionAggregates);
         alertingService.checkAlerts(captureTime);
     }
 
     @Override
     public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {
-        gaugeValueRepository.store(SERVER_ID, gaugeValues);
+        gaugeValueRepository.store(SERVER_NAME, gaugeValues);
     }
 
     @Override
     public void collectTrace(Trace trace) throws Exception {
-        traceRepository.collect(SERVER_ID, trace);
+        traceRepository.collect(SERVER_NAME, trace);
     }
 }

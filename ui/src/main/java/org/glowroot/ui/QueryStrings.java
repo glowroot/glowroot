@@ -95,9 +95,7 @@ class QueryStrings {
     }
 
     private static @Nullable Object parseString(String str, Class<?> targetClass) {
-        if (str.equals("")) {
-            return null;
-        } else if (targetClass == String.class) {
+        if (targetClass == String.class) {
             return str;
         } else if (isInteger(targetClass)) {
             // parse as double and truncate, just in case there is a decimal part

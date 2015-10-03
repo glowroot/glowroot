@@ -103,13 +103,13 @@ class LayoutService {
             List<PluginDescriptor> pluginDescriptors) {
 
         // FIXME
-        long serverId = 0;
+        String server = "";
 
         // use linked hash set to maintain ordering in case there is no default transaction type
         List<String> transactionTypes =
-                Lists.newArrayList(configRepository.getAllTransactionTypes(serverId));
+                Lists.newArrayList(configRepository.getAllTransactionTypes(server));
         String defaultDisplayedTransactionType =
-                configRepository.getDefaultDisplayedTransactionType(serverId);
+                configRepository.getDefaultDisplayedTransactionType(server);
         List<String> orderedTransactionTypes = Lists.newArrayList();
         if (transactionTypes.isEmpty()) {
             defaultDisplayedTransactionType = "NO TRANSACTION TYPES DEFINED";

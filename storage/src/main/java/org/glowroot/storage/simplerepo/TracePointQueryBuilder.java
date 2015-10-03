@@ -43,13 +43,13 @@ class TracePointQueryBuilder {
     // inclusive on upper bound)
     ParameterizedSql getParameterizedSql() {
         ParameterizedSqlBuilder builder = new ParameterizedSqlBuilder();
-        builder.appendText("select trace.trace_id, trace.capture_time, trace.duration_nanos,"
-                + " trace.error from trace");
+        builder.appendText("select trace.server, trace.trace_id, trace.capture_time,"
+                + " trace.duration_nanos, trace.error from trace");
         ParameterizedSql criteria = getAttributeCriteria();
         if (criteria == null) {
             builder.appendText(" where");
         } else {
-            builder.appendText(", trace_attribute attr where attr.server_id = trace.server_id"
+            builder.appendText(", trace_attribute attr where attr.server = trace.server"
                     + " and attr.trace_id = trace.trace_id and attr.capture_time > ?"
                     + " and attr.capture_time <= ? and" + criteria.sql());
             builder.addArg(query.from());
@@ -57,9 +57,11 @@ class TracePointQueryBuilder {
             builder.addArgs(criteria.args());
 
         }
+        // FIXME maintain table of server/server_group associations and join that here
+        // (maintain this table on agent "Hello", wipe out prior associations and add new ones)
         builder.appendText(
-                " trace.server_id = ? and trace.capture_time > ? and trace.capture_time <= ?");
-        builder.addArg(query.serverId());
+                " trace.server = ? and trace.capture_time > ? and trace.capture_time <= ?");
+        builder.addArg(query.serverGroup());
         builder.addArg(query.from());
         builder.addArg(query.to());
         appendTotalNanosCriteria(builder);

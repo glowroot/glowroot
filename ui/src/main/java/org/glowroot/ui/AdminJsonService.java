@@ -63,22 +63,23 @@ class AdminJsonService {
 
     @POST("/backend/admin/delete-all-data")
     void deleteAllData(String content) throws Exception {
-        long serverId = mapper.readValue(content, ImmutableRequestWithServerId.class).serverId();
+        String serverGroup =
+                mapper.readValue(content, ImmutableRequestWithServerGroup.class).serverGroup();
         // clear in-memory aggregates first
         if (liveAggregateRepository != null) {
             liveAggregateRepository.clearAll();
         }
         // TODO optimize by just deleting and re-creating h2 db
-        traceRepository.deleteAll(serverId);
-        gaugeValueRepository.deleteAll(serverId);
-        aggregateRepository.deleteAll(serverId);
+        traceRepository.deleteAll(serverGroup);
+        gaugeValueRepository.deleteAll(serverGroup);
+        aggregateRepository.deleteAll(serverGroup);
         repoAdmin.defrag();
     }
 
     @POST("/backend/admin/reweave")
     String reweave(String content) throws Exception {
-        long serverId = mapper.readValue(content, ImmutableRequestWithServerId.class).serverId();
-        int count = liveWeavingService.reweave(serverId);
+        String server = mapper.readValue(content, ImmutableRequestWithServer.class).server();
+        int count = liveWeavingService.reweave(server);
         return "{\"classes\":" + count + "}";
     }
 
@@ -90,37 +91,42 @@ class AdminJsonService {
     @OnlyUsedByTests
     @POST("/backend/admin/reset-all-config")
     void resetAllConfig(String content) throws IOException {
-        long serverId = mapper.readValue(content, ImmutableRequestWithServerId.class).serverId();
-        configRepository.resetAllConfig(serverId);
+        String server = mapper.readValue(content, ImmutableRequestWithServer.class).server();
+        configRepository.resetAllConfig(server);
     }
 
     @OnlyUsedByTests
     @GET("/backend/admin/num-active-transactions")
     String getNumActiveTransactions(String queryString) throws Exception {
-        long serverId = getServerId(queryString);
-        return Integer.toString(liveTraceRepository.getTransactionCount(serverId));
+        String server = getServer(queryString);
+        return Integer.toString(liveTraceRepository.getTransactionCount(server));
     }
 
     @OnlyUsedByTests
     @GET("/backend/admin/num-pending-complete-transactions")
     String getNumPendingCompleteTransactions(String queryString) throws Exception {
-        long serverId = getServerId(queryString);
-        return Integer.toString(liveTraceRepository.getPendingTransactionCount(serverId));
+        String server = getServer(queryString);
+        return Integer.toString(liveTraceRepository.getPendingTransactionCount(server));
     }
 
     @OnlyUsedByTests
     @GET("/backend/admin/num-traces")
     String getNumTraces(String queryString) throws Exception {
-        long serverId = getServerId(queryString);
-        return Long.toString(traceRepository.count(serverId));
+        String server = getServer(queryString);
+        return Long.toString(traceRepository.count(server));
     }
 
-    private static long getServerId(String queryString) throws Exception {
-        return QueryStrings.decode(queryString, RequestWithServerId.class).serverId();
+    private static String getServer(String queryString) throws Exception {
+        return QueryStrings.decode(queryString, RequestWithServer.class).server();
     }
 
     @Value.Immutable
-    interface RequestWithServerId {
-        long serverId();
+    interface RequestWithServerGroup {
+        String serverGroup();
+    }
+
+    @Value.Immutable
+    interface RequestWithServer {
+        String server();
     }
 }

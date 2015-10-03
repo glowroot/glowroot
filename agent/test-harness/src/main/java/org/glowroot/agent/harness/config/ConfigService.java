@@ -54,7 +54,7 @@ public class ConfigService {
     }
 
     public TransactionConfig getTransactionConfig() throws Exception {
-        return getConfig("/backend/config/transaction?server-id=0", TransactionConfig.class);
+        return getConfig("/backend/config/transaction?server=", TransactionConfig.class);
     }
 
     public void updateTransactionConfig(TransactionConfig config) throws Exception {
@@ -62,7 +62,7 @@ public class ConfigService {
     }
 
     public UserRecordingConfig getUserRecordingConfig() throws Exception {
-        return getConfig("/backend/config/user-recording?server-id=0", UserRecordingConfig.class);
+        return getConfig("/backend/config/user-recording?server=", UserRecordingConfig.class);
     }
 
     public void updateUserRecordingConfig(UserRecordingConfig config) throws Exception {
@@ -70,7 +70,7 @@ public class ConfigService {
     }
 
     public AdvancedConfig getAdvancedConfig() throws Exception {
-        return getConfig("/backend/config/advanced?server-id=0", AdvancedConfig.class);
+        return getConfig("/backend/config/advanced?server=", AdvancedConfig.class);
     }
 
     public void updateAdvancedConfig(AdvancedConfig config) throws Exception {
@@ -78,20 +78,20 @@ public class ConfigService {
     }
 
     public @Nullable PluginConfig getPluginConfig(String pluginId) throws Exception {
-        return getConfig("/backend/config/plugins?server-id=0&plugin-id=" + pluginId,
+        return getConfig("/backend/config/plugins?server=&plugin-id=" + pluginId,
                 PluginConfig.class);
     }
 
     public void updatePluginConfig(String pluginId, PluginConfig config) throws Exception {
         ObjectNode node = mapper.valueToTree(config);
-        node.put("serverId", 0);
+        node.put("server", 0);
         node.put("pluginId", pluginId);
         httpClient.post("/backend/config/plugins", mapper.writeValueAsString(node));
     }
 
     public InstrumentationConfig getInstrumentationConfig(String version) throws Exception {
         String response =
-                httpClient.get("/backend/config/instrumentation?server-id=0&version=" + version);
+                httpClient.get("/backend/config/instrumentation?server=&version=" + version);
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
         ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
         return mapper.readValue(mapper.treeAsTokens(configNode),
@@ -99,7 +99,7 @@ public class ConfigService {
     }
 
     public List<InstrumentationConfig> getInstrumentationConfigs() throws Exception {
-        String response = httpClient.get("/backend/config/instrumentation?server-id=0");
+        String response = httpClient.get("/backend/config/instrumentation?server=");
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
         JsonNode configsNode = rootNode.get("configs");
         if (configsNode == null) {
@@ -131,7 +131,7 @@ public class ConfigService {
     }
 
     public GaugeConfig getGaugeConfig(String version) throws Exception {
-        String response = httpClient.get("/backend/config/gauges?server-id=0&version=" + version);
+        String response = httpClient.get("/backend/config/gauges?server=&version=" + version);
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
         ObjectNode configNode = (ObjectNode) ObjectMappers.getRequiredChildNode(rootNode, "config");
         return mapper.readValue(mapper.treeAsTokens(configNode),
@@ -139,7 +139,7 @@ public class ConfigService {
     }
 
     public List<GaugeConfig> getGaugeConfigs() throws Exception {
-        String response = httpClient.get("/backend/config/gauges?server-id=0");
+        String response = httpClient.get("/backend/config/gauges?server=");
         ArrayNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ArrayNode.class);
         List<GaugeConfig> configs = Lists.newArrayList();
         for (JsonNode childNode : rootNode) {
@@ -170,12 +170,12 @@ public class ConfigService {
     }
 
     public AlertConfig getAlertConfig(String version) throws Exception {
-        String response = httpClient.get("/backend/config/alerts?server-id=0&version=" + version);
+        String response = httpClient.get("/backend/config/alerts?server=&version=" + version);
         return mapper.readValue(response, new TypeReference<AlertConfig>() {});
     }
 
     public List<AlertConfig> getAlertConfigs() throws Exception {
-        String response = httpClient.get("/backend/config/alerts?server-id=0");
+        String response = httpClient.get("/backend/config/alerts?server=");
         return mapper.readValue(response, new TypeReference<List<AlertConfig>>() {});
     }
 
@@ -230,7 +230,7 @@ public class ConfigService {
     }
 
     public int reweave() throws Exception {
-        String response = httpClient.post("/backend/admin/reweave", "{\"serverId\":0}");
+        String response = httpClient.post("/backend/admin/reweave", "{\"server\":\"\"}");
         ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, response, ObjectNode.class);
         JsonNode classesNode = ObjectMappers.getRequiredChildNode(rootNode, "classes");
         return classesNode.asInt();
@@ -241,7 +241,7 @@ public class ConfigService {
     }
 
     public void resetAllConfig() throws Exception {
-        httpClient.post("/backend/admin/reset-all-config", "{\"serverId\":0}");
+        httpClient.post("/backend/admin/reset-all-config", "{\"server\":\"\"}");
         // slowThresholdMillis=0 is by far the most useful setting for testing
         setTransactionSlowThresholdMillis(0);
     }
@@ -264,12 +264,12 @@ public class ConfigService {
 
     private String toJson(Object config) throws JsonProcessingException {
         ObjectNode node = mapper.valueToTree(config);
-        node.put("serverId", 0);
+        node.put("server", 0);
         return mapper.writeValueAsString(node);
     }
 
     private String toJson(String version) {
-        return "{\"serverId\":0,\"version\":\"" + version + "\"}";
+        return "{\"server\":\"\",\"version\":\"" + version + "\"}";
     }
 
     public interface GetUiPortCommand {

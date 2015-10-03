@@ -73,7 +73,7 @@ class ErrorJsonService {
         ErrorMessageRequest request = QueryStrings.decode(queryString, ErrorMessageRequest.class);
 
         ErrorMessageQuery query = ImmutableErrorMessageQuery.builder()
-                .serverId(request.serverId())
+                .serverGroup(request.serverGroup())
                 .transactionType(request.transactionType())
                 .transactionName(request.transactionName())
                 .from(request.from())
@@ -87,7 +87,7 @@ class ErrorJsonService {
         long liveCaptureTime = clock.currentTimeMillis();
         Result<ErrorMessageCount> queryResult = traceRepository.readErrorMessageCounts(query);
         List<ErrorPoint> unfilteredErrorPoints =
-                errorCommonService.readErrorPoints(query.serverId(), query.transactionType(),
+                errorCommonService.readErrorPoints(query.serverGroup(), query.transactionType(),
                         query.transactionName(), query.from(), query.to(), liveCaptureTime);
         DataSeries dataSeries = new DataSeries(null);
         Map<Long, Long[]> dataSeriesExtra = Maps.newHashMap();
@@ -100,7 +100,8 @@ class ErrorJsonService {
                         unfilteredErrorPoint.transactionCount());
             }
             List<TraceErrorPoint> traceErrorPoints = traceRepository.readErrorPoints(query,
-                    aggregateRepository.getDataPointIntervalMillis(query.serverId(), query.from(),
+                    aggregateRepository.getDataPointIntervalMillis(query.serverGroup(),
+                            query.from(),
                             query.to()),
                     liveCaptureTime);
             List<ErrorPoint> errorPoints = Lists.newArrayList();
@@ -132,10 +133,10 @@ class ErrorJsonService {
         ErrorSummaryRequest request = QueryStrings.decode(queryString, ErrorSummaryRequest.class);
 
         OverallErrorSummary overallSummary = errorCommonService.readOverallErrorSummary(
-                request.serverId(), request.transactionType(), request.from(), request.to());
+                request.serverGroup(), request.transactionType(), request.from(), request.to());
 
         ErrorSummaryQuery query = ImmutableErrorSummaryQuery.builder()
-                .serverId(request.serverId())
+                .serverGroup(request.serverGroup())
                 .transactionType(request.transactionType())
                 .from(request.from())
                 .to(request.to())
@@ -165,10 +166,10 @@ class ErrorJsonService {
         String transactionName = request.transactionName();
         long traceCount;
         if (transactionName == null) {
-            traceCount = traceRepository.readOverallErrorCount(request.serverId(),
+            traceCount = traceRepository.readOverallErrorCount(request.serverGroup(),
                     request.transactionType(), request.from(), request.to());
         } else {
-            traceCount = traceRepository.readTransactionErrorCount(request.serverId(),
+            traceCount = traceRepository.readTransactionErrorCount(request.serverGroup(),
                     request.transactionType(), transactionName, request.from(), request.to());
         }
         StringBuilder sb = new StringBuilder();
@@ -183,7 +184,7 @@ class ErrorJsonService {
     private void populateDataSeries(ErrorMessageQuery request, List<ErrorPoint> errorPoints,
             DataSeries dataSeries, Map<Long, Long[]> dataSeriesExtra) {
         DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock, aggregateRepository
-                .getDataPointIntervalMillis(request.serverId(), request.from(), request.to()));
+                .getDataPointIntervalMillis(request.serverGroup(), request.from(), request.to()));
         ErrorPoint lastErrorPoint = null;
         for (ErrorPoint errorPoint : errorPoints) {
             if (lastErrorPoint == null) {
@@ -209,7 +210,7 @@ class ErrorJsonService {
 
     @Value.Immutable
     interface ErrorSummaryRequest {
-        long serverId();
+        String serverGroup();
         String transactionType();
         long from();
         long to();
@@ -219,7 +220,7 @@ class ErrorJsonService {
 
     @Value.Immutable
     interface TabBarDataRequest {
-        long serverId();
+        String serverGroup();
         String transactionType();
         @Nullable
         String transactionName();
@@ -229,7 +230,7 @@ class ErrorJsonService {
 
     @Value.Immutable
     interface ErrorMessageRequest {
-        long serverId();
+        String serverGroup();
         String transactionType();
         @Nullable
         String transactionName();

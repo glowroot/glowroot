@@ -27,14 +27,14 @@ public class AdminService {
 
     public int getNumPendingCompleteTransactions() throws Exception {
         return Integer.parseInt(
-                httpClient.get("/backend/admin/num-pending-complete-transactions?server-id=0"));
+                httpClient.get("/backend/admin/num-pending-complete-transactions?server="));
     }
 
     public long getNumTraces() throws Exception {
-        return Long.parseLong(httpClient.get("/backend/admin/num-traces?server-id=0"));
+        return Long.parseLong(httpClient.get("/backend/admin/num-traces?server="));
     }
 
     public void deleteAllData() throws Exception {
-        httpClient.post("/backend/admin/delete-all-data", "{\"serverId\":0}");
+        httpClient.post("/backend/admin/delete-all-data", "{\"serverGroup\":\"\"}");
     }
 }

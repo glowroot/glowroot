@@ -63,14 +63,14 @@ class AlertJsonService {
         Optional<String> version = request.version();
         if (version.isPresent()) {
             AlertConfig alertConfig =
-                    configRepository.getAlertConfig(request.serverId(), version.get());
+                    configRepository.getAlertConfig(request.server(), version.get());
             if (alertConfig == null) {
                 throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
             }
             return mapper.writeValueAsString(AlertConfigDto.fromConfig(alertConfig));
         } else {
             List<AlertConfigDto> alertConfigDtos = Lists.newArrayList();
-            List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(request.serverId());
+            List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(request.server());
             alertConfigs = orderingByName.immutableSortedCopy(alertConfigs);
             for (AlertConfig alertConfig : alertConfigs) {
                 alertConfigDtos.add(AlertConfigDto.fromConfig(alertConfig));
@@ -84,7 +84,7 @@ class AlertJsonService {
         AlertConfigDto alertConfigDto = mapper.readValue(content, ImmutableAlertConfigDto.class);
         AlertConfig alertConfig = alertConfigDto.toConfig();
         try {
-            configRepository.insertAlertConfig(alertConfigDto.serverId().get(), alertConfig);
+            configRepository.insertAlertConfig(alertConfigDto.server().get(), alertConfig);
         } catch (DuplicateMBeanObjectNameException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
@@ -97,7 +97,7 @@ class AlertJsonService {
     String updateAlert(String content) throws IOException {
         AlertConfigDto alertConfigDto = mapper.readValue(content, ImmutableAlertConfigDto.class);
         AlertConfig alertConfig = alertConfigDto.toConfig();
-        configRepository.updateAlertConfig(alertConfigDto.serverId().get(), alertConfig,
+        configRepository.updateAlertConfig(alertConfigDto.server().get(), alertConfig,
                 alertConfigDto.version().get());
         return mapper.writeValueAsString(AlertConfigDto.fromConfig(alertConfig));
     }
@@ -105,19 +105,19 @@ class AlertJsonService {
     @POST("/backend/config/alerts/remove")
     void removeAlert(String content) throws IOException {
         AlertConfigRequest request = mapper.readValue(content, ImmutableAlertConfigRequest.class);
-        configRepository.deleteAlertConfig(request.serverId(), request.version().get());
+        configRepository.deleteAlertConfig(request.server(), request.version().get());
     }
 
     @Value.Immutable
     interface AlertConfigRequest {
-        long serverId();
+        String server();
         Optional<String> version();
     }
 
     @Value.Immutable
     abstract static class AlertConfigDto {
 
-        abstract Optional<Long> serverId(); // only used in request
+        abstract Optional<String> server(); // only used in request
         abstract String transactionType();
         abstract double percentile();
         abstract int timePeriodMinutes();

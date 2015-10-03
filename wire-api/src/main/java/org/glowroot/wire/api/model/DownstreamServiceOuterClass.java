@@ -1446,9 +1446,33 @@ public final class DownstreamServiceOuterClass {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>optional int64 server_id = 1;</code>
+     * <code>optional string server = 1;</code>
      */
-    long getServerId();
+    java.lang.String getServer();
+    /**
+     * <code>optional string server = 1;</code>
+     */
+    com.google.protobuf.ByteString
+        getServerBytes();
+
+    /**
+     * <code>repeated string server_group = 2;</code>
+     */
+    com.google.protobuf.ProtocolStringList
+        getServerGroupList();
+    /**
+     * <code>repeated string server_group = 2;</code>
+     */
+    int getServerGroupCount();
+    /**
+     * <code>repeated string server_group = 2;</code>
+     */
+    java.lang.String getServerGroup(int index);
+    /**
+     * <code>repeated string server_group = 2;</code>
+     */
+    com.google.protobuf.ByteString
+        getServerGroupBytes(int index);
   }
   /**
    * Protobuf type {@code org_glowroot_wire_api_model.Hello}
@@ -1462,7 +1486,8 @@ public final class DownstreamServiceOuterClass {
       super(builder);
     }
     private Hello() {
-      serverId_ = 0L;
+      server_ = "";
+      serverGroup_ = com.google.protobuf.LazyStringArrayList.EMPTY;
     }
 
     @java.lang.Override
@@ -1489,9 +1514,19 @@ public final class DownstreamServiceOuterClass {
               }
               break;
             }
-            case 8: {
+            case 10: {
+              String s = input.readStringRequireUtf8();
 
-              serverId_ = input.readInt64();
+              server_ = s;
+              break;
+            }
+            case 18: {
+              String s = input.readStringRequireUtf8();
+              if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+                serverGroup_ = new com.google.protobuf.LazyStringArrayList();
+                mutable_bitField0_ |= 0x00000002;
+              }
+              serverGroup_.add(s);
               break;
             }
           }
@@ -1503,6 +1538,9 @@ public final class DownstreamServiceOuterClass {
             new com.google.protobuf.InvalidProtocolBufferException(
                 e.getMessage()).setUnfinishedMessage(this));
       } finally {
+        if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+          serverGroup_ = serverGroup_.getUnmodifiableView();
+        }
         makeExtensionsImmutable();
       }
     }
@@ -1518,13 +1556,68 @@ public final class DownstreamServiceOuterClass {
               org.glowroot.wire.api.model.DownstreamServiceOuterClass.Hello.class, org.glowroot.wire.api.model.DownstreamServiceOuterClass.Hello.Builder.class);
     }
 
-    public static final int SERVER_ID_FIELD_NUMBER = 1;
-    private long serverId_;
+    private int bitField0_;
+    public static final int SERVER_FIELD_NUMBER = 1;
+    private volatile java.lang.Object server_;
     /**
-     * <code>optional int64 server_id = 1;</code>
+     * <code>optional string server = 1;</code>
      */
-    public long getServerId() {
-      return serverId_;
+    public java.lang.String getServer() {
+      java.lang.Object ref = server_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        server_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>optional string server = 1;</code>
+     */
+    public com.google.protobuf.ByteString
+        getServerBytes() {
+      java.lang.Object ref = server_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        server_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int SERVER_GROUP_FIELD_NUMBER = 2;
+    private com.google.protobuf.LazyStringList serverGroup_;
+    /**
+     * <code>repeated string server_group = 2;</code>
+     */
+    public com.google.protobuf.ProtocolStringList
+        getServerGroupList() {
+      return serverGroup_;
+    }
+    /**
+     * <code>repeated string server_group = 2;</code>
+     */
+    public int getServerGroupCount() {
+      return serverGroup_.size();
+    }
+    /**
+     * <code>repeated string server_group = 2;</code>
+     */
+    public java.lang.String getServerGroup(int index) {
+      return serverGroup_.get(index);
+    }
+    /**
+     * <code>repeated string server_group = 2;</code>
+     */
+    public com.google.protobuf.ByteString
+        getServerGroupBytes(int index) {
+      return serverGroup_.getByteString(index);
     }
 
     private byte memoizedIsInitialized = -1;
@@ -1539,8 +1632,11 @@ public final class DownstreamServiceOuterClass {
 
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      if (serverId_ != 0L) {
-        output.writeInt64(1, serverId_);
+      if (!getServerBytes().isEmpty()) {
+        com.google.protobuf.GeneratedMessage.writeString(output, 1, server_);
+      }
+      for (int i = 0; i < serverGroup_.size(); i++) {
+        com.google.protobuf.GeneratedMessage.writeString(output, 2, serverGroup_.getRaw(i));
       }
     }
 
@@ -1549,9 +1645,16 @@ public final class DownstreamServiceOuterClass {
       if (size != -1) return size;
 
       size = 0;
-      if (serverId_ != 0L) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(1, serverId_);
+      if (!getServerBytes().isEmpty()) {
+        size += com.google.protobuf.GeneratedMessage.computeStringSize(1, server_);
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < serverGroup_.size(); i++) {
+          dataSize += computeStringSizeNoTag(serverGroup_.getRaw(i));
+        }
+        size += dataSize;
+        size += 1 * getServerGroupList().size();
       }
       memoizedSize = size;
       return size;
@@ -1664,8 +1767,10 @@ public final class DownstreamServiceOuterClass {
       }
       public Builder clear() {
         super.clear();
-        serverId_ = 0L;
+        server_ = "";
 
+        serverGroup_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
 
@@ -1688,7 +1793,15 @@ public final class DownstreamServiceOuterClass {
 
       public org.glowroot.wire.api.model.DownstreamServiceOuterClass.Hello buildPartial() {
         org.glowroot.wire.api.model.DownstreamServiceOuterClass.Hello result = new org.glowroot.wire.api.model.DownstreamServiceOuterClass.Hello(this);
-        result.serverId_ = serverId_;
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        result.server_ = server_;
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          serverGroup_ = serverGroup_.getUnmodifiableView();
+          bitField0_ = (bitField0_ & ~0x00000002);
+        }
+        result.serverGroup_ = serverGroup_;
+        result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
@@ -1704,8 +1817,19 @@ public final class DownstreamServiceOuterClass {
 
       public Builder mergeFrom(org.glowroot.wire.api.model.DownstreamServiceOuterClass.Hello other) {
         if (other == org.glowroot.wire.api.model.DownstreamServiceOuterClass.Hello.getDefaultInstance()) return this;
-        if (other.getServerId() != 0L) {
-          setServerId(other.getServerId());
+        if (!other.getServer().isEmpty()) {
+          server_ = other.server_;
+          onChanged();
+        }
+        if (!other.serverGroup_.isEmpty()) {
+          if (serverGroup_.isEmpty()) {
+            serverGroup_ = other.serverGroup_;
+            bitField0_ = (bitField0_ & ~0x00000002);
+          } else {
+            ensureServerGroupIsMutable();
+            serverGroup_.addAll(other.serverGroup_);
+          }
+          onChanged();
         }
         onChanged();
         return this;
@@ -1732,29 +1856,167 @@ public final class DownstreamServiceOuterClass {
         }
         return this;
       }
+      private int bitField0_;
 
-      private long serverId_ ;
+      private java.lang.Object server_ = "";
       /**
-       * <code>optional int64 server_id = 1;</code>
+       * <code>optional string server = 1;</code>
        */
-      public long getServerId() {
-        return serverId_;
+      public java.lang.String getServer() {
+        java.lang.Object ref = server_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          server_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
       }
       /**
-       * <code>optional int64 server_id = 1;</code>
+       * <code>optional string server = 1;</code>
        */
-      public Builder setServerId(long value) {
-        
-        serverId_ = value;
+      public com.google.protobuf.ByteString
+          getServerBytes() {
+        java.lang.Object ref = server_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          server_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string server = 1;</code>
+       */
+      public Builder setServer(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        server_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional int64 server_id = 1;</code>
+       * <code>optional string server = 1;</code>
        */
-      public Builder clearServerId() {
+      public Builder clearServer() {
         
-        serverId_ = 0L;
+        server_ = getDefaultInstance().getServer();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string server = 1;</code>
+       */
+      public Builder setServerBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        server_ = value;
+        onChanged();
+        return this;
+      }
+
+      private com.google.protobuf.LazyStringList serverGroup_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+      private void ensureServerGroupIsMutable() {
+        if (!((bitField0_ & 0x00000002) == 0x00000002)) {
+          serverGroup_ = new com.google.protobuf.LazyStringArrayList(serverGroup_);
+          bitField0_ |= 0x00000002;
+         }
+      }
+      /**
+       * <code>repeated string server_group = 2;</code>
+       */
+      public com.google.protobuf.ProtocolStringList
+          getServerGroupList() {
+        return serverGroup_.getUnmodifiableView();
+      }
+      /**
+       * <code>repeated string server_group = 2;</code>
+       */
+      public int getServerGroupCount() {
+        return serverGroup_.size();
+      }
+      /**
+       * <code>repeated string server_group = 2;</code>
+       */
+      public java.lang.String getServerGroup(int index) {
+        return serverGroup_.get(index);
+      }
+      /**
+       * <code>repeated string server_group = 2;</code>
+       */
+      public com.google.protobuf.ByteString
+          getServerGroupBytes(int index) {
+        return serverGroup_.getByteString(index);
+      }
+      /**
+       * <code>repeated string server_group = 2;</code>
+       */
+      public Builder setServerGroup(
+          int index, java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureServerGroupIsMutable();
+        serverGroup_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string server_group = 2;</code>
+       */
+      public Builder addServerGroup(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureServerGroupIsMutable();
+        serverGroup_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string server_group = 2;</code>
+       */
+      public Builder addAllServerGroup(
+          java.lang.Iterable<java.lang.String> values) {
+        ensureServerGroupIsMutable();
+        com.google.protobuf.AbstractMessageLite.Builder.addAll(
+            values, serverGroup_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string server_group = 2;</code>
+       */
+      public Builder clearServerGroup() {
+        serverGroup_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string server_group = 2;</code>
+       */
+      public Builder addServerGroupBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        ensureServerGroupIsMutable();
+        serverGroup_.add(value);
         onChanged();
         return this;
       }
@@ -5592,23 +5854,24 @@ public final class DownstreamServiceOuterClass {
       "glowroot_wire_api_model.HelloH\000\022M\n\023mbean" +
       "_tree_response\030\020 \001(\0132..org_glowroot_wire" +
       "_api_model.MBeanTreeResponseH\000B\t\n\007messag" +
-      "e\"\032\n\005Hello\022\021\n\tserver_id\030\001 \001(\003\"9\n\020MBeanTr",
-      "eeRequest\022%\n\035include_attrs_for_object_na" +
-      "me\030\001 \003(\t\"N\n\021MBeanTreeResponse\0229\n\troot_no" +
-      "de\030\001 \003(\0132&.org_glowroot_wire_api_model.M" +
-      "BeanNode\"\234\001\n\tMBeanNode\022\023\n\013object_name\030\001 " +
-      "\001(\t\022>\n\tattribute\030\002 \003(\0132+.org_glowroot_wi" +
-      "re_api_model.MBeanAttribute\022:\n\nchild_nod" +
-      "e\030\003 \003(\0132&.org_glowroot_wire_api_model.MB" +
-      "eanNode\"V\n\016MBeanAttribute\022\014\n\004name\030\001 \001(\t\022" +
-      "6\n\005value\030\002 \001(\0132\'.org_glowroot_wire_api_m" +
-      "odel.MBeanValue\"S\n\nMBeanValue\022\016\n\004sval\030\001 ",
-      "\001(\tH\000\022\016\n\004dval\030\002 \001(\001H\000\022\016\n\004lval\030\003 \001(\003H\000\022\016\n" +
-      "\004bval\030\004 \001(\010H\000B\005\n\003val2{\n\021DownstreamServic" +
-      "e\022f\n\007connect\022+.org_glowroot_wire_api_mod" +
-      "el.ClientResponse\032*.org_glowroot_wire_ap" +
-      "i_model.ServerRequest(\0010\001B\035\n\033org.glowroo" +
-      "t.wire.api.modelb\006proto3"
+      "e\"-\n\005Hello\022\016\n\006server\030\001 \001(\t\022\024\n\014server_gro",
+      "up\030\002 \003(\t\"9\n\020MBeanTreeRequest\022%\n\035include_" +
+      "attrs_for_object_name\030\001 \003(\t\"N\n\021MBeanTree" +
+      "Response\0229\n\troot_node\030\001 \003(\0132&.org_glowro" +
+      "ot_wire_api_model.MBeanNode\"\234\001\n\tMBeanNod" +
+      "e\022\023\n\013object_name\030\001 \001(\t\022>\n\tattribute\030\002 \003(" +
+      "\0132+.org_glowroot_wire_api_model.MBeanAtt" +
+      "ribute\022:\n\nchild_node\030\003 \003(\0132&.org_glowroo" +
+      "t_wire_api_model.MBeanNode\"V\n\016MBeanAttri" +
+      "bute\022\014\n\004name\030\001 \001(\t\0226\n\005value\030\002 \001(\0132\'.org_" +
+      "glowroot_wire_api_model.MBeanValue\"S\n\nMB",
+      "eanValue\022\016\n\004sval\030\001 \001(\tH\000\022\016\n\004dval\030\002 \001(\001H\000" +
+      "\022\016\n\004lval\030\003 \001(\003H\000\022\016\n\004bval\030\004 \001(\010H\000B\005\n\003val2" +
+      "{\n\021DownstreamService\022f\n\007connect\022+.org_gl" +
+      "owroot_wire_api_model.ClientResponse\032*.o" +
+      "rg_glowroot_wire_api_model.ServerRequest" +
+      "(\0010\001B\035\n\033org.glowroot.wire.api.modelb\006pro" +
+      "to3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -5639,7 +5902,7 @@ public final class DownstreamServiceOuterClass {
     internal_static_org_glowroot_wire_api_model_Hello_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_Hello_descriptor,
-        new java.lang.String[] { "ServerId", });
+        new java.lang.String[] { "Server", "ServerGroup", });
     internal_static_org_glowroot_wire_api_model_MBeanTreeRequest_descriptor =
       getDescriptor().getMessageTypes().get(3);
     internal_static_org_glowroot_wire_api_model_MBeanTreeRequest_fieldAccessorTable = new

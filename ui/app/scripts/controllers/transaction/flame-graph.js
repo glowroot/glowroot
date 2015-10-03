@@ -51,7 +51,7 @@ glowroot.controller('TransactionFlameGraphCtrl', [
       $scope.loaded = true;
     } else {
       var query = {
-        serverId: $scope.serverId,
+        serverGroup: $scope.serverGroup,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
         from: $scope.from,

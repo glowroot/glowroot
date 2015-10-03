@@ -44,21 +44,21 @@ class ReaperRunnable extends ScheduledRunnable {
     @Override
     protected void runInternal() throws SQLException {
 
-        // FIXME for each serverId
-        final long serverId = 0;
+        // FIXME for each serverGroup
+        final String serverGroup = "";
 
         StorageConfig storageConfig = configRepository.getStorageConfig();
         long currentTime = clock.currentTimeMillis();
         for (int i = 0; i < storageConfig.rollupExpirationHours().size(); i++) {
             int hours = storageConfig.rollupExpirationHours().get(i);
             long captureTime = currentTime - HOURS.toMillis(hours);
-            aggregateDao.deleteBefore(serverId, captureTime, i);
+            aggregateDao.deleteBefore(serverGroup, captureTime, i);
             if (i == 0) {
-                gaugeValueDao.deleteBefore(serverId, captureTime, i);
+                gaugeValueDao.deleteBefore(serverGroup, captureTime, i);
             }
-            gaugeValueDao.deleteBefore(serverId, captureTime, i + 1);
+            gaugeValueDao.deleteBefore(serverGroup, captureTime, i + 1);
         }
         long traceCaptureTime = currentTime - HOURS.toMillis(storageConfig.traceExpirationHours());
-        traceDao.deleteBefore(serverId, traceCaptureTime);
+        traceDao.deleteBefore(serverGroup, traceCaptureTime);
     }
 }

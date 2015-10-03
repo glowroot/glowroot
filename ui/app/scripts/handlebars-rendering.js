@@ -366,7 +366,7 @@ HandlebarsRendering = (function () {
         renderNext(traceEntries, 0);
       } else {
         // this is not an export file
-        var serverId = $traceParent.data('gtServerId');
+        var server = $traceParent.data('gtServer');
         var traceId = $traceParent.data('gtTraceId');
         $selector.data('gtLoading', true);
         var loaded;
@@ -377,7 +377,7 @@ HandlebarsRendering = (function () {
             spinner = Glowroot.showSpinner($button.parent().find('.gt-trace-detail-spinner'));
           }
         }, 100);
-        $.get('backend/trace/entries?server-id=' + serverId + '&trace-id=' + traceId)
+        $.get('backend/trace/entries?server=' + server + '&trace-id=' + traceId)
             .done(function (data) {
               if (data.overwritten) {
                 $('#sps').append('<div style="padding: 1em;">The trace entries have expired, see' +
@@ -420,9 +420,9 @@ HandlebarsRendering = (function () {
     var profile = $traceParent.data('gtProfile');
     var url;
     if (!profile) {
-      var serverId = $traceParent.data('gtServerId');
+      var server = $traceParent.data('gtServer');
       var traceId = $traceParent.data('gtTraceId');
-      url = 'backend/trace/profile' + '?server-id=' + serverId + '&trace-id=' + traceId;
+      url = 'backend/trace/profile' + '?server=' + server + '&trace-id=' + traceId;
     }
     profileToggle($button, '#profileOuter', profile, url);
   });
@@ -1173,12 +1173,12 @@ HandlebarsRendering = (function () {
   }
 
   return {
-    renderTrace: function (trace, serverId, $selector) {
+    renderTrace: function (trace, server, $selector) {
       var html = JST.trace(trace);
       $selector.html(html);
       $selector.addClass('gt-trace-parent');
-      if (serverId !== undefined) {
-        $selector.data('gtServerId', serverId);
+      if (server !== undefined) {
+        $selector.data('gtServer', server);
         $selector.data('gtTraceId', trace.id);
       }
     },

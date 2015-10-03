@@ -69,14 +69,14 @@ class GaugeJsonService {
         Optional<String> version = request.version();
         if (version.isPresent()) {
             GaugeConfig gaugeConfig =
-                    configRepository.getGaugeConfig(request.serverId(), version.get());
+                    configRepository.getGaugeConfig(request.server(), version.get());
             if (gaugeConfig == null) {
                 throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
             }
-            return mapper.writeValueAsString(buildResponse(request.serverId(), gaugeConfig));
+            return mapper.writeValueAsString(buildResponse(request.server(), gaugeConfig));
         } else {
             List<GaugeConfigWithWarningMessages> responses = Lists.newArrayList();
-            List<GaugeConfig> gaugeConfigs = configRepository.getGaugeConfigs(request.serverId());
+            List<GaugeConfig> gaugeConfigs = configRepository.getGaugeConfigs(request.server());
             gaugeConfigs = GaugeConfig.orderingByName.immutableSortedCopy(gaugeConfigs);
             for (GaugeConfig gaugeConfig : gaugeConfigs) {
                 responses.add(ImmutableGaugeConfigWithWarningMessages.builder()
@@ -92,7 +92,7 @@ class GaugeJsonService {
         MBeanObjectNameRequest request =
                 QueryStrings.decode(queryString, MBeanObjectNameRequest.class);
         return mapper.writeValueAsString(liveJvmService.getMatchingMBeanObjectNames(
-                request.serverId(), request.partialMBeanObjectName(), request.limit()));
+                request.server(), request.partialMBeanObjectName(), request.limit()));
     }
 
     @GET("/backend/config/mbean-attributes")
@@ -100,7 +100,7 @@ class GaugeJsonService {
         MBeanAttributeNamesRequest request =
                 QueryStrings.decode(queryString, MBeanAttributeNamesRequest.class);
         boolean duplicateMBean = false;
-        for (GaugeConfig gaugeConfig : configRepository.getGaugeConfigs(request.serverId())) {
+        for (GaugeConfig gaugeConfig : configRepository.getGaugeConfigs(request.server())) {
             if (gaugeConfig.mbeanObjectName().equals(request.mbeanObjectName())
                     && !gaugeConfig.version().equals(request.gaugeVersion())) {
                 duplicateMBean = true;
@@ -108,7 +108,7 @@ class GaugeJsonService {
             }
         }
         MBeanMeta mbeanMeta =
-                liveJvmService.getMBeanMeta(request.serverId(), request.mbeanObjectName());
+                liveJvmService.getMBeanMeta(request.server(), request.mbeanObjectName());
         return mapper.writeValueAsString(ImmutableMBeanAttributeNamesResponse.builder()
                 .duplicateMBean(duplicateMBean)
                 .mbeanUnmatched(mbeanMeta.unmatched())
@@ -120,43 +120,45 @@ class GaugeJsonService {
     @POST("/backend/config/gauges/add")
     String addGauge(String content) throws Exception {
         GaugeConfigDto gaugeConfigDto = mapper.readValue(content, ImmutableGaugeConfigDto.class);
-        long serverId = gaugeConfigDto.serverId().get();
+        String server = gaugeConfigDto.server().get();
         GaugeConfig gaugeConfig = gaugeConfigDto.toConfig();
         try {
-            configRepository.insertGaugeConfig(serverId, gaugeConfig);
+            configRepository.insertGaugeConfig(server, gaugeConfig);
         } catch (DuplicateMBeanObjectNameException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
             throw new JsonServiceException(CONFLICT, "mbeanObjectName");
         }
-        return mapper.writeValueAsString(buildResponse(serverId, gaugeConfig));
+        return mapper.writeValueAsString(buildResponse(server, gaugeConfig));
     }
 
     @POST("/backend/config/gauges/update")
     String updateGauge(String content) throws Exception {
         GaugeConfigDto gaugeConfigDto = mapper.readValue(content, ImmutableGaugeConfigDto.class);
-        long serverId = gaugeConfigDto.serverId().get();
+        String server = gaugeConfigDto.server().get();
         GaugeConfig gaugeConfig = gaugeConfigDto.toConfig();
         String version = gaugeConfigDto.version().get();
         try {
-            configRepository.updateGaugeConfig(serverId, gaugeConfig, version);
+            configRepository.updateGaugeConfig(server, gaugeConfig, version);
         } catch (DuplicateMBeanObjectNameException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
             throw new JsonServiceException(CONFLICT, "mbeanObjectName");
         }
-        return mapper.writeValueAsString(buildResponse(serverId, gaugeConfig));
+        return mapper.writeValueAsString(buildResponse(server, gaugeConfig));
     }
 
     @POST("/backend/config/gauges/remove")
     void removeGauge(String content) throws IOException {
         GaugeConfigRequest request = mapper.readValue(content, ImmutableGaugeConfigRequest.class);
-        long serverId = checkNotNull(request.serverId());
-        configRepository.deleteGaugeConfig(serverId, request.version().get());
+        String server = checkNotNull(request.server());
+        configRepository.deleteGaugeConfig(server, request.version().get());
     }
 
-    private GaugeResponse buildResponse(long serverId, GaugeConfig gaugeConfig) throws Exception {
-        MBeanMeta mbeanMeta = liveJvmService.getMBeanMeta(serverId, gaugeConfig.mbeanObjectName());
+    private GaugeResponse buildResponse(String server, GaugeConfig gaugeConfig)
+            throws Exception {
+        MBeanMeta mbeanMeta =
+                liveJvmService.getMBeanMeta(server, gaugeConfig.mbeanObjectName());
         return ImmutableGaugeResponse.builder()
                 .config(GaugeConfigDto.fromConfig(gaugeConfig))
                 .mbeanUnmatched(mbeanMeta.unmatched())
@@ -173,25 +175,25 @@ class GaugeJsonService {
 
     @Value.Immutable
     interface AllGaugeConfigRequest {
-        long serverId();
+        String server();
     }
 
     @Value.Immutable
     interface GaugeConfigRequest {
-        long serverId();
+        String server();
         Optional<String> version();
     }
 
     @Value.Immutable
     interface MBeanObjectNameRequest {
-        long serverId();
+        String server();
         String partialMBeanObjectName();
         int limit();
     }
 
     @Value.Immutable
     interface MBeanAttributeNamesRequest {
-        long serverId();
+        String server();
         String mbeanObjectName();
         @Nullable
         String gaugeVersion();
@@ -222,7 +224,7 @@ class GaugeJsonService {
     @Value.Immutable
     abstract static class GaugeConfigDto {
 
-        abstract Optional<Long> serverId(); // only used in request
+        abstract Optional<String> server(); // only used in request
         // display is only used in one direction since it is a derived attribute
         abstract @Nullable String display();
         abstract String mbeanObjectName();

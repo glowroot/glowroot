@@ -84,7 +84,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
     }
 
     if (version) {
-      $http.get('backend/config/instrumentation?server-id=' + $scope.serverId + '&version=' + version)
+      $http.get('backend/config/instrumentation?server=' + $scope.server + '&version=' + version)
           .success(function (data) {
             $scope.loaded = true;
             onNewData(data);
@@ -115,7 +115,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
 
     $scope.classNames = function (suggestion) {
       var postData = {
-        serverId: $scope.serverId,
+        server: $scope.server,
         partialClassName: suggestion,
         limit: 10
       };
@@ -151,7 +151,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
         return [suggestion];
       }
       var queryData = {
-        serverId: $scope.serverId,
+        server: $scope.server,
         className: $scope.config.className,
         partialMethodName: suggestion,
         limit: 10
@@ -238,7 +238,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
 
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
-      postData.serverId = $scope.serverId;
+      postData.server = $scope.server;
       var url;
       if (version) {
         url = 'backend/config/instrumentation/update';
@@ -263,7 +263,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
 
     $scope.delete = function (deferred) {
       var postData = {
-        serverId: $scope.serverId,
+        server: $scope.server,
         version: $scope.config.version
       };
       $http.post('backend/config/instrumentation/remove', postData)
@@ -333,7 +333,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
 
     function matchingMethods(methodName) {
       var queryData = {
-        serverId: $scope.serverId,
+        server: $scope.server,
         className: $scope.config.className,
         methodName: methodName
       };

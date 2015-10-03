@@ -76,23 +76,30 @@ class TracePointResponse {
         };
 
         private final long captureTime;
-        private final String id;
+        private final String server;
+        private final String traceId;
 
-        private RawPoint(long captureTime, String id) {
+        private RawPoint(long captureTime, String server, String traceId) {
             this.captureTime = captureTime;
-            this.id = id;
+            this.server = server;
+            this.traceId = traceId;
         }
 
-        String getId() {
-            return id;
+        String getServer() {
+            return server;
+        }
+
+        String getTraceId() {
+            return traceId;
         }
 
         @JsonCreator
         static RawPoint readValue(ArrayNode point) {
             long captureTime = point.get(0).asLong();
             // total millis which is point.get(1) is not needed here
-            String id = point.get(2).asText();
-            return new RawPoint(captureTime, id);
+            String server = point.get(2).asText();
+            String traceId = point.get(3).asText();
+            return new RawPoint(captureTime, server, traceId);
         }
     }
 }

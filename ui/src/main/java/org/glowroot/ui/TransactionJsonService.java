@@ -88,7 +88,7 @@ class TransactionJsonService {
 
         long liveCaptureTime = clock.currentTimeMillis();
         List<OverviewAggregate> overviewAggregates = transactionCommonService.getOverviewAggregates(
-                request.serverId(), request.transactionType(), request.transactionName(),
+                request.serverGroup(), request.transactionType(), request.transactionName(),
                 request.from(), request.to(), liveCaptureTime);
         List<DataSeries> dataSeriesList = getDataSeriesForTimersChart(request, overviewAggregates);
         Map<Long, Long> transactionCounts = getTransactionCounts(overviewAggregates);
@@ -124,7 +124,7 @@ class TransactionJsonService {
 
         long liveCaptureTime = clock.currentTimeMillis();
         List<PercentileAggregate> percentileAggregates = transactionCommonService
-                .getPercentileAggregates(request.serverId(), request.transactionType(),
+                .getPercentileAggregates(request.serverGroup(), request.transactionType(),
                         request.transactionName(), request.from(), request.to(), liveCaptureTime);
         List<DataSeries> dataSeriesList = getDataSeriesForPercentileChart(request,
                 percentileAggregates, request.percentile());
@@ -154,12 +154,12 @@ class TransactionJsonService {
         TransactionProfileRequest request =
                 QueryStrings.decode(queryString, TransactionProfileRequest.class);
         MutableProfileTree profileTree = transactionCommonService.getMergedProfile(
-                request.serverId(), request.transactionType(), request.transactionName(),
+                request.serverGroup(), request.transactionType(), request.transactionName(),
                 request.from(), request.to(), request.include(), request.exclude(),
                 request.truncateLeafPercentage());
         if (profileTree.getSampleCount() == 0 && request.include().isEmpty()
                 && request.exclude().isEmpty()
-                && transactionCommonService.shouldHaveProfile(request.serverId(),
+                && transactionCommonService.shouldHaveProfile(request.serverGroup(),
                         request.transactionType(), request.transactionName(), request.from(),
                         request.to())) {
             return "{\"overwritten\":true}";
@@ -172,7 +172,7 @@ class TransactionJsonService {
         TransactionDataRequest request =
                 QueryStrings.decode(queryString, TransactionDataRequest.class);
         List<Aggregate.QueriesByType> queries = transactionCommonService.getMergedQueries(
-                request.serverId(), request.transactionType(), request.transactionName(),
+                request.serverGroup(), request.transactionType(), request.transactionName(),
                 request.from(), request.to());
         List<Query> queryList = Lists.newArrayList();
         for (Aggregate.QueriesByType queriesByType : queries) {
@@ -194,7 +194,7 @@ class TransactionJsonService {
             }
         });
         if (queryList.isEmpty()
-                && transactionCommonService.shouldHaveQueries(request.serverId(),
+                && transactionCommonService.shouldHaveQueries(request.serverGroup(),
                         request.transactionType(), request.transactionName(), request.from(),
                         request.to())) {
             return "{\"overwritten\":true}";
@@ -212,10 +212,10 @@ class TransactionJsonService {
                 QueryStrings.decode(queryString, TransactionSummaryRequest.class);
 
         OverallSummary overallSummary = transactionCommonService.readOverallSummary(
-                request.serverId(), request.transactionType(), request.from(), request.to());
+                request.serverGroup(), request.transactionType(), request.from(), request.to());
 
         TransactionSummaryQuery query = ImmutableTransactionSummaryQuery.builder()
-                .serverId(request.serverId())
+                .serverGroup(request.serverGroup())
                 .transactionType(request.transactionType())
                 .from(request.from())
                 .to(request.to())
@@ -246,15 +246,15 @@ class TransactionJsonService {
         String transactionName = request.transactionName();
         long traceCount;
         if (transactionName == null) {
-            traceCount = traceRepository.readOverallSlowCount(request.serverId(),
+            traceCount = traceRepository.readOverallSlowCount(request.serverGroup(),
                     request.transactionType(), request.from(), request.to());
         } else {
-            traceCount = traceRepository.readTransactionSlowCount(request.serverId(),
+            traceCount = traceRepository.readTransactionSlowCount(request.serverGroup(),
                     request.transactionType(), transactionName, request.from(), request.to());
         }
         boolean includeActiveTraces = shouldIncludeActiveTraces(request);
         if (includeActiveTraces) {
-            traceCount += liveTraceRepository.getMatchingTraceCount(request.serverId(),
+            traceCount += liveTraceRepository.getMatchingTraceCount(request.serverGroup(),
                     request.transactionType(), request.transactionName());
         }
         StringBuilder sb = new StringBuilder();
@@ -270,7 +270,7 @@ class TransactionJsonService {
     String getFlameGraph(String queryString) throws Exception {
         FlameGraphRequest request = QueryStrings.decode(queryString, FlameGraphRequest.class);
         MutableProfileTree profileTree = transactionCommonService.getMergedProfile(
-                request.serverId(), request.transactionType(), request.transactionName(),
+                request.serverGroup(), request.transactionType(), request.transactionName(),
                 request.from(), request.to(), request.include(), request.exclude(),
                 request.truncateLeafPercentage());
         return profileTree.toFlameGraphJson();
@@ -301,7 +301,7 @@ class TransactionJsonService {
             return Lists.newArrayList();
         }
         DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock, aggregateRepository
-                .getDataPointIntervalMillis(request.serverId(), request.from(), request.to()));
+                .getDataPointIntervalMillis(request.serverGroup(), request.from(), request.to()));
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         for (double percentile : percentiles) {
             dataSeriesList
@@ -350,7 +350,7 @@ class TransactionJsonService {
     private List<DataSeries> getTimerDataSeries(TransactionDataRequest request,
             List<StackedPoint> stackedPoints) {
         DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock, aggregateRepository
-                .getDataPointIntervalMillis(request.serverId(), request.from(), request.to()));
+                .getDataPointIntervalMillis(request.serverGroup(), request.from(), request.to()));
         final int topX = 5;
         List<String> timerNames = getTopTimerNames(stackedPoints, topX + 1);
         List<DataSeries> dataSeriesList = Lists.newArrayList();
@@ -508,7 +508,7 @@ class TransactionJsonService {
 
     @Value.Immutable
     interface TransactionSummaryRequest {
-        long serverId();
+        String serverGroup();
         String transactionType();
         long from();
         long to();
@@ -518,7 +518,7 @@ class TransactionJsonService {
 
     @Value.Immutable
     interface TransactionDataRequest {
-        long serverId();
+        String serverGroup();
         String transactionType();
         @Nullable
         String transactionName();
@@ -530,7 +530,7 @@ class TransactionJsonService {
 
     @Value.Immutable
     interface TransactionProfileRequest {
-        long serverId();
+        String serverGroup();
         String transactionType();
         @Nullable
         String transactionName();
@@ -545,7 +545,7 @@ class TransactionJsonService {
 
     @Value.Immutable
     interface FlameGraphRequest {
-        long serverId();
+        String serverGroup();
         String transactionType();
         @Nullable
         String transactionName();

@@ -21,7 +21,7 @@ glowroot.controller('JvmSystemPropertiesCtrl', [
   '$http',
   'httpErrors',
   function ($scope, $http, httpErrors) {
-    $http.get('backend/jvm/system-properties?server-id=' + $scope.serverId)
+    $http.get('backend/jvm/system-properties?server=' + $scope.server)
         .success(function (data) {
           $scope.loaded = true;
           $scope.properties = data;

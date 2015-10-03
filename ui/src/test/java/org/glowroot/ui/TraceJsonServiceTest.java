@@ -28,7 +28,7 @@ public class TraceJsonServiceTest {
         TraceCommonService traceCommonService = mock(TraceCommonService.class);
         TraceJsonService traceJsonService = new TraceJsonService(traceCommonService);
         // when
-        String json = traceJsonService.getHeader("server-id=0&trace-id=1234");
+        String json = traceJsonService.getHeader("server=&trace-id=1234");
         // then
         assertThat(json).isEqualTo("{\"expired\":true}");
     }

@@ -39,29 +39,29 @@ import org.glowroot.storage.repo.config.UserInterfaceConfig;
 
 public interface ConfigRepository {
 
-    TransactionConfig getTransactionConfig(long serverId);
+    TransactionConfig getTransactionConfig(String server);
 
-    UserRecordingConfig getUserRecordingConfig(long serverId);
+    UserRecordingConfig getUserRecordingConfig(String server);
 
-    AdvancedConfig getAdvancedConfig(long serverId);
-
-    @Nullable
-    PluginConfig getPluginConfig(long serverId, String pluginId);
-
-    List<InstrumentationConfig> getInstrumentationConfigs(long serverId);
+    AdvancedConfig getAdvancedConfig(String server);
 
     @Nullable
-    InstrumentationConfig getInstrumentationConfig(long serverId, String version);
+    PluginConfig getPluginConfig(String server, String pluginId);
 
-    List<GaugeConfig> getGaugeConfigs(long serverId);
-
-    @Nullable
-    GaugeConfig getGaugeConfig(long serverId, String version);
-
-    List<AlertConfig> getAlertConfigs(long serverId);
+    List<InstrumentationConfig> getInstrumentationConfigs(String server);
 
     @Nullable
-    AlertConfig getAlertConfig(long serverId, String version);
+    InstrumentationConfig getInstrumentationConfig(String server, String version);
+
+    List<GaugeConfig> getGaugeConfigs(String server);
+
+    @Nullable
+    GaugeConfig getGaugeConfig(String server, String version);
+
+    List<AlertConfig> getAlertConfigs(String server);
+
+    @Nullable
+    AlertConfig getAlertConfig(String server, String version);
 
     UserInterfaceConfig getUserInterfaceConfig();
 
@@ -69,39 +69,39 @@ public interface ConfigRepository {
 
     SmtpConfig getSmtpConfig();
 
-    String updateTransactionConfig(long serverId, TransactionConfig transactionConfig,
+    String updateTransactionConfig(String server, TransactionConfig transactionConfig,
             String priorVersion) throws Exception;
 
-    String updateUserRecordingConfig(long serverId, UserRecordingConfig userRecordingConfig,
+    String updateUserRecordingConfig(String server, UserRecordingConfig userRecordingConfig,
             String priorVersion) throws Exception;
 
-    String updateAdvancedConfig(long serverId, AdvancedConfig advancedConfig, String priorVersion)
+    String updateAdvancedConfig(String server, AdvancedConfig advancedConfig,
+            String priorVersion) throws Exception;
+
+    String updatePluginConfig(String server, PluginConfig pluginConfig, String priorVersion)
             throws Exception;
 
-    String updatePluginConfig(long serverId, PluginConfig pluginConfig, String priorVersion)
+    String insertInstrumentationConfig(String server,
+            InstrumentationConfig instrumentationConfig) throws IOException;
+
+    String updateInstrumentationConfig(String server,
+            InstrumentationConfig instrumentationConfig, String priorVersion) throws IOException;
+
+    void deleteInstrumentationConfig(String server, String version) throws IOException;
+
+    String insertGaugeConfig(String server, GaugeConfig gaugeConfig) throws Exception;
+
+    String updateGaugeConfig(String server, GaugeConfig gaugeConfig, String priorVersion)
             throws Exception;
 
-    String insertInstrumentationConfig(long serverId, InstrumentationConfig instrumentationConfig)
+    void deleteGaugeConfig(String server, String version) throws IOException;
+
+    String insertAlertConfig(String server, AlertConfig alertConfig) throws Exception;
+
+    String updateAlertConfig(String server, AlertConfig alertConfig, String priorVersion)
             throws IOException;
 
-    String updateInstrumentationConfig(long serverId, InstrumentationConfig instrumentationConfig,
-            String priorVersion) throws IOException;
-
-    void deleteInstrumentationConfig(long serverId, String version) throws IOException;
-
-    String insertGaugeConfig(long serverId, GaugeConfig gaugeConfig) throws Exception;
-
-    String updateGaugeConfig(long serverId, GaugeConfig gaugeConfig, String priorVersion)
-            throws Exception;
-
-    void deleteGaugeConfig(long serverId, String version) throws IOException;
-
-    String insertAlertConfig(long serverId, AlertConfig alertConfig) throws Exception;
-
-    String updateAlertConfig(long serverId, AlertConfig alertConfig, String priorVersion)
-            throws IOException;
-
-    void deleteAlertConfig(long serverId, String version) throws IOException;
+    void deleteAlertConfig(String server, String version) throws IOException;
 
     String updateUserInterfaceConfig(UserInterfaceConfig userInterfaceConfig, String priorVersion)
             throws Exception;
@@ -110,9 +110,9 @@ public interface ConfigRepository {
 
     String updateSmtpConfig(SmtpConfig smtpConfig, String priorVersion) throws Exception;
 
-    List<String> getAllTransactionTypes(long serverId);
+    List<String> getAllTransactionTypes(String server);
 
-    String getDefaultDisplayedTransactionType(long serverId);
+    String getDefaultDisplayedTransactionType(String server);
 
     long getGaugeCollectionIntervalMillis();
 
@@ -124,7 +124,7 @@ public interface ConfigRepository {
     void addListener(ConfigListener listener);
 
     @OnlyUsedByTests
-    void resetAllConfig(long serverId) throws IOException;
+    void resetAllConfig(String server) throws IOException;
 
     public interface ConfigListener {
         // the new config is not passed to onChange so that the receiver has to get the latest,

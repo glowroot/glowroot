@@ -21,7 +21,7 @@ glowroot.controller('JvmCapabilitiesCtrl', [
   '$http',
   'httpErrors',
   function ($scope, $http, httpErrors) {
-    $http.get('backend/jvm/capabilities?server-id=' + $scope.serverId)
+    $http.get('backend/jvm/capabilities?server=' + $scope.server)
         .success(function (data) {
           $scope.loaded = true;
           $scope.capabilities = data;

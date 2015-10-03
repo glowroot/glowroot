@@ -28,8 +28,8 @@ import org.junit.Test;
 
 import org.glowroot.agent.harness.Container;
 import org.glowroot.agent.harness.Containers;
-import org.glowroot.agent.harness.config.UserInterfaceConfig;
 import org.glowroot.agent.harness.config.ConfigService.PortChangeFailedException;
+import org.glowroot.agent.harness.config.UserInterfaceConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -72,14 +72,14 @@ public class ChangePortTest {
         boolean oldPortDead = false;
         try {
             asyncHttpClient.prepareGet("http://localhost:" + oldPort
-                    + "/backend/admin/num-active-transactions?server-id=0").execute().get();
+                    + "/backend/admin/num-active-transactions?server=").execute().get();
         } catch (ExecutionException e) {
             if (e.getCause() instanceof ConnectException) {
                 oldPortDead = true;
             }
         }
         Response response = asyncHttpClient.prepareGet("http://localhost:" + newPort
-                + "/backend/admin/num-active-transactions?server-id=0").execute().get();
+                + "/backend/admin/num-active-transactions?server=").execute().get();
         int numActiveTransactions = Integer.parseInt(response.getResponseBody());
 
         assertThat(oldPortDead).isTrue();

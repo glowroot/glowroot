@@ -122,13 +122,13 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public Map<String, /*@Nullable*/Object> getMBeanSortedAttributeMap(long serverId,
+    public Map<String, /*@Nullable*/Object> getMBeanSortedAttributeMap(String server,
             String objectName) throws Exception {
         return getMBeanSortedAttributeMap(ObjectName.getInstance(objectName));
     }
 
     @Override
-    public List<String> getMatchingMBeanObjectNames(long serverId, String partialMBeanObjectName,
+    public List<String> getMatchingMBeanObjectNames(String server, String partialMBeanObjectName,
             int limit) throws InterruptedException {
         Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null,
                 new ObjectNameQueryExp(partialMBeanObjectName));
@@ -145,7 +145,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public MBeanMeta getMBeanMeta(long serverId, String mbeanObjectName) throws Exception {
+    public MBeanMeta getMBeanMeta(String server, String mbeanObjectName) throws Exception {
         Set<ObjectName> objectNames = getObjectNames(mbeanObjectName);
         ImmutableList<String> attributeNames = Ordering.from(String.CASE_INSENSITIVE_ORDER)
                 .immutableSortedCopy(getAttributeNames(objectNames));
@@ -158,7 +158,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public String getHeapDumpDefaultDirectory(long serverId) {
+    public String getHeapDumpDefaultDirectory(String server) {
         String heapDumpPath = getHeapDumpPathFromCommandLine();
         if (heapDumpPath == null) {
             String javaTempDir =
@@ -169,7 +169,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public long getAvailableDiskSpace(long serverId, String directory) throws IOException {
+    public long getAvailableDiskSpace(String server, String directory) throws IOException {
         File dir = new File(directory);
         if (!dir.exists()) {
             throw new IOException("Directory doesn't exist");
@@ -181,7 +181,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public HeapFile dumpHeap(long serverId, String directory) throws Exception {
+    public HeapFile dumpHeap(String server, String directory) throws Exception {
         // this command is filtered out of the UI when service is null
         HeapDumps service = checkNotNull(heapDumps.getService(),
                 "Heap dump service is not available: %s", heapDumps.getAvailability().getReason());
@@ -205,7 +205,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public ProcessInfo getProcessInfo(long serverId) {
+    public ProcessInfo getProcessInfo(String server) {
         String command = System.getProperty("sun.java.command");
         String mainClass = "";
         List<String> arguments = ImmutableList.of();
@@ -248,7 +248,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public Map<String, String> getSystemProperties(long serverId) {
+    public Map<String, String> getSystemProperties(String server) {
         Properties properties = System.getProperties();
         Map<String, String> map = Maps.newHashMap();
         for (Enumeration<?> e = properties.propertyNames(); e.hasMoreElements();) {
@@ -265,7 +265,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public Capabilities getCapabilities(long serverId) {
+    public Capabilities getCapabilities(String server) {
         return ImmutableCapabilities.builder()
                 .threadCpuTime(getThreadCpuTimeAvailability())
                 .threadContentionTime(getThreadContentionAvailability())

@@ -33,29 +33,29 @@ public interface LiveJvmService {
 
     Map<String, MBeanTreeInnerNode> getMBeanTree(MBeanTreeRequest request) throws Exception;
 
-    Map<String, /*@Nullable*/Object> getMBeanSortedAttributeMap(long serverId, String objectName)
+    Map<String, /*@Nullable*/Object> getMBeanSortedAttributeMap(String server, String objectName)
             throws Exception;
 
-    List<String> getMatchingMBeanObjectNames(long serverId, String partialMBeanObjectName,
+    List<String> getMatchingMBeanObjectNames(String server, String partialMBeanObjectName,
             int limit) throws InterruptedException;
 
-    MBeanMeta getMBeanMeta(long serverId, String mbeanObjectName) throws Exception;
+    MBeanMeta getMBeanMeta(String server, String mbeanObjectName) throws Exception;
 
-    String getHeapDumpDefaultDirectory(long serverId);
+    String getHeapDumpDefaultDirectory(String server);
 
-    long getAvailableDiskSpace(long serverId, String directory) throws IOException;
+    long getAvailableDiskSpace(String server, String directory) throws IOException;
 
-    HeapFile dumpHeap(long serverId, String directory) throws Exception;
+    HeapFile dumpHeap(String server, String directory) throws Exception;
 
-    ProcessInfo getProcessInfo(long serverId);
+    ProcessInfo getProcessInfo(String server);
 
-    Map<String, String> getSystemProperties(long serverId);
+    Map<String, String> getSystemProperties(String server);
 
-    Capabilities getCapabilities(long serverId);
+    Capabilities getCapabilities(String server);
 
     @Value.Immutable
     interface MBeanTreeRequest {
-        long serverId();
+        String server();
         List<String> expanded();
     }
 

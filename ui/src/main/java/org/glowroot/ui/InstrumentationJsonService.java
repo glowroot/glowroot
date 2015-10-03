@@ -67,16 +67,16 @@ class InstrumentationJsonService {
                 QueryStrings.decode(queryString, InstrumentationConfigRequest.class);
         Optional<String> version = request.version();
         if (version.isPresent()) {
-            return getInstrumentationConfigInternal(request.serverId(), version.get());
+            return getInstrumentationConfigInternal(request.server(), version.get());
         } else {
             List<InstrumentationConfig> configs =
-                    configRepository.getInstrumentationConfigs(request.serverId());
+                    configRepository.getInstrumentationConfigs(request.server());
             configs = ordering.immutableSortedCopy(configs);
             List<InstrumentationConfigDto> dtos = Lists.newArrayList();
             for (InstrumentationConfig config : configs) {
                 dtos.add(InstrumentationConfigDto.fromConfig(config));
             }
-            GlobalMeta globalMeta = liveWeavingService.getGlobalMeta(request.serverId());
+            GlobalMeta globalMeta = liveWeavingService.getGlobalMeta(request.server());
             return mapper.writeValueAsString(ImmutableInstrumentationListResponse.builder()
                     .addAllConfigs(dtos)
                     .jvmOutOfSync(globalMeta.jvmOutOfSync())
@@ -88,14 +88,14 @@ class InstrumentationJsonService {
     // this is marked as @GET so it can be used without update rights (e.g. demo instance)
     @GET("/backend/config/preload-classpath-cache")
     void preloadClasspathCache(String queryString) throws Exception {
-        final long serverId = getServerId(queryString);
+        final String server = getServer(queryString);
         // HttpServer is configured with a very small thread pool to keep number of threads down
         // (currently only a single thread), so spawn a background thread to perform the preloading
         // so it doesn't block other http requests
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
-                liveWeavingService.preloadClasspathCache(serverId);
+                liveWeavingService.preloadClasspathCache(server);
             }
         });
         thread.setDaemon(true);
@@ -107,14 +107,14 @@ class InstrumentationJsonService {
     String getMatchingClassNames(String queryString) throws Exception {
         ClassNamesRequest request = QueryStrings.decode(queryString, ClassNamesRequest.class);
         return mapper.writeValueAsString(liveWeavingService.getMatchingClassNames(
-                request.serverId(), request.partialClassName(), request.limit()));
+                request.server(), request.partialClassName(), request.limit()));
     }
 
     @GET("/backend/config/matching-method-names")
     String getMatchingMethodNames(String queryString) throws Exception {
         MethodNamesRequest request = QueryStrings.decode(queryString, MethodNamesRequest.class);
         List<String> matchingMethodNames =
-                liveWeavingService.getMatchingMethodNames(request.serverId(), request.className(),
+                liveWeavingService.getMatchingMethodNames(request.server(), request.className(),
                         request.partialMethodName(), request.limit());
         return mapper.writeValueAsString(matchingMethodNames);
     }
@@ -124,7 +124,8 @@ class InstrumentationJsonService {
         MethodSignaturesRequest request =
                 QueryStrings.decode(queryString, MethodSignaturesRequest.class);
         List<MethodSignature> methodSignatures = liveWeavingService
-                .getMethodSignatures(request.serverId(), request.className(), request.methodName());
+                .getMethodSignatures(request.server(), request.className(),
+                        request.methodName());
         return mapper.writeValueAsString(methodSignatures);
     }
 
@@ -132,7 +133,7 @@ class InstrumentationJsonService {
     String addInstrumentationConfig(String content) throws Exception {
         InstrumentationConfigDto configDto =
                 mapper.readValue(content, ImmutableInstrumentationConfigDto.class);
-        long serverId = configDto.serverId().get();
+        String server = configDto.server().get();
         InstrumentationConfig config = configDto.toConfig();
         ImmutableList<String> errors = config.validationErrors();
         if (!errors.isEmpty()) {
@@ -140,36 +141,37 @@ class InstrumentationJsonService {
                     .addAllErrors(errors)
                     .build());
         }
-        String version = configRepository.insertInstrumentationConfig(serverId, config);
-        return getInstrumentationConfigInternal(serverId, version);
+        String version = configRepository.insertInstrumentationConfig(server, config);
+        return getInstrumentationConfigInternal(server, version);
     }
 
     @POST("/backend/config/instrumentation/update")
     String updateInstrumentationConfig(String content) throws Exception {
         InstrumentationConfigDto configDto =
                 mapper.readValue(content, ImmutableInstrumentationConfigDto.class);
-        long serverId = configDto.serverId().get();
+        String server = configDto.server().get();
         InstrumentationConfig config = configDto.toConfig();
         String version = configDto.version();
         checkNotNull(version, "Missing required request property: version");
-        version = configRepository.updateInstrumentationConfig(serverId, config, version);
-        return getInstrumentationConfigInternal(serverId, version);
+        version = configRepository.updateInstrumentationConfig(server, config, version);
+        return getInstrumentationConfigInternal(server, version);
     }
 
     @POST("/backend/config/instrumentation/remove")
     void removeInstrumentationConfig(String content) throws IOException {
         InstrumentationConfigRequest request =
                 mapper.readValue(content, ImmutableInstrumentationConfigRequest.class);
-        configRepository.deleteInstrumentationConfig(request.serverId(), request.version().get());
+        configRepository.deleteInstrumentationConfig(request.server(), request.version().get());
     }
 
-    private String getInstrumentationConfigInternal(long serverId, String version)
+    private String getInstrumentationConfigInternal(String server, String version)
             throws JsonProcessingException {
-        InstrumentationConfig config = configRepository.getInstrumentationConfig(serverId, version);
+        InstrumentationConfig config =
+                configRepository.getInstrumentationConfig(server, version);
         if (config == null) {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
         }
-        List<MethodSignature> methodSignatures = liveWeavingService.getMethodSignatures(serverId,
+        List<MethodSignature> methodSignatures = liveWeavingService.getMethodSignatures(server,
                 config.className(), config.methodName());
         return mapper.writeValueAsString(ImmutableInstrumentationConfigResponse.builder()
                 .config(InstrumentationConfigDto.fromConfig(config))
@@ -177,26 +179,26 @@ class InstrumentationJsonService {
                 .build());
     }
 
-    private static long getServerId(String queryString) throws Exception {
-        return Long.parseLong(queryString.substring("server-id".length() + 1));
+    private static String getServer(String queryString) throws Exception {
+        return queryString.substring("server".length() + 1);
     }
 
     @Value.Immutable
     interface InstrumentationConfigRequest {
-        long serverId();
+        String server();
         Optional<String> version();
     }
 
     @Value.Immutable
     interface ClassNamesRequest {
-        long serverId();
+        String server();
         String partialClassName();
         int limit();
     }
 
     @Value.Immutable
     interface MethodNamesRequest {
-        long serverId();
+        String server();
         String className();
         String partialMethodName();
         int limit();
@@ -204,7 +206,7 @@ class InstrumentationJsonService {
 
     @Value.Immutable
     interface MethodSignaturesRequest {
-        long serverId();
+        String server();
         String className();
         String methodName();
     }
@@ -230,7 +232,7 @@ class InstrumentationJsonService {
     @Value.Immutable
     abstract static class InstrumentationConfigDto {
 
-        abstract Optional<Long> serverId(); // only used in request
+        abstract Optional<String> server(); // only used in request
         abstract String className();
         abstract Optional<String> declaringClassName();
         abstract String methodName();

@@ -44,7 +44,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
     };
 
     function refresh(deferred) {
-      $http.get('backend/config/instrumentation?server-id=' + $scope.serverId)
+      $http.get('backend/config/instrumentation?server=' + $scope.server)
           .success(function (data) {
             $scope.loaded = true;
             $scope.configs = data.configs;
@@ -55,7 +55,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
               deferred.resolve();
             } else {
               // preload cache for class name and method name auto completion
-              $http.get('backend/config/preload-classpath-cache?server-id=' + $scope.serverId);
+              $http.get('backend/config/preload-classpath-cache?server=' + $scope.server);
             }
           })
           .error(httpErrors.handler($scope, deferred));
@@ -117,7 +117,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
     };
 
     $scope.retransformClasses = function (deferred) {
-      $http.post('backend/admin/reweave', '')
+      $http.post('backend/admin/reweave', {server: $scope.server})
           .success(function (data) {
             $scope.dirty = false;
             if (data.classes) {

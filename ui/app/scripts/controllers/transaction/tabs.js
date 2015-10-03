@@ -94,7 +94,7 @@ glowroot.controller('TransactionTabCtrl', [
 
     function updateTabBarData() {
       var query = {
-        serverId: $scope.serverId,
+        serverGroup: $scope.serverGroup,
         transactionType: $scope.transactionType,
         transactionName: $scope.transactionName,
         from: $scope.chartFrom,

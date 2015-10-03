@@ -142,13 +142,13 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     // TODO this implementation of getGauges() will not work in central collector
     @Override
-    public List<Gauge> getGauges(long serverId) throws InterruptedException {
+    public List<Gauge> getGauges(String serverGroup) throws InterruptedException {
         if (!safeToUsePlatformMBeanServer) {
             return ImmutableList.of();
         }
         List<Gauge> gauges = Lists.newArrayList();
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
-        for (GaugeConfig gaugeConfig : configRepository.getGaugeConfigs(serverId)) {
+        for (GaugeConfig gaugeConfig : configRepository.getGaugeConfigs(serverGroup)) {
             List<String> mbeanObjectNames =
                     getMatchingMBeanObjectNames(gaugeConfig.mbeanObjectName(), mbeanServer);
             for (String mbeanObjectName : mbeanObjectNames) {
@@ -163,7 +163,8 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public void store(final long serverId, final List<GaugeValue> gaugeValues) throws Exception {
+    public void store(final String serverGroup, final List<GaugeValue> gaugeValues)
+            throws Exception {
         if (gaugeValues.isEmpty()) {
             return;
         }
@@ -172,7 +173,7 @@ public class GaugeValueDao implements GaugeValueRepository {
                     @Override
                     public void bind(PreparedStatement preparedStatement) throws SQLException {
                         for (GaugeValue gaugeValue : gaugeValues) {
-                            long gaugeId = gaugeMetaDao.getOrCreateGaugeId(serverId,
+                            long gaugeId = gaugeMetaDao.getOrCreateGaugeId(serverGroup,
                                     gaugeValue.getGaugeName());
                             if (gaugeId == -1) {
                                 // data source is closing and a new gauge id was needed, but could
@@ -213,10 +214,10 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public List<GaugeValue> readGaugeValues(long serverId, String gaugeName, long captureTimeFrom,
-            long captureTimeTo, int rollupLevel) throws Exception {
+    public List<GaugeValue> readGaugeValues(String serverGroup, String gaugeName,
+            long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception {
         String tableName = "gauge_point_rollup_" + castUntainted(rollupLevel);
-        Long gaugeId = gaugeMetaDao.getGaugeId(serverId, gaugeName);
+        Long gaugeId = gaugeMetaDao.getGaugeId(serverGroup, gaugeName);
         if (gaugeId == null) {
             // not necessarily an error, gauge id not created until first store
             return ImmutableList.of();
@@ -231,10 +232,10 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public List<GaugeValue> readManuallyRolledUpGaugeValues(long serverId, long from, long to,
+    public List<GaugeValue> readManuallyRolledUpGaugeValues(String serverGroup, long from, long to,
             String gaugeName, int rollupLevel, long liveCaptureTime) throws Exception {
         long fixedIntervalMillis = rollupConfigs.get(rollupLevel - 1).intervalMillis();
-        Long gaugeId = gaugeMetaDao.getGaugeId(serverId, gaugeName);
+        Long gaugeId = gaugeMetaDao.getGaugeId(serverGroup, gaugeName);
         if (gaugeId == null) {
             // not necessarily an error, gauge id not created until first store
             return ImmutableList.of();
@@ -265,7 +266,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public int getRollupLevelForView(long serverId, long from, long to) {
+    public int getRollupLevelForView(String serverGroup, long from, long to) {
         long millis = to - from;
         long timeAgoMillis = clock.currentTimeMillis() - from;
         ImmutableList<Integer> rollupExpirationHours =
@@ -285,20 +286,21 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public void deleteAll(long serverId) throws SQLException {
-        String whereClause = "gauge_id in (select gauge_id from gauge_meta where server_id = ?)";
-        dataSource.batchDelete("gauge_point_rollup_0", whereClause, serverId);
+    public void deleteAll(String serverGroup) throws SQLException {
+        String whereClause = "gauge_id in (select gauge_id from gauge_meta where server_group = ?)";
+        dataSource.batchDelete("gauge_point_rollup_0", whereClause, serverGroup);
         for (int i = 1; i <= configRepository.getRollupConfigs().size(); i++) {
-            dataSource.batchDelete("gauge_point_rollup_" + castUntainted(i), whereClause, serverId);
+            dataSource.batchDelete("gauge_point_rollup_" + castUntainted(i), whereClause,
+                    serverGroup);
         }
-        dataSource.deleteAll("gauge_meta", serverId);
+        dataSource.deleteAll("gauge_meta", "server_group", serverGroup);
     }
 
-    void deleteBefore(long serverId, long captureTime, int rollupLevel) throws SQLException {
-        String whereClause = "gauge_id in (select gauge_id from gauge_meta where server_id = ?)"
+    void deleteBefore(String serverGroup, long captureTime, int rollupLevel) throws SQLException {
+        String whereClause = "gauge_id in (select gauge_id from gauge_meta where server_group = ?)"
                 + " and capture_time < ?";
         dataSource.batchDelete("gauge_point_rollup_" + castUntainted(rollupLevel), whereClause,
-                serverId, captureTime);
+                serverGroup, captureTime);
     }
 
     private List<String> getMatchingMBeanObjectNames(String mbeanObjectName,

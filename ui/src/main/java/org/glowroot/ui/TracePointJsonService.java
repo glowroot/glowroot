@@ -77,7 +77,7 @@ class TracePointJsonService {
         }
 
         TracePointQuery query = ImmutableTracePointQuery.builder()
-                .serverId(request.serverId())
+                .serverGroup(request.serverGroup())
                 .from(request.from())
                 .to(request.to())
                 .durationNanosLow(durationNanosLow)
@@ -119,8 +119,8 @@ class TracePointJsonService {
                 captureTick = ticker.read();
                 // capture active traces first to make sure that none are missed in the transition
                 // between active and pending/stored (possible duplicates are removed below)
-                activeTracePoints.addAll(liveTraceRepository
-                        .getMatchingActiveTracePoints(captureTime, captureTick, query));
+                activeTracePoints.addAll(liveTraceRepository.getMatchingActiveTracePoints(
+                        query.serverGroup(), captureTime, captureTick, query));
             }
             Result<TracePoint> queryResult =
                     getStoredAndPendingPoints(captureTime, captureActiveTracePoints);
@@ -144,8 +144,8 @@ class TracePointJsonService {
             if (captureActiveTraces) {
                 // important to grab pending traces before stored points to ensure none are
                 // missed in the transition between pending and stored
-                matchingPendingPoints =
-                        liveTraceRepository.getMatchingPendingPoints(captureTime, query);
+                matchingPendingPoints = liveTraceRepository
+                        .getMatchingPendingPoints(query.serverGroup(), captureTime, query);
             } else {
                 matchingPendingPoints = ImmutableList.of();
             }
@@ -220,32 +220,20 @@ class TracePointJsonService {
             jg.writeArrayFieldStart("normalPoints");
             for (TracePoint point : points) {
                 if (!point.error()) {
-                    jg.writeStartArray();
-                    jg.writeNumber(point.captureTime());
-                    jg.writeNumber(point.durationNanos() / NANOSECONDS_PER_MILLISECOND);
-                    jg.writeString(point.traceId());
-                    jg.writeEndArray();
+                    writePoint(point, jg);
                 }
             }
             jg.writeEndArray();
             jg.writeArrayFieldStart("errorPoints");
             for (TracePoint point : points) {
                 if (point.error()) {
-                    jg.writeStartArray();
-                    jg.writeNumber(point.captureTime());
-                    jg.writeNumber(point.durationNanos() / NANOSECONDS_PER_MILLISECOND);
-                    jg.writeString(point.traceId());
-                    jg.writeEndArray();
+                    writePoint(point, jg);
                 }
             }
             jg.writeEndArray();
             jg.writeArrayFieldStart("activePoints");
             for (TracePoint activePoint : activePoints) {
-                jg.writeStartArray();
-                jg.writeNumber(activePoint.captureTime());
-                jg.writeNumber(activePoint.durationNanos() / NANOSECONDS_PER_MILLISECOND);
-                jg.writeString(activePoint.traceId());
-                jg.writeEndArray();
+                writePoint(activePoint, jg);
             }
             jg.writeEndArray();
             if (limitExceeded) {
@@ -258,13 +246,22 @@ class TracePointJsonService {
             jg.close();
             return sb.toString();
         }
+
+        private void writePoint(TracePoint point, JsonGenerator jg) throws IOException {
+            jg.writeStartArray();
+            jg.writeNumber(point.captureTime());
+            jg.writeNumber(point.durationNanos() / NANOSECONDS_PER_MILLISECOND);
+            jg.writeString(point.server());
+            jg.writeString(point.traceId());
+            jg.writeEndArray();
+        }
     }
 
     // same as TracePointQuery but with milliseconds instead of nanoseconds
     @Value.Immutable
     public abstract static class TracePointRequest {
 
-        public abstract long serverId();
+        public abstract String serverGroup();
         public abstract long from();
         public abstract long to();
         public abstract double responseTimeMillisLow();

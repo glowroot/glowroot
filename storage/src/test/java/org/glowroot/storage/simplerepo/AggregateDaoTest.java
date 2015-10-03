@@ -53,7 +53,7 @@ import static org.mockito.Mockito.when;
 @Styles.Private
 public class AggregateDaoTest {
 
-    private static final long SERVER_ID = 0;
+    private static final String SERVER_NAME = "";
 
     private DataSource dataSource;
     private File cappedFile;
@@ -77,7 +77,7 @@ public class AggregateDaoTest {
                 .rollupExpirationHours(
                         ImmutableList.of(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE))
                 .build());
-        when(configRepository.getAdvancedConfig(SERVER_ID))
+        when(configRepository.getAdvancedConfig(SERVER_NAME))
                 .thenReturn(ImmutableAdvancedConfig.builder().build());
         ImmutableList<RollupConfig> rollupConfigs = ImmutableList.<RollupConfig>of(
                 ImmutableRollupConfig.of(1000, 0), ImmutableRollupConfig.of(15000, 3600000),
@@ -100,9 +100,9 @@ public class AggregateDaoTest {
         populateAggregates();
         // when
         List<OverviewAggregate> overallAggregates =
-                aggregateDao.readOverallOverviewAggregates(SERVER_ID, "a type", 0, 100000, 0);
+                aggregateDao.readOverallOverviewAggregates(SERVER_NAME, "a type", 0, 100000, 0);
         TransactionSummaryQuery query = ImmutableTransactionSummaryQuery.builder()
-                .serverId(SERVER_ID)
+                .serverGroup(SERVER_NAME)
                 .transactionType("a type")
                 .from(0)
                 .to(100000)
@@ -182,7 +182,7 @@ public class AggregateDaoTest {
                         .setTotalNanosHistogram(getFakeHistogram())
                         .build())
                 .build());
-        aggregateDao.store(SERVER_ID, 10000, ImmutableList.of(overallAggregate),
+        aggregateDao.store(SERVER_NAME, 10000, ImmutableList.of(overallAggregate),
                 transactionAggregates);
 
         OverallAggregate overallAggregate2 = OverallAggregate.newBuilder()
@@ -241,7 +241,7 @@ public class AggregateDaoTest {
                         .setTotalNanosHistogram(getFakeHistogram())
                         .build())
                 .build());
-        aggregateDao.store(SERVER_ID, 20000, ImmutableList.of(overallAggregate2),
+        aggregateDao.store(SERVER_NAME, 20000, ImmutableList.of(overallAggregate2),
                 transactionAggregates2);
     }
 

@@ -36,7 +36,7 @@ public class JavaagentMain {
 
     private static final Logger logger = LoggerFactory.getLogger(JavaagentMain.class);
 
-    private static final long SERVER_ID = 0;
+    private static final String SERVER_NAME = "";
 
     public static void main(String... args) throws Exception {
         boolean viewerMode = Boolean.getBoolean("glowroot.testHarness.viewerMode");
@@ -73,13 +73,13 @@ public class JavaagentMain {
         }
         ConfigRepository configRepository =
                 glowrootModule.getSimpleRepoModule().getConfigRepository();
-        TransactionConfig config = configRepository.getTransactionConfig(SERVER_ID);
+        TransactionConfig config = configRepository.getTransactionConfig(SERVER_NAME);
         // conditional check is needed to prevent config file timestamp update when testing
         // ConfigFileLastModifiedTest.shouldNotUpdateFileOnStartupIfNoChanges()
         if (config.slowThresholdMillis() != 0) {
             TransactionConfig updatedConfig = ImmutableTransactionConfig.builder().copyFrom(config)
                     .slowThresholdMillis(0).build();
-            configRepository.updateTransactionConfig(SERVER_ID, updatedConfig, config.version());
+            configRepository.updateTransactionConfig(SERVER_NAME, updatedConfig, config.version());
         }
     }
 

@@ -48,7 +48,7 @@ public class AggregateService {
     }
 
     private List<Query> getQueriesInternal() throws Exception {
-        String content = httpClient.get("/backend/transaction/queries?server-id=0&from=0&to="
+        String content = httpClient.get("/backend/transaction/queries?server-group=&from=0&to="
                 + Long.MAX_VALUE + "&transaction-type=Test+harness");
         return mapper.readValue(content, new TypeReference<List<Query>>() {});
     }
