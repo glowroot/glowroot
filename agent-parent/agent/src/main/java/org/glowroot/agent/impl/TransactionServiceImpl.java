@@ -1,0 +1,523 @@
+/*
+ * Copyright 2011-2015 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.glowroot.agent.impl;
+
+import java.util.concurrent.TimeUnit;
+
+import javax.annotation.Nullable;
+
+import com.google.common.base.Strings;
+import com.google.common.base.Ticker;
+import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.Ints;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.model.ErrorMessage;
+import org.glowroot.agent.model.QueryData;
+import org.glowroot.agent.model.QueryEntryBase;
+import org.glowroot.agent.model.TimerImpl;
+import org.glowroot.agent.model.TimerNameImpl;
+import org.glowroot.agent.model.Transaction;
+import org.glowroot.agent.model.Transaction.CompletionCallback;
+import org.glowroot.agent.model.Transaction.OverrideSource;
+import org.glowroot.agent.plugin.api.config.ConfigListener;
+import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopQueryEntry;
+import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTimer;
+import org.glowroot.agent.plugin.api.internal.NopTransactionService.NopTraceEntry;
+import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
+import org.glowroot.agent.plugin.api.transaction.QueryEntry;
+import org.glowroot.agent.plugin.api.transaction.Timer;
+import org.glowroot.agent.plugin.api.transaction.TimerName;
+import org.glowroot.agent.plugin.api.transaction.TraceEntry;
+import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.util.ThreadAllocatedBytes;
+import org.glowroot.common.config.AdvancedConfig;
+import org.glowroot.common.util.Clock;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+
+public class TransactionServiceImpl implements TransactionService, ConfigListener {
+
+    private static final Logger logger = LoggerFactory.getLogger(TransactionServiceImpl.class);
+
+    private final TransactionRegistry transactionRegistry;
+    private final TransactionCollector transactionCollector;
+    private final ConfigService configService;
+    private final TimerNameCache timerNameCache;
+    private final @Nullable ThreadAllocatedBytes threadAllocatedBytes;
+    private final UserProfileScheduler userProfileScheduler;
+    private final Clock clock;
+    private final Ticker ticker;
+
+    private final TransactionCompletionCallback transactionCompletionCallback =
+            new TransactionCompletionCallback();
+
+    // cache for fast read access
+    // visibility is provided by memoryBarrier below
+    private boolean captureThreadInfo;
+    private boolean captureGcActivity;
+    private int maxAggregateQueriesPerQueryType;
+    private int maxTraceEntriesPerTransaction;
+
+    public static TransactionServiceImpl create(TransactionRegistry transactionRegistry,
+            TransactionCollector transactionCollector, ConfigService configService,
+            TimerNameCache timerNameCache, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
+            UserProfileScheduler userProfileScheduler, Ticker ticker, Clock clock) {
+        TransactionServiceImpl transactionServiceImpl =
+                new TransactionServiceImpl(transactionRegistry, transactionCollector, configService,
+                        timerNameCache, threadAllocatedBytes, userProfileScheduler, ticker, clock);
+        configService.addConfigListener(transactionServiceImpl);
+        return transactionServiceImpl;
+    }
+
+    private TransactionServiceImpl(TransactionRegistry transactionRegistry,
+            TransactionCollector transactionCollector, ConfigService configService,
+            TimerNameCache timerNameCache, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
+            UserProfileScheduler userProfileScheduler, Ticker ticker, Clock clock) {
+        this.transactionRegistry = transactionRegistry;
+        this.transactionCollector = transactionCollector;
+        this.configService = configService;
+        this.timerNameCache = timerNameCache;
+        this.threadAllocatedBytes = threadAllocatedBytes;
+        this.userProfileScheduler = userProfileScheduler;
+        this.clock = clock;
+        this.ticker = ticker;
+    }
+
+    @Override
+    public TimerName getTimerName(Class<?> adviceClass) {
+        return timerNameCache.getName(adviceClass);
+    }
+
+    @Override
+    public TraceEntry startTransaction(String transactionType, String transactionName,
+            MessageSupplier messageSupplier, TimerName timerName) {
+        if (transactionType == null) {
+            logger.error("startTransaction(): argument 'transactionType' must be non-null");
+            return NopTraceEntry.INSTANCE;
+        }
+        if (transactionName == null) {
+            logger.error("startTransaction(): argument 'transactionName' must be non-null");
+            return NopTraceEntry.INSTANCE;
+        }
+        if (messageSupplier == null) {
+            logger.error("startTransaction(): argument 'messageSupplier' must be non-null");
+            return NopTraceEntry.INSTANCE;
+        }
+        if (timerName == null) {
+            logger.error("startTransaction(): argument 'timerName' must be non-null");
+            return NopTraceEntry.INSTANCE;
+        }
+        // ensure visibility of recent configuration updates
+        configService.readMemoryBarrier();
+        return startTransactionInternal(transactionType, transactionName, messageSupplier,
+                timerName);
+    }
+
+    @Override
+    public TraceEntry startTraceEntry(MessageSupplier messageSupplier, TimerName timerName) {
+        if (messageSupplier == null) {
+            logger.error("startTraceEntry(): argument 'messageSupplier' must be non-null");
+            return NopTraceEntry.INSTANCE;
+        }
+        if (timerName == null) {
+            logger.error("startTraceEntry(): argument 'timerName' must be non-null");
+            return NopTraceEntry.INSTANCE;
+        }
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction == null) {
+            return NopTraceEntry.INSTANCE;
+        }
+        return startTraceEntryInternal(transaction, messageSupplier, null, null, 0, timerName);
+    }
+
+    @Override
+    public QueryEntry startQueryEntry(String queryType, String queryText,
+            MessageSupplier messageSupplier, TimerName timerName) {
+        return startQueryEntry(queryType, queryText, 1, messageSupplier, timerName);
+    }
+
+    @Override
+    public QueryEntry startQueryEntry(String queryType, String queryText, long queryExecutionCount,
+            MessageSupplier messageSupplier, TimerName timerName) {
+        if (queryType == null) {
+            logger.error("startQuery(): argument 'queryType' must be non-null");
+            return NopQueryEntry.INSTANCE;
+        }
+        if (queryText == null) {
+            logger.error("startQuery(): argument 'queryText' must be non-null");
+            return NopQueryEntry.INSTANCE;
+        }
+        if (messageSupplier == null) {
+            logger.error("startQuery(): argument 'messageSupplier' must be non-null");
+            return NopQueryEntry.INSTANCE;
+        }
+        if (timerName == null) {
+            logger.error("startQuery(): argument 'timerName' must be non-null");
+            return NopQueryEntry.INSTANCE;
+        }
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction == null) {
+            return NopQueryEntry.INSTANCE;
+        }
+        return startTraceEntryInternal(transaction, messageSupplier, queryType, queryText,
+                queryExecutionCount, timerName);
+    }
+
+    @Override
+    public Timer startTimer(TimerName timerName) {
+        if (timerName == null) {
+            logger.error("startTimer(): argument 'timerName' must be non-null");
+            return NopTimer.INSTANCE;
+        }
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction == null) {
+            return NopTimer.INSTANCE;
+        }
+        TimerImpl currentTimer = transaction.getCurrentTimer();
+        if (currentTimer == null) {
+            return NopTimer.INSTANCE;
+        }
+        return currentTimer.startNestedTimer(timerName);
+    }
+
+    @Override
+    public void addErrorEntry(Throwable t) {
+        addErrorEntryInternal(ErrorMessage.from(t));
+    }
+
+    @Override
+    public void addErrorEntry(@Nullable String message) {
+        addErrorEntryInternal(ErrorMessage.from(message));
+    }
+
+    @Override
+    public void addErrorEntry(@Nullable String message, Throwable t) {
+        addErrorEntryInternal(ErrorMessage.from(message, t));
+    }
+
+    private void addErrorEntryInternal(ErrorMessage errorMessage) {
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        // use higher entry limit when adding errors, but still need some kind of cap
+        if (transaction != null
+                && transaction.getEntryCount() < 2 * maxTraceEntriesPerTransaction) {
+            long currTick = ticker.read();
+            org.glowroot.agent.model.TraceEntryImpl entry =
+                    transaction.addEntry(currTick, currTick, null, errorMessage, true);
+            if (errorMessage.throwable() == null) {
+                StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+                // need to strip back a few stack calls:
+                // skip i=0 which is "java.lang.Thread.getStackTrace()"
+                // skip i=1 which is "...TransactionServiceImpl.addErrorEntryInternal()"
+                // skip i=2 which is "...TransactionServiceImpl.addErrorEntry()"
+                // skip i=3 which is the plugin advice
+                entry.setStackTrace(ImmutableList.copyOf(stackTrace).subList(4, stackTrace.length));
+            }
+        }
+    }
+
+    @Override
+    public void setTransactionType(@Nullable String transactionType) {
+        if (Strings.isNullOrEmpty(transactionType)) {
+            return;
+        }
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction != null) {
+            transaction.setTransactionType(transactionType, OverrideSource.PLUGIN_API);
+        }
+    }
+
+    @Override
+    public void setTransactionName(@Nullable String transactionName) {
+        if (Strings.isNullOrEmpty(transactionName)) {
+            return;
+        }
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction != null) {
+            transaction.setTransactionName(transactionName, OverrideSource.PLUGIN_API);
+        }
+    }
+
+    @Override
+    public void setTransactionError(@Nullable Throwable t) {
+        if (t == null) {
+            return;
+        }
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction != null) {
+            transaction.setError(ErrorMessage.from(t), OverrideSource.PLUGIN_API);
+        }
+    }
+
+    @Override
+    public void setTransactionError(@Nullable String message) {
+        if (Strings.isNullOrEmpty(message)) {
+            return;
+        }
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction != null) {
+            transaction.setError(ErrorMessage.from(message), OverrideSource.PLUGIN_API);
+        }
+    }
+
+    @Override
+    public void setTransactionError(@Nullable String message, @Nullable Throwable t) {
+        if (Strings.isNullOrEmpty(message) && t == null) {
+            return;
+        }
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction != null) {
+            transaction.setError(ErrorMessage.from(message, t), OverrideSource.PLUGIN_API);
+        }
+    }
+
+    @Override
+    public void setTransactionUser(@Nullable String user) {
+        if (Strings.isNullOrEmpty(user)) {
+            return;
+        }
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction != null) {
+            transaction.setUser(user, OverrideSource.PLUGIN_API);
+            if (transaction.getUserProfileRunnable() == null) {
+                userProfileScheduler.maybeScheduleUserProfiling(transaction, user);
+            }
+        }
+    }
+
+    @Override
+    public void addTransactionAttribute(String name, @Nullable String value) {
+        if (name == null) {
+            logger.error("addTransactionAttribute(): argument 'name' must be non-null");
+            return;
+        }
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction != null) {
+            transaction.addAttribute(name, value);
+        }
+    }
+
+    @Override
+    public void setTransactionSlowThreshold(long threshold, TimeUnit unit) {
+        if (threshold < 0) {
+            logger.error(
+                    "setTransactionSlowThreshold(): argument 'threshold' must be non-negative");
+            return;
+        }
+        if (unit == null) {
+            logger.error("setTransactionSlowThreshold(): argument 'unit' must be non-null");
+            return;
+        }
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction != null) {
+            int thresholdMillis = Ints.saturatedCast(unit.toMillis(threshold));
+            transaction.setSlowThresholdMillis(thresholdMillis, OverrideSource.PLUGIN_API);
+        }
+    }
+
+    @Override
+    public boolean isInTransaction() {
+        return transactionRegistry.getCurrentTransaction() != null;
+    }
+
+    private TraceEntry startTransactionInternal(String transactionType, String transactionName,
+            MessageSupplier messageSupplier, TimerName timerName) {
+        Transaction transaction = transactionRegistry.getCurrentTransaction();
+        if (transaction == null) {
+            long startTick = ticker.read();
+            transaction = new Transaction(clock.currentTimeMillis(), transactionType,
+                    transactionName, messageSupplier, timerName, startTick, captureThreadInfo,
+                    captureGcActivity, maxAggregateQueriesPerQueryType, threadAllocatedBytes,
+                    transactionCompletionCallback, ticker);
+            transactionRegistry.addTransaction(transaction);
+            return transaction.getRootEntry();
+        } else {
+            return startTraceEntryInternal(transaction, messageSupplier, null, null, 0, timerName);
+        }
+    }
+
+    private QueryEntry startTraceEntryInternal(Transaction transaction,
+            MessageSupplier messageSupplier, @Nullable String queryType, @Nullable String queryText,
+            long queryExecutionCount, TimerName timerName) {
+        long startTick = ticker.read();
+        if (transaction.getEntryCount() < maxTraceEntriesPerTransaction) {
+            TimerImpl timer = startTimer(timerName, startTick, transaction);
+            return transaction.pushEntry(startTick, messageSupplier, queryType, queryText,
+                    queryExecutionCount, timer);
+        }
+        // split out to separate method so as not to affect inlining budget of common path
+        return startDummyTraceEntry(transaction, timerName, messageSupplier, queryType, queryText,
+                queryExecutionCount, startTick);
+    }
+
+    private QueryEntry startDummyTraceEntry(Transaction transaction, TimerName timerName,
+            MessageSupplier messageSupplier, @Nullable String queryType, @Nullable String queryText,
+            long queryExecutionCount, long startTick) {
+        // the entry limit has been exceeded for this trace
+        QueryData queryData = null;
+        if (queryType != null && queryText != null) {
+            queryData = transaction.getOrCreateQueryDataIfPossible(queryType, queryText);
+        }
+        transaction.setEntryLimitExceeded();
+        TimerImpl timer = startTimer(timerName, startTick, transaction);
+        return new DummyTraceEntryOrQuery(timer, startTick, transaction, messageSupplier, queryData,
+                queryExecutionCount);
+    }
+
+    private TimerImpl startTimer(TimerName timerName, long startTick, Transaction transaction) {
+        TimerImpl currentTimer = transaction.getCurrentTimer();
+        if (currentTimer == null) {
+            // this really shouldn't happen as current timer should be non-null unless transaction
+            // has completed
+            return TimerImpl.createRootTimer(transaction, (TimerNameImpl) timerName);
+        }
+        return currentTimer.startNestedTimer(timerName, startTick);
+    }
+
+    @Override
+    public void onChange() {
+        AdvancedConfig advancedConfig = configService.getAdvancedConfig();
+        maxAggregateQueriesPerQueryType = advancedConfig.maxAggregateQueriesPerQueryType();
+        maxTraceEntriesPerTransaction = advancedConfig.maxTraceEntriesPerTransaction();
+        captureThreadInfo = advancedConfig.captureThreadInfo();
+        captureGcActivity = advancedConfig.captureGcActivity();
+    }
+
+    private class TransactionCompletionCallback implements CompletionCallback {
+
+        @Override
+        public void completed(Transaction transaction) {
+            // send to trace collector before removing from trace registry so that trace
+            // collector can cover the gap
+            // (via TransactionCollectorImpl.getPendingCompleteTraces())
+            // between removing the trace from the registry and storing it
+            transactionCollector.onCompletedTransaction(transaction);
+            transactionRegistry.removeTransaction(transaction);
+        }
+    }
+
+    private class DummyTraceEntryOrQuery extends QueryEntryBase implements QueryEntry, Timer {
+
+        private final TimerImpl timer;
+        private final long startTick;
+        private final Transaction transaction;
+        private final MessageSupplier messageSupplier;
+
+        // not volatile, so depends on memory barrier in Transaction for visibility
+        private int selfNestingLevel;
+        // only used by transaction thread
+        private @MonotonicNonNull TimerImpl extendedTimer;
+
+        public DummyTraceEntryOrQuery(TimerImpl timer, long startTick, Transaction transaction,
+                MessageSupplier messageSupplier, @Nullable QueryData queryData,
+                long queryExecutionCount) {
+            super(queryData);
+            this.timer = timer;
+            this.startTick = startTick;
+            this.transaction = transaction;
+            this.messageSupplier = messageSupplier;
+            if (queryData != null) {
+                queryData.start(startTick, queryExecutionCount);
+            }
+        }
+
+        @Override
+        public void end() {
+            endInternal(ticker.read());
+        }
+
+        @Override
+        public void endWithStackTrace(long threshold, TimeUnit unit) {
+            if (threshold < 0) {
+                logger.error("endWithStackTrace(): argument 'threshold' must be non-negative");
+                end();
+                return;
+            }
+            endInternal(ticker.read());
+        }
+
+        @Override
+        public void endWithError(Throwable t) {
+            endWithErrorInternal(ErrorMessage.from(t));
+        }
+
+        @Override
+        public void endWithError(@Nullable String message) {
+            endWithErrorInternal(ErrorMessage.from(message));
+        }
+
+        @Override
+        public void endWithError(@Nullable String message, Throwable t) {
+            endWithErrorInternal(ErrorMessage.from(message, t));
+        }
+
+        private void endWithErrorInternal(ErrorMessage errorMessage) {
+            long endTick = ticker.read();
+            endInternal(endTick);
+            // use higher entry limit when adding errors, but still need some kind of cap
+            if (transaction.getEntryCount() < 2 * maxTraceEntriesPerTransaction) {
+                // entry won't be nested properly, but at least the error will get captured
+                org.glowroot.agent.model.TraceEntryImpl entry = transaction.addEntry(startTick,
+                        endTick, messageSupplier, errorMessage, true);
+                if (errorMessage.throwable() == null) {
+                    StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+                    // need to strip back a few stack calls:
+                    // skip i=0 which is "java.lang.Thread.getStackTrace()"
+                    // skip i=1 which is "...DummyTraceEntryOrQuery.endWithErrorInternal()"
+                    // skip i=2 which is "...DummyTraceEntryOrQuery.endWithError()"
+                    // skip i=3 which is the plugin advice
+                    entry.setStackTrace(
+                            ImmutableList.copyOf(stackTrace).subList(4, stackTrace.length));
+                }
+            }
+        }
+
+        private void endInternal(long endTick) {
+            timer.end(endTick);
+            endQueryData(endTick);
+        }
+
+        @Override
+        public Timer extend() {
+            if (selfNestingLevel++ == 0) {
+                long currTick = ticker.read();
+                extendedTimer = timer.extend(currTick);
+                extendQueryData(currTick);
+            }
+            return this;
+        }
+
+        // this is called for stopping an extension
+        @Override
+        public void stop() {
+            // the timer interface for this class is only expose through return value of extend()
+            if (--selfNestingLevel == 0) {
+                long stopTick = ticker.read();
+                checkNotNull(extendedTimer);
+                extendedTimer.end(stopTick);
+                endQueryData(stopTick);
+            }
+        }
+
+        @Override
+        public MessageSupplier getMessageSupplier() {
+            return messageSupplier;
+        }
+    }
+}

@@ -12,36 +12,36 @@ case "$1" in
                # shaded glowroot-agent
                if [[ "$GLOWROOT_UNSHADED" == "true" ]]
                then
-                 mvn clean test -Dglowroot.test.harness=$GLOWROOT_HARNESS \
+                 mvn clean test -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -DargLine="$surefire_jvm_args" \
                                 -B
                else
                  # using install instead of package for subsequent jdbc-plugin tests
-                 mvn clean install -Dglowroot.test.harness=$GLOWROOT_HARNESS \
+                 mvn clean install -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                    -DargLine="$surefire_jvm_args" \
                                    -B
-                 mvn clean test -pl agent/plugins/jdbc-plugin \
-                                -Dglowroot.test.harness=$GLOWROOT_HARNESS \
+                 mvn clean test -pl agent-parent/plugins/jdbc-plugin \
+                                -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=H2 \
                                 -DargLine="$surefire_jvm_args" \
                                 -B
-                 mvn clean test -pl agent/plugins/jdbc-plugin \
-                                -Dglowroot.test.harness=$GLOWROOT_HARNESS \
+                 mvn clean test -pl agent-parent/plugins/jdbc-plugin \
+                                -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=COMMONS_DBCP_WRAPPED \
                                 -DargLine="$surefire_jvm_args" \
                                 -B
-                 mvn clean test -pl agent/plugins/jdbc-plugin \
-                                -Dglowroot.test.harness=$GLOWROOT_HARNESS \
+                 mvn clean test -pl agent-parent/plugins/jdbc-plugin \
+                                -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=TOMCAT_JDBC_POOL_WRAPPED \
                                 -DargLine="$surefire_jvm_args" \
                                 -B
                fi
                ;;
 
-     "deploy") # using the default test harness (local) since it is faster, and complete coverage
+     "deploy") # using the default integration test harness (local) since it is faster, and complete coverage
                # with both harnesses is done elsewhere in the build
                #
-               # using glowroot.ui.skip so deployed test-harness artifact will not include any third
+               # using glowroot.ui.skip so deployed it-harness artifact will not include any third
                # party javascript libraries
                mvn clean install -Dglowroot.ui.skip=true \
                                  -DargLine="$surefire_jvm_args" \
@@ -50,8 +50,8 @@ case "$1" in
                version=`mvn help:evaluate -Dexpression=project.version | grep -v '\['`
                if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" && "$version" == *-SNAPSHOT ]]
                then
-                 # deploy only parent, agent/api, agent/plugin-api, and agent/test-harness artifacts to maven repository
-                 mvn clean deploy -pl .,agent/api,agent/plugin-api,agent/test-harness \
+                 # deploy only parent, agent-parent/api, agent-parent/plugin-api, and agent-parent/it-harness artifacts to maven repository
+                 mvn clean deploy -pl .,agent-parent/api,agent-parent/plugin-api,agent-parent/it-harness \
                                   -Pjavadoc \
                                   -Dglowroot.ui.skip=true \
                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
@@ -74,26 +74,26 @@ case "$1" in
                  # jacoco destFile needs absolute path, otherwise it is relative to each submodule
                  #
                  # code coverage for @Pointcut classes are only captured when run with javaagent
-                 # harness since in that case jacoco javaagent goes first (see JavaagentMain) and
-                 # uses the original bytecode to construct the class ids, whereas when run with
-                 # local harness jacoco javaagent uses the bytecode that is woven by
-                 # IsolatedWeavingClassLoader to construct the class ids
+                 # integration test harness since in that case jacoco javaagent goes first
+                 # (see JavaagentMain) and uses the original bytecode to construct the class ids,
+                 # whereas when run with local integration test harness jacoco javaagent uses the
+                 # bytecode that is woven by IsolatedWeavingClassLoader to construct the class ids
                  #
                  # shading is done during the package phase, so 'mvn test' is used to run tests
                  # against unshaded glowroot-agent and 'mvn package' is used to run tests against
                  # shaded glowroot-agent
                  mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent test \
-                                 -Dglowroot.test.harness=javaagent \
+                                 -Dglowroot.it.harness=javaagent \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
                                  -Djacoco.propertyName=jacocoArgLine \
                                  -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                  -B
                  # basic mvn install so the additional runs can use the installed artifacts
                  mvn clean install -DskipTests=true
-                 # also running integration-tests with (default) local test harness to capture a
-                 # couple methods exercised only by the local test harness
+                 # also running integration-tests with (default) local integration test harness to capture a
+                 # couple methods exercised only by the local integration test harness
                  mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent test \
-                                 -pl agent/integration-tests \
+                                 -pl agent-parent/integration-tests \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
                                  -Djacoco.propertyName=jacocoArgLine \
                                  -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
@@ -102,8 +102,8 @@ case "$1" in
                  # code coverage for Slf4jTest and Slf4jMarkerTest
                  # (see comments in those classes for more detail)
                  mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent package \
-                                 -pl agent/plugins/logger-plugin \
-                                 -Dglowroot.test.harness=javaagent \
+                                 -pl agent-parent/plugins/logger-plugin \
+                                 -Dglowroot.it.harness=javaagent \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
                                  -Djacoco.propertyName=jacocoArgLine \
                                  -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
@@ -112,7 +112,7 @@ case "$1" in
                  # the sonar.jdbc.password system property is set in the pom.xml using the
                  # environment variable SONAR_DB_PASSWORD (instead of setting the system
                  # property on the command line which which would make it visible to ps)
-                 mvn sonar:sonar -pl .,common,agent/api,agent/plugin-api,agent/core,agent/plugins/cassandra-plugin,agent/plugins/jdbc-plugin,agent/plugins/logger-plugin,agent/plugins/servlet-plugin,storage,ui,fat-agent/core \
+                 mvn sonar:sonar -pl .,common,agent-parent/api,agent-parent/plugin-api,agent-parent/agent,agent-parent/plugins/cassandra-plugin,agent-parent/plugins/jdbc-plugin,agent-parent/plugins/logger-plugin,agent-parent/plugins/servlet-plugin,storage,ui-parent/ui,fat-agent-parent/fat-agent \
                                  -Dsonar.jdbc.url=$SONAR_JDBC_URL \
                                  -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \
                                  -Dsonar.host.url=$SONAR_HOST_URL \
@@ -154,7 +154,7 @@ case "$1" in
 
                # omitting wire-api from checker framework validation as it contains (mostly) generated code which does not pass
                mvn clean install -am -pl wire-api
-               mvn clean compile -pl .,misc/license-resource-bundle,common,agent/api,agent/plugin-api,agent/core,agent/test-harness,agent/plugins/cassandra-plugin,agent/plugins/jdbc-plugin,agent/plugins/logger-plugin,agent/plugins/servlet-plugin,storage,ui,fat-agent/core \
+               mvn clean compile -pl .,misc/license-resource-bundle,common,agent-parent/api,agent-parent/plugin-api,agent-parent/agent,agent-parent/it-harness,agent-parent/plugins/cassandra-plugin,agent-parent/plugins/jdbc-plugin,agent-parent/plugins/logger-plugin,agent-parent/plugins/servlet-plugin,storage,ui-parent/ui,fat-agent-parent/fat-agent \
                                  -Pchecker \
                                  -Dchecker.install.dir=$HOME/checker-framework \
                                  -Dchecker.stubs.dir=$PWD/misc/checker-stubs \
@@ -176,7 +176,7 @@ case "$1" in
                then
                  mvn clean install -DskipTests=true \
                                    -B
-                 cd webdriver-tests
+                 cd ui-parent/integration-tests
                  mvn clean test -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \
                                 -Dsaucelabs.browser.name=$SAUCELABS_BROWSER_NAME \
                                 -Dsaucelabs.browser.version=$SAUCELABS_BROWSER_VERSION \

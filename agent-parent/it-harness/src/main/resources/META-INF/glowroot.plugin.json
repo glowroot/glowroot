@@ -1,0 +1,23 @@
+{
+  "name": "Test Container Plugin",
+  "id": "glowroot-test-container",
+  "instrumentation": [
+    {
+      "className": "org.glowroot.agent.it.harness.TransactionMarker",
+      "methodName": "transactionMarker",
+      "methodParameterTypes": [ ],
+      "captureKind": "transaction",
+      "timerName": "mock trace marker",
+      "transactionType": "Test harness",
+      "transactionNameTemplate": "trace marker / {{this.class.simpleName}}"
+    },
+    {
+      "className": "org.glowroot.agent.it.harness.TraceEntryMarker",
+      "methodName": "traceEntryMarker",
+      "methodParameterTypes": [ ],
+      "captureKind": "trace-entry",
+      "timerName": "mock trace entry marker",
+      "traceEntryMessageTemplate": "trace entry marker / {{this.class.simpleName}}"
+    }
+  ]
+}

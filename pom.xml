@@ -39,26 +39,26 @@
     <module>misc/checker-qual-jdk6</module>
     <module>common</module>
     <module>wire-api</module>
-    <module>agent/api</module>
-    <module>agent/plugin-api</module>
-    <module>agent/core</module>
-    <module>agent/test-harness</module>
-    <module>agent/integration-tests</module>
-    <module>agent/plugins/cassandra-plugin</module>
-    <module>agent/plugins/http-client-plugin</module>
-    <module>agent/plugins/jdbc-plugin</module>
-    <module>agent/plugins/jms-plugin</module>
-    <module>agent/plugins/logger-plugin</module>
-    <module>agent/plugins/quartz-plugin</module>
-    <module>agent/plugins/servlet-plugin</module>
-    <module>agent/benchmarks</module>
-    <module>agent/distribution</module>
+    <module>agent-parent/api</module>
+    <module>agent-parent/plugin-api</module>
+    <module>agent-parent/agent</module>
+    <module>agent-parent/it-harness</module>
+    <module>agent-parent/integration-tests</module>
+    <module>agent-parent/plugins/cassandra-plugin</module>
+    <module>agent-parent/plugins/http-client-plugin</module>
+    <module>agent-parent/plugins/jdbc-plugin</module>
+    <module>agent-parent/plugins/jms-plugin</module>
+    <module>agent-parent/plugins/logger-plugin</module>
+    <module>agent-parent/plugins/quartz-plugin</module>
+    <module>agent-parent/plugins/servlet-plugin</module>
+    <module>agent-parent/benchmarks</module>
+    <module>agent-parent/distribution</module>
     <module>storage</module>
-    <module>ui</module>
-    <module>fat-agent/core</module>
-    <module>fat-agent/distribution</module>
-    <module>webdriver-tests</module>
-    <module>ui-sandbox</module>
+    <module>ui-parent/ui</module>
+    <module>ui-parent/integration-tests</module>
+    <module>ui-parent/sandbox</module>
+    <module>fat-agent-parent/fat-agent</module>
+    <module>fat-agent-parent/distribution</module>
   </modules>
 
   <scm>
