@@ -49,8 +49,8 @@ public interface AggregateRepository {
             long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception;
 
     // captureTimeFrom is non-inclusive
-    Result<TransactionErrorSummary> readTransactionErrorSummaries(ErrorSummaryQuery query,
-            int rollupLevel) throws Exception;
+    Result<TransactionErrorSummary> readTransactionErrorSummaries(ErrorSummaryQuery query)
+            throws Exception;
 
     // captureTimeFrom is INCLUSIVE
     List<OverviewAggregate> readOverallOverviewAggregates(String serverGroup,

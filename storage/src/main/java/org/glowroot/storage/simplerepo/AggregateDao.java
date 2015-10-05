@@ -258,18 +258,20 @@ public class AggregateDao implements AggregateRepository {
 
     // captureTimeFrom is non-inclusive
     @Override
-    public Result<TransactionErrorSummary> readTransactionErrorSummaries(ErrorSummaryQuery query,
-            int rollupLevel) throws Exception {
-        List<TransactionErrorSummary> summary = dataSource.query("select transaction_name,"
-                + " sum(error_count), sum(transaction_count) from transaction_aggregate_rollup_"
-                + castUntainted(rollupLevel) + " where server_group = ? and transaction_type = ?"
-                + "and capture_time > ? and capture_time <= ? group by transaction_type,"
-                + " transaction_name having sum(error_count) > 0 order by "
-                + getSortClause(query.sortOrder()) + ", transaction_type, transaction_name limit ?",
-                new ErrorSummaryRowMapper(), query.serverGroup(), query.transactionType(),
-                query.from(), query.to(), query.limit() + 1);
+    public Result<TransactionErrorSummary> readTransactionErrorSummaries(ErrorSummaryQuery query)
+            throws Exception {
+        int rollupLevel = getRollupLevelForView(query.serverGroup(), query.from(), query.to());
+        List<TransactionErrorSummary> summaries;
+        long lastRollupTime = lastRollupTimes.get(rollupLevel);
+        if (rollupLevel != 0 && query.to() > lastRollupTime) {
+            // need to aggregate some non-rolled up data
+            summaries =
+                    readTransactionErrorSummariesInternalSplit(query, rollupLevel, lastRollupTime);
+        } else {
+            summaries = readTransactionErrorSummariesInternal(query, rollupLevel);
+        }
         // one extra record over the limit is fetched above to identify if the limit was hit
-        return Result.from(summary, query.limit());
+        return Result.from(summaries, query.limit());
     }
 
     // captureTimeFrom is INCLUSIVE
@@ -643,6 +645,39 @@ public class AggregateDao implements AggregateRepository {
                         + " group by transaction_name order by " + getSortClause(query.sortOrder())
                         + ", transaction_name limit ?",
                 new TransactionSummaryRowMapper(), query.serverGroup(), query.transactionType(),
+                query.from(), lastRollupTime, query.transactionType(), lastRollupTime, query.to(),
+                query.limit() + 1);
+    }
+
+    private List<TransactionErrorSummary> readTransactionErrorSummariesInternal(
+            ErrorSummaryQuery query, int rollupLevel) throws SQLException {
+        return dataSource.query(
+                "select transaction_name, sum(error_count), sum(transaction_count)"
+                        + " from transaction_aggregate_rollup_" + castUntainted(rollupLevel)
+                        + " where server_group = ? and transaction_type = ? and capture_time > ?"
+                        + " and capture_time <= ? group by transaction_type, transaction_name"
+                        + " having sum(error_count) > 0 order by "
+                        + getSortClause(query.sortOrder())
+                        + ", transaction_type, transaction_name limit ?",
+                new ErrorSummaryRowMapper(), query.serverGroup(), query.transactionType(),
+                query.from(), query.to(), query.limit() + 1);
+    }
+
+    private List<TransactionErrorSummary> readTransactionErrorSummariesInternalSplit(
+            ErrorSummaryQuery query, int rollupLevel, long lastRollupTime) throws Exception {
+        // it's important that all these columns are in a single index so h2 can return the
+        // result set directly from the index without having to reference the table for each row
+        return dataSource.query(
+                "select transaction_name, sum(error_count), sum(transaction_count)"
+                        + " from (select transaction_name, error_count, transaction_count"
+                        + " from transaction_aggregate_rollup_" + castUntainted(rollupLevel)
+                        + " where server_group = ? and transaction_type = ? and capture_time > ?"
+                        + " and capture_time <= ? union all select transaction_name, error_count,"
+                        + " transaction_count from transaction_aggregate_rollup_0 where"
+                        + " transaction_type = ? and capture_time > ? and capture_time <= ?) t"
+                        + " group by transaction_name having sum(error_count) > 0 order by "
+                        + getSortClause(query.sortOrder()) + ", transaction_name limit ?",
+                new ErrorSummaryRowMapper(), query.serverGroup(), query.transactionType(),
                 query.from(), lastRollupTime, query.transactionType(), lastRollupTime, query.to(),
                 query.limit() + 1);
     }

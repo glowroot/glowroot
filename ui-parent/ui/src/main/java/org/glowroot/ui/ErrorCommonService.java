@@ -102,13 +102,11 @@ class ErrorCommonService {
     // query.from() is non-inclusive
     Result<TransactionErrorSummary> readTransactionErrorSummaries(ErrorSummaryQuery query)
             throws Exception {
-        int rollupLevel = aggregateRepository.getRollupLevelForView(query.serverGroup(),
-                query.from(), query.to());
         LiveResult<List<TransactionErrorSummary>> liveResult =
                 liveAggregateRepository.getLiveTransactionErrorSummaries(query.serverGroup(),
                         query.transactionType(), query.from(), query.to());
         if (liveResult == null) {
-            return aggregateRepository.readTransactionErrorSummaries(query, rollupLevel);
+            return aggregateRepository.readTransactionErrorSummaries(query);
         }
         // -1 since query 'to' is inclusive
         // this way don't need to worry about de-dupping between live and stored aggregates
@@ -116,7 +114,7 @@ class ErrorCommonService {
         ErrorSummaryQuery revisedQuery =
                 ImmutableErrorSummaryQuery.builder().copyFrom(query).to(revisedTo).build();
         Result<TransactionErrorSummary> queryResult =
-                aggregateRepository.readTransactionErrorSummaries(revisedQuery, rollupLevel);
+                aggregateRepository.readTransactionErrorSummaries(revisedQuery);
         return mergeInLiveTransactionErrorSummaries(revisedQuery, queryResult, liveResult.get());
     }
 
