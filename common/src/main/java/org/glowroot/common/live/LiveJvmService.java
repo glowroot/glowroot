@@ -49,8 +49,6 @@ public interface LiveJvmService {
 
     ProcessInfo getProcessInfo(String server);
 
-    Map<String, String> getSystemProperties(String server);
-
     Capabilities getCapabilities(String server);
 
     @Value.Immutable

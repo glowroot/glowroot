@@ -260,10 +260,10 @@ glowroot.config([
         waitForLayout: waitForLayout
       }
     });
-    $stateProvider.state('jvm.mbeanTree', {
-      url: '/mbean-tree',
-      templateUrl: 'views/jvm/mbean-tree.html',
-      controller: 'JvmMBeanTreeCtrl'
+    $stateProvider.state('jvm.processInfo', {
+      url: '/process-info',
+      templateUrl: 'views/jvm/process-info.html',
+      controller: 'JvmProcessInfoCtrl'
     });
     $stateProvider.state('jvm.threadDump', {
       url: '/thread-dump',
@@ -275,15 +275,10 @@ glowroot.config([
       templateUrl: 'views/jvm/heap-dump.html',
       controller: 'JvmHeapDumpCtrl'
     });
-    $stateProvider.state('jvm.processInfo', {
-      url: '/process-info',
-      templateUrl: 'views/jvm/process-info.html',
-      controller: 'JvmProcessInfoCtrl'
-    });
-    $stateProvider.state('jvm.systemProperties', {
-      url: '/system-properties',
-      templateUrl: 'views/jvm/system-properties.html',
-      controller: 'JvmSystemPropertiesCtrl'
+    $stateProvider.state('jvm.mbeanTree', {
+      url: '/mbean-tree',
+      templateUrl: 'views/jvm/mbean-tree.html',
+      controller: 'JvmMBeanTreeCtrl'
     });
     $stateProvider.state('jvm.capabilities', {
       url: '/capabilities',

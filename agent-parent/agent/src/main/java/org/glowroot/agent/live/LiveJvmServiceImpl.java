@@ -23,11 +23,9 @@ import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -245,23 +243,6 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                 .javaHome(javaHome)
                 .jvmArguments(runtimeMXBean.getInputArguments())
                 .build();
-    }
-
-    @Override
-    public Map<String, String> getSystemProperties(String server) {
-        Properties properties = System.getProperties();
-        Map<String, String> map = Maps.newHashMap();
-        for (Enumeration<?> e = properties.propertyNames(); e.hasMoreElements();) {
-            Object obj = e.nextElement();
-            if (obj instanceof String) {
-                String propertyName = (String) obj;
-                String propertyValue = properties.getProperty(propertyName);
-                if (propertyValue != null) {
-                    map.put(propertyName, propertyValue);
-                }
-            }
-        }
-        return map;
     }
 
     @Override

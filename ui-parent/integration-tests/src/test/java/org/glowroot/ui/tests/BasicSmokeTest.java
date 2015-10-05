@@ -156,6 +156,17 @@ public class BasicSmokeTest extends WebDriverTest {
         // sleep for a second to give time for jvm gauges page to make 2 requests
         // (first to get gauge list and then to get gauge points for default selected gauges)
         Thread.sleep(1000);
+
+        jvmSidebar.getProcessInfoLink().click();
+
+        jvmSidebar.getThreadDumpLink().click();
+
+        jvmSidebar.getHeapDumpLink().click();
+        Utils.withWait(driver, By.xpath("//button[normalize-space()='Dump heap']")).click();
+        Utils.withWait(driver, By.xpath("//div[@ng-show='heapDumpResponse']"));
+        Utils.withWait(driver, By.xpath("//button[normalize-space()='Check disk space']")).click();
+        Utils.withWait(driver, By.xpath("//div[@ng-show='availableDiskSpace']"));
+
         jvmSidebar.getMBeanTreeLink().click();
         List<WebElement> elements = new WebDriverWait(driver, 30)
                 .until(ExpectedConditions.visibilityOfAllElementsLocatedBy(
@@ -169,17 +180,9 @@ public class BasicSmokeTest extends WebDriverTest {
         // clicked in chrome and safari drivers
         ((JavascriptExecutor) driver).executeScript("scroll(0, 0)");
 
-        jvmSidebar.getThreadDumpLink().click();
-        jvmSidebar.getHeapDumpLink().click();
-        Utils.withWait(driver, By.xpath("//button[normalize-space()='Dump heap']")).click();
-        Utils.withWait(driver, By.xpath("//div[@ng-show='heapDumpResponse']"));
-        Utils.withWait(driver, By.xpath("//button[normalize-space()='Check disk space']")).click();
-        Utils.withWait(driver, By.xpath("//div[@ng-show='availableDiskSpace']"));
-        jvmSidebar.getProcessInfoLink().click();
-        jvmSidebar.getSystemPropertiesLink().click();
         // jvm capabilities is not accessible via config sidebar currently
         String capabilitiesUrl =
-                driver.getCurrentUrl().replace("/jvm/system-properties", "/jvm/capabilities");
+                driver.getCurrentUrl().replace("/jvm/mbean-tree", "/jvm/capabilities");
         driver.navigate().to(capabilitiesUrl);
     }
 }

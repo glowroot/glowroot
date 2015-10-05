@@ -18,9 +18,6 @@ package org.glowroot.ui;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeMap;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -184,29 +181,6 @@ class JvmJsonService {
     String getProcessInfo(String queryString) throws Exception {
         String server = getServer(queryString);
         return mapper.writeValueAsString(liveJvmService.getProcessInfo(server));
-    }
-
-    @GET("/backend/jvm/system-properties")
-    String getSystemProperties(String queryString) throws Exception {
-        String server = getServer(queryString);
-        // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
-        // see https://code.google.com/p/guava-libraries/issues/detail?id=635
-        Map<String, String> sortedProperties =
-                new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
-        sortedProperties.putAll(liveJvmService.getSystemProperties(server));
-
-        StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        jg.writeStartArray();
-        for (Entry<String, String> entry : sortedProperties.entrySet()) {
-            jg.writeStartObject();
-            jg.writeStringField("name", entry.getKey());
-            jg.writeStringField("value", entry.getValue());
-            jg.writeEndObject();
-        }
-        jg.writeEndArray();
-        jg.close();
-        return sb.toString();
     }
 
     @GET("/backend/jvm/capabilities")

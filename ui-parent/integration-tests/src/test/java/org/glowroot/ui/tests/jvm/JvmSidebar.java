@@ -51,10 +51,6 @@ public class JvmSidebar {
         return Utils.withWait(driver, getSidebar(), linkText("Process info"));
     }
 
-    public WebElement getSystemPropertiesLink() {
-        return Utils.withWait(driver, getSidebar(), linkText("System properties"));
-    }
-
     private WebElement getSidebar() {
         return Utils.withWait(driver, cssSelector("div.gt-sidebar"));
     }
