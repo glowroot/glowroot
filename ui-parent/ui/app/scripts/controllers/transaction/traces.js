@@ -182,9 +182,9 @@ glowroot.controller('TracesCtrl', [
       $scope.filter.error = '';
       $scope.filter.userComparator = 'begins';
       $scope.filter.user = '';
-      $scope.filter.customAttributeName = '';
-      $scope.filter.customAttributeValueComparator = 'begins';
-      $scope.filter.customAttributeValue = '';
+      $scope.filter.attributeName = '';
+      $scope.filter.attributeValueComparator = 'begins';
+      $scope.filter.attributeValue = '';
       $scope.filter.limit = defaultFilterLimit;
       $scope.refreshButtonClick();
     };

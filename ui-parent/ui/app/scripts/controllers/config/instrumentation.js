@@ -307,8 +307,8 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       if (!data.transactionUserTemplate) {
         delete data.transactionUserTemplate;
       }
-      if (!data.transactionCustomAttributeTemplates || !Object.keys(data.transactionCustomAttributeTemplates).length) {
-        delete data.transactionCustomAttributeTemplates;
+      if (!data.transactionAttributeTemplates || !Object.keys(data.transactionAttributeTemplates).length) {
+        delete data.transactionAttributeTemplates;
       }
       if (!data.enabledProperty) {
         delete data.enabledProperty;
