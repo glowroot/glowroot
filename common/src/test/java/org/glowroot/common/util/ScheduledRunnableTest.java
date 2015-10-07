@@ -70,29 +70,6 @@ public class ScheduledRunnableTest {
     }
 
     @Test
-    public void testScheduleAtFixedRate() {
-        // given
-        TestScheduledRunnable testScheduledRunnable = new TestScheduledRunnable();
-        // when
-        testScheduledRunnable.scheduleAtFixedRate(scheduledExecutorService, 1, 1, SECONDS);
-        // then
-        verify(scheduledExecutorService).scheduleAtFixedRate(testScheduledRunnable, 1, 1, SECONDS);
-        verifyNoMoreInteractions(scheduledExecutorService);
-    }
-
-    @Test
-    public void testScheduleAtFixedRateCalledTwice() {
-        // given
-        TestScheduledRunnable testScheduledRunnable = new TestScheduledRunnable();
-        // when
-        testScheduledRunnable.scheduleAtFixedRate(scheduledExecutorService, 1, 1, SECONDS);
-        testScheduledRunnable.scheduleAtFixedRate(scheduledExecutorService, 1, 1, SECONDS);
-        // then
-        verify(scheduledExecutorService).scheduleAtFixedRate(testScheduledRunnable, 1, 1, SECONDS);
-        verifyNoMoreInteractions(scheduledExecutorService);
-    }
-
-    @Test
     public void testCancelWithNoFuture() {
         // given
         TestScheduledRunnable testScheduledRunnable = new TestScheduledRunnable();

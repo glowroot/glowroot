@@ -188,7 +188,7 @@ public class AgentModule {
         long gaugeCollectionIntervalMillis = configService.getGaugeCollectionIntervalMillis();
         long initialDelay = gaugeCollectionIntervalMillis
                 - (clock.currentTimeMillis() % gaugeCollectionIntervalMillis);
-        gaugeCollector.scheduleAtFixedRate(initialDelay, gaugeCollectionIntervalMillis,
+        gaugeCollector.scheduleWithFixedDelay(initialDelay, gaugeCollectionIntervalMillis,
                 MILLISECONDS);
         stackTraceCollector =
                 StackTraceCollector.create(transactionRegistry, configService, scheduledExecutor);

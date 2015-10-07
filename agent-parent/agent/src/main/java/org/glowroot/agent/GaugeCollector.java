@@ -123,8 +123,8 @@ class GaugeCollector extends ScheduledRunnable {
         }
     }
 
-    void scheduleAtFixedRate(long initialDelay, long period, TimeUnit unit) {
-        scheduleAtFixedRate(dedicatedScheduledExecutor, initialDelay, period, unit);
+    void scheduleWithFixedDelay(long initialDelay, long period, TimeUnit unit) {
+        scheduleWithFixedDelay(dedicatedScheduledExecutor, initialDelay, period, unit);
     }
 
     void close() {
