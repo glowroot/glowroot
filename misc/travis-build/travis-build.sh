@@ -48,7 +48,7 @@ case "$1" in
                                  -B
                # only deploy snapshot versions (release versions need pgp signature)
                version=`mvn help:evaluate -Dexpression=project.version | grep -v '\['`
-               if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" && "$version" == *-SNAPSHOT ]]
+               if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_PULL_REQUEST" == "false" && "$version" == *-SNAPSHOT ]]
                then
                  # deploy only parent, agent-parent/api, agent-parent/plugin-api, and agent-parent/it-harness artifacts to maven repository
                  mvn clean deploy -pl .,agent-parent/api,agent-parent/plugin-api,agent-parent/it-harness \
@@ -65,7 +65,7 @@ case "$1" in
                                  -B
                ;;
 
-      "sonar") if [[ $SONAR_JDBC_URL ]]
+      "sonar") if [[ $SONAR_JDBC_URL && "$TRAVIS_PULL_REQUEST" == "false" ]]
                then
                  # need to skip shading when running jacoco, otherwise the bytecode changes done to
                  # the classes during shading will modify the jacoco class id and the sonar reports
@@ -172,7 +172,7 @@ case "$1" in
                fi
                ;;
 
-  "saucelabs") if [[ $SAUCE_USERNAME ]]
+  "saucelabs") if [[ $SAUCE_USERNAME && "$TRAVIS_PULL_REQUEST" == "false" ]]
                then
                  mvn clean install -DskipTests=true \
                                    -B
