@@ -524,8 +524,11 @@ HandlebarsRendering = (function () {
       var maxDuration = 0;
       // find the largest entry duration, not including trace entry exceeded/extended markers which have no duration
       for (i = 0; i < traceEntries.length; i++) {
-        var entryDuration = traceEntries[i].duration;
+        var entryDuration = traceEntries[i].durationNanos;
         if (entryDuration) {
+          if (traceEntries[i].active) {
+            entryDuration *= 10; // need space for the ..
+          }
           maxDuration = Math.max(maxDuration, entryDuration);
         }
       }
