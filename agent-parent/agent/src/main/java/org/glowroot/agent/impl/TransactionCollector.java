@@ -112,7 +112,9 @@ public class TransactionCollector {
         if (!slow && !shouldStoreError(transaction)) {
             return;
         }
-        if (pendingTransactions.size() >= PENDING_LIMIT) {
+        // limit doesn't apply to transactions that were already (partially) stored to make sure
+        // they don't get left out in case they cause an avalanche of slowness
+        if (pendingTransactions.size() >= PENDING_LIMIT && !transaction.isPartiallyStored()) {
             logPendingLimitWarning();
             return;
         }
