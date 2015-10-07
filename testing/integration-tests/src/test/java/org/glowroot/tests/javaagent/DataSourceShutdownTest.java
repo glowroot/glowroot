@@ -15,6 +15,7 @@
  */
 package org.glowroot.tests.javaagent;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,6 +32,7 @@ import org.glowroot.container.impl.JavaagentContainer;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertTrue;
 
 // this is a test of DataSource's jvm shutdown hook, since prior to replacing H2's jvm shutdown
 // hook, the H2 jdbc connection could get closed while there were still traces being written to it,
@@ -68,7 +70,10 @@ public class DataSourceShutdownTest {
         // check that no error messages were logged during shutdown
         // the problem is that the external jvm is terminated so it can't be queried, so have to
         // resort to screen scraping
-        assertThat(container.getUnexpectedConsoleLines()).isEmpty();
+        final List<String> lines = container.getUnexpectedConsoleLines();
+        // on OSX, the jvm loves to emit:
+        // "objc[26511]: Class JavaLaunchHelper is implemented in both /Library/Java/JavaVirtua etc etc
+        assertTrue("Expected no console output", lines.isEmpty() || (lines.size() == 1 && lines.get(0).startsWith("objc")));
         // cleanup
         executorService.shutdown();
     }
