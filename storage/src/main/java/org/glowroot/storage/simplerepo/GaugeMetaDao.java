@@ -103,6 +103,13 @@ class GaugeMetaDao {
         return gaugeId;
     }
 
+    void deleteAll(String serverGroup) throws SQLException {
+        synchronized (lock) {
+            dataSource.deleteAll("gauge_meta", "server_group", serverGroup);
+            gaugeIds.invalidateAll();
+        }
+    }
+
     private @Nullable Long readGaugeId(GaugeKey gaugeKey) throws SQLException {
         List<Long> gaugeIds = dataSource.query(
                 "select gauge_id from gauge_meta where server_group = ? and gauge_name = ?",

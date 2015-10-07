@@ -293,7 +293,7 @@ public class GaugeValueDao implements GaugeValueRepository {
             dataSource.batchDelete("gauge_point_rollup_" + castUntainted(i), whereClause,
                     serverGroup);
         }
-        dataSource.deleteAll("gauge_meta", "server_group", serverGroup);
+        gaugeMetaDao.deleteAll(serverGroup);
     }
 
     void deleteBefore(String serverGroup, long captureTime, int rollupLevel) throws SQLException {
