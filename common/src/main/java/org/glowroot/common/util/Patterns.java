@@ -15,8 +15,6 @@
  */
 package org.glowroot.common.util;
 
-// TODO move this to agent once it is no longer used by GaugeValueDao
-// (via PatternObjectNameQueryExp)
 public class Patterns {
 
     private Patterns() {}

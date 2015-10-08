@@ -57,13 +57,13 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.OptionalService;
+import org.glowroot.agent.util.PatternObjectNameQueryExp;
 import org.glowroot.common.live.ImmutableAvailability;
 import org.glowroot.common.live.ImmutableCapabilities;
 import org.glowroot.common.live.ImmutableHeapFile;
 import org.glowroot.common.live.ImmutableMBeanMeta;
 import org.glowroot.common.live.ImmutableProcessInfo;
 import org.glowroot.common.live.LiveJvmService;
-import org.glowroot.common.util.PatternObjectNameQueryExp;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

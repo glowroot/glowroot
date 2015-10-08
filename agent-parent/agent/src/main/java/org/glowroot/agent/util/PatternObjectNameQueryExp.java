@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.common.util;
+package org.glowroot.agent.util;
 
 import java.util.regex.Pattern;
 
@@ -21,7 +21,8 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.QueryExp;
 
-// TODO move this to agent once it is no longer used in GaugeValueDao.getGauges()
+import org.glowroot.common.util.Patterns;
+
 @SuppressWarnings("serial")
 public class PatternObjectNameQueryExp implements QueryExp {
 

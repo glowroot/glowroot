@@ -125,8 +125,7 @@ public class SimpleRepoModule {
         aggregateDao =
                 new AggregateDao(dataSource, this.rollupCappedDatabases, configRepository, clock);
         traceDao = new TraceDao(dataSource, traceCappedDatabase);
-        gaugeValueDao = new GaugeValueDao(dataSource, configRepository,
-                platformMBeanServerLifecycle, clock);
+        gaugeValueDao = new GaugeValueDao(dataSource, configRepository, clock);
 
         repoAdmin = new RepoAdminImpl(dataSource, rollupCappedDatabases, traceCappedDatabase,
                 configRepository);

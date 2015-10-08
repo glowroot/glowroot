@@ -36,6 +36,7 @@ import org.glowroot.storage.simplerepo.util.Schema.Column;
 import org.glowroot.storage.simplerepo.util.Schema.ColumnType;
 import org.glowroot.storage.simplerepo.util.Schema.Index;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.HOURS;
 
@@ -101,6 +102,16 @@ class GaugeMetaDao {
         }
         gaugeIds.put(gaugeKey, gaugeId);
         return gaugeId;
+    }
+
+    List<String> readAllGaugeNames() throws SQLException {
+        return dataSource.query("select gauge_name from gauge_meta", new RowMapper<String>() {
+            @Override
+            public String mapRow(ResultSet resultSet) throws Exception {
+                return checkNotNull(resultSet.getString(1));
+            }
+
+        });
     }
 
     void deleteAll(String serverGroup) throws SQLException {

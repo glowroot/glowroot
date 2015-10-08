@@ -27,7 +27,7 @@ public interface GaugeValueRepository {
 
     void store(String serverGroup, List<GaugeValue> gaugeValues) throws Exception;
 
-    List<Gauge> getGauges(String serverGroup) throws InterruptedException;
+    List<Gauge> getGauges(String serverGroup) throws Exception;
 
     List<GaugeValue> readGaugeValues(String serverGroup, String gaugeName, long captureTimeFrom,
             long captureTimeTo, int rollupLevel) throws Exception;

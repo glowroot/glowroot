@@ -15,17 +15,13 @@
  */
 package org.glowroot.storage.simplerepo;
 
-import java.lang.management.ManagementFactory;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLongArray;
-
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
+import java.util.regex.Pattern;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -36,12 +32,11 @@ import org.checkerframework.checker.tainting.qual.Untainted;
 import org.glowroot.common.config.GaugeConfig;
 import org.glowroot.common.config.GaugeConfig.MBeanAttribute;
 import org.glowroot.common.util.Clock;
-import org.glowroot.common.util.PatternObjectNameQueryExp;
+import org.glowroot.common.util.Patterns;
 import org.glowroot.storage.repo.ConfigRepository;
 import org.glowroot.storage.repo.ConfigRepository.RollupConfig;
 import org.glowroot.storage.repo.GaugeValueRepository;
 import org.glowroot.storage.repo.ImmutableGauge;
-import org.glowroot.storage.simplerepo.PlatformMBeanServerLifecycle.InitListener;
 import org.glowroot.storage.simplerepo.util.DataSource;
 import org.glowroot.storage.simplerepo.util.DataSource.PreparedStatementBinder;
 import org.glowroot.storage.simplerepo.util.DataSource.ResultSetExtractor;
@@ -85,20 +80,11 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     private final Object rollupLock = new Object();
 
-    private volatile boolean safeToUsePlatformMBeanServer;
-
-    GaugeValueDao(DataSource dataSource, ConfigRepository configRepository,
-            PlatformMBeanServerLifecycle platformMBeanServerLifecycle, Clock clock)
-                    throws Exception {
+    GaugeValueDao(DataSource dataSource, ConfigRepository configRepository, Clock clock)
+            throws Exception {
         gaugeMetaDao = new GaugeMetaDao(dataSource);
         this.dataSource = dataSource;
         this.configRepository = configRepository;
-        platformMBeanServerLifecycle.addInitListener(new InitListener() {
-            @Override
-            public void doWithPlatformMBeanServer(MBeanServer mbeanServer) {
-                safeToUsePlatformMBeanServer = true;
-            }
-        });
         this.clock = clock;
         this.rollupConfigs = configRepository.getRollupConfigs();
 
@@ -140,22 +126,19 @@ public class GaugeValueDao implements GaugeValueRepository {
         // TODO initial rollup in case store is not called in a reasonable time
     }
 
-    // TODO this implementation of getGauges() will not work in central collector
     @Override
-    public List<Gauge> getGauges(String serverGroup) throws InterruptedException {
-        if (!safeToUsePlatformMBeanServer) {
-            return ImmutableList.of();
-        }
+    public List<Gauge> getGauges(String serverGroup) throws Exception {
+        List<String> allGaugeNames = gaugeMetaDao.readAllGaugeNames();
         List<Gauge> gauges = Lists.newArrayList();
-        MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
         for (GaugeConfig gaugeConfig : configRepository.getGaugeConfigs(serverGroup)) {
-            List<String> mbeanObjectNames =
-                    getMatchingMBeanObjectNames(gaugeConfig.mbeanObjectName(), mbeanServer);
-            for (String mbeanObjectName : mbeanObjectNames) {
-                for (MBeanAttribute mbeanAttribute : gaugeConfig.mbeanAttributes()) {
-                    gauges.add(ImmutableGauge.of(mbeanObjectName + "," + mbeanAttribute.name(),
-                            GaugeConfig.display(mbeanObjectName) + '/' + mbeanAttribute.name(),
-                            mbeanAttribute.counter()));
+            for (MBeanAttribute mbeanAttribute : gaugeConfig.mbeanAttributes()) {
+                String gaugeName = gaugeConfig.mbeanObjectName() + "," + mbeanAttribute.name();
+                if (gaugeName.contains("*")) {
+                    gauges.addAll(getMatching(gaugeName, mbeanAttribute, allGaugeNames));
+                } else {
+                    String display = GaugeConfig.display(gaugeConfig.mbeanObjectName()) + '/'
+                            + mbeanAttribute.name();
+                    gauges.add(ImmutableGauge.of(gaugeName, display, mbeanAttribute.counter()));
                 }
             }
         }
@@ -303,19 +286,19 @@ public class GaugeValueDao implements GaugeValueRepository {
                 serverGroup, captureTime);
     }
 
-    private List<String> getMatchingMBeanObjectNames(String mbeanObjectName,
-            MBeanServer mbeanServer) throws InterruptedException {
-        if (!mbeanObjectName.contains("*")) {
-            return ImmutableList.of(mbeanObjectName);
+    private List<Gauge> getMatching(String gaugeName, MBeanAttribute mbeanAttribute,
+            List<String> allGaugeNames) {
+        List<Gauge> gauges = Lists.newArrayList();
+        Pattern pattern = Pattern.compile(Patterns.buildSimplePattern(gaugeName));
+        for (String storedGaugeName : allGaugeNames) {
+            if (pattern.matcher(storedGaugeName).matches()) {
+                int index = storedGaugeName.lastIndexOf(',');
+                String objectName = storedGaugeName.substring(0, index);
+                String display = GaugeConfig.display(objectName) + '/' + mbeanAttribute.name();
+                gauges.add(ImmutableGauge.of(storedGaugeName, display, mbeanAttribute.counter()));
+            }
         }
-        Set<ObjectName> objectNames =
-                mbeanServer.queryNames(null, new PatternObjectNameQueryExp(mbeanObjectName));
-        List<String> mbeanObjectNames = Lists.newArrayList();
-        for (ObjectName objectName : objectNames) {
-            mbeanObjectNames
-                    .add(objectName.getDomain() + ":" + objectName.getKeyPropertyListString());
-        }
-        return mbeanObjectNames;
+        return gauges;
     }
 
     private void rollup(long lastRollupTime, long safeRollupTime, long fixedIntervalMillis,
