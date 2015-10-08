@@ -30,6 +30,8 @@ public class Viewer {
     private Viewer() {}
 
     public static void main(String... args) throws Exception {
+        // no need for restrictive limit since not competing for resources with app
+        System.setProperty("glowroot.internal.ui.workerThreads", "20");
         CodeSource codeSource = Viewer.class.getProtectionDomain().getCodeSource();
         MainEntryPoint.runViewer(getGlowrootJarFile(codeSource));
     }
