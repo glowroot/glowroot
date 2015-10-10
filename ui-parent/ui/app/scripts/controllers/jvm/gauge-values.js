@@ -78,14 +78,14 @@ glowroot.controller('JvmGaugeValuesCtrl', [
 
     $scope.buildQueryObject = function (baseQuery) {
       var query = baseQuery || angular.copy($location.search());
+      delete query.from;
+      delete query.to;
+      delete query.last;
       if (!$scope.last) {
         query.from = $scope.chartFrom;
         query.to = $scope.chartTo;
-        delete query.last;
       } else if ($scope.last !== 4 * 60 * 60 * 1000) {
         query.last = $scope.last;
-        delete query.from;
-        delete query.to;
       }
       if (angular.equals($scope.gaugeNames, DEFAULT_GAUGES)) {
         delete query['gauge-name'];
