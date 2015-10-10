@@ -75,9 +75,13 @@ glowroot.controller('TracesCtrl', [
       var limit = appliedFilter.limit;
       if (appliedFilter.responseTimeMillisLow) {
         appliedFilter.responseTimeMillisLow = Number(appliedFilter.responseTimeMillisLow);
+      } else if (appliedFilter.responseTimeMillisLow === '') {
+        appliedFilter.responseTimeMillisLow = 0;
       }
       if (appliedFilter.responseTimeMillisHigh) {
         appliedFilter.responseTimeMillisHigh = Number(appliedFilter.responseTimeMillisHigh);
+      } else if (appliedFilter.responseTimeMillisHigh === '') {
+        appliedFilter.responseTimeMillisHigh = undefined;
       }
       var responseTimeMillisLow = appliedFilter.responseTimeMillisLow;
       var responseTimeMillisHigh = appliedFilter.responseTimeMillisHigh;
