@@ -35,6 +35,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     var yvalMaps = {};
 
     var gaugeScales = {};
+    var emptyGaugeNames = {};
 
     var gaugeShortDisplayMap = {};
     var counterGauges = {};
@@ -207,15 +208,16 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       // reset gauge scales
       gaugeScales = {};
       yvalMaps = {};
+      emptyGaugeNames = {};
 
       for (var i = 0; i < data.length; i++) {
         var dataSeries = data[i];
-        updateYvalMap(dataSeries.name, dataSeries.data);
         if (dataSeries.data.length) {
           var scale = scalePoints(dataSeries.data);
           gaugeScales[dataSeries.name] = scale;
+          updateYvalMap(dataSeries.name, dataSeries.data);
         } else {
-          gaugeScales[dataSeries.name] = undefined;
+          emptyGaugeNames[dataSeries.name] = true;
         }
       }
       updateThePlotData(data);
@@ -341,7 +343,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     };
 
     $scope.gaugeColorText = function (gaugeName) {
-      if ($scope.gaugeNames.indexOf(gaugeName) !== -1 && !gaugeScales[gaugeName]) {
+      if ($scope.gaugeNames.indexOf(gaugeName) !== -1 && emptyGaugeNames[gaugeName]) {
         return 'no data';
       }
       return '';
@@ -375,6 +377,8 @@ glowroot.controller('JvmGaugeValuesCtrl', [
         $scope.gaugeNames.push(gaugeName);
       } else {
         $scope.gaugeNames.splice(index, 1);
+        // hide color and scale right away (noticeable when subsequent server response is slow)
+        delete gaugeScales[gaugeName];
       }
     };
 

@@ -83,9 +83,7 @@ class JvmJsonService {
         for (String gaugeName : request.gaugeNames()) {
             List<GaugeValue> gaugeValues = getGaugeValues(request.serverGroup(), revisedFrom,
                     revisedTo, gaugeName, rollupLevel, liveCaptureTime);
-            if (!gaugeValues.isEmpty()) {
-                dataSeriesList.add(convertToDataSeriesWithGaps(gaugeName, gaugeValues, gapMillis));
-            }
+            dataSeriesList.add(convertToDataSeriesWithGaps(gaugeName, gaugeValues, gapMillis));
         }
 
         StringBuilder sb = new StringBuilder();
