@@ -75,8 +75,7 @@ class JvmJsonService {
                     configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
         }
         double gapMillis = intervalMillis * 1.5;
-        // 2x in order to deal with displaying deltas
-        long revisedFrom = request.from() - 2 * intervalMillis;
+        long revisedFrom = request.from() - intervalMillis;
         long revisedTo = request.to() + intervalMillis;
 
         long liveCaptureTime = clock.currentTimeMillis();

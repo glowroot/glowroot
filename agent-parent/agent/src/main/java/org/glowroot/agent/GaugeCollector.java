@@ -33,6 +33,7 @@ import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -40,18 +41,20 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
-import org.glowroot.agent.util.PatternObjectNameQueryExp;
 import org.glowroot.agent.util.LazyPlatformMBeanServer.InitListener;
+import org.glowroot.agent.util.PatternObjectNameQueryExp;
 import org.glowroot.agent.util.Reflections;
 import org.glowroot.common.config.GaugeConfig;
 import org.glowroot.common.config.GaugeConfig.MBeanAttribute;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ScheduledRunnable;
+import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
 
 class GaugeCollector extends ScheduledRunnable {
@@ -62,6 +65,7 @@ class GaugeCollector extends ScheduledRunnable {
     private final Collector collector;
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
     private final Clock clock;
+    private final Ticker ticker;
     private final long startTimeMillis;
 
     private final Set<String> pendingLoggedMBeanGauges = Sets.newConcurrentHashSet();
@@ -73,14 +77,15 @@ class GaugeCollector extends ScheduledRunnable {
 
     // since gauges have their own dedicated thread, don't need to worry about thread safety of
     // priorRawCounterValues (except can't initialize here outside of the dedicated thread)
-    private @MonotonicNonNull Map<String, GaugeValue> priorRawCounterValues;
+    private @MonotonicNonNull Map<String, RawCounterValue> priorRawCounterValues;
 
     GaugeCollector(ConfigService configService, Collector collector,
-            LazyPlatformMBeanServer lazyPlatformMBeanServer, Clock clock) {
+            LazyPlatformMBeanServer lazyPlatformMBeanServer, Clock clock, Ticker ticker) {
         this.configService = configService;
         this.collector = collector;
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
         this.clock = clock;
+        this.ticker = ticker;
         startTimeMillis = clock.currentTimeMillis();
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
                 .setDaemon(true)
@@ -213,20 +218,25 @@ class GaugeCollector extends ScheduledRunnable {
             if (value != null) {
                 String gaugeName = mbeanObjectName + ',' + mbeanAttributeName;
                 if (mbeanAttribute.counter()) {
-                    GaugeValue priorRawCounterValue = priorRawCounterValues.get(gaugeName);
+                    // "[counter]" suffix is so gauge name (and gauge id) will change if gauge is
+                    // switched between counter and non-counter (which will prevent counter and
+                    // non-counter values showing up in same chart line)
+                    gaugeName += "[counter]";
+                    RawCounterValue priorRawCounterValue = priorRawCounterValues.get(gaugeName);
+                    long captureTick = ticker.read();
                     if (priorRawCounterValue != null) {
-                        double valuePerSecond = 1000 * (value - priorRawCounterValue.getValue())
-                                / (captureTime - priorRawCounterValue.getCaptureTime());
+                        long intervalNanos = captureTick - priorRawCounterValue.captureTick();
+                        double valuePerSecond =
+                                1000000000 * (value - priorRawCounterValue.value()) / intervalNanos;
                         gaugeValues.add(GaugeValue.newBuilder()
                                 .setGaugeName(gaugeName)
                                 .setCaptureTime(captureTime)
                                 .setValue(valuePerSecond)
+                                .setIntervalNanos(intervalNanos)
                                 .build());
                     }
-                    priorRawCounterValues.put(gaugeName, GaugeValue.newBuilder()
-                            .setCaptureTime(captureTime)
-                            .setValue(value)
-                            .build());
+                    priorRawCounterValues.put(gaugeName,
+                            ImmutableRawCounterValue.of(value, captureTick));
                 } else {
                     gaugeValues.add(GaugeValue.newBuilder()
                             .setGaugeName(gaugeName)
@@ -278,5 +288,12 @@ class GaugeCollector extends ScheduledRunnable {
             logger.warn("error accessing mbean attribute {} {}: {}", mbeanObjectName,
                     mbeanAttributeName, message);
         }
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface RawCounterValue {
+        double value();
+        long captureTick();
     }
 }

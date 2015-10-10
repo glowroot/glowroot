@@ -23,6 +23,7 @@ import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
 import javax.management.ObjectName;
 
+import com.google.common.base.Ticker;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,6 +55,7 @@ public class GaugeCollectorTest {
     private GaugeCollector gaugeCollector;
     private LazyPlatformMBeanServer lazyPlatformMBeanServer;
     private Clock clock;
+    private Ticker ticker;
     private Logger logger;
 
     @Before
@@ -66,10 +68,11 @@ public class GaugeCollectorTest {
         Collector collector = mock(Collector.class);
         lazyPlatformMBeanServer = mock(LazyPlatformMBeanServer.class);
         clock = mock(Clock.class);
+        ticker = mock(Ticker.class);
         logger = mock(Logger.class);
         setLogger(GaugeCollector.class, logger);
-        gaugeCollector =
-                new GaugeCollector(configService, collector, lazyPlatformMBeanServer, clock);
+        gaugeCollector = new GaugeCollector(configService, collector, lazyPlatformMBeanServer,
+                clock, ticker);
     }
 
     @After

@@ -54,19 +54,17 @@ import static org.glowroot.storage.simplerepo.util.Checkers.castUntainted;
 
 public class GaugeValueDao implements GaugeValueRepository {
 
-    private static final ImmutableList<Column> gaugeValueRollup0Columns = ImmutableList.<Column>of(
-            ImmutableColumn.of("gauge_id", ColumnType.BIGINT),
-            ImmutableColumn.of("capture_time", ColumnType.BIGINT),
-            ImmutableColumn.of("value", ColumnType.DOUBLE));
-
     private static final ImmutableList<Column> gaugeValueRollupColumns = ImmutableList.<Column>of(
             ImmutableColumn.of("gauge_id", ColumnType.BIGINT),
             ImmutableColumn.of("capture_time", ColumnType.BIGINT),
             ImmutableColumn.of("value", ColumnType.DOUBLE),
-            ImmutableColumn.of("count", ColumnType.DOUBLE)); // count is needed for further rollups
+            // weight is needed for rollups
+            // for non-counters, it is the number of recording that the (averaged) value represents
+            // for counters, it is the interval of time that the (averaged) value represents
+            ImmutableColumn.of("weight", ColumnType.BIGINT));
 
     private static final ImmutableList<Index> gaugeValueRollup0Indexes =
-            ImmutableList.<Index>of(ImmutableIndex.of("gauge_point_rollup_0_idx",
+            ImmutableList.<Index>of(ImmutableIndex.of("gauge_value_rollup_0_idx",
                     ImmutableList.of("gauge_id", "capture_time", "value")));
 
     private final GaugeMetaDao gaugeMetaDao;
@@ -89,20 +87,20 @@ public class GaugeValueDao implements GaugeValueRepository {
         this.rollupConfigs = configRepository.getRollupConfigs();
 
         Schema schema = dataSource.getSchema();
-        schema.syncTable("gauge_point_rollup_0", gaugeValueRollup0Columns);
-        schema.syncIndexes("gauge_point_rollup_0", gaugeValueRollup0Indexes);
+        schema.syncTable("gauge_value_rollup_0", gaugeValueRollupColumns);
+        schema.syncIndexes("gauge_value_rollup_0", gaugeValueRollup0Indexes);
         for (int i = 1; i <= rollupConfigs.size(); i++) {
-            schema.syncTable("gauge_point_rollup_" + castUntainted(i), gaugeValueRollupColumns);
-            schema.syncIndexes("gauge_point_rollup_" + castUntainted(i),
+            schema.syncTable("gauge_value_rollup_" + castUntainted(i), gaugeValueRollupColumns);
+            schema.syncIndexes("gauge_value_rollup_" + castUntainted(i),
                     ImmutableList.<Index>of(
-                            ImmutableIndex.of("gauge_point_rollup_" + castUntainted(i) + "_idx",
+                            ImmutableIndex.of("gauge_value_rollup_" + castUntainted(i) + "_idx",
                                     ImmutableList.of("gauge_id", "capture_time", "value"))));
         }
         List<Column> columns = Lists.newArrayList();
         for (int i = 1; i <= rollupConfigs.size(); i++) {
             columns.add(ImmutableColumn.of("last_rollup_" + i + "_time", ColumnType.BIGINT));
         }
-        schema.syncTable("gauge_point_last_rollup_times", columns);
+        schema.syncTable("gauge_value_last_rollup_times", columns);
 
         List<String> columnNames = Lists.newArrayList();
         for (int i = 1; i <= rollupConfigs.size(); i++) {
@@ -111,12 +109,12 @@ public class GaugeValueDao implements GaugeValueRepository {
         Joiner joiner = Joiner.on(", ");
         String selectClause = castUntainted(joiner.join(columnNames));
         long[] lastRollupTimes =
-                dataSource.query("select " + selectClause + " from gauge_point_last_rollup_times",
+                dataSource.query("select " + selectClause + " from gauge_value_last_rollup_times",
                         new LastRollupTimesExtractor());
         if (lastRollupTimes == null) {
             long[] values = new long[rollupConfigs.size()];
             String valueClause = castUntainted(joiner.join(Longs.asList(values)));
-            dataSource.update("insert into gauge_point_last_rollup_times (" + selectClause
+            dataSource.update("insert into gauge_value_last_rollup_times (" + selectClause
                     + ") values (" + valueClause + ")");
             this.lastRollupTimes = new AtomicLongArray(values);
         } else {
@@ -133,6 +131,9 @@ public class GaugeValueDao implements GaugeValueRepository {
         for (GaugeConfig gaugeConfig : configRepository.getGaugeConfigs(serverGroup)) {
             for (MBeanAttribute mbeanAttribute : gaugeConfig.mbeanAttributes()) {
                 String gaugeName = gaugeConfig.mbeanObjectName() + "," + mbeanAttribute.name();
+                if (mbeanAttribute.counter()) {
+                    gaugeName += "[counter]";
+                }
                 if (gaugeName.contains("*")) {
                     gauges.addAll(getMatching(gaugeName, mbeanAttribute, allGaugeNames));
                 } else {
@@ -151,8 +152,8 @@ public class GaugeValueDao implements GaugeValueRepository {
         if (gaugeValues.isEmpty()) {
             return;
         }
-        dataSource.batchUpdate("insert into gauge_point_rollup_0 (gauge_id, capture_time,"
-                + " value) values (?, ?, ?)", new PreparedStatementBinder() {
+        dataSource.batchUpdate("insert into gauge_value_rollup_0 (gauge_id, capture_time,"
+                + " value, weight) values (?, ?, ?, ?)", new PreparedStatementBinder() {
                     @Override
                     public void bind(PreparedStatement preparedStatement) throws SQLException {
                         for (GaugeValue gaugeValue : gaugeValues) {
@@ -167,6 +168,12 @@ public class GaugeValueDao implements GaugeValueRepository {
                             preparedStatement.setLong(1, gaugeId);
                             preparedStatement.setLong(2, gaugeValue.getCaptureTime());
                             preparedStatement.setDouble(3, gaugeValue.getValue());
+                            long weight = gaugeValue.getIntervalNanos();
+                            if (weight == 0) {
+                                // this is for non-counter gauges
+                                weight = 1;
+                            }
+                            preparedStatement.setLong(4, weight);
                             preparedStatement.addBatch();
                         }
                     }
@@ -188,7 +195,7 @@ public class GaugeValueDao implements GaugeValueRepository {
                     // JVM termination here will cause last_rollup_*_time to be out of sync, which
                     // will cause a re-rollup of this time after the next startup, but this possible
                     // duplicate is filtered out by the distinct clause in readGaugeValues()
-                    dataSource.update("update gauge_point_last_rollup_times set last_rollup_"
+                    dataSource.update("update gauge_value_last_rollup_times set last_rollup_"
                             + castUntainted(i + 1) + "_time = ?", safeRollupTime);
                     lastRollupTimes.set(i, safeRollupTime);
                 }
@@ -199,14 +206,14 @@ public class GaugeValueDao implements GaugeValueRepository {
     @Override
     public List<GaugeValue> readGaugeValues(String serverGroup, String gaugeName,
             long captureTimeFrom, long captureTimeTo, int rollupLevel) throws Exception {
-        String tableName = "gauge_point_rollup_" + castUntainted(rollupLevel);
+        String tableName = "gauge_value_rollup_" + castUntainted(rollupLevel);
         Long gaugeId = gaugeMetaDao.getGaugeId(serverGroup, gaugeName);
         if (gaugeId == null) {
             // not necessarily an error, gauge id not created until first store
             return ImmutableList.of();
         }
         // the distinct clause is needed for the rollup tables in order to handle corner case where
-        // JVM termination occurs in between rollup and updating gauge_point_last_rollup_times
+        // JVM termination occurs in between rollup and updating gauge_value_last_rollup_times
         // in which case a duplicate entry will occur after the next startup
         return dataSource.query(
                 "select distinct capture_time, value from " + tableName + " where gauge_id = ?"
@@ -228,7 +235,7 @@ public class GaugeValueDao implements GaugeValueRepository {
                 "ceil(capture_time / " + fixedIntervalMillis + ".0) * " + fixedIntervalMillis);
         List<GaugeValue> gaugeValues = dataSource.query(
                 "select " + captureTimeSql + " ceil_capture_time, avg(value)"
-                        + " from gauge_point_rollup_0 where gauge_id = ? and capture_time > ?"
+                        + " from gauge_value_rollup_0 where gauge_id = ? and capture_time > ?"
                         + " and capture_time <= ? group by ceil_capture_time"
                         + " order by ceil_capture_time",
                 new GaugeValueRowMapper(), gaugeId, from, to);
@@ -271,9 +278,9 @@ public class GaugeValueDao implements GaugeValueRepository {
     @Override
     public void deleteAll(String serverGroup) throws SQLException {
         String whereClause = "gauge_id in (select gauge_id from gauge_meta where server_group = ?)";
-        dataSource.batchDelete("gauge_point_rollup_0", whereClause, serverGroup);
+        dataSource.batchDelete("gauge_value_rollup_0", whereClause, serverGroup);
         for (int i = 1; i <= configRepository.getRollupConfigs().size(); i++) {
-            dataSource.batchDelete("gauge_point_rollup_" + castUntainted(i), whereClause,
+            dataSource.batchDelete("gauge_value_rollup_" + castUntainted(i), whereClause,
                     serverGroup);
         }
         gaugeMetaDao.deleteAll(serverGroup);
@@ -282,7 +289,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     void deleteBefore(String serverGroup, long captureTime, int rollupLevel) throws SQLException {
         String whereClause = "gauge_id in (select gauge_id from gauge_meta where server_group = ?)"
                 + " and capture_time < ?";
-        dataSource.batchDelete("gauge_point_rollup_" + castUntainted(rollupLevel), whereClause,
+        dataSource.batchDelete("gauge_value_rollup_" + castUntainted(rollupLevel), whereClause,
                 serverGroup, captureTime);
     }
 
@@ -313,12 +320,12 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     private void rollup(long lastRollupTime, long safeRollupTime, @Untainted String captureTimeSql,
             int toRollupLevel, int fromRollupLevel) throws SQLException {
-        dataSource.update("insert into gauge_point_rollup_" + castUntainted(toRollupLevel)
-                + " (gauge_id, capture_time, value, count) select gauge_id, " + captureTimeSql
-                + " ceil_capture_time, avg(value), count(*) from gauge_point_rollup_"
-                + castUntainted(fromRollupLevel) + " gp where gp.capture_time > ?"
-                + " and gp.capture_time <= ? group by gp.gauge_id, ceil_capture_time",
-                lastRollupTime, safeRollupTime);
+        dataSource.update("insert into gauge_value_rollup_" + castUntainted(toRollupLevel)
+                + " (gauge_id, capture_time, value, weight) select gauge_id, " + captureTimeSql
+                + " ceil_capture_time, sum(value * weight) / sum(weight), sum(weight)"
+                + " from gauge_value_rollup_" + castUntainted(fromRollupLevel)
+                + " gp where gp.capture_time > ? and gp.capture_time <= ?"
+                + " group by gp.gauge_id, ceil_capture_time", lastRollupTime, safeRollupTime);
     }
 
     private static class LastRollupTimesExtractor

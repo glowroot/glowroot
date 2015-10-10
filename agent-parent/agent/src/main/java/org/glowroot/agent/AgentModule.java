@@ -182,8 +182,8 @@ public class AgentModule {
                 ServiceRegistryImpl.init(glowrootService, transactionService, configServiceFactory);
 
         lazyPlatformMBeanServer = new LazyPlatformMBeanServer(jbossModules);
-        gaugeCollector =
-                new GaugeCollector(configService, collector, lazyPlatformMBeanServer, clock);
+        gaugeCollector = new GaugeCollector(configService, collector, lazyPlatformMBeanServer,
+                clock, ticker);
         // using fixed rate to keep gauge collections close to on the second mark
         long gaugeCollectionIntervalMillis = configService.getGaugeCollectionIntervalMillis();
         long initialDelay = gaugeCollectionIntervalMillis

@@ -29,8 +29,21 @@ public final class GaugeValueOuterClass {
 
     /**
      * <code>optional double value = 3;</code>
+     *
+     * <pre>
+     * for counter gauges, the value is the delta of the counter over the past interval_nanos
+     * </pre>
      */
     double getValue();
+
+    /**
+     * <code>optional int64 interval_nanos = 4;</code>
+     *
+     * <pre>
+     * interval_nanos is only used for counter gauges
+     * </pre>
+     */
+    long getIntervalNanos();
   }
   /**
    * Protobuf type {@code org_glowroot_wire_api_model.GaugeValue}
@@ -47,6 +60,7 @@ public final class GaugeValueOuterClass {
       gaugeName_ = "";
       captureTime_ = 0L;
       value_ = 0D;
+      intervalNanos_ = 0L;
     }
 
     @java.lang.Override
@@ -87,6 +101,11 @@ public final class GaugeValueOuterClass {
             case 25: {
 
               value_ = input.readDouble();
+              break;
+            }
+            case 32: {
+
+              intervalNanos_ = input.readInt64();
               break;
             }
           }
@@ -160,9 +179,26 @@ public final class GaugeValueOuterClass {
     private double value_;
     /**
      * <code>optional double value = 3;</code>
+     *
+     * <pre>
+     * for counter gauges, the value is the delta of the counter over the past interval_nanos
+     * </pre>
      */
     public double getValue() {
       return value_;
+    }
+
+    public static final int INTERVAL_NANOS_FIELD_NUMBER = 4;
+    private long intervalNanos_;
+    /**
+     * <code>optional int64 interval_nanos = 4;</code>
+     *
+     * <pre>
+     * interval_nanos is only used for counter gauges
+     * </pre>
+     */
+    public long getIntervalNanos() {
+      return intervalNanos_;
     }
 
     private byte memoizedIsInitialized = -1;
@@ -186,6 +222,9 @@ public final class GaugeValueOuterClass {
       if (value_ != 0D) {
         output.writeDouble(3, value_);
       }
+      if (intervalNanos_ != 0L) {
+        output.writeInt64(4, intervalNanos_);
+      }
     }
 
     public int getSerializedSize() {
@@ -203,6 +242,10 @@ public final class GaugeValueOuterClass {
       if (value_ != 0D) {
         size += com.google.protobuf.CodedOutputStream
           .computeDoubleSize(3, value_);
+      }
+      if (intervalNanos_ != 0L) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt64Size(4, intervalNanos_);
       }
       memoizedSize = size;
       return size;
@@ -321,6 +364,8 @@ public final class GaugeValueOuterClass {
 
         value_ = 0D;
 
+        intervalNanos_ = 0L;
+
         return this;
       }
 
@@ -346,6 +391,7 @@ public final class GaugeValueOuterClass {
         result.gaugeName_ = gaugeName_;
         result.captureTime_ = captureTime_;
         result.value_ = value_;
+        result.intervalNanos_ = intervalNanos_;
         onBuilt();
         return result;
       }
@@ -370,6 +416,9 @@ public final class GaugeValueOuterClass {
         }
         if (other.getValue() != 0D) {
           setValue(other.getValue());
+        }
+        if (other.getIntervalNanos() != 0L) {
+          setIntervalNanos(other.getIntervalNanos());
         }
         onChanged();
         return this;
@@ -495,12 +544,20 @@ public final class GaugeValueOuterClass {
       private double value_ ;
       /**
        * <code>optional double value = 3;</code>
+       *
+       * <pre>
+       * for counter gauges, the value is the delta of the counter over the past interval_nanos
+       * </pre>
        */
       public double getValue() {
         return value_;
       }
       /**
        * <code>optional double value = 3;</code>
+       *
+       * <pre>
+       * for counter gauges, the value is the delta of the counter over the past interval_nanos
+       * </pre>
        */
       public Builder setValue(double value) {
         
@@ -510,10 +567,52 @@ public final class GaugeValueOuterClass {
       }
       /**
        * <code>optional double value = 3;</code>
+       *
+       * <pre>
+       * for counter gauges, the value is the delta of the counter over the past interval_nanos
+       * </pre>
        */
       public Builder clearValue() {
         
         value_ = 0D;
+        onChanged();
+        return this;
+      }
+
+      private long intervalNanos_ ;
+      /**
+       * <code>optional int64 interval_nanos = 4;</code>
+       *
+       * <pre>
+       * interval_nanos is only used for counter gauges
+       * </pre>
+       */
+      public long getIntervalNanos() {
+        return intervalNanos_;
+      }
+      /**
+       * <code>optional int64 interval_nanos = 4;</code>
+       *
+       * <pre>
+       * interval_nanos is only used for counter gauges
+       * </pre>
+       */
+      public Builder setIntervalNanos(long value) {
+        
+        intervalNanos_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int64 interval_nanos = 4;</code>
+       *
+       * <pre>
+       * interval_nanos is only used for counter gauges
+       * </pre>
+       */
+      public Builder clearIntervalNanos() {
+        
+        intervalNanos_ = 0L;
         onChanged();
         return this;
       }
@@ -590,9 +689,10 @@ public final class GaugeValueOuterClass {
   static {
     java.lang.String[] descriptorData = {
       "\n\020GaugeValue.proto\022\033org_glowroot_wire_ap" +
-      "i_model\"E\n\nGaugeValue\022\022\n\ngauge_name\030\001 \001(" +
-      "\t\022\024\n\014capture_time\030\002 \001(\003\022\r\n\005value\030\003 \001(\001B\035" +
-      "\n\033org.glowroot.wire.api.modelb\006proto3"
+      "i_model\"]\n\nGaugeValue\022\022\n\ngauge_name\030\001 \001(" +
+      "\t\022\024\n\014capture_time\030\002 \001(\003\022\r\n\005value\030\003 \001(\001\022\026" +
+      "\n\016interval_nanos\030\004 \001(\003B\035\n\033org.glowroot.w" +
+      "ire.api.modelb\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -611,7 +711,7 @@ public final class GaugeValueOuterClass {
     internal_static_org_glowroot_wire_api_model_GaugeValue_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_GaugeValue_descriptor,
-        new java.lang.String[] { "GaugeName", "CaptureTime", "Value", });
+        new java.lang.String[] { "GaugeName", "CaptureTime", "Value", "IntervalNanos", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)
