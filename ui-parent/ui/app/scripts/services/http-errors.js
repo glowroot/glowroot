@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 glowroot.factory('httpErrors', [
   function () {
     function getHttpErrorsObject(data, status) {
-      if (status === 0) {
+      if (status === 0 || status === -1) {
         return {
           headline: 'Unable to connect to server'
         };
