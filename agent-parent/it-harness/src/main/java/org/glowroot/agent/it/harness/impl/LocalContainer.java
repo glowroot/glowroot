@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
+import com.google.common.reflect.Reflection;
 
 import org.glowroot.agent.AgentModule;
 import org.glowroot.agent.DataDirLocking.BaseDirLockedException;
@@ -95,6 +96,18 @@ public class LocalContainer implements Container {
         IsolatedClassLoader midLoader = new IsolatedClassLoader(bridgeClasses);
         ClassLoader priorContextClassLoader = Thread.currentThread().getContextClassLoader();
         try {
+            // need to initialize MainEntryPoint first to give SLF4J a chance to load outside
+            // of the context class loader, otherwise often (but not always) end up with this:
+            //
+            // SLF4J: The following set of substitute loggers may have been accessed
+            // SLF4J: during the initialization phase. Logging calls during this
+            // SLF4J: phase were not honored. However, subsequent logging calls to these
+            // SLF4J: loggers will work as normally expected.
+            // SLF4J: See also http://www.slf4j.org/codes.html#substituteLogger
+            // SLF4J: org.glowroot.agent.weaving.IsolatedWeavingClassLoader
+
+            Reflection.initialize(MainEntryPoint.class);
+
             Thread.currentThread().setContextClassLoader(midLoader);
             MainEntryPoint.start(properties);
         } catch (BaseDirLockedException e) {
