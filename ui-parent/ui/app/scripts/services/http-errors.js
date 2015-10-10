@@ -49,12 +49,20 @@ glowroot.factory('httpErrors', [
               deferred.reject('Someone else has updated the data on this page, please reload and try again');
             } else {
               $scope.httpError = getHttpErrorsObject(data, status);
+              $scope.$on('$locationChangeSuccess', function () {
+                // e.g. clear error on back button
+                $scope.httpError = undefined;
+              });
               deferred.reject($scope.httpError.headline);
             }
           };
         } else {
           return function (data, status) {
             $scope.httpError = getHttpErrorsObject(data, status);
+            $scope.$on('$locationChangeSuccess', function () {
+              // e.g. clear error on back button
+              $scope.httpError = undefined;
+            });
           };
         }
       }
