@@ -15,10 +15,22 @@
  */
 package org.glowroot.agent.weaving;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+
 import org.glowroot.common.util.UsedByGeneratedBytecode;
 
 @UsedByGeneratedBytecode
 public class AdviceFlowOuterHolder {
+
+    private static final LoadingCache<String, AdviceFlowOuterHolder> cache = CacheBuilder
+            .newBuilder().weakKeys().build(new CacheLoader<String, AdviceFlowOuterHolder>() {
+                @Override
+                public AdviceFlowOuterHolder load(String key) throws Exception {
+                    return new AdviceFlowOuterHolder();
+                }
+            });
 
     // it is faster to use a mutable holder object and always perform ThreadLocal.get() and never
     // use ThreadLocal.set(), because the value is more likely to be found in the ThreadLocalMap
@@ -34,6 +46,11 @@ public class AdviceFlowOuterHolder {
     @UsedByGeneratedBytecode
     public static AdviceFlowOuterHolder create() {
         return new AdviceFlowOuterHolder();
+    }
+
+    @UsedByGeneratedBytecode
+    public static AdviceFlowOuterHolder get(String timerName) {
+        return cache.getUnchecked(timerName);
     }
 
     private AdviceFlowOuterHolder() {}

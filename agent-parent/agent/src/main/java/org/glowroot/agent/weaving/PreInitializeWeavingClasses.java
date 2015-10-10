@@ -361,6 +361,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.Advice$AdviceParameter");
         types.add("org.glowroot.agent.weaving.AdviceFlowOuterHolder");
         types.add("org.glowroot.agent.weaving.AdviceFlowOuterHolder$1");
+        types.add("org.glowroot.agent.weaving.AdviceFlowOuterHolder$2");
         types.add("org.glowroot.agent.weaving.AdviceFlowOuterHolder$AdviceFlowHolder");
         types.add("org.glowroot.agent.weaving.AdviceMatcher");
         types.add("org.glowroot.agent.weaving.AnalyzedClass");
@@ -392,6 +393,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.MixinType");
         types.add("org.glowroot.agent.weaving.ParameterKind");
         types.add("org.glowroot.agent.weaving.PointcutClassVisitor");
+        types.add("org.glowroot.agent.weaving.PointcutClassVisitor$1");
         types.add("org.glowroot.agent.weaving.ShimType");
         types.add("org.glowroot.agent.weaving.Weaver");
         types.add("org.glowroot.agent.weaving.Weaver$ComputeFramesClassWriter");

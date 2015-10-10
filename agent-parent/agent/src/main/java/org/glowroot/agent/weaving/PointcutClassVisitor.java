@@ -18,6 +18,7 @@ package org.glowroot.agent.weaving;
 import javax.annotation.Nullable;
 
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
@@ -39,6 +40,7 @@ class PointcutClassVisitor extends ClassVisitor {
     private final ClassWriter cw;
 
     private @MonotonicNonNull String internalName;
+    private @Nullable String timerName;
     private boolean clinit;
 
     PointcutClassVisitor(ClassWriter cw) {
@@ -52,6 +54,23 @@ class PointcutClassVisitor extends ClassVisitor {
         this.internalName = internalName;
         cw.visit(version, access, internalName, signature, superInternalName,
                 interfaceInternalNames);
+    }
+
+    @Override
+    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+        AnnotationVisitor av = cw.visitAnnotation(desc, visible);
+        if (desc.equals("Lorg/glowroot/agent/plugin/api/weaving/Pointcut;")) {
+            return new AnnotationVisitor(ASM5, av) {
+                @Override
+                public void visit(@Nullable String name, Object value) {
+                    if ("timerName".equals(name)) {
+                        timerName = (String) value;
+                    }
+                    super.visit(name, value);
+                }
+            };
+        }
+        return av;
     }
 
     @Override
@@ -76,8 +95,20 @@ class PointcutClassVisitor extends ClassVisitor {
         fv.visitEnd();
         MethodVisitor mv = cw.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
         mv.visitCode();
-        mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(AdviceFlowOuterHolder.class),
-                "create", "()" + Type.getDescriptor(AdviceFlowOuterHolder.class), false);
+        if (timerName == null || timerName.isEmpty()) {
+            mv.visitMethodInsn(INVOKESTATIC,
+                    Type.getInternalName(AdviceFlowOuterHolder.class),
+                    "create",
+                    "()" + Type.getDescriptor(AdviceFlowOuterHolder.class),
+                    false);
+        } else {
+            mv.visitLdcInsn(timerName);
+            mv.visitMethodInsn(INVOKESTATIC,
+                    Type.getInternalName(AdviceFlowOuterHolder.class),
+                    "get",
+                    "(Ljava/lang/String;)" + Type.getDescriptor(AdviceFlowOuterHolder.class),
+                    false);
+        }
         mv.visitFieldInsn(PUTSTATIC, internalName, "glowroot$advice$flow$outer$holder",
                 Type.getDescriptor(AdviceFlowOuterHolder.class));
         if (clinit) {

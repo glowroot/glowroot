@@ -214,8 +214,20 @@ public class AdviceGenerator {
     private void addStaticInitializer(ClassWriter cw) {
         MethodVisitor mv = cw.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
         mv.visitCode();
-        mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(AdviceFlowOuterHolder.class),
-                "create", "()" + Type.getDescriptor(AdviceFlowOuterHolder.class), false);
+        if (config.timerName().isEmpty()) {
+            mv.visitMethodInsn(INVOKESTATIC,
+                    Type.getInternalName(AdviceFlowOuterHolder.class),
+                    "create",
+                    "()" + Type.getDescriptor(AdviceFlowOuterHolder.class),
+                    false);
+        } else {
+            mv.visitLdcInsn(config.timerName());
+            mv.visitMethodInsn(INVOKESTATIC,
+                    Type.getInternalName(AdviceFlowOuterHolder.class),
+                    "get",
+                    "(Ljava/lang/String;)" + Type.getDescriptor(AdviceFlowOuterHolder.class),
+                    false);
+        }
         mv.visitFieldInsn(PUTSTATIC, adviceInternalName, "glowroot$advice$flow$outer$holder",
                 Type.getDescriptor(AdviceFlowOuterHolder.class));
         mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/plugin/api/Agent",
