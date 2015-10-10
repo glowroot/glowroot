@@ -274,15 +274,11 @@ glowroot.factory('charts', [
                 data: dataSeries.data,
                 label: label,
                 shortLabel: dataSeries.shortLabel,
-                color: chartState.keyedColorPool.get(label)
-              };
-              if (dataSeries.data.length === 1) {
-                plotDataItem.points = {
-                  show: true,
-                  radius: 3,
+                color: chartState.keyedColorPool.get(label),
+                points: {
                   fillColor: chartState.keyedColorPool.get(label)
-                };
-              }
+                }
+              };
               plotData.push(plotDataItem);
             });
             if (plotData.length) {

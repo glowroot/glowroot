@@ -22,6 +22,18 @@ glowroot.factory('keyedColorPools', [
     var dynamicPool = fixedPool.slice(0);
     var variation = 1;
 
+    function colorToHex(color)  {
+      function twoDigitHex(value) {
+        var hex = value.toString(16);
+        if (hex.length === 1) {
+          return '0' + hex;
+        } else {
+          return hex;
+        }
+      }
+      return '#' + twoDigitHex(color.r) + twoDigitHex(color.g) + twoDigitHex(color.b);
+    }
+
     function getColor(i) {
       if (i < dynamicPool.length) {
         return dynamicPool[i];
@@ -34,7 +46,7 @@ glowroot.factory('keyedColorPools', [
           variation += 1;
         }
       }
-      var color = c.scale('rgb', variation);
+      var color = colorToHex(c.scale('rgb', variation));
       dynamicPool.push(color);
       return color;
     }
