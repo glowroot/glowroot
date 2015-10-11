@@ -355,7 +355,7 @@ glowroot.factory('charts', [
           html += ' style="background-color: #eee;"';
         }
         html += '>' +
-            '<td class="legendColorBox">' +
+            '<td class="legendColorBox" width="16">' +
             '<div style="border: 1px solid rgb(204, 204, 204); padding: 1px;">' +
             '<div style="width: 4px; height: 0px; border: 5px solid ' + dataSeries.color + '; overflow: hidden;">' +
             '</div></div></td>' +
