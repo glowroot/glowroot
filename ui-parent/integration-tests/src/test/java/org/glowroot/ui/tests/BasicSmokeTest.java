@@ -15,6 +15,8 @@
  */
 package org.glowroot.ui.tests;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Executors;
 
@@ -163,7 +165,13 @@ public class BasicSmokeTest extends WebDriverTest {
 
         jvmSidebar.getHeapDumpLink().click();
         Utils.withWait(driver, By.xpath("//button[normalize-space()='Dump heap']")).click();
-        Utils.withWait(driver, By.xpath("//div[@ng-show='heapDumpResponse']"));
+        String heapDumpFileName = Utils
+                .withWait(driver,
+                        By.xpath("//div[@ng-show='heapDumpResponse']//table//tr[1]/td[2]"))
+                .getText();
+        if (!new File(heapDumpFileName).delete()) {
+            throw new IOException("Could not delete heap dump file: " + heapDumpFileName);
+        }
         Utils.withWait(driver, By.xpath("//button[normalize-space()='Check disk space']")).click();
         Utils.withWait(driver, By.xpath("//div[@ng-show='availableDiskSpace']"));
 
