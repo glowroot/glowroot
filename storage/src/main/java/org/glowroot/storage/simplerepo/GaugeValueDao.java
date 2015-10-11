@@ -130,7 +130,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         List<Gauge> gauges = Lists.newArrayList();
         for (GaugeConfig gaugeConfig : configRepository.getGaugeConfigs(serverGroup)) {
             for (MBeanAttribute mbeanAttribute : gaugeConfig.mbeanAttributes()) {
-                String gaugeName = gaugeConfig.mbeanObjectName() + "," + mbeanAttribute.name();
+                String gaugeName = gaugeConfig.mbeanObjectName() + ':' + mbeanAttribute.name();
                 if (mbeanAttribute.counter()) {
                     gaugeName += "[counter]";
                 }
@@ -299,7 +299,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         Pattern pattern = Pattern.compile(Patterns.buildSimplePattern(gaugeName));
         for (String storedGaugeName : allGaugeNames) {
             if (pattern.matcher(storedGaugeName).matches()) {
-                int index = storedGaugeName.lastIndexOf(',');
+                int index = storedGaugeName.lastIndexOf(':');
                 String objectName = storedGaugeName.substring(0, index);
                 String display = GaugeConfig.display(objectName) + '/' + mbeanAttribute.name();
                 gauges.add(ImmutableGauge.of(storedGaugeName, display, mbeanAttribute.counter()));

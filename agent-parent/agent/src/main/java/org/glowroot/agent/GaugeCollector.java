@@ -216,7 +216,7 @@ class GaugeCollector extends ScheduledRunnable {
                         "MBean attribute value is not a number or string");
             }
             if (value != null) {
-                String gaugeName = mbeanObjectName + ',' + mbeanAttributeName;
+                String gaugeName = mbeanObjectName + ':' + mbeanAttributeName;
                 if (mbeanAttribute.counter()) {
                     // "[counter]" suffix is so gauge name (and gauge id) will change if gauge is
                     // switched between counter and non-counter (which will prevent counter and

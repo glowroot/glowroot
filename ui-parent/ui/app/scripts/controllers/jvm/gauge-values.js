@@ -28,7 +28,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
   'httpErrors',
   function ($scope, $location, $filter, $http, $timeout, charts, keyedColorPools, queryStrings, httpErrors) {
 
-    var DEFAULT_GAUGES = ['java.lang:type=Memory,HeapMemoryUsage/used'];
+    var DEFAULT_GAUGES = ['java.lang:type=Memory:HeapMemoryUsage/used'];
 
     var chartState = charts.createState();
 
@@ -282,7 +282,10 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       var i, j;
       for (i = 0; i < gauges.length; i++) {
         var splitGaugeName = splitGaugeNames[i];
-        minRequiredForUniqueName = 2;
+        var gaugeName = gauges[i].name;
+        var separator = gaugeName.lastIndexOf(':');
+        // at least include the last step in the mbean object name
+        minRequiredForUniqueName = gaugeName.substring(separator + 1).split('/').length + 1;
         for (j = 0; j < gauges.length; j++) {
           if (j === i) {
             continue;
@@ -437,28 +440,28 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           function unitFromLabel(label) {
             // TODO units should be configurable per gauge config
             var unit = '';
-            if (label.match(/java.lang:type=Memory,(Non)?HeapMemoryUsage\/(init|used|committed|max)/)) {
+            if (label.match(/java.lang:type=Memory:(Non)?HeapMemoryUsage\/(init|used|committed|max)/)) {
               unit = ' bytes';
             }
-            if (label.match(/java.lang:type=OperatingSystem,(Free|Total)(Physical|Swap)MemorySize/)) {
+            if (label.match(/java.lang:type=OperatingSystem:(Free|Total)(Physical|Swap)MemorySize/)) {
               unit = ' bytes';
             }
-            if (label.match(/java.lang:type=Runtime,Uptime/)) {
+            if (label.match(/java.lang:type=Runtime:Uptime/)) {
               unit = ' milliseconds';
             }
-            if (label.match(/java.lang:type=Threading,CurrentThread(Cpu|User)Time/)) {
+            if (label.match(/java.lang:type=Threading:CurrentThread(Cpu|User)Time/)) {
               unit = ' nanoseconds';
             }
-            if (label.match(/java.lang:type=MemoryPool,name=[a-zA-Z0-9 ]+,(Peak)?Usage\/(init|used|committed|max)/)) {
+            if (label.match(/java.lang:type=MemoryPool,name=[a-zA-Z0-9 ]+:(Peak)?Usage\/(init|used|committed|max)/)) {
               unit = ' bytes';
             }
-            if (label.match(/java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+,LastGcInfo\/duration/)) {
+            if (label.match(/java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+:LastGcInfo\/duration/)) {
               unit = ' milliseconds';
             }
-            if (label.match(/java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+,CollectionTime/)) {
+            if (label.match(/java.lang:type=GarbageCollector,name=[a-zA-Z0-9 ]+:CollectionTime/)) {
               unit = ' milliseconds';
             }
-            if (label.match(/java.lang:type=Compilation,TotalCompilationTime/)) {
+            if (label.match(/java.lang:type=Compilation:TotalCompilationTime/)) {
               unit = ' milliseconds';
             }
             if (counterGauges[label]) {
