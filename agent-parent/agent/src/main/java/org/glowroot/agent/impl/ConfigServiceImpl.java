@@ -70,12 +70,16 @@ public class ConfigServiceImpl
         this.configService = configService;
         PluginConfig pluginConfig = configService.getPluginConfig(pluginId);
         if (pluginConfig == null) {
-            List<String> ids = Lists.newArrayList();
-            for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-                ids.add(pluginDescriptor.id());
+            if (pluginDescriptors.isEmpty()) {
+                logger.warn("unexpected plugin id: {} (there are no available plugins)");
+            } else {
+                List<String> ids = Lists.newArrayList();
+                for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
+                    ids.add(pluginDescriptor.id());
+                }
+                logger.warn("unexpected plugin id: {} (available plugin ids are {})", pluginId,
+                        Joiner.on(", ").join(ids));
             }
-            logger.warn("unexpected plugin id: {} (available plugin ids are {})", pluginId,
-                    Joiner.on(", ").join(ids));
             this.pluginId = null;
         } else {
             this.pluginId = pluginId;
