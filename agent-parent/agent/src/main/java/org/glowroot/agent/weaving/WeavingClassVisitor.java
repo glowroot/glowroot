@@ -478,8 +478,8 @@ class WeavingClassVisitor extends ClassVisitor {
         }
         if ((!classMetaTypes.isEmpty() || !methodMetaTypes.isEmpty())
                 && metaHolderInternalName == null) {
-            metaHolderInternalName = "org/glowroot/agent/weaving/MetaHolder"
-                    + metaHolderCounter.incrementAndGet();
+            metaHolderInternalName =
+                    "org/glowroot/agent/weaving/MetaHolder" + metaHolderCounter.incrementAndGet();
         }
         return methodMetaUniqueNum;
     }

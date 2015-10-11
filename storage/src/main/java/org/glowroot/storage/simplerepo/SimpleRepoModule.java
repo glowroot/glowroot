@@ -73,7 +73,7 @@ public class SimpleRepoModule {
     public SimpleRepoModule(File baseDir, Clock clock, Ticker ticker,
             ConfigRepository configRepository, @Nullable ScheduledExecutorService scheduledExecutor,
             PlatformMBeanServerLifecycle platformMBeanServerLifecycle, boolean internalH2MemDb,
-            boolean viewerModeEnabled) throws Exception {
+            boolean viewerMode) throws Exception {
         File dataDir = new File(baseDir, "data");
         if (!dataDir.exists() && !dataDir.mkdir()) {
             throw new IOException("Could not create directory: " + dataDir.getAbsolutePath());
@@ -133,7 +133,7 @@ public class SimpleRepoModule {
         TriggeredAlertDao triggeredAlertDao = new TriggeredAlertDao(dataSource);
         alertingService = new AlertingService(configRepository, triggeredAlertDao, aggregateDao,
                 new MailService());
-        if (viewerModeEnabled) {
+        if (viewerMode) {
             reaperRunnable = null;
         } else {
             // scheduledExecutor must be non-null when not in viewer mode

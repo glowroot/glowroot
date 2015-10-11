@@ -64,7 +64,7 @@ class BatchQueryMessageSupplier extends MessageSupplier {
         return new BatchQueryMessageSupplier(queries);
     }
 
-    public BatchQueryMessageSupplier(List<String> queries) {
+    private BatchQueryMessageSupplier(List<String> queries) {
         super();
         this.queries = queries;
     }

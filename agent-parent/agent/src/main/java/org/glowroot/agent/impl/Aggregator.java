@@ -65,10 +65,11 @@ public class Aggregator {
         this.configService = configService;
         this.clock = clock;
         this.aggregateIntervalMillis = aggregateIntervalMillis;
-        activeIntervalCollector = new AggregateIntervalCollector(clock.currentTimeMillis(),
-                aggregateIntervalMillis,
-                configService.getAdvancedConfig().maxAggregateTransactionsPerTransactionType(),
-                configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
+        activeIntervalCollector =
+                new AggregateIntervalCollector(clock.currentTimeMillis(), aggregateIntervalMillis,
+                        configService.getAdvancedConfig()
+                                .maxAggregateTransactionsPerTransactionType(),
+                        configService.getAdvancedConfig().maxAggregateQueriesPerQueryType());
         // dedicated thread to aggregating transaction data
         processingThread = new Thread(new TransactionProcessor());
         processingThread.setDaemon(true);

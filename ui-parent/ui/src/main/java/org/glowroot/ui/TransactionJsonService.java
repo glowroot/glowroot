@@ -193,10 +193,9 @@ class TransactionJsonService {
                 return Doubles.compare(right.totalNanos(), left.totalNanos());
             }
         });
-        if (queryList.isEmpty()
-                && transactionCommonService.shouldHaveQueries(request.serverGroup(),
-                        request.transactionType(), request.transactionName(), request.from(),
-                        request.to())) {
+        if (queryList.isEmpty() && transactionCommonService.shouldHaveQueries(request.serverGroup(),
+                request.transactionType(), request.transactionName(), request.from(),
+                request.to())) {
             return "{\"overwritten\":true}";
         }
         StringBuilder sb = new StringBuilder();
@@ -380,10 +379,9 @@ class TransactionJsonService {
                     dataSeries.add(overviewAggregate.captureTime(), 0);
                 } else {
                     // convert to average milliseconds
-                    dataSeries.add(overviewAggregate.captureTime(),
-                            (totalNanos.doubleValue()
-                                    / overviewAggregate.transactionCount())
-                                    / NANOSECONDS_PER_MILLISECOND);
+                    double value = (totalNanos.doubleValue() / overviewAggregate.transactionCount())
+                            / NANOSECONDS_PER_MILLISECOND;
+                    dataSeries.add(overviewAggregate.captureTime(), value);
                     totalOtherNanos -= totalNanos.doubleValue();
                 }
             }

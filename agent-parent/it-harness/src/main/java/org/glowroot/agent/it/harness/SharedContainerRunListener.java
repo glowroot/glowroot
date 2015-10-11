@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,23 +27,23 @@ public class SharedContainerRunListener extends RunListener {
     private static volatile @Nullable Container sharedLocalContainer;
     private static volatile @Nullable Container sharedJavaagentContainer;
 
-    public static boolean useSharedContainer() {
+    static boolean useSharedContainer() {
         return useSharedContainer;
     }
 
-    public static @Nullable Container getSharedLocalContainer() {
+    static @Nullable Container getSharedLocalContainer() {
         return sharedLocalContainer;
     }
 
-    public static @Nullable Container getSharedJavaagentContainer() {
+    static @Nullable Container getSharedJavaagentContainer() {
         return sharedJavaagentContainer;
     }
 
-    public static void setSharedLocalContainer(Container container) {
+    static void setSharedLocalContainer(Container container) {
         sharedLocalContainer = container;
     }
 
-    public static void setSharedJavaagentContainer(Container container) {
+    static void setSharedJavaagentContainer(Container container) {
         sharedJavaagentContainer = container;
     }
 

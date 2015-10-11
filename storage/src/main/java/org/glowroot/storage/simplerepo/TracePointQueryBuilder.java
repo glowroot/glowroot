@@ -86,8 +86,7 @@ class TracePointQueryBuilder {
         }
         StringComparator attributeValueComparator = query.attributeValueComparator();
         String attributeValue = query.attributeValue();
-        if (attributeValueComparator != null
-                && !Strings.isNullOrEmpty(attributeValue)) {
+        if (attributeValueComparator != null && !Strings.isNullOrEmpty(attributeValue)) {
             sql += " upper(attr.value) " + attributeValueComparator.getComparator() + " ? and";
             args.add(attributeValueComparator.formatParameter(attributeValue));
         }

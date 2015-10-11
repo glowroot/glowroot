@@ -64,7 +64,7 @@ public abstract class PluginCache {
     public abstract ImmutableList<File> pluginJars();
     public abstract ImmutableList<PluginDescriptor> pluginDescriptors();
 
-    public static PluginCache create(@Nullable File glowrootJarFile, boolean viewerModeEnabled)
+    public static PluginCache create(@Nullable File glowrootJarFile, boolean viewerMode)
             throws Exception {
         ImmutablePluginCache.Builder builder = ImmutablePluginCache.builder();
         List<URL> descriptorURLs = Lists.newArrayList();
@@ -81,7 +81,7 @@ public abstract class PluginCache {
         }
         // also add descriptors on the class path (this is primarily for integration tests)
         descriptorURLs.addAll(getResources("META-INF/glowroot.plugin.json"));
-        if (viewerModeEnabled) {
+        if (viewerMode) {
             builder.addAllPluginDescriptors(createInViewerMode(descriptorURLs));
         } else {
             builder.addAllPluginDescriptors(readPluginDescriptors(descriptorURLs));

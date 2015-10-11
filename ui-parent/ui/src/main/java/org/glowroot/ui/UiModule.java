@@ -58,6 +58,7 @@ public class UiModule {
             LiveThreadDumpService liveThreadDumpService,
             LiveAggregateRepository liveAggregateRepository,
             LiveWeavingService liveWeavingService,
+            boolean viewerMode,
             String bindAddress,
             String version,
             List<PluginDescriptor> pluginDescriptors) { // TODO UI should not depend on this
@@ -116,7 +117,7 @@ public class UiModule {
         int port = configRepository.getUserInterfaceConfig().port();
         LazyHttpServer lazyHttpServer = new LazyHttpServer(bindAddress, port, httpSessionManager,
                 indexHtmlHttpService, layoutHttpService, layoutService, traceDetailHttpService,
-                traceExportHttpService, glowrootLogHttpService, jsonServices);
+                traceExportHttpService, glowrootLogHttpService, jsonServices, viewerMode);
 
         lazyHttpServer.init(configJsonService);
         return new UiModule(lazyHttpServer);

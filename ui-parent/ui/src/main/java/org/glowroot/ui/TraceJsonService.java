@@ -33,8 +33,7 @@ class TraceJsonService {
     @GET("/backend/trace/header")
     String getHeader(String queryString) throws Exception {
         HeaderRequest request = QueryStrings.decode(queryString, HeaderRequest.class);
-        String headerJson =
-                traceCommonService.getHeaderJson(request.server(), request.traceId());
+        String headerJson = traceCommonService.getHeaderJson(request.server(), request.traceId());
         if (headerJson == null) {
             logger.debug("no trace found for server '{}' and trace id '{}'", request.server(),
                     request.traceId());

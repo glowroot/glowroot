@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
@@ -38,10 +37,7 @@ import com.fasterxml.jackson.databind.deser.Deserializers;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
-import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,83 +111,6 @@ public class ObjectMappers {
             }
         }
         return map;
-    }
-
-    @SuppressWarnings("return.type.incompatible")
-    public static <T> Map<String, List</*@NonNull*/T>> orEmpty2(
-            @Nullable Map<String, /*@Nullable*/List<T>> map, String fieldName)
-                    throws JsonMappingException {
-        if (map == null) {
-            return ImmutableMap.of();
-        }
-        for (List<T> list : map.values()) {
-            if (list == null) {
-                throw new JsonMappingException(
-                        "Null values are not allowed in map field: " + fieldName);
-            }
-            for (T item : list) {
-                if (item == null) {
-                    throw new JsonMappingException(
-                            "Null values are not allowed in map field: " + fieldName);
-                }
-            }
-        }
-        return map;
-    }
-
-    @PolyNull
-    @SuppressWarnings("return.type.incompatible")
-    public static <T> List</*@NonNull*/T> checkNotNullItems(@PolyNull List<T> list,
-            String fieldName) throws JsonMappingException {
-        if (list == null) {
-            return null;
-        }
-        for (T item : list) {
-            if (item == null) {
-                throw new JsonMappingException(
-                        "Null items are not allowed in array field: " + fieldName);
-            }
-        }
-        return list;
-    }
-
-    @PolyNull
-    @SuppressWarnings("return.type.incompatible")
-    public static <K, V> Map<K, /*@NonNull*/V> checkNotNullValuesForProperty(
-            @PolyNull Map<K, V> map, String fieldName) throws JsonMappingException {
-        if (map == null) {
-            return null;
-        }
-        for (Entry<K, V> entry : map.entrySet()) {
-            if (entry.getValue() == null) {
-                throw new JsonMappingException(
-                        "Null values are not allowed in object: " + fieldName);
-            }
-        }
-        return map;
-    }
-
-    // named after guava Strings.nullToEmpty
-    public static <T> List<T> nullToEmpty(@Nullable List<T> list) {
-        if (list == null) {
-            return Lists.newArrayList();
-        } else {
-            return list;
-        }
-    }
-
-    // named after guava Strings.nullToEmpty
-    public static <K, V> Map<K, V> nullToEmpty(@Nullable Map<K, V> map) {
-        if (map == null) {
-            return Maps.newHashMap();
-        } else {
-            return map;
-        }
-    }
-
-    // named after guava Strings.nullToEmpty
-    public static boolean nullToFalse(@Nullable Boolean value) {
-        return value == null ? false : value;
     }
 
     @SuppressWarnings("serial")

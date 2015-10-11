@@ -90,8 +90,7 @@ class TransactionCommonService {
 
     // from is non-inclusive
     OverallSummary readOverallSummary(String serverGroup, String transactionType, long from,
-            long to)
-                    throws Exception {
+            long to) throws Exception {
         LiveResult<OverallSummary> liveResult = liveAggregateRepository
                 .getLiveOverallSummary(serverGroup, transactionType, from, to);
         if (liveResult == null) {
@@ -295,8 +294,8 @@ class TransactionCommonService {
     private MutableProfileTree getMergedProfile(String serverGroup, String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception {
         int initialRollupLevel = aggregateRepository.getRollupLevelForView(serverGroup, from, to);
-        LiveResult<ProfileTree> liveResult = liveAggregateRepository
-                .getLiveProfileTree(serverGroup, transactionType, transactionName, from, to);
+        LiveResult<ProfileTree> liveResult = liveAggregateRepository.getLiveProfileTree(serverGroup,
+                transactionType, transactionName, from, to);
         // -1 since query 'to' is inclusive
         // this way don't need to worry about de-dupping between live and stored aggregates
         long revisedTo = liveResult == null ? to : liveResult.initialCaptureTime() - 1;
@@ -326,8 +325,7 @@ class TransactionCommonService {
     //
     // from is non-inclusive
     private List<Aggregate.QueriesByType> getMergedQueries(String serverGroup,
-            String transactionType,
-            @Nullable String transactionName, long from, long to,
+            String transactionType, @Nullable String transactionName, long from, long to,
             int maxAggregateQueriesPerQueryType) throws Exception {
         int initialRollupLevel = aggregateRepository.getRollupLevelForView(serverGroup, from, to);
         LiveResult<List<Aggregate.QueriesByType>> liveResult = liveAggregateRepository
@@ -339,8 +337,7 @@ class TransactionCommonService {
         QueryCollector mergedQueries = new QueryCollector(maxAggregateQueriesPerQueryType, 0);
         for (int rollupLevel = initialRollupLevel; rollupLevel >= 0; rollupLevel--) {
             mergeInQueriesFromDao(mergedQueries, serverGroup, transactionType, transactionName,
-                    from,
-                    revisedTo, rollupLevel);
+                    from, revisedTo, rollupLevel);
             long lastRolledUpTime = mergedQueries.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > revisedTo) {

@@ -257,9 +257,10 @@ class GaugeCollector extends ScheduledRunnable {
         } else if (loggedMBeanGauges.add(mbeanObjectName)) {
             String matchedOrFound = mbeanObjectName.contains("*") ? "matched" : "found";
             if (pendingLoggedMBeanGauges.remove(mbeanObjectName)) {
-                logger.warn("mbean not {}: {} (waited {} seconds after jvm startup before"
-                        + " logging this warning to allow time for mbean registration"
-                        + " - this wait time can be changed under Configuration > Advanced)",
+                logger.warn(
+                        "mbean not {}: {} (waited {} seconds after jvm startup before logging this"
+                                + " warning to allow time for mbean registration - this wait time"
+                                + " can be changed under Configuration > Advanced)",
                         matchedOrFound, mbeanObjectName, delaySeconds);
             } else {
                 logger.warn("mbean not {}: {}", matchedOrFound, mbeanObjectName);

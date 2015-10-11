@@ -269,6 +269,10 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
                     || line.contains("Glowroot plugins loaded")) {
                 continue;
             }
+            if (line.matches("objc\\[\\d+\\]: Class JavaLaunchHelper is implemented in both .*")) {
+                // OSX jvm loves to emit this
+                continue;
+            }
             unexpectedLines.add(line);
         }
         return unexpectedLines;

@@ -90,9 +90,8 @@ class ErrorCommonService {
         // -1 since query 'to' is inclusive
         // this way don't need to worry about de-dupping between live and stored aggregates
         long revisedTo = liveResult.initialCaptureTime() - 1;
-        OverallErrorSummary overallSummary =
-                aggregateRepository.readOverallErrorSummary(serverGroup,
-                        transactionType, from, revisedTo, rollupLevel);
+        OverallErrorSummary overallSummary = aggregateRepository.readOverallErrorSummary(
+                serverGroup, transactionType, from, revisedTo, rollupLevel);
         for (OverallErrorSummary liveOverallErrorSummary : liveResult.get()) {
             overallSummary = combineOverallErrorSummaries(overallSummary, liveOverallErrorSummary);
         }

@@ -98,8 +98,7 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
     }
 
     @Override
-    public List<String> getMatchingClassNames(String server, String partialClassName,
-            int limit) {
+    public List<String> getMatchingClassNames(String server, String partialClassName, int limit) {
         return getClasspathCache().getMatchingClassNames(partialClassName, limit);
     }
 

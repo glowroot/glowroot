@@ -93,7 +93,8 @@ public class SauceLabs {
             capabilities.setCapability("tunnel-identifier", tunnelIdentifier);
         }
         capabilities.setCapability("name", testName);
-        return new RemoteWebDriver(new URL("http://" + sauceUsername + ":" + sauceAccessKey
-                + "@localhost:4445/wd/hub"), capabilities);
+        return new RemoteWebDriver(new URL(
+                "http://" + sauceUsername + ":" + sauceAccessKey + "@localhost:4445/wd/hub"),
+                capabilities);
     }
 }

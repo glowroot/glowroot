@@ -78,8 +78,7 @@ public class AlertingService {
         }
     }
 
-    private void checkAlert(String server, AlertConfig alertConfig, long endTime)
-            throws Exception {
+    private void checkAlert(String server, AlertConfig alertConfig, long endTime) throws Exception {
         long startTime = endTime - MINUTES.toMillis(alertConfig.timePeriodMinutes());
         // don't want to include the aggregate at startTime, so add 1
         startTime++;

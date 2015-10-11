@@ -89,16 +89,13 @@ public class NestableCallAspect {
                 transactionService.setTransactionUser(null);
             }
             if (random.nextBoolean()) {
-                transactionService.addTransactionAttribute("My First Attribute",
-                        "hello world");
-                transactionService.addTransactionAttribute("My First Attribute",
-                        "hello world");
+                transactionService.addTransactionAttribute("My First Attribute", "hello world");
+                transactionService.addTransactionAttribute("My First Attribute", "hello world");
                 transactionService.addTransactionAttribute("My First Attribute",
                         "hello world " + random.nextInt(10));
             }
             if (random.nextBoolean()) {
-                transactionService.addTransactionAttribute("Second",
-                        "val " + random.nextInt(10));
+                transactionService.addTransactionAttribute("Second", "val " + random.nextInt(10));
             }
             if (random.nextBoolean()) {
                 transactionService.addTransactionAttribute("A Very Long Attribute Value",

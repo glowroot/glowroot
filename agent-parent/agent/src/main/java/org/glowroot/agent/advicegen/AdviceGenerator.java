@@ -107,8 +107,7 @@ public class AdviceGenerator {
                 || !config.transactionUserTemplate().isEmpty()
                 || !config.transactionAttributeTemplates().isEmpty()) {
             // templates are used, so method meta is needed
-            methodMetaInternalName =
-                    "org/glowroot/agent/advicegen/GeneratedMethodMeta" + uniqueNum;
+            methodMetaInternalName = "org/glowroot/agent/advicegen/GeneratedMethodMeta" + uniqueNum;
         } else {
             methodMetaInternalName = null;
         }

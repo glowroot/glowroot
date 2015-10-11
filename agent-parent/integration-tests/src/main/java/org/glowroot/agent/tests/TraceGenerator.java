@@ -31,7 +31,7 @@ public abstract class TraceGenerator {
     public abstract @Nullable String user();
     public abstract Map<String, String> attributes();
 
-    public void call(boolean active) throws InterruptedException {
+    void call(boolean active) throws InterruptedException {
         if (active) {
             Thread.sleep(Long.MAX_VALUE);
         }

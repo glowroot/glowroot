@@ -106,8 +106,8 @@ class InstrumentationJsonService {
     @GET("/backend/config/matching-class-names")
     String getMatchingClassNames(String queryString) throws Exception {
         ClassNamesRequest request = QueryStrings.decode(queryString, ClassNamesRequest.class);
-        return mapper.writeValueAsString(liveWeavingService.getMatchingClassNames(
-                request.server(), request.partialClassName(), request.limit()));
+        return mapper.writeValueAsString(liveWeavingService.getMatchingClassNames(request.server(),
+                request.partialClassName(), request.limit()));
     }
 
     @GET("/backend/config/matching-method-names")
@@ -124,8 +124,7 @@ class InstrumentationJsonService {
         MethodSignaturesRequest request =
                 QueryStrings.decode(queryString, MethodSignaturesRequest.class);
         List<MethodSignature> methodSignatures = liveWeavingService
-                .getMethodSignatures(request.server(), request.className(),
-                        request.methodName());
+                .getMethodSignatures(request.server(), request.className(), request.methodName());
         return mapper.writeValueAsString(methodSignatures);
     }
 
@@ -137,9 +136,8 @@ class InstrumentationJsonService {
         InstrumentationConfig config = configDto.toConfig();
         ImmutableList<String> errors = config.validationErrors();
         if (!errors.isEmpty()) {
-            return mapper.writeValueAsString(ImmutableInstrumentationErrorResponse.builder()
-                    .addAllErrors(errors)
-                    .build());
+            return mapper.writeValueAsString(
+                    ImmutableInstrumentationErrorResponse.builder().addAllErrors(errors).build());
         }
         String version = configRepository.insertInstrumentationConfig(server, config);
         return getInstrumentationConfigInternal(server, version);
@@ -166,8 +164,7 @@ class InstrumentationJsonService {
 
     private String getInstrumentationConfigInternal(String server, String version)
             throws JsonProcessingException {
-        InstrumentationConfig config =
-                configRepository.getInstrumentationConfig(server, version);
+        InstrumentationConfig config = configRepository.getInstrumentationConfig(server, version);
         if (config == null) {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
         }

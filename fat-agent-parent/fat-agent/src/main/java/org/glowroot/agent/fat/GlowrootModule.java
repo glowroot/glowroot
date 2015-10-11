@@ -88,8 +88,7 @@ public class GlowrootModule {
 
     GlowrootModule(File baseDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
-            String glowrootVersion, boolean jbossModules, boolean viewerModeEnabled)
-                    throws Exception {
+            String glowrootVersion, boolean jbossModules, boolean viewerMode) throws Exception {
 
         dataDirLockingCloseable = DataDirLocking.lockDataDir(baseDir);
 
@@ -99,7 +98,7 @@ public class GlowrootModule {
         // mem db is only used for testing (by glowroot-test-container)
         h2MemDb = Boolean.parseBoolean(properties.get("internal.h2.memdb"));
 
-        if (viewerModeEnabled) {
+        if (viewerMode) {
             viewerAgentModule = new ViewerAgentModule(baseDir, glowrootJarFile);
             scheduledExecutor = null;
             agentModule = null;
@@ -127,8 +126,7 @@ public class GlowrootModule {
             ConfigRepository configRepository = ConfigRepositoryImpl.create(baseDir,
                     agentModule.getPluginDescriptors(), agentModule.getConfigService());
             PlatformMBeanServerLifecycle platformMBeanServerLifecycle =
-                    new PlatformMBeanServerLifecycleImpl(
-                            agentModule.getLazyPlatformMBeanServer());
+                    new PlatformMBeanServerLifecycleImpl(agentModule.getLazyPlatformMBeanServer());
             simpleRepoModule = new SimpleRepoModule(baseDir, clock, ticker, configRepository,
                     scheduledExecutor, platformMBeanServerLifecycle, h2MemDb, false);
             // now inject the real collector into the proxy
@@ -189,6 +187,7 @@ public class GlowrootModule {
                     .liveThreadDumpService(agentModule.getLiveThreadDumpService())
                     .liveAggregateRepository(agentModule.getLiveAggregateRepository())
                     .liveWeavingService(agentModule.getLiveWeavingService())
+                    .viewerMode(false)
                     .bindAddress(bindAddress)
                     .version(version)
                     .pluginDescriptors(agentModule.getPluginDescriptors())
@@ -209,6 +208,7 @@ public class GlowrootModule {
                     .liveThreadDumpService(new LiveThreadDumpServiceNop())
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
                     .liveWeavingService(new LiveWeavingServiceNop())
+                    .viewerMode(true)
                     .bindAddress(bindAddress)
                     .version(version)
                     .pluginDescriptors(viewerAgentModule.getPluginDescriptors())

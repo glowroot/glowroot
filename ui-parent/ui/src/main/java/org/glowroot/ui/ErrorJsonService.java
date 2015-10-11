@@ -99,11 +99,10 @@ class ErrorJsonService {
                 transactionCountMap.put(unfilteredErrorPoint.captureTime(),
                         unfilteredErrorPoint.transactionCount());
             }
-            List<TraceErrorPoint> traceErrorPoints = traceRepository.readErrorPoints(query,
-                    aggregateRepository.getDataPointIntervalMillis(query.serverGroup(),
-                            query.from(),
-                            query.to()),
-                    liveCaptureTime);
+            long resolutionMillis = aggregateRepository
+                    .getDataPointIntervalMillis(query.serverGroup(), query.from(), query.to());
+            List<TraceErrorPoint> traceErrorPoints =
+                    traceRepository.readErrorPoints(query, resolutionMillis, liveCaptureTime);
             List<ErrorPoint> errorPoints = Lists.newArrayList();
             for (TraceErrorPoint traceErrorPoint : traceErrorPoints) {
                 Long transactionCount = transactionCountMap.get(traceErrorPoint.captureTime());

@@ -28,11 +28,10 @@ public class GlowrootFatAgentInit implements GlowrootAgentInit {
     @Override
     public void init(File baseDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
-            String glowrootVersion, boolean jbossModules, boolean viewerModeEnabled)
-                    throws Exception {
+            String glowrootVersion, boolean jbossModules, boolean viewerMode) throws Exception {
 
         GlowrootModule module = new GlowrootModule(baseDir, properties, instrumentation,
-                glowrootJarFile, glowrootVersion, jbossModules, viewerModeEnabled);
+                glowrootJarFile, glowrootVersion, jbossModules, viewerMode);
         GlowrootModule.setInstance(module);
         if (instrumentation == null) {
             module.initEmbeddedServer();

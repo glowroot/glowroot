@@ -289,8 +289,8 @@ class TraceCommonService {
         jg.writeEndObject();
     }
 
-    private static void writeDetailEntries(List<Trace.DetailEntry> detailEntries,
-            JsonGenerator jg) throws IOException {
+    private static void writeDetailEntries(List<Trace.DetailEntry> detailEntries, JsonGenerator jg)
+            throws IOException {
         jg.writeStartObject();
         for (Trace.DetailEntry detailEntry : detailEntries) {
             jg.writeFieldName(detailEntry.getName());
@@ -328,8 +328,7 @@ class TraceCommonService {
                 jg.writeBoolean(value.getBval());
                 break;
             default:
-                throw new IllegalStateException(
-                        "Unexpected detail value: " + value.getValCase());
+                throw new IllegalStateException("Unexpected detail value: " + value.getValCase());
         }
     }
 

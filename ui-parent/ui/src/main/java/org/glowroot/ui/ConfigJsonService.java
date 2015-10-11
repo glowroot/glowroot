@@ -302,8 +302,7 @@ class ConfigJsonService {
         return mapper.writeValueAsString(TransactionConfigDto.fromConfig(config));
     }
 
-    private String getUserRecordingConfigInternal(String server)
-            throws JsonProcessingException {
+    private String getUserRecordingConfigInternal(String server) throws JsonProcessingException {
         UserRecordingConfig config = configRepository.getUserRecordingConfig(server);
         return mapper.writeValueAsString(UserRecordingConfigDto.fromConfig(config));
     }
@@ -312,8 +311,7 @@ class ConfigJsonService {
         AdvancedConfig config = configRepository.getAdvancedConfig(server);
         return mapper.writeValueAsString(ImmutableAdvancedConfigResponse.builder()
                 .config(AdvancedConfigDto.fromConfig(config))
-                .timerWrapperMethodsActive(
-                        liveWeavingService.isTimerWrapperMethodsActive(server))
+                .timerWrapperMethodsActive(liveWeavingService.isTimerWrapperMethodsActive(server))
                 .build());
     }
 

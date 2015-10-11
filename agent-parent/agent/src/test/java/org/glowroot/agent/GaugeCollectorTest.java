@@ -154,9 +154,10 @@ public class GaugeCollectorTest {
         gaugeCollector.collectGaugeValues(gaugeConfig);
         // then
         verify(logger, times(5)).debug(anyString(), any(Exception.class));
-        verify(logger).warn("mbean not {}: {} (waited {} seconds after jvm startup before"
-                + " logging this warning to allow time for mbean registration"
-                + " - this wait time can be changed under Configuration > Advanced)",
+        verify(logger).warn(
+                "mbean not {}: {} (waited {} seconds after jvm startup before logging this warning"
+                        + " to allow time for mbean registration - this wait time can be changed"
+                        + " under Configuration > Advanced)",
                 "found", "xyz:aaa=bbb", 60);
     }
 

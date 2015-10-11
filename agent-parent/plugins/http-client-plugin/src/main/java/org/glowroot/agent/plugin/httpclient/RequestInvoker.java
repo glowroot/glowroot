@@ -37,15 +37,15 @@ public class RequestInvoker {
         getOriginalURIMethod = Invokers.getMethod(requestClass, "getOriginalURI");
     }
 
-    public String getMethod(Object request) {
+    String getMethod(Object request) {
         return Invokers.invoke(getMethodMethod, request, "");
     }
 
-    public URI getOriginalURI(Object request) {
+    URI getOriginalURI(Object request) {
         return Invokers.invoke(getOriginalURIMethod, request, null);
     }
 
-    static @Nullable Class<?> getRequestClass(Class<?> clazz) {
+    private static @Nullable Class<?> getRequestClass(Class<?> clazz) {
         try {
             return Class.forName("com.ning.http.client.Request", false, clazz.getClassLoader());
         } catch (ClassNotFoundException e) {

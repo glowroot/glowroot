@@ -59,7 +59,7 @@ public class MockCatalinaHttpServletRequest extends MockHttpServletRequest {
         public V put(K key, V value) {
             if (locked) {
                 throw new IllegalStateException(
-                        "Cannot modify locked ParameterMap," + " check isLocked() first");
+                        "Cannot modify locked ParameterMap, check isLocked() first");
             }
             return super.put(key, value);
         }

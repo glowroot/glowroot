@@ -225,9 +225,10 @@ public class DataSource {
         int deleted;
         do {
             if (POSTGRES) {
-                deleted = update("delete from " + tableName
-                        + " where ctid = any(array(select ctid from " + tableName + " where "
-                        + whereClause + " limit 100))", args);
+                deleted = update(
+                        "delete from " + tableName + " where ctid = any(array(select ctid from "
+                                + tableName + " where " + whereClause + " limit 100))",
+                        args);
             } else {
                 deleted = update(
                         "delete from " + tableName + " where " + whereClause + " limit 100", args);

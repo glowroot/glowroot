@@ -73,8 +73,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.agent.weaving.SuperBasicMisc",
-            methodName = "superBasic", methodParameterTypes = {}, timerName = "superbasic")
+    @Pointcut(className = "org.glowroot.agent.weaving.SuperBasicMisc", methodName = "superBasic",
+            methodParameterTypes = {}, timerName = "superbasic")
     public static class SuperBasicAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -208,8 +208,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.agent.weaving.BasicMisc$InnerMisc",
-            methodName = "execute1", methodParameterTypes = {})
+    @Pointcut(className = "org.glowroot.agent.weaving.BasicMisc$InnerMisc", methodName = "execute1",
+            methodParameterTypes = {})
     public static class BasicWithInnerClassAdvice {
         @IsEnabled
         public static boolean isEnabled() {
@@ -465,8 +465,8 @@ public class SomeAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.agent.weaving.other.ArrayMisc",
-            methodName = "executeArray", methodParameterTypes = {".."})
+    @Pointcut(className = "org.glowroot.agent.weaving.other.ArrayMisc", methodName = "executeArray",
+            methodParameterTypes = {".."})
     public static class BindMethodMetaArrayAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindMethodMeta TestMethodMeta meta) {
@@ -842,8 +842,8 @@ public class SomeAspect {
             methodParameterTypes = {".."}, ignoreSelfNested = true)
     public static class MultipleMethodsAdvice extends BasicAdvice {}
 
-    @Pointcut(className = "org.glowroot.agent.weaving.StaticMisc",
-            methodName = "executeStatic", methodParameterTypes = {})
+    @Pointcut(className = "org.glowroot.agent.weaving.StaticMisc", methodName = "executeStatic",
+            methodParameterTypes = {})
     public static class StaticAdvice extends BasicAdvice {}
 
     @Pointcut(className = "org.glowroot.agent.weaving.Misc", methodName = "execute1",

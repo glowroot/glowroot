@@ -88,8 +88,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     }
 
     @Override
-    public @Nullable ProfileTree getProfileTree(String server, String traceId)
-            throws IOException {
+    public @Nullable ProfileTree getProfileTree(String server, String traceId) throws IOException {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
                 transactionCollector.getPendingTransactions())) {
             if (transaction.getId().equals(traceId)) {

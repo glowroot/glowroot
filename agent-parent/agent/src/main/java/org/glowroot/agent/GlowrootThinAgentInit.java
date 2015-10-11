@@ -49,8 +49,7 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
     @Override
     public void init(File baseDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
-            String glowrootVersion, boolean jbossModules, boolean viewerModeEnabled)
-                    throws Exception {
+            String glowrootVersion, boolean jbossModules, boolean viewerMode) throws Exception {
 
         if (instrumentation != null) {
             PreInitializeWeavingClasses.preInitializeClasses();

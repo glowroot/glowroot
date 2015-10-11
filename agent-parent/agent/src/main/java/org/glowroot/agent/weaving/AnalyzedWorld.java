@@ -352,11 +352,14 @@ public class AnalyzedWorld {
         }
         for (AnalyzedMethod analyzedMethod : analyzedClass.analyzedMethods()) {
             if (!analyzedMethod.advisors().isEmpty()) {
-                logger.warn("{} was not woven with requested advice (it was first encountered"
-                        + " during the weaving of one of its {} and the resource {}.class could not"
-                        + " be found in class loader {}, so {} had to be explicitly loaded using"
-                        + " Class.forName() in the middle of weaving the {}, which means it was not"
-                        + " woven itself since weaving is not re-entrant)", clazz.getName(),
+                logger.warn(
+                        "{} was not woven with requested advice (it was first encountered during"
+                                + " the weaving of one of its {} and the resource {}.class could"
+                                + " not be found in class loader {}, so {} had to be explicitly"
+                                + " loaded using Class.forName() in the middle of weaving the {},"
+                                + " which means it was not woven itself since weaving is not"
+                                + " re-entrant)",
+                        clazz.getName(),
                         analyzedClass.isInterface() ? "implementations" : "subclasses",
                         ClassNames.toInternalName(clazz.getName()), loader, clazz.getName(),
                         analyzedClass.isInterface() ? "implementation" : "subclass");

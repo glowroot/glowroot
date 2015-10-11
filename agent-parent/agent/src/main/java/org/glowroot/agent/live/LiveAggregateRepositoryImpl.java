@@ -49,8 +49,8 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
 
     // from is non-inclusive
     @Override
-    public @Nullable LiveResult<List<TransactionSummary>> getLiveTransactionSummaries(
-            String server, final String transactionType, long from, long to) throws Exception {
+    public @Nullable LiveResult<List<TransactionSummary>> getLiveTransactionSummaries(String server,
+            final String transactionType, long from, long to) throws Exception {
         return map(from, to, new Mapper<List<TransactionSummary>>() {
             @Override
             public List<TransactionSummary> map(AggregateIntervalCollector collector) {

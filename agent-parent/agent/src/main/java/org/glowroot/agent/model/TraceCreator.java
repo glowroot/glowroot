@@ -57,8 +57,8 @@ public class TraceCreator {
     // timings for traces that are still active are normalized to the capture tick in order to
     // *attempt* to present a picture of the trace at that exact tick
     // (without using synchronization to block updates to the trace while it is being read)
-    private static Trace createFullTrace(Transaction transaction, boolean slow,
-            boolean partial, long captureTime, long captureTick) throws IOException {
+    private static Trace createFullTrace(Transaction transaction, boolean slow, boolean partial,
+            long captureTime, long captureTick) throws IOException {
         Trace.Header header =
                 createTraceHeader(transaction, slow, partial, captureTime, captureTick);
         List<Trace.Entry> entries = transaction.getEntriesProtobuf();

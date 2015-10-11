@@ -491,9 +491,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private void loadOptionalReturnValue(int opcode, boolean dup) {
         if (opcode == RETURN) {
             // void
-            visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/weaving/VoidReturn",
-                    "getInstance", "()Lorg/glowroot/agent/plugin/api/weaving/OptionalReturn;",
-                    false);
+            visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/weaving/VoidReturn", "getInstance",
+                    "()Lorg/glowroot/agent/plugin/api/weaving/OptionalReturn;", false);
         } else {
             loadReturnValue(opcode, dup, true);
             visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/weaving/NonVoidReturn", "create",
@@ -633,8 +632,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     break;
                 default:
                     // this should have been caught during Advice construction, but just in case:
-                    logger.warn("the @{} method in {} has an unexpected parameter kind {} at index"
-                            + " {}", annotationType.getSimpleName(), adviceType.getClassName(),
+                    logger.warn(
+                            "the @{} method in {} has an unexpected parameter kind {} at index {}",
+                            annotationType.getSimpleName(), adviceType.getClassName(),
                             parameter.kind(), i);
                     pushDefault(parameter.type());
                     break;
@@ -657,9 +657,11 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private void loadMethodParameter(Type adviceType, Class<? extends Annotation> annotationType,
             int argIndex, AdviceParameter parameter, boolean useSavedArg) {
         if (argIndex >= argumentTypes.length) {
-            logger.warn("the @{} method in {} has more @{} arguments than the number of args in"
-                    + " the target method", annotationType.getSimpleName(),
-                    adviceType.getClassName(), BindParameter.class.getSimpleName());
+            logger.warn(
+                    "the @{} method in {} has more @{} arguments than the number of args in"
+                            + " the target method",
+                    annotationType.getSimpleName(), adviceType.getClassName(),
+                    BindParameter.class.getSimpleName());
             pushDefault(parameter.type());
             return;
         }

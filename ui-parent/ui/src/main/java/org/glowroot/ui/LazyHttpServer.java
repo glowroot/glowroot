@@ -32,10 +32,6 @@ class LazyHttpServer {
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
 
-    // default two http worker threads to keep # of threads down
-    private static final int NUM_WORKER_THREADS =
-            Integer.getInteger("glowroot.internal.ui.workerThreads", 2);
-
     private final String bindAddress;
     private final int port;
     private final HttpSessionManager httpSessionManager;
@@ -46,6 +42,7 @@ class LazyHttpServer {
     private final TraceExportHttpService traceExportHttpService;
     private final GlowrootLogHttpService glowrootLogHttpService;
     private final List<Object> jsonServices;
+    private final boolean viewerMode;
 
     private volatile @Nullable HttpServer httpServer;
 
@@ -53,7 +50,8 @@ class LazyHttpServer {
             IndexHtmlHttpService indexHtmlHttpService, LayoutHttpService layoutHttpService,
             LayoutService layoutService, TraceDetailHttpService traceDetailHttpService,
             TraceExportHttpService traceExportHttpService,
-            GlowrootLogHttpService glowrootLogHttpService, List<Object> jsonServices) {
+            GlowrootLogHttpService glowrootLogHttpService, List<Object> jsonServices,
+            boolean viewerMode) {
         this.bindAddress = bindAddress;
         this.port = port;
         this.httpSessionManager = httpSessionManager;
@@ -64,6 +62,7 @@ class LazyHttpServer {
         this.traceExportHttpService = traceExportHttpService;
         this.glowrootLogHttpService = glowrootLogHttpService;
         this.jsonServices = jsonServices;
+        this.viewerMode = viewerMode;
     }
 
     void init(ConfigJsonService configJsonService) {
@@ -101,8 +100,13 @@ class LazyHttpServer {
         httpServices.put(Pattern.compile("^/backend/jvm/glowroot-log$"), glowrootLogHttpService);
         // services
         try {
-            return new HttpServer(bindAddress, port, NUM_WORKER_THREADS, layoutService,
-                    httpServices, httpSessionManager, jsonServices);
+            // in embedded mode, default two http worker threads to keep # of threads down
+            // in viewer mode, no need for restrictive limit
+            int defaultNumWorkerThreads = viewerMode ? 20 : 2;
+            int numWorkerThreads = Integer.getInteger("glowroot.internal.ui.workerThreads",
+                    defaultNumWorkerThreads);
+            return new HttpServer(bindAddress, port, numWorkerThreads, layoutService, httpServices,
+                    httpSessionManager, jsonServices);
         } catch (Exception e) {
             // binding to the specified port failed and binding to port 0 (any port) failed
             logger.error("error binding to any port, the user interface will not be available", e);

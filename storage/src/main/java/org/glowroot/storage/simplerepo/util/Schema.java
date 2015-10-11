@@ -88,8 +88,9 @@ public class Schema {
                 if (!tableExistsInternal(tableName, connection)) {
                     createTable(tableName, columns, connection);
                 } else if (tableNeedsUpgrade(tableName, columns, connection)) {
-                    logger.warn("upgrading table {}, which unfortunately at this point just means"
-                            + " dropping and re-create the table (losing existing data)",
+                    logger.warn(
+                            "upgrading table {}, which unfortunately at this point just means"
+                                    + " dropping and re-create the table (losing existing data)",
                             tableName);
                     execute("drop table " + tableName, connection);
                     createTable(tableName, columns, connection);
@@ -179,8 +180,8 @@ public class Schema {
         }
     }
 
-    private boolean tableNeedsUpgrade(String tableName, List<Column> columns,
-            Connection connection) throws SQLException {
+    private boolean tableNeedsUpgrade(String tableName, List<Column> columns, Connection connection)
+            throws SQLException {
         // can't use Maps.newTreeMap() because of OpenJDK6 type inference bug
         // see https://code.google.com/p/guava-libraries/issues/detail?id=635
         Map<String, Column> columnMap = new TreeMap<String, Column>(String.CASE_INSENSITIVE_ORDER);
@@ -198,8 +199,8 @@ public class Schema {
         }
     }
 
-    private boolean columnNamesAndTypesMatch(ResultSet resultSet,
-            Map<String, Column> columnMap, Connection connection) throws SQLException {
+    private boolean columnNamesAndTypesMatch(ResultSet resultSet, Map<String, Column> columnMap,
+            Connection connection) throws SQLException {
         while (resultSet.next()) {
             Column column = columnMap.remove(resultSet.getString("COLUMN_NAME"));
             if (column == null) {

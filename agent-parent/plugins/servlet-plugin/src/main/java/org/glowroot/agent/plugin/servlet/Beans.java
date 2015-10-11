@@ -80,7 +80,7 @@ public class Beans {
 
     private Beans() {}
 
-    public static @Nullable Object value(@Nullable Object obj, String path) {
+    static @Nullable Object value(@Nullable Object obj, String path) {
         try {
             return valueInternal(obj, path);
         } catch (Exception e) {
@@ -90,7 +90,7 @@ public class Beans {
         }
     }
 
-    public static Map<String, String> propertiesAsText(Object obj) {
+    static Map<String, String> propertiesAsText(Object obj) {
         Map<String, String> properties = Maps.newHashMap();
         ImmutableMap<String, Method> allGettersForObj =
                 wildcardGetters.getUnchecked(obj.getClass());

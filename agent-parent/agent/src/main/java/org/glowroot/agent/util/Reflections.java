@@ -112,11 +112,6 @@ public class Reflections {
         return method.invoke(obj, args);
     }
 
-    public static @Nullable Object invokeStatic(Method method, @Nullable Object... args)
-            throws Exception {
-        return method.invoke(null, args);
-    }
-
     public static <T> /*@NonNull*/T invoke(Constructor<T> constructor, @Nullable Object... args)
             throws Exception {
         return constructor.newInstance(args);

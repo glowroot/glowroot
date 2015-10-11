@@ -95,8 +95,8 @@ public class BasicSmokeTest extends WebDriverTest {
         Utils.withWait(driver, By.partialLinkText("Continuous profiling")).click();
         Utils.withWait(driver, By.xpath("//input[@ng-model='filter']")).sendKeys("JdbcServlet");
         Utils.withWait(driver, By.xpath("//button[@ng-click='refreshButtonClick()']")).click();
-        new WebDriverWait(driver, 30).until(ExpectedConditions.textToBePresentInElementLocated(
-                By.className("gt-profile"), "JdbcServlet"));
+        new WebDriverWait(driver, 30).until(ExpectedConditions
+                .textToBePresentInElementLocated(By.className("gt-profile"), "JdbcServlet"));
 
         Utils.withWait(driver, By.linkText("View flame graph (experimental)")).click();
         // give flame graph a chance to render (only for visual when running locally)

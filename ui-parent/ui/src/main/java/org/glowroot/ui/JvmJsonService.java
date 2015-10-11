@@ -113,8 +113,8 @@ class JvmJsonService {
     String getMBeanAttributeMap(String queryString) throws Exception {
         MBeanAttributeMapRequest request =
                 QueryStrings.decode(queryString, MBeanAttributeMapRequest.class);
-        return mapper.writeValueAsString(liveJvmService
-                .getMBeanSortedAttributeMap(request.server(), request.objectName()));
+        return mapper.writeValueAsString(
+                liveJvmService.getMBeanSortedAttributeMap(request.server(), request.objectName()));
     }
 
     @POST("/backend/jvm/perform-gc")
@@ -140,8 +140,7 @@ class JvmJsonService {
         HeapDumpRequest request = mapper.readValue(content, ImmutableHeapDumpRequest.class);
         try {
             return Long.toString(
-                    liveJvmService.getAvailableDiskSpace(request.server(),
-                            request.directory()));
+                    liveJvmService.getAvailableDiskSpace(request.server(), request.directory()));
         } catch (IOException e) {
             logger.debug(e.getMessage(), e);
             // this is for specific common errors, e.g. "Directory doesn't exist"

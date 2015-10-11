@@ -36,11 +36,11 @@ public class ResponseInvoker {
     }
 
     // ServletResponse.getContentType() was introduced in Servlet 2.4 (e.g. since Tomcat 5.5.x)
-    public boolean hasGetContentTypeMethod() {
+    boolean hasGetContentTypeMethod() {
         return getContentTypeMethod != null;
     }
 
-    public String getContentType(Object response) {
+    String getContentType(Object response) {
         return Invokers.invoke(getContentTypeMethod, response, "");
     }
 

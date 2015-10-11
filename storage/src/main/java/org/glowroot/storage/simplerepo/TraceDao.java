@@ -95,8 +95,9 @@ public class TraceDao implements TraceRepository {
             // result set directly from the index without having to reference the table for each row
             //
             // trace_slow_idx is for slow trace point query and for readOverallSlowCount()
-            ImmutableIndex.of("trace_slow_idx", ImmutableList.of("server", "transaction_type",
-                    "slow", "capture_time", "duration_nanos", "error", "trace_id")),
+            ImmutableIndex.of("trace_slow_idx",
+                    ImmutableList.of("server", "transaction_type", "slow", "capture_time",
+                            "duration_nanos", "error", "trace_id")),
             // trace_transaction_slow_idx is for slow trace point query and for
             // readTransactionSlowCount()
             ImmutableIndex.of("trace_transaction_slow_idx",
@@ -109,8 +110,8 @@ public class TraceDao implements TraceRepository {
             // trace_transaction_error_idx is for error trace point query and for
             // readTransactionErrorCount()
             ImmutableIndex.of("trace_transaction_error_idx",
-                    ImmutableList.of("server", "transaction_type", "transaction_name",
-                            "error", "capture_time", "duration_nanos", "trace_id")),
+                    ImmutableList.of("server", "transaction_type", "transaction_name", "error",
+                            "capture_time", "duration_nanos", "trace_id")),
             // trace_idx is for trace header lookup
             ImmutableIndex.of("trace_idx", ImmutableList.of("server", "trace_id")));
 
@@ -133,16 +134,14 @@ public class TraceDao implements TraceRepository {
     @Override
     public void collect(final String server, Trace trace) throws Exception {
         final Trace.Header header = trace.getHeader();
-        boolean exists = dataSource.queryForExists("select 1 from trace where server = ?"
-                + " and trace_id = ?", server, header.getId());
+        boolean exists = dataSource.queryForExists(
+                "select 1 from trace where server = ? and trace_id = ?", server, header.getId());
         if (exists) {
-            dataSource.update(
-                    "update trace set partial = ?, slow = ?, error = ?, start_time = ?,"
-                            + " capture_time = ?, duration_nanos = ?, transaction_type = ?,"
-                            + " transaction_name = ?, headline = ?, user_id = ?, error_message = ?,"
-                            + " header = ?, entries_capped_id = ?, profile_capped_id = ?"
-                            + " where server = ? and trace_id = ?",
-                    new TraceBinder(server, trace));
+            dataSource.update("update trace set partial = ?, slow = ?, error = ?, start_time = ?,"
+                    + " capture_time = ?, duration_nanos = ?, transaction_type = ?,"
+                    + " transaction_name = ?, headline = ?, user_id = ?, error_message = ?,"
+                    + " header = ?, entries_capped_id = ?, profile_capped_id = ?"
+                    + " where server = ? and trace_id = ?", new TraceBinder(server, trace));
         } else {
             dataSource.update(
                     "insert into trace (partial, slow, error, start_time, capture_time,"
@@ -157,8 +156,9 @@ public class TraceDao implements TraceRepository {
                 dataSource.update("delete from trace_attribute where server = ? and trace_id = ?",
                         server, header.getId());
             }
-            dataSource.batchUpdate("insert into trace_attribute (server, trace_id, name, value,"
-                    + " capture_time) values (?, ?, ?, ?, ?)",
+            dataSource.batchUpdate(
+                    "insert into trace_attribute (server, trace_id, name, value, capture_time)"
+                            + " values (?, ?, ?, ?, ?)",
                     new PreparedStatementBinder() {
                         @Override
                         public void bind(PreparedStatement preparedStatement) throws SQLException {
@@ -187,8 +187,8 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public long readOverallSlowCount(String server, String transactionType,
-            long captureTimeFrom, long captureTimeTo) throws Exception {
+    public long readOverallSlowCount(String server, String transactionType, long captureTimeFrom,
+            long captureTimeTo) throws Exception {
         return dataSource.queryForLong(
                 "select count(*) from trace where server = ? and transaction_type = ?"
                         + " and capture_time > ? and capture_time <= ? and slow = ?",
@@ -202,13 +202,12 @@ public class TraceDao implements TraceRepository {
                 "select count(*) from trace where server = ? and transaction_type = ?"
                         + " and transaction_name = ? and capture_time > ? and capture_time <= ?"
                         + " and slow = ?",
-                server, transactionType, transactionName, captureTimeFrom, captureTimeTo,
-                true);
+                server, transactionType, transactionName, captureTimeFrom, captureTimeTo, true);
     }
 
     @Override
-    public long readOverallErrorCount(String server, String transactionType,
-            long captureTimeFrom, long captureTimeTo) throws Exception {
+    public long readOverallErrorCount(String server, String transactionType, long captureTimeFrom,
+            long captureTimeTo) throws Exception {
         return dataSource.queryForLong(
                 "select count(*) from trace where server = ? and transaction_type = ?"
                         + " and capture_time > ? and capture_time <= ? and error = ?",
@@ -222,13 +221,12 @@ public class TraceDao implements TraceRepository {
                 "select count(*) from trace where server = ? and transaction_type = ?"
                         + " and transaction_name = ? and capture_time > ? and capture_time <= ?"
                         + " and error = ?",
-                server, transactionType, transactionName, captureTimeFrom, captureTimeTo,
-                true);
+                server, transactionType, transactionName, captureTimeFrom, captureTimeTo, true);
     }
 
     @Override
-    public List<TraceErrorPoint> readErrorPoints(ErrorMessageQuery query,
-            long resolutionMillis, long liveCaptureTime) throws Exception {
+    public List<TraceErrorPoint> readErrorPoints(ErrorMessageQuery query, long resolutionMillis,
+            long liveCaptureTime) throws Exception {
         // need ".0" to force double result
         String captureTimeSql = castUntainted(
                 "ceil(capture_time / " + resolutionMillis + ".0) * " + resolutionMillis);
@@ -253,8 +251,9 @@ public class TraceDao implements TraceRepository {
 
     @Override
     public @Nullable HeaderPlus readHeader(String server, String traceId) throws Exception {
-        List<HeaderPlus> traces = dataSource.query("select header, entries_capped_id,"
-                + " profile_capped_id from trace where server = ? and trace_id = ?",
+        List<HeaderPlus> traces = dataSource.query(
+                "select header, entries_capped_id, profile_capped_id from trace"
+                        + " where server = ? and trace_id = ?",
                 new TraceHeaderRowMapper(), server, traceId);
         if (traces.isEmpty()) {
             return null;
@@ -268,9 +267,9 @@ public class TraceDao implements TraceRepository {
 
     @Override
     public List<Trace.Entry> readEntries(String server, String traceId) throws Exception {
-        List<Trace.Entry> entries =
-                dataSource.query("select entries_capped_id from trace where server = ?"
-                        + " and trace_id = ?", new EntriesResultExtractor(), server, traceId);
+        List<Trace.Entry> entries = dataSource.query(
+                "select entries_capped_id from trace where server = ? and trace_id = ?",
+                new EntriesResultExtractor(), server, traceId);
         if (entries == null) {
             // data source is closing
             return ImmutableList.of();
@@ -279,10 +278,10 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable ProfileTree readProfileTree(String server, String traceId)
-            throws Exception {
-        return dataSource.query("select profile_capped_id from trace where server = ?"
-                + " and trace_id = ?", new ProfileTreeResultExtractor(), server, traceId);
+    public @Nullable ProfileTree readProfileTree(String server, String traceId) throws Exception {
+        return dataSource.query(
+                "select profile_capped_id from trace where server = ? and trace_id = ?",
+                new ProfileTreeResultExtractor(), server, traceId);
     }
 
     @Override

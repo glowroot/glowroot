@@ -403,8 +403,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor$AnalyzedMethodKey");
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor$InitMixins");
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor$MethodMetaGroup");
-        types.add(
-                "org.glowroot.agent.weaving.WeavingClassVisitor$PointcutClassFoundException");
+        types.add("org.glowroot.agent.weaving.WeavingClassVisitor$PointcutClassFoundException");
         types.add("org.glowroot.agent.weaving.WeavingMethodVisitor");
         types.add("org.glowroot.agent.weaving.WeavingMethodVisitor$CatchHandler");
         types.add("org.glowroot.agent.weaving.WeavingTimerService");

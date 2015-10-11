@@ -37,8 +37,7 @@ class CollectorImpl implements Collector {
     private final AlertingService alertingService;
 
     CollectorImpl(AggregateRepository aggregateRepository, TraceRepository traceRepository,
-            GaugeValueRepository gaugeValueRepository,
-            AlertingService alertingService) {
+            GaugeValueRepository gaugeValueRepository, AlertingService alertingService) {
         this.aggregateRepository = aggregateRepository;
         this.traceRepository = traceRepository;
         this.gaugeValueRepository = gaugeValueRepository;

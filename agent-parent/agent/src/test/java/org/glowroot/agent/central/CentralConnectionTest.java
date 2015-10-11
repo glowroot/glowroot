@@ -56,7 +56,8 @@ public class CentralConnectionTest {
         server = NettyServerBuilder.forPort(8025)
                 .addService(CollectorServiceGrpc.bindService(new TestCollectorService()))
                 .addService(DownstreamServiceGrpc.bindService(downstreamService))
-                .build().start();
+                .build()
+                .start();
         centralConnection = new CentralConnection(SERVER_NAME, "localhost", 8025);
     }
 

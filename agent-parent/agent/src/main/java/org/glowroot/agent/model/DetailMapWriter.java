@@ -32,7 +32,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class DetailMapWriter {
+class DetailMapWriter {
 
     private static final Logger logger = LoggerFactory.getLogger(DetailMapWriter.class);
 
@@ -48,7 +48,7 @@ public class DetailMapWriter {
 
     private DetailMapWriter() {}
 
-    public static List<Trace.DetailEntry> toProtobufDetail(
+    static List<Trace.DetailEntry> toProtobufDetail(
             Map<String, ? extends /*@Nullable*/Object> detail) {
         return writeMap(detail);
     }
@@ -74,21 +74,17 @@ public class DetailMapWriter {
 
     private static Trace.DetailEntry createDetailEntry(String name, @Nullable Object value) {
         if (value instanceof Map) {
-            return Trace.DetailEntry.newBuilder()
-                    .setName(name)
-                    .addAllChildEntry(writeMap((Map<?, ?>) value))
-                    .build();
+            return Trace.DetailEntry.newBuilder().setName(name)
+                    .addAllChildEntry(writeMap((Map<?, ?>) value)).build();
         } else if (value instanceof List) {
-            Trace.DetailEntry.Builder builder = Trace.DetailEntry.newBuilder()
-                    .setName(name);
+            Trace.DetailEntry.Builder builder = Trace.DetailEntry.newBuilder().setName(name);
             for (Object v : (List<?>) value) {
                 addValue(builder, v);
             }
             return builder.build();
         } else {
             // simple value
-            Trace.DetailEntry.Builder builder = Trace.DetailEntry.newBuilder()
-                    .setName(name);
+            Trace.DetailEntry.Builder builder = Trace.DetailEntry.newBuilder().setName(name);
             addValue(builder, value);
             return builder.build();
         }

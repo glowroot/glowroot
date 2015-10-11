@@ -179,8 +179,7 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public @Nullable InstrumentationConfig getInstrumentationConfig(String server,
-            String version) {
+    public @Nullable InstrumentationConfig getInstrumentationConfig(String server, String version) {
         for (InstrumentationConfig instrumentationConfig : configService
                 .getInstrumentationConfigs()) {
             if (instrumentationConfig.version().equals(version)) {
@@ -247,8 +246,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String updateUserRecordingConfig(String server,
-            UserRecordingConfig userRecordingConfig, String priorVersion) throws Exception {
+    public String updateUserRecordingConfig(String server, UserRecordingConfig userRecordingConfig,
+            String priorVersion) throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(configService.getUserRecordingConfig().version(), priorVersion);
             configService.updateUserRecordingConfig(userRecordingConfig);
@@ -269,11 +268,10 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String updatePluginConfig(String server, PluginConfig pluginConfig,
-            String priorVersion) throws Exception {
+    public String updatePluginConfig(String server, PluginConfig pluginConfig, String priorVersion)
+            throws Exception {
         synchronized (writeLock) {
-            List<PluginConfig> configs =
-                    Lists.newArrayList(configService.getPluginConfigs());
+            List<PluginConfig> configs = Lists.newArrayList(configService.getPluginConfigs());
             boolean found = false;
             for (ListIterator<PluginConfig> i = configs.listIterator(); i.hasNext();) {
                 PluginConfig loopPluginConfig = i.next();
@@ -455,8 +453,8 @@ class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String updateUserInterfaceConfig(UserInterfaceConfig updatedConfig,
-            String priorVersion) throws Exception {
+    public String updateUserInterfaceConfig(UserInterfaceConfig updatedConfig, String priorVersion)
+            throws Exception {
         synchronized (writeLock) {
             checkVersionsEqual(userInterfaceConfig.version(), priorVersion);
             configService.updateOtherConfig("ui", updatedConfig);

@@ -463,8 +463,7 @@ public class AggregateDao implements AggregateRepository {
     public boolean shouldHaveTransactionProfile(String serverGroup, String transactionType,
             String transactionName, long captureTimeFrom, long captureTimeTo) throws Exception {
         return shouldHaveTransactionSomething("profile_tree_capped_id", serverGroup,
-                transactionType,
-                transactionName, captureTimeFrom, captureTimeTo);
+                transactionType, transactionName, captureTimeFrom, captureTimeTo);
     }
 
     @Override
@@ -616,8 +615,8 @@ public class AggregateDao implements AggregateRepository {
                 .build();
     }
 
-    private List<TransactionSummary> readTransactionSummariesInternal(
-            TransactionSummaryQuery query, int rollupLevel) throws Exception {
+    private List<TransactionSummary> readTransactionSummariesInternal(TransactionSummaryQuery query,
+            int rollupLevel) throws Exception {
         // it's important that all these columns are in a single index so h2 can return the
         // result set directly from the index without having to reference the table for each row
         return dataSource.query(
@@ -651,16 +650,14 @@ public class AggregateDao implements AggregateRepository {
 
     private List<TransactionErrorSummary> readTransactionErrorSummariesInternal(
             ErrorSummaryQuery query, int rollupLevel) throws SQLException {
-        return dataSource.query(
-                "select transaction_name, sum(error_count), sum(transaction_count)"
-                        + " from transaction_aggregate_rollup_" + castUntainted(rollupLevel)
-                        + " where server_group = ? and transaction_type = ? and capture_time > ?"
-                        + " and capture_time <= ? group by transaction_type, transaction_name"
-                        + " having sum(error_count) > 0 order by "
-                        + getSortClause(query.sortOrder())
-                        + ", transaction_type, transaction_name limit ?",
-                new ErrorSummaryRowMapper(), query.serverGroup(), query.transactionType(),
-                query.from(), query.to(), query.limit() + 1);
+        return dataSource.query("select transaction_name, sum(error_count), sum(transaction_count)"
+                + " from transaction_aggregate_rollup_" + castUntainted(rollupLevel)
+                + " where server_group = ? and transaction_type = ? and capture_time > ?"
+                + " and capture_time <= ? group by transaction_type, transaction_name"
+                + " having sum(error_count) > 0 order by " + getSortClause(query.sortOrder())
+                + ", transaction_type, transaction_name limit ?", new ErrorSummaryRowMapper(),
+                query.serverGroup(), query.transactionType(), query.from(), query.to(),
+                query.limit() + 1);
     }
 
     private List<TransactionErrorSummary> readTransactionErrorSummariesInternalSplit(
@@ -726,8 +723,7 @@ public class AggregateDao implements AggregateRepository {
     // captureTimeFrom is non-inclusive
     private boolean shouldHaveTransactionSomething(@Untainted String cappedIdColumnName,
             String serverGroup, String transactionType, String transactionName,
-            long captureTimeFrom,
-            long captureTimeTo) throws Exception {
+            long captureTimeFrom, long captureTimeTo) throws Exception {
         int rollupLevel = getRollupLevelForView(serverGroup, captureTimeFrom, captureTimeTo);
         return dataSource.queryForExists(
                 "select 1 from transaction_aggregate_rollup_" + castUntainted(rollupLevel)
@@ -1074,17 +1070,16 @@ public class AggregateDao implements AggregateRepository {
 
         @Override
         public @Nullable Void extractData(ResultSet resultSet) throws Exception {
-            int maxAggregateQueriesPerQueryType =
-                    configRepository.getAdvancedConfig(serverGroup)
-                            .maxAggregateQueriesPerQueryType();
+            int maxAggregateQueriesPerQueryType = configRepository.getAdvancedConfig(serverGroup)
+                    .maxAggregateQueriesPerQueryType();
             MutableOverallAggregate curr = null;
             while (resultSet.next()) {
                 String transactionType = checkNotNull(resultSet.getString(1));
                 if (curr == null || !transactionType.equals(curr.transactionType())) {
                     if (curr != null) {
                         storeOverallAggregate(serverGroup, rollupCaptureTime,
-                                curr.transactionType(),
-                                curr.aggregate().toAggregate(scratchBuffer), toRollupLevel);
+                                curr.transactionType(), curr.aggregate().toAggregate(scratchBuffer),
+                                toRollupLevel);
                     }
                     curr = ImmutableMutableOverallAggregate.of(transactionType,
                             new MutableAggregate(maxAggregateQueriesPerQueryType));
@@ -1117,9 +1112,8 @@ public class AggregateDao implements AggregateRepository {
 
         @Override
         public @Nullable Void extractData(ResultSet resultSet) throws Exception {
-            int maxAggregateQueriesPerQueryType =
-                    configRepository.getAdvancedConfig(serverGroup)
-                            .maxAggregateQueriesPerQueryType();
+            int maxAggregateQueriesPerQueryType = configRepository.getAdvancedConfig(serverGroup)
+                    .maxAggregateQueriesPerQueryType();
             MutableTransactionAggregate curr = null;
             while (resultSet.next()) {
                 String transactionType = checkNotNull(resultSet.getString(1));

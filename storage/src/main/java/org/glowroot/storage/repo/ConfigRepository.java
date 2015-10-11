@@ -75,17 +75,17 @@ public interface ConfigRepository {
     String updateUserRecordingConfig(String server, UserRecordingConfig userRecordingConfig,
             String priorVersion) throws Exception;
 
-    String updateAdvancedConfig(String server, AdvancedConfig advancedConfig,
-            String priorVersion) throws Exception;
+    String updateAdvancedConfig(String server, AdvancedConfig advancedConfig, String priorVersion)
+            throws Exception;
 
     String updatePluginConfig(String server, PluginConfig pluginConfig, String priorVersion)
             throws Exception;
 
-    String insertInstrumentationConfig(String server,
-            InstrumentationConfig instrumentationConfig) throws IOException;
+    String insertInstrumentationConfig(String server, InstrumentationConfig instrumentationConfig)
+            throws IOException;
 
-    String updateInstrumentationConfig(String server,
-            InstrumentationConfig instrumentationConfig, String priorVersion) throws IOException;
+    String updateInstrumentationConfig(String server, InstrumentationConfig instrumentationConfig,
+            String priorVersion) throws IOException;
 
     void deleteInstrumentationConfig(String server, String version) throws IOException;
 
