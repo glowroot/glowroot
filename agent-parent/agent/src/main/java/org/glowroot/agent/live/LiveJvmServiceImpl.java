@@ -56,7 +56,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
-import org.glowroot.agent.util.OptionalService;
 import org.glowroot.agent.util.PatternObjectNameQueryExp;
 import org.glowroot.common.live.ImmutableAvailability;
 import org.glowroot.common.live.ImmutableCapabilities;
@@ -65,11 +64,12 @@ import org.glowroot.common.live.ImmutableMBeanMeta;
 import org.glowroot.common.live.ImmutableProcessInfo;
 import org.glowroot.common.live.LiveJvmService;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 public class LiveJvmServiceImpl implements LiveJvmService {
 
     private static final Logger logger = LoggerFactory.getLogger(LiveJvmServiceImpl.class);
+
+    private static final String HOT_SPOT_DIAGNOSTIC_MBEAN_NAME =
+            "com.sun.management:type=HotSpotDiagnostic";
 
     private static final ImmutableSet<String> numericAttributeTypes =
             ImmutableSet.of("long", "int", "double", "float", "java.lang.Long", "java.lang.Integer",
@@ -77,14 +77,12 @@ public class LiveJvmServiceImpl implements LiveJvmService {
 
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
     private final Availability threadAllocatedBytesAvailability;
-    private final OptionalService<HeapDumps> heapDumps;
     private final String processId;
 
     public LiveJvmServiceImpl(LazyPlatformMBeanServer lazyPlatformMBeanServer,
             Availability threadAllocatedBytesAvailability) {
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
         this.threadAllocatedBytesAvailability = threadAllocatedBytesAvailability;
-        this.heapDumps = HeapDumps.create(lazyPlatformMBeanServer);
         this.processId = parseProcessId(ManagementFactory.getRuntimeMXBean().getName());
     }
 
@@ -180,9 +178,6 @@ public class LiveJvmServiceImpl implements LiveJvmService {
 
     @Override
     public HeapFile dumpHeap(String server, String directory) throws Exception {
-        // this command is filtered out of the UI when service is null
-        HeapDumps service = checkNotNull(heapDumps.getService(),
-                "Heap dump service is not available: %s", heapDumps.getAvailability().getReason());
         File dir = new File(directory);
         if (!dir.exists()) {
             throw new IOException("Directory doesn't exist");
@@ -198,7 +193,10 @@ public class LiveJvmServiceImpl implements LiveJvmService {
             i++;
             file = new File(dir, "heap-dump-" + timestamp + "-" + i + ".hprof");
         }
-        service.dumpHeap(file.getAbsolutePath());
+        ObjectName objectName = ObjectName.getInstance(HOT_SPOT_DIAGNOSTIC_MBEAN_NAME);
+        lazyPlatformMBeanServer.invoke(objectName, "dumpHeap",
+                new Object[] {file.getAbsolutePath(), false},
+                new String[] {"java.lang.String", "boolean"});
         return ImmutableHeapFile.of(file.getAbsolutePath(), file.length());
     }
 
@@ -251,7 +249,6 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                 .threadCpuTime(getThreadCpuTimeAvailability())
                 .threadContentionTime(getThreadContentionAvailability())
                 .threadAllocatedBytes(threadAllocatedBytesAvailability)
-                .heapDump(heapDumps.getAvailability())
                 .build();
     }
 

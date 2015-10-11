@@ -180,13 +180,12 @@ public interface LiveJvmService {
         Availability threadCpuTime();
         Availability threadContentionTime();
         Availability threadAllocatedBytes();
-        Availability heapDump();
     }
 
     @Value.Immutable
     @Styles.AllParameters
     interface Availability {
-        boolean isAvailable();
+        boolean available();
         // reason only needed when available is false
         String getReason();
     }

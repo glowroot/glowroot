@@ -29,7 +29,7 @@ public class ThreadAllocatedBytesTest {
         OptionalService<ThreadAllocatedBytes> optionalService =
                 ThreadAllocatedBytes.createInternal(null, sunThreadMXBeanClass);
         // then
-        assertThat(optionalService.getAvailability().isAvailable()).isFalse();
+        assertThat(optionalService.getAvailability().available()).isFalse();
         assertThat(optionalService.getAvailability().getReason()).isEqualTo(
                 "ThreadMXBean.isThreadAllocatedMemorySupported() unexpectedly returned null");
     }
@@ -42,7 +42,7 @@ public class ThreadAllocatedBytesTest {
         OptionalService<ThreadAllocatedBytes> optionalService =
                 ThreadAllocatedBytes.createInternal(false, sunThreadMXBeanClass);
         // then
-        assertThat(optionalService.getAvailability().isAvailable()).isFalse();
+        assertThat(optionalService.getAvailability().available()).isFalse();
         assertThat(optionalService.getAvailability().getReason()).isEqualTo(
                 "Method com.sun.management.ThreadMXBean.isThreadAllocatedMemorySupported()"
                         + " returned false");

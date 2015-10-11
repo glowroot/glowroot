@@ -26,7 +26,7 @@ public class OptionalServiceTest {
         // given
         OptionalService<Object> optionalService = OptionalService.unavailable("abc");
         // then
-        assertThat(optionalService.getAvailability().isAvailable()).isFalse();
+        assertThat(optionalService.getAvailability().available()).isFalse();
         assertThat(optionalService.getAvailability().getReason()).isEqualTo("abc");
     }
 }
