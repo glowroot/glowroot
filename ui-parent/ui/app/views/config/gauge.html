@@ -50,7 +50,7 @@
                  class="form-control"
                  ng-model="config.mbeanObjectName"
                  ng-required="true"
-                 typeahead="suggestion for suggestion in mbeanObjectNames($viewValue)"
+                 uib-typeahead="suggestion for suggestion in mbeanObjectNames($viewValue)"
                  typeahead-on-select="onSelectMBeanObjectName()"
                  ng-blur="onBlurMBeanObjectName()"
                  name="mbeanObjectName"

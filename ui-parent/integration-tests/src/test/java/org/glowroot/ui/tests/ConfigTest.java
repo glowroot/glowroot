@@ -138,7 +138,7 @@ public class ConfigTest extends WebDriverTest {
         driver.navigate().to(userRecordingUrl);
 
         // when
-        page.getEnabledSwitchOff().click();
+        page.getEnabledSwitchOn().click();
         page.getUserTextField().clear();
         page.getUserTextField().sendKeys("abc");
         page.getProfileIntervalTextField().clear();
@@ -150,9 +150,9 @@ public class ConfigTest extends WebDriverTest {
         globalNavbar.getConfigurationLink().click();
         // user recording config is not accessible via config sidebar currently
         driver.navigate().to(userRecordingUrl);
-        assertThat(page.getEnabledSwitchOn().getAttribute("class").split(" "))
+        assertThat(page.getEnabledSwitchOff().getAttribute("class").split(" "))
                 .doesNotContain("active");
-        assertThat(page.getEnabledSwitchOff().getAttribute("class").split(" ")).contains("active");
+        assertThat(page.getEnabledSwitchOn().getAttribute("class").split(" ")).contains("active");
         assertThat(page.getUserTextField().getAttribute("value")).isEqualTo("abc");
         assertThat(page.getProfileIntervalTextField().getAttribute("value")).isEqualTo("2345");
     }

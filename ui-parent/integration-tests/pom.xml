@@ -16,7 +16,7 @@
   <description>Glowroot UI Integration Tests</description>
 
   <properties>
-    <selenium.version>2.47.2</selenium.version>
+    <selenium.version>2.48.2</selenium.version>
   </properties>
 
   <dependencies>

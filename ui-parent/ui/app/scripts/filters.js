@@ -57,19 +57,20 @@ glowroot.filter('gtOnOff', function () {
   };
 });
 
-glowroot.filter('gtTypeaheadClassHighlight', function () {
-
-  function escapeRegexp(queryToEscape) {
-    return queryToEscape.replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1');
-  }
-
-  return function (matchItem, query) {
-    if (!query) {
-      return matchItem;
+glowroot.filter('gtTypeaheadClassHighlight', [
+  '$sce',
+  function ($sce) {
+    function escapeRegexp(queryToEscape) {
+      return queryToEscape.replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1');
     }
-    matchItem = matchItem.replace(new RegExp('^' + escapeRegexp(query), 'gi'), '<strong>$&</strong>');
-    matchItem = matchItem.replace(new RegExp('\\.(' + escapeRegexp(query) + ')', 'gi'), '.<strong>$1</strong>');
-    matchItem = matchItem.replace(new RegExp('\\$(' + escapeRegexp(query) + ')', 'gi'), '$<strong>$1</strong>');
-    return matchItem;
-  };
-});
+    return function (matchItem, query) {
+      if (!query) {
+        return matchItem;
+      }
+      matchItem = matchItem.replace(new RegExp('^' + escapeRegexp(query), 'gi'), '<strong>$&</strong>');
+      matchItem = matchItem.replace(new RegExp('\\.(' + escapeRegexp(query) + ')', 'gi'), '.<strong>$1</strong>');
+      matchItem = matchItem.replace(new RegExp('\\$(' + escapeRegexp(query) + ')', 'gi'), '$<strong>$1</strong>');
+      return $sce.trustAsHtml(matchItem);
+    };
+  }
+]);

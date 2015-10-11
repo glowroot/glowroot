@@ -34,11 +34,11 @@ public class UserRecordingConfigPage {
     }
 
     public WebElement getEnabledSwitchOn() {
-        return withWait(xpath("//div[@gt-label='Enabled']//label[@btn-radio='true']"));
+        return withWait(xpath("//div[@gt-label='Enabled']//label[@uib-btn-radio='true']"));
     }
 
     public WebElement getEnabledSwitchOff() {
-        return withWait(xpath("//div[@gt-label='Enabled']//label[@btn-radio='false']"));
+        return withWait(xpath("//div[@gt-label='Enabled']//label[@uib-btn-radio='false']"));
     }
 
     public WebElement getUserTextField() {
