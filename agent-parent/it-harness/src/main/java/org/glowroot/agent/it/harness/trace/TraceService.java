@@ -180,18 +180,20 @@ public class TraceService {
         return mapper.readValue(content, ImmutableProfileTree.class);
     }
 
-    public void assertNoActiveTransactions() throws Exception {
+    public void assertNoActiveOrPendingCompleteTransactions() throws Exception {
         Stopwatch stopwatch = Stopwatch.createStarted();
         // if interruptAppUnderTest() was used to terminate an active transaction, it may take a few
         // milliseconds to interrupt the thread and end the active transaction
         while (stopwatch.elapsed(SECONDS) < 2) {
             int numActiveTransactions = Integer.parseInt(
                     httpClient.get("/backend/admin/num-active-transactions?server="));
-            if (numActiveTransactions == 0) {
+            int numPendingCompleteTransactions = Integer.parseInt(
+                    httpClient.get("/backend/admin/num-pending-complete-transactions?server="));
+            if (numActiveTransactions + numPendingCompleteTransactions == 0) {
                 return;
             }
         }
-        throw new AssertionError("There are still active transactions");
+        throw new AssertionError("There are still active or pending complete transactions");
     }
 
     private @Nullable Trace.Header getActiveHeader() throws Exception {

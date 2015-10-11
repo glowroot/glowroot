@@ -25,6 +25,10 @@ public class AdminService {
         this.httpClient = httpClient;
     }
 
+    public int getNumActiveTransactions() throws Exception {
+        return Integer.parseInt(httpClient.get("/backend/admin/num-active-transactions?server="));
+    }
+
     public int getNumPendingCompleteTransactions() throws Exception {
         return Integer.parseInt(
                 httpClient.get("/backend/admin/num-pending-complete-transactions?server="));

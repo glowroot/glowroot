@@ -179,8 +179,11 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
         // wait for all traces to be stored
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (adminService.getNumPendingCompleteTransactions() > 0
-                && stopwatch.elapsed(SECONDS) < 5) {
+                && stopwatch.elapsed(SECONDS) < 15) {
             Thread.sleep(10);
+        }
+        if (adminService.getNumPendingCompleteTransactions() > 0) {
+            throw new IllegalStateException("There are still pending complete transactions");
         }
     }
 
@@ -211,7 +214,7 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
 
     @Override
     public void checkAndReset() throws Exception {
-        traceService.assertNoActiveTransactions();
+        traceService.assertNoActiveOrPendingCompleteTransactions();
         adminService.deleteAllData();
         checkAndResetConfigOnly();
     }
