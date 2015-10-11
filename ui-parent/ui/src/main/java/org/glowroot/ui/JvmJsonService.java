@@ -82,7 +82,7 @@ class JvmJsonService {
         List<DataSeries> dataSeriesList = Lists.newArrayList();
         for (String gaugeName : request.gaugeNames()) {
             List<GaugeValue> gaugeValues = getGaugeValues(request.serverGroup(), revisedFrom,
-                    revisedTo, gaugeName, rollupLevel, liveCaptureTime);
+                    revisedTo, gaugeName, rollupLevel, liveCaptureTime, gapMillis);
             dataSeriesList.add(convertToDataSeriesWithGaps(gaugeName, gaugeValues, gapMillis));
         }
 
@@ -186,7 +186,8 @@ class JvmJsonService {
     }
 
     private List<GaugeValue> getGaugeValues(String serverGroup, long from, long to,
-            String gaugeName, int rollupLevel, long liveCaptureTime) throws Exception {
+            String gaugeName, int rollupLevel, long liveCaptureTime, double gapMillis)
+                    throws Exception {
         List<GaugeValue> gaugeValues =
                 gaugeValueRepository.readGaugeValues(serverGroup, gaugeName, from, to, rollupLevel);
         if (rollupLevel == 0) {
@@ -197,10 +198,19 @@ class JvmJsonService {
             long lastRolledUpTime = gaugeValues.get(gaugeValues.size() - 1).getCaptureTime();
             nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
         }
-        List<GaugeValue> allGaugeValues = Lists.newArrayList(gaugeValues);
-        allGaugeValues.addAll(gaugeValueRepository.readManuallyRolledUpGaugeValues(serverGroup,
-                nonRolledUpFrom, to, gaugeName, rollupLevel, liveCaptureTime));
-        return allGaugeValues;
+        if (liveCaptureTime - nonRolledUpFrom > gapMillis) {
+            // only display "live" rollup if there is gap since the last value
+            // this avoids the confusion of an empty chart shortly after starting the jvm
+            // (when in default 4 hour rollup level)
+            // while at the same time avoiding the confusion of always showing the "live" rollup
+            // which can look like a strange spiky value at the end of a chart since it can be based
+            // on a very short amount of time (e.g. 5 seconds) and so not smoothed out with enough
+            // data yet
+            gaugeValues = Lists.newArrayList(gaugeValues);
+            gaugeValues.addAll(gaugeValueRepository.readManuallyRolledUpGaugeValues(serverGroup,
+                    nonRolledUpFrom, to, gaugeName, rollupLevel, liveCaptureTime));
+        }
+        return gaugeValues;
     }
 
     private static DataSeries convertToDataSeriesWithGaps(String dataSeriesName,
