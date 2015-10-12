@@ -51,15 +51,36 @@ class LoggerPlugin {
         LoggerPlugin.inAdvice.set(inAdvice);
     }
 
-    static boolean markTraceAsError(boolean warn, boolean throwable) {
-        if (warn && throwable) {
-            return traceErrorOnWarningWithThrowable.value();
-        } else if (warn && !throwable) {
-            return traceErrorOnWarningWithoutThrowable.value();
-        } else if (!warn && throwable) {
-            return traceErrorOnErrorWithThrowable.value();
-        } else {
-            return traceErrorOnErrorWithoutThrowable.value();
+    static boolean markTraceAsError(Level level, boolean throwable) {
+        if (level == Level.ERROR || level == Level.FATAL) {
+            return throwable ? traceErrorOnErrorWithThrowable.value()
+                    : traceErrorOnErrorWithoutThrowable.value();
+        }
+        if (level == Level.WARN) {
+            return throwable ? traceErrorOnWarningWithThrowable.value()
+                    : traceErrorOnWarningWithoutThrowable.value();
+        }
+        return false;
+    }
+
+    static enum Level {
+
+        TRACE("trace"),
+        DEBUG("debug"),
+        INFO("info"),
+        WARN("warn"),
+        ERROR("error"),
+        FATAL("fatal"),
+        UNKNOWN("unknown");
+
+        private final String name;
+
+        private Level(String name) {
+            this.name = name;
+        }
+
+        String getName() {
+            return name;
         }
     }
 }

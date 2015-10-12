@@ -210,19 +210,19 @@ public class Log4jTest {
         assertThat(entries).hasSize(3);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.message()).isEqualTo("log warn (localized): def____");
+        assertThat(warnEntry.message()).isEqualTo("log warn: def____");
         assertThat(warnEntry.error().get().message()).isEqualTo("456__");
         assertThat(warnEntry.error().get().exception().get().stackTraceElements().get(0))
                 .contains("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.message()).isEqualTo("log error (localized): efg____");
+        assertThat(errorEntry.message()).isEqualTo("log error: efg____");
         assertThat(errorEntry.error().get().message()).isEqualTo("567__");
         assertThat(errorEntry.error().get().exception().get().stackTraceElements().get(0))
                 .contains("transactionMarker");
 
         Trace.Entry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.message()).isEqualTo("log fatal (localized): fgh____");
+        assertThat(fatalEntry.message()).isEqualTo("log fatal: fgh____");
         assertThat(fatalEntry.error().get().message()).isEqualTo("678__");
     }
 
@@ -240,13 +240,13 @@ public class Log4jTest {
         assertThat(entries).hasSize(3);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.message()).isEqualTo("log warn (localized): def____null");
+        assertThat(warnEntry.message()).isEqualTo("log warn: def____null");
         assertThat(warnEntry.error().get().message()).isEqualTo("def____null");
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.message()).isEqualTo("log error (localized): efg____null");
+        assertThat(errorEntry.message()).isEqualTo("log error: efg____null");
         assertThat(errorEntry.error().get().message()).isEqualTo("efg____null");
         Trace.Entry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.message()).isEqualTo("log fatal (localized): fgh____null");
+        assertThat(fatalEntry.message()).isEqualTo("log fatal: fgh____null");
         assertThat(fatalEntry.error().get().message()).isEqualTo("fgh____null");
     }
 
@@ -262,21 +262,19 @@ public class Log4jTest {
         assertThat(entries).hasSize(3);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.message()).isEqualTo("log warn (localized): def____ [d, e, f]");
+        assertThat(warnEntry.message()).isEqualTo("log warn: def____");
         assertThat(warnEntry.error().get().message()).isEqualTo("456__");
         assertThat(warnEntry.error().get().exception().get().stackTraceElements().get(0))
                 .contains("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.message())
-                .isEqualTo("log error (localized): efg____ [e, f, g]");
+        assertThat(errorEntry.message()).isEqualTo("log error: efg____");
         assertThat(errorEntry.error().get().message()).isEqualTo("567__");
         assertThat(errorEntry.error().get().exception().get().stackTraceElements().get(0))
                 .contains("transactionMarker");
 
         Trace.Entry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.message())
-                .isEqualTo("log fatal (localized): fgh____ [f, g, h]");
+        assertThat(fatalEntry.message()).isEqualTo("log fatal: fgh____");
         assertThat(fatalEntry.error().get().message()).isEqualTo("678__");
         assertThat(fatalEntry.error().get().exception().get().stackTraceElements().get(0))
                 .contains("transactionMarker");
@@ -294,19 +292,19 @@ public class Log4jTest {
         assertThat(entries).hasSize(3);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.message()).isEqualTo("log warn (localized): def____");
+        assertThat(warnEntry.message()).isEqualTo("log warn: def____");
         assertThat(warnEntry.error().get().message()).isEqualTo("456__");
         assertThat(warnEntry.error().get().exception().get().stackTraceElements().get(0))
                 .contains("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.message()).isEqualTo("log error (localized): efg____");
+        assertThat(errorEntry.message()).isEqualTo("log error: efg____");
         assertThat(errorEntry.error().get().message()).isEqualTo("567__");
         assertThat(errorEntry.error().get().exception().get().stackTraceElements().get(0))
                 .contains("transactionMarker");
 
         Trace.Entry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.message()).isEqualTo("log fatal (localized): fgh____");
+        assertThat(fatalEntry.message()).isEqualTo("log fatal: fgh____");
         assertThat(fatalEntry.error().get().message()).isEqualTo("678__");
         assertThat(fatalEntry.error().get().exception().get().stackTraceElements().get(0))
                 .contains("transactionMarker");
@@ -326,17 +324,14 @@ public class Log4jTest {
         assertThat(entries).hasSize(3);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.message())
-                .isEqualTo("log warn (localized): def____null [d_, e_, f_]");
-        assertThat(warnEntry.error().get().message()).isEqualTo("def____null [d_, e_, f_]");
+        assertThat(warnEntry.message()).isEqualTo("log warn: def____null");
+        assertThat(warnEntry.error().get().message()).isEqualTo("def____null");
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.message())
-                .isEqualTo("log error (localized): efg____null [e_, f_, g_]");
-        assertThat(errorEntry.error().get().message()).isEqualTo("efg____null [e_, f_, g_]");
+        assertThat(errorEntry.message()).isEqualTo("log error: efg____null");
+        assertThat(errorEntry.error().get().message()).isEqualTo("efg____null");
         Trace.Entry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.message())
-                .isEqualTo("log fatal (localized): fgh____null [f_, g_, h_]");
-        assertThat(fatalEntry.error().get().message()).isEqualTo("fgh____null [f_, g_, h_]");
+        assertThat(fatalEntry.message()).isEqualTo("log fatal: fgh____null");
+        assertThat(fatalEntry.error().get().message()).isEqualTo("fgh____null");
     }
 
     @Test
