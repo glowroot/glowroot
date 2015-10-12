@@ -132,10 +132,10 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public void collect(final String server, Trace trace) throws Exception {
+    public void collect(final String server, final Trace trace) throws Exception {
         final Trace.Header header = trace.getHeader();
         boolean exists = dataSource.queryForExists(
-                "select 1 from trace where server = ? and trace_id = ?", server, header.getId());
+                "select 1 from trace where server = ? and trace_id = ?", server, trace.getId());
         if (exists) {
             dataSource.update("update trace set partial = ?, slow = ?, error = ?, start_time = ?,"
                     + " capture_time = ?, duration_nanos = ?, transaction_type = ?,"
@@ -154,7 +154,7 @@ public class TraceDao implements TraceRepository {
         if (header.getAttributeCount() > 0) {
             if (exists) {
                 dataSource.update("delete from trace_attribute where server = ? and trace_id = ?",
-                        server, header.getId());
+                        server, trace.getId());
             }
             dataSource.batchUpdate(
                     "insert into trace_attribute (server, trace_id, name, value, capture_time)"
@@ -165,7 +165,7 @@ public class TraceDao implements TraceRepository {
                             for (Trace.Attribute attribute : header.getAttributeList()) {
                                 for (String value : attribute.getValueList()) {
                                     preparedStatement.setString(1, server);
-                                    preparedStatement.setString(2, header.getId());
+                                    preparedStatement.setString(2, trace.getId());
                                     preparedStatement.setString(3, attribute.getName());
                                     preparedStatement.setString(4, value);
                                     preparedStatement.setLong(5, header.getCaptureTime());
@@ -367,12 +367,14 @@ public class TraceDao implements TraceRepository {
     private class TraceBinder implements PreparedStatementBinder {
 
         private final String server;
+        private final String traceId;
         private final Trace.Header header;
         private final @Nullable Long entriesId;
         private final @Nullable Long profileId;
 
         private TraceBinder(String server, Trace trace) throws IOException {
             this.server = server;
+            this.traceId = trace.getId();
             this.header = trace.getHeader();
 
             List<Trace.Entry> entries = trace.getEntryList();
@@ -411,7 +413,7 @@ public class TraceDao implements TraceRepository {
             RowMappers.setLong(preparedStatement, i++, entriesId);
             RowMappers.setLong(preparedStatement, i++, profileId);
             preparedStatement.setString(i++, server);
-            preparedStatement.setString(i++, header.getId());
+            preparedStatement.setString(i++, traceId);
         }
     }
 

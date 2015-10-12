@@ -8,15 +8,16 @@ option java_package = "org.glowroot.wire.api.model";
 
 message Trace {
 
-  Header header = 1;
+  string id = 1;
+
+  Header header = 2;
 
   // each entry can have child entries (and each child entry can have child entries, etc)
-  repeated Entry entry = 2;
+  repeated Entry entry = 3;
 
-  ProfileTree profile_tree = 3;
+  ProfileTree profile_tree = 4;
 
   message Header {
-    string id = 1;
     bool partial = 2;
     bool slow = 3;
     int64 start_time = 4;

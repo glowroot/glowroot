@@ -64,6 +64,7 @@ public class TraceCreator {
         List<Trace.Entry> entries = transaction.getEntriesProtobuf();
         ProfileTree profileTree = transaction.getProfileTreeProtobuf();
         Trace.Builder builder = Trace.newBuilder()
+                .setId(transaction.getId())
                 .setHeader(header)
                 .addAllEntry(entries);
         if (profileTree != null) {
@@ -75,7 +76,6 @@ public class TraceCreator {
     private static Trace.Header createTraceHeader(Transaction transaction, boolean slow,
             boolean partial, long captureTime, long captureTick) throws IOException {
         Trace.Header.Builder builder = Trace.Header.newBuilder();
-        builder.setId(transaction.getId());
         builder.setPartial(partial);
         builder.setSlow(slow);
         ErrorMessage errorMessage = transaction.getErrorMessage();

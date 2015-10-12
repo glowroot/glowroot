@@ -79,7 +79,6 @@ public class TraceDaoTest {
         Trace.Header header =
                 traceDao.readHeader(SERVER_NAME, queryResult.records().get(0).traceId()).header();
         // then
-        assertThat(header.getId()).isEqualTo(trace.getHeader().getId());
         assertThat(header.getPartial()).isEqualTo(trace.getHeader().getPartial());
         assertThat(header.getStartTime()).isEqualTo(trace.getHeader().getStartTime());
         assertThat(header.getCaptureTime()).isEqualTo(trace.getHeader().getCaptureTime());

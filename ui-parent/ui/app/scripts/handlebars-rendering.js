@@ -1176,19 +1176,19 @@ HandlebarsRendering = (function () {
   }
 
   return {
-    renderTrace: function (trace, server, $selector) {
-      var html = JST.trace(trace);
+    renderTrace: function (traceHeader, server, traceId, $selector) {
+      var html = JST.trace(traceHeader);
       $selector.html(html);
       $selector.addClass('gt-trace-parent');
       if (server !== undefined) {
         $selector.data('gtServer', server);
-        $selector.data('gtTraceId', trace.id);
+        $selector.data('gtTraceId', traceId);
       }
     },
-    renderTraceFromExport: function (trace, $selector, traceEntries, profile) {
+    renderTraceFromExport: function (traceHeader, $selector, traceEntries, profile) {
       $selector.data('gtTraceEntries', traceEntries);
       $selector.data('gtProfile', profile);
-      this.renderTrace(trace, undefined, $selector);
+      this.renderTrace(traceHeader, undefined, undefined, $selector);
     },
     formatBytes: formatBytes,
     formatMillis: formatMillis,

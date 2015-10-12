@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
@@ -157,17 +158,17 @@ public class TraceService {
         String content = httpClient.get("/backend/trace/points?" + sb.toString());
         TracePointResponse response =
                 ObjectMappers.readRequiredValue(mapper, content, TracePointResponse.class);
-        List<Trace.Header> traces = Lists.newArrayList();
+        List<Trace.Header> headers = Lists.newArrayList();
         for (RawPoint point : response.getNormalPoints()) {
-            traces.add(getHeader(point.getServer(), point.getTraceId()));
+            headers.add(getHeader(point.getServer(), point.getTraceId()));
         }
         for (RawPoint point : response.getErrorPoints()) {
-            traces.add(getHeader(point.getServer(), point.getTraceId()));
+            headers.add(getHeader(point.getServer(), point.getTraceId()));
         }
         for (RawPoint point : response.getActivePoints()) {
-            traces.add(getHeader(point.getServer(), point.getTraceId()));
+            headers.add(getHeader(point.getServer(), point.getTraceId()));
         }
-        return traces;
+        return headers;
     }
 
     public List<Trace.Entry> getEntries(String traceId) throws Exception {
@@ -214,6 +215,8 @@ public class TraceService {
     private Trace.Header getHeader(String server, String traceId) throws Exception {
         String content =
                 httpClient.get("/backend/trace/header?server=" + server + "&trace-id=" + traceId);
-        return mapper.readValue(content, ImmutableHeader.class);
+        ObjectNode rootNode = ObjectMappers.readRequiredValue(mapper, content, ObjectNode.class);
+        rootNode.put("id", traceId);
+        return mapper.readValue(mapper.treeAsTokens(rootNode), ImmutableHeader.class);
     }
 }

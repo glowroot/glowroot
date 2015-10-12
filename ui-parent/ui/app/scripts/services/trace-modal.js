@@ -34,7 +34,7 @@ glowroot.factory('traceModal', [
               $modalContent.html('expired');
             } else {
               data.showExport = true;
-              HandlebarsRendering.renderTrace(data, server, $modalContent);
+              HandlebarsRendering.renderTrace(data, server, traceId, $modalContent);
               $('#traceModal .modal-body button.download-trace').click(function () {
                 var $traceParent = $(this).parents('.gt-trace-parent');
                 var traceId = $traceParent.data('gtTraceId');

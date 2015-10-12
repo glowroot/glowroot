@@ -13,20 +13,30 @@ public final class TraceOuterClass {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 1;</code>
+     * <code>optional string id = 1;</code>
+     */
+    java.lang.String getId();
+    /**
+     * <code>optional string id = 1;</code>
+     */
+    com.google.protobuf.ByteString
+        getIdBytes();
+
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 2;</code>
      */
     boolean hasHeader();
     /**
-     * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 1;</code>
+     * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 2;</code>
      */
     org.glowroot.wire.api.model.TraceOuterClass.Trace.Header getHeader();
     /**
-     * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 1;</code>
+     * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 2;</code>
      */
     org.glowroot.wire.api.model.TraceOuterClass.Trace.HeaderOrBuilder getHeaderOrBuilder();
 
     /**
-     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
      *
      * <pre>
      * each entry can have child entries (and each child entry can have child entries, etc)
@@ -35,7 +45,7 @@ public final class TraceOuterClass {
     java.util.List<org.glowroot.wire.api.model.TraceOuterClass.Trace.Entry> 
         getEntryList();
     /**
-     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
      *
      * <pre>
      * each entry can have child entries (and each child entry can have child entries, etc)
@@ -43,7 +53,7 @@ public final class TraceOuterClass {
      */
     org.glowroot.wire.api.model.TraceOuterClass.Trace.Entry getEntry(int index);
     /**
-     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
      *
      * <pre>
      * each entry can have child entries (and each child entry can have child entries, etc)
@@ -51,7 +61,7 @@ public final class TraceOuterClass {
      */
     int getEntryCount();
     /**
-     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
      *
      * <pre>
      * each entry can have child entries (and each child entry can have child entries, etc)
@@ -60,7 +70,7 @@ public final class TraceOuterClass {
     java.util.List<? extends org.glowroot.wire.api.model.TraceOuterClass.Trace.EntryOrBuilder> 
         getEntryOrBuilderList();
     /**
-     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
      *
      * <pre>
      * each entry can have child entries (and each child entry can have child entries, etc)
@@ -70,15 +80,15 @@ public final class TraceOuterClass {
         int index);
 
     /**
-     * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 3;</code>
+     * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 4;</code>
      */
     boolean hasProfileTree();
     /**
-     * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 3;</code>
+     * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 4;</code>
      */
     org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree getProfileTree();
     /**
-     * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 3;</code>
+     * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 4;</code>
      */
     org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTreeOrBuilder getProfileTreeOrBuilder();
   }
@@ -94,6 +104,7 @@ public final class TraceOuterClass {
       super(builder);
     }
     private Trace() {
+      id_ = "";
       entry_ = java.util.Collections.emptyList();
     }
 
@@ -122,6 +133,12 @@ public final class TraceOuterClass {
               break;
             }
             case 10: {
+              String s = input.readStringRequireUtf8();
+
+              id_ = s;
+              break;
+            }
+            case 18: {
               org.glowroot.wire.api.model.TraceOuterClass.Trace.Header.Builder subBuilder = null;
               if (header_ != null) {
                 subBuilder = header_.toBuilder();
@@ -134,15 +151,15 @@ public final class TraceOuterClass {
 
               break;
             }
-            case 18: {
-              if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+            case 26: {
+              if (!((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
                 entry_ = new java.util.ArrayList<org.glowroot.wire.api.model.TraceOuterClass.Trace.Entry>();
-                mutable_bitField0_ |= 0x00000002;
+                mutable_bitField0_ |= 0x00000004;
               }
               entry_.add(input.readMessage(org.glowroot.wire.api.model.TraceOuterClass.Trace.Entry.parser(), extensionRegistry));
               break;
             }
-            case 26: {
+            case 34: {
               org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree.Builder subBuilder = null;
               if (profileTree_ != null) {
                 subBuilder = profileTree_.toBuilder();
@@ -164,7 +181,7 @@ public final class TraceOuterClass {
             new com.google.protobuf.InvalidProtocolBufferException(
                 e.getMessage()).setUnfinishedMessage(this));
       } finally {
-        if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
           entry_ = java.util.Collections.unmodifiableList(entry_);
         }
         makeExtensionsImmutable();
@@ -185,16 +202,6 @@ public final class TraceOuterClass {
     public interface HeaderOrBuilder extends
         // @@protoc_insertion_point(interface_extends:org_glowroot_wire_api_model.Trace.Header)
         com.google.protobuf.MessageOrBuilder {
-
-      /**
-       * <code>optional string id = 1;</code>
-       */
-      java.lang.String getId();
-      /**
-       * <code>optional string id = 1;</code>
-       */
-      com.google.protobuf.ByteString
-          getIdBytes();
 
       /**
        * <code>optional bool partial = 2;</code>
@@ -427,7 +434,6 @@ public final class TraceOuterClass {
         super(builder);
       }
       private Header() {
-        id_ = "";
         partial_ = false;
         slow_ = false;
         startTime_ = 0L;
@@ -472,12 +478,6 @@ public final class TraceOuterClass {
                 if (!input.skipField(tag)) {
                   done = true;
                 }
-                break;
-              }
-              case 10: {
-                String s = input.readStringRequireUtf8();
-
-                id_ = s;
                 break;
               }
               case 16: {
@@ -530,17 +530,17 @@ public final class TraceOuterClass {
                 break;
               }
               case 90: {
-                if (!((mutable_bitField0_ & 0x00000400) == 0x00000400)) {
+                if (!((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
                   attribute_ = new java.util.ArrayList<org.glowroot.wire.api.model.TraceOuterClass.Trace.Attribute>();
-                  mutable_bitField0_ |= 0x00000400;
+                  mutable_bitField0_ |= 0x00000200;
                 }
                 attribute_.add(input.readMessage(org.glowroot.wire.api.model.TraceOuterClass.Trace.Attribute.parser(), extensionRegistry));
                 break;
               }
               case 98: {
-                if (!((mutable_bitField0_ & 0x00000800) == 0x00000800)) {
+                if (!((mutable_bitField0_ & 0x00000400) == 0x00000400)) {
                   detailEntry_ = new java.util.ArrayList<org.glowroot.wire.api.model.TraceOuterClass.Trace.DetailEntry>();
-                  mutable_bitField0_ |= 0x00000800;
+                  mutable_bitField0_ |= 0x00000400;
                 }
                 detailEntry_.add(input.readMessage(org.glowroot.wire.api.model.TraceOuterClass.Trace.DetailEntry.parser(), extensionRegistry));
                 break;
@@ -592,9 +592,9 @@ public final class TraceOuterClass {
                 break;
               }
               case 154: {
-                if (!((mutable_bitField0_ & 0x00040000) == 0x00040000)) {
+                if (!((mutable_bitField0_ & 0x00020000) == 0x00020000)) {
                   gcActivity_ = new java.util.ArrayList<org.glowroot.wire.api.model.TraceOuterClass.Trace.GarbageCollectionActivity>();
-                  mutable_bitField0_ |= 0x00040000;
+                  mutable_bitField0_ |= 0x00020000;
                 }
                 gcActivity_.add(input.readMessage(org.glowroot.wire.api.model.TraceOuterClass.Trace.GarbageCollectionActivity.parser(), extensionRegistry));
                 break;
@@ -628,13 +628,13 @@ public final class TraceOuterClass {
               new com.google.protobuf.InvalidProtocolBufferException(
                   e.getMessage()).setUnfinishedMessage(this));
         } finally {
-          if (((mutable_bitField0_ & 0x00000400) == 0x00000400)) {
+          if (((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
             attribute_ = java.util.Collections.unmodifiableList(attribute_);
           }
-          if (((mutable_bitField0_ & 0x00000800) == 0x00000800)) {
+          if (((mutable_bitField0_ & 0x00000400) == 0x00000400)) {
             detailEntry_ = java.util.Collections.unmodifiableList(detailEntry_);
           }
-          if (((mutable_bitField0_ & 0x00040000) == 0x00040000)) {
+          if (((mutable_bitField0_ & 0x00020000) == 0x00020000)) {
             gcActivity_ = java.util.Collections.unmodifiableList(gcActivity_);
           }
           makeExtensionsImmutable();
@@ -653,40 +653,6 @@ public final class TraceOuterClass {
       }
 
       private int bitField0_;
-      public static final int ID_FIELD_NUMBER = 1;
-      private volatile java.lang.Object id_;
-      /**
-       * <code>optional string id = 1;</code>
-       */
-      public java.lang.String getId() {
-        java.lang.Object ref = id_;
-        if (ref instanceof java.lang.String) {
-          return (java.lang.String) ref;
-        } else {
-          com.google.protobuf.ByteString bs = 
-              (com.google.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
-          id_ = s;
-          return s;
-        }
-      }
-      /**
-       * <code>optional string id = 1;</code>
-       */
-      public com.google.protobuf.ByteString
-          getIdBytes() {
-        java.lang.Object ref = id_;
-        if (ref instanceof java.lang.String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          id_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-
       public static final int PARTIAL_FIELD_NUMBER = 2;
       private boolean partial_;
       /**
@@ -1115,9 +1081,6 @@ public final class TraceOuterClass {
 
       public void writeTo(com.google.protobuf.CodedOutputStream output)
                           throws java.io.IOException {
-        if (!getIdBytes().isEmpty()) {
-          com.google.protobuf.GeneratedMessage.writeString(output, 1, id_);
-        }
         if (partial_ != false) {
           output.writeBool(2, partial_);
         }
@@ -1191,9 +1154,6 @@ public final class TraceOuterClass {
         if (size != -1) return size;
 
         size = 0;
-        if (!getIdBytes().isEmpty()) {
-          size += com.google.protobuf.GeneratedMessage.computeStringSize(1, id_);
-        }
         if (partial_ != false) {
           size += com.google.protobuf.CodedOutputStream
             .computeBoolSize(2, partial_);
@@ -1392,8 +1352,6 @@ public final class TraceOuterClass {
         }
         public Builder clear() {
           super.clear();
-          id_ = "";
-
           partial_ = false;
 
           slow_ = false;
@@ -1414,13 +1372,13 @@ public final class TraceOuterClass {
 
           if (attributeBuilder_ == null) {
             attribute_ = java.util.Collections.emptyList();
-            bitField0_ = (bitField0_ & ~0x00000400);
+            bitField0_ = (bitField0_ & ~0x00000200);
           } else {
             attributeBuilder_.clear();
           }
           if (detailEntryBuilder_ == null) {
             detailEntry_ = java.util.Collections.emptyList();
-            bitField0_ = (bitField0_ & ~0x00000800);
+            bitField0_ = (bitField0_ & ~0x00000400);
           } else {
             detailEntryBuilder_.clear();
           }
@@ -1446,7 +1404,7 @@ public final class TraceOuterClass {
 
           if (gcActivityBuilder_ == null) {
             gcActivity_ = java.util.Collections.emptyList();
-            bitField0_ = (bitField0_ & ~0x00040000);
+            bitField0_ = (bitField0_ & ~0x00020000);
           } else {
             gcActivityBuilder_.clear();
           }
@@ -1482,7 +1440,6 @@ public final class TraceOuterClass {
           org.glowroot.wire.api.model.TraceOuterClass.Trace.Header result = new org.glowroot.wire.api.model.TraceOuterClass.Trace.Header(this);
           int from_bitField0_ = bitField0_;
           int to_bitField0_ = 0;
-          result.id_ = id_;
           result.partial_ = partial_;
           result.slow_ = slow_;
           result.startTime_ = startTime_;
@@ -1493,18 +1450,18 @@ public final class TraceOuterClass {
           result.headline_ = headline_;
           result.user_ = user_;
           if (attributeBuilder_ == null) {
-            if (((bitField0_ & 0x00000400) == 0x00000400)) {
+            if (((bitField0_ & 0x00000200) == 0x00000200)) {
               attribute_ = java.util.Collections.unmodifiableList(attribute_);
-              bitField0_ = (bitField0_ & ~0x00000400);
+              bitField0_ = (bitField0_ & ~0x00000200);
             }
             result.attribute_ = attribute_;
           } else {
             result.attribute_ = attributeBuilder_.build();
           }
           if (detailEntryBuilder_ == null) {
-            if (((bitField0_ & 0x00000800) == 0x00000800)) {
+            if (((bitField0_ & 0x00000400) == 0x00000400)) {
               detailEntry_ = java.util.Collections.unmodifiableList(detailEntry_);
-              bitField0_ = (bitField0_ & ~0x00000800);
+              bitField0_ = (bitField0_ & ~0x00000400);
             }
             result.detailEntry_ = detailEntry_;
           } else {
@@ -1525,9 +1482,9 @@ public final class TraceOuterClass {
           result.threadWaitedNanos_ = threadWaitedNanos_;
           result.threadAllocatedBytes_ = threadAllocatedBytes_;
           if (gcActivityBuilder_ == null) {
-            if (((bitField0_ & 0x00040000) == 0x00040000)) {
+            if (((bitField0_ & 0x00020000) == 0x00020000)) {
               gcActivity_ = java.util.Collections.unmodifiableList(gcActivity_);
-              bitField0_ = (bitField0_ & ~0x00040000);
+              bitField0_ = (bitField0_ & ~0x00020000);
             }
             result.gcActivity_ = gcActivity_;
           } else {
@@ -1553,10 +1510,6 @@ public final class TraceOuterClass {
 
         public Builder mergeFrom(org.glowroot.wire.api.model.TraceOuterClass.Trace.Header other) {
           if (other == org.glowroot.wire.api.model.TraceOuterClass.Trace.Header.getDefaultInstance()) return this;
-          if (!other.getId().isEmpty()) {
-            id_ = other.id_;
-            onChanged();
-          }
           if (other.getPartial() != false) {
             setPartial(other.getPartial());
           }
@@ -1592,7 +1545,7 @@ public final class TraceOuterClass {
             if (!other.attribute_.isEmpty()) {
               if (attribute_.isEmpty()) {
                 attribute_ = other.attribute_;
-                bitField0_ = (bitField0_ & ~0x00000400);
+                bitField0_ = (bitField0_ & ~0x00000200);
               } else {
                 ensureAttributeIsMutable();
                 attribute_.addAll(other.attribute_);
@@ -1605,7 +1558,7 @@ public final class TraceOuterClass {
                 attributeBuilder_.dispose();
                 attributeBuilder_ = null;
                 attribute_ = other.attribute_;
-                bitField0_ = (bitField0_ & ~0x00000400);
+                bitField0_ = (bitField0_ & ~0x00000200);
                 attributeBuilder_ = 
                   com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                      getAttributeFieldBuilder() : null;
@@ -1618,7 +1571,7 @@ public final class TraceOuterClass {
             if (!other.detailEntry_.isEmpty()) {
               if (detailEntry_.isEmpty()) {
                 detailEntry_ = other.detailEntry_;
-                bitField0_ = (bitField0_ & ~0x00000800);
+                bitField0_ = (bitField0_ & ~0x00000400);
               } else {
                 ensureDetailEntryIsMutable();
                 detailEntry_.addAll(other.detailEntry_);
@@ -1631,7 +1584,7 @@ public final class TraceOuterClass {
                 detailEntryBuilder_.dispose();
                 detailEntryBuilder_ = null;
                 detailEntry_ = other.detailEntry_;
-                bitField0_ = (bitField0_ & ~0x00000800);
+                bitField0_ = (bitField0_ & ~0x00000400);
                 detailEntryBuilder_ = 
                   com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                      getDetailEntryFieldBuilder() : null;
@@ -1662,7 +1615,7 @@ public final class TraceOuterClass {
             if (!other.gcActivity_.isEmpty()) {
               if (gcActivity_.isEmpty()) {
                 gcActivity_ = other.gcActivity_;
-                bitField0_ = (bitField0_ & ~0x00040000);
+                bitField0_ = (bitField0_ & ~0x00020000);
               } else {
                 ensureGcActivityIsMutable();
                 gcActivity_.addAll(other.gcActivity_);
@@ -1675,7 +1628,7 @@ public final class TraceOuterClass {
                 gcActivityBuilder_.dispose();
                 gcActivityBuilder_ = null;
                 gcActivity_ = other.gcActivity_;
-                bitField0_ = (bitField0_ & ~0x00040000);
+                bitField0_ = (bitField0_ & ~0x00020000);
                 gcActivityBuilder_ = 
                   com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                      getGcActivityFieldBuilder() : null;
@@ -1722,75 +1675,6 @@ public final class TraceOuterClass {
           return this;
         }
         private int bitField0_;
-
-        private java.lang.Object id_ = "";
-        /**
-         * <code>optional string id = 1;</code>
-         */
-        public java.lang.String getId() {
-          java.lang.Object ref = id_;
-          if (!(ref instanceof java.lang.String)) {
-            com.google.protobuf.ByteString bs =
-                (com.google.protobuf.ByteString) ref;
-            java.lang.String s = bs.toStringUtf8();
-            id_ = s;
-            return s;
-          } else {
-            return (java.lang.String) ref;
-          }
-        }
-        /**
-         * <code>optional string id = 1;</code>
-         */
-        public com.google.protobuf.ByteString
-            getIdBytes() {
-          java.lang.Object ref = id_;
-          if (ref instanceof String) {
-            com.google.protobuf.ByteString b = 
-                com.google.protobuf.ByteString.copyFromUtf8(
-                    (java.lang.String) ref);
-            id_ = b;
-            return b;
-          } else {
-            return (com.google.protobuf.ByteString) ref;
-          }
-        }
-        /**
-         * <code>optional string id = 1;</code>
-         */
-        public Builder setId(
-            java.lang.String value) {
-          if (value == null) {
-    throw new NullPointerException();
-  }
-  
-          id_ = value;
-          onChanged();
-          return this;
-        }
-        /**
-         * <code>optional string id = 1;</code>
-         */
-        public Builder clearId() {
-          
-          id_ = getDefaultInstance().getId();
-          onChanged();
-          return this;
-        }
-        /**
-         * <code>optional string id = 1;</code>
-         */
-        public Builder setIdBytes(
-            com.google.protobuf.ByteString value) {
-          if (value == null) {
-    throw new NullPointerException();
-  }
-  checkByteStringIsUtf8(value);
-          
-          id_ = value;
-          onChanged();
-          return this;
-        }
 
         private boolean partial_ ;
         /**
@@ -2201,9 +2085,9 @@ public final class TraceOuterClass {
         private java.util.List<org.glowroot.wire.api.model.TraceOuterClass.Trace.Attribute> attribute_ =
           java.util.Collections.emptyList();
         private void ensureAttributeIsMutable() {
-          if (!((bitField0_ & 0x00000400) == 0x00000400)) {
+          if (!((bitField0_ & 0x00000200) == 0x00000200)) {
             attribute_ = new java.util.ArrayList<org.glowroot.wire.api.model.TraceOuterClass.Trace.Attribute>(attribute_);
-            bitField0_ |= 0x00000400;
+            bitField0_ |= 0x00000200;
            }
         }
 
@@ -2353,7 +2237,7 @@ public final class TraceOuterClass {
         public Builder clearAttribute() {
           if (attributeBuilder_ == null) {
             attribute_ = java.util.Collections.emptyList();
-            bitField0_ = (bitField0_ & ~0x00000400);
+            bitField0_ = (bitField0_ & ~0x00000200);
             onChanged();
           } else {
             attributeBuilder_.clear();
@@ -2430,7 +2314,7 @@ public final class TraceOuterClass {
             attributeBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
                 org.glowroot.wire.api.model.TraceOuterClass.Trace.Attribute, org.glowroot.wire.api.model.TraceOuterClass.Trace.Attribute.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.AttributeOrBuilder>(
                     attribute_,
-                    ((bitField0_ & 0x00000400) == 0x00000400),
+                    ((bitField0_ & 0x00000200) == 0x00000200),
                     getParentForChildren(),
                     isClean());
             attribute_ = null;
@@ -2441,9 +2325,9 @@ public final class TraceOuterClass {
         private java.util.List<org.glowroot.wire.api.model.TraceOuterClass.Trace.DetailEntry> detailEntry_ =
           java.util.Collections.emptyList();
         private void ensureDetailEntryIsMutable() {
-          if (!((bitField0_ & 0x00000800) == 0x00000800)) {
+          if (!((bitField0_ & 0x00000400) == 0x00000400)) {
             detailEntry_ = new java.util.ArrayList<org.glowroot.wire.api.model.TraceOuterClass.Trace.DetailEntry>(detailEntry_);
-            bitField0_ |= 0x00000800;
+            bitField0_ |= 0x00000400;
            }
         }
 
@@ -2593,7 +2477,7 @@ public final class TraceOuterClass {
         public Builder clearDetailEntry() {
           if (detailEntryBuilder_ == null) {
             detailEntry_ = java.util.Collections.emptyList();
-            bitField0_ = (bitField0_ & ~0x00000800);
+            bitField0_ = (bitField0_ & ~0x00000400);
             onChanged();
           } else {
             detailEntryBuilder_.clear();
@@ -2670,7 +2554,7 @@ public final class TraceOuterClass {
             detailEntryBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
                 org.glowroot.wire.api.model.TraceOuterClass.Trace.DetailEntry, org.glowroot.wire.api.model.TraceOuterClass.Trace.DetailEntry.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.DetailEntryOrBuilder>(
                     detailEntry_,
-                    ((bitField0_ & 0x00000800) == 0x00000800),
+                    ((bitField0_ & 0x00000400) == 0x00000400),
                     getParentForChildren(),
                     isClean());
             detailEntry_ = null;
@@ -3067,9 +2951,9 @@ public final class TraceOuterClass {
         private java.util.List<org.glowroot.wire.api.model.TraceOuterClass.Trace.GarbageCollectionActivity> gcActivity_ =
           java.util.Collections.emptyList();
         private void ensureGcActivityIsMutable() {
-          if (!((bitField0_ & 0x00040000) == 0x00040000)) {
+          if (!((bitField0_ & 0x00020000) == 0x00020000)) {
             gcActivity_ = new java.util.ArrayList<org.glowroot.wire.api.model.TraceOuterClass.Trace.GarbageCollectionActivity>(gcActivity_);
-            bitField0_ |= 0x00040000;
+            bitField0_ |= 0x00020000;
            }
         }
 
@@ -3219,7 +3103,7 @@ public final class TraceOuterClass {
         public Builder clearGcActivity() {
           if (gcActivityBuilder_ == null) {
             gcActivity_ = java.util.Collections.emptyList();
-            bitField0_ = (bitField0_ & ~0x00040000);
+            bitField0_ = (bitField0_ & ~0x00020000);
             onChanged();
           } else {
             gcActivityBuilder_.clear();
@@ -3296,7 +3180,7 @@ public final class TraceOuterClass {
             gcActivityBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
                 org.glowroot.wire.api.model.TraceOuterClass.Trace.GarbageCollectionActivity, org.glowroot.wire.api.model.TraceOuterClass.Trace.GarbageCollectionActivity.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.GarbageCollectionActivityOrBuilder>(
                     gcActivity_,
-                    ((bitField0_ & 0x00040000) == 0x00040000),
+                    ((bitField0_ & 0x00020000) == 0x00020000),
                     getParentForChildren(),
                     isClean());
             gcActivity_ = null;
@@ -12420,31 +12304,65 @@ public final class TraceOuterClass {
     }
 
     private int bitField0_;
-    public static final int HEADER_FIELD_NUMBER = 1;
+    public static final int ID_FIELD_NUMBER = 1;
+    private volatile java.lang.Object id_;
+    /**
+     * <code>optional string id = 1;</code>
+     */
+    public java.lang.String getId() {
+      java.lang.Object ref = id_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        id_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>optional string id = 1;</code>
+     */
+    public com.google.protobuf.ByteString
+        getIdBytes() {
+      java.lang.Object ref = id_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        id_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int HEADER_FIELD_NUMBER = 2;
     private org.glowroot.wire.api.model.TraceOuterClass.Trace.Header header_;
     /**
-     * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 1;</code>
+     * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 2;</code>
      */
     public boolean hasHeader() {
       return header_ != null;
     }
     /**
-     * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 1;</code>
+     * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 2;</code>
      */
     public org.glowroot.wire.api.model.TraceOuterClass.Trace.Header getHeader() {
       return header_ == null ? org.glowroot.wire.api.model.TraceOuterClass.Trace.Header.getDefaultInstance() : header_;
     }
     /**
-     * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 1;</code>
+     * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 2;</code>
      */
     public org.glowroot.wire.api.model.TraceOuterClass.Trace.HeaderOrBuilder getHeaderOrBuilder() {
       return getHeader();
     }
 
-    public static final int ENTRY_FIELD_NUMBER = 2;
+    public static final int ENTRY_FIELD_NUMBER = 3;
     private java.util.List<org.glowroot.wire.api.model.TraceOuterClass.Trace.Entry> entry_;
     /**
-     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
      *
      * <pre>
      * each entry can have child entries (and each child entry can have child entries, etc)
@@ -12454,7 +12372,7 @@ public final class TraceOuterClass {
       return entry_;
     }
     /**
-     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
      *
      * <pre>
      * each entry can have child entries (and each child entry can have child entries, etc)
@@ -12465,7 +12383,7 @@ public final class TraceOuterClass {
       return entry_;
     }
     /**
-     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
      *
      * <pre>
      * each entry can have child entries (and each child entry can have child entries, etc)
@@ -12475,7 +12393,7 @@ public final class TraceOuterClass {
       return entry_.size();
     }
     /**
-     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
      *
      * <pre>
      * each entry can have child entries (and each child entry can have child entries, etc)
@@ -12485,7 +12403,7 @@ public final class TraceOuterClass {
       return entry_.get(index);
     }
     /**
-     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
      *
      * <pre>
      * each entry can have child entries (and each child entry can have child entries, etc)
@@ -12496,22 +12414,22 @@ public final class TraceOuterClass {
       return entry_.get(index);
     }
 
-    public static final int PROFILE_TREE_FIELD_NUMBER = 3;
+    public static final int PROFILE_TREE_FIELD_NUMBER = 4;
     private org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree profileTree_;
     /**
-     * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 3;</code>
+     * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 4;</code>
      */
     public boolean hasProfileTree() {
       return profileTree_ != null;
     }
     /**
-     * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 3;</code>
+     * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 4;</code>
      */
     public org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree getProfileTree() {
       return profileTree_ == null ? org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree.getDefaultInstance() : profileTree_;
     }
     /**
-     * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 3;</code>
+     * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 4;</code>
      */
     public org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTreeOrBuilder getProfileTreeOrBuilder() {
       return getProfileTree();
@@ -12529,14 +12447,17 @@ public final class TraceOuterClass {
 
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
+      if (!getIdBytes().isEmpty()) {
+        com.google.protobuf.GeneratedMessage.writeString(output, 1, id_);
+      }
       if (header_ != null) {
-        output.writeMessage(1, getHeader());
+        output.writeMessage(2, getHeader());
       }
       for (int i = 0; i < entry_.size(); i++) {
-        output.writeMessage(2, entry_.get(i));
+        output.writeMessage(3, entry_.get(i));
       }
       if (profileTree_ != null) {
-        output.writeMessage(3, getProfileTree());
+        output.writeMessage(4, getProfileTree());
       }
     }
 
@@ -12545,17 +12466,20 @@ public final class TraceOuterClass {
       if (size != -1) return size;
 
       size = 0;
+      if (!getIdBytes().isEmpty()) {
+        size += com.google.protobuf.GeneratedMessage.computeStringSize(1, id_);
+      }
       if (header_ != null) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(1, getHeader());
+          .computeMessageSize(2, getHeader());
       }
       for (int i = 0; i < entry_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(2, entry_.get(i));
+          .computeMessageSize(3, entry_.get(i));
       }
       if (profileTree_ != null) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(3, getProfileTree());
+          .computeMessageSize(4, getProfileTree());
       }
       memoizedSize = size;
       return size;
@@ -12669,6 +12593,8 @@ public final class TraceOuterClass {
       }
       public Builder clear() {
         super.clear();
+        id_ = "";
+
         if (headerBuilder_ == null) {
           header_ = null;
         } else {
@@ -12677,7 +12603,7 @@ public final class TraceOuterClass {
         }
         if (entryBuilder_ == null) {
           entry_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000002);
+          bitField0_ = (bitField0_ & ~0x00000004);
         } else {
           entryBuilder_.clear();
         }
@@ -12711,15 +12637,16 @@ public final class TraceOuterClass {
         org.glowroot.wire.api.model.TraceOuterClass.Trace result = new org.glowroot.wire.api.model.TraceOuterClass.Trace(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
+        result.id_ = id_;
         if (headerBuilder_ == null) {
           result.header_ = header_;
         } else {
           result.header_ = headerBuilder_.build();
         }
         if (entryBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          if (((bitField0_ & 0x00000004) == 0x00000004)) {
             entry_ = java.util.Collections.unmodifiableList(entry_);
-            bitField0_ = (bitField0_ & ~0x00000002);
+            bitField0_ = (bitField0_ & ~0x00000004);
           }
           result.entry_ = entry_;
         } else {
@@ -12746,6 +12673,10 @@ public final class TraceOuterClass {
 
       public Builder mergeFrom(org.glowroot.wire.api.model.TraceOuterClass.Trace other) {
         if (other == org.glowroot.wire.api.model.TraceOuterClass.Trace.getDefaultInstance()) return this;
+        if (!other.getId().isEmpty()) {
+          id_ = other.id_;
+          onChanged();
+        }
         if (other.hasHeader()) {
           mergeHeader(other.getHeader());
         }
@@ -12753,7 +12684,7 @@ public final class TraceOuterClass {
           if (!other.entry_.isEmpty()) {
             if (entry_.isEmpty()) {
               entry_ = other.entry_;
-              bitField0_ = (bitField0_ & ~0x00000002);
+              bitField0_ = (bitField0_ & ~0x00000004);
             } else {
               ensureEntryIsMutable();
               entry_.addAll(other.entry_);
@@ -12766,7 +12697,7 @@ public final class TraceOuterClass {
               entryBuilder_.dispose();
               entryBuilder_ = null;
               entry_ = other.entry_;
-              bitField0_ = (bitField0_ & ~0x00000002);
+              bitField0_ = (bitField0_ & ~0x00000004);
               entryBuilder_ = 
                 com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                    getEntryFieldBuilder() : null;
@@ -12805,17 +12736,86 @@ public final class TraceOuterClass {
       }
       private int bitField0_;
 
+      private java.lang.Object id_ = "";
+      /**
+       * <code>optional string id = 1;</code>
+       */
+      public java.lang.String getId() {
+        java.lang.Object ref = id_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          id_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string id = 1;</code>
+       */
+      public com.google.protobuf.ByteString
+          getIdBytes() {
+        java.lang.Object ref = id_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          id_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string id = 1;</code>
+       */
+      public Builder setId(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        id_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string id = 1;</code>
+       */
+      public Builder clearId() {
+        
+        id_ = getDefaultInstance().getId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string id = 1;</code>
+       */
+      public Builder setIdBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        id_ = value;
+        onChanged();
+        return this;
+      }
+
       private org.glowroot.wire.api.model.TraceOuterClass.Trace.Header header_ = null;
       private com.google.protobuf.SingleFieldBuilder<
           org.glowroot.wire.api.model.TraceOuterClass.Trace.Header, org.glowroot.wire.api.model.TraceOuterClass.Trace.Header.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.HeaderOrBuilder> headerBuilder_;
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 2;</code>
        */
       public boolean hasHeader() {
         return headerBuilder_ != null || header_ != null;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 2;</code>
        */
       public org.glowroot.wire.api.model.TraceOuterClass.Trace.Header getHeader() {
         if (headerBuilder_ == null) {
@@ -12825,7 +12825,7 @@ public final class TraceOuterClass {
         }
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 2;</code>
        */
       public Builder setHeader(org.glowroot.wire.api.model.TraceOuterClass.Trace.Header value) {
         if (headerBuilder_ == null) {
@@ -12841,7 +12841,7 @@ public final class TraceOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 2;</code>
        */
       public Builder setHeader(
           org.glowroot.wire.api.model.TraceOuterClass.Trace.Header.Builder builderForValue) {
@@ -12855,7 +12855,7 @@ public final class TraceOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 2;</code>
        */
       public Builder mergeHeader(org.glowroot.wire.api.model.TraceOuterClass.Trace.Header value) {
         if (headerBuilder_ == null) {
@@ -12873,7 +12873,7 @@ public final class TraceOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 2;</code>
        */
       public Builder clearHeader() {
         if (headerBuilder_ == null) {
@@ -12887,7 +12887,7 @@ public final class TraceOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 2;</code>
        */
       public org.glowroot.wire.api.model.TraceOuterClass.Trace.Header.Builder getHeaderBuilder() {
         
@@ -12895,7 +12895,7 @@ public final class TraceOuterClass {
         return getHeaderFieldBuilder().getBuilder();
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 2;</code>
        */
       public org.glowroot.wire.api.model.TraceOuterClass.Trace.HeaderOrBuilder getHeaderOrBuilder() {
         if (headerBuilder_ != null) {
@@ -12906,7 +12906,7 @@ public final class TraceOuterClass {
         }
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace.Header header = 2;</code>
        */
       private com.google.protobuf.SingleFieldBuilder<
           org.glowroot.wire.api.model.TraceOuterClass.Trace.Header, org.glowroot.wire.api.model.TraceOuterClass.Trace.Header.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.HeaderOrBuilder> 
@@ -12925,9 +12925,9 @@ public final class TraceOuterClass {
       private java.util.List<org.glowroot.wire.api.model.TraceOuterClass.Trace.Entry> entry_ =
         java.util.Collections.emptyList();
       private void ensureEntryIsMutable() {
-        if (!((bitField0_ & 0x00000002) == 0x00000002)) {
+        if (!((bitField0_ & 0x00000004) == 0x00000004)) {
           entry_ = new java.util.ArrayList<org.glowroot.wire.api.model.TraceOuterClass.Trace.Entry>(entry_);
-          bitField0_ |= 0x00000002;
+          bitField0_ |= 0x00000004;
          }
       }
 
@@ -12935,7 +12935,7 @@ public final class TraceOuterClass {
           org.glowroot.wire.api.model.TraceOuterClass.Trace.Entry, org.glowroot.wire.api.model.TraceOuterClass.Trace.Entry.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.EntryOrBuilder> entryBuilder_;
 
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -12949,7 +12949,7 @@ public final class TraceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -12963,7 +12963,7 @@ public final class TraceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -12977,7 +12977,7 @@ public final class TraceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -12998,7 +12998,7 @@ public final class TraceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -13016,7 +13016,7 @@ public final class TraceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -13036,7 +13036,7 @@ public final class TraceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -13057,7 +13057,7 @@ public final class TraceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -13075,7 +13075,7 @@ public final class TraceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -13093,7 +13093,7 @@ public final class TraceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -13112,7 +13112,7 @@ public final class TraceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -13121,7 +13121,7 @@ public final class TraceOuterClass {
       public Builder clearEntry() {
         if (entryBuilder_ == null) {
           entry_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000002);
+          bitField0_ = (bitField0_ & ~0x00000004);
           onChanged();
         } else {
           entryBuilder_.clear();
@@ -13129,7 +13129,7 @@ public final class TraceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -13146,7 +13146,7 @@ public final class TraceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -13157,7 +13157,7 @@ public final class TraceOuterClass {
         return getEntryFieldBuilder().getBuilder(index);
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -13171,7 +13171,7 @@ public final class TraceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -13186,7 +13186,7 @@ public final class TraceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -13197,7 +13197,7 @@ public final class TraceOuterClass {
             org.glowroot.wire.api.model.TraceOuterClass.Trace.Entry.getDefaultInstance());
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -13209,7 +13209,7 @@ public final class TraceOuterClass {
             index, org.glowroot.wire.api.model.TraceOuterClass.Trace.Entry.getDefaultInstance());
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.Entry entry = 3;</code>
        *
        * <pre>
        * each entry can have child entries (and each child entry can have child entries, etc)
@@ -13226,7 +13226,7 @@ public final class TraceOuterClass {
           entryBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
               org.glowroot.wire.api.model.TraceOuterClass.Trace.Entry, org.glowroot.wire.api.model.TraceOuterClass.Trace.Entry.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.EntryOrBuilder>(
                   entry_,
-                  ((bitField0_ & 0x00000002) == 0x00000002),
+                  ((bitField0_ & 0x00000004) == 0x00000004),
                   getParentForChildren(),
                   isClean());
           entry_ = null;
@@ -13238,13 +13238,13 @@ public final class TraceOuterClass {
       private com.google.protobuf.SingleFieldBuilder<
           org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree, org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree.Builder, org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTreeOrBuilder> profileTreeBuilder_;
       /**
-       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 3;</code>
+       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 4;</code>
        */
       public boolean hasProfileTree() {
         return profileTreeBuilder_ != null || profileTree_ != null;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 3;</code>
+       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 4;</code>
        */
       public org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree getProfileTree() {
         if (profileTreeBuilder_ == null) {
@@ -13254,7 +13254,7 @@ public final class TraceOuterClass {
         }
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 3;</code>
+       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 4;</code>
        */
       public Builder setProfileTree(org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree value) {
         if (profileTreeBuilder_ == null) {
@@ -13270,7 +13270,7 @@ public final class TraceOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 3;</code>
+       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 4;</code>
        */
       public Builder setProfileTree(
           org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree.Builder builderForValue) {
@@ -13284,7 +13284,7 @@ public final class TraceOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 3;</code>
+       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 4;</code>
        */
       public Builder mergeProfileTree(org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree value) {
         if (profileTreeBuilder_ == null) {
@@ -13302,7 +13302,7 @@ public final class TraceOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 3;</code>
+       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 4;</code>
        */
       public Builder clearProfileTree() {
         if (profileTreeBuilder_ == null) {
@@ -13316,7 +13316,7 @@ public final class TraceOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 3;</code>
+       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 4;</code>
        */
       public org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree.Builder getProfileTreeBuilder() {
         
@@ -13324,7 +13324,7 @@ public final class TraceOuterClass {
         return getProfileTreeFieldBuilder().getBuilder();
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 3;</code>
+       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 4;</code>
        */
       public org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTreeOrBuilder getProfileTreeOrBuilder() {
         if (profileTreeBuilder_ != null) {
@@ -13335,7 +13335,7 @@ public final class TraceOuterClass {
         }
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 3;</code>
+       * <code>optional .org_glowroot_wire_api_model.ProfileTree profile_tree = 4;</code>
        */
       private com.google.protobuf.SingleFieldBuilder<
           org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree, org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree.Builder, org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTreeOrBuilder> 
@@ -13473,12 +13473,12 @@ public final class TraceOuterClass {
   static {
     java.lang.String[] descriptorData = {
       "\n\013Trace.proto\022\033org_glowroot_wire_api_mod" +
-      "el\032\021ProfileTree.proto\"\344\021\n\005Trace\0229\n\006heade" +
-      "r\030\001 \001(\0132).org_glowroot_wire_api_model.Tr" +
-      "ace.Header\0227\n\005entry\030\002 \003(\0132(.org_glowroot" +
-      "_wire_api_model.Trace.Entry\022>\n\014profile_t" +
-      "ree\030\003 \001(\0132(.org_glowroot_wire_api_model." +
-      "ProfileTree\032\207\006\n\006Header\022\n\n\002id\030\001 \001(\t\022\017\n\007pa" +
+      "el\032\021ProfileTree.proto\"\344\021\n\005Trace\022\n\n\002id\030\001 " +
+      "\001(\t\0229\n\006header\030\002 \001(\0132).org_glowroot_wire_" +
+      "api_model.Trace.Header\0227\n\005entry\030\003 \003(\0132(." +
+      "org_glowroot_wire_api_model.Trace.Entry\022" +
+      ">\n\014profile_tree\030\004 \001(\0132(.org_glowroot_wir" +
+      "e_api_model.ProfileTree\032\373\005\n\006Header\022\017\n\007pa" +
       "rtial\030\002 \001(\010\022\014\n\004slow\030\003 \001(\010\022\022\n\nstart_time\030" +
       "\004 \001(\003\022\024\n\014capture_time\030\005 \001(\003\022\026\n\016duration_" +
       "nanos\030\006 \001(\003\022\030\n\020transaction_type\030\007 \001(\t\022\030\n",
@@ -13551,13 +13551,13 @@ public final class TraceOuterClass {
     internal_static_org_glowroot_wire_api_model_Trace_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_Trace_descriptor,
-        new java.lang.String[] { "Header", "Entry", "ProfileTree", });
+        new java.lang.String[] { "Id", "Header", "Entry", "ProfileTree", });
     internal_static_org_glowroot_wire_api_model_Trace_Header_descriptor =
       internal_static_org_glowroot_wire_api_model_Trace_descriptor.getNestedTypes().get(0);
     internal_static_org_glowroot_wire_api_model_Trace_Header_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_Trace_Header_descriptor,
-        new java.lang.String[] { "Id", "Partial", "Slow", "StartTime", "CaptureTime", "DurationNanos", "TransactionType", "TransactionName", "Headline", "User", "Attribute", "DetailEntry", "Error", "RootTimer", "ThreadCpuNanos", "ThreadBlockedNanos", "ThreadWaitedNanos", "ThreadAllocatedBytes", "GcActivity", "EntryCount", "EntryLimitExceeded", "ProfileSampleCount", "ProfileSampleLimitExceeded", });
+        new java.lang.String[] { "Partial", "Slow", "StartTime", "CaptureTime", "DurationNanos", "TransactionType", "TransactionName", "Headline", "User", "Attribute", "DetailEntry", "Error", "RootTimer", "ThreadCpuNanos", "ThreadBlockedNanos", "ThreadWaitedNanos", "ThreadAllocatedBytes", "GcActivity", "EntryCount", "EntryLimitExceeded", "ProfileSampleCount", "ProfileSampleLimitExceeded", });
     internal_static_org_glowroot_wire_api_model_Trace_Attribute_descriptor =
       internal_static_org_glowroot_wire_api_model_Trace_descriptor.getNestedTypes().get(1);
     internal_static_org_glowroot_wire_api_model_Trace_Attribute_fieldAccessorTable = new

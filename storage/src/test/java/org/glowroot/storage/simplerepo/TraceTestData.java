@@ -29,7 +29,6 @@ class TraceTestData {
 
     static Trace createTrace() {
         Trace.Header header = Trace.Header.newBuilder()
-                .setId("abc" + counter.getAndIncrement())
                 .setPartial(false)
                 .setSlow(true)
                 .setStartTime(1)
@@ -65,6 +64,7 @@ class TraceTestData {
                 .setProfileSampleLimitExceeded(false)
                 .build();
         return Trace.newBuilder()
+                .setId("abc" + counter.getAndIncrement())
                 .setHeader(header)
                 .build();
     }

@@ -160,7 +160,6 @@ class TraceCommonService {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = jsonFactory.createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeStringField("id", header.getId());
         if (active) {
             jg.writeBooleanField("active", active);
         }
