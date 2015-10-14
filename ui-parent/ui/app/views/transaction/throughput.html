@@ -1,0 +1,112 @@
+<!--
+  Copyright 2015 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div style="position: relative;">
+  <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+  <div style="text-align: center; margin-top: -6px; margin-bottom: 2px; color: #555;">
+    <label class="radio-inline">
+      <input type="radio" name="view" value="average" ng-click="clickTopRadioButton('average')">
+      <a class="gt-radio-link"
+         href="transaction/average{{tabQueryString()}}">
+        average
+      </a>
+    </label>
+    <label class="radio-inline">
+      <input type="radio" name="view" value="percentiles" ng-click="clickTopRadioButton('percentiles')">
+      <a class="gt-radio-link"
+         href="transaction/percentiles{{tabQueryString()}}">
+        percentiles
+      </a>
+    </label>
+    <label class="radio-inline">
+      <input type="radio" name="view" value="throughput" ng-click="clickTopRadioButton('throughput')" checked>
+      <a class="gt-radio-link"
+         href="transaction/throughput{{tabQueryString()}}"
+         ng-click="clickActiveTopLink($event)">
+        throughput
+      </a>
+    </label>
+  </div>
+  <!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
+  <div class="clearfix" style="position: relative; z-index: 800;">
+    <div class="pull-right" style="margin-top: -20px; margin-bottom: -8px; font-size: 22px;">
+      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
+      <a role="button"
+         class="gt-chart-button"
+         href="#"
+         ng-click="zoomOut()">
+        <i title="Zoom out"
+           class="fa fa-search-minus"></i><!-- lack of space here is significant
+   --></a>
+      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
+      <a role="button"
+         class="gt-chart-button"
+         href="#"
+         ng-click="refresh()">
+        <i title="Refresh"
+           class="fa fa-refresh"></i><!-- lack of space here is significant
+   --></a>
+      <!-- using anchor instead of button due to nicer focus ring behavior in chrome -->
+      <a role="button"
+         class="gt-chart-button"
+         href="#"
+         uib-popover-template="'template/help/chart.html'"
+         popover-placement="left"
+         popover-trigger="focus">
+        <i title="Help"
+           class="fa fa-question-circle"></i><!-- lack of space here is significant
+   --></a>
+    </div>
+  </div>
+  <div style="position: relative;">
+    <!-- negative position is so that overlay will cover chart legend which sometimes stick beyond container -->
+    <div class="gt-panel-overlay"
+         ng-show="showChartSpinner"
+         style="right: -20px; pointer-events: none;">
+    </div>
+    <div class="gt-chart-container">
+      <div gt-spinner
+           gt-show="showChartSpinner"
+           gt-no-delay="true"
+           id="chartSpinner"
+           class="gt-chart-panel">
+      </div>
+      <div class="gt-chart-dimensions" id="chart"></div>
+      <div ng-show="chartNoData && !showChartSpinner"
+           class="gt-chart-panel"
+           style="display: table;">
+        <div style="display: table-cell; text-align: center; vertical-align: middle;">
+          <div class="gt-chart-no-data">No data for this time period</div>
+        </div>
+      </div>
+    </div>
+    <div ng-show="transactionCount"
+         style="position: relative; padding-top: 30px; margin-left: 40px;">
+      <div style="margin-top: 20px;">
+        <label>Throughput:</label>
+
+        <div class="gt-inline-block" style="vertical-align: top;">
+          {{transactionsPerMin.toFixed(1)}} transactions per minute<br>
+          ({{transactionCount}}
+          <span ng-pluralize
+                count="transactionCount"
+                when="{'1':'transaction','other':'transactions'}">
+          </span>
+          in this period)
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

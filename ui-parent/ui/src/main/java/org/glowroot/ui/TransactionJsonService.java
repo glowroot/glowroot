@@ -39,6 +39,7 @@ import org.immutables.value.Value;
 import org.glowroot.common.live.LiveAggregateRepository.OverallSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.model.LazyHistogram;
@@ -90,7 +91,7 @@ class TransactionJsonService {
         List<OverviewAggregate> overviewAggregates = transactionCommonService.getOverviewAggregates(
                 request.serverGroup(), request.transactionType(), request.transactionName(),
                 request.from(), request.to(), liveCaptureTime);
-        List<DataSeries> dataSeriesList = getDataSeriesForTimersChart(request, overviewAggregates);
+        List<DataSeries> dataSeriesList = getDataSeriesForTimerChart(request, overviewAggregates);
         Map<Long, Long> transactionCounts = getTransactionCounts(overviewAggregates);
         if (!overviewAggregates.isEmpty()
                 && overviewAggregates.get(0).captureTime() == request.from()) {
@@ -144,6 +145,45 @@ class TransactionJsonService {
         jg.writeObjectField("dataSeries", dataSeriesList);
         jg.writeObjectField("transactionCounts", transactionCounts);
         jg.writeObjectField("mergedAggregate", mergedAggregate);
+        jg.writeEndObject();
+        jg.close();
+        return sb.toString();
+    }
+
+    @GET("/backend/transaction/throughput")
+    String getThroughput(String queryString) throws Exception {
+        TransactionDataRequest request =
+                QueryStrings.decode(queryString, TransactionDataRequest.class);
+
+        long liveCaptureTime = clock.currentTimeMillis();
+        List<ThroughputAggregate> throughputAggregates =
+                transactionCommonService.getThroughputAggregates(
+                        request.serverGroup(), request.transactionType(), request.transactionName(),
+                        request.from(), request.to(), liveCaptureTime);
+        List<DataSeries> dataSeriesList =
+                getDataSeriesForThroughputChart(request, throughputAggregates);
+        long transactionCount = 0;
+        for (ThroughputAggregate throughputAggregate : throughputAggregates) {
+            // not including transaction count where captureTime == request.from() since that
+            // will be transaction count for interval outside of chart
+            if (throughputAggregate.captureTime() > request.from()) {
+                transactionCount += throughputAggregate.transactionCount();
+            }
+        }
+        if (!throughputAggregates.isEmpty()
+                && throughputAggregates.get(0).captureTime() == request.from()) {
+            // the left most aggregate is not really in the requested interval since it is for
+            // prior capture times
+            throughputAggregates = throughputAggregates.subList(1, throughputAggregates.size());
+        }
+
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        jg.writeStartObject();
+        jg.writeObjectField("dataSeries", dataSeriesList);
+        jg.writeNumberField("transactionCount", transactionCount);
+        jg.writeNumberField("transactionsPerMin",
+                60000.0 * transactionCount / (request.to() - request.from()));
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -293,6 +333,18 @@ class TransactionJsonService {
         return transactionCounts;
     }
 
+    private List<DataSeries> getDataSeriesForTimerChart(TransactionDataRequest request,
+            List<OverviewAggregate> aggregates) throws IOException {
+        if (aggregates.isEmpty()) {
+            return Lists.newArrayList();
+        }
+        List<StackedPoint> stackedPoints = Lists.newArrayList();
+        for (OverviewAggregate aggregate : aggregates) {
+            stackedPoints.add(StackedPoint.create(aggregate));
+        }
+        return getTimerDataSeries(request, stackedPoints);
+    }
+
     private List<DataSeries> getDataSeriesForPercentileChart(TransactionDataRequest request,
             List<PercentileAggregate> percentileAggregates, List<Double> percentiles)
                     throws Exception {
@@ -334,16 +386,39 @@ class TransactionJsonService {
         return dataSeriesList;
     }
 
-    private List<DataSeries> getDataSeriesForTimersChart(TransactionDataRequest request,
-            List<OverviewAggregate> aggregates) throws IOException {
-        if (aggregates.isEmpty()) {
+    private List<DataSeries> getDataSeriesForThroughputChart(TransactionDataRequest request,
+            List<ThroughputAggregate> throughputAggregates) throws Exception {
+        if (throughputAggregates.isEmpty()) {
             return Lists.newArrayList();
         }
-        List<StackedPoint> stackedPoints = Lists.newArrayList();
-        for (OverviewAggregate aggregate : aggregates) {
-            stackedPoints.add(StackedPoint.create(aggregate));
+        long dataPointIntervalMillis = aggregateRepository
+                .getDataPointIntervalMillis(request.serverGroup(), request.from(), request.to());
+        DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock, dataPointIntervalMillis);
+        DataSeries dataSeries = new DataSeries("throughput");
+        List<DataSeries> dataSeriesList = Lists.newArrayList(dataSeries);
+        ThroughputAggregate lastThroughputAggregate = null;
+        for (ThroughputAggregate throughputAggregate : throughputAggregates) {
+            if (lastThroughputAggregate == null) {
+                // first aggregate
+                dataSeriesHelper.addInitialUpslopeIfNeeded(request.from(),
+                        throughputAggregate.captureTime(), dataSeriesList, null);
+            } else {
+                dataSeriesHelper.addGapIfNeeded(lastThroughputAggregate.captureTime(),
+                        throughputAggregate.captureTime(), dataSeriesList, null);
+            }
+            lastThroughputAggregate = throughputAggregate;
+            long from = throughputAggregate.captureTime() - dataPointIntervalMillis;
+            // this math is to deal with active aggregate
+            from = (long) (Math.ceil(from / dataPointIntervalMillis) * dataPointIntervalMillis);
+            double transactionsPerMin = 60000.0 * throughputAggregate.transactionCount()
+                    / (throughputAggregate.captureTime() - from);
+            dataSeries.add(throughputAggregate.captureTime(), transactionsPerMin);
         }
-        return getTimerDataSeries(request, stackedPoints);
+        if (lastThroughputAggregate != null) {
+            dataSeriesHelper.addFinalDownslopeIfNeeded(request.to(), dataSeriesList, null,
+                    lastThroughputAggregate.captureTime());
+        }
+        return dataSeriesList;
     }
 
     private List<DataSeries> getTimerDataSeries(TransactionDataRequest request,

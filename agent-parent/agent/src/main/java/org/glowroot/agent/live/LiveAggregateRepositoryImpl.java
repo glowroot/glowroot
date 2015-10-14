@@ -88,6 +88,20 @@ public class LiveAggregateRepositoryImpl implements LiveAggregateRepository {
     }
 
     @Override
+    public @Nullable LiveResult<ThroughputAggregate> getLiveThroughputAggregates(String server,
+            final String transactionType, final @Nullable String transactionName, long from,
+            long to, final long liveCaptureTime) throws Exception {
+        return map(from, to, new Mapper<ThroughputAggregate>() {
+            @Override
+            public @Nullable ThroughputAggregate map(AggregateIntervalCollector collector)
+                    throws Exception {
+                return collector.getLiveThroughputAggregate(transactionType, transactionName,
+                        liveCaptureTime);
+            }
+        });
+    }
+
+    @Override
     public @Nullable LiveResult<ProfileTree> getLiveProfileTree(String server,
             final String transactionType, final @Nullable String transactionName, long from,
             long to) throws Exception {

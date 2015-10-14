@@ -43,7 +43,7 @@ glowroot.controller('TransactionAverageCtrl', [
       if (item === 'average') {
         $scope.$parent.chartRefresh++;
       } else {
-        $location.url('transaction/percentiles' + $scope.tabQueryString());
+        $location.url('transaction/' + item + $scope.tabQueryString());
       }
     };
 
@@ -77,7 +77,6 @@ glowroot.controller('TransactionAverageCtrl', [
       $scope.transactionCounts = data.transactionCounts;
       $scope.mergedAggregate = data.mergedAggregate;
       $scope.threadInfoAggregate = data.threadInfoAggregate;
-      $scope.lastDurationMillis = query.to - query.from;
       if ($scope.mergedAggregate.transactionCount) {
         updateTreeTimers();
         updateFlattenedTimers();

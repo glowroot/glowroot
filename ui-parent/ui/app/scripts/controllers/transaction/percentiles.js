@@ -19,12 +19,11 @@
 glowroot.controller('TransactionPercentilesCtrl', [
   '$scope',
   '$location',
-  '$http',
   '$filter',
   '$timeout',
   'charts',
   'modals',
-  function ($scope, $location, $http, $filter, $timeout, charts, modals) {
+  function ($scope, $location, $filter, $timeout, charts, modals) {
 
     $scope.$parent.activeTabItem = 'time';
 
@@ -54,7 +53,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
       if (item === 'percentiles') {
         $scope.$parent.chartRefresh++;
       } else {
-        $location.url('transaction/average' + $scope.tabQueryString());
+        $location.url('transaction/' + item + $scope.tabQueryString());
       }
     };
 
@@ -121,7 +120,6 @@ glowroot.controller('TransactionPercentilesCtrl', [
 
     function onRefreshData(data, query) {
       $scope.transactionCounts = data.transactionCounts;
-      $scope.lastDurationMillis = query.to - query.from;
       $scope.mergedAggregate = data.mergedAggregate;
     }
 

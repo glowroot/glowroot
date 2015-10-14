@@ -25,6 +25,7 @@ import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverallSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 import org.glowroot.common.model.QueryCollector;
@@ -63,12 +64,22 @@ public interface AggregateRepository {
                     throws Exception;
 
     // captureTimeFrom is INCLUSIVE
+    List<ThroughputAggregate> readOverallThroughputAggregates(String serverGroup,
+            String transactionType, long captureTimeFrom, long captureTimeTo, int rollupLevel)
+                    throws Exception;
+
+    // captureTimeFrom is INCLUSIVE
     List<OverviewAggregate> readTransactionOverviewAggregates(String serverGroup,
             String transactionType, String transactionName, long captureTimeFrom,
             long captureTimeTo, int rollupLevel) throws Exception;
 
     // captureTimeFrom is INCLUSIVE
     List<PercentileAggregate> readTransactionPercentileAggregates(String serverGroup,
+            String transactionType, String transactionName, long captureTimeFrom,
+            long captureTimeTo, int rollupLevel) throws Exception;
+
+    // captureTimeFrom is INCLUSIVE
+    List<ThroughputAggregate> readTransactionThroughputAggregates(String serverGroup,
             String transactionType, String transactionName, long captureTimeFrom,
             long captureTimeTo, int rollupLevel) throws Exception;
 

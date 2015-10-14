@@ -35,6 +35,7 @@ import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverallSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
@@ -166,6 +167,19 @@ public class AggregateIntervalCollector {
         synchronized (aggregateCollector) {
             long capturedAt = Math.min(liveCaptureTime, captureTime);
             return aggregateCollector.buildLivePercentileAggregate(capturedAt);
+        }
+    }
+
+    public @Nullable ThroughputAggregate getLiveThroughputAggregate(String transactionType,
+            @Nullable String transactionName, long liveCaptureTime) throws IOException {
+        AggregateCollector aggregateCollector =
+                getAggregateCollector(transactionType, transactionName);
+        if (aggregateCollector == null) {
+            return null;
+        }
+        synchronized (aggregateCollector) {
+            long capturedAt = Math.min(liveCaptureTime, captureTime);
+            return aggregateCollector.buildLiveThroughputAggregate(capturedAt);
         }
     }
 

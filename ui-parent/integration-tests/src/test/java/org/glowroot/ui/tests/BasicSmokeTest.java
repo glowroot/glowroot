@@ -92,6 +92,7 @@ public class BasicSmokeTest extends WebDriverTest {
                 By.xpath("//a[@gt-display='All Servlet Transactions'][contains(., '%')]"));
 
         Utils.withWait(driver, By.partialLinkText("percentiles")).click();
+        Utils.withWait(driver, By.partialLinkText("throughput")).click();
         Utils.withWait(driver, By.partialLinkText("Slow traces")).click();
         Utils.withWait(driver, By.partialLinkText("External queries")).click();
         Utils.withWait(driver, By.partialLinkText("Continuous profiling")).click();

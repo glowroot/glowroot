@@ -27,12 +27,14 @@ import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 
 import org.glowroot.common.live.ImmutableOverallSummary;
+import org.glowroot.common.live.ImmutableThroughputAggregate;
 import org.glowroot.common.live.ImmutableTransactionSummary;
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.live.LiveAggregateRepository.LiveResult;
 import org.glowroot.common.live.LiveAggregateRepository.OverallSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 import org.glowroot.common.model.MutableProfileTree;
 import org.glowroot.common.model.QueryCollector;
@@ -193,8 +195,8 @@ class TransactionCommonService {
             orderedNonRolledUpAggregates.addAll(liveResult.get());
         }
         aggregates = Lists.newArrayList(aggregates);
-        aggregates.addAll(rollUpOverviewAggregates(serverGroup, orderedNonRolledUpAggregates,
-                liveCaptureTime, rollupLevel));
+        aggregates.addAll(rollUpOverviewAggregates(orderedNonRolledUpAggregates, liveCaptureTime,
+                rollupLevel));
         return aggregates;
     }
 
@@ -230,8 +232,45 @@ class TransactionCommonService {
             orderedNonRolledUpAggregates.addAll(liveResult.get());
         }
         aggregates = Lists.newArrayList(aggregates);
-        aggregates.addAll(rollUpPercentileAggregates(serverGroup, orderedNonRolledUpAggregates,
-                liveCaptureTime, rollupLevel));
+        aggregates.addAll(rollUpPercentileAggregates(orderedNonRolledUpAggregates, liveCaptureTime,
+                rollupLevel));
+        return aggregates;
+    }
+
+    // from is INCLUSIVE
+    List<ThroughputAggregate> getThroughputAggregates(String serverGroup, String transactionType,
+            @Nullable String transactionName, long from, long to, long liveCaptureTime)
+                    throws Exception {
+        int rollupLevel = aggregateRepository.getRollupLevelForView(serverGroup, from, to);
+        LiveResult<ThroughputAggregate> liveResult =
+                liveAggregateRepository.getLiveThroughputAggregates(serverGroup, transactionType,
+                        transactionName, from - 1, to, liveCaptureTime);
+        // -1 since query 'to' is inclusive
+        // this way don't need to worry about de-dupping between live and stored aggregates
+        long revisedTo = liveResult == null ? to : liveResult.initialCaptureTime() - 1;
+        List<ThroughputAggregate> aggregates = getThroughputAggregatesFromDao(serverGroup,
+                transactionType, transactionName, from, revisedTo, rollupLevel);
+        if (rollupLevel == 0) {
+            aggregates = Lists.newArrayList(aggregates);
+            if (liveResult != null) {
+                aggregates.addAll(liveResult.get());
+            }
+            return aggregates;
+        }
+        long nonRolledUpFrom = from;
+        if (!aggregates.isEmpty()) {
+            long lastRolledUpTime = aggregates.get(aggregates.size() - 1).captureTime();
+            nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
+        }
+        List<ThroughputAggregate> orderedNonRolledUpAggregates = Lists.newArrayList();
+        orderedNonRolledUpAggregates.addAll(getThroughputAggregatesFromDao(serverGroup,
+                transactionType, transactionName, nonRolledUpFrom, revisedTo, 0));
+        if (liveResult != null) {
+            orderedNonRolledUpAggregates.addAll(liveResult.get());
+        }
+        aggregates = Lists.newArrayList(aggregates);
+        aggregates.addAll(rollUpThroughputAggregates(orderedNonRolledUpAggregates, liveCaptureTime,
+                rollupLevel));
         return aggregates;
     }
 
@@ -281,6 +320,19 @@ class TransactionCommonService {
                     from, to, rollupLevel);
         } else {
             return aggregateRepository.readTransactionPercentileAggregates(serverGroup,
+                    transactionType, transactionName, from, to, rollupLevel);
+        }
+    }
+
+    // from is INCLUSIVE
+    private List<ThroughputAggregate> getThroughputAggregatesFromDao(String serverGroup,
+            String transactionType, @Nullable String transactionName, long from, long to,
+            int rollupLevel) throws Exception {
+        if (transactionName == null) {
+            return aggregateRepository.readOverallThroughputAggregates(serverGroup, transactionType,
+                    from, to, rollupLevel);
+        } else {
+            return aggregateRepository.readTransactionThroughputAggregates(serverGroup,
                     transactionType, transactionName, from, to, rollupLevel);
         }
     }
@@ -378,7 +430,7 @@ class TransactionCommonService {
         }
     }
 
-    private List<OverviewAggregate> rollUpOverviewAggregates(String serverGroup,
+    private List<OverviewAggregate> rollUpOverviewAggregates(
             List<OverviewAggregate> orderedNonRolledUpOverviewAggregates, long liveCaptureTime,
             int rollupLevel) throws Exception {
         long fixedIntervalMillis =
@@ -386,18 +438,16 @@ class TransactionCommonService {
         List<OverviewAggregate> rolledUpOverviewAggregates = Lists.newArrayList();
         MutableAggregate currMergedAggregate = null;
         long currRollupTime = Long.MIN_VALUE;
-        int maxAggregateQueriesPerQueryType =
-                configRepository.getAdvancedConfig(serverGroup).maxAggregateQueriesPerQueryType();
         for (OverviewAggregate nonRolledUpOverviewAggregate : orderedNonRolledUpOverviewAggregates) {
             long rollupTime = Utils.getNextRollupTime(nonRolledUpOverviewAggregate.captureTime(),
                     fixedIntervalMillis);
             if (rollupTime != currRollupTime && currMergedAggregate != null) {
                 rolledUpOverviewAggregates.add(currMergedAggregate
                         .toOverviewAggregate(Math.min(currRollupTime, liveCaptureTime)));
-                currMergedAggregate = new MutableAggregate(maxAggregateQueriesPerQueryType);
+                currMergedAggregate = new MutableAggregate(0);
             }
             if (currMergedAggregate == null) {
-                currMergedAggregate = new MutableAggregate(maxAggregateQueriesPerQueryType);
+                currMergedAggregate = new MutableAggregate(0);
             }
             currRollupTime = rollupTime;
             currMergedAggregate.addTotalNanos(nonRolledUpOverviewAggregate.totalNanos());
@@ -420,7 +470,7 @@ class TransactionCommonService {
         return rolledUpOverviewAggregates;
     }
 
-    private List<PercentileAggregate> rollUpPercentileAggregates(String serverGroup,
+    private List<PercentileAggregate> rollUpPercentileAggregates(
             List<PercentileAggregate> orderedNonRolledUpPercentileAggregates, long liveCaptureTime,
             int rollupLevel) throws Exception {
         long fixedIntervalMillis =
@@ -428,18 +478,16 @@ class TransactionCommonService {
         List<PercentileAggregate> rolledUpPercentileAggregates = Lists.newArrayList();
         MutableAggregate currMergedAggregate = null;
         long currRollupTime = Long.MIN_VALUE;
-        int maxAggregateQueriesPerQueryType =
-                configRepository.getAdvancedConfig(serverGroup).maxAggregateQueriesPerQueryType();
         for (PercentileAggregate nonRolledUpPercentileAggregate : orderedNonRolledUpPercentileAggregates) {
             long rollupTime = Utils.getNextRollupTime(nonRolledUpPercentileAggregate.captureTime(),
                     fixedIntervalMillis);
             if (rollupTime != currRollupTime && currMergedAggregate != null) {
                 rolledUpPercentileAggregates.add(currMergedAggregate
                         .toPercentileAggregate(Math.min(currRollupTime, liveCaptureTime)));
-                currMergedAggregate = new MutableAggregate(maxAggregateQueriesPerQueryType);
+                currMergedAggregate = new MutableAggregate(0);
             }
             if (currMergedAggregate == null) {
-                currMergedAggregate = new MutableAggregate(maxAggregateQueriesPerQueryType);
+                currMergedAggregate = new MutableAggregate(0);
             }
             currRollupTime = rollupTime;
             currMergedAggregate.addTotalNanos(nonRolledUpPercentileAggregate.totalNanos());
@@ -453,6 +501,33 @@ class TransactionCommonService {
                     .toPercentileAggregate(Math.min(currRollupTime, liveCaptureTime)));
         }
         return rolledUpPercentileAggregates;
+    }
+
+    private List<ThroughputAggregate> rollUpThroughputAggregates(
+            List<ThroughputAggregate> orderedNonRolledUpThroughputAggregates, long liveCaptureTime,
+            int rollupLevel) throws Exception {
+        long fixedIntervalMillis =
+                configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();
+        List<ThroughputAggregate> rolledUpThroughputAggregates = Lists.newArrayList();
+        long currTransactionCount = 0;
+        long currRollupTime = Long.MIN_VALUE;
+        for (ThroughputAggregate nonRolledUpThroughputAggregate : orderedNonRolledUpThroughputAggregates) {
+            long rollupTime = Utils.getNextRollupTime(nonRolledUpThroughputAggregate.captureTime(),
+                    fixedIntervalMillis);
+            if (rollupTime != currRollupTime && currTransactionCount != 0) {
+                rolledUpThroughputAggregates.add(ImmutableThroughputAggregate
+                        .of(Math.min(currRollupTime, liveCaptureTime), currTransactionCount));
+                currTransactionCount = 0;
+            }
+            currRollupTime = rollupTime;
+            currTransactionCount += nonRolledUpThroughputAggregate.transactionCount();
+        }
+        if (currTransactionCount != 0) {
+            // roll up final one
+            rolledUpThroughputAggregates.add(ImmutableThroughputAggregate
+                    .of(Math.min(currRollupTime, liveCaptureTime), currTransactionCount));
+        }
+        return rolledUpThroughputAggregates;
     }
 
     private static List<TransactionSummary> mergeInLiveTransactionSummaries(

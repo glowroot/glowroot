@@ -30,6 +30,7 @@ import org.glowroot.common.live.ImmutableOverallErrorSummary;
 import org.glowroot.common.live.ImmutableOverallSummary;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
+import org.glowroot.common.live.ImmutableThroughputAggregate;
 import org.glowroot.common.live.ImmutableTransactionErrorSummary;
 import org.glowroot.common.live.ImmutableTransactionSummary;
 import org.glowroot.common.live.LiveAggregateRepository.ErrorPoint;
@@ -37,6 +38,7 @@ import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverallSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 import org.glowroot.common.model.LazyHistogram;
@@ -160,6 +162,13 @@ class AggregateCollector {
                 .totalNanos(totalNanos)
                 .transactionCount(transactionCount)
                 .histogram(lazyHistogram.toProtobuf(new ScratchBuffer()))
+                .build();
+    }
+
+    ThroughputAggregate buildLiveThroughputAggregate(long captureTime) throws IOException {
+        return ImmutableThroughputAggregate.builder()
+                .captureTime(captureTime)
+                .transactionCount(transactionCount)
                 .build();
     }
 

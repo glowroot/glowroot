@@ -39,6 +39,7 @@ import org.glowroot.common.live.ImmutableOverallErrorSummary;
 import org.glowroot.common.live.ImmutableOverallSummary;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
+import org.glowroot.common.live.ImmutableThroughputAggregate;
 import org.glowroot.common.live.ImmutableTransactionErrorSummary;
 import org.glowroot.common.live.ImmutableTransactionSummary;
 import org.glowroot.common.live.LiveAggregateRepository.ErrorPoint;
@@ -46,6 +47,7 @@ import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverallSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
+import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
@@ -304,6 +306,20 @@ public class AggregateDao implements AggregateRepository {
 
     // captureTimeFrom is INCLUSIVE
     @Override
+    public List<ThroughputAggregate> readOverallThroughputAggregates(String serverGroup,
+            String transactionType, long captureTimeFrom, long captureTimeTo, int rollupLevel)
+                    throws Exception {
+        return dataSource.query(
+                "select capture_time, transaction_count from overall_aggregate_rollup_"
+                        + castUntainted(rollupLevel) + " where server_group = ?"
+                        + " and transaction_type = ? and capture_time >= ? and capture_time <= ?"
+                        + " order by capture_time",
+                new ThroughputAggregateRowMapper(), serverGroup, transactionType, captureTimeFrom,
+                captureTimeTo);
+    }
+
+    // captureTimeFrom is INCLUSIVE
+    @Override
     public List<OverviewAggregate> readTransactionOverviewAggregates(String serverGroup,
             String transactionType, String transactionName, long captureTimeFrom,
             long captureTimeTo, int rollupLevel) throws Exception {
@@ -330,6 +346,20 @@ public class AggregateDao implements AggregateRepository {
                         + " and transaction_name = ? and capture_time >= ? and capture_time <= ?"
                         + " order by capture_time",
                 new PercentileAggregateRowMapper(), serverGroup, transactionType, transactionName,
+                captureTimeFrom, captureTimeTo);
+    }
+
+    // captureTimeFrom is INCLUSIVE
+    @Override
+    public List<ThroughputAggregate> readTransactionThroughputAggregates(String serverGroup,
+            String transactionType, String transactionName, long captureTimeFrom,
+            long captureTimeTo, int rollupLevel) throws Exception {
+        return dataSource.query(
+                "select capture_time, transaction_count from transaction_aggregate_rollup_"
+                        + castUntainted(rollupLevel) + " where server_group = ?"
+                        + " and transaction_type = ? and transaction_name = ? and capture_time >= ?"
+                        + " and capture_time <= ? order by capture_time",
+                new ThroughputAggregateRowMapper(), serverGroup, transactionType, transactionName,
                 captureTimeFrom, captureTimeTo);
     }
 
@@ -1018,6 +1048,18 @@ public class AggregateDao implements AggregateRepository {
             byte[] histogram = checkNotNull(resultSet.getBytes(i++));
             builder.histogram(Aggregate.Histogram.parser().parseFrom(histogram));
             return builder.build();
+        }
+    }
+
+    private static class ThroughputAggregateRowMapper implements RowMapper<ThroughputAggregate> {
+
+        @Override
+        public ThroughputAggregate mapRow(ResultSet resultSet) throws Exception {
+            int i = 1;
+            return ImmutableThroughputAggregate.builder()
+                    .captureTime(resultSet.getLong(i++))
+                    .transactionCount(resultSet.getLong(i++))
+                    .build();
         }
     }
 

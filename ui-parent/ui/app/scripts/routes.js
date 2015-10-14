@@ -112,6 +112,15 @@ glowroot.config([
         }
       }
     });
+    $stateProvider.state('transaction.detail.throughput', {
+      url: '/throughput?transaction-name',
+      views: {
+        'main@transaction': {
+          templateUrl: 'views/transaction/throughput.html',
+          controller: 'TransactionThroughputCtrl'
+        }
+      }
+    });
     $stateProvider.state('transaction.detail.queries', {
       url: '/queries?transaction-name',
       views: {

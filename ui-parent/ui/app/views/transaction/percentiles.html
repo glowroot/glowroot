@@ -31,6 +31,13 @@
         percentiles
       </a>
     </label>
+    <label class="radio-inline">
+      <input type="radio" name="view" value="throughput" ng-click="clickTopRadioButton('throughput')">
+      <a class="gt-radio-link"
+         href="transaction/throughput{{tabQueryString()}}">
+        throughput
+      </a>
+    </label>
   </div>
   <!-- z-index 800 is needed to keep the buttons in front of the chart spinner overlay -->
   <div class="clearfix" style="position: relative; z-index: 800;">
@@ -117,17 +124,6 @@
       <div ng-repeat="percentileValue in mergedAggregate.percentileValues">
         <label>{{percentileValue.dataSeriesName}}:</label>
         {{percentileValue.value / 1000000 | gtMillis}} ms
-      </div>
-
-      <div style="margin-top: 20px;">
-        <label>Throughput:</label>
-        {{(60 * 1000 * mergedAggregate.transactionCount / lastDurationMillis).toFixed(1)}}/min
-        ({{mergedAggregate.transactionCount}}
-      <span ng-pluralize
-            count="mergedAggregate.transactionCount"
-            when="{'1':'transaction','other':'transactions'}">
-      </span>
-        in this period)
       </div>
     </div>
   </div>

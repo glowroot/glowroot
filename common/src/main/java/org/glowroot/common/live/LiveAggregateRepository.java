@@ -48,6 +48,11 @@ public interface LiveAggregateRepository {
             long liveCaptureTime) throws Exception;
 
     @Nullable
+    LiveResult<ThroughputAggregate> getLiveThroughputAggregates(String server,
+            String transactionType, @Nullable String transactionName, long from, long to,
+            long liveCaptureTime) throws Exception;
+
+    @Nullable
     LiveResult<ProfileTree> getLiveProfileTree(String server, String transactionType,
             @Nullable String transactionName, long from, long to) throws Exception;
 
@@ -122,6 +127,13 @@ public interface LiveAggregateRepository {
 
     @Value.Immutable
     @Styles.AllParameters
+    public interface ThroughputAggregate {
+        long captureTime();
+        long transactionCount();
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
     public interface ErrorPoint {
         long captureTime();
         long errorCount();
@@ -170,6 +182,13 @@ public interface LiveAggregateRepository {
 
         @Override
         public @Nullable LiveResult<PercentileAggregate> getLivePercentileAggregates(String server,
+                String transactionType, @Nullable String transactionName, long from, long to,
+                long liveCaptureTime) {
+            return null;
+        }
+
+        @Override
+        public @Nullable LiveResult<ThroughputAggregate> getLiveThroughputAggregates(String server,
                 String transactionType, @Nullable String transactionName, long from, long to,
                 long liveCaptureTime) {
             return null;
