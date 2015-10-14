@@ -740,7 +740,8 @@ HandlebarsRendering = (function () {
 
       function filterNode(node, underMatchingNode) {
         var nodes = [node];
-        while (node.childNodes && node.childNodes.length === 1 && !node.leafThreadState && !node.ellipsedSampleCount) {
+        while (node.childNodes && node.childNodes.length === 1 && !node.leafThreadState
+        && (!SHOW_ELLIPSED_NODE_MARKERS || !node.ellipsedSampleCount)) {
           node = node.childNodes[0];
           nodes.push(node);
         }
