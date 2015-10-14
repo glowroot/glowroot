@@ -861,6 +861,12 @@ HandlebarsRendering = (function () {
           node = node.childNodes[0];
           nodes.push(node);
         }
+        if (!timer) {
+          // the displayed percentage for this chain is based on the last node
+          // (this is noticeable with large truncation percentages where the first/last node in a chain can have
+          // noticeably different sample counts)
+          nodeSampleCount = nodes[nodes.length - 1].sampleCount;
+        }
         var ret = '<span id="gtProfileNode' + node.id + '">';
         ret += '<span class="gt-inline-block" style="width: 4em; margin-left: ' + level + 'em;"';
         ret += ' id="gtProfileNodePercent' + node.id + '">';
