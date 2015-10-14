@@ -33,6 +33,11 @@ glowroot.controller('TransactionFlameGraphCtrl', [
     $scope.transactionType = $location.search()['transaction-type'] || $scope.layout.defaultTransactionType;
     $scope.transactionName = $location.search()['transaction-name'];
     $scope.filter = $location.search().filter;
+    // larger truncate-branch-percentage compared to tree view
+    // because svg flame graph is very slow with finer grained leafs
+    // (especially removing it from the dom when going to another page)
+    // plus it's pretty confusing visually (and very tall vertically) with very fine grained leafs
+    $scope.truncateBranchPercentage = $location.search()['truncate-branch-percentage'] || 1.0;
 
     if (!$scope.last && (!$scope.from || !$scope.to)) {
       $scope.last = 4 * 60 * 60 * 1000;
@@ -58,10 +63,7 @@ glowroot.controller('TransactionFlameGraphCtrl', [
         to: $scope.to,
         include: parseResult.includes,
         exclude: parseResult.excludes,
-        // svg flame graph is very slow with finer grained leafs
-        // (especially removing it from the dom when going to another page)
-        // plus it's pretty confusing visually (and very tall vertically) with very fine grained leafs
-        truncateLeafPercentage: 0.01
+        truncateBranchPercentage: $scope.truncateBranchPercentage
       };
       $http.get('backend/transaction/flame-graph' + queryStrings.encodeObject(query))
           .success(function (data) {

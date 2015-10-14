@@ -277,16 +277,17 @@ class TransactionCommonService {
     // from is non-inclusive
     MutableProfileTree getMergedProfile(String serverGroup, String transactionType,
             @Nullable String transactionName, long from, long to, List<String> includes,
-            List<String> excludes, double truncateLeafPercentage) throws Exception {
+            List<String> excludes, double truncateBranchPercentage) throws Exception {
         MutableProfileTree profileTree =
                 getMergedProfile(serverGroup, transactionType, transactionName, from, to);
         if (!includes.isEmpty() || !excludes.isEmpty()) {
             profileTree.filter(includes, excludes);
         }
-        if (truncateLeafPercentage != 0) {
-            int minSamples = (int) Math.ceil(profileTree.getSampleCount() * truncateLeafPercentage);
+        if (truncateBranchPercentage != 0) {
+            int minSamples =
+                    (int) Math.ceil(profileTree.getSampleCount() * truncateBranchPercentage / 100);
             // don't truncate any root nodes
-            profileTree.truncateLeafs(minSamples);
+            profileTree.truncateBranches(minSamples);
         }
         return profileTree;
     }

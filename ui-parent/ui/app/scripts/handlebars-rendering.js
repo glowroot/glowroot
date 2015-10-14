@@ -920,6 +920,13 @@ HandlebarsRendering = (function () {
           ret += formatPercent(ellipsedSamplePercentage);
           ret += '%)</span></div>';
         }
+        if (!SHOW_ELLIPSED_NODE_MARKERS && !node.childNodes && !node.leafThreadState) {
+          ret += '<div id="gtProfileNodeEllipsed' + node.id + '">';
+          ret += '<span class="gt-inline-block" style="width: 4em; margin-left: ' + (level + 1) + 'em;"></span>';
+          ret += '<span style="visibility: hidden;"><strong>...</strong> </span>';
+          ret += '<span class="gt-inline-block" style="padding: 1px 1em;">(truncated branches)';
+          ret += '</span></div>';
+        }
         ret += '</span>';
         return ret;
       }

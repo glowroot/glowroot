@@ -76,6 +76,7 @@ glowroot.controller('TransactionProfileCtrl', [
         $scope.$parent.chartRefresh++;
       }
       $scope.filter = appliedFilter;
+      $scope.truncateBranchPercentage = $location.search()['truncate-branch-percentage'] || 0.1;
     }
 
     $scope.$on('$locationChangeSuccess', onLocationChangeSuccess);
@@ -108,7 +109,7 @@ glowroot.controller('TransactionProfileCtrl', [
         to: $scope.chartTo,
         include: parseResult.includes,
         exclude: parseResult.excludes,
-        truncateLeafPercentage: 0.001
+        truncateBranchPercentage: $scope.truncateBranchPercentage
       };
       $scope.showSpinner++;
       $http.get('backend/transaction/profile' + queryStrings.encodeObject(query))

@@ -196,7 +196,7 @@ class TransactionJsonService {
         MutableProfileTree profileTree = transactionCommonService.getMergedProfile(
                 request.serverGroup(), request.transactionType(), request.transactionName(),
                 request.from(), request.to(), request.include(), request.exclude(),
-                request.truncateLeafPercentage());
+                request.truncateBranchPercentage());
         if (profileTree.getSampleCount() == 0 && request.include().isEmpty()
                 && request.exclude().isEmpty()
                 && transactionCommonService.shouldHaveProfile(request.serverGroup(),
@@ -311,7 +311,7 @@ class TransactionJsonService {
         MutableProfileTree profileTree = transactionCommonService.getMergedProfile(
                 request.serverGroup(), request.transactionType(), request.transactionName(),
                 request.from(), request.to(), request.include(), request.exclude(),
-                request.truncateLeafPercentage());
+                request.truncateBranchPercentage());
         return profileTree.toFlameGraphJson();
     }
 
@@ -613,7 +613,7 @@ class TransactionJsonService {
         ImmutableList<String> include();
         // intentionally not plural since maps from query string
         ImmutableList<String> exclude();
-        double truncateLeafPercentage();
+        double truncateBranchPercentage();
     }
 
     @Value.Immutable
@@ -628,7 +628,7 @@ class TransactionJsonService {
         ImmutableList<String> include();
         // intentionally not plural since maps from query string
         ImmutableList<String> exclude();
-        double truncateLeafPercentage();
+        double truncateBranchPercentage();
     }
 
     @Value.Immutable

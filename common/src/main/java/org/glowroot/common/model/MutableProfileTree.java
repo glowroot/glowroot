@@ -175,7 +175,7 @@ public class MutableProfileTree {
         }
     }
 
-    public void truncateLeafs(int minSamples) {
+    public void truncateBranches(int minSamples) {
         Deque<ProfileNode> toBeVisited = new ArrayDeque<ProfileNode>();
         for (ProfileNode rootNode : rootNodes) {
             toBeVisited.add(rootNode);
