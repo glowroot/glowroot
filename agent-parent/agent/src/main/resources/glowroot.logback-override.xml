@@ -8,7 +8,7 @@
   <appender name="FILE" class="org.glowroot.agent.shaded.qos.logback.core.rolling.RollingFileAppender">
     <file>${glowroot.base.dir}/glowroot.log</file>
     <rollingPolicy class="org.glowroot.agent.shaded.qos.logback.core.rolling.FixedWindowRollingPolicy">
-      <fileNamePattern>glowroot.%i.log</fileNamePattern>
+      <fileNamePattern>${glowroot.base.dir}/glowroot.%i.log</fileNamePattern>
       <minIndex>1</minIndex>
       <maxIndex>1</maxIndex>
     </rollingPolicy>
