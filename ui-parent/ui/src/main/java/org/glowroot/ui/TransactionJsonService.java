@@ -53,7 +53,7 @@ import org.glowroot.storage.repo.ImmutableTransactionSummaryQuery;
 import org.glowroot.storage.repo.Result;
 import org.glowroot.storage.repo.TraceRepository;
 import org.glowroot.storage.repo.Utils;
-import org.glowroot.ui.AggregateMerging.PercentileMergedAggregate;
+import org.glowroot.ui.AggregateMerging.PercentileValue;
 import org.glowroot.ui.AggregateMerging.ThreadInfoAggregate;
 import org.glowroot.ui.AggregateMerging.TimerMergedAggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -127,24 +127,16 @@ class TransactionJsonService {
         List<PercentileAggregate> percentileAggregates = transactionCommonService
                 .getPercentileAggregates(request.serverGroup(), request.transactionType(),
                         request.transactionName(), request.from(), request.to(), liveCaptureTime);
-        List<DataSeries> dataSeriesList = getDataSeriesForPercentileChart(request,
-                percentileAggregates, request.percentile());
+        PercentileData percentileData = getDataSeriesForPercentileChart(request,
+                percentileAggregates, request.percentile(), request.from());
         Map<Long, Long> transactionCounts = getTransactionCounts2(percentileAggregates);
-        if (!percentileAggregates.isEmpty()
-                && percentileAggregates.get(0).captureTime() == request.from()) {
-            // the left most aggregate is not really in the requested interval since it is for
-            // prior capture times
-            percentileAggregates = percentileAggregates.subList(1, percentileAggregates.size());
-        }
-        PercentileMergedAggregate mergedAggregate = AggregateMerging
-                .getPercentileMergedAggregate(percentileAggregates, request.percentile());
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeObjectField("dataSeries", dataSeriesList);
+        jg.writeObjectField("dataSeries", percentileData.dataSeriesList());
         jg.writeObjectField("transactionCounts", transactionCounts);
-        jg.writeObjectField("mergedAggregate", mergedAggregate);
+        jg.writeObjectField("mergedAggregate", percentileData.mergedAggregate());
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -345,11 +337,16 @@ class TransactionJsonService {
         return getTimerDataSeries(request, stackedPoints);
     }
 
-    private List<DataSeries> getDataSeriesForPercentileChart(TransactionDataRequest request,
-            List<PercentileAggregate> percentileAggregates, List<Double> percentiles)
+    private PercentileData getDataSeriesForPercentileChart(TransactionDataRequest request,
+            List<PercentileAggregate> percentileAggregates, List<Double> percentiles, long from)
                     throws Exception {
         if (percentileAggregates.isEmpty()) {
-            return Lists.newArrayList();
+            return ImmutablePercentileData.builder()
+                    .mergedAggregate(ImmutablePercentileMergedAggregate.builder()
+                            .transactionCount(0)
+                            .totalNanos(0)
+                            .build())
+                    .build();
         }
         DataSeriesHelper dataSeriesHelper = new DataSeriesHelper(clock, aggregateRepository
                 .getDataPointIntervalMillis(request.serverGroup(), request.from(), request.to()));
@@ -358,6 +355,11 @@ class TransactionJsonService {
             dataSeriesList
                     .add(new DataSeries(Utils.getPercentileWithSuffix(percentile) + " percentile"));
         }
+
+        long transactionCount = 0;
+        double totalNanos = 0;
+        LazyHistogram mergedHistogram = new LazyHistogram();
+
         PercentileAggregate lastPercentileAggregate = null;
         for (PercentileAggregate percentileAggregate : percentileAggregates) {
             if (lastPercentileAggregate == null) {
@@ -369,8 +371,7 @@ class TransactionJsonService {
                         percentileAggregate.captureTime(), dataSeriesList, null);
             }
             lastPercentileAggregate = percentileAggregate;
-            LazyHistogram histogram = new LazyHistogram();
-            histogram.merge(percentileAggregate.histogram());
+            LazyHistogram histogram = new LazyHistogram(percentileAggregate.histogram());
             for (int i = 0; i < percentiles.size(); i++) {
                 DataSeries dataSeries = dataSeriesList.get(i);
                 double percentile = percentiles.get(i);
@@ -378,12 +379,35 @@ class TransactionJsonService {
                 dataSeries.add(percentileAggregate.captureTime(),
                         histogram.getValueAtPercentile(percentile) / NANOSECONDS_PER_MILLISECOND);
             }
+
+            if (percentileAggregate.captureTime() > from) {
+                // filtering out the left most aggregate since it is not really in the requested
+                // interval since it is for prior capture times
+                transactionCount += percentileAggregate.transactionCount();
+                totalNanos += percentileAggregate.totalNanos();
+                mergedHistogram.merge(histogram);
+            }
         }
         if (lastPercentileAggregate != null) {
             dataSeriesHelper.addFinalDownslopeIfNeeded(request.to(), dataSeriesList, null,
                     lastPercentileAggregate.captureTime());
         }
-        return dataSeriesList;
+
+        List<PercentileValue> percentileValues = Lists.newArrayList();
+        for (double percentile : percentiles) {
+            percentileValues.add(ImmutablePercentileValue.of(
+                    Utils.getPercentileWithSuffix(percentile) + " percentile",
+                    mergedHistogram.getValueAtPercentile(percentile)));
+        }
+
+        return ImmutablePercentileData.builder()
+                .dataSeriesList(dataSeriesList)
+                .mergedAggregate(ImmutablePercentileMergedAggregate.builder()
+                        .transactionCount(transactionCount)
+                        .totalNanos(totalNanos)
+                        .addAllPercentileValues(percentileValues)
+                        .build())
+                .build();
     }
 
     private List<DataSeries> getDataSeriesForThroughputChart(TransactionDataRequest request,
@@ -638,5 +662,19 @@ class TransactionJsonService {
         double totalNanos();
         long executionCount();
         long totalRows();
+    }
+
+    @Value.Immutable
+    interface PercentileData {
+        ImmutableList<DataSeries> dataSeriesList();
+        PercentileMergedAggregate mergedAggregate();
+    }
+
+    @Value.Immutable
+    interface PercentileMergedAggregate {
+        long transactionCount();
+        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
+        double totalNanos();
+        ImmutableList<PercentileValue> percentileValues();
     }
 }

@@ -17,6 +17,7 @@ package org.glowroot.common.model;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.List;
 import java.util.zip.DataFormatException;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -37,6 +38,23 @@ public class LazyHistogram {
     private boolean sorted;
 
     private @MonotonicNonNull Histogram histogram;
+
+    public LazyHistogram() {}
+
+    // special constructor, histogram created this way cannot be further mutated
+    public LazyHistogram(Aggregate.Histogram hist) {
+        ByteString encodedBytes = hist.getEncodedBytes();
+        if (encodedBytes.isEmpty()) {
+            List<Long> orderedRawValues = hist.getOrderedRawValueList();
+            values = new long[orderedRawValues.size()];
+            for (int i = 0; i < values.length; i++) {
+                values[i] = orderedRawValues.get(i);
+            }
+            size = values.length;
+        } else {
+            histogram = Histogram.decodeFromByteBuffer(encodedBytes.asReadOnlyByteBuffer(), 0);
+        }
+    }
 
     public Aggregate.Histogram toProtobuf(ScratchBuffer scratchBuffer) {
         Aggregate.Histogram.Builder builder = Aggregate.Histogram.newBuilder();
@@ -74,10 +92,23 @@ public class LazyHistogram {
         }
     }
 
+    public void merge(LazyHistogram toBeMergedHistogram) {
+        if (histogram == null) {
+            convertValuesToHistogram();
+        }
+        if (toBeMergedHistogram.histogram == null) {
+            for (int i = 0; i < toBeMergedHistogram.size; i++) {
+                histogram.recordValue(toBeMergedHistogram.values[i]);
+            }
+        } else {
+            histogram.add(toBeMergedHistogram.histogram);
+        }
+    }
+
     public long getValueAtPercentile(double percentile) {
         if (histogram == null) {
             if (size == 0) {
-                // this is consisten with HdrHistogram behavior
+                // this is consistent with HdrHistogram behavior
                 return 0;
             }
             if (!sorted) {

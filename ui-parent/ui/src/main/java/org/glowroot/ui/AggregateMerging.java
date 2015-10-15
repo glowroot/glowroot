@@ -17,17 +17,13 @@ package org.glowroot.ui;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
-import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.storage.repo.MutableTimer;
-import org.glowroot.storage.repo.Utils;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.Timer;
 
@@ -48,31 +44,6 @@ class AggregateMerging {
         timerMergedAggregate.rootTimers(rootTimers);
         timerMergedAggregate.transactionCount(transactionCount);
         return timerMergedAggregate.build();
-    }
-
-    static PercentileMergedAggregate getPercentileMergedAggregate(
-            List<PercentileAggregate> percentileAggregates, List<Double> percentiles)
-                    throws Exception {
-        long transactionCount = 0;
-        double totalNanos = 0;
-        LazyHistogram histogram = new LazyHistogram();
-        for (PercentileAggregate percentileAggregate : percentileAggregates) {
-            transactionCount += percentileAggregate.transactionCount();
-            totalNanos += percentileAggregate.totalNanos();
-            histogram.merge(percentileAggregate.histogram());
-        }
-
-        List<PercentileValue> percentileValues = Lists.newArrayList();
-        for (double percentile : percentiles) {
-            percentileValues.add(ImmutablePercentileValue.of(
-                    Utils.getPercentileWithSuffix(percentile) + " percentile",
-                    histogram.getValueAtPercentile(percentile)));
-        }
-        return ImmutablePercentileMergedAggregate.builder()
-                .transactionCount(transactionCount)
-                .totalNanos(totalNanos)
-                .addAllPercentileValues(percentileValues)
-                .build();
     }
 
     static ThreadInfoAggregate getThreadInfoAggregate(List<OverviewAggregate> overviewAggregates) {
@@ -121,14 +92,6 @@ class AggregateMerging {
     interface TimerMergedAggregate {
         long transactionCount();
         List<MutableTimer> rootTimers();
-    }
-
-    @Value.Immutable
-    interface PercentileMergedAggregate {
-        long transactionCount();
-        // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
-        double totalNanos();
-        ImmutableList<PercentileValue> percentileValues();
     }
 
     @Value.Immutable
