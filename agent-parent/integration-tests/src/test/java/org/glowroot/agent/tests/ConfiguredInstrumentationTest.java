@@ -18,7 +18,6 @@ package org.glowroot.agent.tests;
 import java.io.File;
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -27,14 +26,14 @@ import org.junit.Test;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TempDirs;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.config.InstrumentationConfig;
-import org.glowroot.agent.it.harness.config.InstrumentationConfig.CaptureKind;
-import org.glowroot.agent.it.harness.config.InstrumentationConfig.MethodModifier;
-import org.glowroot.agent.it.harness.config.TransactionConfig;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.agent.it.harness.impl.LocalContainer;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.CaptureKind;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.InstrumentationConfig;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.MethodModifier;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,14 +45,18 @@ public class ConfiguredInstrumentationTest {
     @BeforeClass
     public static void setUp() throws Exception {
         baseDir = TempDirs.createTempDir("glowroot-test-basedir");
-        container = Containers.createWithFileDb(baseDir);
-        addInstrumentationForExecute1();
-        addInstrumentationForExecute1TimerOnly();
-        addInstrumentationForExecuteWithReturn();
-        addInstrumentationForExecuteWithArgs();
+        // see subclass (ReweavePointcutsTest) for JavaagentContainer test
+        container = LocalContainer.create(baseDir);
+        List<InstrumentationConfig> instrumentationConfigs = Lists.newArrayList();
+        instrumentationConfigs.add(buildInstrumentationForExecute1());
+        instrumentationConfigs.add(buildInstrumentationForExecute1TimerOnly());
+        instrumentationConfigs.add(buildInstrumentationForExecuteWithReturn());
+        instrumentationConfigs.add(buildInstrumentationForExecuteWithArgs());
+        container.getConfigService().updateInstrumentationConfigs(instrumentationConfigs);
         // re-start now with pointcut configs
         container.close();
-        container = Containers.createWithFileDb(baseDir);
+        // see subclass (ReweavePointcutsTest) for JavaagentContainer test
+        container = LocalContainer.create(baseDir);
     }
 
     @AfterClass
@@ -70,116 +73,119 @@ public class ConfiguredInstrumentationTest {
     @Test
     public void shouldExecute1() throws Exception {
         // given
-        TransactionConfig config = container.getConfigService().getTransactionConfig();
-        config.setSlowThresholdMillis(Integer.MAX_VALUE);
-        container.getConfigService().updateTransactionConfig(config);
+        container.getConfigService().updateTransactionConfig(
+                TransactionConfigUpdate.newBuilder()
+                        .setSlowThresholdMillis(ProtoOptional.of(Integer.MAX_VALUE))
+                        .build());
         // when
-        container.executeAppUnderTest(ShouldExecute1.class);
+        Trace trace = container.execute(ShouldExecute1.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
-        assertThat(header.transactionType()).isEqualTo("test override type");
-        assertThat(header.transactionName()).isEqualTo("test override name");
-        assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
-        assertThat(header.rootTimer().childTimers()).hasSize(1);
-        assertThat(header.rootTimer().childTimers().get(0).name())
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getTransactionType()).isEqualTo("test override type");
+        assertThat(header.getTransactionName()).isEqualTo("test override name");
+        assertThat(header.getRootTimer().getName()).isEqualTo("mock trace marker");
+        assertThat(header.getRootTimer().getChildTimerList()).hasSize(1);
+        assertThat(header.getRootTimer().getChildTimerList().get(0).getName())
                 .isEqualTo("execute one");
-        assertThat(header.rootTimer().childTimers().get(0).childTimers()).hasSize(1);
-        assertThat(header.rootTimer().childTimers().get(0).childTimers().get(0).name())
-                .isEqualTo("execute one timer only");
+        assertThat(header.getRootTimer().getChildTimerList().get(0).getChildTimerList()).hasSize(1);
+        assertThat(header.getRootTimer().getChildTimerList().get(0).getChildTimerList().get(0)
+                .getName()).isEqualTo("execute one timer only");
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.message()).isEqualTo("execute1() => void");
-        assertThat(entry.locationStackTraceElements()).isNotEmpty();
+        assertThat(entry.getMessage()).isEqualTo("execute1() => void");
+        assertThat(entry.getLocationStackTraceElementList()).isNotEmpty();
     }
 
     @Test
     public void shouldRenderTraceEntryMessageTemplateWithReturnValue() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldExecuteWithReturn.class);
+        Trace trace = container.execute(ShouldExecuteWithReturn.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
-        assertThat(header.rootTimer().childTimers()).hasSize(1);
-        assertThat(header.rootTimer().childTimers().get(0).name())
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getRootTimer().getName()).isEqualTo("mock trace marker");
+        assertThat(header.getRootTimer().getChildTimerList()).hasSize(1);
+        assertThat(header.getRootTimer().getChildTimerList().get(0).getName())
                 .isEqualTo("execute with return");
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).message()).isEqualTo("executeWithReturn() => xyz");
+        assertThat(entries.get(0).getMessage()).isEqualTo("executeWithReturn() => xyz");
     }
 
     @Test
     public void shouldRenderTraceHeadline() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldExecuteWithArgs.class);
+        Trace trace = container.execute(ShouldExecuteWithArgs.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.headline()).isEqualTo("executeWithArgs(): abc, 123, the name");
-        assertThat(header.transactionType()).isEqualTo("Pointcut config test");
-        assertThat(header.transactionName()).isEqualTo("Misc / executeWithArgs");
-        assertThat(header.rootTimer().name()).isEqualTo("execute with args");
-        assertThat(header.rootTimer().childTimers()).isEmpty();
-        assertThat(header.entryCount()).isZero();
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getHeadline()).isEqualTo("executeWithArgs(): abc, 123, the name");
+        assertThat(header.getTransactionType()).isEqualTo("Pointcut config test");
+        assertThat(header.getTransactionName()).isEqualTo("Misc / executeWithArgs");
+        assertThat(header.getRootTimer().getName()).isEqualTo("execute with args");
+        assertThat(header.getRootTimer().getChildTimerList()).isEmpty();
+        assertThat(header.getEntryCount()).isZero();
     }
 
-    protected static void addInstrumentationForExecute1() throws Exception {
-        InstrumentationConfig config = new InstrumentationConfig();
-        config.setClassName("org.glowroot.agent.tests.ConfiguredInstrumentationTest$Misc");
-        config.setMethodName("execute1");
-        config.setMethodParameterTypes(ImmutableList.<String>of());
-        config.setMethodReturnType("");
-        config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
-        config.setCaptureKind(CaptureKind.TRACE_ENTRY);
-        config.setTimerName("execute one");
-        config.setTraceEntryMessageTemplate("execute1() => {{_}}");
-        config.setTraceEntryStackThresholdMillis(0L);
-        config.setTransactionType("test override type");
-        config.setTransactionNameTemplate("test override name");
-        config.setTransactionSlowThresholdMillis(0L);
-        container.getConfigService().addInstrumentationConfig(config);
+    protected static InstrumentationConfig buildInstrumentationForExecute1() throws Exception {
+        return InstrumentationConfig.newBuilder()
+                .setClassName("org.glowroot.agent.tests.ConfiguredInstrumentationTest$Misc")
+                .setMethodName("execute1")
+                .setMethodReturnType("")
+                .addMethodModifier(MethodModifier.PUBLIC)
+                .setCaptureKind(CaptureKind.TRACE_ENTRY)
+                .setTimerName("execute one")
+                .setTraceEntryMessageTemplate("execute1() => {{_}}")
+                .setTraceEntryStackThresholdMillis(ProtoOptional.of(0))
+                .setTransactionType("test override type")
+                .setTransactionNameTemplate("test override name")
+                .setTransactionSlowThresholdMillis(ProtoOptional.of(0))
+                .build();
     }
 
-    protected static void addInstrumentationForExecute1TimerOnly() throws Exception {
-        InstrumentationConfig config = new InstrumentationConfig();
-        config.setClassName("org.glowroot.agent.tests.ConfiguredInstrumentationTest$Misc");
-        config.setMethodName("execute1");
-        config.setMethodParameterTypes(ImmutableList.<String>of());
-        config.setMethodReturnType("");
-        config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
-        config.setCaptureKind(CaptureKind.TIMER);
-        config.setTimerName("execute one timer only");
-        container.getConfigService().addInstrumentationConfig(config);
+    protected static InstrumentationConfig buildInstrumentationForExecute1TimerOnly()
+            throws Exception {
+        return InstrumentationConfig.newBuilder()
+                .setClassName("org.glowroot.agent.tests.ConfiguredInstrumentationTest$Misc")
+                .setMethodName("execute1")
+                .setMethodReturnType("")
+                .addMethodModifier(MethodModifier.PUBLIC)
+                .setCaptureKind(CaptureKind.TIMER)
+                .setTimerName("execute one timer only")
+                .build();
     }
 
-    protected static void addInstrumentationForExecuteWithReturn() throws Exception {
-        InstrumentationConfig config = new InstrumentationConfig();
-        config.setClassName("org.glowroot.agent.tests.ConfiguredInstrumentationTest$Misc");
-        config.setMethodName("executeWithReturn");
-        config.setMethodParameterTypes(ImmutableList.<String>of());
-        config.setMethodReturnType("");
-        config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
-        config.setCaptureKind(CaptureKind.TRACE_ENTRY);
-        config.setTimerName("execute with return");
-        config.setTraceEntryMessageTemplate("executeWithReturn() => {{_}}");
-        container.getConfigService().addInstrumentationConfig(config);
+    protected static InstrumentationConfig buildInstrumentationForExecuteWithReturn()
+            throws Exception {
+        return InstrumentationConfig.newBuilder()
+                .setClassName("org.glowroot.agent.tests.ConfiguredInstrumentationTest$Misc")
+                .setMethodName("executeWithReturn")
+                .setMethodReturnType("")
+                .addMethodModifier(MethodModifier.PUBLIC)
+                .setCaptureKind(CaptureKind.TRACE_ENTRY)
+                .setTimerName("execute with return")
+                .setTraceEntryMessageTemplate("executeWithReturn() => {{_}}")
+                .build();
     }
 
-    protected static void addInstrumentationForExecuteWithArgs() throws Exception {
-        InstrumentationConfig config = new InstrumentationConfig();
-        config.setClassName("org.glowroot.agent.tests.ConfiguredInstrumentationTest$Misc");
-        config.setMethodName("executeWithArgs");
-        config.setMethodParameterTypes(ImmutableList.of("java.lang.String", "int",
-                "org.glowroot.agent.tests.ConfiguredInstrumentationTest$BasicMisc"));
-        config.setMethodReturnType("void");
-        config.setMethodModifiers(Lists.newArrayList(MethodModifier.PUBLIC));
-        config.setCaptureKind(CaptureKind.TRANSACTION);
-        config.setTimerName("execute with args");
-        config.setTraceEntryMessageTemplate("executeWithArgs(): {{0}}, {{1}}, {{2.name}}");
-        config.setTransactionType("Pointcut config test");
-        config.setTransactionNameTemplate("Misc / {{methodName}}");
-        container.getConfigService().addInstrumentationConfig(config);
+    protected static InstrumentationConfig buildInstrumentationForExecuteWithArgs()
+            throws Exception {
+        return InstrumentationConfig.newBuilder()
+                .setClassName("org.glowroot.agent.tests.ConfiguredInstrumentationTest$Misc")
+                .setMethodName("executeWithArgs")
+                .addMethodParameterType("java.lang.String")
+                .addMethodParameterType("int")
+                .addMethodParameterType(
+                        "org.glowroot.agent.tests.ConfiguredInstrumentationTest$BasicMisc")
+                .setMethodReturnType("void")
+                .addMethodModifier(MethodModifier.PUBLIC)
+                .setCaptureKind(CaptureKind.TRANSACTION)
+                .setTimerName("execute with args")
+                .setTraceEntryMessageTemplate("executeWithArgs(): {{0}}, {{1}}, {{2.name}}")
+                .setTransactionType("Pointcut config test")
+                .setTransactionNameTemplate("Misc / {{methodName}}")
+                .build();
     }
 
     public interface Misc {

@@ -57,6 +57,8 @@ import org.glowroot.common.util.ScheduledRunnable;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 class GaugeCollector extends ScheduledRunnable {
 
     private static final Logger logger = LoggerFactory.getLogger(GaugeCollector.class);
@@ -71,8 +73,8 @@ class GaugeCollector extends ScheduledRunnable {
     private final Set<String> pendingLoggedMBeanGauges = Sets.newConcurrentHashSet();
     private final Set<String> loggedMBeanGauges = Sets.newConcurrentHashSet();
 
-    // gauges have their own dedicated scheduled executor service to make sure their collection is
-    // not hampered by other glowroot threads
+    // gauges have their own dedicated scheduled executor to make sure their collection is not
+    // hampered by other glowroot threads
     private final ScheduledExecutorService dedicatedScheduledExecutor;
 
     // since gauges have their own dedicated thread, don't need to worry about thread safety of
@@ -132,8 +134,11 @@ class GaugeCollector extends ScheduledRunnable {
         scheduleWithFixedDelay(dedicatedScheduledExecutor, initialDelay, period, unit);
     }
 
-    void close() {
-        dedicatedScheduledExecutor.shutdownNow();
+    void close() throws InterruptedException {
+        dedicatedScheduledExecutor.shutdown();
+        if (!dedicatedScheduledExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate gauge collector");
+        }
     }
 
     @VisibleForTesting

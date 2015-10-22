@@ -28,9 +28,9 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.trace.Trace;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -68,11 +68,9 @@ public class LogManagerTest {
     public void shouldTest() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldUseCustomLogManager.class);
+        Trace trace = container.execute(ShouldUseCustomLogManager.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        // then
-        assertThat(header.user()).isEqualTo(CustomLogManager.class.getName());
+        assertThat(trace.getHeader().getUser()).isEqualTo(CustomLogManager.class.getName());
     }
 
     private static boolean isShaded() {

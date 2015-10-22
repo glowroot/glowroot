@@ -66,7 +66,7 @@ public class TraceDao implements TraceRepository {
 
     private static final ImmutableList<Column> traceColumns = ImmutableList.<Column>of(
             ImmutableColumn.of("server", ColumnType.VARCHAR),
-            ImmutableColumn.of("trace_id", ColumnType.VARCHAR),
+            ImmutableColumn.of("id", ColumnType.VARCHAR),
             ImmutableColumn.of("partial", ColumnType.BOOLEAN),
             ImmutableColumn.of("slow", ColumnType.BOOLEAN),
             ImmutableColumn.of("error", ColumnType.BOOLEAN),
@@ -85,38 +85,38 @@ public class TraceDao implements TraceRepository {
     // capture_time column is used for expiring records without using FK with on delete cascade
     private static final ImmutableList<Column> traceAttributeColumns =
             ImmutableList.<Column>of(ImmutableColumn.of("server", ColumnType.VARCHAR),
-                    ImmutableColumn.of("trace_id", ColumnType.VARCHAR),
+                    ImmutableColumn.of("id", ColumnType.VARCHAR),
                     ImmutableColumn.of("name", ColumnType.VARCHAR),
                     ImmutableColumn.of("value", ColumnType.VARCHAR),
                     ImmutableColumn.of("capture_time", ColumnType.BIGINT));
 
     private static final ImmutableList<Index> traceIndexes = ImmutableList.<Index>of(
-            // duration_nanos, trace_id and error columns are included so database can return the
+            // duration_nanos, id and error columns are included so database can return the
             // result set directly from the index without having to reference the table for each row
             //
             // trace_slow_idx is for slow trace point query and for readOverallSlowCount()
             ImmutableIndex.of("trace_slow_idx",
                     ImmutableList.of("server", "transaction_type", "slow", "capture_time",
-                            "duration_nanos", "error", "trace_id")),
+                            "duration_nanos", "error", "id")),
             // trace_transaction_slow_idx is for slow trace point query and for
             // readTransactionSlowCount()
             ImmutableIndex.of("trace_transaction_slow_idx",
                     ImmutableList.of("server", "transaction_type", "transaction_name", "slow",
-                            "capture_time", "duration_nanos", "error", "trace_id")),
+                            "capture_time", "duration_nanos", "error", "id")),
             // trace_error_idx is for error trace point query and for readOverallErrorCount()
             ImmutableIndex.of("trace_error_idx",
                     ImmutableList.of("server", "transaction_type", "error", "capture_time",
-                            "duration_nanos", "error", "trace_id")),
+                            "duration_nanos", "error", "id")),
             // trace_transaction_error_idx is for error trace point query and for
             // readTransactionErrorCount()
             ImmutableIndex.of("trace_transaction_error_idx",
                     ImmutableList.of("server", "transaction_type", "transaction_name", "error",
-                            "capture_time", "duration_nanos", "trace_id")),
+                            "capture_time", "duration_nanos", "id")),
             // trace_idx is for trace header lookup
-            ImmutableIndex.of("trace_idx", ImmutableList.of("server", "trace_id")));
+            ImmutableIndex.of("trace_idx", ImmutableList.of("server", "id")));
 
     private static final ImmutableList<Index> traceAttributeIndexes = ImmutableList.<Index>of(
-            ImmutableIndex.of("trace_attribute_idx", ImmutableList.of("server", "trace_id")));
+            ImmutableIndex.of("trace_attribute_idx", ImmutableList.of("server", "id")));
 
     private final DataSource dataSource;
     private final CappedDatabase traceCappedDatabase;
@@ -135,29 +135,29 @@ public class TraceDao implements TraceRepository {
     public void collect(final String server, final Trace trace) throws Exception {
         final Trace.Header header = trace.getHeader();
         boolean exists = dataSource.queryForExists(
-                "select 1 from trace where server = ? and trace_id = ?", server, trace.getId());
+                "select 1 from trace where server = ? and id = ?", server, trace.getId());
         if (exists) {
             dataSource.update("update trace set partial = ?, slow = ?, error = ?, start_time = ?,"
                     + " capture_time = ?, duration_nanos = ?, transaction_type = ?,"
                     + " transaction_name = ?, headline = ?, user_id = ?, error_message = ?,"
                     + " header = ?, entries_capped_id = ?, profile_capped_id = ?"
-                    + " where server = ? and trace_id = ?", new TraceBinder(server, trace));
+                    + " where server = ? and id = ?", new TraceBinder(server, trace));
         } else {
             dataSource.update(
                     "insert into trace (partial, slow, error, start_time, capture_time,"
                             + " duration_nanos, transaction_type, transaction_name, headline,"
                             + " user_id, error_message, header, entries_capped_id,"
-                            + " profile_capped_id, server, trace_id)"
+                            + " profile_capped_id, server, id)"
                             + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     new TraceBinder(server, trace));
         }
         if (header.getAttributeCount() > 0) {
             if (exists) {
-                dataSource.update("delete from trace_attribute where server = ? and trace_id = ?",
+                dataSource.update("delete from trace_attribute where server = ? and id = ?",
                         server, trace.getId());
             }
             dataSource.batchUpdate(
-                    "insert into trace_attribute (server, trace_id, name, value, capture_time)"
+                    "insert into trace_attribute (server, id, name, value, capture_time)"
                             + " values (?, ?, ?, ?, ?)",
                     new PreparedStatementBinder() {
                         @Override
@@ -253,7 +253,7 @@ public class TraceDao implements TraceRepository {
     public @Nullable HeaderPlus readHeader(String server, String traceId) throws Exception {
         List<HeaderPlus> traces = dataSource.query(
                 "select header, entries_capped_id, profile_capped_id from trace"
-                        + " where server = ? and trace_id = ?",
+                        + " where server = ? and id = ?",
                 new TraceHeaderRowMapper(), server, traceId);
         if (traces.isEmpty()) {
             return null;
@@ -268,7 +268,7 @@ public class TraceDao implements TraceRepository {
     @Override
     public List<Trace.Entry> readEntries(String server, String traceId) throws Exception {
         List<Trace.Entry> entries = dataSource.query(
-                "select entries_capped_id from trace where server = ? and trace_id = ?",
+                "select entries_capped_id from trace where server = ? and id = ?",
                 new EntriesResultExtractor(), server, traceId);
         if (entries == null) {
             // data source is closing
@@ -280,7 +280,7 @@ public class TraceDao implements TraceRepository {
     @Override
     public @Nullable ProfileTree readProfileTree(String server, String traceId) throws Exception {
         return dataSource.query(
-                "select profile_capped_id from trace where server = ? and trace_id = ?",
+                "select profile_capped_id from trace where server = ? and id = ?",
                 new ProfileTreeResultExtractor(), server, traceId);
     }
 

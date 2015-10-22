@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+import "Common.proto";
+
+package org_glowroot_agent_it_harness;
+
+option java_package = "org.glowroot.agent.it.harness.grpc";
+
+service JavaagentService {
+  rpc ping(Void) returns (Void);
+  rpc executeApp(AppUnderTestClassName) returns (Void);
+  rpc interruptApp(Void) returns (Void);
+  rpc addExpectedLogMessage(ExpectedLogMessage) returns (Void);
+  rpc clearLogMessages(Void) returns (LogCount);
+  rpc resetAllConfig(Void) returns (Void);
+  rpc shutdown(Void) returns (Void);
+  rpc kill(Void) returns (Void);
+}
+
+message AppUnderTestClassName {
+  string value = 1;
+}
+
+message ExpectedLogMessage {
+  string logger_name = 1;
+  string partial_message = 2;
+}
+
+message LogCount {
+  int32 unexpectedCount = 1;
+  int32 expectedButNotLoggedCount = 2;
+}

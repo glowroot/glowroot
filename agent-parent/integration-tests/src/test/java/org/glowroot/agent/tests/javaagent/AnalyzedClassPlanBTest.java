@@ -30,8 +30,8 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.config.InstrumentationConfig;
-import org.glowroot.agent.it.harness.config.InstrumentationConfig.CaptureKind;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.CaptureKind;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.InstrumentationConfig;
 
 public class AnalyzedClassPlanBTest {
 
@@ -40,15 +40,10 @@ public class AnalyzedClassPlanBTest {
     @BeforeClass
     public static void setUp() throws Exception {
         container = Containers.getSharedJavaagentContainer();
-        addInstrumentationConfig();
-        container.getConfigService().reweave();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        // afterEachTest() will remove the pointcut configs, but still need to reweave here
-        // in order to get back to square one
-        container.getConfigService().reweave();
         container.close();
     }
 
@@ -60,8 +55,9 @@ public class AnalyzedClassPlanBTest {
     @Test
     public void shouldNotLogWarningInAnalyzedWorldPlanB() throws Exception {
         // given
+        updateInstrumentationConfigs();
         // when
-        container.executeAppUnderTest(ShouldNotLogWarningInAnalyzedWorldPlanB.class);
+        container.executeNoExpectedTrace(ShouldNotLogWarningInAnalyzedWorldPlanB.class);
         // then
         // container close will validate that there were no unexpected warnings or errors
     }
@@ -69,22 +65,23 @@ public class AnalyzedClassPlanBTest {
     @Test
     public void shouldLogWarningInAnalyzedWorldPlanB() throws Exception {
         // given
+        updateInstrumentationConfigs();
         container.addExpectedLogMessage("org.glowroot.agent.weaving.AnalyzedWorld",
                 Y.class.getName() + " was not woven with requested advice");
         // when
-        container.executeAppUnderTest(ShouldLogWarningInAnalyzedWorldPlanB.class);
+        container.executeNoExpectedTrace(ShouldLogWarningInAnalyzedWorldPlanB.class);
         // then
     }
 
-    private static void addInstrumentationConfig() throws Exception {
-        InstrumentationConfig config = new InstrumentationConfig();
-        config.setClassName("org.glowroot.agent.tests.javaagent.AnalyzedClassPlanBTest$Y");
-        config.setMethodName("y");
-        config.setMethodParameterTypes(ImmutableList.<String>of());
-        config.setMethodReturnType("");
-        config.setCaptureKind(CaptureKind.TIMER);
-        config.setTimerName("y");
-        container.getConfigService().addInstrumentationConfig(config);
+    private static void updateInstrumentationConfigs() throws Exception {
+        InstrumentationConfig config = InstrumentationConfig.newBuilder()
+                .setClassName("org.glowroot.agent.tests.javaagent.AnalyzedClassPlanBTest$Y")
+                .setMethodName("y")
+                .setMethodReturnType("")
+                .setCaptureKind(CaptureKind.TIMER)
+                .setTimerName("y")
+                .build();
+        container.getConfigService().updateInstrumentationConfigs(ImmutableList.of(config));
     }
 
     public static class ShouldNotLogWarningInAnalyzedWorldPlanB implements AppUnderTest {

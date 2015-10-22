@@ -209,7 +209,8 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
                 || className.startsWith("org.glowroot.agent.plugin.api.")
                 || (className.startsWith("org.glowroot.agent.")
                         && !className.startsWith("org.glowroot.agent.plugin.")
-                        && !className.startsWith("org.glowroot.agent.tests."));
+                        && !className.startsWith("org.glowroot.agent.tests.")
+                        && !className.startsWith("org.glowroot.agent.it."));
     }
 
     public static class Builder {

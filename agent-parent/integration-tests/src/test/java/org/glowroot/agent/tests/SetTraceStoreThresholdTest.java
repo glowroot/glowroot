@@ -24,14 +24,11 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.config.TransactionConfig;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
-import org.glowroot.agent.tests.LevelOne;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class SetTraceStoreThresholdTest {
 
@@ -56,36 +53,32 @@ public class SetTraceStoreThresholdTest {
     public void shouldNotReadTrace() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(SetLargeTraceStoreThreshold.class);
+        container.executeNoExpectedTrace(SetLargeTraceStoreThreshold.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header).isNull();
     }
 
     @Test
     public void shouldReadTrace() throws Exception {
         // given
-        TransactionConfig config = container.getConfigService().getTransactionConfig();
-        config.setSlowThresholdMillis(Integer.MAX_VALUE);
-        container.getConfigService().updateTransactionConfig(config);
+        container.getConfigService().updateTransactionConfig(
+                TransactionConfigUpdate.newBuilder()
+                        .setSlowThresholdMillis(ProtoOptional.of(Integer.MAX_VALUE))
+                        .build());
         // when
-        container.executeAppUnderTest(SetLargeAndThenSmallTraceStoreThreshold.class);
+        container.execute(SetLargeAndThenSmallTraceStoreThreshold.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header).isNotNull();
     }
 
     @Test
     public void shouldReadTrace2() throws Exception {
         // given
-        TransactionConfig config = container.getConfigService().getTransactionConfig();
-        config.setSlowThresholdMillis(Integer.MAX_VALUE);
-        container.getConfigService().updateTransactionConfig(config);
+        container.getConfigService().updateTransactionConfig(
+                TransactionConfigUpdate.newBuilder()
+                        .setSlowThresholdMillis(ProtoOptional.of(Integer.MAX_VALUE))
+                        .build());
         // when
-        container.executeAppUnderTest(SetSmallAndThenLargeTraceStoreThreshold.class);
+        container.execute(SetSmallAndThenLargeTraceStoreThreshold.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header).isNotNull();
     }
 
     public static class SetLargeTraceStoreThreshold implements AppUnderTest, TransactionMarker {

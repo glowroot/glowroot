@@ -60,7 +60,7 @@ public class ConfigServiceImpl
             List<PluginDescriptor> pluginDescriptors, String pluginId) {
         ConfigServiceImpl configServiceImpl =
                 new ConfigServiceImpl(configService, pluginDescriptors, pluginId);
-        configService.addPluginConfigListener(pluginId, configServiceImpl);
+        configService.addPluginConfigListener(configServiceImpl);
         configService.addConfigListener(configServiceImpl);
         return configServiceImpl;
     }
@@ -144,7 +144,7 @@ public class ConfigServiceImpl
             logger.error("registerConfigListener(): argument 'listener' must be non-null");
             return;
         }
-        configService.addPluginConfigListener(pluginId, listener);
+        configService.addPluginConfigListener(listener);
         listener.onChange();
     }
 

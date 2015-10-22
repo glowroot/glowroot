@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import com.google.common.base.Stopwatch;
 import org.junit.After;
@@ -30,12 +31,9 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.config.AdvancedConfig;
-import org.glowroot.agent.it.harness.trace.Trace;
-import org.glowroot.agent.tests.LevelOne;
-import org.glowroot.agent.tests.LogError;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.AdvancedConfigUpdate;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,7 +45,7 @@ public class MaxEntriesLimitTest {
     public static void setUp() throws Exception {
         container = Containers.getSharedContainer();
         // capture one header to warm up the system since this test involves some timing
-        container.executeAppUnderTest(WarmupTrace.class);
+        container.execute(WarmupTrace.class);
     }
 
     @AfterClass
@@ -63,80 +61,78 @@ public class MaxEntriesLimitTest {
     @Test
     public void shouldReadIsLimitExceededMarker() throws Exception {
         // given
-        AdvancedConfig advancedConfig = container.getConfigService().getAdvancedConfig();
-        advancedConfig.setMaxTraceEntriesPerTransaction(100);
-        container.getConfigService().updateAdvancedConfig(advancedConfig);
+        container.getConfigService().updateAdvancedConfig(AdvancedConfigUpdate.newBuilder()
+                .setMaxTraceEntriesPerTransaction(ProtoOptional.of(100))
+                .setImmediatePartialStoreThresholdSeconds(ProtoOptional.of(1))
+                .build());
         // when
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.submit(new Callable<Void>() {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<Trace> future = executor.submit(new Callable<Trace>() {
             @Override
-            public Void call() throws Exception {
-                try {
-                    container.executeAppUnderTest(GenerateLotsOfEntries.class);
-                } catch (Throwable t) {
-                    t.printStackTrace();
-                }
-                return null;
+            public Trace call() throws Exception {
+                return container.execute(GenerateLotsOfEntries.class);
             }
         });
         // then
         // integration test harness needs to kick off test, so may need to wait a little
         Stopwatch stopwatch = Stopwatch.createStarted();
+        Trace trace = null;
         Trace.Header header = null;
-        while (stopwatch.elapsed(SECONDS) < 2) {
-            header = container.getTraceService().getActiveHeader(0, MILLISECONDS);
-            if (header == null) {
-                continue;
-            }
-            if (header.entryCount() == 100 && header.entryLimitExceeded().or(false)) {
+        while (stopwatch.elapsed(SECONDS) < 10) {
+            trace = container.getCollectedPartialTrace();
+            header = trace.getHeader();
+            if (header.getEntryCount() == 100 && header.getEntryLimitExceeded()) {
                 break;
             }
             // otherwise continue
+            Thread.sleep(10);
         }
         assertThat(header).isNotNull();
-        assertThat(header.entryCount()).isEqualTo(100);
-        assertThat(header.entryLimitExceeded().or(false)).isTrue();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
-        assertThat(entries).hasSize(25);
+        assertThat(header.getPartial()).isTrue();
+        assertThat(header.getEntryCount()).isEqualTo(100);
+        assertThat(header.getEntryLimitExceeded()).isTrue();
 
         // part 2 of this test, extend the max trace entries limit in the middle of transaction
-        advancedConfig = container.getConfigService().getAdvancedConfig();
-        advancedConfig.setMaxTraceEntriesPerTransaction(200);
-        container.getConfigService().updateAdvancedConfig(advancedConfig);
+        container.getConfigService().updateAdvancedConfig(AdvancedConfigUpdate.newBuilder()
+                .setMaxTraceEntriesPerTransaction(ProtoOptional.of(200))
+                .build());
         stopwatch.stop().reset().start();
-        while (stopwatch.elapsed(SECONDS) < 2) {
-            header = container.getTraceService().getActiveHeader(0, MILLISECONDS);
-            if (header == null) {
-                continue;
-            }
-            if (header.entryCount() == 200 && header.entryLimitExceeded().or(false)) {
+        while (stopwatch.elapsed(SECONDS) < 10) {
+            trace = container.getCollectedPartialTrace();
+            header = trace.getHeader();
+            if (header.getEntryCount() == 200 && header.getEntryLimitExceeded()) {
                 break;
             }
             // otherwise continue
+            Thread.sleep(10);
         }
-        container.interruptAppUnderTest();
         assertThat(header).isNotNull();
-        assertThat(header.entryCount()).isEqualTo(200);
-        assertThat(header.entryLimitExceeded().or(false)).isTrue();
-        // cleanup
-        executorService.shutdown();
+        assertThat(header.getPartial()).isTrue();
+        assertThat(header.getEntryCount()).isEqualTo(200);
+        assertThat(header.getEntryLimitExceeded()).isTrue();
+        // cleanup trace
+        container.interruptAppUnderTest();
+        future.get();
+        executor.shutdown();
+        if (!executor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate executor");
+        }
     }
 
     @Test
     public void shouldReadLimitBypassedTraceEntries() throws Exception {
         // given
-        AdvancedConfig advancedConfig = container.getConfigService().getAdvancedConfig();
-        advancedConfig.setMaxTraceEntriesPerTransaction(100);
-        container.getConfigService().updateAdvancedConfig(advancedConfig);
+        container.getConfigService().updateAdvancedConfig(AdvancedConfigUpdate.newBuilder()
+                .setMaxTraceEntriesPerTransaction(ProtoOptional.of(100))
+                .build());
         // when
-        container.executeAppUnderTest(GenerateLimitBypassedEntries.class);
+        Trace trace = container.execute(GenerateLimitBypassedEntries.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.entryCount()).isEqualTo(101);
-        assertThat(header.entryLimitExceeded().or(false)).isTrue();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        assertThat(trace.getHeader().getEntryCount()).isEqualTo(101);
+        assertThat(trace.getHeader().getEntryLimitExceeded()).isTrue();
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(26);
-        assertThat(entries.get(25).message()).isEqualTo("ERROR -- abc");
+        assertThat(entries.get(25).getMessage()).isEqualTo("ERROR -- abc");
     }
 
     public static class GenerateLotsOfEntries implements AppUnderTest, TransactionMarker {

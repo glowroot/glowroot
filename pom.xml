@@ -54,10 +54,10 @@
     <module>agent-parent/benchmarks</module>
     <module>agent-parent/distribution</module>
     <module>storage</module>
-    <module>ui-parent/ui</module>
-    <module>ui-parent/integration-tests</module>
-    <module>ui-parent/sandbox</module>
+    <module>ui</module>
     <module>fat-agent-parent/fat-agent</module>
+    <module>fat-agent-parent/webdriver-tests</module>
+    <module>fat-agent-parent/ui-sandbox</module>
     <module>fat-agent-parent/distribution</module>
   </modules>
 

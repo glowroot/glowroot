@@ -23,10 +23,10 @@ message Aggregate {
   double total_nanos = 1;
   int64 transaction_count = 2;
   int64 error_count = 3;
-  double total_cpu_nanos = 4; // -1 means N/A
-  double total_blocked_nanos = 5; // -1 means N/A
-  double total_waited_nanos = 6; // -1 means N/A
-  double total_allocated_bytes = 7; // -1 means N/A
+  OptionalDouble total_cpu_nanos = 4;
+  OptionalDouble total_blocked_nanos = 5;
+  OptionalDouble total_waited_nanos = 6;
+  OptionalDouble total_allocated_bytes = 7;
   Histogram total_nanos_histogram = 8;
 
   repeated Timer root_timer = 9;
@@ -34,6 +34,10 @@ message Aggregate {
   repeated QueriesByType queries_by_type = 10;
 
   ProfileTree profile_tree = 11;
+
+  message OptionalDouble {
+    double value = 1;
+  }
 
   message Histogram {
     // for smaller numbers of transactions, the individual raw values are stored directly

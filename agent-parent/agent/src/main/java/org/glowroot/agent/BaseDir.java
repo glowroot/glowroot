@@ -33,7 +33,7 @@ class BaseDir {
     private BaseDir() {}
 
     public static File getBaseDir(Map<String, String> properties, @Nullable File glowrootJarFile) {
-        String baseDirPath = properties.get("base.dir");
+        String baseDirPath = properties.get("glowroot.base.dir");
         if (glowrootJarFile == null) {
             // this is only for test support
             checkNotNull(baseDirPath, "Property base.dir is required when no glowroot jar file");

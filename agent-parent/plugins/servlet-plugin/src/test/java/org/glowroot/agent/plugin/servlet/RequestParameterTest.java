@@ -32,7 +32,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,12 +61,10 @@ public class RequestParameterTest {
     public void testRequestParameters() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(GetParameter.class);
+        Trace trace = container.execute(GetParameter.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        @SuppressWarnings("unchecked")
         Map<String, Object> requestParameters =
-                (Map<String, Object>) header.detail().get("Request parameters");
+                ResponseHeaderTest.getDetailMap(trace, "Request parameters");
         assertThat(requestParameters).hasSize(3);
         assertThat(requestParameters.get("xYz")).isEqualTo("aBc");
         assertThat(requestParameters.get("jpassword1")).isEqualTo("****");
@@ -80,32 +78,29 @@ public class RequestParameterTest {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestParameters", "");
         // when
-        container.executeAppUnderTest(GetParameter.class);
+        Trace trace = container.execute(GetParameter.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.detail()).hasSize(1);
-        assertThat(header.detail()).containsKey("Request http method");
+        assertThat(trace.getHeader().getDetailEntryList()).hasSize(1);
+        assertThat(trace.getHeader().getDetailEntryList().get(0).getName())
+                .isEqualTo("Request http method");
     }
 
     @Test
     public void testRequestParameterMap() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(GetParameterMap.class);
+        container.execute(GetParameterMap.class);
         // then don't throw IllegalStateException (see MockCatalinaHttpServletRequest)
-        container.getTraceService().getLastHeader();
     }
 
     @Test
     public void testBadRequestParameterMap() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(GetBadParameterMap.class);
+        Trace trace = container.execute(GetBadParameterMap.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        @SuppressWarnings("unchecked")
         Map<String, Object> requestParameters =
-                (Map<String, Object>) header.detail().get("Request parameters");
+                ResponseHeaderTest.getDetailMap(trace, "Request parameters");
         assertThat(requestParameters).hasSize(1);
         assertThat(requestParameters.get("k")).isEqualTo("");
     }
@@ -114,10 +109,8 @@ public class RequestParameterTest {
     public void testOutsideServlet() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(GetParameterOutsideServlet.class);
+        container.executeNoExpectedTrace(GetParameterOutsideServlet.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header).isNull();
         // basically just testing that it should not generate any errors
     }
 

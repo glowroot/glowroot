@@ -61,6 +61,9 @@ class ImmediateTraceStoreWatcher extends ScheduledRunnable {
     protected void runInternal() {
         int immediatePartialStoreThresholdSeconds =
                 configService.getAdvancedConfig().immediatePartialStoreThresholdSeconds();
+        if (immediatePartialStoreThresholdSeconds == 0) {
+            return;
+        }
         long immediatePartialStoreTick =
                 ticker.read() - SECONDS.toNanos(immediatePartialStoreThresholdSeconds)
                         + MILLISECONDS.toNanos(PERIOD_MILLIS);
@@ -75,11 +78,9 @@ class ImmediateTraceStoreWatcher extends ScheduledRunnable {
                                 - NANOSECONDS.toMillis(transaction.getDurationNanos()));
                 ScheduledRunnable immediateTraceStoreRunnable =
                         new ImmediateTraceStoreRunnable(transaction, transactionCollector);
-                // repeat at minimum every 60 seconds (in case partial store threshold is set very
-                // small)
-                long repeatingIntervalSeconds = Math.max(60, immediatePartialStoreThresholdSeconds);
                 immediateTraceStoreRunnable.scheduleWithFixedDelay(scheduledExecutor,
-                        initialDelayMillis, SECONDS.toMillis(repeatingIntervalSeconds),
+                        initialDelayMillis,
+                        SECONDS.toMillis(immediatePartialStoreThresholdSeconds),
                         MILLISECONDS);
                 transaction.setImmediateTraceStoreRunnable(immediateTraceStoreRunnable);
             }

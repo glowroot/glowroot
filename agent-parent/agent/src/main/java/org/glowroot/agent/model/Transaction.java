@@ -22,11 +22,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.UUID;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.Strings;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -65,8 +68,12 @@ public class Transaction {
     // this is just to limit memory (and also to limit display size of trace)
     private static final long ATTRIBUTE_VALUES_PER_KEY_LIMIT = 10000;
 
-    // a unique identifier
-    private final TraceUniqueId id;
+    private final Supplier<UUID> uuid = Suppliers.memoize(new Supplier<UUID>() {
+        @Override
+        public UUID get() {
+            return UUID.randomUUID();
+        }
+    });
 
     // timing data is tracked in nano seconds which cannot be converted into dates
     // (see javadoc for System.nanoTime()), so the start time is also tracked here
@@ -145,7 +152,6 @@ public class Transaction {
         this.startTime = startTime;
         this.transactionType = transactionType;
         this.transactionName = transactionName;
-        id = new TraceUniqueId(startTime);
         // suppress warning for passing @UnderInitialization this
         @SuppressWarnings("argument.type.incompatible")
         TimerImpl rootTimer = TimerImpl.createRootTimer(this, (TimerNameImpl) timerName);
@@ -166,7 +172,7 @@ public class Transaction {
     }
 
     public String getId() {
-        return id.get();
+        return uuid.get().toString();
     }
 
     // a couple of properties make sense to expose as part of trace
@@ -567,7 +573,7 @@ public class Transaction {
     public enum OverrideSource {
 
         // higher priority wins
-        PLUGIN_API(1), USER_API(2);
+        PLUGIN_API(1), USER_API(2), USER_RECORDING(3);
 
         private final int priority;
 

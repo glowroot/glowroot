@@ -17,6 +17,7 @@ package org.glowroot.agent.it.harness;
 
 import java.lang.Thread.State;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.base.MoreObjects;
@@ -81,8 +82,8 @@ public class Threads {
             // Glowroot-Background-1
             // H2 Log Writer GLOWROOT
             // H2 File Lock Watchdog <lock db file>
-            // Glowroot-Http-Boss
-            // Glowroot-Http-Worker-0
+            // Glowroot-grpc-worker-ELG-0
+            // Glowroot-grpc-executor-0
             // Generate Seed
             // threadDeathWatcher-2-1
             if (rogueThreads.isEmpty() && nonPreExistingThreads.size() <= 8) {
@@ -91,7 +92,7 @@ public class Threads {
             }
             // wait a few milliseconds before trying again
             Thread.sleep(10);
-        } while (stopwatch.elapsed(SECONDS) < 5);
+        } while (stopwatch.elapsed(SECONDS) < 10);
         // failure
         if (!rogueThreads.isEmpty()) {
             throw new RogueThreadsException(rogueThreads);
@@ -121,7 +122,7 @@ public class Threads {
             }
             // wait a few milliseconds before trying again
             Thread.sleep(10);
-        } while (stopwatch.elapsed(SECONDS) < 5);
+        } while (stopwatch.elapsed(SECONDS) < 10);
         // failure
         throw new RogueThreadsException(rogueThreads);
     }
@@ -140,9 +141,15 @@ public class Threads {
     private static List<Thread> getNonPreExistingThreads(Collection<Thread> preExistingThreads) {
         List<Thread> currentThreads = currentThreads();
         currentThreads.removeAll(preExistingThreads);
-        // remove current thread in case it is newly created by the tests
-        // (e.g. SocketCommandProcessor)
-        currentThreads.remove(Thread.currentThread());
+        for (Iterator<Thread> i = currentThreads.iterator(); i.hasNext();) {
+            String threadName = i.next().getName();
+            if (threadName.startsWith("Glowroot-grpc-")) {
+                i.remove();
+            }
+            if (threadName.equals("threadDeathWatcher-2-1")) {
+                i.remove();
+            }
+        }
         return currentThreads;
     }
 
@@ -150,12 +157,12 @@ public class Threads {
         if (!thread.isDaemon()) {
             return true;
         } else if (isShaded() && !thread.getName().startsWith("Glowroot-")
-                && !thread.getName().startsWith("threadDeathWatcher-2-1")) {
+                && !thread.getName().equals("threadDeathWatcher-2-1")) {
             return true;
         } else if (!isShaded()
                 && !thread.getName().startsWith("Glowroot-")
                 // TODO submit netty issue to customize threadDeathWatcher thread name
-                && !thread.getName().startsWith("threadDeathWatcher-2-1")
+                && !thread.getName().equals("threadDeathWatcher-2-1")
                 && !thread.getName().startsWith("H2 File Lock Watchdog ")
                 && !thread.getName().startsWith("H2 Log Writer ")
                 && !thread.getName().equals("Generate Seed")) {

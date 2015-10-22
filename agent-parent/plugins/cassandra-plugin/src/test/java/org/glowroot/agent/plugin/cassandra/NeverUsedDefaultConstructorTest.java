@@ -27,7 +27,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 // currently Jacoco counts private default constructors on utility classes as uncovered lines of
@@ -42,12 +41,12 @@ public class NeverUsedDefaultConstructorTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.getSharedLocalContainer();
+        container = SharedSetupRunListener.getContainer();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        container.close();
+        SharedSetupRunListener.close(container);
     }
 
     @Test

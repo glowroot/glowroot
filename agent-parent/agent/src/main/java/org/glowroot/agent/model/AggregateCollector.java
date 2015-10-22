@@ -48,6 +48,7 @@ import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble;
 import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -131,10 +132,10 @@ class AggregateCollector {
                 .setTotalNanos(totalNanos)
                 .setTransactionCount(transactionCount)
                 .setErrorCount(errorCount)
-                .setTotalCpuNanos(totalCpuNanos)
-                .setTotalBlockedNanos(totalBlockedNanos)
-                .setTotalWaitedNanos(totalWaitedNanos)
-                .setTotalAllocatedBytes(totalAllocatedBytes)
+                .setTotalCpuNanos(toOptionalDouble(totalCpuNanos))
+                .setTotalBlockedNanos(toOptionalDouble(totalBlockedNanos))
+                .setTotalWaitedNanos(toOptionalDouble(totalWaitedNanos))
+                .setTotalAllocatedBytes(toOptionalDouble(totalAllocatedBytes))
                 .setTotalNanosHistogram(lazyHistogram.toProtobuf(scratchBuffer))
                 .addAllRootTimer(getRootTimersProtobuf())
                 .addAllQueriesByType(queries.toProtobuf(true))
@@ -234,5 +235,13 @@ class AggregateCollector {
             rootTimers.add(rootTimer.toProtobuf());
         }
         return rootTimers;
+    }
+
+    private static OptionalDouble toOptionalDouble(double value) {
+        if (value == NotAvailableAware.NA) {
+            return OptionalDouble.getDefaultInstance();
+        } else {
+            return OptionalDouble.newBuilder().setValue(value).build();
+        }
     }
 }

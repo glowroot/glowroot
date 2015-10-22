@@ -36,7 +36,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -62,20 +62,19 @@ public class JmsPluginTest {
 
     @Test
     public void shouldReceiveMessage() throws Exception {
-        container.executeAppUnderTest(ReceiveMessage.class);
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.transactionType()).isEqualTo("Background");
-        assertThat(header.transactionName()).isEqualTo("JMS Message: TestMessageListener");
-        assertThat(header.headline()).isEqualTo("JMS Message: TestMessageListener");
+        Trace trace = container.execute(ReceiveMessage.class);
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getTransactionType()).isEqualTo("Background");
+        assertThat(header.getTransactionName()).isEqualTo("JMS Message: TestMessageListener");
+        assertThat(header.getHeadline()).isEqualTo("JMS Message: TestMessageListener");
     }
 
     @Test
     public void shouldSendMessage() throws Exception {
-        container.executeAppUnderTest(SendMessage.class);
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Timer> nestedTimers = header.rootTimer().childTimers();
+        Trace trace = container.execute(SendMessage.class);
+        List<Trace.Timer> nestedTimers = trace.getHeader().getRootTimer().getChildTimerList();
         assertThat(nestedTimers).hasSize(1);
-        assertThat(nestedTimers.get(0).name()).isEqualTo("jms send message");
+        assertThat(nestedTimers.get(0).getName()).isEqualTo("jms send message");
     }
 
     public static class ReceiveMessage implements AppUnderTest {

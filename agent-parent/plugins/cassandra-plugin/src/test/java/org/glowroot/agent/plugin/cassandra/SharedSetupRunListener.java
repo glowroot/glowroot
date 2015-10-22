@@ -37,8 +37,8 @@ public class SharedSetupRunListener extends RunListener {
     }
 
     public static void close(Container container) throws Exception {
-        container.close();
         if (sharedContainer == null) {
+            container.close();
             CassandraWrapper.stop();
         }
     }

@@ -14,10 +14,18 @@ public final class TraceOuterClass {
 
     /**
      * <code>optional string id = 1;</code>
+     *
+     * <pre>
+     * this is a uuid
+     * </pre>
      */
     java.lang.String getId();
     /**
      * <code>optional string id = 1;</code>
+     *
+     * <pre>
+     * this is a uuid
+     * </pre>
      */
     com.google.protobuf.ByteString
         getIdBytes();
@@ -343,40 +351,56 @@ public final class TraceOuterClass {
       org.glowroot.wire.api.model.TraceOuterClass.Trace.TimerOrBuilder getRootTimerOrBuilder();
 
       /**
-       * <code>optional sint64 thread_cpu_nanos = 15;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_cpu_nanos = 15;</code>
        */
-      long getThreadCpuNanos();
+      boolean hasThreadCpuNanos();
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_cpu_nanos = 15;</code>
+       */
+      org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt getThreadCpuNanos();
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_cpu_nanos = 15;</code>
+       */
+      org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder getThreadCpuNanosOrBuilder();
 
       /**
-       * <code>optional sint64 thread_blocked_nanos = 16;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_blocked_nanos = 16;</code>
        */
-      long getThreadBlockedNanos();
+      boolean hasThreadBlockedNanos();
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_blocked_nanos = 16;</code>
+       */
+      org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt getThreadBlockedNanos();
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_blocked_nanos = 16;</code>
+       */
+      org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder getThreadBlockedNanosOrBuilder();
 
       /**
-       * <code>optional sint64 thread_waited_nanos = 17;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_waited_nanos = 17;</code>
        */
-      long getThreadWaitedNanos();
+      boolean hasThreadWaitedNanos();
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_waited_nanos = 17;</code>
+       */
+      org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt getThreadWaitedNanos();
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_waited_nanos = 17;</code>
+       */
+      org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder getThreadWaitedNanosOrBuilder();
 
       /**
-       * <code>optional sint64 thread_allocated_bytes = 18;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_allocated_bytes = 18;</code>
        */
-      long getThreadAllocatedBytes();
+      boolean hasThreadAllocatedBytes();
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_allocated_bytes = 18;</code>
+       */
+      org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt getThreadAllocatedBytes();
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_allocated_bytes = 18;</code>
+       */
+      org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder getThreadAllocatedBytesOrBuilder();
 
       /**
        * <code>repeated .org_glowroot_wire_api_model.Trace.GarbageCollectionActivity gc_activity = 19;</code>
@@ -445,10 +469,6 @@ public final class TraceOuterClass {
         user_ = "";
         attribute_ = java.util.Collections.emptyList();
         detailEntry_ = java.util.Collections.emptyList();
-        threadCpuNanos_ = 0L;
-        threadBlockedNanos_ = 0L;
-        threadWaitedNanos_ = 0L;
-        threadAllocatedBytes_ = 0L;
         gcActivity_ = java.util.Collections.emptyList();
         entryCount_ = 0;
         entryLimitExceeded_ = false;
@@ -571,24 +591,56 @@ public final class TraceOuterClass {
 
                 break;
               }
-              case 120: {
+              case 122: {
+                org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder subBuilder = null;
+                if (threadCpuNanos_ != null) {
+                  subBuilder = threadCpuNanos_.toBuilder();
+                }
+                threadCpuNanos_ = input.readMessage(org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.parser(), extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(threadCpuNanos_);
+                  threadCpuNanos_ = subBuilder.buildPartial();
+                }
 
-                threadCpuNanos_ = input.readSInt64();
                 break;
               }
-              case 128: {
+              case 130: {
+                org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder subBuilder = null;
+                if (threadBlockedNanos_ != null) {
+                  subBuilder = threadBlockedNanos_.toBuilder();
+                }
+                threadBlockedNanos_ = input.readMessage(org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.parser(), extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(threadBlockedNanos_);
+                  threadBlockedNanos_ = subBuilder.buildPartial();
+                }
 
-                threadBlockedNanos_ = input.readSInt64();
                 break;
               }
-              case 136: {
+              case 138: {
+                org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder subBuilder = null;
+                if (threadWaitedNanos_ != null) {
+                  subBuilder = threadWaitedNanos_.toBuilder();
+                }
+                threadWaitedNanos_ = input.readMessage(org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.parser(), extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(threadWaitedNanos_);
+                  threadWaitedNanos_ = subBuilder.buildPartial();
+                }
 
-                threadWaitedNanos_ = input.readSInt64();
                 break;
               }
-              case 144: {
+              case 146: {
+                org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder subBuilder = null;
+                if (threadAllocatedBytes_ != null) {
+                  subBuilder = threadAllocatedBytes_.toBuilder();
+                }
+                threadAllocatedBytes_ = input.readMessage(org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.parser(), extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(threadAllocatedBytes_);
+                  threadAllocatedBytes_ = subBuilder.buildPartial();
+                }
 
-                threadAllocatedBytes_ = input.readSInt64();
                 break;
               }
               case 154: {
@@ -947,55 +999,87 @@ public final class TraceOuterClass {
       }
 
       public static final int THREAD_CPU_NANOS_FIELD_NUMBER = 15;
-      private long threadCpuNanos_;
+      private org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt threadCpuNanos_;
       /**
-       * <code>optional sint64 thread_cpu_nanos = 15;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_cpu_nanos = 15;</code>
        */
-      public long getThreadCpuNanos() {
-        return threadCpuNanos_;
+      public boolean hasThreadCpuNanos() {
+        return threadCpuNanos_ != null;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_cpu_nanos = 15;</code>
+       */
+      public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt getThreadCpuNanos() {
+        return threadCpuNanos_ == null ? org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.getDefaultInstance() : threadCpuNanos_;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_cpu_nanos = 15;</code>
+       */
+      public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder getThreadCpuNanosOrBuilder() {
+        return getThreadCpuNanos();
       }
 
       public static final int THREAD_BLOCKED_NANOS_FIELD_NUMBER = 16;
-      private long threadBlockedNanos_;
+      private org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt threadBlockedNanos_;
       /**
-       * <code>optional sint64 thread_blocked_nanos = 16;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_blocked_nanos = 16;</code>
        */
-      public long getThreadBlockedNanos() {
-        return threadBlockedNanos_;
+      public boolean hasThreadBlockedNanos() {
+        return threadBlockedNanos_ != null;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_blocked_nanos = 16;</code>
+       */
+      public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt getThreadBlockedNanos() {
+        return threadBlockedNanos_ == null ? org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.getDefaultInstance() : threadBlockedNanos_;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_blocked_nanos = 16;</code>
+       */
+      public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder getThreadBlockedNanosOrBuilder() {
+        return getThreadBlockedNanos();
       }
 
       public static final int THREAD_WAITED_NANOS_FIELD_NUMBER = 17;
-      private long threadWaitedNanos_;
+      private org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt threadWaitedNanos_;
       /**
-       * <code>optional sint64 thread_waited_nanos = 17;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_waited_nanos = 17;</code>
        */
-      public long getThreadWaitedNanos() {
-        return threadWaitedNanos_;
+      public boolean hasThreadWaitedNanos() {
+        return threadWaitedNanos_ != null;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_waited_nanos = 17;</code>
+       */
+      public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt getThreadWaitedNanos() {
+        return threadWaitedNanos_ == null ? org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.getDefaultInstance() : threadWaitedNanos_;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_waited_nanos = 17;</code>
+       */
+      public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder getThreadWaitedNanosOrBuilder() {
+        return getThreadWaitedNanos();
       }
 
       public static final int THREAD_ALLOCATED_BYTES_FIELD_NUMBER = 18;
-      private long threadAllocatedBytes_;
+      private org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt threadAllocatedBytes_;
       /**
-       * <code>optional sint64 thread_allocated_bytes = 18;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_allocated_bytes = 18;</code>
        */
-      public long getThreadAllocatedBytes() {
-        return threadAllocatedBytes_;
+      public boolean hasThreadAllocatedBytes() {
+        return threadAllocatedBytes_ != null;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_allocated_bytes = 18;</code>
+       */
+      public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt getThreadAllocatedBytes() {
+        return threadAllocatedBytes_ == null ? org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.getDefaultInstance() : threadAllocatedBytes_;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_allocated_bytes = 18;</code>
+       */
+      public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder getThreadAllocatedBytesOrBuilder() {
+        return getThreadAllocatedBytes();
       }
 
       public static final int GC_ACTIVITY_FIELD_NUMBER = 19;
@@ -1120,17 +1204,17 @@ public final class TraceOuterClass {
         if (rootTimer_ != null) {
           output.writeMessage(14, getRootTimer());
         }
-        if (threadCpuNanos_ != 0L) {
-          output.writeSInt64(15, threadCpuNanos_);
+        if (threadCpuNanos_ != null) {
+          output.writeMessage(15, getThreadCpuNanos());
         }
-        if (threadBlockedNanos_ != 0L) {
-          output.writeSInt64(16, threadBlockedNanos_);
+        if (threadBlockedNanos_ != null) {
+          output.writeMessage(16, getThreadBlockedNanos());
         }
-        if (threadWaitedNanos_ != 0L) {
-          output.writeSInt64(17, threadWaitedNanos_);
+        if (threadWaitedNanos_ != null) {
+          output.writeMessage(17, getThreadWaitedNanos());
         }
-        if (threadAllocatedBytes_ != 0L) {
-          output.writeSInt64(18, threadAllocatedBytes_);
+        if (threadAllocatedBytes_ != null) {
+          output.writeMessage(18, getThreadAllocatedBytes());
         }
         for (int i = 0; i < gcActivity_.size(); i++) {
           output.writeMessage(19, gcActivity_.get(i));
@@ -1202,21 +1286,21 @@ public final class TraceOuterClass {
           size += com.google.protobuf.CodedOutputStream
             .computeMessageSize(14, getRootTimer());
         }
-        if (threadCpuNanos_ != 0L) {
+        if (threadCpuNanos_ != null) {
           size += com.google.protobuf.CodedOutputStream
-            .computeSInt64Size(15, threadCpuNanos_);
+            .computeMessageSize(15, getThreadCpuNanos());
         }
-        if (threadBlockedNanos_ != 0L) {
+        if (threadBlockedNanos_ != null) {
           size += com.google.protobuf.CodedOutputStream
-            .computeSInt64Size(16, threadBlockedNanos_);
+            .computeMessageSize(16, getThreadBlockedNanos());
         }
-        if (threadWaitedNanos_ != 0L) {
+        if (threadWaitedNanos_ != null) {
           size += com.google.protobuf.CodedOutputStream
-            .computeSInt64Size(17, threadWaitedNanos_);
+            .computeMessageSize(17, getThreadWaitedNanos());
         }
-        if (threadAllocatedBytes_ != 0L) {
+        if (threadAllocatedBytes_ != null) {
           size += com.google.protobuf.CodedOutputStream
-            .computeSInt64Size(18, threadAllocatedBytes_);
+            .computeMessageSize(18, getThreadAllocatedBytes());
         }
         for (int i = 0; i < gcActivity_.size(); i++) {
           size += com.google.protobuf.CodedOutputStream
@@ -1394,14 +1478,30 @@ public final class TraceOuterClass {
             rootTimer_ = null;
             rootTimerBuilder_ = null;
           }
-          threadCpuNanos_ = 0L;
-
-          threadBlockedNanos_ = 0L;
-
-          threadWaitedNanos_ = 0L;
-
-          threadAllocatedBytes_ = 0L;
-
+          if (threadCpuNanosBuilder_ == null) {
+            threadCpuNanos_ = null;
+          } else {
+            threadCpuNanos_ = null;
+            threadCpuNanosBuilder_ = null;
+          }
+          if (threadBlockedNanosBuilder_ == null) {
+            threadBlockedNanos_ = null;
+          } else {
+            threadBlockedNanos_ = null;
+            threadBlockedNanosBuilder_ = null;
+          }
+          if (threadWaitedNanosBuilder_ == null) {
+            threadWaitedNanos_ = null;
+          } else {
+            threadWaitedNanos_ = null;
+            threadWaitedNanosBuilder_ = null;
+          }
+          if (threadAllocatedBytesBuilder_ == null) {
+            threadAllocatedBytes_ = null;
+          } else {
+            threadAllocatedBytes_ = null;
+            threadAllocatedBytesBuilder_ = null;
+          }
           if (gcActivityBuilder_ == null) {
             gcActivity_ = java.util.Collections.emptyList();
             bitField0_ = (bitField0_ & ~0x00020000);
@@ -1477,10 +1577,26 @@ public final class TraceOuterClass {
           } else {
             result.rootTimer_ = rootTimerBuilder_.build();
           }
-          result.threadCpuNanos_ = threadCpuNanos_;
-          result.threadBlockedNanos_ = threadBlockedNanos_;
-          result.threadWaitedNanos_ = threadWaitedNanos_;
-          result.threadAllocatedBytes_ = threadAllocatedBytes_;
+          if (threadCpuNanosBuilder_ == null) {
+            result.threadCpuNanos_ = threadCpuNanos_;
+          } else {
+            result.threadCpuNanos_ = threadCpuNanosBuilder_.build();
+          }
+          if (threadBlockedNanosBuilder_ == null) {
+            result.threadBlockedNanos_ = threadBlockedNanos_;
+          } else {
+            result.threadBlockedNanos_ = threadBlockedNanosBuilder_.build();
+          }
+          if (threadWaitedNanosBuilder_ == null) {
+            result.threadWaitedNanos_ = threadWaitedNanos_;
+          } else {
+            result.threadWaitedNanos_ = threadWaitedNanosBuilder_.build();
+          }
+          if (threadAllocatedBytesBuilder_ == null) {
+            result.threadAllocatedBytes_ = threadAllocatedBytes_;
+          } else {
+            result.threadAllocatedBytes_ = threadAllocatedBytesBuilder_.build();
+          }
           if (gcActivityBuilder_ == null) {
             if (((bitField0_ & 0x00020000) == 0x00020000)) {
               gcActivity_ = java.util.Collections.unmodifiableList(gcActivity_);
@@ -1599,17 +1715,17 @@ public final class TraceOuterClass {
           if (other.hasRootTimer()) {
             mergeRootTimer(other.getRootTimer());
           }
-          if (other.getThreadCpuNanos() != 0L) {
-            setThreadCpuNanos(other.getThreadCpuNanos());
+          if (other.hasThreadCpuNanos()) {
+            mergeThreadCpuNanos(other.getThreadCpuNanos());
           }
-          if (other.getThreadBlockedNanos() != 0L) {
-            setThreadBlockedNanos(other.getThreadBlockedNanos());
+          if (other.hasThreadBlockedNanos()) {
+            mergeThreadBlockedNanos(other.getThreadBlockedNanos());
           }
-          if (other.getThreadWaitedNanos() != 0L) {
-            setThreadWaitedNanos(other.getThreadWaitedNanos());
+          if (other.hasThreadWaitedNanos()) {
+            mergeThreadWaitedNanos(other.getThreadWaitedNanos());
           }
-          if (other.getThreadAllocatedBytes() != 0L) {
-            setThreadAllocatedBytes(other.getThreadAllocatedBytes());
+          if (other.hasThreadAllocatedBytes()) {
+            mergeThreadAllocatedBytes(other.getThreadAllocatedBytes());
           }
           if (gcActivityBuilder_ == null) {
             if (!other.gcActivity_.isEmpty()) {
@@ -2796,156 +2912,472 @@ public final class TraceOuterClass {
           return rootTimerBuilder_;
         }
 
-        private long threadCpuNanos_ ;
+        private org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt threadCpuNanos_ = null;
+        private com.google.protobuf.SingleFieldBuilder<
+            org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder> threadCpuNanosBuilder_;
         /**
-         * <code>optional sint64 thread_cpu_nanos = 15;</code>
-         *
-         * <pre>
-         * -1 means N/A
-         * </pre>
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_cpu_nanos = 15;</code>
          */
-        public long getThreadCpuNanos() {
-          return threadCpuNanos_;
+        public boolean hasThreadCpuNanos() {
+          return threadCpuNanosBuilder_ != null || threadCpuNanos_ != null;
         }
         /**
-         * <code>optional sint64 thread_cpu_nanos = 15;</code>
-         *
-         * <pre>
-         * -1 means N/A
-         * </pre>
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_cpu_nanos = 15;</code>
          */
-        public Builder setThreadCpuNanos(long value) {
-          
-          threadCpuNanos_ = value;
-          onChanged();
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt getThreadCpuNanos() {
+          if (threadCpuNanosBuilder_ == null) {
+            return threadCpuNanos_ == null ? org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.getDefaultInstance() : threadCpuNanos_;
+          } else {
+            return threadCpuNanosBuilder_.getMessage();
+          }
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_cpu_nanos = 15;</code>
+         */
+        public Builder setThreadCpuNanos(org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt value) {
+          if (threadCpuNanosBuilder_ == null) {
+            if (value == null) {
+              throw new NullPointerException();
+            }
+            threadCpuNanos_ = value;
+            onChanged();
+          } else {
+            threadCpuNanosBuilder_.setMessage(value);
+          }
+
           return this;
         }
         /**
-         * <code>optional sint64 thread_cpu_nanos = 15;</code>
-         *
-         * <pre>
-         * -1 means N/A
-         * </pre>
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_cpu_nanos = 15;</code>
+         */
+        public Builder setThreadCpuNanos(
+            org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder builderForValue) {
+          if (threadCpuNanosBuilder_ == null) {
+            threadCpuNanos_ = builderForValue.build();
+            onChanged();
+          } else {
+            threadCpuNanosBuilder_.setMessage(builderForValue.build());
+          }
+
+          return this;
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_cpu_nanos = 15;</code>
+         */
+        public Builder mergeThreadCpuNanos(org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt value) {
+          if (threadCpuNanosBuilder_ == null) {
+            if (threadCpuNanos_ != null) {
+              threadCpuNanos_ =
+                org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.newBuilder(threadCpuNanos_).mergeFrom(value).buildPartial();
+            } else {
+              threadCpuNanos_ = value;
+            }
+            onChanged();
+          } else {
+            threadCpuNanosBuilder_.mergeFrom(value);
+          }
+
+          return this;
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_cpu_nanos = 15;</code>
          */
         public Builder clearThreadCpuNanos() {
-          
-          threadCpuNanos_ = 0L;
-          onChanged();
+          if (threadCpuNanosBuilder_ == null) {
+            threadCpuNanos_ = null;
+            onChanged();
+          } else {
+            threadCpuNanos_ = null;
+            threadCpuNanosBuilder_ = null;
+          }
+
           return this;
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_cpu_nanos = 15;</code>
+         */
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder getThreadCpuNanosBuilder() {
+          
+          onChanged();
+          return getThreadCpuNanosFieldBuilder().getBuilder();
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_cpu_nanos = 15;</code>
+         */
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder getThreadCpuNanosOrBuilder() {
+          if (threadCpuNanosBuilder_ != null) {
+            return threadCpuNanosBuilder_.getMessageOrBuilder();
+          } else {
+            return threadCpuNanos_ == null ?
+                org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.getDefaultInstance() : threadCpuNanos_;
+          }
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_cpu_nanos = 15;</code>
+         */
+        private com.google.protobuf.SingleFieldBuilder<
+            org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder> 
+            getThreadCpuNanosFieldBuilder() {
+          if (threadCpuNanosBuilder_ == null) {
+            threadCpuNanosBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+                org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder>(
+                    getThreadCpuNanos(),
+                    getParentForChildren(),
+                    isClean());
+            threadCpuNanos_ = null;
+          }
+          return threadCpuNanosBuilder_;
         }
 
-        private long threadBlockedNanos_ ;
+        private org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt threadBlockedNanos_ = null;
+        private com.google.protobuf.SingleFieldBuilder<
+            org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder> threadBlockedNanosBuilder_;
         /**
-         * <code>optional sint64 thread_blocked_nanos = 16;</code>
-         *
-         * <pre>
-         * -1 means N/A
-         * </pre>
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_blocked_nanos = 16;</code>
          */
-        public long getThreadBlockedNanos() {
-          return threadBlockedNanos_;
+        public boolean hasThreadBlockedNanos() {
+          return threadBlockedNanosBuilder_ != null || threadBlockedNanos_ != null;
         }
         /**
-         * <code>optional sint64 thread_blocked_nanos = 16;</code>
-         *
-         * <pre>
-         * -1 means N/A
-         * </pre>
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_blocked_nanos = 16;</code>
          */
-        public Builder setThreadBlockedNanos(long value) {
-          
-          threadBlockedNanos_ = value;
-          onChanged();
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt getThreadBlockedNanos() {
+          if (threadBlockedNanosBuilder_ == null) {
+            return threadBlockedNanos_ == null ? org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.getDefaultInstance() : threadBlockedNanos_;
+          } else {
+            return threadBlockedNanosBuilder_.getMessage();
+          }
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_blocked_nanos = 16;</code>
+         */
+        public Builder setThreadBlockedNanos(org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt value) {
+          if (threadBlockedNanosBuilder_ == null) {
+            if (value == null) {
+              throw new NullPointerException();
+            }
+            threadBlockedNanos_ = value;
+            onChanged();
+          } else {
+            threadBlockedNanosBuilder_.setMessage(value);
+          }
+
           return this;
         }
         /**
-         * <code>optional sint64 thread_blocked_nanos = 16;</code>
-         *
-         * <pre>
-         * -1 means N/A
-         * </pre>
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_blocked_nanos = 16;</code>
+         */
+        public Builder setThreadBlockedNanos(
+            org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder builderForValue) {
+          if (threadBlockedNanosBuilder_ == null) {
+            threadBlockedNanos_ = builderForValue.build();
+            onChanged();
+          } else {
+            threadBlockedNanosBuilder_.setMessage(builderForValue.build());
+          }
+
+          return this;
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_blocked_nanos = 16;</code>
+         */
+        public Builder mergeThreadBlockedNanos(org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt value) {
+          if (threadBlockedNanosBuilder_ == null) {
+            if (threadBlockedNanos_ != null) {
+              threadBlockedNanos_ =
+                org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.newBuilder(threadBlockedNanos_).mergeFrom(value).buildPartial();
+            } else {
+              threadBlockedNanos_ = value;
+            }
+            onChanged();
+          } else {
+            threadBlockedNanosBuilder_.mergeFrom(value);
+          }
+
+          return this;
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_blocked_nanos = 16;</code>
          */
         public Builder clearThreadBlockedNanos() {
-          
-          threadBlockedNanos_ = 0L;
-          onChanged();
+          if (threadBlockedNanosBuilder_ == null) {
+            threadBlockedNanos_ = null;
+            onChanged();
+          } else {
+            threadBlockedNanos_ = null;
+            threadBlockedNanosBuilder_ = null;
+          }
+
           return this;
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_blocked_nanos = 16;</code>
+         */
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder getThreadBlockedNanosBuilder() {
+          
+          onChanged();
+          return getThreadBlockedNanosFieldBuilder().getBuilder();
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_blocked_nanos = 16;</code>
+         */
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder getThreadBlockedNanosOrBuilder() {
+          if (threadBlockedNanosBuilder_ != null) {
+            return threadBlockedNanosBuilder_.getMessageOrBuilder();
+          } else {
+            return threadBlockedNanos_ == null ?
+                org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.getDefaultInstance() : threadBlockedNanos_;
+          }
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_blocked_nanos = 16;</code>
+         */
+        private com.google.protobuf.SingleFieldBuilder<
+            org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder> 
+            getThreadBlockedNanosFieldBuilder() {
+          if (threadBlockedNanosBuilder_ == null) {
+            threadBlockedNanosBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+                org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder>(
+                    getThreadBlockedNanos(),
+                    getParentForChildren(),
+                    isClean());
+            threadBlockedNanos_ = null;
+          }
+          return threadBlockedNanosBuilder_;
         }
 
-        private long threadWaitedNanos_ ;
+        private org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt threadWaitedNanos_ = null;
+        private com.google.protobuf.SingleFieldBuilder<
+            org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder> threadWaitedNanosBuilder_;
         /**
-         * <code>optional sint64 thread_waited_nanos = 17;</code>
-         *
-         * <pre>
-         * -1 means N/A
-         * </pre>
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_waited_nanos = 17;</code>
          */
-        public long getThreadWaitedNanos() {
-          return threadWaitedNanos_;
+        public boolean hasThreadWaitedNanos() {
+          return threadWaitedNanosBuilder_ != null || threadWaitedNanos_ != null;
         }
         /**
-         * <code>optional sint64 thread_waited_nanos = 17;</code>
-         *
-         * <pre>
-         * -1 means N/A
-         * </pre>
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_waited_nanos = 17;</code>
          */
-        public Builder setThreadWaitedNanos(long value) {
-          
-          threadWaitedNanos_ = value;
-          onChanged();
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt getThreadWaitedNanos() {
+          if (threadWaitedNanosBuilder_ == null) {
+            return threadWaitedNanos_ == null ? org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.getDefaultInstance() : threadWaitedNanos_;
+          } else {
+            return threadWaitedNanosBuilder_.getMessage();
+          }
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_waited_nanos = 17;</code>
+         */
+        public Builder setThreadWaitedNanos(org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt value) {
+          if (threadWaitedNanosBuilder_ == null) {
+            if (value == null) {
+              throw new NullPointerException();
+            }
+            threadWaitedNanos_ = value;
+            onChanged();
+          } else {
+            threadWaitedNanosBuilder_.setMessage(value);
+          }
+
           return this;
         }
         /**
-         * <code>optional sint64 thread_waited_nanos = 17;</code>
-         *
-         * <pre>
-         * -1 means N/A
-         * </pre>
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_waited_nanos = 17;</code>
+         */
+        public Builder setThreadWaitedNanos(
+            org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder builderForValue) {
+          if (threadWaitedNanosBuilder_ == null) {
+            threadWaitedNanos_ = builderForValue.build();
+            onChanged();
+          } else {
+            threadWaitedNanosBuilder_.setMessage(builderForValue.build());
+          }
+
+          return this;
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_waited_nanos = 17;</code>
+         */
+        public Builder mergeThreadWaitedNanos(org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt value) {
+          if (threadWaitedNanosBuilder_ == null) {
+            if (threadWaitedNanos_ != null) {
+              threadWaitedNanos_ =
+                org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.newBuilder(threadWaitedNanos_).mergeFrom(value).buildPartial();
+            } else {
+              threadWaitedNanos_ = value;
+            }
+            onChanged();
+          } else {
+            threadWaitedNanosBuilder_.mergeFrom(value);
+          }
+
+          return this;
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_waited_nanos = 17;</code>
          */
         public Builder clearThreadWaitedNanos() {
-          
-          threadWaitedNanos_ = 0L;
-          onChanged();
+          if (threadWaitedNanosBuilder_ == null) {
+            threadWaitedNanos_ = null;
+            onChanged();
+          } else {
+            threadWaitedNanos_ = null;
+            threadWaitedNanosBuilder_ = null;
+          }
+
           return this;
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_waited_nanos = 17;</code>
+         */
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder getThreadWaitedNanosBuilder() {
+          
+          onChanged();
+          return getThreadWaitedNanosFieldBuilder().getBuilder();
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_waited_nanos = 17;</code>
+         */
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder getThreadWaitedNanosOrBuilder() {
+          if (threadWaitedNanosBuilder_ != null) {
+            return threadWaitedNanosBuilder_.getMessageOrBuilder();
+          } else {
+            return threadWaitedNanos_ == null ?
+                org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.getDefaultInstance() : threadWaitedNanos_;
+          }
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_waited_nanos = 17;</code>
+         */
+        private com.google.protobuf.SingleFieldBuilder<
+            org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder> 
+            getThreadWaitedNanosFieldBuilder() {
+          if (threadWaitedNanosBuilder_ == null) {
+            threadWaitedNanosBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+                org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder>(
+                    getThreadWaitedNanos(),
+                    getParentForChildren(),
+                    isClean());
+            threadWaitedNanos_ = null;
+          }
+          return threadWaitedNanosBuilder_;
         }
 
-        private long threadAllocatedBytes_ ;
+        private org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt threadAllocatedBytes_ = null;
+        private com.google.protobuf.SingleFieldBuilder<
+            org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder> threadAllocatedBytesBuilder_;
         /**
-         * <code>optional sint64 thread_allocated_bytes = 18;</code>
-         *
-         * <pre>
-         * -1 means N/A
-         * </pre>
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_allocated_bytes = 18;</code>
          */
-        public long getThreadAllocatedBytes() {
-          return threadAllocatedBytes_;
+        public boolean hasThreadAllocatedBytes() {
+          return threadAllocatedBytesBuilder_ != null || threadAllocatedBytes_ != null;
         }
         /**
-         * <code>optional sint64 thread_allocated_bytes = 18;</code>
-         *
-         * <pre>
-         * -1 means N/A
-         * </pre>
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_allocated_bytes = 18;</code>
          */
-        public Builder setThreadAllocatedBytes(long value) {
-          
-          threadAllocatedBytes_ = value;
-          onChanged();
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt getThreadAllocatedBytes() {
+          if (threadAllocatedBytesBuilder_ == null) {
+            return threadAllocatedBytes_ == null ? org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.getDefaultInstance() : threadAllocatedBytes_;
+          } else {
+            return threadAllocatedBytesBuilder_.getMessage();
+          }
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_allocated_bytes = 18;</code>
+         */
+        public Builder setThreadAllocatedBytes(org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt value) {
+          if (threadAllocatedBytesBuilder_ == null) {
+            if (value == null) {
+              throw new NullPointerException();
+            }
+            threadAllocatedBytes_ = value;
+            onChanged();
+          } else {
+            threadAllocatedBytesBuilder_.setMessage(value);
+          }
+
           return this;
         }
         /**
-         * <code>optional sint64 thread_allocated_bytes = 18;</code>
-         *
-         * <pre>
-         * -1 means N/A
-         * </pre>
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_allocated_bytes = 18;</code>
+         */
+        public Builder setThreadAllocatedBytes(
+            org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder builderForValue) {
+          if (threadAllocatedBytesBuilder_ == null) {
+            threadAllocatedBytes_ = builderForValue.build();
+            onChanged();
+          } else {
+            threadAllocatedBytesBuilder_.setMessage(builderForValue.build());
+          }
+
+          return this;
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_allocated_bytes = 18;</code>
+         */
+        public Builder mergeThreadAllocatedBytes(org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt value) {
+          if (threadAllocatedBytesBuilder_ == null) {
+            if (threadAllocatedBytes_ != null) {
+              threadAllocatedBytes_ =
+                org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.newBuilder(threadAllocatedBytes_).mergeFrom(value).buildPartial();
+            } else {
+              threadAllocatedBytes_ = value;
+            }
+            onChanged();
+          } else {
+            threadAllocatedBytesBuilder_.mergeFrom(value);
+          }
+
+          return this;
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_allocated_bytes = 18;</code>
          */
         public Builder clearThreadAllocatedBytes() {
-          
-          threadAllocatedBytes_ = 0L;
-          onChanged();
+          if (threadAllocatedBytesBuilder_ == null) {
+            threadAllocatedBytes_ = null;
+            onChanged();
+          } else {
+            threadAllocatedBytes_ = null;
+            threadAllocatedBytesBuilder_ = null;
+          }
+
           return this;
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_allocated_bytes = 18;</code>
+         */
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder getThreadAllocatedBytesBuilder() {
+          
+          onChanged();
+          return getThreadAllocatedBytesFieldBuilder().getBuilder();
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_allocated_bytes = 18;</code>
+         */
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder getThreadAllocatedBytesOrBuilder() {
+          if (threadAllocatedBytesBuilder_ != null) {
+            return threadAllocatedBytesBuilder_.getMessageOrBuilder();
+          } else {
+            return threadAllocatedBytes_ == null ?
+                org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.getDefaultInstance() : threadAllocatedBytes_;
+          }
+        }
+        /**
+         * <code>optional .org_glowroot_wire_api_model.Trace.OptionalInt thread_allocated_bytes = 18;</code>
+         */
+        private com.google.protobuf.SingleFieldBuilder<
+            org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder> 
+            getThreadAllocatedBytesFieldBuilder() {
+          if (threadAllocatedBytesBuilder_ == null) {
+            threadAllocatedBytesBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+                org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder>(
+                    getThreadAllocatedBytes(),
+                    getParentForChildren(),
+                    isClean());
+            threadAllocatedBytes_ = null;
+          }
+          return threadAllocatedBytesBuilder_;
         }
 
         private java.util.List<org.glowroot.wire.api.model.TraceOuterClass.Trace.GarbageCollectionActivity> gcActivity_ =
@@ -6662,7 +7094,7 @@ public final class TraceOuterClass {
           getDisplayBytes();
 
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
        *
        * <pre>
        * for inner "cause" throwable, stack trace only includes frames not in common with the
@@ -6670,27 +7102,27 @@ public final class TraceOuterClass {
        * </pre>
        */
       java.util.List<org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement> 
-          getElementList();
+          getStackTraceElementList();
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
        *
        * <pre>
        * for inner "cause" throwable, stack trace only includes frames not in common with the
        * enclosing throwable
        * </pre>
        */
-      org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement getElement(int index);
+      org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement getStackTraceElement(int index);
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
        *
        * <pre>
        * for inner "cause" throwable, stack trace only includes frames not in common with the
        * enclosing throwable
        * </pre>
        */
-      int getElementCount();
+      int getStackTraceElementCount();
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
        *
        * <pre>
        * for inner "cause" throwable, stack trace only includes frames not in common with the
@@ -6698,16 +7130,16 @@ public final class TraceOuterClass {
        * </pre>
        */
       java.util.List<? extends org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElementOrBuilder> 
-          getElementOrBuilderList();
+          getStackTraceElementOrBuilderList();
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
        *
        * <pre>
        * for inner "cause" throwable, stack trace only includes frames not in common with the
        * enclosing throwable
        * </pre>
        */
-      org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElementOrBuilder getElementOrBuilder(
+      org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElementOrBuilder getStackTraceElementOrBuilder(
           int index);
 
       /**
@@ -6745,7 +7177,7 @@ public final class TraceOuterClass {
       }
       private Throwable() {
         display_ = "";
-        element_ = java.util.Collections.emptyList();
+        stackTraceElement_ = java.util.Collections.emptyList();
         framesInCommonWithEnclosing_ = 0;
       }
 
@@ -6781,10 +7213,10 @@ public final class TraceOuterClass {
               }
               case 18: {
                 if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
-                  element_ = new java.util.ArrayList<org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement>();
+                  stackTraceElement_ = new java.util.ArrayList<org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement>();
                   mutable_bitField0_ |= 0x00000002;
                 }
-                element_.add(input.readMessage(org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.parser(), extensionRegistry));
+                stackTraceElement_.add(input.readMessage(org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.parser(), extensionRegistry));
                 break;
               }
               case 24: {
@@ -6815,7 +7247,7 @@ public final class TraceOuterClass {
                   e.getMessage()).setUnfinishedMessage(this));
         } finally {
           if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
-            element_ = java.util.Collections.unmodifiableList(element_);
+            stackTraceElement_ = java.util.Collections.unmodifiableList(stackTraceElement_);
           }
           makeExtensionsImmutable();
         }
@@ -6877,21 +7309,21 @@ public final class TraceOuterClass {
         }
       }
 
-      public static final int ELEMENT_FIELD_NUMBER = 2;
-      private java.util.List<org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement> element_;
+      public static final int STACK_TRACE_ELEMENT_FIELD_NUMBER = 2;
+      private java.util.List<org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement> stackTraceElement_;
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
        *
        * <pre>
        * for inner "cause" throwable, stack trace only includes frames not in common with the
        * enclosing throwable
        * </pre>
        */
-      public java.util.List<org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement> getElementList() {
-        return element_;
+      public java.util.List<org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement> getStackTraceElementList() {
+        return stackTraceElement_;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
        *
        * <pre>
        * for inner "cause" throwable, stack trace only includes frames not in common with the
@@ -6899,42 +7331,42 @@ public final class TraceOuterClass {
        * </pre>
        */
       public java.util.List<? extends org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElementOrBuilder> 
-          getElementOrBuilderList() {
-        return element_;
+          getStackTraceElementOrBuilderList() {
+        return stackTraceElement_;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
        *
        * <pre>
        * for inner "cause" throwable, stack trace only includes frames not in common with the
        * enclosing throwable
        * </pre>
        */
-      public int getElementCount() {
-        return element_.size();
+      public int getStackTraceElementCount() {
+        return stackTraceElement_.size();
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
        *
        * <pre>
        * for inner "cause" throwable, stack trace only includes frames not in common with the
        * enclosing throwable
        * </pre>
        */
-      public org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement getElement(int index) {
-        return element_.get(index);
+      public org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement getStackTraceElement(int index) {
+        return stackTraceElement_.get(index);
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
        *
        * <pre>
        * for inner "cause" throwable, stack trace only includes frames not in common with the
        * enclosing throwable
        * </pre>
        */
-      public org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElementOrBuilder getElementOrBuilder(
+      public org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElementOrBuilder getStackTraceElementOrBuilder(
           int index) {
-        return element_.get(index);
+        return stackTraceElement_.get(index);
       }
 
       public static final int FRAMES_IN_COMMON_WITH_ENCLOSING_FIELD_NUMBER = 3;
@@ -6986,8 +7418,8 @@ public final class TraceOuterClass {
         if (!getDisplayBytes().isEmpty()) {
           com.google.protobuf.GeneratedMessage.writeString(output, 1, display_);
         }
-        for (int i = 0; i < element_.size(); i++) {
-          output.writeMessage(2, element_.get(i));
+        for (int i = 0; i < stackTraceElement_.size(); i++) {
+          output.writeMessage(2, stackTraceElement_.get(i));
         }
         if (framesInCommonWithEnclosing_ != 0) {
           output.writeInt32(3, framesInCommonWithEnclosing_);
@@ -7005,9 +7437,9 @@ public final class TraceOuterClass {
         if (!getDisplayBytes().isEmpty()) {
           size += com.google.protobuf.GeneratedMessage.computeStringSize(1, display_);
         }
-        for (int i = 0; i < element_.size(); i++) {
+        for (int i = 0; i < stackTraceElement_.size(); i++) {
           size += com.google.protobuf.CodedOutputStream
-            .computeMessageSize(2, element_.get(i));
+            .computeMessageSize(2, stackTraceElement_.get(i));
         }
         if (framesInCommonWithEnclosing_ != 0) {
           size += com.google.protobuf.CodedOutputStream
@@ -7124,18 +7556,18 @@ public final class TraceOuterClass {
         }
         private void maybeForceBuilderInitialization() {
           if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-            getElementFieldBuilder();
+            getStackTraceElementFieldBuilder();
           }
         }
         public Builder clear() {
           super.clear();
           display_ = "";
 
-          if (elementBuilder_ == null) {
-            element_ = java.util.Collections.emptyList();
+          if (stackTraceElementBuilder_ == null) {
+            stackTraceElement_ = java.util.Collections.emptyList();
             bitField0_ = (bitField0_ & ~0x00000002);
           } else {
-            elementBuilder_.clear();
+            stackTraceElementBuilder_.clear();
           }
           framesInCommonWithEnclosing_ = 0;
 
@@ -7170,14 +7602,14 @@ public final class TraceOuterClass {
           int from_bitField0_ = bitField0_;
           int to_bitField0_ = 0;
           result.display_ = display_;
-          if (elementBuilder_ == null) {
+          if (stackTraceElementBuilder_ == null) {
             if (((bitField0_ & 0x00000002) == 0x00000002)) {
-              element_ = java.util.Collections.unmodifiableList(element_);
+              stackTraceElement_ = java.util.Collections.unmodifiableList(stackTraceElement_);
               bitField0_ = (bitField0_ & ~0x00000002);
             }
-            result.element_ = element_;
+            result.stackTraceElement_ = stackTraceElement_;
           } else {
-            result.element_ = elementBuilder_.build();
+            result.stackTraceElement_ = stackTraceElementBuilder_.build();
           }
           result.framesInCommonWithEnclosing_ = framesInCommonWithEnclosing_;
           if (causeBuilder_ == null) {
@@ -7205,29 +7637,29 @@ public final class TraceOuterClass {
             display_ = other.display_;
             onChanged();
           }
-          if (elementBuilder_ == null) {
-            if (!other.element_.isEmpty()) {
-              if (element_.isEmpty()) {
-                element_ = other.element_;
+          if (stackTraceElementBuilder_ == null) {
+            if (!other.stackTraceElement_.isEmpty()) {
+              if (stackTraceElement_.isEmpty()) {
+                stackTraceElement_ = other.stackTraceElement_;
                 bitField0_ = (bitField0_ & ~0x00000002);
               } else {
-                ensureElementIsMutable();
-                element_.addAll(other.element_);
+                ensureStackTraceElementIsMutable();
+                stackTraceElement_.addAll(other.stackTraceElement_);
               }
               onChanged();
             }
           } else {
-            if (!other.element_.isEmpty()) {
-              if (elementBuilder_.isEmpty()) {
-                elementBuilder_.dispose();
-                elementBuilder_ = null;
-                element_ = other.element_;
+            if (!other.stackTraceElement_.isEmpty()) {
+              if (stackTraceElementBuilder_.isEmpty()) {
+                stackTraceElementBuilder_.dispose();
+                stackTraceElementBuilder_ = null;
+                stackTraceElement_ = other.stackTraceElement_;
                 bitField0_ = (bitField0_ & ~0x00000002);
-                elementBuilder_ = 
+                stackTraceElementBuilder_ = 
                   com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
-                     getElementFieldBuilder() : null;
+                     getStackTraceElementFieldBuilder() : null;
               } else {
-                elementBuilder_.addAllMessages(other.element_);
+                stackTraceElementBuilder_.addAllMessages(other.stackTraceElement_);
               }
             }
           }
@@ -7358,270 +7790,270 @@ public final class TraceOuterClass {
           return this;
         }
 
-        private java.util.List<org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement> element_ =
+        private java.util.List<org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement> stackTraceElement_ =
           java.util.Collections.emptyList();
-        private void ensureElementIsMutable() {
+        private void ensureStackTraceElementIsMutable() {
           if (!((bitField0_ & 0x00000002) == 0x00000002)) {
-            element_ = new java.util.ArrayList<org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement>(element_);
+            stackTraceElement_ = new java.util.ArrayList<org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement>(stackTraceElement_);
             bitField0_ |= 0x00000002;
            }
         }
 
         private com.google.protobuf.RepeatedFieldBuilder<
-            org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement, org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElementOrBuilder> elementBuilder_;
+            org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement, org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElementOrBuilder> stackTraceElementBuilder_;
 
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
          * enclosing throwable
          * </pre>
          */
-        public java.util.List<org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement> getElementList() {
-          if (elementBuilder_ == null) {
-            return java.util.Collections.unmodifiableList(element_);
+        public java.util.List<org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement> getStackTraceElementList() {
+          if (stackTraceElementBuilder_ == null) {
+            return java.util.Collections.unmodifiableList(stackTraceElement_);
           } else {
-            return elementBuilder_.getMessageList();
+            return stackTraceElementBuilder_.getMessageList();
           }
         }
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
          * enclosing throwable
          * </pre>
          */
-        public int getElementCount() {
-          if (elementBuilder_ == null) {
-            return element_.size();
+        public int getStackTraceElementCount() {
+          if (stackTraceElementBuilder_ == null) {
+            return stackTraceElement_.size();
           } else {
-            return elementBuilder_.getCount();
+            return stackTraceElementBuilder_.getCount();
           }
         }
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
          * enclosing throwable
          * </pre>
          */
-        public org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement getElement(int index) {
-          if (elementBuilder_ == null) {
-            return element_.get(index);
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement getStackTraceElement(int index) {
+          if (stackTraceElementBuilder_ == null) {
+            return stackTraceElement_.get(index);
           } else {
-            return elementBuilder_.getMessage(index);
+            return stackTraceElementBuilder_.getMessage(index);
           }
         }
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
          * enclosing throwable
          * </pre>
          */
-        public Builder setElement(
+        public Builder setStackTraceElement(
             int index, org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement value) {
-          if (elementBuilder_ == null) {
+          if (stackTraceElementBuilder_ == null) {
             if (value == null) {
               throw new NullPointerException();
             }
-            ensureElementIsMutable();
-            element_.set(index, value);
+            ensureStackTraceElementIsMutable();
+            stackTraceElement_.set(index, value);
             onChanged();
           } else {
-            elementBuilder_.setMessage(index, value);
+            stackTraceElementBuilder_.setMessage(index, value);
           }
           return this;
         }
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
          * enclosing throwable
          * </pre>
          */
-        public Builder setElement(
+        public Builder setStackTraceElement(
             int index, org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.Builder builderForValue) {
-          if (elementBuilder_ == null) {
-            ensureElementIsMutable();
-            element_.set(index, builderForValue.build());
+          if (stackTraceElementBuilder_ == null) {
+            ensureStackTraceElementIsMutable();
+            stackTraceElement_.set(index, builderForValue.build());
             onChanged();
           } else {
-            elementBuilder_.setMessage(index, builderForValue.build());
+            stackTraceElementBuilder_.setMessage(index, builderForValue.build());
           }
           return this;
         }
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
          * enclosing throwable
          * </pre>
          */
-        public Builder addElement(org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement value) {
-          if (elementBuilder_ == null) {
+        public Builder addStackTraceElement(org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement value) {
+          if (stackTraceElementBuilder_ == null) {
             if (value == null) {
               throw new NullPointerException();
             }
-            ensureElementIsMutable();
-            element_.add(value);
+            ensureStackTraceElementIsMutable();
+            stackTraceElement_.add(value);
             onChanged();
           } else {
-            elementBuilder_.addMessage(value);
+            stackTraceElementBuilder_.addMessage(value);
           }
           return this;
         }
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
          * enclosing throwable
          * </pre>
          */
-        public Builder addElement(
+        public Builder addStackTraceElement(
             int index, org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement value) {
-          if (elementBuilder_ == null) {
+          if (stackTraceElementBuilder_ == null) {
             if (value == null) {
               throw new NullPointerException();
             }
-            ensureElementIsMutable();
-            element_.add(index, value);
+            ensureStackTraceElementIsMutable();
+            stackTraceElement_.add(index, value);
             onChanged();
           } else {
-            elementBuilder_.addMessage(index, value);
+            stackTraceElementBuilder_.addMessage(index, value);
           }
           return this;
         }
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
          * enclosing throwable
          * </pre>
          */
-        public Builder addElement(
+        public Builder addStackTraceElement(
             org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.Builder builderForValue) {
-          if (elementBuilder_ == null) {
-            ensureElementIsMutable();
-            element_.add(builderForValue.build());
+          if (stackTraceElementBuilder_ == null) {
+            ensureStackTraceElementIsMutable();
+            stackTraceElement_.add(builderForValue.build());
             onChanged();
           } else {
-            elementBuilder_.addMessage(builderForValue.build());
+            stackTraceElementBuilder_.addMessage(builderForValue.build());
           }
           return this;
         }
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
          * enclosing throwable
          * </pre>
          */
-        public Builder addElement(
+        public Builder addStackTraceElement(
             int index, org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.Builder builderForValue) {
-          if (elementBuilder_ == null) {
-            ensureElementIsMutable();
-            element_.add(index, builderForValue.build());
+          if (stackTraceElementBuilder_ == null) {
+            ensureStackTraceElementIsMutable();
+            stackTraceElement_.add(index, builderForValue.build());
             onChanged();
           } else {
-            elementBuilder_.addMessage(index, builderForValue.build());
+            stackTraceElementBuilder_.addMessage(index, builderForValue.build());
           }
           return this;
         }
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
          * enclosing throwable
          * </pre>
          */
-        public Builder addAllElement(
+        public Builder addAllStackTraceElement(
             java.lang.Iterable<? extends org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement> values) {
-          if (elementBuilder_ == null) {
-            ensureElementIsMutable();
+          if (stackTraceElementBuilder_ == null) {
+            ensureStackTraceElementIsMutable();
             com.google.protobuf.AbstractMessageLite.Builder.addAll(
-                values, element_);
+                values, stackTraceElement_);
             onChanged();
           } else {
-            elementBuilder_.addAllMessages(values);
+            stackTraceElementBuilder_.addAllMessages(values);
           }
           return this;
         }
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
          * enclosing throwable
          * </pre>
          */
-        public Builder clearElement() {
-          if (elementBuilder_ == null) {
-            element_ = java.util.Collections.emptyList();
+        public Builder clearStackTraceElement() {
+          if (stackTraceElementBuilder_ == null) {
+            stackTraceElement_ = java.util.Collections.emptyList();
             bitField0_ = (bitField0_ & ~0x00000002);
             onChanged();
           } else {
-            elementBuilder_.clear();
+            stackTraceElementBuilder_.clear();
           }
           return this;
         }
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
          * enclosing throwable
          * </pre>
          */
-        public Builder removeElement(int index) {
-          if (elementBuilder_ == null) {
-            ensureElementIsMutable();
-            element_.remove(index);
+        public Builder removeStackTraceElement(int index) {
+          if (stackTraceElementBuilder_ == null) {
+            ensureStackTraceElementIsMutable();
+            stackTraceElement_.remove(index);
             onChanged();
           } else {
-            elementBuilder_.remove(index);
+            stackTraceElementBuilder_.remove(index);
           }
           return this;
         }
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
          * enclosing throwable
          * </pre>
          */
-        public org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.Builder getElementBuilder(
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.Builder getStackTraceElementBuilder(
             int index) {
-          return getElementFieldBuilder().getBuilder(index);
+          return getStackTraceElementFieldBuilder().getBuilder(index);
         }
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
          * enclosing throwable
          * </pre>
          */
-        public org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElementOrBuilder getElementOrBuilder(
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElementOrBuilder getStackTraceElementOrBuilder(
             int index) {
-          if (elementBuilder_ == null) {
-            return element_.get(index);  } else {
-            return elementBuilder_.getMessageOrBuilder(index);
+          if (stackTraceElementBuilder_ == null) {
+            return stackTraceElement_.get(index);  } else {
+            return stackTraceElementBuilder_.getMessageOrBuilder(index);
           }
         }
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
@@ -7629,40 +8061,40 @@ public final class TraceOuterClass {
          * </pre>
          */
         public java.util.List<? extends org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElementOrBuilder> 
-             getElementOrBuilderList() {
-          if (elementBuilder_ != null) {
-            return elementBuilder_.getMessageOrBuilderList();
+             getStackTraceElementOrBuilderList() {
+          if (stackTraceElementBuilder_ != null) {
+            return stackTraceElementBuilder_.getMessageOrBuilderList();
           } else {
-            return java.util.Collections.unmodifiableList(element_);
+            return java.util.Collections.unmodifiableList(stackTraceElement_);
           }
         }
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
          * enclosing throwable
          * </pre>
          */
-        public org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.Builder addElementBuilder() {
-          return getElementFieldBuilder().addBuilder(
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.Builder addStackTraceElementBuilder() {
+          return getStackTraceElementFieldBuilder().addBuilder(
               org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.getDefaultInstance());
         }
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
          * enclosing throwable
          * </pre>
          */
-        public org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.Builder addElementBuilder(
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.Builder addStackTraceElementBuilder(
             int index) {
-          return getElementFieldBuilder().addBuilder(
+          return getStackTraceElementFieldBuilder().addBuilder(
               index, org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.getDefaultInstance());
         }
         /**
-         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement element = 2;</code>
+         * <code>repeated .org_glowroot_wire_api_model.Trace.StackTraceElement stack_trace_element = 2;</code>
          *
          * <pre>
          * for inner "cause" throwable, stack trace only includes frames not in common with the
@@ -7670,22 +8102,22 @@ public final class TraceOuterClass {
          * </pre>
          */
         public java.util.List<org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.Builder> 
-             getElementBuilderList() {
-          return getElementFieldBuilder().getBuilderList();
+             getStackTraceElementBuilderList() {
+          return getStackTraceElementFieldBuilder().getBuilderList();
         }
         private com.google.protobuf.RepeatedFieldBuilder<
             org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement, org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElementOrBuilder> 
-            getElementFieldBuilder() {
-          if (elementBuilder_ == null) {
-            elementBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+            getStackTraceElementFieldBuilder() {
+          if (stackTraceElementBuilder_ == null) {
+            stackTraceElementBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
                 org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement, org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElement.Builder, org.glowroot.wire.api.model.TraceOuterClass.Trace.StackTraceElementOrBuilder>(
-                    element_,
+                    stackTraceElement_,
                     ((bitField0_ & 0x00000002) == 0x00000002),
                     getParentForChildren(),
                     isClean());
-            element_ = null;
+            stackTraceElement_ = null;
           }
-          return elementBuilder_;
+          return stackTraceElementBuilder_;
         }
 
         private int framesInCommonWithEnclosing_ ;
@@ -8965,6 +9397,381 @@ public final class TraceOuterClass {
       }
 
       public org.glowroot.wire.api.model.TraceOuterClass.Trace.Timer getDefaultInstanceForType() {
+        return DEFAULT_INSTANCE;
+      }
+
+    }
+
+    public interface OptionalIntOrBuilder extends
+        // @@protoc_insertion_point(interface_extends:org_glowroot_wire_api_model.Trace.OptionalInt)
+        com.google.protobuf.MessageOrBuilder {
+
+      /**
+       * <code>optional int64 value = 1;</code>
+       */
+      long getValue();
+    }
+    /**
+     * Protobuf type {@code org_glowroot_wire_api_model.Trace.OptionalInt}
+     */
+    public  static final class OptionalInt extends
+        com.google.protobuf.GeneratedMessage implements
+        // @@protoc_insertion_point(message_implements:org_glowroot_wire_api_model.Trace.OptionalInt)
+        OptionalIntOrBuilder {
+      // Use OptionalInt.newBuilder() to construct.
+      private OptionalInt(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+        super(builder);
+      }
+      private OptionalInt() {
+        value_ = 0L;
+      }
+
+      @java.lang.Override
+      public final com.google.protobuf.UnknownFieldSet
+      getUnknownFields() {
+        return com.google.protobuf.UnknownFieldSet.getDefaultInstance();
+      }
+      private OptionalInt(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry) {
+        this();
+        int mutable_bitField0_ = 0;
+        try {
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              default: {
+                if (!input.skipField(tag)) {
+                  done = true;
+                }
+                break;
+              }
+              case 8: {
+
+                value_ = input.readInt64();
+                break;
+              }
+            }
+          }
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw new RuntimeException(e.setUnfinishedMessage(this));
+        } catch (java.io.IOException e) {
+          throw new RuntimeException(
+              new com.google.protobuf.InvalidProtocolBufferException(
+                  e.getMessage()).setUnfinishedMessage(this));
+        } finally {
+          makeExtensionsImmutable();
+        }
+      }
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.glowroot.wire.api.model.TraceOuterClass.internal_static_org_glowroot_wire_api_model_Trace_OptionalInt_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.glowroot.wire.api.model.TraceOuterClass.internal_static_org_glowroot_wire_api_model_Trace_OptionalInt_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.class, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder.class);
+      }
+
+      public static final int VALUE_FIELD_NUMBER = 1;
+      private long value_;
+      /**
+       * <code>optional int64 value = 1;</code>
+       */
+      public long getValue() {
+        return value_;
+      }
+
+      private byte memoizedIsInitialized = -1;
+      public final boolean isInitialized() {
+        byte isInitialized = memoizedIsInitialized;
+        if (isInitialized == 1) return true;
+        if (isInitialized == 0) return false;
+
+        memoizedIsInitialized = 1;
+        return true;
+      }
+
+      public void writeTo(com.google.protobuf.CodedOutputStream output)
+                          throws java.io.IOException {
+        if (value_ != 0L) {
+          output.writeInt64(1, value_);
+        }
+      }
+
+      public int getSerializedSize() {
+        int size = memoizedSize;
+        if (size != -1) return size;
+
+        size = 0;
+        if (value_ != 0L) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeInt64Size(1, value_);
+        }
+        memoizedSize = size;
+        return size;
+      }
+
+      private static final long serialVersionUID = 0L;
+      public static org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt parseFrom(
+          com.google.protobuf.ByteString data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt parseFrom(
+          com.google.protobuf.ByteString data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt parseFrom(byte[] data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt parseFrom(
+          byte[] data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt parseFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt parseFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+      public static org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt parseDelimitedFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input);
+      }
+      public static org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt parseDelimitedFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      }
+      public static org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt parseFrom(
+          com.google.protobuf.CodedInputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt parseFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+
+      public Builder newBuilderForType() { return newBuilder(); }
+      public static Builder newBuilder() {
+        return DEFAULT_INSTANCE.toBuilder();
+      }
+      public static Builder newBuilder(org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt prototype) {
+        return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+      }
+      public Builder toBuilder() {
+        return this == DEFAULT_INSTANCE
+            ? new Builder() : new Builder().mergeFrom(this);
+      }
+
+      @java.lang.Override
+      protected Builder newBuilderForType(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        Builder builder = new Builder(parent);
+        return builder;
+      }
+      /**
+       * Protobuf type {@code org_glowroot_wire_api_model.Trace.OptionalInt}
+       */
+      public static final class Builder extends
+          com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+          // @@protoc_insertion_point(builder_implements:org_glowroot_wire_api_model.Trace.OptionalInt)
+          org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalIntOrBuilder {
+        public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+          return org.glowroot.wire.api.model.TraceOuterClass.internal_static_org_glowroot_wire_api_model_Trace_OptionalInt_descriptor;
+        }
+
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+          return org.glowroot.wire.api.model.TraceOuterClass.internal_static_org_glowroot_wire_api_model_Trace_OptionalInt_fieldAccessorTable
+              .ensureFieldAccessorsInitialized(
+                  org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.class, org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.Builder.class);
+        }
+
+        // Construct using org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.newBuilder()
+        private Builder() {
+          maybeForceBuilderInitialization();
+        }
+
+        private Builder(
+            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          super(parent);
+          maybeForceBuilderInitialization();
+        }
+        private void maybeForceBuilderInitialization() {
+          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          }
+        }
+        public Builder clear() {
+          super.clear();
+          value_ = 0L;
+
+          return this;
+        }
+
+        public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+          return org.glowroot.wire.api.model.TraceOuterClass.internal_static_org_glowroot_wire_api_model_Trace_OptionalInt_descriptor;
+        }
+
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt getDefaultInstanceForType() {
+          return org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.getDefaultInstance();
+        }
+
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt build() {
+          org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt result = buildPartial();
+          if (!result.isInitialized()) {
+            throw newUninitializedMessageException(result);
+          }
+          return result;
+        }
+
+        public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt buildPartial() {
+          org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt result = new org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt(this);
+          result.value_ = value_;
+          onBuilt();
+          return result;
+        }
+
+        public Builder mergeFrom(com.google.protobuf.Message other) {
+          if (other instanceof org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt) {
+            return mergeFrom((org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt)other);
+          } else {
+            super.mergeFrom(other);
+            return this;
+          }
+        }
+
+        public Builder mergeFrom(org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt other) {
+          if (other == org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt.getDefaultInstance()) return this;
+          if (other.getValue() != 0L) {
+            setValue(other.getValue());
+          }
+          onChanged();
+          return this;
+        }
+
+        public final boolean isInitialized() {
+          return true;
+        }
+
+        public Builder mergeFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+          org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt parsedMessage = null;
+          try {
+            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            parsedMessage = (org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt) e.getUnfinishedMessage();
+            throw e;
+          } finally {
+            if (parsedMessage != null) {
+              mergeFrom(parsedMessage);
+            }
+          }
+          return this;
+        }
+
+        private long value_ ;
+        /**
+         * <code>optional int64 value = 1;</code>
+         */
+        public long getValue() {
+          return value_;
+        }
+        /**
+         * <code>optional int64 value = 1;</code>
+         */
+        public Builder setValue(long value) {
+          
+          value_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>optional int64 value = 1;</code>
+         */
+        public Builder clearValue() {
+          
+          value_ = 0L;
+          onChanged();
+          return this;
+        }
+        public final Builder setUnknownFields(
+            final com.google.protobuf.UnknownFieldSet unknownFields) {
+          return this;
+        }
+
+        public final Builder mergeUnknownFields(
+            final com.google.protobuf.UnknownFieldSet unknownFields) {
+          return this;
+        }
+
+
+        // @@protoc_insertion_point(builder_scope:org_glowroot_wire_api_model.Trace.OptionalInt)
+      }
+
+      // @@protoc_insertion_point(class_scope:org_glowroot_wire_api_model.Trace.OptionalInt)
+      private static final org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt DEFAULT_INSTANCE;
+      static {
+        DEFAULT_INSTANCE = new org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt();
+      }
+
+      public static org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt getDefaultInstance() {
+        return DEFAULT_INSTANCE;
+      }
+
+      private static final com.google.protobuf.Parser<OptionalInt>
+          PARSER = new com.google.protobuf.AbstractParser<OptionalInt>() {
+        public OptionalInt parsePartialFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws com.google.protobuf.InvalidProtocolBufferException {
+          try {
+            return new OptionalInt(input, extensionRegistry);
+          } catch (RuntimeException e) {
+            if (e.getCause() instanceof
+                com.google.protobuf.InvalidProtocolBufferException) {
+              throw (com.google.protobuf.InvalidProtocolBufferException)
+                  e.getCause();
+            }
+            throw e;
+          }
+        }
+      };
+
+      public static com.google.protobuf.Parser<OptionalInt> parser() {
+        return PARSER;
+      }
+
+      @java.lang.Override
+      public com.google.protobuf.Parser<OptionalInt> getParserForType() {
+        return PARSER;
+      }
+
+      public org.glowroot.wire.api.model.TraceOuterClass.Trace.OptionalInt getDefaultInstanceForType() {
         return DEFAULT_INSTANCE;
       }
 
@@ -12308,6 +13115,10 @@ public final class TraceOuterClass {
     private volatile java.lang.Object id_;
     /**
      * <code>optional string id = 1;</code>
+     *
+     * <pre>
+     * this is a uuid
+     * </pre>
      */
     public java.lang.String getId() {
       java.lang.Object ref = id_;
@@ -12323,6 +13134,10 @@ public final class TraceOuterClass {
     }
     /**
      * <code>optional string id = 1;</code>
+     *
+     * <pre>
+     * this is a uuid
+     * </pre>
      */
     public com.google.protobuf.ByteString
         getIdBytes() {
@@ -12739,6 +13554,10 @@ public final class TraceOuterClass {
       private java.lang.Object id_ = "";
       /**
        * <code>optional string id = 1;</code>
+       *
+       * <pre>
+       * this is a uuid
+       * </pre>
        */
       public java.lang.String getId() {
         java.lang.Object ref = id_;
@@ -12754,6 +13573,10 @@ public final class TraceOuterClass {
       }
       /**
        * <code>optional string id = 1;</code>
+       *
+       * <pre>
+       * this is a uuid
+       * </pre>
        */
       public com.google.protobuf.ByteString
           getIdBytes() {
@@ -12770,6 +13593,10 @@ public final class TraceOuterClass {
       }
       /**
        * <code>optional string id = 1;</code>
+       *
+       * <pre>
+       * this is a uuid
+       * </pre>
        */
       public Builder setId(
           java.lang.String value) {
@@ -12783,6 +13610,10 @@ public final class TraceOuterClass {
       }
       /**
        * <code>optional string id = 1;</code>
+       *
+       * <pre>
+       * this is a uuid
+       * </pre>
        */
       public Builder clearId() {
         
@@ -12792,6 +13623,10 @@ public final class TraceOuterClass {
       }
       /**
        * <code>optional string id = 1;</code>
+       *
+       * <pre>
+       * this is a uuid
+       * </pre>
        */
       public Builder setIdBytes(
           com.google.protobuf.ByteString value) {
@@ -13449,6 +14284,11 @@ public final class TraceOuterClass {
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_org_glowroot_wire_api_model_Trace_Timer_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_org_glowroot_wire_api_model_Trace_OptionalInt_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_org_glowroot_wire_api_model_Trace_OptionalInt_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_org_glowroot_wire_api_model_Trace_GarbageCollectionActivity_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
@@ -13473,12 +14313,12 @@ public final class TraceOuterClass {
   static {
     java.lang.String[] descriptorData = {
       "\n\013Trace.proto\022\033org_glowroot_wire_api_mod" +
-      "el\032\021ProfileTree.proto\"\344\021\n\005Trace\022\n\n\002id\030\001 " +
+      "el\032\021ProfileTree.proto\"\316\023\n\005Trace\022\n\n\002id\030\001 " +
       "\001(\t\0229\n\006header\030\002 \001(\0132).org_glowroot_wire_" +
       "api_model.Trace.Header\0227\n\005entry\030\003 \003(\0132(." +
       "org_glowroot_wire_api_model.Trace.Entry\022" +
       ">\n\014profile_tree\030\004 \001(\0132(.org_glowroot_wir" +
-      "e_api_model.ProfileTree\032\373\005\n\006Header\022\017\n\007pa" +
+      "e_api_model.ProfileTree\032\273\007\n\006Header\022\017\n\007pa" +
       "rtial\030\002 \001(\010\022\014\n\004slow\030\003 \001(\010\022\022\n\nstart_time\030" +
       "\004 \001(\003\022\024\n\014capture_time\030\005 \001(\003\022\026\n\016duration_" +
       "nanos\030\006 \001(\003\022\030\n\020transaction_type\030\007 \001(\t\022\030\n",
@@ -13489,49 +14329,55 @@ public final class TraceOuterClass {
       "re_api_model.Trace.DetailEntry\0227\n\005error\030" +
       "\r \001(\0132(.org_glowroot_wire_api_model.Trac" +
       "e.Error\022<\n\nroot_timer\030\016 \001(\0132(.org_glowro" +
-      "ot_wire_api_model.Trace.Timer\022\030\n\020thread_" +
-      "cpu_nanos\030\017 \001(\022\022\034\n\024thread_blocked_nanos\030" +
-      "\020 \001(\022\022\033\n\023thread_waited_nanos\030\021 \001(\022\022\036\n\026th",
-      "read_allocated_bytes\030\022 \001(\022\022Q\n\013gc_activit" +
-      "y\030\023 \003(\0132<.org_glowroot_wire_api_model.Tr" +
-      "ace.GarbageCollectionActivity\022\023\n\013entry_c" +
-      "ount\030\024 \001(\005\022\034\n\024entry_limit_exceeded\030\025 \001(\010" +
-      "\022\034\n\024profile_sample_count\030\026 \001(\003\022%\n\035profil" +
-      "e_sample_limit_exceeded\030\027 \001(\010\032(\n\tAttribu" +
-      "te\022\014\n\004name\030\001 \001(\t\022\r\n\005value\030\002 \003(\t\032\237\001\n\013Deta" +
-      "ilEntry\022\014\n\004name\030\001 \001(\t\022=\n\005value\030\002 \003(\0132..o" +
-      "rg_glowroot_wire_api_model.Trace.DetailV" +
-      "alue\022C\n\013child_entry\030\003 \003(\0132..org_glowroot",
-      "_wire_api_model.Trace.DetailEntry\032T\n\013Det" +
-      "ailValue\022\016\n\004sval\030\001 \001(\tH\000\022\016\n\004dval\030\002 \001(\001H\000" +
-      "\022\016\n\004lval\030\003 \001(\003H\000\022\016\n\004bval\030\004 \001(\010H\000B\005\n\003val\032" +
-      "Y\n\005Error\022\017\n\007message\030\001 \001(\t\022?\n\texception\030\002" +
-      " \001(\0132,.org_glowroot_wire_api_model.Trace" +
-      ".Throwable\032\311\001\n\tThrowable\022\017\n\007display\030\001 \001(" +
-      "\t\022E\n\007element\030\002 \003(\01324.org_glowroot_wire_a" +
-      "pi_model.Trace.StackTraceElement\022\'\n\037fram" +
-      "es_in_common_with_enclosing\030\003 \001(\005\022;\n\005cau" +
-      "se\030\004 \001(\0132,.org_glowroot_wire_api_model.T",
-      "race.Throwable\032\232\001\n\005Timer\022\014\n\004name\030\001 \001(\t\022\020" +
-      "\n\010extended\030\002 \001(\010\022\023\n\013total_nanos\030\003 \001(\003\022\r\n" +
-      "\005count\030\004 \001(\003\022\016\n\006active\030\005 \001(\010\022=\n\013child_ti" +
-      "mer\030\006 \003(\0132(.org_glowroot_wire_api_model." +
-      "Trace.Timer\032X\n\031GarbageCollectionActivity" +
-      "\022\026\n\016collector_name\030\001 \001(\t\022\024\n\014total_millis" +
-      "\030\002 \001(\003\022\r\n\005count\030\003 \001(\003\032\366\002\n\005Entry\022\032\n\022start" +
-      "_offset_nanos\030\001 \001(\003\022\026\n\016duration_nanos\030\002 " +
-      "\001(\003\022\016\n\006active\030\003 \001(\010\022\017\n\007message\030\004 \001(\t\022D\n\014" +
-      "detail_entry\030\005 \003(\0132..org_glowroot_wire_a",
-      "pi_model.Trace.DetailEntry\022Z\n\034location_s" +
-      "tack_trace_element\030\006 \003(\01324.org_glowroot_" +
-      "wire_api_model.Trace.StackTraceElement\0227" +
-      "\n\005error\030\007 \001(\0132(.org_glowroot_wire_api_mo" +
-      "del.Trace.Error\022=\n\013child_entry\030\010 \003(\0132(.o" +
-      "rg_glowroot_wire_api_model.Trace.Entry\032d" +
-      "\n\021StackTraceElement\022\022\n\nclass_name\030\001 \001(\t\022" +
-      "\023\n\013method_name\030\002 \001(\t\022\021\n\tfile_name\030\003 \001(\t\022" +
-      "\023\n\013line_number\030\004 \001(\021B\035\n\033org.glowroot.wir" +
-      "e.api.modelb\006proto3"
+      "ot_wire_api_model.Trace.Timer\022H\n\020thread_" +
+      "cpu_nanos\030\017 \001(\0132..org_glowroot_wire_api_" +
+      "model.Trace.OptionalInt\022L\n\024thread_blocke",
+      "d_nanos\030\020 \001(\0132..org_glowroot_wire_api_mo" +
+      "del.Trace.OptionalInt\022K\n\023thread_waited_n" +
+      "anos\030\021 \001(\0132..org_glowroot_wire_api_model" +
+      ".Trace.OptionalInt\022N\n\026thread_allocated_b" +
+      "ytes\030\022 \001(\0132..org_glowroot_wire_api_model" +
+      ".Trace.OptionalInt\022Q\n\013gc_activity\030\023 \003(\0132" +
+      "<.org_glowroot_wire_api_model.Trace.Garb" +
+      "ageCollectionActivity\022\023\n\013entry_count\030\024 \001" +
+      "(\005\022\034\n\024entry_limit_exceeded\030\025 \001(\010\022\034\n\024prof" +
+      "ile_sample_count\030\026 \001(\003\022%\n\035profile_sample",
+      "_limit_exceeded\030\027 \001(\010\032(\n\tAttribute\022\014\n\004na" +
+      "me\030\001 \001(\t\022\r\n\005value\030\002 \003(\t\032\237\001\n\013DetailEntry\022" +
+      "\014\n\004name\030\001 \001(\t\022=\n\005value\030\002 \003(\0132..org_glowr" +
+      "oot_wire_api_model.Trace.DetailValue\022C\n\013" +
+      "child_entry\030\003 \003(\0132..org_glowroot_wire_ap" +
+      "i_model.Trace.DetailEntry\032T\n\013DetailValue" +
+      "\022\016\n\004sval\030\001 \001(\tH\000\022\016\n\004dval\030\002 \001(\001H\000\022\016\n\004lval" +
+      "\030\003 \001(\003H\000\022\016\n\004bval\030\004 \001(\010H\000B\005\n\003val\032Y\n\005Error" +
+      "\022\017\n\007message\030\001 \001(\t\022?\n\texception\030\002 \001(\0132,.o" +
+      "rg_glowroot_wire_api_model.Trace.Throwab",
+      "le\032\325\001\n\tThrowable\022\017\n\007display\030\001 \001(\t\022Q\n\023sta" +
+      "ck_trace_element\030\002 \003(\01324.org_glowroot_wi" +
+      "re_api_model.Trace.StackTraceElement\022\'\n\037" +
+      "frames_in_common_with_enclosing\030\003 \001(\005\022;\n" +
+      "\005cause\030\004 \001(\0132,.org_glowroot_wire_api_mod" +
+      "el.Trace.Throwable\032\232\001\n\005Timer\022\014\n\004name\030\001 \001" +
+      "(\t\022\020\n\010extended\030\002 \001(\010\022\023\n\013total_nanos\030\003 \001(" +
+      "\003\022\r\n\005count\030\004 \001(\003\022\016\n\006active\030\005 \001(\010\022=\n\013chil" +
+      "d_timer\030\006 \003(\0132(.org_glowroot_wire_api_mo" +
+      "del.Trace.Timer\032\034\n\013OptionalInt\022\r\n\005value\030",
+      "\001 \001(\003\032X\n\031GarbageCollectionActivity\022\026\n\016co" +
+      "llector_name\030\001 \001(\t\022\024\n\014total_millis\030\002 \001(\003" +
+      "\022\r\n\005count\030\003 \001(\003\032\366\002\n\005Entry\022\032\n\022start_offse" +
+      "t_nanos\030\001 \001(\003\022\026\n\016duration_nanos\030\002 \001(\003\022\016\n" +
+      "\006active\030\003 \001(\010\022\017\n\007message\030\004 \001(\t\022D\n\014detail" +
+      "_entry\030\005 \003(\0132..org_glowroot_wire_api_mod" +
+      "el.Trace.DetailEntry\022Z\n\034location_stack_t" +
+      "race_element\030\006 \003(\01324.org_glowroot_wire_a" +
+      "pi_model.Trace.StackTraceElement\0227\n\005erro" +
+      "r\030\007 \001(\0132(.org_glowroot_wire_api_model.Tr",
+      "ace.Error\022=\n\013child_entry\030\010 \003(\0132(.org_glo" +
+      "wroot_wire_api_model.Trace.Entry\032d\n\021Stac" +
+      "kTraceElement\022\022\n\nclass_name\030\001 \001(\t\022\023\n\013met" +
+      "hod_name\030\002 \001(\t\022\021\n\tfile_name\030\003 \001(\t\022\023\n\013lin" +
+      "e_number\030\004 \001(\021B\035\n\033org.glowroot.wire.api." +
+      "modelb\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -13587,27 +14433,33 @@ public final class TraceOuterClass {
     internal_static_org_glowroot_wire_api_model_Trace_Throwable_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_Trace_Throwable_descriptor,
-        new java.lang.String[] { "Display", "Element", "FramesInCommonWithEnclosing", "Cause", });
+        new java.lang.String[] { "Display", "StackTraceElement", "FramesInCommonWithEnclosing", "Cause", });
     internal_static_org_glowroot_wire_api_model_Trace_Timer_descriptor =
       internal_static_org_glowroot_wire_api_model_Trace_descriptor.getNestedTypes().get(6);
     internal_static_org_glowroot_wire_api_model_Trace_Timer_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_Trace_Timer_descriptor,
         new java.lang.String[] { "Name", "Extended", "TotalNanos", "Count", "Active", "ChildTimer", });
-    internal_static_org_glowroot_wire_api_model_Trace_GarbageCollectionActivity_descriptor =
+    internal_static_org_glowroot_wire_api_model_Trace_OptionalInt_descriptor =
       internal_static_org_glowroot_wire_api_model_Trace_descriptor.getNestedTypes().get(7);
+    internal_static_org_glowroot_wire_api_model_Trace_OptionalInt_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_org_glowroot_wire_api_model_Trace_OptionalInt_descriptor,
+        new java.lang.String[] { "Value", });
+    internal_static_org_glowroot_wire_api_model_Trace_GarbageCollectionActivity_descriptor =
+      internal_static_org_glowroot_wire_api_model_Trace_descriptor.getNestedTypes().get(8);
     internal_static_org_glowroot_wire_api_model_Trace_GarbageCollectionActivity_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_Trace_GarbageCollectionActivity_descriptor,
         new java.lang.String[] { "CollectorName", "TotalMillis", "Count", });
     internal_static_org_glowroot_wire_api_model_Trace_Entry_descriptor =
-      internal_static_org_glowroot_wire_api_model_Trace_descriptor.getNestedTypes().get(8);
+      internal_static_org_glowroot_wire_api_model_Trace_descriptor.getNestedTypes().get(9);
     internal_static_org_glowroot_wire_api_model_Trace_Entry_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_Trace_Entry_descriptor,
         new java.lang.String[] { "StartOffsetNanos", "DurationNanos", "Active", "Message", "DetailEntry", "LocationStackTraceElement", "Error", "ChildEntry", });
     internal_static_org_glowroot_wire_api_model_Trace_StackTraceElement_descriptor =
-      internal_static_org_glowroot_wire_api_model_Trace_descriptor.getNestedTypes().get(9);
+      internal_static_org_glowroot_wire_api_model_Trace_descriptor.getNestedTypes().get(10);
     internal_static_org_glowroot_wire_api_model_Trace_StackTraceElement_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_Trace_StackTraceElement_descriptor,

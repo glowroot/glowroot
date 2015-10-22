@@ -33,8 +33,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.trace.Trace;
 import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -65,12 +65,10 @@ public class RequestHeaderTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
                 "Content-Type, Content-Length");
         // when
-        container.executeAppUnderTest(SetStandardRequestHeaders.class);
+        Trace trace = container.execute(SetStandardRequestHeaders.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) header.detail().get("Request headers");
+                ResponseHeaderTest.getDetailMap(trace, "Request headers");
         assertThat(requestHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(requestHeaders.get("Content-Length")).isEqualTo("1");
         assertThat(requestHeaders.get("Extra")).isNull();
@@ -82,12 +80,10 @@ public class RequestHeaderTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
                 "Content-Type, Content-Length");
         // when
-        container.executeAppUnderTest(SetStandardRequestHeadersLowercase.class);
+        Trace trace = container.execute(SetStandardRequestHeadersLowercase.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) header.detail().get("Request headers");
+                ResponseHeaderTest.getDetailMap(trace, "Request headers");
         assertThat(requestHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(requestHeaders.get("content-length")).isEqualTo("1");
         assertThat(requestHeaders.get("extra")).isNull();
@@ -99,12 +95,10 @@ public class RequestHeaderTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
                 "One,Two");
         // when
-        container.executeAppUnderTest(SetOtherRequestHeaders.class);
+        Trace trace = container.execute(SetOtherRequestHeaders.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) header.detail().get("Request headers");
+                ResponseHeaderTest.getDetailMap(trace, "Request headers");
         @SuppressWarnings("unchecked")
         List<String> one = (List<String>) requestHeaders.get("One");
         assertThat(one).containsExactly("ab", "xy");
@@ -118,12 +112,10 @@ public class RequestHeaderTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
                 "Content-Type, Content-Length");
         // when
-        container.executeAppUnderTest(GetBadRequestHeaders.class);
+        Trace trace = container.execute(GetBadRequestHeaders.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) header.detail().get("Request headers");
+                ResponseHeaderTest.getDetailMap(trace, "Request headers");
         assertThat(requestHeaders).isNull();
     }
 
@@ -133,12 +125,10 @@ public class RequestHeaderTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
                 "Content-Type, Content-Length, h1");
         // when
-        container.executeAppUnderTest(GetBadRequestHeaders2.class);
+        Trace trace = container.execute(GetBadRequestHeaders2.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        @SuppressWarnings("unchecked")
         Map<String, Object> requestHeaders =
-                (Map<String, Object>) header.detail().get("Request headers");
+                ResponseHeaderTest.getDetailMap(trace, "Request headers");
         assertThat(requestHeaders).hasSize(1);
         assertThat(requestHeaders.get("h1")).isEqualTo("");
     }
@@ -147,10 +137,9 @@ public class RequestHeaderTest {
     public void testTransactionNameOverrideRequestHeaders() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(SetTransactionNameOverrideRequestHeaders.class);
+        Trace trace = container.execute(SetTransactionNameOverrideRequestHeaders.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.transactionName()).isEqualTo("AbcXyz");
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("AbcXyz");
     }
 
     @SuppressWarnings("serial")

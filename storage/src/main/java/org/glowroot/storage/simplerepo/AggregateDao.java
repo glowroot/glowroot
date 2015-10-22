@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLongArray;
 
@@ -891,14 +892,26 @@ public class AggregateDao implements AggregateRepository {
             preparedStatement.setDouble(i++, aggregate.getTotalNanos());
             preparedStatement.setLong(i++, aggregate.getTransactionCount());
             preparedStatement.setLong(i++, aggregate.getErrorCount());
-            RowMappers.setNotAvailableAwareDouble(preparedStatement, i++,
-                    aggregate.getTotalCpuNanos());
-            RowMappers.setNotAvailableAwareDouble(preparedStatement, i++,
-                    aggregate.getTotalBlockedNanos());
-            RowMappers.setNotAvailableAwareDouble(preparedStatement, i++,
-                    aggregate.getTotalWaitedNanos());
-            RowMappers.setNotAvailableAwareDouble(preparedStatement, i++,
-                    aggregate.getTotalAllocatedBytes());
+            if (aggregate.hasTotalCpuNanos()) {
+                preparedStatement.setDouble(i++, aggregate.getTotalCpuNanos().getValue());
+            } else {
+                preparedStatement.setNull(i++, Types.BIGINT);
+            }
+            if (aggregate.hasTotalBlockedNanos()) {
+                preparedStatement.setDouble(i++, aggregate.getTotalBlockedNanos().getValue());
+            } else {
+                preparedStatement.setNull(i++, Types.BIGINT);
+            }
+            if (aggregate.hasTotalWaitedNanos()) {
+                preparedStatement.setDouble(i++, aggregate.getTotalWaitedNanos().getValue());
+            } else {
+                preparedStatement.setNull(i++, Types.BIGINT);
+            }
+            if (aggregate.hasTotalAllocatedBytes()) {
+                preparedStatement.setDouble(i++, aggregate.getTotalAllocatedBytes().getValue());
+            } else {
+                preparedStatement.setNull(i++, Types.BIGINT);
+            }
             RowMappers.setLong(preparedStatement, i++, queriesCappedId);
             RowMappers.setLong(preparedStatement, i++, profileCappedId);
 

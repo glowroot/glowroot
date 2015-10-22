@@ -25,12 +25,12 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.Threads;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.config.TransactionConfig;
-import org.glowroot.agent.it.harness.config.UserRecordingConfig;
-import org.glowroot.agent.it.harness.trace.ProfileTree;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.OptionalStringList;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.UserRecordingConfigUpdate;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,7 +43,8 @@ public class ProfilingTest {
         container = Containers.getSharedContainer();
         // capture one header to warm up the system, otherwise sometimes there are delays in class
         // loading and the profiler captures too many or too few samples
-        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
+        container.execute(ShouldGenerateTraceWithProfile.class);
+        container.checkAndReset();
     }
 
     @AfterClass
@@ -59,72 +60,59 @@ public class ProfilingTest {
     @Test
     public void shouldReadProfile() throws Exception {
         // given
-        TransactionConfig transactionConfig = container.getConfigService().getTransactionConfig();
-        transactionConfig.setProfilingIntervalMillis(20);
-        container.getConfigService().updateTransactionConfig(transactionConfig);
+        setProfilingIntervalMillis(20);
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
+        Trace trace = container.execute(ShouldGenerateTraceWithProfile.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.profileSampleCount()).isGreaterThan(0);
         // profiler should have captured about 10 stack traces
-        Thread.sleep(1000);
-        ProfileTree profileTree = container.getTraceService().getProfile(header.id());
-        assertThat(profileTree.unfilteredSampleCount()).isBetween(5L, 15L);
+        assertThat(trace.getHeader().getProfileSampleCount()).isBetween(5L, 15L);
     }
 
     @Test
     public void shouldNotReadProfile() throws Exception {
-        // given
-        TransactionConfig transactionConfig = container.getConfigService().getTransactionConfig();
-        transactionConfig.setProfilingIntervalMillis(0);
-        container.getConfigService().updateTransactionConfig(transactionConfig);
+        setProfilingIntervalMillis(0);
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithProfile.class);
+        Trace trace = container.execute(ShouldGenerateTraceWithProfile.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.profileSampleCount()).isZero();
+        assertThat(trace.getHeader().getProfileSampleCount()).isZero();
     }
 
     @Test
     public void shouldReadUserRecordingProfile() throws Exception {
         // given
-        UserRecordingConfig userRecordingConfig =
-                container.getConfigService().getUserRecordingConfig();
-        userRecordingConfig.setEnabled(true);
-        userRecordingConfig.setUser("able");
-        userRecordingConfig.setProfileIntervalMillis(20);
+        UserRecordingConfigUpdate userRecordingConfig = UserRecordingConfigUpdate.newBuilder()
+                .setUsers(OptionalStringList.newBuilder().addValue("able").build())
+                .setProfilingIntervalMillis(ProtoOptional.of(20))
+                .build();
         container.getConfigService().updateUserRecordingConfig(userRecordingConfig);
-        TransactionConfig transactionConfig = container.getConfigService().getTransactionConfig();
-        transactionConfig.setProfilingIntervalMillis(0);
-        container.getConfigService().updateTransactionConfig(transactionConfig);
+        setProfilingIntervalMillis(0);
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithProfileForAble.class);
+        Trace trace = container.execute(ShouldGenerateTraceWithProfileForAble.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.profileSampleCount()).isGreaterThan(0);
+        assertThat(trace.getHeader().getProfileSampleCount()).isBetween(5L, 15L);
         // profiler should have captured about 10 stack traces
-        ProfileTree profileTree = container.getTraceService().getProfile(header.id());
-        assertThat(profileTree.unfilteredSampleCount()).isBetween(5L, 15L);
     }
 
     @Test
     public void shouldNotReadUserRecordingProfile() throws Exception {
         // given
-        UserRecordingConfig userRecordingConfig =
-                container.getConfigService().getUserRecordingConfig();
-        userRecordingConfig.setEnabled(true);
-        userRecordingConfig.setUser("baker");
-        userRecordingConfig.setProfileIntervalMillis(20);
+        UserRecordingConfigUpdate userRecordingConfig = UserRecordingConfigUpdate.newBuilder()
+                .setUsers(OptionalStringList.newBuilder().addValue("baker").build())
+                .setProfilingIntervalMillis(ProtoOptional.of(20))
+                .build();
         container.getConfigService().updateUserRecordingConfig(userRecordingConfig);
-        TransactionConfig transactionConfig = container.getConfigService().getTransactionConfig();
-        transactionConfig.setProfilingIntervalMillis(0);
-        container.getConfigService().updateTransactionConfig(transactionConfig);
+        setProfilingIntervalMillis(0);
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithProfileForAble.class);
+        Trace trace = container.execute(ShouldGenerateTraceWithProfileForAble.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.profileSampleCount()).isZero();
+        assertThat(trace.getHeader().getProfileSampleCount()).isZero();
+    }
+
+    private static void setProfilingIntervalMillis(int millis) throws Exception {
+        container.getConfigService().updateTransactionConfig(
+                TransactionConfigUpdate.newBuilder()
+                        .setProfilingIntervalMillis(ProtoOptional.of(millis))
+                        .build());
     }
 
     public static class ShouldGenerateTraceWithProfile implements AppUnderTest, TransactionMarker {

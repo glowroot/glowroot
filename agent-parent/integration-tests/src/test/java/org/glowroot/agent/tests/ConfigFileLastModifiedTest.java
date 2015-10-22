@@ -31,12 +31,12 @@ public class ConfigFileLastModifiedTest {
     public void shouldNotUpdateFileOnStartupIfNoChanges() throws Exception {
         // given
         File baseDir = TempDirs.createTempDir("glowroot-test-basedir");
-        Container container = Containers.create(baseDir, false);
+        Container container = Containers.create(baseDir);
         File configFile = new File(baseDir, "config.json");
         long originalLastModified = configFile.lastModified();
         // when
         container.close();
-        container = Containers.create(baseDir, true);
+        container = Containers.create(baseDir);
         long lastModified = configFile.lastModified();
         // then
         assertThat(lastModified).isEqualTo(originalLastModified);

@@ -17,10 +17,7 @@ package org.glowroot.agent.tests;
 
 import java.io.File;
 import java.util.List;
-import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -29,8 +26,7 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.trace.Trace;
-import org.glowroot.agent.tests.LevelOne;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,70 +53,168 @@ public class DetailMapTest {
     public void shouldReadDetailMap() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
+        Trace trace = container.execute(ShouldGenerateTraceWithNestedEntries.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.headline()).isEqualTo("Level One");
-        assertThat(header.detail()).isEqualTo(ImmutableMap.of("arg1", "a", "arg2", "b", "nested1",
-                ImmutableMap.of("nestedkey11", "a", "nestedkey12", "b", "subnested1",
-                        ImmutableMap.of("subnestedkey1", "a", "subnestedkey2", "b")),
-                "nested2", ImmutableMap.of("nestedkey21", "a", "nestedkey22", "b")));
-        assertThat(header.transactionName()).isEqualTo("basic test");
-        assertThat(header.rootTimer().name()).isEqualTo("level one");
-        assertThat(header.rootTimer().childTimers()).hasSize(1);
-        assertThat(header.rootTimer().childTimers().get(0).name())
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getHeadline()).isEqualTo("Level One");
+        List<Trace.DetailEntry> details = trace.getHeader().getDetailEntryList();
+        assertThat(details).hasSize(4);
+        assertThat(details.get(0).getName()).isEqualTo("arg1");
+        assertThat(details.get(0).getValueList()).hasSize(1);
+        assertThat(details.get(0).getValueList().get(0).getSval()).isEqualTo("a");
+        assertThat(details.get(1).getName()).isEqualTo("arg2");
+        assertThat(details.get(1).getValueList()).hasSize(1);
+        assertThat(details.get(1).getValueList().get(0).getSval()).isEqualTo("b");
+        assertThat(details.get(2).getName()).isEqualTo("nested1");
+        List<Trace.DetailEntry> nestedDetails = details.get(2).getChildEntryList();
+        assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey11");
+        assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
+        assertThat(nestedDetails.get(0).getValueList().get(0).getSval()).isEqualTo("a");
+        assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey12");
+        assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
+        assertThat(nestedDetails.get(1).getValueList().get(0).getSval()).isEqualTo("b");
+        assertThat(nestedDetails.get(2).getName()).isEqualTo("subnested1");
+        List<Trace.DetailEntry> subNestedDetails = nestedDetails.get(2).getChildEntryList();
+        assertThat(subNestedDetails.get(0).getName()).isEqualTo("subnestedkey1");
+        assertThat(subNestedDetails.get(0).getValueList()).hasSize(1);
+        assertThat(subNestedDetails.get(0).getValueList().get(0).getSval()).isEqualTo("a");
+        assertThat(subNestedDetails.get(1).getName()).isEqualTo("subnestedkey2");
+        assertThat(subNestedDetails.get(1).getValueList()).hasSize(1);
+        assertThat(subNestedDetails.get(1).getValueList().get(0).getSval()).isEqualTo("b");
+        assertThat(details.get(3).getName()).isEqualTo("nested2");
+        nestedDetails = details.get(3).getChildEntryList();
+        assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey21");
+        assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
+        assertThat(nestedDetails.get(0).getValueList().get(0).getSval()).isEqualTo("a");
+        assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey22");
+        assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
+        assertThat(nestedDetails.get(1).getValueList().get(0).getSval()).isEqualTo("b");
+
+        assertThat(header.getTransactionName()).isEqualTo("basic test");
+        assertThat(header.getRootTimer().getName()).isEqualTo("level one");
+        assertThat(header.getRootTimer().getChildTimerList()).hasSize(1);
+        assertThat(header.getRootTimer().getChildTimerList().get(0).getName())
                 .isEqualTo("level two");
-        Trace.Timer levelTwoTimer = header.rootTimer().childTimers().get(0);
-        assertThat(levelTwoTimer.childTimers()).hasSize(1);
-        assertThat(levelTwoTimer.childTimers().get(0).name()).isEqualTo("level three");
-        Trace.Timer levelThreeTimer = levelTwoTimer.childTimers().get(0);
-        assertThat(levelThreeTimer.childTimers()).hasSize(1);
-        assertThat(levelThreeTimer.childTimers().get(0).name()).isEqualTo("level four");
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        Trace.Timer levelTwoTimer = header.getRootTimer().getChildTimerList().get(0);
+        assertThat(levelTwoTimer.getChildTimerList()).hasSize(1);
+        assertThat(levelTwoTimer.getChildTimerList().get(0).getName()).isEqualTo("level three");
+        Trace.Timer levelThreeTimer = levelTwoTimer.getChildTimerList().get(0);
+        assertThat(levelThreeTimer.getChildTimerList()).hasSize(1);
+        assertThat(levelThreeTimer.getChildTimerList().get(0).getName()).isEqualTo("level four");
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry2 = entries.get(0);
-        assertThat(entry2.message()).isEqualTo("Level Two");
-        assertThat(entry2.detail()).isEqualTo(ImmutableMap.of("arg1", "ax", "arg2", "bx"));
-        List<Trace.Entry> childEntries2 = entry2.childEntries();
+        assertThat(entry2.getMessage()).isEqualTo("Level Two");
+        details = entry2.getDetailEntryList();
+        assertThat(details).hasSize(2);
+        assertThat(details.get(0).getName()).isEqualTo("arg1");
+        assertThat(details.get(0).getValueList()).hasSize(1);
+        assertThat(details.get(0).getValueList().get(0).getSval()).isEqualTo("ax");
+        assertThat(details.get(1).getName()).isEqualTo("arg2");
+        assertThat(details.get(1).getValueList()).hasSize(1);
+        assertThat(details.get(1).getValueList().get(0).getSval()).isEqualTo("bx");
+        List<Trace.Entry> childEntries2 = entry2.getChildEntryList();
         assertThat(childEntries2).hasSize(1);
         Trace.Entry entry3 = childEntries2.get(0);
-        assertThat(entry3.message()).isEqualTo("Level Three");
-        assertThat(entry3.detail()).isEqualTo(ImmutableMap.of("arg1", "axy", "arg2", "bxy"));
+        assertThat(entry3.getMessage()).isEqualTo("Level Three");
+        details = entry3.getDetailEntryList();
+        assertThat(details).hasSize(2);
+        assertThat(details.get(0).getName()).isEqualTo("arg1");
+        assertThat(details.get(0).getValueList()).hasSize(1);
+        assertThat(details.get(0).getValueList().get(0).getSval()).isEqualTo("axy");
+        assertThat(details.get(1).getName()).isEqualTo("arg2");
+        assertThat(details.get(1).getValueList()).hasSize(1);
+        assertThat(details.get(1).getValueList().get(0).getSval()).isEqualTo("bxy");
         // there's no way offsetNanos should be 0
-        assertThat(entry3.startOffsetNanos()).isGreaterThan(0);
-        List<Trace.Entry> childEntries3 = entry3.childEntries();
+        assertThat(entry3.getStartOffsetNanos()).isGreaterThan(0);
+        List<Trace.Entry> childEntries3 = entry3.getChildEntryList();
         assertThat(childEntries3).hasSize(1);
         Trace.Entry entry4 = childEntries3.get(0);
-        assertThat(entry4.message()).isEqualTo("Level Four: axy, bxy");
+        assertThat(entry4.getMessage()).isEqualTo("Level Four: axy, bxy");
     }
 
     @Test
     public void shouldReadDetailMapWithBooleans() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithBooleans.class);
+        Trace trace = container.execute(ShouldGenerateTraceWithBooleans.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.headline()).isEqualTo("Level One");
-        assertThat(header.detail())
-                .isEqualTo(ImmutableMap.of("arg1", false, "arg2", true, "nested1",
-                        ImmutableMap.of("nestedkey11", false, "nestedkey12", true, "subnested1",
-                                ImmutableMap.of("subnestedkey1", false, "subnestedkey2", true)),
-                        "nested2", ImmutableMap.of("nestedkey21", false, "nestedkey22", true)));
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getHeadline()).isEqualTo("Level One");
+        List<Trace.DetailEntry> details = trace.getHeader().getDetailEntryList();
+        assertThat(details).hasSize(4);
+        assertThat(details.get(0).getName()).isEqualTo("arg1");
+        assertThat(details.get(0).getValueList()).hasSize(1);
+        assertThat(details.get(0).getValueList().get(0).getBval()).isEqualTo(false);
+        assertThat(details.get(1).getName()).isEqualTo("arg2");
+        assertThat(details.get(1).getValueList()).hasSize(1);
+        assertThat(details.get(1).getValueList().get(0).getBval()).isEqualTo(true);
+        assertThat(details.get(2).getName()).isEqualTo("nested1");
+        List<Trace.DetailEntry> nestedDetails = details.get(2).getChildEntryList();
+        assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey11");
+        assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
+        assertThat(nestedDetails.get(0).getValueList().get(0).getBval()).isEqualTo(false);
+        assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey12");
+        assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
+        assertThat(nestedDetails.get(1).getValueList().get(0).getBval()).isEqualTo(true);
+        assertThat(nestedDetails.get(2).getName()).isEqualTo("subnested1");
+        List<Trace.DetailEntry> subNestedDetails = nestedDetails.get(2).getChildEntryList();
+        assertThat(subNestedDetails.get(0).getName()).isEqualTo("subnestedkey1");
+        assertThat(subNestedDetails.get(0).getValueList()).hasSize(1);
+        assertThat(subNestedDetails.get(0).getValueList().get(0).getBval()).isEqualTo(false);
+        assertThat(subNestedDetails.get(1).getName()).isEqualTo("subnestedkey2");
+        assertThat(subNestedDetails.get(1).getValueList()).hasSize(1);
+        assertThat(subNestedDetails.get(1).getValueList().get(0).getBval()).isEqualTo(true);
+        assertThat(details.get(3).getName()).isEqualTo("nested2");
+        nestedDetails = details.get(3).getChildEntryList();
+        assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey21");
+        assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
+        assertThat(nestedDetails.get(0).getValueList().get(0).getBval()).isEqualTo(false);
+        assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey22");
+        assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
+        assertThat(nestedDetails.get(1).getValueList().get(0).getBval()).isEqualTo(true);
     }
 
     @Test
     public void shouldReadDetailMapWithNumbers() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithNumbers.class);
+        Trace trace = container.execute(ShouldGenerateTraceWithNumbers.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.headline()).isEqualTo("Level One");
-        assertThat(header.detail()).isEqualTo(ImmutableMap.of("arg1", 5.0, "arg2", 5.5, "nested1",
-                ImmutableMap.of("nestedkey11", 5.0, "nestedkey12", 5.5, "subnested1",
-                        ImmutableMap.of("subnestedkey1", 5.0, "subnestedkey2", 5.5)),
-                "nested2", ImmutableMap.of("nestedkey21", 5.0, "nestedkey22", 5.5)));
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getHeadline()).isEqualTo("Level One");
+        List<Trace.DetailEntry> details = trace.getHeader().getDetailEntryList();
+        assertThat(details).hasSize(4);
+        assertThat(details.get(0).getName()).isEqualTo("arg1");
+        assertThat(details.get(0).getValueList()).hasSize(1);
+        assertThat(details.get(0).getValueList().get(0).getDval()).isEqualTo(5.0);
+        assertThat(details.get(1).getName()).isEqualTo("arg2");
+        assertThat(details.get(1).getValueList()).hasSize(1);
+        assertThat(details.get(1).getValueList().get(0).getDval()).isEqualTo(5.5);
+        assertThat(details.get(2).getName()).isEqualTo("nested1");
+        List<Trace.DetailEntry> nestedDetails = details.get(2).getChildEntryList();
+        assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey11");
+        assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
+        assertThat(nestedDetails.get(0).getValueList().get(0).getDval()).isEqualTo(5.0);
+        assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey12");
+        assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
+        assertThat(nestedDetails.get(1).getValueList().get(0).getDval()).isEqualTo(5.5);
+        assertThat(nestedDetails.get(2).getName()).isEqualTo("subnested1");
+        List<Trace.DetailEntry> subNestedDetails = nestedDetails.get(2).getChildEntryList();
+        assertThat(subNestedDetails.get(0).getName()).isEqualTo("subnestedkey1");
+        assertThat(subNestedDetails.get(0).getValueList()).hasSize(1);
+        assertThat(subNestedDetails.get(0).getValueList().get(0).getDval()).isEqualTo(5.0);
+        assertThat(subNestedDetails.get(1).getName()).isEqualTo("subnestedkey2");
+        assertThat(subNestedDetails.get(1).getValueList()).hasSize(1);
+        assertThat(subNestedDetails.get(1).getValueList().get(0).getDval()).isEqualTo(5.5);
+        assertThat(details.get(3).getName()).isEqualTo("nested2");
+        nestedDetails = details.get(3).getChildEntryList();
+        assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey21");
+        assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
+        assertThat(nestedDetails.get(0).getValueList().get(0).getDval()).isEqualTo(5.0);
+        assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey22");
+        assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
+        assertThat(nestedDetails.get(1).getValueList().get(0).getDval()).isEqualTo(5.5);
     }
 
     @Test
@@ -131,14 +225,41 @@ public class DetailMapTest {
                     "detail map has unexpected value type: java.io.File");
         }
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithBadType.class);
+        Trace trace = container.execute(ShouldGenerateTraceWithBadType.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.headline()).isEqualTo("Level One");
-        assertThat(header.detail()).isEqualTo(ImmutableMap.of("arg1", "a", "arg2", "x", "nested1",
-                ImmutableMap.of("nestedkey11", "a", "nestedkey12", "x", "subnested1",
-                        ImmutableMap.of("subnestedkey1", "a", "subnestedkey2", "x")),
-                "nested2", ImmutableMap.of("nestedkey21", "a", "nestedkey22", "x")));
+        assertThat(trace.getHeader().getHeadline()).isEqualTo("Level One");
+        List<Trace.DetailEntry> details = trace.getHeader().getDetailEntryList();
+        assertThat(details).hasSize(4);
+        assertThat(details.get(0).getName()).isEqualTo("arg1");
+        assertThat(details.get(0).getValueList()).hasSize(1);
+        assertThat(details.get(0).getValueList().get(0).getSval()).isEqualTo("a");
+        assertThat(details.get(1).getName()).isEqualTo("arg2");
+        assertThat(details.get(1).getValueList()).hasSize(1);
+        assertThat(details.get(1).getValueList().get(0).getSval()).isEqualTo("x");
+        assertThat(details.get(2).getName()).isEqualTo("nested1");
+        List<Trace.DetailEntry> nestedDetails = details.get(2).getChildEntryList();
+        assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey11");
+        assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
+        assertThat(nestedDetails.get(0).getValueList().get(0).getSval()).isEqualTo("a");
+        assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey12");
+        assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
+        assertThat(nestedDetails.get(1).getValueList().get(0).getSval()).isEqualTo("x");
+        assertThat(nestedDetails.get(2).getName()).isEqualTo("subnested1");
+        List<Trace.DetailEntry> subNestedDetails = nestedDetails.get(2).getChildEntryList();
+        assertThat(subNestedDetails.get(0).getName()).isEqualTo("subnestedkey1");
+        assertThat(subNestedDetails.get(0).getValueList()).hasSize(1);
+        assertThat(subNestedDetails.get(0).getValueList().get(0).getSval()).isEqualTo("a");
+        assertThat(subNestedDetails.get(1).getName()).isEqualTo("subnestedkey2");
+        assertThat(subNestedDetails.get(1).getValueList()).hasSize(1);
+        assertThat(subNestedDetails.get(1).getValueList().get(0).getSval()).isEqualTo("x");
+        assertThat(details.get(3).getName()).isEqualTo("nested2");
+        nestedDetails = details.get(3).getChildEntryList();
+        assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey21");
+        assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
+        assertThat(nestedDetails.get(0).getValueList().get(0).getSval()).isEqualTo("a");
+        assertThat(nestedDetails.get(1).getName()).isEqualTo("nestedkey22");
+        assertThat(nestedDetails.get(1).getValueList()).hasSize(1);
+        assertThat(nestedDetails.get(1).getValueList().get(0).getSval()).isEqualTo("x");
     }
 
     @Test
@@ -149,16 +270,23 @@ public class DetailMapTest {
         container.addExpectedLogMessage("org.glowroot.agent.model.DetailMapWriter",
                 "detail map has null key");
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithNullKey.class);
+        Trace trace = container.execute(ShouldGenerateTraceWithNullKey.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.headline()).isEqualTo("Level One");
-        Map<String, Object> map = Maps.newLinkedHashMap();
-        map.put("arg1", "useArg2AsKeyAndValue");
-        Map<String, Object> nestedMap = Maps.newLinkedHashMap();
-        nestedMap.put("nestedkey11", "useArg2AsKeyAndValue");
-        map.put("nested1", nestedMap);
-        assertThat(header.detail()).isEqualTo(map);
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getHeadline()).isEqualTo("Level One");
+
+        List<Trace.DetailEntry> details = trace.getHeader().getDetailEntryList();
+        assertThat(details).hasSize(2);
+        assertThat(details.get(0).getName()).isEqualTo("arg1");
+        assertThat(details.get(0).getValueList()).hasSize(1);
+        assertThat(details.get(0).getValueList().get(0).getSval())
+                .isEqualTo("useArg2AsKeyAndValue");
+        assertThat(details.get(1).getName()).isEqualTo("nested1");
+        List<Trace.DetailEntry> nestedDetails = details.get(1).getChildEntryList();
+        assertThat(nestedDetails.get(0).getName()).isEqualTo("nestedkey11");
+        assertThat(nestedDetails.get(0).getValueList()).hasSize(1);
+        assertThat(nestedDetails.get(0).getValueList().get(0).getSval())
+                .isEqualTo("useArg2AsKeyAndValue");
     }
 
     public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest {

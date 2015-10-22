@@ -15,9 +15,7 @@
  */
 package org.glowroot.agent.tests;
 
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -27,8 +25,7 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.trace.Trace;
-import org.glowroot.agent.tests.LevelOne;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -55,22 +52,17 @@ public class TransactionAttributesTest {
     public void shouldReadTraceAttributesInAlphaOrder() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
+        Trace trace = container.execute(ShouldGenerateTraceWithNestedEntries.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        Iterator<Map.Entry<String, List<String>>> i = header.attributes().entrySet().iterator();
-        Map.Entry<String, List<String>> entry = i.next();
-        assertThat(entry.getKey()).isEqualTo("Wee Four");
-        assertThat(entry.getValue()).containsExactly("ww");
-        entry = i.next();
-        assertThat(entry.getKey()).isEqualTo("Xee Three");
-        assertThat(entry.getValue()).containsExactly("xx");
-        entry = i.next();
-        assertThat(entry.getKey()).isEqualTo("Yee Two");
-        assertThat(entry.getValue()).containsExactly("yy", "Yy2", "yy3");
-        entry = i.next();
-        assertThat(entry.getKey()).isEqualTo("Zee One");
-        assertThat(entry.getValue()).containsExactly("bx");
+        List<Trace.Attribute> attributes = trace.getHeader().getAttributeList();
+        assertThat(attributes.get(0).getName()).isEqualTo("Wee Four");
+        assertThat(attributes.get(0).getValueList()).containsExactly("ww");
+        assertThat(attributes.get(1).getName()).isEqualTo("Xee Three");
+        assertThat(attributes.get(1).getValueList()).containsExactly("xx");
+        assertThat(attributes.get(2).getName()).isEqualTo("Yee Two");
+        assertThat(attributes.get(2).getValueList()).containsExactly("yy", "Yy2", "yy3");
+        assertThat(attributes.get(3).getName()).isEqualTo("Zee One");
+        assertThat(attributes.get(3).getValueList()).containsExactly("bx");
     }
 
     public static class ShouldGenerateTraceWithNestedEntries implements AppUnderTest {

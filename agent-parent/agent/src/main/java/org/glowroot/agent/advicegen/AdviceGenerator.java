@@ -567,11 +567,11 @@ public class AdviceGenerator {
                     "(Ljava/lang/String;Ljava/lang/String;)V",
                     true);
         }
-        Long slowThresholdMillis = config.transactionSlowThresholdMillis();
+        Integer slowThresholdMillis = config.transactionSlowThresholdMillis();
         if (slowThresholdMillis != null) {
             mv.visitFieldInsn(GETSTATIC, adviceInternalName, "transactionService",
                     "Lorg/glowroot/agent/plugin/api/transaction/TransactionService;");
-            mv.visitLdcInsn(slowThresholdMillis);
+            mv.visitLdcInsn(slowThresholdMillis.longValue());
             mv.visitFieldInsn(GETSTATIC, "java/util/concurrent/TimeUnit", "MILLISECONDS",
                     "Ljava/util/concurrent/TimeUnit;");
             mv.visitMethodInsn(INVOKEINTERFACE,
@@ -661,7 +661,7 @@ public class AdviceGenerator {
                 "(Lorg/glowroot/agent/plugin/api/transaction/TraceEntry;Ljava/lang/Object;)V",
                 false);
         mv.visitVarInsn(ALOAD, travelerParamIndex);
-        Long stackTraceThresholdMillis = config.traceEntryStackThresholdMillis();
+        Integer stackTraceThresholdMillis = config.traceEntryStackThresholdMillis();
         if (stackTraceThresholdMillis == null) {
             mv.visitMethodInsn(INVOKEINTERFACE,
                     "org/glowroot/agent/plugin/api/transaction/TraceEntry",
@@ -669,7 +669,7 @@ public class AdviceGenerator {
                     "()V",
                     true);
         } else {
-            mv.visitLdcInsn(stackTraceThresholdMillis);
+            mv.visitLdcInsn(stackTraceThresholdMillis.longValue());
             mv.visitFieldInsn(GETSTATIC, "java/util/concurrent/TimeUnit", "MILLISECONDS",
                     "Ljava/util/concurrent/TimeUnit;");
             mv.visitMethodInsn(INVOKEINTERFACE,

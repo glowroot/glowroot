@@ -67,7 +67,8 @@ public class BaseDirTest {
     @Test
     public void testWithAbsoluteBaseDirProperty() {
         // given
-        Map<String, String> properties = ImmutableMap.of("base.dir", customBaseDir.getPath());
+        Map<String, String> properties =
+                ImmutableMap.of("glowroot.base.dir", customBaseDir.getPath());
         // when
         File baseDir = BaseDir.getBaseDir(properties, null);
         // then
@@ -77,7 +78,8 @@ public class BaseDirTest {
     @Test
     public void testWithAbsoluteBaseDirPropertyAndGlowrootJarFile() {
         // given
-        Map<String, String> properties = ImmutableMap.of("base.dir", customBaseDir.getPath());
+        Map<String, String> properties =
+                ImmutableMap.of("glowroot.base.dir", customBaseDir.getPath());
         // when
         File baseDir = BaseDir.getBaseDir(properties, glowrootJarFile);
         // then
@@ -87,7 +89,8 @@ public class BaseDirTest {
     @Test
     public void testWithRelativeBaseDirPropertyAndGlowrootJarFile() {
         // given
-        Map<String, String> properties = ImmutableMap.of("base.dir", "x" + File.separator + "y");
+        Map<String, String> properties =
+                ImmutableMap.of("glowroot.base.dir", "x" + File.separator + "y");
         // when
         File baseDir = BaseDir.getBaseDir(properties, glowrootJarFile);
         // then
@@ -98,7 +101,8 @@ public class BaseDirTest {
     @Test
     public void testWithBadAbsoluteBaseDirPropertyAndGlowrootJarFile() {
         // given
-        Map<String, String> properties = ImmutableMap.of("base.dir", glowrootJarFile.getPath());
+        Map<String, String> properties =
+                ImmutableMap.of("glowroot.base.dir", glowrootJarFile.getPath());
         // when
         File baseDir = BaseDir.getBaseDir(properties, glowrootJarFile);
         // then

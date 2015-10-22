@@ -28,12 +28,9 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.config.TransactionConfig;
-import org.glowroot.agent.it.harness.trace.Trace;
-import org.glowroot.agent.tests.LevelOne;
-import org.glowroot.agent.tests.LogCause;
-import org.glowroot.agent.tests.LogError;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
 import org.glowroot.agent.tests.plugin.LogCauseAspect.LogCauseAdvice;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -59,85 +56,95 @@ public class ErrorCaptureTest {
     @Test
     public void shouldCaptureError() throws Exception {
         // given
-        TransactionConfig transactionConfig = container.getConfigService().getTransactionConfig();
-        transactionConfig.setSlowThresholdMillis(10000);
-        container.getConfigService().updateTransactionConfig(transactionConfig);
+        container.getConfigService().updateTransactionConfig(
+                TransactionConfigUpdate.newBuilder()
+                        .setSlowThresholdMillis(ProtoOptional.of(10000))
+                        .build());
         // when
-        container.executeAppUnderTest(ShouldCaptureError.class);
+        Trace trace = container.execute(ShouldCaptureError.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.entryCount()).isEqualTo(3);
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getEntryCount()).isEqualTo(3);
+        List<Trace.Entry> entries = trace.getEntryList();
         // the exception has no message, and no message is supplied in this test
-        assertThat(header.error().get().message()).isEmpty();
-        assertThat(header.error().get().exception().isPresent()).isTrue();
+        assertThat(header.hasError()).isTrue();
+        assertThat(header.getError().getMessage()).isEmpty();
+        assertThat(header.getError().hasException()).isTrue();
         assertThat(entries).hasSize(1);
         Trace.Entry entry1 = entries.get(0);
-        assertThat(entry1.error().isPresent()).isFalse();
-        assertThat(entry1.childEntries()).hasSize(1);
-        Trace.Entry entry2 = entry1.childEntries().get(0);
-        assertThat(entry2.error().isPresent()).isFalse();
-        assertThat(entry2.childEntries()).hasSize(1);
-        Trace.Entry entry3 = entry2.childEntries().get(0);
-        assertThat(entry3.error().isPresent()).isFalse();
+        assertThat(entry1.hasError()).isFalse();
+        assertThat(entry1.getChildEntryList()).hasSize(1);
+        Trace.Entry entry2 = entry1.getChildEntryList().get(0);
+        assertThat(entry2.hasError()).isFalse();
+        assertThat(entry2.getChildEntryList()).hasSize(1);
+        Trace.Entry entry3 = entry2.getChildEntryList().get(0);
+        assertThat(entry3.hasError()).isFalse();
     }
 
     @Test
     public void shouldCaptureErrorWithTraceEntryStackTrace() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldCaptureErrorWithTraceEntryStackTrace.class);
+        Trace trace = container.execute(ShouldCaptureErrorWithTraceEntryStackTrace.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
-        assertThat(header.error().isPresent()).isFalse();
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(trace.getHeader().hasError()).isFalse();
         assertThat(entries).hasSize(1);
-        List<Trace.Entry> childEntries = entries.get(0).childEntries();
+        List<Trace.Entry> childEntries = entries.get(0).getChildEntryList();
         assertThat(childEntries).hasSize(1);
-        assertThat(childEntries.get(0).error().get().message()).isNotEmpty();
-        List<String> stackTrace = childEntries.get(0).locationStackTraceElements();
-        assertThat(stackTrace.get(0))
-                .isEqualTo(LogError.class.getName() + ".addNestedErrorEntry(LogError.java)");
+        assertThat(childEntries.get(0).getError().getMessage()).isNotEmpty();
+        List<Trace.StackTraceElement> stackTraceElements =
+                childEntries.get(0).getLocationStackTraceElementList();
+        assertThat(stackTraceElements.get(0).getClassName()).isEqualTo(LogError.class.getName());
+        assertThat(stackTraceElements.get(0).getMethodName()).isEqualTo("addNestedErrorEntry");
+        assertThat(stackTraceElements.get(0).getFileName()).isEqualTo("LogError.java");
     }
 
     @Test
     public void shouldCaptureErrorWithCausalChain() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldCaptureErrorWithCausalChain.class);
+        Trace trace = container.execute(ShouldCaptureErrorWithCausalChain.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
-        assertThat(header.error().isPresent()).isFalse();
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(trace.getHeader().hasError()).isFalse();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.error().get().message()).isNotEmpty();
-        assertThat(entry.message()).isEqualTo("ERROR -- abc");
-        Trace.Throwable throwable = entry.error().get().exception().get();
-        assertThat(throwable.display()).isEqualTo(
+        assertThat(entry.getError().getMessage()).isNotEmpty();
+        assertThat(entry.getMessage()).isEqualTo("ERROR -- abc");
+        Trace.Throwable throwable = entry.getError().getException();
+        assertThat(throwable.getDisplay()).isEqualTo(
                 "java.lang.IllegalStateException: java.lang.IllegalArgumentException: Cause 3");
-        assertThat(throwable.stackTraceElements().get(0).toString())
-                .startsWith(LogCauseAdvice.class.getName() + ".onAfter(");
-        assertThat(throwable.framesInCommonWithEnclosing().isPresent()).isFalse();
-        Trace.Throwable cause = throwable.cause().get();
-        assertThat(cause.display()).isEqualTo("java.lang.IllegalArgumentException: Cause 3");
-        assertThat(cause.stackTraceElements().get(0).toString())
-                .startsWith(LogCauseAdvice.class.getName() + ".onAfter(");
-        assertThat(cause.framesInCommonWithEnclosing().get()).isGreaterThan(0);
+        assertThat(throwable.getStackTraceElementList().get(0).getClassName())
+                .isEqualTo(LogCauseAdvice.class.getName());
+        assertThat(throwable.getStackTraceElementList().get(0).getMethodName())
+                .isEqualTo("onAfter");
+        assertThat(throwable.getFramesInCommonWithEnclosing()).isZero();
+        Trace.Throwable cause = throwable.getCause();
+        assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalArgumentException: Cause 3");
+        assertThat(cause.getStackTraceElementList().get(0).getClassName())
+                .isEqualTo(LogCauseAdvice.class.getName());
+        assertThat(cause.getStackTraceElementList().get(0).getMethodName())
+                .isEqualTo("onAfter");
+        assertThat(cause.getFramesInCommonWithEnclosing()).isGreaterThan(0);
         Set<Integer> causeLineNumbers = Sets.newHashSet();
-        causeLineNumbers.add(getFirstLineNumber(cause));
-        cause = cause.cause().get();
-        assertThat(cause.display()).isEqualTo("java.lang.IllegalStateException: Cause 2");
-        assertThat(cause.stackTraceElements().get(0).toString())
-                .startsWith(LogCauseAdvice.class.getName() + ".onAfter(");
-        assertThat(cause.framesInCommonWithEnclosing().get()).isGreaterThan(0);
-        causeLineNumbers.add(getFirstLineNumber(cause));
-        cause = cause.cause().get();
-        assertThat(cause.display()).isEqualTo("java.lang.NullPointerException: Cause 1");
-        assertThat(cause.stackTraceElements().get(0).toString())
-                .startsWith(LogCauseAdvice.class.getName() + ".onAfter(");
-        assertThat(cause.framesInCommonWithEnclosing().get()).isGreaterThan(0);
-        causeLineNumbers.add(getFirstLineNumber(cause));
+        causeLineNumbers.add(cause.getStackTraceElementList().get(0).getLineNumber());
+        cause = cause.getCause();
+        assertThat(cause.getDisplay()).isEqualTo("java.lang.IllegalStateException: Cause 2");
+        assertThat(cause.getStackTraceElementList().get(0).getClassName())
+                .isEqualTo(LogCauseAdvice.class.getName());
+        assertThat(cause.getStackTraceElementList().get(0).getMethodName())
+                .isEqualTo("onAfter");
+        assertThat(cause.getFramesInCommonWithEnclosing()).isGreaterThan(0);
+        causeLineNumbers.add(cause.getStackTraceElementList().get(0).getLineNumber());
+        cause = cause.getCause();
+        assertThat(cause.getDisplay()).isEqualTo("java.lang.NullPointerException: Cause 1");
+        assertThat(cause.getStackTraceElementList().get(0).getClassName())
+                .isEqualTo(LogCauseAdvice.class.getName());
+        assertThat(cause.getStackTraceElementList().get(0).getMethodName())
+                .isEqualTo("onAfter");
+        assertThat(cause.getFramesInCommonWithEnclosing()).isGreaterThan(0);
+        causeLineNumbers.add(cause.getStackTraceElementList().get(0).getLineNumber());
         // make sure they are all different line numbers
         assertThat(causeLineNumbers).hasSize(3);
     }
@@ -146,25 +153,18 @@ public class ErrorCaptureTest {
     public void shouldAddNestedErrorEntry() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldAddNestedErrorEntry.class);
+        Trace trace = container.execute(ShouldAddNestedErrorEntry.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
-        assertThat(header.error().isPresent()).isFalse();
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(trace.getHeader().hasError()).isFalse();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.message()).isEqualTo("outer entry to test nesting level");
-        List<Trace.Entry> childEntries = entry.childEntries();
+        assertThat(entry.getMessage()).isEqualTo("outer entry to test nesting level");
+        List<Trace.Entry> childEntries = entry.getChildEntryList();
         assertThat(childEntries).hasSize(1);
         Trace.Entry childEntry = childEntries.get(0);
-        assertThat(childEntry.error().get().message())
+        assertThat(childEntry.getError().getMessage())
                 .isEqualTo("test add nested error entry message");
-    }
-
-    private static int getFirstLineNumber(Trace.Throwable cause) {
-        String element = cause.stackTraceElements().get(0);
-        return Integer
-                .parseInt(element.substring(element.lastIndexOf(':') + 1, element.length() - 1));
     }
 
     public static class ShouldCaptureError implements AppUnderTest {

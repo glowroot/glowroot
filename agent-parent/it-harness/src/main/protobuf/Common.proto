@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package org_glowroot_agent_it_harness;
+
+option java_package = "org.glowroot.agent.it.harness.grpc";
+
+message Void {
+}

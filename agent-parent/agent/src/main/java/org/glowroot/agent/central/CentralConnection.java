@@ -15,10 +15,15 @@
  */
 package org.glowroot.agent.central;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import io.netty.channel.EventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,12 +41,22 @@ class CentralConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(CentralConnection.class);
 
+    private final EventLoopGroup eventLoopGroup;
+    private final ExecutorService executor;
     private final ManagedChannel channel;
     private final StreamObserver<ClientResponse> responseObserver;
 
     CentralConnection(String server, String host, int port) throws Exception {
 
+        // TODO reuse channel from GrpcCollector
+        eventLoopGroup = EventLoopGroups.create("Glowroot-grpc-worker-ELG");
+        executor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
+                .setDaemon(true)
+                .setNameFormat("Glowroot-grpc-executor-%d")
+                .build());
         channel = NettyChannelBuilder.forAddress(host, port)
+                .eventLoopGroup(eventLoopGroup)
+                .executor(executor)
                 .negotiationType(NegotiationType.PLAINTEXT)
                 .build();
 
@@ -57,10 +72,16 @@ class CentralConnection {
     @OnlyUsedByTests
     public void close() throws InterruptedException {
         responseObserver.onCompleted();
-        channel.shutdownNow();
-        boolean terminated = channel.awaitTermination(5, SECONDS);
-        if (!terminated) {
-            throw new RuntimeException("GRPC channel did not terminate");
+        channel.shutdown();
+        if (!channel.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate gRPC channel");
+        }
+        executor.shutdown();
+        if (!executor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate gRPC executor");
+        }
+        if (!eventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate gRPC event loop group");
         }
     }
 

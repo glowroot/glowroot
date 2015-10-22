@@ -29,7 +29,6 @@ import org.junit.Test;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorService;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;
-import org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage;
@@ -65,6 +64,9 @@ public class CentralConnectionTest {
     public void afterEach() throws InterruptedException {
         centralConnection.close();
         server.shutdown();
+        if (!server.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate test server");
+        }
     }
 
     @Test
@@ -72,7 +74,7 @@ public class CentralConnectionTest {
         // wait for client to connect
         Stopwatch stopwatch = Stopwatch.createStarted();
         StreamObserver<ServerRequest> requestObserver = null;
-        while (stopwatch.elapsed(SECONDS) < 5) {
+        while (stopwatch.elapsed(SECONDS) < 10) {
             requestObserver = downstreamService.clients.get(SERVER_NAME);
             if (requestObserver != null) {
                 break;
@@ -105,13 +107,6 @@ public class CentralConnectionTest {
         @Override
         public void collectTrace(TraceMessage traceMessage,
                 StreamObserver<EmptyMessage> responseObserver) {
-            responseObserver.onCompleted();
-        }
-
-        @Override
-        public void getConfig(EmptyMessage emptyMessage,
-                StreamObserver<ConfigMessage> responseObserver) {
-            responseObserver.onNext(ConfigMessage.newBuilder().build());
             responseObserver.onCompleted();
         }
     }

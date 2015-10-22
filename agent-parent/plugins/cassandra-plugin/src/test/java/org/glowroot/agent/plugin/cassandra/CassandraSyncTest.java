@@ -31,8 +31,7 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.aggregate.Query;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,66 +56,37 @@ public class CassandraSyncTest {
 
     @Test
     public void shouldExecuteStatement() throws Exception {
-        container.executeAppUnderTest(ExecuteStatement.class);
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Query> queries = container.getAggregateService().getQueries();
-        assertThat(queries).hasSize(1);
-        Query query = queries.get(0);
-        assertThat(query.getQueryText()).isEqualTo("SELECT * FROM test.users");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.getTotalRows()).isEqualTo(10);
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        Trace trace = container.execute(ExecuteStatement.class);
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).message())
+        assertThat(entries.get(0).getMessage())
                 .isEqualTo("cql execution: SELECT * FROM test.users => 10 rows");
     }
 
     @Test
     public void shouldIterateUsingOneAndAll() throws Exception {
-        container.executeAppUnderTest(IterateUsingOneAndAll.class);
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Query> queries = container.getAggregateService().getQueries();
-        assertThat(queries).hasSize(1);
-        Query query = queries.get(0);
-        assertThat(query.getQueryText()).isEqualTo("SELECT * FROM test.users");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.getTotalRows()).isEqualTo(10);
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        Trace trace = container.execute(IterateUsingOneAndAll.class);
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).message())
+        assertThat(entries.get(0).getMessage())
                 .isEqualTo("cql execution: SELECT * FROM test.users => 10 rows");
     }
 
     @Test
     public void shouldExecuteBoundStatement() throws Exception {
-        container.executeAppUnderTest(ExecuteBoundStatement.class);
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Query> queries = container.getAggregateService().getQueries();
-        assertThat(queries).hasSize(1);
-        Query query = queries.get(0);
-        assertThat(query.getQueryText())
-                .isEqualTo("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.getTotalRows()).isEqualTo(0);
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        Trace trace = container.execute(ExecuteBoundStatement.class);
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).message()).isEqualTo(
+        assertThat(entries.get(0).getMessage()).isEqualTo(
                 "cql execution: INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
     }
 
     @Test
     public void shouldExecuteBatchStatement() throws Exception {
-        container.executeAppUnderTest(ExecuteBatchStatement.class);
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Query> queries = container.getAggregateService().getQueries();
-        assertThat(queries).hasSize(1);
-        Query query = queries.get(0);
-        assertThat(query.getQueryText()).isEqualTo("<batch cql>");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.getTotalRows()).isEqualTo(0);
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        Trace trace = container.execute(ExecuteBatchStatement.class);
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).message()).isEqualTo("cql execution:"
+        assertThat(entries.get(0).getMessage()).isEqualTo("cql execution:"
                 + " INSERT INTO test.users (id,  fname, lname) VALUES (100, 'f100', 'l100'),"
                 + " INSERT INTO test.users (id,  fname, lname) VALUES (101, 'f101', 'l101'),"
                 + " 10 x INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?),"

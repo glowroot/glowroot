@@ -80,7 +80,7 @@ public abstract class ErrorMessage {
         Trace.Throwable.Builder builder = Trace.Throwable.newBuilder()
                 .setDisplay(t.toString());
         for (StackTraceElement element : stackTrace) {
-            builder.addElement(toProtobuf(element));
+            builder.addStackTraceElement(toProtobuf(element));
         }
         builder.setFramesInCommonWithEnclosing(framesInCommonWithEnclosing);
         Throwable cause = t.getCause();

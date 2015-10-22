@@ -26,8 +26,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.trace.Trace;
-import org.glowroot.agent.tests.MockDriver;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,10 +53,10 @@ public class JdbcDriverTest {
     public void shouldNotTriggerMockJdbcDriverToLoad() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithNestedEntries.class);
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
-        assertThat(entries.get(0).message()).isEqualTo("major version");
+        Trace trace = container.execute(ShouldGenerateTraceWithNestedEntries.class);
+        // then
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(entries.get(0).getMessage()).isEqualTo("major version");
     }
 
     public static class ShouldGenerateTraceWithNestedEntries

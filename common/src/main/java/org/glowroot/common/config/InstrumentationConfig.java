@@ -78,7 +78,7 @@ public abstract class InstrumentationConfig {
 
     // need to write zero since it is treated different from null
     @JsonInclude(value = Include.NON_NULL)
-    public abstract @Nullable Long transactionSlowThresholdMillis();
+    public abstract @Nullable Integer transactionSlowThresholdMillis();
 
     @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)
@@ -88,7 +88,7 @@ public abstract class InstrumentationConfig {
 
     // need to write zero since it is treated different from null
     @JsonInclude(value = Include.NON_NULL)
-    public abstract @Nullable Long traceEntryStackThresholdMillis();
+    public abstract @Nullable Integer traceEntryStackThresholdMillis();
 
     @Value.Default
     @JsonInclude(value = Include.NON_EMPTY)

@@ -24,8 +24,8 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.config.AdvancedConfig;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.AdvancedConfigUpdate;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,29 +49,28 @@ public class GcActivityTest {
     }
 
     @Test
-    public void shouldReadTraceThreadInfoConfigEnabled() throws Exception {
+    public void shouldReadTraceGcActivityConfigEnabled() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(GenerateTraceWithGc.class);
+        Trace trace = container.execute(GenerateTraceWithGcActivity.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.gcActivities()).isNotEmpty();
+        assertThat(trace.getHeader().getGcActivityList()).isNotEmpty();
     }
 
     @Test
-    public void shouldReadTraceThreadInfoConfigDisabled() throws Exception {
+    public void shouldReadTraceGcActivityConfigDisabled() throws Exception {
         // given
-        AdvancedConfig advancedConfig = container.getConfigService().getAdvancedConfig();
-        advancedConfig.setCaptureGcActivity(false);
-        container.getConfigService().updateAdvancedConfig(advancedConfig);
+        container.getConfigService().updateAdvancedConfig(
+                AdvancedConfigUpdate.newBuilder()
+                        .setCaptureGcActivity(ProtoOptional.of(false))
+                        .build());
         // when
-        container.executeAppUnderTest(GenerateTraceWithGc.class);
+        Trace trace = container.execute(GenerateTraceWithGcActivity.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.gcActivities()).isEmpty();
+        assertThat(trace.getHeader().getGcActivityList()).isEmpty();
     }
 
-    public static class GenerateTraceWithGc implements AppUnderTest, TransactionMarker {
+    public static class GenerateTraceWithGcActivity implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() {
             transactionMarker();

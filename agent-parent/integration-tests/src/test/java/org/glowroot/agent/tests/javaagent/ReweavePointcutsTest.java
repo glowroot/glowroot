@@ -15,12 +15,17 @@
  */
 package org.glowroot.agent.tests.javaagent;
 
+import java.util.List;
+
+import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.agent.it.harness.Containers;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.InstrumentationConfig;
 import org.glowroot.agent.tests.ConfiguredInstrumentationTest;
 
 public class ReweavePointcutsTest extends ConfiguredInstrumentationTest {
@@ -28,24 +33,25 @@ public class ReweavePointcutsTest extends ConfiguredInstrumentationTest {
     @BeforeClass
     public static void setUp() throws Exception {
         container = Containers.getSharedJavaagentContainer();
-        // make sure the classes are loaded before re-weaving
-        container.executeAppUnderTest(ShouldExecute1.class);
-        container.executeAppUnderTest(ShouldExecuteWithReturn.class);
-        container.executeAppUnderTest(ShouldExecuteWithArgs.class);
-
-        addInstrumentationForExecute1();
-        addInstrumentationForExecute1TimerOnly();
-        addInstrumentationForExecuteWithReturn();
-        addInstrumentationForExecuteWithArgs();
-        container.getConfigService().reweave();
+        // make sure the classes are loaded once before re-weaving
+        container.execute(ShouldExecute1.class);
+        container.execute(ShouldExecuteWithReturn.class);
+        container.executeNoExpectedTrace(ShouldExecuteWithArgs.class);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        // afterEachTest() will remove the pointcut configs, but still need to reweave here
-        // in order to get back to square one
-        container.getConfigService().reweave();
         container.close();
+    }
+
+    @Before
+    public void beforeEachTest() throws Exception {
+        List<InstrumentationConfig> instrumentationConfigs = Lists.newArrayList();
+        instrumentationConfigs.add(buildInstrumentationForExecute1());
+        instrumentationConfigs.add(buildInstrumentationForExecute1TimerOnly());
+        instrumentationConfigs.add(buildInstrumentationForExecuteWithReturn());
+        instrumentationConfigs.add(buildInstrumentationForExecuteWithArgs());
+        container.getConfigService().updateInstrumentationConfigs(instrumentationConfigs);
     }
 
     @Override

@@ -17,7 +17,6 @@ package org.glowroot.agent.config;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,12 +28,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.base.Joiner;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -82,8 +78,7 @@ public class ConfigService {
     private final ImmutableList<PluginDescriptor> pluginDescriptors;
 
     private final Set<ConfigListener> configListeners = Sets.newCopyOnWriteArraySet();
-    private final Multimap<String, ConfigListener> pluginConfigListeners =
-            Multimaps.synchronizedMultimap(ArrayListMultimap.<String, ConfigListener>create());
+    private final Set<ConfigListener> pluginConfigListeners = Sets.newCopyOnWriteArraySet();
 
     private volatile TransactionConfig transactionConfig;
     private volatile UserRecordingConfig userRecordingConfig;
@@ -211,39 +206,45 @@ public class ConfigService {
         listener.onChange();
     }
 
-    public void addPluginConfigListener(String pluginId, ConfigListener listener) {
-        pluginConfigListeners.put(pluginId, listener);
+    public void addPluginConfigListener(ConfigListener listener) {
+        pluginConfigListeners.add(listener);
     }
 
     public void updateTransactionConfig(TransactionConfig updatedConfig) throws IOException {
         configFile.write("transaction", updatedConfig, mapper);
         transactionConfig = updatedConfig;
+        notifyConfigListeners();
     }
 
     public void updateUserRecordingConfig(UserRecordingConfig updatedConfig) throws IOException {
         configFile.write("userRecording", updatedConfig, mapper);
         userRecordingConfig = updatedConfig;
+        notifyConfigListeners();
     }
 
     public void updateAdvancedConfig(AdvancedConfig updatedConfig) throws IOException {
         configFile.write("advanced", updatedConfig, mapper);
         advancedConfig = updatedConfig;
+        notifyConfigListeners();
     }
 
     public void updatePluginConfigs(List<PluginConfig> updatedConfigs) throws IOException {
         configFile.write("plugins", updatedConfigs, mapper);
         pluginConfigs = ImmutableList.copyOf(updatedConfigs);
+        notifyAllPluginConfigListeners();
     }
 
     public void updateInstrumentationConfigs(List<InstrumentationConfig> updatedConfigs)
             throws IOException {
         configFile.write("instrumentation", updatedConfigs, mapper);
         instrumentationConfigs = ImmutableList.copyOf(updatedConfigs);
+        notifyConfigListeners();
     }
 
     public void updateGaugeConfigs(List<GaugeConfig> updatedConfigs) throws IOException {
         configFile.write("gauges", updatedConfigs, mapper);
         gaugeConfigs = ImmutableList.copyOf(updatedConfigs);
+        notifyConfigListeners();
     }
 
     public <T extends /*@NonNull*/Object> /*@Nullable*/T getOtherConfig(String key,
@@ -276,17 +277,14 @@ public class ConfigService {
     // config updates being sent out of order, instead listeners must call get*Config() which will
     // never return the updates out of order (at worst it may return the most recent update twice
     // which is ok)
-    public void notifyConfigListeners() {
+    private void notifyConfigListeners() {
         for (ConfigListener configListener : configListeners) {
             configListener.onChange();
         }
     }
 
-    public void notifyPluginConfigListeners(String pluginId) {
-        // make copy first to avoid possible ConcurrentModificationException while iterating
-        Collection<ConfigListener> listeners =
-                ImmutableList.copyOf(pluginConfigListeners.get(pluginId));
-        for (ConfigListener listener : listeners) {
+    private void notifyAllPluginConfigListeners() {
+        for (ConfigListener listener : pluginConfigListeners) {
             listener.onChange();
         }
     }
@@ -314,14 +312,6 @@ public class ConfigService {
         configs.put("gauges", this.gaugeConfigs);
         configs.put("instrumentation", this.instrumentationConfigs);
         configFile.write(configs, mapper);
-    }
-
-    private void notifyAllPluginConfigListeners() {
-        // make copy first to avoid possible ConcurrentModificationException while iterating
-        Collection<ConfigListener> listeners = ImmutableList.copyOf(pluginConfigListeners.values());
-        for (ConfigListener configListener : listeners) {
-            configListener.onChange();
-        }
     }
 
     private static ImmutableList<GaugeConfig> getDefaultGaugeConfigs() {

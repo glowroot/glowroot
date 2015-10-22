@@ -24,8 +24,8 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.config.InstrumentationConfig;
-import org.glowroot.agent.it.harness.config.InstrumentationConfig.CaptureKind;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.CaptureKind;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.InstrumentationConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,9 +40,6 @@ public class ReweaveCountTest {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        // afterEachTest() will remove the pointcut configs, but still need to reweave here
-        // in order to get back to square one
-        container.getConfigService().reweave();
         container.close();
     }
 
@@ -53,19 +50,19 @@ public class ReweaveCountTest {
 
     @Test
     public void shouldCalculateCorrectReweaveCount() throws Exception {
-        container.executeAppUnderTest(ShouldLoadClassesForWeaving.class);
-        InstrumentationConfig config = new InstrumentationConfig();
-        config.setClassName("org.glowroot.agent.tests.javaagent.ReweaveCountTest$AAA");
-        config.setMethodName("x");
-        config.setMethodParameterTypes(ImmutableList.<String>of());
-        config.setMethodReturnType("");
-        config.setCaptureKind(CaptureKind.TIMER);
-        config.setTimerName("x");
-        config = container.getConfigService().addInstrumentationConfig(config);
-        int reweaveCount = container.getConfigService().reweave();
+        container.executeNoExpectedTrace(ShouldLoadClassesForWeaving.class);
+        InstrumentationConfig config = InstrumentationConfig.newBuilder()
+                .setClassName("org.glowroot.agent.tests.javaagent.ReweaveCountTest$AAA")
+                .setMethodName("x")
+                .setMethodReturnType("")
+                .setCaptureKind(CaptureKind.TIMER)
+                .setTimerName("x")
+                .build();
+        int reweaveCount =
+                container.getConfigService().updateInstrumentationConfigs(ImmutableList.of(config));
         assertThat(reweaveCount).isEqualTo(2);
-        container.getConfigService().removeInstrumentationConfig(config.getVersion());
-        reweaveCount = container.getConfigService().reweave();
+        reweaveCount = container.getConfigService()
+                .updateInstrumentationConfigs(ImmutableList.<InstrumentationConfig>of());
         assertThat(reweaveCount).isEqualTo(2);
     }
 

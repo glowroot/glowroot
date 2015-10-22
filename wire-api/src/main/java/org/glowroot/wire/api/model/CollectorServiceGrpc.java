@@ -48,15 +48,6 @@ public class CollectorServiceGrpc {
               "org_glowroot_wire_api_model.CollectorService", "collectTrace"),
           io.grpc.protobuf.ProtoUtils.marshaller(org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage.getDefaultInstance()),
           io.grpc.protobuf.ProtoUtils.marshaller(org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage.getDefaultInstance()));
-  @io.grpc.ExperimentalApi
-  public static final io.grpc.MethodDescriptor<org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage,
-      org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage> METHOD_GET_CONFIG =
-      io.grpc.MethodDescriptor.create(
-          io.grpc.MethodDescriptor.MethodType.UNARY,
-          generateFullMethodName(
-              "org_glowroot_wire_api_model.CollectorService", "getConfig"),
-          io.grpc.protobuf.ProtoUtils.marshaller(org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage.getDefaultInstance()),
-          io.grpc.protobuf.ProtoUtils.marshaller(org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage.getDefaultInstance()));
 
   public static CollectorServiceStub newStub(io.grpc.Channel channel) {
     return new CollectorServiceStub(channel);
@@ -82,9 +73,6 @@ public class CollectorServiceGrpc {
 
     public void collectTrace(org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage request,
         io.grpc.stub.StreamObserver<org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage> responseObserver);
-
-    public void getConfig(org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage request,
-        io.grpc.stub.StreamObserver<org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage> responseObserver);
   }
 
   public static interface CollectorServiceBlockingClient {
@@ -94,8 +82,6 @@ public class CollectorServiceGrpc {
     public org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage collectGaugeValues(org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage request);
 
     public org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage collectTrace(org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage request);
-
-    public org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage getConfig(org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage request);
   }
 
   public static interface CollectorServiceFutureClient {
@@ -108,9 +94,6 @@ public class CollectorServiceGrpc {
 
     public com.google.common.util.concurrent.ListenableFuture<org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage> collectTrace(
         org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage request);
-
-    public com.google.common.util.concurrent.ListenableFuture<org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage> getConfig(
-        org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage request);
   }
 
   public static class CollectorServiceStub extends io.grpc.stub.AbstractStub<CollectorServiceStub>
@@ -150,13 +133,6 @@ public class CollectorServiceGrpc {
       asyncUnaryCall(
           getChannel().newCall(METHOD_COLLECT_TRACE, getCallOptions()), request, responseObserver);
     }
-
-    @java.lang.Override
-    public void getConfig(org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage request,
-        io.grpc.stub.StreamObserver<org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage> responseObserver) {
-      asyncUnaryCall(
-          getChannel().newCall(METHOD_GET_CONFIG, getCallOptions()), request, responseObserver);
-    }
   }
 
   public static class CollectorServiceBlockingStub extends io.grpc.stub.AbstractStub<CollectorServiceBlockingStub>
@@ -192,12 +168,6 @@ public class CollectorServiceGrpc {
     public org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage collectTrace(org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage request) {
       return blockingUnaryCall(
           getChannel().newCall(METHOD_COLLECT_TRACE, getCallOptions()), request);
-    }
-
-    @java.lang.Override
-    public org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage getConfig(org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage request) {
-      return blockingUnaryCall(
-          getChannel().newCall(METHOD_GET_CONFIG, getCallOptions()), request);
     }
   }
 
@@ -237,13 +207,6 @@ public class CollectorServiceGrpc {
         org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage request) {
       return futureUnaryCall(
           getChannel().newCall(METHOD_COLLECT_TRACE, getCallOptions()), request);
-    }
-
-    @java.lang.Override
-    public com.google.common.util.concurrent.ListenableFuture<org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage> getConfig(
-        org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage request) {
-      return futureUnaryCall(
-          getChannel().newCall(METHOD_GET_CONFIG, getCallOptions()), request);
     }
   }
 
@@ -287,19 +250,6 @@ public class CollectorServiceGrpc {
                 org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage request,
                 io.grpc.stub.StreamObserver<org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage> responseObserver) {
               serviceImpl.collectTrace(request, responseObserver);
-            }
-          }))
-      .addMethod(
-        METHOD_GET_CONFIG,
-        asyncUnaryCall(
-          new io.grpc.stub.ServerCalls.UnaryMethod<
-              org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage,
-              org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage>() {
-            @java.lang.Override
-            public void invoke(
-                org.glowroot.wire.api.model.CollectorServiceOuterClass.EmptyMessage request,
-                io.grpc.stub.StreamObserver<org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage> responseObserver) {
-              serviceImpl.getConfig(request, responseObserver);
             }
           })).build();
   }

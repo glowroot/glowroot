@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent;
 
-import java.io.Closeable;
 import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.net.MalformedURLException;
@@ -25,26 +24,23 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.agent.weaving.PreInitializeWeavingClasses;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common.util.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class GlowrootThinAgentInit implements GlowrootAgentInit {
 
-    // this static field is needed to retain the data directory lock for life of jvm
-    private static @Nullable Closeable dataDirLockingCloseable;
+    private @Nullable AgentModule agentModule;
 
     @Override
     public void init(File baseDir, Map<String, String> properties,
@@ -55,23 +51,43 @@ public class GlowrootThinAgentInit implements GlowrootAgentInit {
             PreInitializeWeavingClasses.preInitializeClasses();
         }
 
-        // need to retain the data directory lock for life of jvm
-        dataDirLockingCloseable = DataDirLocking.lockDataDir(baseDir);
-
         Ticker ticker = Tickers.getTicker();
         Clock clock = Clock.systemClock();
 
         Collector collector = loadCustomCollector(baseDir);
+        if (collector == null) {
+            String host = properties.get("glowroot.collector.host");
+            if (Strings.isNullOrEmpty(host)) {
+                throw new IllegalStateException("glowroot.collector.host not supplied");
+            }
+            String portStr = properties.get("glowroot.collector.port");
+            if (Strings.isNullOrEmpty(portStr)) {
+                throw new IllegalStateException("glowroot.collector.port not supplied");
+            }
+            int port = Integer.parseInt(portStr);
+            collector = new GrpcCollector(host, port);
+        }
 
-        // FIXME need to add grpc collector
-        checkNotNull(collector);
+        agentModule = new AgentModule(clock, ticker, collector, instrumentation, baseDir,
+                glowrootJarFile, jbossModules);
+    }
 
-        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
-                .setNameFormat("Glowroot-Background-%d").build();
-        ScheduledExecutorService scheduledExecutor =
-                Executors.newScheduledThreadPool(2, threadFactory);
-        new AgentModule(clock, ticker, collector, instrumentation, baseDir, glowrootJarFile,
-                scheduledExecutor, jbossModules);
+    @Override
+    @OnlyUsedByTests
+    public AgentModule getAgentModule() {
+        return checkNotNull(agentModule);
+    }
+
+    @Override
+    @OnlyUsedByTests
+    public void close() throws Exception {
+        checkNotNull(agentModule).close();
+    }
+
+    @Override
+    @OnlyUsedByTests
+    public void reopen() throws Exception {
+        checkNotNull(agentModule).reopen();
     }
 
     private static @Nullable Collector loadCustomCollector(File baseDir)

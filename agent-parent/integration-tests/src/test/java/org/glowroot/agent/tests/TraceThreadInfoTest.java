@@ -30,9 +30,10 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TraceThreadInfoTest {
@@ -58,30 +59,28 @@ public class TraceThreadInfoTest {
     public void shouldTestCpuTime() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldUseCpu.class);
+        Trace trace = container.execute(ShouldUseCpu.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.threadCpuNanos().get()).isGreaterThanOrEqualTo(MILLISECONDS.toNanos(10));
+        assertThat(trace.getHeader().getThreadCpuNanos().getValue())
+                .isGreaterThanOrEqualTo(MILLISECONDS.toNanos(10));
     }
 
     @Test
     public void shouldTestWaitTime() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldWait.class);
+        Trace trace = container.execute(ShouldWait.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.threadWaitedNanos().get()).isGreaterThanOrEqualTo(5);
+        assertThat(trace.getHeader().getThreadWaitedNanos().getValue()).isGreaterThanOrEqualTo(5);
     }
 
     @Test
     public void shouldTestBlockTime() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldBlock.class);
+        Trace trace = container.execute(ShouldBlock.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.threadBlockedNanos().get()).isGreaterThanOrEqualTo(5);
+        assertThat(trace.getHeader().getThreadBlockedNanos().getValue()).isGreaterThanOrEqualTo(5);
     }
 
     public static class ShouldUseCpu implements AppUnderTest, TransactionMarker {
@@ -134,6 +133,9 @@ public class TraceThreadInfoTest {
             synchronized (lock) {
             }
             executor.shutdownNow();
+            if (!executor.awaitTermination(10, SECONDS)) {
+                throw new IllegalStateException("Could not terminate executor");
+            }
         }
     }
 

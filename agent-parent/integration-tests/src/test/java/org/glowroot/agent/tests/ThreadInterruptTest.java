@@ -46,11 +46,7 @@ public class ThreadInterruptTest {
 
     @Test
     public void shouldNotInterfereWithInterrupt() throws Exception {
-        // given
-        // when
-        container.executeAppUnderTest(ShouldInterrupt.class);
-        // then
-        container.getTraceService().getLastHeader();
+        container.execute(ShouldInterrupt.class);
     }
 
     public static class ShouldInterrupt implements AppUnderTest, TransactionMarker {

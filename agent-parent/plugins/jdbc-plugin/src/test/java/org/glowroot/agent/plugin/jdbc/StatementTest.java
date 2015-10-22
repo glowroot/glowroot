@@ -32,7 +32,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -59,13 +59,12 @@ public class StatementTest {
     public void testStatement() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
+        Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.message())
+        assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 
@@ -73,13 +72,12 @@ public class StatementTest {
     public void testStatementQuery() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteStatementQueryAndIterateOverResults.class);
+        Trace trace = container.execute(ExecuteStatementQueryAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.message())
+        assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 
@@ -87,13 +85,12 @@ public class StatementTest {
     public void testStatementUpdate() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteStatementUpdate.class);
+        Trace trace = container.execute(ExecuteStatementUpdate.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.message())
+        assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: update employee set name = 'nobody' => 3 rows");
     }
 
@@ -101,37 +98,34 @@ public class StatementTest {
     public void testNullStatement() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteNullStatement.class);
+        Trace trace = container.execute(ExecuteNullStatement.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.entryCount()).isZero();
+        assertThat(trace.getHeader().getEntryCount()).isZero();
     }
 
     @Test
     public void testStatementThrowing() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteStatementThrowing.class);
+        Trace trace = container.execute(ExecuteStatementThrowing.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.message()).isEqualTo("jdbc execution: select * from employee");
-        assertThat(entry.error().get().message()).isEqualTo("An execute failure");
+        assertThat(entry.getMessage()).isEqualTo("jdbc execution: select * from employee");
+        assertThat(entry.getError().getMessage()).isEqualTo("An execute failure");
     }
 
     @Test
     public void testStatementUsingPrevious() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteStatementAndUsePrevious.class);
+        Trace trace = container.execute(ExecuteStatementAndUsePrevious.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.message())
+        assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 
@@ -139,13 +133,12 @@ public class StatementTest {
     public void testStatementUsingRelativeForward() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteStatementAndUseRelativeForward.class);
+        Trace trace = container.execute(ExecuteStatementAndUseRelativeForward.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.message())
+        assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 
@@ -153,13 +146,12 @@ public class StatementTest {
     public void testStatementUsingRelativeBackward() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteStatementAndUseRelativeBackward.class);
+        Trace trace = container.execute(ExecuteStatementAndUseRelativeBackward.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.message())
+        assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 
@@ -167,13 +159,12 @@ public class StatementTest {
     public void testStatementUsingAbsolute() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteStatementAndUseAbsolute.class);
+        Trace trace = container.execute(ExecuteStatementAndUseAbsolute.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.message())
+        assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 2 rows");
     }
 
@@ -181,26 +172,24 @@ public class StatementTest {
     public void testStatementUsingFirst() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteStatementAndUseFirst.class);
+        Trace trace = container.execute(ExecuteStatementAndUseFirst.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.message()).isEqualTo("jdbc execution: select * from employee => 1 row");
+        assertThat(entry.getMessage()).isEqualTo("jdbc execution: select * from employee => 1 row");
     }
 
     @Test
     public void testStatementUsingLast() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteStatementAndUseLast.class);
+        Trace trace = container.execute(ExecuteStatementAndUseLast.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.message())
+        assertThat(entry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
     }
 

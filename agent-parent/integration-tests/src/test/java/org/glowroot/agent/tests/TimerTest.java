@@ -29,7 +29,8 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.AdvancedConfigUpdate;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,49 +58,55 @@ public class TimerTest {
     public void shouldReadTimers() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithTimers.class);
+        Trace trace = container.execute(ShouldGenerateTraceWithTimers.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.rootTimer().childTimers()).isEmpty();
-        assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getRootTimer().getChildTimerList()).isEmpty();
+        assertThat(header.getRootTimer().getName()).isEqualTo("mock trace marker");
     }
 
     @Test
     public void shouldReadTimersWithRootAndSelfNested() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithRootAndSelfNestedTimer.class);
+        Trace trace = container.execute(ShouldGenerateTraceWithRootAndSelfNestedTimer.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.rootTimer().childTimers()).isEmpty();
-        assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
-        assertThat(header.rootTimer().count()).isEqualTo(1);
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getRootTimer().getChildTimerList()).isEmpty();
+        assertThat(header.getRootTimer().getName()).isEqualTo("mock trace marker");
+        assertThat(header.getRootTimer().getCount()).isEqualTo(1);
     }
 
     @Test
     public void shouldReadActiveTimers() throws Exception {
         // given
+        container.getConfigService().updateAdvancedConfig(
+                AdvancedConfigUpdate.newBuilder()
+                        .setImmediatePartialStoreThresholdSeconds(ProtoOptional.of(1))
+                        .build());
         // when
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Future<Void> future = executorService.submit(new Callable<Void>() {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<Void> future = executor.submit(new Callable<Void>() {
             @Override
             public Void call() throws Exception {
-                container.executeAppUnderTest(ShouldGenerateActiveTraceWithTimers.class);
+                container.execute(ShouldGenerateActiveTraceWithTimers.class);
                 return null;
             }
         });
         // then
-        Trace.Header header = container.getTraceService().getActiveHeader(5, SECONDS);
-        assertThat(header).isNotNull();
-        assertThat(header.rootTimer().childTimers()).isEmpty();
-        assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
-        assertThat(header.rootTimer().count()).isEqualTo(1);
-        assertThat(header.rootTimer().active().or(false)).isTrue();
+        Trace trace = container.getCollectedPartialTrace();
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getRootTimer().getChildTimerList()).isEmpty();
+        assertThat(header.getRootTimer().getName()).isEqualTo("mock trace marker");
+        assertThat(header.getRootTimer().getCount()).isEqualTo(1);
+        assertThat(header.getRootTimer().getActive()).isTrue();
         // cleanup
-        // interrupt header
         container.interruptAppUnderTest();
         future.get();
-        executorService.shutdown();
+        executor.shutdown();
+        if (!executor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate executor");
+        }
     }
 
     public static class ShouldGenerateTraceWithTimers implements AppUnderTest, TransactionMarker {

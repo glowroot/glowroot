@@ -32,7 +32,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -59,22 +59,22 @@ public class CommitRollbackTest {
     public void testCommit() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteJdbcCommit.class);
+        Trace trace = container.execute(ExecuteJdbcCommit.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(2);
         Trace.Entry jdbcInsertEntry = entries.get(0);
-        assertThat(jdbcInsertEntry.message())
+        assertThat(jdbcInsertEntry.getMessage())
                 .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
         Trace.Entry jdbcCommitEntry = entries.get(1);
-        assertThat(jdbcCommitEntry.message()).isEqualTo("jdbc commit");
-        assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
-        assertThat(header.rootTimer().childTimers()).hasSize(2);
+        assertThat(jdbcCommitEntry.getMessage()).isEqualTo("jdbc commit");
+        Trace.Timer rootTimer = trace.getHeader().getRootTimer();
+        assertThat(rootTimer.getName()).isEqualTo("mock trace marker");
+        assertThat(rootTimer.getChildTimerList()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();
-        childTimerNames.add(header.rootTimer().childTimers().get(0).name());
-        childTimerNames.add(header.rootTimer().childTimers().get(1).name());
+        childTimerNames.add(rootTimer.getChildTimerList().get(0).getName());
+        childTimerNames.add(rootTimer.getChildTimerList().get(1).getName());
         assertThat(childTimerNames).containsOnly("jdbc execute", "jdbc commit");
     }
 
@@ -82,23 +82,23 @@ public class CommitRollbackTest {
     public void testCommitThrowing() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteJdbcCommitThrowing.class);
+        Trace trace = container.execute(ExecuteJdbcCommitThrowing.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(2);
         Trace.Entry jdbcInsertEntry = entries.get(0);
-        assertThat(jdbcInsertEntry.message())
+        assertThat(jdbcInsertEntry.getMessage())
                 .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
         Trace.Entry jdbcCommitEntry = entries.get(1);
-        assertThat(jdbcCommitEntry.message()).isEqualTo("jdbc commit");
-        assertThat(jdbcCommitEntry.error().get().message()).isEqualTo("A commit failure");
-        assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
-        assertThat(header.rootTimer().childTimers()).hasSize(2);
+        assertThat(jdbcCommitEntry.getMessage()).isEqualTo("jdbc commit");
+        assertThat(jdbcCommitEntry.getError().getMessage()).isEqualTo("A commit failure");
+        Trace.Timer rootTimer = trace.getHeader().getRootTimer();
+        assertThat(rootTimer.getName()).isEqualTo("mock trace marker");
+        assertThat(rootTimer.getChildTimerList()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();
-        childTimerNames.add(header.rootTimer().childTimers().get(0).name());
-        childTimerNames.add(header.rootTimer().childTimers().get(1).name());
+        childTimerNames.add(rootTimer.getChildTimerList().get(0).getName());
+        childTimerNames.add(rootTimer.getChildTimerList().get(1).getName());
         assertThat(childTimerNames).containsOnly("jdbc execute", "jdbc commit");
     }
 
@@ -106,22 +106,22 @@ public class CommitRollbackTest {
     public void testRollback() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteJdbcRollback.class);
+        Trace trace = container.execute(ExecuteJdbcRollback.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(2);
         Trace.Entry jdbcInsertEntry = entries.get(0);
-        assertThat(jdbcInsertEntry.message())
+        assertThat(jdbcInsertEntry.getMessage())
                 .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
         Trace.Entry jdbcCommitEntry = entries.get(1);
-        assertThat(jdbcCommitEntry.message()).isEqualTo("jdbc rollback");
-        assertThat(header.rootTimer().name()).isEqualTo("mock trace marker");
-        assertThat(header.rootTimer().childTimers()).hasSize(2);
+        assertThat(jdbcCommitEntry.getMessage()).isEqualTo("jdbc rollback");
+        Trace.Timer rootTimer = trace.getHeader().getRootTimer();
+        assertThat(rootTimer.getName()).isEqualTo("mock trace marker");
+        assertThat(rootTimer.getChildTimerList()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();
-        childTimerNames.add(header.rootTimer().childTimers().get(0).name());
-        childTimerNames.add(header.rootTimer().childTimers().get(1).name());
+        childTimerNames.add(rootTimer.getChildTimerList().get(0).getName());
+        childTimerNames.add(rootTimer.getChildTimerList().get(1).getName());
         assertThat(childTimerNames).containsOnly("jdbc execute", "jdbc rollback");
     }
 
@@ -129,22 +129,22 @@ public class CommitRollbackTest {
     public void testRollbackThrowing() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteJdbcRollbackThrowing.class);
+        Trace trace = container.execute(ExecuteJdbcRollbackThrowing.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(2);
         Trace.Entry jdbcInsertEntry = entries.get(0);
-        assertThat(jdbcInsertEntry.message())
+        assertThat(jdbcInsertEntry.getMessage())
                 .isEqualTo("jdbc execution: insert into employee (name) values ('john doe')");
         Trace.Entry jdbcCommitEntry = entries.get(1);
-        assertThat(jdbcCommitEntry.message()).isEqualTo("jdbc rollback");
-        assertThat(jdbcCommitEntry.error().get().message()).isEqualTo("A rollback failure");
-        assertThat(header.rootTimer().childTimers()).hasSize(2);
+        assertThat(jdbcCommitEntry.getMessage()).isEqualTo("jdbc rollback");
+        assertThat(jdbcCommitEntry.getError().getMessage()).isEqualTo("A rollback failure");
+        Trace.Timer rootTimer = trace.getHeader().getRootTimer();
+        assertThat(rootTimer.getChildTimerList()).hasSize(2);
         // ordering is by total desc, so order is not fixed
         Set<String> childTimerNames = Sets.newHashSet();
-        childTimerNames.add(header.rootTimer().childTimers().get(0).name());
-        childTimerNames.add(header.rootTimer().childTimers().get(1).name());
+        childTimerNames.add(rootTimer.getChildTimerList().get(0).getName());
+        childTimerNames.add(rootTimer.getChildTimerList().get(1).getName());
         assertThat(childTimerNames).containsOnly("jdbc execute", "jdbc rollback");
     }
 

@@ -18,11 +18,11 @@ public final class DownstreamServiceOuterClass {
     long getRequestId();
 
     /**
-     * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 16;</code>
+     * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 100;</code>
      */
     org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest getMbeanTreeRequest();
     /**
-     * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 16;</code>
+     * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 100;</code>
      */
     org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequestOrBuilder getMbeanTreeRequestOrBuilder();
 
@@ -72,9 +72,9 @@ public final class DownstreamServiceOuterClass {
               requestId_ = input.readInt64();
               break;
             }
-            case 130: {
+            case 802: {
               org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest.Builder subBuilder = null;
-              if (messageCase_ == 16) {
+              if (messageCase_ == 100) {
                 subBuilder = ((org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest) message_).toBuilder();
               }
               message_ =
@@ -83,7 +83,7 @@ public final class DownstreamServiceOuterClass {
                 subBuilder.mergeFrom((org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest) message_);
                 message_ = subBuilder.buildPartial();
               }
-              messageCase_ = 16;
+              messageCase_ = 100;
               break;
             }
           }
@@ -114,7 +114,7 @@ public final class DownstreamServiceOuterClass {
     private java.lang.Object message_;
     public enum MessageCase
         implements com.google.protobuf.Internal.EnumLite {
-      MBEAN_TREE_REQUEST(16),
+      MBEAN_TREE_REQUEST(100),
       MESSAGE_NOT_SET(0);
       private int value = 0;
       private MessageCase(int value) {
@@ -122,7 +122,7 @@ public final class DownstreamServiceOuterClass {
       }
       public static MessageCase valueOf(int value) {
         switch (value) {
-          case 16: return MBEAN_TREE_REQUEST;
+          case 100: return MBEAN_TREE_REQUEST;
           case 0: return MESSAGE_NOT_SET;
           default: throw new java.lang.IllegalArgumentException(
             "Value is undefined for this oneof enum.");
@@ -148,21 +148,21 @@ public final class DownstreamServiceOuterClass {
       return requestId_;
     }
 
-    public static final int MBEAN_TREE_REQUEST_FIELD_NUMBER = 16;
+    public static final int MBEAN_TREE_REQUEST_FIELD_NUMBER = 100;
     /**
-     * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 16;</code>
+     * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 100;</code>
      */
     public org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest getMbeanTreeRequest() {
-      if (messageCase_ == 16) {
+      if (messageCase_ == 100) {
          return (org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest) message_;
       }
       return org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest.getDefaultInstance();
     }
     /**
-     * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 16;</code>
+     * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 100;</code>
      */
     public org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequestOrBuilder getMbeanTreeRequestOrBuilder() {
-      if (messageCase_ == 16) {
+      if (messageCase_ == 100) {
          return (org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest) message_;
       }
       return org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest.getDefaultInstance();
@@ -183,8 +183,8 @@ public final class DownstreamServiceOuterClass {
       if (requestId_ != 0L) {
         output.writeInt64(1, requestId_);
       }
-      if (messageCase_ == 16) {
-        output.writeMessage(16, (org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest) message_);
+      if (messageCase_ == 100) {
+        output.writeMessage(100, (org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest) message_);
       }
     }
 
@@ -197,9 +197,9 @@ public final class DownstreamServiceOuterClass {
         size += com.google.protobuf.CodedOutputStream
           .computeInt64Size(1, requestId_);
       }
-      if (messageCase_ == 16) {
+      if (messageCase_ == 100) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(16, (org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest) message_);
+          .computeMessageSize(100, (org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest) message_);
       }
       memoizedSize = size;
       return size;
@@ -339,7 +339,7 @@ public final class DownstreamServiceOuterClass {
       public org.glowroot.wire.api.model.DownstreamServiceOuterClass.ServerRequest buildPartial() {
         org.glowroot.wire.api.model.DownstreamServiceOuterClass.ServerRequest result = new org.glowroot.wire.api.model.DownstreamServiceOuterClass.ServerRequest(this);
         result.requestId_ = requestId_;
-        if (messageCase_ == 16) {
+        if (messageCase_ == 100) {
           if (mbeanTreeRequestBuilder_ == null) {
             result.message_ = message_;
           } else {
@@ -444,23 +444,23 @@ public final class DownstreamServiceOuterClass {
       private com.google.protobuf.SingleFieldBuilder<
           org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest, org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest.Builder, org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequestOrBuilder> mbeanTreeRequestBuilder_;
       /**
-       * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 16;</code>
+       * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 100;</code>
        */
       public org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest getMbeanTreeRequest() {
         if (mbeanTreeRequestBuilder_ == null) {
-          if (messageCase_ == 16) {
+          if (messageCase_ == 100) {
             return (org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest) message_;
           }
           return org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest.getDefaultInstance();
         } else {
-          if (messageCase_ == 16) {
+          if (messageCase_ == 100) {
             return mbeanTreeRequestBuilder_.getMessage();
           }
           return org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest.getDefaultInstance();
         }
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 16;</code>
+       * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 100;</code>
        */
       public Builder setMbeanTreeRequest(org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest value) {
         if (mbeanTreeRequestBuilder_ == null) {
@@ -472,11 +472,11 @@ public final class DownstreamServiceOuterClass {
         } else {
           mbeanTreeRequestBuilder_.setMessage(value);
         }
-        messageCase_ = 16;
+        messageCase_ = 100;
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 16;</code>
+       * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 100;</code>
        */
       public Builder setMbeanTreeRequest(
           org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest.Builder builderForValue) {
@@ -486,15 +486,15 @@ public final class DownstreamServiceOuterClass {
         } else {
           mbeanTreeRequestBuilder_.setMessage(builderForValue.build());
         }
-        messageCase_ = 16;
+        messageCase_ = 100;
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 16;</code>
+       * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 100;</code>
        */
       public Builder mergeMbeanTreeRequest(org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest value) {
         if (mbeanTreeRequestBuilder_ == null) {
-          if (messageCase_ == 16 &&
+          if (messageCase_ == 100 &&
               message_ != org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest.getDefaultInstance()) {
             message_ = org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest.newBuilder((org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest) message_)
                 .mergeFrom(value).buildPartial();
@@ -503,26 +503,26 @@ public final class DownstreamServiceOuterClass {
           }
           onChanged();
         } else {
-          if (messageCase_ == 16) {
+          if (messageCase_ == 100) {
             mbeanTreeRequestBuilder_.mergeFrom(value);
           }
           mbeanTreeRequestBuilder_.setMessage(value);
         }
-        messageCase_ = 16;
+        messageCase_ = 100;
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 16;</code>
+       * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 100;</code>
        */
       public Builder clearMbeanTreeRequest() {
         if (mbeanTreeRequestBuilder_ == null) {
-          if (messageCase_ == 16) {
+          if (messageCase_ == 100) {
             messageCase_ = 0;
             message_ = null;
             onChanged();
           }
         } else {
-          if (messageCase_ == 16) {
+          if (messageCase_ == 100) {
             messageCase_ = 0;
             message_ = null;
           }
@@ -531,32 +531,32 @@ public final class DownstreamServiceOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 16;</code>
+       * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 100;</code>
        */
       public org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest.Builder getMbeanTreeRequestBuilder() {
         return getMbeanTreeRequestFieldBuilder().getBuilder();
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 16;</code>
+       * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 100;</code>
        */
       public org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequestOrBuilder getMbeanTreeRequestOrBuilder() {
-        if ((messageCase_ == 16) && (mbeanTreeRequestBuilder_ != null)) {
+        if ((messageCase_ == 100) && (mbeanTreeRequestBuilder_ != null)) {
           return mbeanTreeRequestBuilder_.getMessageOrBuilder();
         } else {
-          if (messageCase_ == 16) {
+          if (messageCase_ == 100) {
             return (org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest) message_;
           }
           return org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest.getDefaultInstance();
         }
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 16;</code>
+       * <code>optional .org_glowroot_wire_api_model.MBeanTreeRequest mbean_tree_request = 100;</code>
        */
       private com.google.protobuf.SingleFieldBuilder<
           org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest, org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest.Builder, org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequestOrBuilder> 
           getMbeanTreeRequestFieldBuilder() {
         if (mbeanTreeRequestBuilder_ == null) {
-          if (!(messageCase_ == 16)) {
+          if (!(messageCase_ == 100)) {
             message_ = org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeRequest.getDefaultInstance();
           }
           mbeanTreeRequestBuilder_ = new com.google.protobuf.SingleFieldBuilder<
@@ -566,7 +566,7 @@ public final class DownstreamServiceOuterClass {
                   isClean());
           message_ = null;
         }
-        messageCase_ = 16;
+        messageCase_ = 100;
         onChanged();;
         return mbeanTreeRequestBuilder_;
       }
@@ -647,11 +647,11 @@ public final class DownstreamServiceOuterClass {
     org.glowroot.wire.api.model.DownstreamServiceOuterClass.HelloOrBuilder getHelloOrBuilder();
 
     /**
-     * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 16;</code>
+     * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 100;</code>
      */
     org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse getMbeanTreeResponse();
     /**
-     * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 16;</code>
+     * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 100;</code>
      */
     org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponseOrBuilder getMbeanTreeResponseOrBuilder();
 
@@ -715,9 +715,9 @@ public final class DownstreamServiceOuterClass {
               messageCase_ = 2;
               break;
             }
-            case 130: {
+            case 802: {
               org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse.Builder subBuilder = null;
-              if (messageCase_ == 16) {
+              if (messageCase_ == 100) {
                 subBuilder = ((org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse) message_).toBuilder();
               }
               message_ =
@@ -726,7 +726,7 @@ public final class DownstreamServiceOuterClass {
                 subBuilder.mergeFrom((org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse) message_);
                 message_ = subBuilder.buildPartial();
               }
-              messageCase_ = 16;
+              messageCase_ = 100;
               break;
             }
           }
@@ -758,7 +758,7 @@ public final class DownstreamServiceOuterClass {
     public enum MessageCase
         implements com.google.protobuf.Internal.EnumLite {
       HELLO(2),
-      MBEAN_TREE_RESPONSE(16),
+      MBEAN_TREE_RESPONSE(100),
       MESSAGE_NOT_SET(0);
       private int value = 0;
       private MessageCase(int value) {
@@ -767,7 +767,7 @@ public final class DownstreamServiceOuterClass {
       public static MessageCase valueOf(int value) {
         switch (value) {
           case 2: return HELLO;
-          case 16: return MBEAN_TREE_RESPONSE;
+          case 100: return MBEAN_TREE_RESPONSE;
           case 0: return MESSAGE_NOT_SET;
           default: throw new java.lang.IllegalArgumentException(
             "Value is undefined for this oneof enum.");
@@ -813,21 +813,21 @@ public final class DownstreamServiceOuterClass {
       return org.glowroot.wire.api.model.DownstreamServiceOuterClass.Hello.getDefaultInstance();
     }
 
-    public static final int MBEAN_TREE_RESPONSE_FIELD_NUMBER = 16;
+    public static final int MBEAN_TREE_RESPONSE_FIELD_NUMBER = 100;
     /**
-     * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 16;</code>
+     * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 100;</code>
      */
     public org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse getMbeanTreeResponse() {
-      if (messageCase_ == 16) {
+      if (messageCase_ == 100) {
          return (org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse) message_;
       }
       return org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse.getDefaultInstance();
     }
     /**
-     * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 16;</code>
+     * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 100;</code>
      */
     public org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponseOrBuilder getMbeanTreeResponseOrBuilder() {
-      if (messageCase_ == 16) {
+      if (messageCase_ == 100) {
          return (org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse) message_;
       }
       return org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse.getDefaultInstance();
@@ -851,8 +851,8 @@ public final class DownstreamServiceOuterClass {
       if (messageCase_ == 2) {
         output.writeMessage(2, (org.glowroot.wire.api.model.DownstreamServiceOuterClass.Hello) message_);
       }
-      if (messageCase_ == 16) {
-        output.writeMessage(16, (org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse) message_);
+      if (messageCase_ == 100) {
+        output.writeMessage(100, (org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse) message_);
       }
     }
 
@@ -869,9 +869,9 @@ public final class DownstreamServiceOuterClass {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(2, (org.glowroot.wire.api.model.DownstreamServiceOuterClass.Hello) message_);
       }
-      if (messageCase_ == 16) {
+      if (messageCase_ == 100) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(16, (org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse) message_);
+          .computeMessageSize(100, (org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse) message_);
       }
       memoizedSize = size;
       return size;
@@ -1018,7 +1018,7 @@ public final class DownstreamServiceOuterClass {
             result.message_ = helloBuilder_.build();
           }
         }
-        if (messageCase_ == 16) {
+        if (messageCase_ == 100) {
           if (mbeanTreeResponseBuilder_ == null) {
             result.message_ = message_;
           } else {
@@ -1257,23 +1257,23 @@ public final class DownstreamServiceOuterClass {
       private com.google.protobuf.SingleFieldBuilder<
           org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse, org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse.Builder, org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponseOrBuilder> mbeanTreeResponseBuilder_;
       /**
-       * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 16;</code>
+       * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 100;</code>
        */
       public org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse getMbeanTreeResponse() {
         if (mbeanTreeResponseBuilder_ == null) {
-          if (messageCase_ == 16) {
+          if (messageCase_ == 100) {
             return (org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse) message_;
           }
           return org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse.getDefaultInstance();
         } else {
-          if (messageCase_ == 16) {
+          if (messageCase_ == 100) {
             return mbeanTreeResponseBuilder_.getMessage();
           }
           return org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse.getDefaultInstance();
         }
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 16;</code>
+       * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 100;</code>
        */
       public Builder setMbeanTreeResponse(org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse value) {
         if (mbeanTreeResponseBuilder_ == null) {
@@ -1285,11 +1285,11 @@ public final class DownstreamServiceOuterClass {
         } else {
           mbeanTreeResponseBuilder_.setMessage(value);
         }
-        messageCase_ = 16;
+        messageCase_ = 100;
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 16;</code>
+       * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 100;</code>
        */
       public Builder setMbeanTreeResponse(
           org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse.Builder builderForValue) {
@@ -1299,15 +1299,15 @@ public final class DownstreamServiceOuterClass {
         } else {
           mbeanTreeResponseBuilder_.setMessage(builderForValue.build());
         }
-        messageCase_ = 16;
+        messageCase_ = 100;
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 16;</code>
+       * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 100;</code>
        */
       public Builder mergeMbeanTreeResponse(org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse value) {
         if (mbeanTreeResponseBuilder_ == null) {
-          if (messageCase_ == 16 &&
+          if (messageCase_ == 100 &&
               message_ != org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse.getDefaultInstance()) {
             message_ = org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse.newBuilder((org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse) message_)
                 .mergeFrom(value).buildPartial();
@@ -1316,26 +1316,26 @@ public final class DownstreamServiceOuterClass {
           }
           onChanged();
         } else {
-          if (messageCase_ == 16) {
+          if (messageCase_ == 100) {
             mbeanTreeResponseBuilder_.mergeFrom(value);
           }
           mbeanTreeResponseBuilder_.setMessage(value);
         }
-        messageCase_ = 16;
+        messageCase_ = 100;
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 16;</code>
+       * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 100;</code>
        */
       public Builder clearMbeanTreeResponse() {
         if (mbeanTreeResponseBuilder_ == null) {
-          if (messageCase_ == 16) {
+          if (messageCase_ == 100) {
             messageCase_ = 0;
             message_ = null;
             onChanged();
           }
         } else {
-          if (messageCase_ == 16) {
+          if (messageCase_ == 100) {
             messageCase_ = 0;
             message_ = null;
           }
@@ -1344,32 +1344,32 @@ public final class DownstreamServiceOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 16;</code>
+       * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 100;</code>
        */
       public org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse.Builder getMbeanTreeResponseBuilder() {
         return getMbeanTreeResponseFieldBuilder().getBuilder();
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 16;</code>
+       * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 100;</code>
        */
       public org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponseOrBuilder getMbeanTreeResponseOrBuilder() {
-        if ((messageCase_ == 16) && (mbeanTreeResponseBuilder_ != null)) {
+        if ((messageCase_ == 100) && (mbeanTreeResponseBuilder_ != null)) {
           return mbeanTreeResponseBuilder_.getMessageOrBuilder();
         } else {
-          if (messageCase_ == 16) {
+          if (messageCase_ == 100) {
             return (org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse) message_;
           }
           return org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse.getDefaultInstance();
         }
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 16;</code>
+       * <code>optional .org_glowroot_wire_api_model.MBeanTreeResponse mbean_tree_response = 100;</code>
        */
       private com.google.protobuf.SingleFieldBuilder<
           org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse, org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse.Builder, org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponseOrBuilder> 
           getMbeanTreeResponseFieldBuilder() {
         if (mbeanTreeResponseBuilder_ == null) {
-          if (!(messageCase_ == 16)) {
+          if (!(messageCase_ == 100)) {
             message_ = org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanTreeResponse.getDefaultInstance();
           }
           mbeanTreeResponseBuilder_ = new com.google.protobuf.SingleFieldBuilder<
@@ -1379,7 +1379,7 @@ public final class DownstreamServiceOuterClass {
                   isClean());
           message_ = null;
         }
-        messageCase_ = 16;
+        messageCase_ = 100;
         onChanged();;
         return mbeanTreeResponseBuilder_;
       }
@@ -5847,12 +5847,12 @@ public final class DownstreamServiceOuterClass {
     java.lang.String[] descriptorData = {
       "\n\027DownstreamService.proto\022\033org_glowroot_" +
       "wire_api_model\"{\n\rServerRequest\022\022\n\nreque" +
-      "st_id\030\001 \001(\003\022K\n\022mbean_tree_request\030\020 \001(\0132" +
+      "st_id\030\001 \001(\003\022K\n\022mbean_tree_request\030d \001(\0132" +
       "-.org_glowroot_wire_api_model.MBeanTreeR" +
       "equestH\000B\t\n\007message\"\263\001\n\016ClientResponse\022\022" +
       "\n\nrequest_id\030\001 \001(\003\0223\n\005hello\030\002 \001(\0132\".org_" +
       "glowroot_wire_api_model.HelloH\000\022M\n\023mbean" +
-      "_tree_response\030\020 \001(\0132..org_glowroot_wire" +
+      "_tree_response\030d \001(\0132..org_glowroot_wire" +
       "_api_model.MBeanTreeResponseH\000B\t\n\007messag" +
       "e\"-\n\005Hello\022\016\n\006server\030\001 \001(\t\022\024\n\014server_gro",
       "up\030\002 \003(\t\"9\n\020MBeanTreeRequest\022%\n\035include_" +

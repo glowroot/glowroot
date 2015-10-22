@@ -50,10 +50,10 @@ public interface LiveTraceRepository {
             TracePointQuery query);
 
     @OnlyUsedByTests
-    int getTransactionCount(String server);
+    int getActiveTransactionCount(String server);
 
     @OnlyUsedByTests
-    int getPendingTransactionCount(String server);
+    int getPendingCompleteTransactionCount(String server);
 
     @Value.Immutable
     public abstract static class TracePointQuery {
@@ -143,12 +143,12 @@ public interface LiveTraceRepository {
         }
 
         @Override
-        public int getTransactionCount(String server) {
+        public int getActiveTransactionCount(String server) {
             return 0;
         }
 
         @Override
-        public int getPendingTransactionCount(String server) {
+        public int getPendingCompleteTransactionCount(String server) {
             return 0;
         }
     }

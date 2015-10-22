@@ -26,10 +26,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.config.PluginConfig;
-import org.glowroot.agent.it.harness.config.TransactionConfig;
-import org.glowroot.agent.it.harness.trace.Trace;
-import org.glowroot.agent.tests.Pause;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,24 +54,22 @@ public class TraceEntryStackTraceTest {
     @Test
     public void shouldReadTraceEntryStackTrace() throws Exception {
         // given
-        TransactionConfig transactionConfig = container.getConfigService().getTransactionConfig();
-        container.getConfigService().updateTransactionConfig(transactionConfig);
-        PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setProperty("captureTraceEntryStackTraces", true);
-        container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureTraceEntryStackTraces",
+                true);
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithTraceEntryStackTrace.class);
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        Trace trace = container.execute(ShouldGenerateTraceWithTraceEntryStackTrace.class);
+        // then
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
-        List<String> stackTrace = entries.get(0).locationStackTraceElements();
-        assertThat(stackTrace).isNotEmpty();
-        assertThat(stackTrace.get(0)).startsWith(Pause.class.getName() + ".pauseOneMillisecond("
-                + Pause.class.getSimpleName() + ".java:");
-        for (String element : stackTrace) {
-            assertThat(element).doesNotContain("$glowroot$");
-            // assert that element contains line number (or is a native method
-            assertThat(element).matches(".*\\.java:[0-9]+\\)|.*Native Method\\)");
+        List<Trace.StackTraceElement> stackTraceElements =
+                entries.get(0).getLocationStackTraceElementList();
+        assertThat(stackTraceElements).isNotEmpty();
+        assertThat(stackTraceElements.get(0).getClassName()).isEqualTo(Pause.class.getName());
+        assertThat(stackTraceElements.get(0).getMethodName()).isEqualTo("pauseOneMillisecond");
+        assertThat(stackTraceElements.get(0).getFileName())
+                .isEqualTo(Pause.class.getSimpleName() + ".java");
+        for (Trace.StackTraceElement stackTraceElement : stackTraceElements) {
+            assertThat(stackTraceElement.getMethodName()).doesNotContain("$glowroot$");
         }
     }
 

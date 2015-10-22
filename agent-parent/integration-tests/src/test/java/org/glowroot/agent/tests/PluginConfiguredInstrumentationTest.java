@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.tests;
 
+import java.util.List;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -24,9 +26,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.trace.Trace;
-import org.glowroot.agent.tests.AAA;
-import org.glowroot.agent.tests.ParamObject;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,14 +53,18 @@ public class PluginConfiguredInstrumentationTest {
     public void shouldExecute1() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldExecuteAAA.class);
+        Trace trace = container.execute(ShouldExecuteAAA.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.transactionName()).isEqualTo("abc zzz");
-        assertThat(header.user()).isEqualTo("uzzz");
-        assertThat(header.attributes().get("View")).containsExactly("vabc");
-        assertThat(header.attributes().get("Z")).containsExactly("zabc");
-        assertThat(header.entryCount()).isZero();
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getTransactionName()).isEqualTo("abc zzz");
+        assertThat(header.getUser()).isEqualTo("uzzz");
+        List<Trace.Attribute> attributes = header.getAttributeList();
+        assertThat(attributes).hasSize(2);
+        assertThat(attributes.get(0).getName()).isEqualTo("View");
+        assertThat(attributes.get(0).getValueList()).containsExactly("vabc");
+        assertThat(attributes.get(1).getName()).isEqualTo("Z");
+        assertThat(attributes.get(1).getValueList()).containsExactly("zabc");
+        assertThat(header.getEntryCount()).isZero();
     }
 
     public static class ShouldExecuteAAA implements AppUnderTest, TransactionMarker {

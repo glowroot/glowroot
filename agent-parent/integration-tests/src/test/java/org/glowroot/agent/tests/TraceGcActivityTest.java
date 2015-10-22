@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -29,8 +28,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.config.AdvancedConfig;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,13 +46,6 @@ public class TraceGcActivityTest {
         container.close();
     }
 
-    @Before
-    public void beforeEachTest() throws Exception {
-        AdvancedConfig config = container.getConfigService().getAdvancedConfig();
-        config.setCaptureGcActivity(true);
-        container.getConfigService().updateAdvancedConfig(config);
-    }
-
     @After
     public void afterEachTest() throws Exception {
         container.checkAndReset();
@@ -64,14 +55,13 @@ public class TraceGcActivityTest {
     public void shouldTestGarbageCollection() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateGarbage.class);
+        Trace trace = container.execute(ShouldGenerateGarbage.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
         long collectionCount = 0;
         long collectionTime = 0;
-        for (Trace.GarbageCollectionActivity gcActivity : header.gcActivities()) {
-            collectionCount += gcActivity.count();
-            collectionTime += gcActivity.totalMillis();
+        for (Trace.GarbageCollectionActivity gcActivity : trace.getHeader().getGcActivityList()) {
+            collectionCount += gcActivity.getCount();
+            collectionTime += gcActivity.getTotalMillis();
         }
         assertThat(collectionCount).isGreaterThanOrEqualTo(5);
         assertThat(collectionTime).isGreaterThanOrEqualTo(5);

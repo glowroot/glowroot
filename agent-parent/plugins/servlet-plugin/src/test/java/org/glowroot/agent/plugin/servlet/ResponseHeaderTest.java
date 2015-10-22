@@ -19,9 +19,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -31,8 +34,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.trace.Trace;
 import org.glowroot.agent.plugin.servlet.TestServlet.PatchedMockHttpServletResponse;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -63,12 +66,9 @@ public class ResponseHeaderTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
                 "Content-Type, Content-Length, Content-Language");
         // when
-        container.executeAppUnderTest(SetStandardResponseHeaders.class);
+        Trace trace = container.execute(SetStandardResponseHeaders.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        @SuppressWarnings("unchecked")
-        Map<String, Object> responseHeaders =
-                (Map<String, Object>) header.detail().get("Response headers");
+        Map<String, Object> responseHeaders = getResponseHeaders(trace);
         assertThat(responseHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("Content-Length")).isEqualTo("1");
         assertThat(responseHeaders.get("Content-Language")).isEqualTo("en");
@@ -81,12 +81,9 @@ public class ResponseHeaderTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
                 "Content-Type, Content-Length, Content-Language");
         // when
-        container.executeAppUnderTest(SetStandardResponseHeadersUsingSetHeader.class);
+        Trace trace = container.execute(SetStandardResponseHeadersUsingSetHeader.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        @SuppressWarnings("unchecked")
-        Map<String, Object> responseHeaders =
-                (Map<String, Object>) header.detail().get("Response headers");
+        Map<String, Object> responseHeaders = getResponseHeaders(trace);
         assertThat(responseHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("Content-Length")).isEqualTo("1");
         assertThat(responseHeaders.get("Content-Language")).isEqualTo("en");
@@ -99,12 +96,9 @@ public class ResponseHeaderTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
                 "Content-Type, Content-Length, Content-Language");
         // when
-        container.executeAppUnderTest(SetStandardResponseHeadersUsingAddHeader.class);
+        Trace trace = container.execute(SetStandardResponseHeadersUsingAddHeader.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        @SuppressWarnings("unchecked")
-        Map<String, Object> responseHeaders =
-                (Map<String, Object>) header.detail().get("Response headers");
+        Map<String, Object> responseHeaders = getResponseHeaders(trace);
         assertThat(responseHeaders.get("Content-Type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("Content-Length")).isEqualTo("1");
         assertThat(responseHeaders.get("Content-Language")).isEqualTo("en");
@@ -117,12 +111,9 @@ public class ResponseHeaderTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
                 "Content-Type, Content-Length");
         // when
-        container.executeAppUnderTest(SetStandardResponseHeadersLowercase.class);
+        Trace trace = container.execute(SetStandardResponseHeadersLowercase.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        @SuppressWarnings("unchecked")
-        Map<String, Object> responseHeaders =
-                (Map<String, Object>) header.detail().get("Response headers");
+        Map<String, Object> responseHeaders = getResponseHeaders(trace);
         assertThat(responseHeaders.get("content-type")).isEqualTo("text/plain;charset=UTF-8");
         assertThat(responseHeaders.get("content-length")).isEqualTo("1");
         assertThat(responseHeaders.get("extra")).isNull();
@@ -133,10 +124,9 @@ public class ResponseHeaderTest {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders", "");
         // when
-        container.executeAppUnderTest(SetStandardResponseHeaders.class);
+        Trace trace = container.execute(SetStandardResponseHeaders.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.detail()).doesNotContainKey("Response headers");
+        assertThat(getResponseHeaders(trace)).isNull();
     }
 
     @Test
@@ -144,10 +134,9 @@ public class ResponseHeaderTest {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders", "ABC");
         // when
-        container.executeAppUnderTest(SetStandardResponseHeaders.class);
+        Trace trace = container.execute(SetStandardResponseHeaders.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.detail()).doesNotContainKey("Response headers");
+        assertThat(getResponseHeaders(trace)).isNull();
     }
 
     @Test
@@ -155,10 +144,9 @@ public class ResponseHeaderTest {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders", "");
         // when
-        container.executeAppUnderTest(SetStandardResponseHeadersUsingSetHeader.class);
+        Trace trace = container.execute(SetStandardResponseHeadersUsingSetHeader.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.detail()).doesNotContainKey("Response headers");
+        assertThat(getResponseHeaders(trace)).isNull();
     }
 
     @Test
@@ -166,10 +154,9 @@ public class ResponseHeaderTest {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders", "");
         // when
-        container.executeAppUnderTest(SetStandardResponseHeadersUsingAddHeader.class);
+        Trace trace = container.execute(SetStandardResponseHeadersUsingAddHeader.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.detail()).doesNotContainKey("Response headers");
+        assertThat(getResponseHeaders(trace)).isNull();
     }
 
     @Test
@@ -178,12 +165,9 @@ public class ResponseHeaderTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
                 "One,Two,Date-One,Date-Two,Int-One,Int-Two,X-One");
         // when
-        container.executeAppUnderTest(SetLotsOfResponseHeaders.class);
+        Trace trace = container.execute(SetLotsOfResponseHeaders.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        @SuppressWarnings("unchecked")
-        Map<String, Object> responseHeaders =
-                (Map<String, Object>) header.detail().get("Response headers");
+        Map<String, Object> responseHeaders = getResponseHeaders(trace);
         @SuppressWarnings("unchecked")
         List<String> one = (List<String>) responseHeaders.get("One");
         @SuppressWarnings("unchecked")
@@ -211,11 +195,41 @@ public class ResponseHeaderTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
                 "Content-Type, Content-Length, Content-Language");
         // when
-        container.executeAppUnderTest(SetStandardResponseHeadersOutsideServlet.class);
+        container.executeNoExpectedTrace(SetStandardResponseHeadersOutsideServlet.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header).isNull();
         // basically just testing that it should not generate any errors
+    }
+
+    static @Nullable Map<String, Object> getDetailMap(Trace trace, String name) {
+        List<Trace.DetailEntry> details = trace.getHeader().getDetailEntryList();
+        Trace.DetailEntry found = null;
+        for (Trace.DetailEntry detail : details) {
+            if (detail.getName().equals(name)) {
+                found = detail;
+                break;
+            }
+        }
+        if (found == null) {
+            return null;
+        }
+        Map<String, Object> responseHeaders = Maps.newLinkedHashMap();
+        for (Trace.DetailEntry detail : found.getChildEntryList()) {
+            List<Trace.DetailValue> values = detail.getValueList();
+            if (values.size() == 1) {
+                responseHeaders.put(detail.getName(), values.get(0).getSval());
+            } else {
+                List<String> vals = Lists.newArrayList();
+                for (Trace.DetailValue value : values) {
+                    vals.add(value.getSval());
+                }
+                responseHeaders.put(detail.getName(), vals);
+            }
+        }
+        return responseHeaders;
+    }
+
+    private static @Nullable Map<String, Object> getResponseHeaders(Trace trace) {
+        return getDetailMap(trace, "Response headers");
     }
 
     @SuppressWarnings("serial")

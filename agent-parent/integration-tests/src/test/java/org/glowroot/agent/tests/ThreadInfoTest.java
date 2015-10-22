@@ -26,9 +26,8 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.config.AdvancedConfig;
-import org.glowroot.agent.it.harness.trace.Trace;
-import org.glowroot.agent.tests.LevelOne;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.AdvancedConfigUpdate;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -55,111 +54,103 @@ public class ThreadInfoTest {
     public void shouldReadTraceThreadInfoConfigEnabled() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(Normal.class);
+        Trace trace = container.execute(Normal.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.threadCpuNanos().isPresent()).isTrue();
-        assertThat(header.threadBlockedNanos().isPresent()).isTrue();
-        assertThat(header.threadWaitedNanos().isPresent()).isTrue();
+        assertThat(trace.getHeader().hasThreadCpuNanos()).isTrue();
+        assertThat(trace.getHeader().hasThreadBlockedNanos()).isTrue();
+        assertThat(trace.getHeader().hasThreadWaitedNanos()).isTrue();
     }
 
     @Test
     public void shouldReadTraceThreadInfoConfigDisabled() throws Exception {
         // given
-        AdvancedConfig advancedConfig = container.getConfigService().getAdvancedConfig();
-        advancedConfig.setCaptureThreadInfo(false);
-        container.getConfigService().updateAdvancedConfig(advancedConfig);
+        container.getConfigService().updateAdvancedConfig(
+                AdvancedConfigUpdate.newBuilder()
+                        .setCaptureThreadInfo(ProtoOptional.of(false))
+                        .build());
         // when
-        container.executeAppUnderTest(Normal.class);
+        Trace trace = container.execute(Normal.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.threadCpuNanos().isPresent()).isFalse();
-        assertThat(header.threadBlockedNanos().isPresent()).isFalse();
-        assertThat(header.threadWaitedNanos().isPresent()).isFalse();
+        assertThat(trace.getHeader().hasThreadCpuNanos()).isFalse();
+        assertThat(trace.getHeader().hasThreadBlockedNanos()).isFalse();
+        assertThat(trace.getHeader().hasThreadWaitedNanos()).isFalse();
     }
 
     @Test
     public void shouldReadTraceCpuTimeDisabled() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ThreadCpuTimeDisabled.class);
+        Trace trace = container.execute(ThreadCpuTimeDisabled.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.threadCpuNanos().isPresent()).isFalse();
-        assertThat(header.threadBlockedNanos().isPresent()).isTrue();
-        assertThat(header.threadWaitedNanos().isPresent()).isTrue();
+        assertThat(trace.getHeader().hasThreadCpuNanos()).isFalse();
+        assertThat(trace.getHeader().hasThreadBlockedNanos()).isTrue();
+        assertThat(trace.getHeader().hasThreadWaitedNanos()).isTrue();
     }
 
     @Test
     public void shouldReadTraceCpuTimeDisabledMid() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ThreadCpuTimeDisabledMid.class);
+        Trace trace = container.execute(ThreadCpuTimeDisabledMid.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.threadCpuNanos().isPresent()).isFalse();
-        assertThat(header.threadBlockedNanos().isPresent()).isTrue();
-        assertThat(header.threadWaitedNanos().isPresent()).isTrue();
+        assertThat(trace.getHeader().hasThreadCpuNanos()).isFalse();
+        assertThat(trace.getHeader().hasThreadBlockedNanos()).isTrue();
+        assertThat(trace.getHeader().hasThreadWaitedNanos()).isTrue();
     }
 
     @Test
     public void shouldReadTraceCpuTimeEnabledMid() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ThreadCpuTimeEnabledMid.class);
+        Trace trace = container.execute(ThreadCpuTimeEnabledMid.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.threadCpuNanos().isPresent()).isFalse();
-        assertThat(header.threadBlockedNanos().isPresent()).isTrue();
-        assertThat(header.threadWaitedNanos().isPresent()).isTrue();
+        assertThat(trace.getHeader().hasThreadCpuNanos()).isFalse();
+        assertThat(trace.getHeader().hasThreadBlockedNanos()).isTrue();
+        assertThat(trace.getHeader().hasThreadWaitedNanos()).isTrue();
     }
 
     @Test
     public void shouldReadTraceContentionMonitoringDisabled() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ThreadContentionMonitoringDisabled.class);
+        Trace trace = container.execute(ThreadContentionMonitoringDisabled.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.threadCpuNanos().isPresent()).isTrue();
-        assertThat(header.threadBlockedNanos().isPresent()).isFalse();
-        assertThat(header.threadWaitedNanos().isPresent()).isFalse();
+        assertThat(trace.getHeader().hasThreadCpuNanos()).isTrue();
+        assertThat(trace.getHeader().hasThreadBlockedNanos()).isFalse();
+        assertThat(trace.getHeader().hasThreadWaitedNanos()).isFalse();
     }
 
     @Test
     public void shouldReadTraceContentionMonitoringDisabledMid() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ThreadContentionMonitoringDisabledMid.class);
+        Trace trace = container.execute(ThreadContentionMonitoringDisabledMid.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.threadCpuNanos().isPresent()).isTrue();
-        assertThat(header.threadBlockedNanos().isPresent()).isFalse();
-        assertThat(header.threadWaitedNanos().isPresent()).isFalse();
+        assertThat(trace.getHeader().hasThreadCpuNanos()).isTrue();
+        assertThat(trace.getHeader().hasThreadBlockedNanos()).isFalse();
+        assertThat(trace.getHeader().hasThreadWaitedNanos()).isFalse();
     }
 
     @Test
     public void shouldReadTraceContentionMonitoringEnabledMid() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ThreadContentionMonitoringEnabledMid.class);
+        Trace trace = container.execute(ThreadContentionMonitoringEnabledMid.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.threadCpuNanos().isPresent()).isTrue();
-        assertThat(header.threadBlockedNanos().isPresent()).isFalse();
-        assertThat(header.threadWaitedNanos().isPresent()).isFalse();
+        assertThat(trace.getHeader().hasThreadCpuNanos()).isTrue();
+        assertThat(trace.getHeader().hasThreadBlockedNanos()).isFalse();
+        assertThat(trace.getHeader().hasThreadWaitedNanos()).isFalse();
     }
 
     @Test
     public void shouldReadTraceBothDisabled() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(BothDisabled.class);
+        Trace trace = container.execute(BothDisabled.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.threadCpuNanos().isPresent()).isFalse();
-        assertThat(header.threadBlockedNanos().isPresent()).isFalse();
-        assertThat(header.threadWaitedNanos().isPresent()).isFalse();
+        assertThat(trace.getHeader().hasThreadCpuNanos()).isFalse();
+        assertThat(trace.getHeader().hasThreadBlockedNanos()).isFalse();
+        assertThat(trace.getHeader().hasThreadWaitedNanos()).isFalse();
     }
 
     public static class Normal implements AppUnderTest {

@@ -31,7 +31,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,41 +56,37 @@ public class ApacheHttpClientPluginTest {
 
     @Test
     public void shouldCaptureHttpGet() throws Exception {
-        container.executeAppUnderTest(ExecuteHttpGet.class);
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        Trace trace = container.execute(ExecuteHttpGet.class);
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).message())
+        assertThat(entries.get(0).getMessage())
                 .isEqualTo("http client request: GET http://www.example.com/hello1");
     }
 
     @Test
     public void shouldCaptureHttpGetUsingHttpHostArg() throws Exception {
-        container.executeAppUnderTest(ExecuteHttpGetUsingHttpHostArg.class);
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        Trace trace = container.execute(ExecuteHttpGetUsingHttpHostArg.class);
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).message())
+        assertThat(entries.get(0).getMessage())
                 .isEqualTo("http client request: GET http://www.example.com/hello2");
     }
 
     @Test
     public void shouldCaptureHttpPost() throws Exception {
-        container.executeAppUnderTest(ExecuteHttpPost.class);
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        Trace trace = container.execute(ExecuteHttpPost.class);
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).message())
+        assertThat(entries.get(0).getMessage())
                 .isEqualTo("http client request: POST http://www.example.com/hello3");
     }
 
     @Test
     public void shouldCaptureHttpPostUsingHttpHostArg() throws Exception {
-        container.executeAppUnderTest(ExecuteHttpPostUsingHttpHostArg.class);
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        Trace trace = container.execute(ExecuteHttpPostUsingHttpHostArg.class);
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).message())
+        assertThat(entries.get(0).getMessage())
                 .isEqualTo("http client request: POST http://www.example.com/hello4");
     }
 

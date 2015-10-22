@@ -15,10 +15,7 @@
  */
 package org.glowroot.agent.it.harness;
 
-import org.glowroot.agent.it.harness.admin.AdminService;
-import org.glowroot.agent.it.harness.aggregate.AggregateService;
-import org.glowroot.agent.it.harness.config.ConfigService;
-import org.glowroot.agent.it.harness.trace.TraceService;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface Container {
 
@@ -26,34 +23,20 @@ public interface Container {
 
     void addExpectedLogMessage(String loggerName, String partialMessage) throws Exception;
 
-    void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass) throws Exception;
+    Trace execute(Class<? extends AppUnderTest> appUnderTestClass) throws Exception;
+
+    void executeNoExpectedTrace(Class<? extends AppUnderTest> appUnderTestClass) throws Exception;
 
     void interruptAppUnderTest() throws Exception;
 
-    TraceService getTraceService();
-
-    AggregateService getAggregateService();
-
-    AdminService getAdminService();
-
-    int getUiPort() throws Exception;
+    Trace getCollectedPartialTrace() throws Exception;
 
     // checks no unexpected log messages
     // checks no active traces
-    // resets Glowroot back to square one
+    // resets Glowroot back to square one (including re-weaving instrumentation configs if needed)
     void checkAndReset() throws Exception;
-
-    void checkAndResetConfigOnly() throws Exception;
 
     void close() throws Exception;
 
     void close(boolean evenIfShared) throws Exception;
-
-    @SuppressWarnings("serial")
-    class StartupFailedException extends Exception {
-        public StartupFailedException() {}
-        public StartupFailedException(Throwable cause) {
-            super(cause);
-        }
-    }
 }

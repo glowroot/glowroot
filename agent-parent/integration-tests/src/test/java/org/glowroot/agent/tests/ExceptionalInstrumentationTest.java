@@ -26,8 +26,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.trace.Trace;
-import org.glowroot.agent.tests.ExceptionalClass;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,12 +53,11 @@ public class ExceptionalInstrumentationTest {
     public void shouldReadTraceAttributesInAlphaOrder() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateTraceWithErrorEntry.class);
+        Trace trace = container.execute(ShouldGenerateTraceWithErrorEntry.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries.size()).isEqualTo(1);
-        assertThat(entries.get(0).error().get().message()).isEqualTo("This is exceptional");
+        assertThat(entries.get(0).getError().getMessage()).isEqualTo("This is exceptional");
     }
 
     public static class ShouldGenerateTraceWithErrorEntry

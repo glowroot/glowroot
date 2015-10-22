@@ -26,4 +26,10 @@ public interface GlowrootAgentInit {
     void init(File baseDir, Map<String, String> properties,
             @Nullable Instrumentation instrumentation, @Nullable File glowrootJarFile,
             String glowrootVersion, boolean jbossModules, boolean viewerMode) throws Exception;
+
+    AgentModule getAgentModule();
+
+    void close() throws Exception;
+
+    void reopen() throws Exception;
 }

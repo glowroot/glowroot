@@ -43,7 +43,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @OnlyUsedByTests
 public class SpyingLogbackFilter extends Filter<ILoggingEvent> {
 
-    private final List<ExpectedMessage> expectedMessages = Lists.newCopyOnWriteArrayList();
+    private final List<ExpectedLogMessage> expectedMessages = Lists.newCopyOnWriteArrayList();
 
     private final AtomicInteger unexpectedMessageCount = new AtomicInteger();
 
@@ -70,7 +70,7 @@ public class SpyingLogbackFilter extends Filter<ILoggingEvent> {
             if (expectedMessages.isEmpty()) {
                 return false;
             }
-            ExpectedMessage expectedMessage = expectedMessages.get(0);
+            ExpectedLogMessage expectedMessage = expectedMessages.get(0);
             if (event.getMessage() == null) {
                 return false;
             }
@@ -95,18 +95,19 @@ public class SpyingLogbackFilter extends Filter<ILoggingEvent> {
         return getSpyingLogbackFilter() != null;
     }
 
-    public static void addExpectedMessage(String loggerName, String partialMessage) {
+    public static void addExpectedLogMessage(String loggerName, String partialMessage) {
         SpyingLogbackFilter spyingLogbackFilter = getSpyingLogbackFilter();
         checkNotNull(spyingLogbackFilter, "SpyingLogbackFilter.init() was never called");
         spyingLogbackFilter.expectedMessages
-                .add(ImmutableExpectedMessage.of(loggerName, partialMessage));
+                .add(ImmutableExpectedLogMessage.of(loggerName, partialMessage));
     }
 
-    public static MessageCount clearMessages() {
+    public static LogCount clearMessages() {
         SpyingLogbackFilter spyingLogbackFilter = getSpyingLogbackFilter();
         checkNotNull(spyingLogbackFilter, "SpyingLogbackFilter.init() was never called");
-        MessageCount counts = ImmutableMessageCount.of(spyingLogbackFilter.expectedMessages.size(),
-                spyingLogbackFilter.unexpectedMessageCount.get());
+        LogCount counts =
+                ImmutableLogCount.of(spyingLogbackFilter.unexpectedMessageCount.get(),
+                        spyingLogbackFilter.expectedMessages.size());
         spyingLogbackFilter.expectedMessages.clear();
         spyingLogbackFilter.unexpectedMessageCount.set(0);
         return counts;
@@ -141,14 +142,14 @@ public class SpyingLogbackFilter extends Filter<ILoggingEvent> {
 
     @Value.Immutable
     @Styles.AllParameters
-    public interface MessageCount extends Serializable {
-        int expectedCount();
+    public interface LogCount extends Serializable {
         int unexpectedCount();
+        int expectedButNotLoggedCount();
     }
 
     @Value.Immutable
     @Styles.AllParameters
-    interface ExpectedMessage {
+    interface ExpectedLogMessage {
         String loggerName();
         String partialMessage();
     }

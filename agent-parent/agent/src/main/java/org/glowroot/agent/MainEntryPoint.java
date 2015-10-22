@@ -27,6 +27,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +38,9 @@ public class MainEntryPoint {
 
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
+
+    @OnlyUsedByTests
+    private static @MonotonicNonNull GlowrootAgentInit glowrootAgentInit;
 
     private MainEntryPoint() {}
 
@@ -67,11 +71,13 @@ public class MainEntryPoint {
         ImmutableMap<String, String> properties = getGlowrootProperties();
         File baseDir = BaseDir.getBaseDir(properties, glowrootJarFile);
         String version = Version.getVersion();
-        GlowrootAgentInit glowrootModule = getGlowrootAgentInit();
+        glowrootAgentInit = newGlowrootAgentInit();
         try {
-            boolean loggingSpy = Boolean.parseBoolean(properties.get("internal.logging.spy"));
+            boolean loggingSpy =
+                    Boolean.parseBoolean(properties.get("glowroot.internal.logging.spy"));
             LoggingInit.initStaticLoggerState(baseDir, loggingSpy);
-            glowrootModule.init(baseDir, properties, null, glowrootJarFile, version, false, true);
+            glowrootAgentInit.init(baseDir, properties, null, glowrootJarFile, version, false,
+                    true);
         } catch (BaseDirLockedException e) {
             logBaseDirLockedException(baseDir);
             return;
@@ -91,18 +97,18 @@ public class MainEntryPoint {
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
         ManagementFactory.getThreadMXBean().setThreadContentionMonitoringEnabled(true);
         String version = Version.getVersion();
-        GlowrootAgentInit glowrootModule = getGlowrootAgentInit();
-        boolean loggingSpy = Boolean.parseBoolean(properties.get("internal.logging.spy"));
+        glowrootAgentInit = newGlowrootAgentInit();
+        boolean loggingSpy = Boolean.parseBoolean(properties.get("glowroot.internal.logging.spy"));
         LoggingInit.initStaticLoggerState(baseDir, loggingSpy);
-        glowrootModule.init(baseDir, properties, instrumentation, glowrootJarFile, version, false,
-                jbossModules);
+        glowrootAgentInit.init(baseDir, properties, instrumentation, glowrootJarFile, version,
+                false, jbossModules);
         startupLogger.info("Glowroot started (version {})", version);
     }
 
-    private static GlowrootAgentInit getGlowrootAgentInit() {
+    private static GlowrootAgentInit newGlowrootAgentInit() {
         try {
             Class<?> glowrootAgentInitClass =
-                    Class.forName("org.glowroot.agent.fat.GlowrootFatAgentInit");
+                    Class.forName("org.glowroot.fat.GlowrootFatAgentInit");
             return (GlowrootAgentInit) glowrootAgentInitClass.newInstance();
         } catch (Exception e) {
             return new GlowrootThinAgentInit();
@@ -115,7 +121,7 @@ public class MainEntryPoint {
             if (entry.getKey() instanceof String && entry.getValue() instanceof String
                     && ((String) entry.getKey()).startsWith("glowroot.")) {
                 String key = (String) entry.getKey();
-                builder.put(key.substring("glowroot.".length()), (String) entry.getValue());
+                builder.put(key, (String) entry.getValue());
             }
         }
         return builder.build();
@@ -163,5 +169,10 @@ public class MainEntryPoint {
     public static void start(Map<String, String> properties) throws Exception {
         File baseDir = BaseDir.getBaseDir(properties, null);
         start(baseDir, properties, null, null, false);
+    }
+
+    @OnlyUsedByTests
+    public static @Nullable GlowrootAgentInit getGlowrootAgentInit() {
+        return glowrootAgentInit;
     }
 }

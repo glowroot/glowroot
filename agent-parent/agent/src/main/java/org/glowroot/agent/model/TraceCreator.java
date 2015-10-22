@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.glowroot.agent.model.ThreadInfoComponent.ThreadInfoData;
+import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -104,16 +105,19 @@ public class TraceCreator {
         }
         builder.setRootTimer(transaction.getRootTimer().toProtobuf());
         ThreadInfoData threadInfo = transaction.getThreadInfo();
-        if (threadInfo == null) {
-            builder.setThreadCpuNanos(-1);
-            builder.setThreadBlockedNanos(-1);
-            builder.setThreadWaitedNanos(-1);
-            builder.setThreadAllocatedBytes(-1);
-        } else {
-            builder.setThreadCpuNanos(threadInfo.threadCpuNanos());
-            builder.setThreadBlockedNanos(threadInfo.threadBlockedNanos());
-            builder.setThreadWaitedNanos(threadInfo.threadWaitedNanos());
-            builder.setThreadAllocatedBytes(threadInfo.threadAllocatedBytes());
+        if (threadInfo != null) {
+            if (threadInfo.threadCpuNanos() != NotAvailableAware.NA) {
+                builder.setThreadCpuNanos(getOptionalInt(threadInfo.threadCpuNanos()));
+            }
+            if (threadInfo.threadBlockedNanos() != NotAvailableAware.NA) {
+                builder.setThreadBlockedNanos(getOptionalInt(threadInfo.threadBlockedNanos()));
+            }
+            if (threadInfo.threadWaitedNanos() != NotAvailableAware.NA) {
+                builder.setThreadWaitedNanos(getOptionalInt(threadInfo.threadWaitedNanos()));
+            }
+            if (threadInfo.threadAllocatedBytes() != NotAvailableAware.NA) {
+                builder.setThreadAllocatedBytes(getOptionalInt(threadInfo.threadAllocatedBytes()));
+            }
         }
         builder.addAllGcActivity(transaction.getGcActivity());
         builder.setEntryCount(transaction.getEntryCount());
@@ -121,5 +125,9 @@ public class TraceCreator {
         builder.setProfileSampleCount(transaction.getProfileSampleCount());
         builder.setProfileSampleLimitExceeded(transaction.isProfileSampleLimitExceeded());
         return builder.build();
+    }
+
+    private static Trace.OptionalInt getOptionalInt(long value) {
+        return Trace.OptionalInt.newBuilder().setValue(value).build();
     }
 }

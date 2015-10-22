@@ -51,7 +51,7 @@ public class BadPluginIdTest {
                 "unexpected plugin id: not-to-be-found (available plugin ids are"
                         + " glowroot-integration-tests, glowroot-test-container)");
         // when
-        container.executeAppUnderTest(BadPluginId.class);
+        container.executeNoExpectedTrace(BadPluginId.class);
         // then
     }
 

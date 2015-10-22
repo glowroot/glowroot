@@ -30,7 +30,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -59,17 +59,16 @@ public class UserTest {
     public void testHasRequestUserPrincipal() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(HasRequestUserPrincipal.class);
+        Trace trace = container.execute(HasRequestUserPrincipal.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.user()).isEqualTo("my name is mock");
+        assertThat(trace.getHeader().getUser()).isEqualTo("my name is mock");
     }
 
     @Test
     public void testHasRequestWithExceptionOnGetUserPrincipal() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(HasRequestWithExceptionOnGetUserPrincipal.class);
+        container.execute(HasRequestWithExceptionOnGetUserPrincipal.class);
         // then don't blow up
     }
 
@@ -79,10 +78,9 @@ public class UserTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
                 "userattr");
         // when
-        container.executeAppUnderTest(HasSessionUserAttribute.class);
+        Trace trace = container.execute(HasSessionUserAttribute.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.user()).isEqualTo("abc");
+        assertThat(trace.getHeader().getUser()).isEqualTo("abc");
     }
 
     @Test
@@ -91,10 +89,9 @@ public class UserTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
                 "userattr");
         // when
-        container.executeAppUnderTest(SetSessionUserAttribute.class);
+        Trace trace = container.execute(SetSessionUserAttribute.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.user()).isEqualTo("abc");
+        assertThat(trace.getHeader().getUser()).isEqualTo("abc");
     }
 
     @Test
@@ -103,12 +100,11 @@ public class UserTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
                 "userattr");
         // when
-        container.executeAppUnderTest(SetSessionUserAttributeNull.class);
+        Trace trace = container.execute(SetSessionUserAttributeNull.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
         // this is intentional, setting user attribute to null shouldn't clear out user for
         // that particular request (since the request was in fact, originally, for that user)
-        assertThat(header.user()).isEqualTo("something");
+        assertThat(trace.getHeader().getUser()).isEqualTo("something");
     }
 
     @Test
@@ -117,10 +113,9 @@ public class UserTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
                 "userone.two");
         // when
-        container.executeAppUnderTest(HasNestedSessionUserAttribute.class);
+        Trace trace = container.execute(HasNestedSessionUserAttribute.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.user()).isEqualTo("xyz");
+        assertThat(trace.getHeader().getUser()).isEqualTo("xyz");
     }
 
     @Test
@@ -129,10 +124,9 @@ public class UserTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
                 "userone.two");
         // when
-        container.executeAppUnderTest(SetNestedSessionUserAttribute.class);
+        Trace trace = container.execute(SetNestedSessionUserAttribute.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.user()).isEqualTo("xyz");
+        assertThat(trace.getHeader().getUser()).isEqualTo("xyz");
     }
 
     @Test
@@ -141,10 +135,9 @@ public class UserTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
                 "missinguserattr");
         // when
-        container.executeAppUnderTest(HasSessionUserAttribute.class);
+        Trace trace = container.execute(HasSessionUserAttribute.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.user()).isEmpty();
+        assertThat(trace.getHeader().getUser()).isEmpty();
     }
 
     @Test
@@ -153,10 +146,9 @@ public class UserTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "sessionUserAttribute",
                 "userone.missingtwo");
         // when
-        container.executeAppUnderTest(HasNestedSessionUserAttribute.class);
+        Trace trace = container.execute(HasNestedSessionUserAttribute.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.user()).isEmpty();
+        assertThat(trace.getHeader().getUser()).isEmpty();
     }
 
     @SuppressWarnings("serial")

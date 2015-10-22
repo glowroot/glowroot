@@ -1429,40 +1429,56 @@ public final class AggregateOuterClass {
     long getErrorCount();
 
     /**
-     * <code>optional double total_cpu_nanos = 4;</code>
-     *
-     * <pre>
-     * -1 means N/A
-     * </pre>
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_cpu_nanos = 4;</code>
      */
-    double getTotalCpuNanos();
+    boolean hasTotalCpuNanos();
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_cpu_nanos = 4;</code>
+     */
+    org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble getTotalCpuNanos();
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_cpu_nanos = 4;</code>
+     */
+    org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder getTotalCpuNanosOrBuilder();
 
     /**
-     * <code>optional double total_blocked_nanos = 5;</code>
-     *
-     * <pre>
-     * -1 means N/A
-     * </pre>
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_blocked_nanos = 5;</code>
      */
-    double getTotalBlockedNanos();
+    boolean hasTotalBlockedNanos();
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_blocked_nanos = 5;</code>
+     */
+    org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble getTotalBlockedNanos();
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_blocked_nanos = 5;</code>
+     */
+    org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder getTotalBlockedNanosOrBuilder();
 
     /**
-     * <code>optional double total_waited_nanos = 6;</code>
-     *
-     * <pre>
-     * -1 means N/A
-     * </pre>
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_waited_nanos = 6;</code>
      */
-    double getTotalWaitedNanos();
+    boolean hasTotalWaitedNanos();
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_waited_nanos = 6;</code>
+     */
+    org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble getTotalWaitedNanos();
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_waited_nanos = 6;</code>
+     */
+    org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder getTotalWaitedNanosOrBuilder();
 
     /**
-     * <code>optional double total_allocated_bytes = 7;</code>
-     *
-     * <pre>
-     * -1 means N/A
-     * </pre>
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_allocated_bytes = 7;</code>
      */
-    double getTotalAllocatedBytes();
+    boolean hasTotalAllocatedBytes();
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_allocated_bytes = 7;</code>
+     */
+    org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble getTotalAllocatedBytes();
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_allocated_bytes = 7;</code>
+     */
+    org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder getTotalAllocatedBytesOrBuilder();
 
     /**
      * <code>optional .org_glowroot_wire_api_model.Aggregate.Histogram total_nanos_histogram = 8;</code>
@@ -1557,10 +1573,6 @@ public final class AggregateOuterClass {
       totalNanos_ = 0D;
       transactionCount_ = 0L;
       errorCount_ = 0L;
-      totalCpuNanos_ = 0D;
-      totalBlockedNanos_ = 0D;
-      totalWaitedNanos_ = 0D;
-      totalAllocatedBytes_ = 0D;
       rootTimer_ = java.util.Collections.emptyList();
       queriesByType_ = java.util.Collections.emptyList();
     }
@@ -1604,24 +1616,56 @@ public final class AggregateOuterClass {
               errorCount_ = input.readInt64();
               break;
             }
-            case 33: {
+            case 34: {
+              org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder subBuilder = null;
+              if (totalCpuNanos_ != null) {
+                subBuilder = totalCpuNanos_.toBuilder();
+              }
+              totalCpuNanos_ = input.readMessage(org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.parser(), extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(totalCpuNanos_);
+                totalCpuNanos_ = subBuilder.buildPartial();
+              }
 
-              totalCpuNanos_ = input.readDouble();
               break;
             }
-            case 41: {
+            case 42: {
+              org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder subBuilder = null;
+              if (totalBlockedNanos_ != null) {
+                subBuilder = totalBlockedNanos_.toBuilder();
+              }
+              totalBlockedNanos_ = input.readMessage(org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.parser(), extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(totalBlockedNanos_);
+                totalBlockedNanos_ = subBuilder.buildPartial();
+              }
 
-              totalBlockedNanos_ = input.readDouble();
               break;
             }
-            case 49: {
+            case 50: {
+              org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder subBuilder = null;
+              if (totalWaitedNanos_ != null) {
+                subBuilder = totalWaitedNanos_.toBuilder();
+              }
+              totalWaitedNanos_ = input.readMessage(org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.parser(), extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(totalWaitedNanos_);
+                totalWaitedNanos_ = subBuilder.buildPartial();
+              }
 
-              totalWaitedNanos_ = input.readDouble();
               break;
             }
-            case 57: {
+            case 58: {
+              org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder subBuilder = null;
+              if (totalAllocatedBytes_ != null) {
+                subBuilder = totalAllocatedBytes_.toBuilder();
+              }
+              totalAllocatedBytes_ = input.readMessage(org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.parser(), extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(totalAllocatedBytes_);
+                totalAllocatedBytes_ = subBuilder.buildPartial();
+              }
 
-              totalAllocatedBytes_ = input.readDouble();
               break;
             }
             case 66: {
@@ -1694,6 +1738,381 @@ public final class AggregateOuterClass {
       return org.glowroot.wire.api.model.AggregateOuterClass.internal_static_org_glowroot_wire_api_model_Aggregate_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.class, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.Builder.class);
+    }
+
+    public interface OptionalDoubleOrBuilder extends
+        // @@protoc_insertion_point(interface_extends:org_glowroot_wire_api_model.Aggregate.OptionalDouble)
+        com.google.protobuf.MessageOrBuilder {
+
+      /**
+       * <code>optional double value = 1;</code>
+       */
+      double getValue();
+    }
+    /**
+     * Protobuf type {@code org_glowroot_wire_api_model.Aggregate.OptionalDouble}
+     */
+    public  static final class OptionalDouble extends
+        com.google.protobuf.GeneratedMessage implements
+        // @@protoc_insertion_point(message_implements:org_glowroot_wire_api_model.Aggregate.OptionalDouble)
+        OptionalDoubleOrBuilder {
+      // Use OptionalDouble.newBuilder() to construct.
+      private OptionalDouble(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+        super(builder);
+      }
+      private OptionalDouble() {
+        value_ = 0D;
+      }
+
+      @java.lang.Override
+      public final com.google.protobuf.UnknownFieldSet
+      getUnknownFields() {
+        return com.google.protobuf.UnknownFieldSet.getDefaultInstance();
+      }
+      private OptionalDouble(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry) {
+        this();
+        int mutable_bitField0_ = 0;
+        try {
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              default: {
+                if (!input.skipField(tag)) {
+                  done = true;
+                }
+                break;
+              }
+              case 9: {
+
+                value_ = input.readDouble();
+                break;
+              }
+            }
+          }
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw new RuntimeException(e.setUnfinishedMessage(this));
+        } catch (java.io.IOException e) {
+          throw new RuntimeException(
+              new com.google.protobuf.InvalidProtocolBufferException(
+                  e.getMessage()).setUnfinishedMessage(this));
+        } finally {
+          makeExtensionsImmutable();
+        }
+      }
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.glowroot.wire.api.model.AggregateOuterClass.internal_static_org_glowroot_wire_api_model_Aggregate_OptionalDouble_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.glowroot.wire.api.model.AggregateOuterClass.internal_static_org_glowroot_wire_api_model_Aggregate_OptionalDouble_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.class, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder.class);
+      }
+
+      public static final int VALUE_FIELD_NUMBER = 1;
+      private double value_;
+      /**
+       * <code>optional double value = 1;</code>
+       */
+      public double getValue() {
+        return value_;
+      }
+
+      private byte memoizedIsInitialized = -1;
+      public final boolean isInitialized() {
+        byte isInitialized = memoizedIsInitialized;
+        if (isInitialized == 1) return true;
+        if (isInitialized == 0) return false;
+
+        memoizedIsInitialized = 1;
+        return true;
+      }
+
+      public void writeTo(com.google.protobuf.CodedOutputStream output)
+                          throws java.io.IOException {
+        if (value_ != 0D) {
+          output.writeDouble(1, value_);
+        }
+      }
+
+      public int getSerializedSize() {
+        int size = memoizedSize;
+        if (size != -1) return size;
+
+        size = 0;
+        if (value_ != 0D) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeDoubleSize(1, value_);
+        }
+        memoizedSize = size;
+        return size;
+      }
+
+      private static final long serialVersionUID = 0L;
+      public static org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble parseFrom(
+          com.google.protobuf.ByteString data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble parseFrom(
+          com.google.protobuf.ByteString data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble parseFrom(byte[] data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble parseFrom(
+          byte[] data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble parseFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble parseFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+      public static org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble parseDelimitedFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input);
+      }
+      public static org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble parseDelimitedFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      }
+      public static org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble parseFrom(
+          com.google.protobuf.CodedInputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble parseFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+
+      public Builder newBuilderForType() { return newBuilder(); }
+      public static Builder newBuilder() {
+        return DEFAULT_INSTANCE.toBuilder();
+      }
+      public static Builder newBuilder(org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble prototype) {
+        return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+      }
+      public Builder toBuilder() {
+        return this == DEFAULT_INSTANCE
+            ? new Builder() : new Builder().mergeFrom(this);
+      }
+
+      @java.lang.Override
+      protected Builder newBuilderForType(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        Builder builder = new Builder(parent);
+        return builder;
+      }
+      /**
+       * Protobuf type {@code org_glowroot_wire_api_model.Aggregate.OptionalDouble}
+       */
+      public static final class Builder extends
+          com.google.protobuf.GeneratedMessage.Builder<Builder> implements
+          // @@protoc_insertion_point(builder_implements:org_glowroot_wire_api_model.Aggregate.OptionalDouble)
+          org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder {
+        public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+          return org.glowroot.wire.api.model.AggregateOuterClass.internal_static_org_glowroot_wire_api_model_Aggregate_OptionalDouble_descriptor;
+        }
+
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+          return org.glowroot.wire.api.model.AggregateOuterClass.internal_static_org_glowroot_wire_api_model_Aggregate_OptionalDouble_fieldAccessorTable
+              .ensureFieldAccessorsInitialized(
+                  org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.class, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder.class);
+        }
+
+        // Construct using org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.newBuilder()
+        private Builder() {
+          maybeForceBuilderInitialization();
+        }
+
+        private Builder(
+            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          super(parent);
+          maybeForceBuilderInitialization();
+        }
+        private void maybeForceBuilderInitialization() {
+          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          }
+        }
+        public Builder clear() {
+          super.clear();
+          value_ = 0D;
+
+          return this;
+        }
+
+        public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+          return org.glowroot.wire.api.model.AggregateOuterClass.internal_static_org_glowroot_wire_api_model_Aggregate_OptionalDouble_descriptor;
+        }
+
+        public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble getDefaultInstanceForType() {
+          return org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.getDefaultInstance();
+        }
+
+        public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble build() {
+          org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble result = buildPartial();
+          if (!result.isInitialized()) {
+            throw newUninitializedMessageException(result);
+          }
+          return result;
+        }
+
+        public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble buildPartial() {
+          org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble result = new org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble(this);
+          result.value_ = value_;
+          onBuilt();
+          return result;
+        }
+
+        public Builder mergeFrom(com.google.protobuf.Message other) {
+          if (other instanceof org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble) {
+            return mergeFrom((org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble)other);
+          } else {
+            super.mergeFrom(other);
+            return this;
+          }
+        }
+
+        public Builder mergeFrom(org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble other) {
+          if (other == org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.getDefaultInstance()) return this;
+          if (other.getValue() != 0D) {
+            setValue(other.getValue());
+          }
+          onChanged();
+          return this;
+        }
+
+        public final boolean isInitialized() {
+          return true;
+        }
+
+        public Builder mergeFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+          org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble parsedMessage = null;
+          try {
+            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            parsedMessage = (org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble) e.getUnfinishedMessage();
+            throw e;
+          } finally {
+            if (parsedMessage != null) {
+              mergeFrom(parsedMessage);
+            }
+          }
+          return this;
+        }
+
+        private double value_ ;
+        /**
+         * <code>optional double value = 1;</code>
+         */
+        public double getValue() {
+          return value_;
+        }
+        /**
+         * <code>optional double value = 1;</code>
+         */
+        public Builder setValue(double value) {
+          
+          value_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>optional double value = 1;</code>
+         */
+        public Builder clearValue() {
+          
+          value_ = 0D;
+          onChanged();
+          return this;
+        }
+        public final Builder setUnknownFields(
+            final com.google.protobuf.UnknownFieldSet unknownFields) {
+          return this;
+        }
+
+        public final Builder mergeUnknownFields(
+            final com.google.protobuf.UnknownFieldSet unknownFields) {
+          return this;
+        }
+
+
+        // @@protoc_insertion_point(builder_scope:org_glowroot_wire_api_model.Aggregate.OptionalDouble)
+      }
+
+      // @@protoc_insertion_point(class_scope:org_glowroot_wire_api_model.Aggregate.OptionalDouble)
+      private static final org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble DEFAULT_INSTANCE;
+      static {
+        DEFAULT_INSTANCE = new org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble();
+      }
+
+      public static org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble getDefaultInstance() {
+        return DEFAULT_INSTANCE;
+      }
+
+      private static final com.google.protobuf.Parser<OptionalDouble>
+          PARSER = new com.google.protobuf.AbstractParser<OptionalDouble>() {
+        public OptionalDouble parsePartialFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws com.google.protobuf.InvalidProtocolBufferException {
+          try {
+            return new OptionalDouble(input, extensionRegistry);
+          } catch (RuntimeException e) {
+            if (e.getCause() instanceof
+                com.google.protobuf.InvalidProtocolBufferException) {
+              throw (com.google.protobuf.InvalidProtocolBufferException)
+                  e.getCause();
+            }
+            throw e;
+          }
+        }
+      };
+
+      public static com.google.protobuf.Parser<OptionalDouble> parser() {
+        return PARSER;
+      }
+
+      @java.lang.Override
+      public com.google.protobuf.Parser<OptionalDouble> getParserForType() {
+        return PARSER;
+      }
+
+      public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble getDefaultInstanceForType() {
+        return DEFAULT_INSTANCE;
+      }
+
     }
 
     public interface HistogramOrBuilder extends
@@ -4862,55 +5281,87 @@ public final class AggregateOuterClass {
     }
 
     public static final int TOTAL_CPU_NANOS_FIELD_NUMBER = 4;
-    private double totalCpuNanos_;
+    private org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble totalCpuNanos_;
     /**
-     * <code>optional double total_cpu_nanos = 4;</code>
-     *
-     * <pre>
-     * -1 means N/A
-     * </pre>
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_cpu_nanos = 4;</code>
      */
-    public double getTotalCpuNanos() {
-      return totalCpuNanos_;
+    public boolean hasTotalCpuNanos() {
+      return totalCpuNanos_ != null;
+    }
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_cpu_nanos = 4;</code>
+     */
+    public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble getTotalCpuNanos() {
+      return totalCpuNanos_ == null ? org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.getDefaultInstance() : totalCpuNanos_;
+    }
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_cpu_nanos = 4;</code>
+     */
+    public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder getTotalCpuNanosOrBuilder() {
+      return getTotalCpuNanos();
     }
 
     public static final int TOTAL_BLOCKED_NANOS_FIELD_NUMBER = 5;
-    private double totalBlockedNanos_;
+    private org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble totalBlockedNanos_;
     /**
-     * <code>optional double total_blocked_nanos = 5;</code>
-     *
-     * <pre>
-     * -1 means N/A
-     * </pre>
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_blocked_nanos = 5;</code>
      */
-    public double getTotalBlockedNanos() {
-      return totalBlockedNanos_;
+    public boolean hasTotalBlockedNanos() {
+      return totalBlockedNanos_ != null;
+    }
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_blocked_nanos = 5;</code>
+     */
+    public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble getTotalBlockedNanos() {
+      return totalBlockedNanos_ == null ? org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.getDefaultInstance() : totalBlockedNanos_;
+    }
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_blocked_nanos = 5;</code>
+     */
+    public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder getTotalBlockedNanosOrBuilder() {
+      return getTotalBlockedNanos();
     }
 
     public static final int TOTAL_WAITED_NANOS_FIELD_NUMBER = 6;
-    private double totalWaitedNanos_;
+    private org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble totalWaitedNanos_;
     /**
-     * <code>optional double total_waited_nanos = 6;</code>
-     *
-     * <pre>
-     * -1 means N/A
-     * </pre>
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_waited_nanos = 6;</code>
      */
-    public double getTotalWaitedNanos() {
-      return totalWaitedNanos_;
+    public boolean hasTotalWaitedNanos() {
+      return totalWaitedNanos_ != null;
+    }
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_waited_nanos = 6;</code>
+     */
+    public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble getTotalWaitedNanos() {
+      return totalWaitedNanos_ == null ? org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.getDefaultInstance() : totalWaitedNanos_;
+    }
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_waited_nanos = 6;</code>
+     */
+    public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder getTotalWaitedNanosOrBuilder() {
+      return getTotalWaitedNanos();
     }
 
     public static final int TOTAL_ALLOCATED_BYTES_FIELD_NUMBER = 7;
-    private double totalAllocatedBytes_;
+    private org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble totalAllocatedBytes_;
     /**
-     * <code>optional double total_allocated_bytes = 7;</code>
-     *
-     * <pre>
-     * -1 means N/A
-     * </pre>
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_allocated_bytes = 7;</code>
      */
-    public double getTotalAllocatedBytes() {
-      return totalAllocatedBytes_;
+    public boolean hasTotalAllocatedBytes() {
+      return totalAllocatedBytes_ != null;
+    }
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_allocated_bytes = 7;</code>
+     */
+    public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble getTotalAllocatedBytes() {
+      return totalAllocatedBytes_ == null ? org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.getDefaultInstance() : totalAllocatedBytes_;
+    }
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_allocated_bytes = 7;</code>
+     */
+    public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder getTotalAllocatedBytesOrBuilder() {
+      return getTotalAllocatedBytes();
     }
 
     public static final int TOTAL_NANOS_HISTOGRAM_FIELD_NUMBER = 8;
@@ -5046,17 +5497,17 @@ public final class AggregateOuterClass {
       if (errorCount_ != 0L) {
         output.writeInt64(3, errorCount_);
       }
-      if (totalCpuNanos_ != 0D) {
-        output.writeDouble(4, totalCpuNanos_);
+      if (totalCpuNanos_ != null) {
+        output.writeMessage(4, getTotalCpuNanos());
       }
-      if (totalBlockedNanos_ != 0D) {
-        output.writeDouble(5, totalBlockedNanos_);
+      if (totalBlockedNanos_ != null) {
+        output.writeMessage(5, getTotalBlockedNanos());
       }
-      if (totalWaitedNanos_ != 0D) {
-        output.writeDouble(6, totalWaitedNanos_);
+      if (totalWaitedNanos_ != null) {
+        output.writeMessage(6, getTotalWaitedNanos());
       }
-      if (totalAllocatedBytes_ != 0D) {
-        output.writeDouble(7, totalAllocatedBytes_);
+      if (totalAllocatedBytes_ != null) {
+        output.writeMessage(7, getTotalAllocatedBytes());
       }
       if (totalNanosHistogram_ != null) {
         output.writeMessage(8, getTotalNanosHistogram());
@@ -5089,21 +5540,21 @@ public final class AggregateOuterClass {
         size += com.google.protobuf.CodedOutputStream
           .computeInt64Size(3, errorCount_);
       }
-      if (totalCpuNanos_ != 0D) {
+      if (totalCpuNanos_ != null) {
         size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(4, totalCpuNanos_);
+          .computeMessageSize(4, getTotalCpuNanos());
       }
-      if (totalBlockedNanos_ != 0D) {
+      if (totalBlockedNanos_ != null) {
         size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(5, totalBlockedNanos_);
+          .computeMessageSize(5, getTotalBlockedNanos());
       }
-      if (totalWaitedNanos_ != 0D) {
+      if (totalWaitedNanos_ != null) {
         size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(6, totalWaitedNanos_);
+          .computeMessageSize(6, getTotalWaitedNanos());
       }
-      if (totalAllocatedBytes_ != 0D) {
+      if (totalAllocatedBytes_ != null) {
         size += com.google.protobuf.CodedOutputStream
-          .computeDoubleSize(7, totalAllocatedBytes_);
+          .computeMessageSize(7, getTotalAllocatedBytes());
       }
       if (totalNanosHistogram_ != null) {
         size += com.google.protobuf.CodedOutputStream
@@ -5244,14 +5695,30 @@ public final class AggregateOuterClass {
 
         errorCount_ = 0L;
 
-        totalCpuNanos_ = 0D;
-
-        totalBlockedNanos_ = 0D;
-
-        totalWaitedNanos_ = 0D;
-
-        totalAllocatedBytes_ = 0D;
-
+        if (totalCpuNanosBuilder_ == null) {
+          totalCpuNanos_ = null;
+        } else {
+          totalCpuNanos_ = null;
+          totalCpuNanosBuilder_ = null;
+        }
+        if (totalBlockedNanosBuilder_ == null) {
+          totalBlockedNanos_ = null;
+        } else {
+          totalBlockedNanos_ = null;
+          totalBlockedNanosBuilder_ = null;
+        }
+        if (totalWaitedNanosBuilder_ == null) {
+          totalWaitedNanos_ = null;
+        } else {
+          totalWaitedNanos_ = null;
+          totalWaitedNanosBuilder_ = null;
+        }
+        if (totalAllocatedBytesBuilder_ == null) {
+          totalAllocatedBytes_ = null;
+        } else {
+          totalAllocatedBytes_ = null;
+          totalAllocatedBytesBuilder_ = null;
+        }
         if (totalNanosHistogramBuilder_ == null) {
           totalNanosHistogram_ = null;
         } else {
@@ -5303,10 +5770,26 @@ public final class AggregateOuterClass {
         result.totalNanos_ = totalNanos_;
         result.transactionCount_ = transactionCount_;
         result.errorCount_ = errorCount_;
-        result.totalCpuNanos_ = totalCpuNanos_;
-        result.totalBlockedNanos_ = totalBlockedNanos_;
-        result.totalWaitedNanos_ = totalWaitedNanos_;
-        result.totalAllocatedBytes_ = totalAllocatedBytes_;
+        if (totalCpuNanosBuilder_ == null) {
+          result.totalCpuNanos_ = totalCpuNanos_;
+        } else {
+          result.totalCpuNanos_ = totalCpuNanosBuilder_.build();
+        }
+        if (totalBlockedNanosBuilder_ == null) {
+          result.totalBlockedNanos_ = totalBlockedNanos_;
+        } else {
+          result.totalBlockedNanos_ = totalBlockedNanosBuilder_.build();
+        }
+        if (totalWaitedNanosBuilder_ == null) {
+          result.totalWaitedNanos_ = totalWaitedNanos_;
+        } else {
+          result.totalWaitedNanos_ = totalWaitedNanosBuilder_.build();
+        }
+        if (totalAllocatedBytesBuilder_ == null) {
+          result.totalAllocatedBytes_ = totalAllocatedBytes_;
+        } else {
+          result.totalAllocatedBytes_ = totalAllocatedBytesBuilder_.build();
+        }
         if (totalNanosHistogramBuilder_ == null) {
           result.totalNanosHistogram_ = totalNanosHistogram_;
         } else {
@@ -5360,17 +5843,17 @@ public final class AggregateOuterClass {
         if (other.getErrorCount() != 0L) {
           setErrorCount(other.getErrorCount());
         }
-        if (other.getTotalCpuNanos() != 0D) {
-          setTotalCpuNanos(other.getTotalCpuNanos());
+        if (other.hasTotalCpuNanos()) {
+          mergeTotalCpuNanos(other.getTotalCpuNanos());
         }
-        if (other.getTotalBlockedNanos() != 0D) {
-          setTotalBlockedNanos(other.getTotalBlockedNanos());
+        if (other.hasTotalBlockedNanos()) {
+          mergeTotalBlockedNanos(other.getTotalBlockedNanos());
         }
-        if (other.getTotalWaitedNanos() != 0D) {
-          setTotalWaitedNanos(other.getTotalWaitedNanos());
+        if (other.hasTotalWaitedNanos()) {
+          mergeTotalWaitedNanos(other.getTotalWaitedNanos());
         }
-        if (other.getTotalAllocatedBytes() != 0D) {
-          setTotalAllocatedBytes(other.getTotalAllocatedBytes());
+        if (other.hasTotalAllocatedBytes()) {
+          mergeTotalAllocatedBytes(other.getTotalAllocatedBytes());
         }
         if (other.hasTotalNanosHistogram()) {
           mergeTotalNanosHistogram(other.getTotalNanosHistogram());
@@ -5535,156 +6018,472 @@ public final class AggregateOuterClass {
         return this;
       }
 
-      private double totalCpuNanos_ ;
+      private org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble totalCpuNanos_ = null;
+      private com.google.protobuf.SingleFieldBuilder<
+          org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder> totalCpuNanosBuilder_;
       /**
-       * <code>optional double total_cpu_nanos = 4;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_cpu_nanos = 4;</code>
        */
-      public double getTotalCpuNanos() {
-        return totalCpuNanos_;
+      public boolean hasTotalCpuNanos() {
+        return totalCpuNanosBuilder_ != null || totalCpuNanos_ != null;
       }
       /**
-       * <code>optional double total_cpu_nanos = 4;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_cpu_nanos = 4;</code>
        */
-      public Builder setTotalCpuNanos(double value) {
-        
-        totalCpuNanos_ = value;
-        onChanged();
+      public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble getTotalCpuNanos() {
+        if (totalCpuNanosBuilder_ == null) {
+          return totalCpuNanos_ == null ? org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.getDefaultInstance() : totalCpuNanos_;
+        } else {
+          return totalCpuNanosBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_cpu_nanos = 4;</code>
+       */
+      public Builder setTotalCpuNanos(org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble value) {
+        if (totalCpuNanosBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          totalCpuNanos_ = value;
+          onChanged();
+        } else {
+          totalCpuNanosBuilder_.setMessage(value);
+        }
+
         return this;
       }
       /**
-       * <code>optional double total_cpu_nanos = 4;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_cpu_nanos = 4;</code>
+       */
+      public Builder setTotalCpuNanos(
+          org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder builderForValue) {
+        if (totalCpuNanosBuilder_ == null) {
+          totalCpuNanos_ = builderForValue.build();
+          onChanged();
+        } else {
+          totalCpuNanosBuilder_.setMessage(builderForValue.build());
+        }
+
+        return this;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_cpu_nanos = 4;</code>
+       */
+      public Builder mergeTotalCpuNanos(org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble value) {
+        if (totalCpuNanosBuilder_ == null) {
+          if (totalCpuNanos_ != null) {
+            totalCpuNanos_ =
+              org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.newBuilder(totalCpuNanos_).mergeFrom(value).buildPartial();
+          } else {
+            totalCpuNanos_ = value;
+          }
+          onChanged();
+        } else {
+          totalCpuNanosBuilder_.mergeFrom(value);
+        }
+
+        return this;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_cpu_nanos = 4;</code>
        */
       public Builder clearTotalCpuNanos() {
-        
-        totalCpuNanos_ = 0D;
-        onChanged();
+        if (totalCpuNanosBuilder_ == null) {
+          totalCpuNanos_ = null;
+          onChanged();
+        } else {
+          totalCpuNanos_ = null;
+          totalCpuNanosBuilder_ = null;
+        }
+
         return this;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_cpu_nanos = 4;</code>
+       */
+      public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder getTotalCpuNanosBuilder() {
+        
+        onChanged();
+        return getTotalCpuNanosFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_cpu_nanos = 4;</code>
+       */
+      public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder getTotalCpuNanosOrBuilder() {
+        if (totalCpuNanosBuilder_ != null) {
+          return totalCpuNanosBuilder_.getMessageOrBuilder();
+        } else {
+          return totalCpuNanos_ == null ?
+              org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.getDefaultInstance() : totalCpuNanos_;
+        }
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_cpu_nanos = 4;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder> 
+          getTotalCpuNanosFieldBuilder() {
+        if (totalCpuNanosBuilder_ == null) {
+          totalCpuNanosBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder>(
+                  getTotalCpuNanos(),
+                  getParentForChildren(),
+                  isClean());
+          totalCpuNanos_ = null;
+        }
+        return totalCpuNanosBuilder_;
       }
 
-      private double totalBlockedNanos_ ;
+      private org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble totalBlockedNanos_ = null;
+      private com.google.protobuf.SingleFieldBuilder<
+          org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder> totalBlockedNanosBuilder_;
       /**
-       * <code>optional double total_blocked_nanos = 5;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_blocked_nanos = 5;</code>
        */
-      public double getTotalBlockedNanos() {
-        return totalBlockedNanos_;
+      public boolean hasTotalBlockedNanos() {
+        return totalBlockedNanosBuilder_ != null || totalBlockedNanos_ != null;
       }
       /**
-       * <code>optional double total_blocked_nanos = 5;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_blocked_nanos = 5;</code>
        */
-      public Builder setTotalBlockedNanos(double value) {
-        
-        totalBlockedNanos_ = value;
-        onChanged();
+      public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble getTotalBlockedNanos() {
+        if (totalBlockedNanosBuilder_ == null) {
+          return totalBlockedNanos_ == null ? org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.getDefaultInstance() : totalBlockedNanos_;
+        } else {
+          return totalBlockedNanosBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_blocked_nanos = 5;</code>
+       */
+      public Builder setTotalBlockedNanos(org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble value) {
+        if (totalBlockedNanosBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          totalBlockedNanos_ = value;
+          onChanged();
+        } else {
+          totalBlockedNanosBuilder_.setMessage(value);
+        }
+
         return this;
       }
       /**
-       * <code>optional double total_blocked_nanos = 5;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_blocked_nanos = 5;</code>
+       */
+      public Builder setTotalBlockedNanos(
+          org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder builderForValue) {
+        if (totalBlockedNanosBuilder_ == null) {
+          totalBlockedNanos_ = builderForValue.build();
+          onChanged();
+        } else {
+          totalBlockedNanosBuilder_.setMessage(builderForValue.build());
+        }
+
+        return this;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_blocked_nanos = 5;</code>
+       */
+      public Builder mergeTotalBlockedNanos(org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble value) {
+        if (totalBlockedNanosBuilder_ == null) {
+          if (totalBlockedNanos_ != null) {
+            totalBlockedNanos_ =
+              org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.newBuilder(totalBlockedNanos_).mergeFrom(value).buildPartial();
+          } else {
+            totalBlockedNanos_ = value;
+          }
+          onChanged();
+        } else {
+          totalBlockedNanosBuilder_.mergeFrom(value);
+        }
+
+        return this;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_blocked_nanos = 5;</code>
        */
       public Builder clearTotalBlockedNanos() {
-        
-        totalBlockedNanos_ = 0D;
-        onChanged();
+        if (totalBlockedNanosBuilder_ == null) {
+          totalBlockedNanos_ = null;
+          onChanged();
+        } else {
+          totalBlockedNanos_ = null;
+          totalBlockedNanosBuilder_ = null;
+        }
+
         return this;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_blocked_nanos = 5;</code>
+       */
+      public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder getTotalBlockedNanosBuilder() {
+        
+        onChanged();
+        return getTotalBlockedNanosFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_blocked_nanos = 5;</code>
+       */
+      public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder getTotalBlockedNanosOrBuilder() {
+        if (totalBlockedNanosBuilder_ != null) {
+          return totalBlockedNanosBuilder_.getMessageOrBuilder();
+        } else {
+          return totalBlockedNanos_ == null ?
+              org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.getDefaultInstance() : totalBlockedNanos_;
+        }
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_blocked_nanos = 5;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder> 
+          getTotalBlockedNanosFieldBuilder() {
+        if (totalBlockedNanosBuilder_ == null) {
+          totalBlockedNanosBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder>(
+                  getTotalBlockedNanos(),
+                  getParentForChildren(),
+                  isClean());
+          totalBlockedNanos_ = null;
+        }
+        return totalBlockedNanosBuilder_;
       }
 
-      private double totalWaitedNanos_ ;
+      private org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble totalWaitedNanos_ = null;
+      private com.google.protobuf.SingleFieldBuilder<
+          org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder> totalWaitedNanosBuilder_;
       /**
-       * <code>optional double total_waited_nanos = 6;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_waited_nanos = 6;</code>
        */
-      public double getTotalWaitedNanos() {
-        return totalWaitedNanos_;
+      public boolean hasTotalWaitedNanos() {
+        return totalWaitedNanosBuilder_ != null || totalWaitedNanos_ != null;
       }
       /**
-       * <code>optional double total_waited_nanos = 6;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_waited_nanos = 6;</code>
        */
-      public Builder setTotalWaitedNanos(double value) {
-        
-        totalWaitedNanos_ = value;
-        onChanged();
+      public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble getTotalWaitedNanos() {
+        if (totalWaitedNanosBuilder_ == null) {
+          return totalWaitedNanos_ == null ? org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.getDefaultInstance() : totalWaitedNanos_;
+        } else {
+          return totalWaitedNanosBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_waited_nanos = 6;</code>
+       */
+      public Builder setTotalWaitedNanos(org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble value) {
+        if (totalWaitedNanosBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          totalWaitedNanos_ = value;
+          onChanged();
+        } else {
+          totalWaitedNanosBuilder_.setMessage(value);
+        }
+
         return this;
       }
       /**
-       * <code>optional double total_waited_nanos = 6;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_waited_nanos = 6;</code>
+       */
+      public Builder setTotalWaitedNanos(
+          org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder builderForValue) {
+        if (totalWaitedNanosBuilder_ == null) {
+          totalWaitedNanos_ = builderForValue.build();
+          onChanged();
+        } else {
+          totalWaitedNanosBuilder_.setMessage(builderForValue.build());
+        }
+
+        return this;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_waited_nanos = 6;</code>
+       */
+      public Builder mergeTotalWaitedNanos(org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble value) {
+        if (totalWaitedNanosBuilder_ == null) {
+          if (totalWaitedNanos_ != null) {
+            totalWaitedNanos_ =
+              org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.newBuilder(totalWaitedNanos_).mergeFrom(value).buildPartial();
+          } else {
+            totalWaitedNanos_ = value;
+          }
+          onChanged();
+        } else {
+          totalWaitedNanosBuilder_.mergeFrom(value);
+        }
+
+        return this;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_waited_nanos = 6;</code>
        */
       public Builder clearTotalWaitedNanos() {
-        
-        totalWaitedNanos_ = 0D;
-        onChanged();
+        if (totalWaitedNanosBuilder_ == null) {
+          totalWaitedNanos_ = null;
+          onChanged();
+        } else {
+          totalWaitedNanos_ = null;
+          totalWaitedNanosBuilder_ = null;
+        }
+
         return this;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_waited_nanos = 6;</code>
+       */
+      public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder getTotalWaitedNanosBuilder() {
+        
+        onChanged();
+        return getTotalWaitedNanosFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_waited_nanos = 6;</code>
+       */
+      public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder getTotalWaitedNanosOrBuilder() {
+        if (totalWaitedNanosBuilder_ != null) {
+          return totalWaitedNanosBuilder_.getMessageOrBuilder();
+        } else {
+          return totalWaitedNanos_ == null ?
+              org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.getDefaultInstance() : totalWaitedNanos_;
+        }
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_waited_nanos = 6;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder> 
+          getTotalWaitedNanosFieldBuilder() {
+        if (totalWaitedNanosBuilder_ == null) {
+          totalWaitedNanosBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder>(
+                  getTotalWaitedNanos(),
+                  getParentForChildren(),
+                  isClean());
+          totalWaitedNanos_ = null;
+        }
+        return totalWaitedNanosBuilder_;
       }
 
-      private double totalAllocatedBytes_ ;
+      private org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble totalAllocatedBytes_ = null;
+      private com.google.protobuf.SingleFieldBuilder<
+          org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder> totalAllocatedBytesBuilder_;
       /**
-       * <code>optional double total_allocated_bytes = 7;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_allocated_bytes = 7;</code>
        */
-      public double getTotalAllocatedBytes() {
-        return totalAllocatedBytes_;
+      public boolean hasTotalAllocatedBytes() {
+        return totalAllocatedBytesBuilder_ != null || totalAllocatedBytes_ != null;
       }
       /**
-       * <code>optional double total_allocated_bytes = 7;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_allocated_bytes = 7;</code>
        */
-      public Builder setTotalAllocatedBytes(double value) {
-        
-        totalAllocatedBytes_ = value;
-        onChanged();
+      public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble getTotalAllocatedBytes() {
+        if (totalAllocatedBytesBuilder_ == null) {
+          return totalAllocatedBytes_ == null ? org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.getDefaultInstance() : totalAllocatedBytes_;
+        } else {
+          return totalAllocatedBytesBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_allocated_bytes = 7;</code>
+       */
+      public Builder setTotalAllocatedBytes(org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble value) {
+        if (totalAllocatedBytesBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          totalAllocatedBytes_ = value;
+          onChanged();
+        } else {
+          totalAllocatedBytesBuilder_.setMessage(value);
+        }
+
         return this;
       }
       /**
-       * <code>optional double total_allocated_bytes = 7;</code>
-       *
-       * <pre>
-       * -1 means N/A
-       * </pre>
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_allocated_bytes = 7;</code>
+       */
+      public Builder setTotalAllocatedBytes(
+          org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder builderForValue) {
+        if (totalAllocatedBytesBuilder_ == null) {
+          totalAllocatedBytes_ = builderForValue.build();
+          onChanged();
+        } else {
+          totalAllocatedBytesBuilder_.setMessage(builderForValue.build());
+        }
+
+        return this;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_allocated_bytes = 7;</code>
+       */
+      public Builder mergeTotalAllocatedBytes(org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble value) {
+        if (totalAllocatedBytesBuilder_ == null) {
+          if (totalAllocatedBytes_ != null) {
+            totalAllocatedBytes_ =
+              org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.newBuilder(totalAllocatedBytes_).mergeFrom(value).buildPartial();
+          } else {
+            totalAllocatedBytes_ = value;
+          }
+          onChanged();
+        } else {
+          totalAllocatedBytesBuilder_.mergeFrom(value);
+        }
+
+        return this;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_allocated_bytes = 7;</code>
        */
       public Builder clearTotalAllocatedBytes() {
-        
-        totalAllocatedBytes_ = 0D;
-        onChanged();
+        if (totalAllocatedBytesBuilder_ == null) {
+          totalAllocatedBytes_ = null;
+          onChanged();
+        } else {
+          totalAllocatedBytes_ = null;
+          totalAllocatedBytesBuilder_ = null;
+        }
+
         return this;
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_allocated_bytes = 7;</code>
+       */
+      public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder getTotalAllocatedBytesBuilder() {
+        
+        onChanged();
+        return getTotalAllocatedBytesFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_allocated_bytes = 7;</code>
+       */
+      public org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder getTotalAllocatedBytesOrBuilder() {
+        if (totalAllocatedBytesBuilder_ != null) {
+          return totalAllocatedBytesBuilder_.getMessageOrBuilder();
+        } else {
+          return totalAllocatedBytes_ == null ?
+              org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.getDefaultInstance() : totalAllocatedBytes_;
+        }
+      }
+      /**
+       * <code>optional .org_glowroot_wire_api_model.Aggregate.OptionalDouble total_allocated_bytes = 7;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder> 
+          getTotalAllocatedBytesFieldBuilder() {
+        if (totalAllocatedBytesBuilder_ == null) {
+          totalAllocatedBytesBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDouble.Builder, org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.OptionalDoubleOrBuilder>(
+                  getTotalAllocatedBytes(),
+                  getParentForChildren(),
+                  isClean());
+          totalAllocatedBytes_ = null;
+        }
+        return totalAllocatedBytesBuilder_;
       }
 
       private org.glowroot.wire.api.model.AggregateOuterClass.Aggregate.Histogram totalNanosHistogram_ = null;
@@ -6474,6 +7273,11 @@ public final class AggregateOuterClass {
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_org_glowroot_wire_api_model_Aggregate_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_org_glowroot_wire_api_model_Aggregate_OptionalDouble_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_org_glowroot_wire_api_model_Aggregate_OptionalDouble_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_org_glowroot_wire_api_model_Aggregate_Histogram_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
@@ -6509,30 +7313,36 @@ public final class AggregateOuterClass {
       ".Aggregate\"\205\001\n\024TransactionAggregate\022\030\n\020t" +
       "ransaction_type\030\001 \001(\t\022\030\n\020transaction_nam" +
       "e\030\002 \001(\t\0229\n\taggregate\030\003 \001(\0132&.org_glowroo" +
-      "t_wire_api_model.Aggregate\"\350\006\n\tAggregate" +
+      "t_wire_api_model.Aggregate\"\345\010\n\tAggregate" +
       "\022\023\n\013total_nanos\030\001 \001(\001\022\031\n\021transaction_cou" +
-      "nt\030\002 \001(\003\022\023\n\013error_count\030\003 \001(\003\022\027\n\017total_c",
-      "pu_nanos\030\004 \001(\001\022\033\n\023total_blocked_nanos\030\005 " +
-      "\001(\001\022\032\n\022total_waited_nanos\030\006 \001(\001\022\035\n\025total" +
-      "_allocated_bytes\030\007 \001(\001\022O\n\025total_nanos_hi" +
-      "stogram\030\010 \001(\01320.org_glowroot_wire_api_mo" +
-      "del.Aggregate.Histogram\022@\n\nroot_timer\030\t " +
-      "\003(\0132,.org_glowroot_wire_api_model.Aggreg" +
-      "ate.Timer\022M\n\017queries_by_type\030\n \003(\01324.org" +
-      "_glowroot_wire_api_model.Aggregate.Queri" +
-      "esByType\022>\n\014profile_tree\030\013 \001(\0132(.org_glo" +
-      "wroot_wire_api_model.ProfileTree\032=\n\tHist",
-      "ogram\022\031\n\021ordered_raw_value\030\001 \003(\003\022\025\n\renco" +
-      "ded_bytes\030\002 \001(\014\032\216\001\n\005Timer\022\014\n\004name\030\001 \001(\t\022" +
-      "\020\n\010extended\030\002 \001(\010\022\023\n\013total_nanos\030\003 \001(\001\022\r" +
-      "\n\005count\030\004 \001(\003\022A\n\013child_timer\030\005 \003(\0132,.org" +
-      "_glowroot_wire_api_model.Aggregate.Timer" +
-      "\032Z\n\rQueriesByType\022\014\n\004type\030\001 \001(\t\022;\n\005query" +
-      "\030\002 \003(\0132,.org_glowroot_wire_api_model.Agg" +
-      "regate.Query\032W\n\005Query\022\014\n\004text\030\001 \001(\t\022\023\n\013t" +
-      "otal_nanos\030\002 \001(\001\022\022\n\ntotal_rows\030\003 \001(\003\022\027\n\017" +
-      "execution_count\030\004 \001(\003B\035\n\033org.glowroot.wi",
-      "re.api.modelb\006proto3"
+      "nt\030\002 \001(\003\022\023\n\013error_count\030\003 \001(\003\022N\n\017total_c",
+      "pu_nanos\030\004 \001(\01325.org_glowroot_wire_api_m" +
+      "odel.Aggregate.OptionalDouble\022R\n\023total_b" +
+      "locked_nanos\030\005 \001(\01325.org_glowroot_wire_a" +
+      "pi_model.Aggregate.OptionalDouble\022Q\n\022tot" +
+      "al_waited_nanos\030\006 \001(\01325.org_glowroot_wir" +
+      "e_api_model.Aggregate.OptionalDouble\022T\n\025" +
+      "total_allocated_bytes\030\007 \001(\01325.org_glowro" +
+      "ot_wire_api_model.Aggregate.OptionalDoub" +
+      "le\022O\n\025total_nanos_histogram\030\010 \001(\01320.org_" +
+      "glowroot_wire_api_model.Aggregate.Histog",
+      "ram\022@\n\nroot_timer\030\t \003(\0132,.org_glowroot_w" +
+      "ire_api_model.Aggregate.Timer\022M\n\017queries" +
+      "_by_type\030\n \003(\01324.org_glowroot_wire_api_m" +
+      "odel.Aggregate.QueriesByType\022>\n\014profile_" +
+      "tree\030\013 \001(\0132(.org_glowroot_wire_api_model" +
+      ".ProfileTree\032\037\n\016OptionalDouble\022\r\n\005value\030" +
+      "\001 \001(\001\032=\n\tHistogram\022\031\n\021ordered_raw_value\030" +
+      "\001 \003(\003\022\025\n\rencoded_bytes\030\002 \001(\014\032\216\001\n\005Timer\022\014" +
+      "\n\004name\030\001 \001(\t\022\020\n\010extended\030\002 \001(\010\022\023\n\013total_" +
+      "nanos\030\003 \001(\001\022\r\n\005count\030\004 \001(\003\022A\n\013child_time",
+      "r\030\005 \003(\0132,.org_glowroot_wire_api_model.Ag" +
+      "gregate.Timer\032Z\n\rQueriesByType\022\014\n\004type\030\001" +
+      " \001(\t\022;\n\005query\030\002 \003(\0132,.org_glowroot_wire_" +
+      "api_model.Aggregate.Query\032W\n\005Query\022\014\n\004te" +
+      "xt\030\001 \001(\t\022\023\n\013total_nanos\030\002 \001(\001\022\022\n\ntotal_r" +
+      "ows\030\003 \001(\003\022\027\n\017execution_count\030\004 \001(\003B\035\n\033or" +
+      "g.glowroot.wire.api.modelb\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -6565,26 +7375,32 @@ public final class AggregateOuterClass {
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_Aggregate_descriptor,
         new java.lang.String[] { "TotalNanos", "TransactionCount", "ErrorCount", "TotalCpuNanos", "TotalBlockedNanos", "TotalWaitedNanos", "TotalAllocatedBytes", "TotalNanosHistogram", "RootTimer", "QueriesByType", "ProfileTree", });
-    internal_static_org_glowroot_wire_api_model_Aggregate_Histogram_descriptor =
+    internal_static_org_glowroot_wire_api_model_Aggregate_OptionalDouble_descriptor =
       internal_static_org_glowroot_wire_api_model_Aggregate_descriptor.getNestedTypes().get(0);
+    internal_static_org_glowroot_wire_api_model_Aggregate_OptionalDouble_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_org_glowroot_wire_api_model_Aggregate_OptionalDouble_descriptor,
+        new java.lang.String[] { "Value", });
+    internal_static_org_glowroot_wire_api_model_Aggregate_Histogram_descriptor =
+      internal_static_org_glowroot_wire_api_model_Aggregate_descriptor.getNestedTypes().get(1);
     internal_static_org_glowroot_wire_api_model_Aggregate_Histogram_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_Aggregate_Histogram_descriptor,
         new java.lang.String[] { "OrderedRawValue", "EncodedBytes", });
     internal_static_org_glowroot_wire_api_model_Aggregate_Timer_descriptor =
-      internal_static_org_glowroot_wire_api_model_Aggregate_descriptor.getNestedTypes().get(1);
+      internal_static_org_glowroot_wire_api_model_Aggregate_descriptor.getNestedTypes().get(2);
     internal_static_org_glowroot_wire_api_model_Aggregate_Timer_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_Aggregate_Timer_descriptor,
         new java.lang.String[] { "Name", "Extended", "TotalNanos", "Count", "ChildTimer", });
     internal_static_org_glowroot_wire_api_model_Aggregate_QueriesByType_descriptor =
-      internal_static_org_glowroot_wire_api_model_Aggregate_descriptor.getNestedTypes().get(2);
+      internal_static_org_glowroot_wire_api_model_Aggregate_descriptor.getNestedTypes().get(3);
     internal_static_org_glowroot_wire_api_model_Aggregate_QueriesByType_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_Aggregate_QueriesByType_descriptor,
         new java.lang.String[] { "Type", "Query", });
     internal_static_org_glowroot_wire_api_model_Aggregate_Query_descriptor =
-      internal_static_org_glowroot_wire_api_model_Aggregate_descriptor.getNestedTypes().get(3);
+      internal_static_org_glowroot_wire_api_model_Aggregate_descriptor.getNestedTypes().get(4);
     internal_static_org_glowroot_wire_api_model_Aggregate_Query_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_Aggregate_Query_descriptor,

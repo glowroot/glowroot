@@ -8,7 +8,7 @@ option java_package = "org.glowroot.wire.api.model";
 
 message Trace {
 
-  string id = 1;
+  string id = 1; // this is a uuid
 
   Header header = 2;
 
@@ -31,10 +31,10 @@ message Trace {
     repeated DetailEntry detail_entry = 12;
     Error error = 13;
     Timer root_timer = 14;
-    sint64 thread_cpu_nanos = 15; // -1 means N/A
-    sint64 thread_blocked_nanos = 16; // -1 means N/A
-    sint64 thread_waited_nanos = 17; // -1 means N/A
-    sint64 thread_allocated_bytes = 18; // -1 means N/A
+    OptionalInt thread_cpu_nanos = 15;
+    OptionalInt thread_blocked_nanos = 16;
+    OptionalInt thread_waited_nanos = 17;
+    OptionalInt thread_allocated_bytes = 18;
     repeated GarbageCollectionActivity gc_activity = 19;
     int32 entry_count = 20;
     bool entry_limit_exceeded = 21;
@@ -74,7 +74,7 @@ message Trace {
     string display = 1;
     // for inner "cause" throwable, stack trace only includes frames not in common with the
     // enclosing throwable
-    repeated StackTraceElement element = 2;
+    repeated StackTraceElement stack_trace_element = 2;
     // this is for printing '... 18 more' at end of inner "cause" instead of the entire stack trace
     int32 frames_in_common_with_enclosing = 3;
     Throwable cause = 4;
@@ -88,6 +88,10 @@ message Trace {
     // whether timer was active at the time of a partial trace capture
     bool active = 5;
     repeated Timer child_timer = 6;
+  }
+
+  message OptionalInt {
+    int64 value = 1;
   }
 
   message GarbageCollectionActivity {

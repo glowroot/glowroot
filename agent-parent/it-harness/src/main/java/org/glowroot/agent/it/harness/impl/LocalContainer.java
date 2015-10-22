@@ -16,38 +16,35 @@
 package org.glowroot.agent.it.harness.impl;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Charsets;
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 import com.google.common.reflect.Reflection;
 
 import org.glowroot.agent.AgentModule;
-import org.glowroot.agent.DataDirLocking.BaseDirLockedException;
+import org.glowroot.agent.GlowrootAgentInit;
+import org.glowroot.agent.GrpcServerWrapper;
 import org.glowroot.agent.MainEntryPoint;
-import org.glowroot.agent.fat.GlowrootModule;
 import org.glowroot.agent.impl.AdviceCache;
 import org.glowroot.agent.it.harness.AppUnderTest;
+import org.glowroot.agent.it.harness.ConfigService;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TempDirs;
-import org.glowroot.agent.it.harness.admin.AdminService;
-import org.glowroot.agent.it.harness.aggregate.AggregateService;
-import org.glowroot.agent.it.harness.common.HttpClient;
-import org.glowroot.agent.it.harness.config.ConfigService;
-import org.glowroot.agent.it.harness.config.ConfigService.GetUiPortCommand;
-import org.glowroot.agent.it.harness.trace.TraceService;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.OptionalInt;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
 import org.glowroot.agent.util.SpyingLogbackFilter;
-import org.glowroot.agent.util.SpyingLogbackFilter.MessageCount;
+import org.glowroot.agent.util.SpyingLogbackFilter.LogCount;
 import org.glowroot.agent.weaving.Advice;
 import org.glowroot.agent.weaving.IsolatedWeavingClassLoader;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -59,19 +56,18 @@ public class LocalContainer implements Container {
     private final boolean shared;
 
     private volatile @Nullable IsolatedWeavingClassLoader isolatedWeavingClassLoader;
-    private final HttpClient httpClient;
+    private final GrpcServerWrapper server;
+    private final TraceCollector traceCollector;
     private final ConfigService configService;
-    private final TraceService traceService;
-    private final AggregateService aggregateService;
-    private final AdminService adminService;
-    private final List<Thread> executingAppThreads = Lists.newCopyOnWriteArrayList();
-    private final GlowrootModule glowrootModule;
+    private final GlowrootAgentInit glowrootAgentInit;
 
-    public static Container createWithFileDb(File baseDir) throws Exception {
-        return new LocalContainer(baseDir, true, 0, false, ImmutableMap.<String, String>of());
+    private volatile @Nullable Thread executingAppThread;
+
+    public static LocalContainer create(File baseDir) throws Exception {
+        return new LocalContainer(baseDir, false, ImmutableMap.<String, String>of());
     }
 
-    public LocalContainer(@Nullable File baseDir, boolean useFileDb, int port, boolean shared,
+    public LocalContainer(@Nullable File baseDir, boolean shared,
             Map<String, String> extraProperties) throws Exception {
         if (baseDir == null) {
             this.baseDir = TempDirs.createTempDir("glowroot-test-basedir");
@@ -81,16 +77,17 @@ public class LocalContainer implements Container {
             deleteBaseDirOnClose = false;
         }
         this.shared = shared;
-        File configFile = new File(this.baseDir, "config.json");
-        if (!configFile.exists()) {
-            Files.write("{\"ui\":{\"port\":" + port + "}}", configFile, Charsets.UTF_8);
-        }
+
+        traceCollector = new TraceCollector();
+
+        int collectorPort = getAvailablePort();
+        server = new GrpcServerWrapper(traceCollector, collectorPort);
+
         Map<String, String> properties = Maps.newHashMap();
-        properties.put("base.dir", this.baseDir.getAbsolutePath());
-        properties.put("internal.logging.spy", "true");
-        if (!useFileDb) {
-            properties.put("internal.h2.memdb", "true");
-        }
+        properties.put("glowroot.base.dir", this.baseDir.getAbsolutePath());
+        properties.put("glowroot.internal.logging.spy", "true");
+        properties.put("glowroot.collector.host", "localhost");
+        properties.put("glowroot.collector.port", Integer.toString(collectorPort));
         properties.putAll(extraProperties);
         List<Class<?>> bridgeClasses = ImmutableList.<Class<?>>of(AppUnderTest.class);
         IsolatedClassLoader midLoader = new IsolatedClassLoader(bridgeClasses);
@@ -110,18 +107,14 @@ public class LocalContainer implements Container {
 
             Thread.currentThread().setContextClassLoader(midLoader);
             MainEntryPoint.start(properties);
-        } catch (BaseDirLockedException e) {
-            throw new StartupFailedException(e);
         } finally {
             Thread.currentThread().setContextClassLoader(priorContextClassLoader);
         }
         JavaagentMain.setTransactionSlowThresholdMillisToZero();
-        final GlowrootModule glowrootModule = GlowrootModule.getInstance();
-        checkNotNull(glowrootModule);
         IsolatedWeavingClassLoader.Builder loader = IsolatedWeavingClassLoader.builder();
         loader.setParentClassLoader(midLoader);
-        AgentModule agentModule = glowrootModule.getAgentModule();
-        checkNotNull(agentModule);
+        glowrootAgentInit = checkNotNull(MainEntryPoint.getGlowrootAgentInit());
+        AgentModule agentModule = glowrootAgentInit.getAgentModule();
         AdviceCache adviceCache = agentModule.getAdviceCache();
         loader.setShimTypes(adviceCache.getShimTypes());
         loader.setMixinTypes(adviceCache.getMixinTypes());
@@ -133,20 +126,8 @@ public class LocalContainer implements Container {
                 agentModule.getConfigService().getAdvancedConfig().timerWrapperMethods());
         loader.addBridgeClasses(bridgeClasses);
         isolatedWeavingClassLoader = loader.build();
-        httpClient = new HttpClient(glowrootModule.getUiModule().getPort());
-        configService = new ConfigService(httpClient, new GetUiPortCommand() {
-            @Override
-            public int getUiPort() throws Exception {
-                // TODO report checker framework issue that checkNotNull needed here
-                // in addition to above
-                checkNotNull(glowrootModule);
-                return glowrootModule.getUiModule().getPort();
-            }
-        });
-        traceService = new TraceService(httpClient);
-        aggregateService = new AggregateService(httpClient);
-        adminService = new AdminService(httpClient);
-        this.glowrootModule = glowrootModule;
+        configService = new LocalConfigService(
+                new ConfigUpdateServiceHelper(agentModule.getConfigService(), null));
     }
 
     @Override
@@ -156,78 +137,51 @@ public class LocalContainer implements Container {
 
     @Override
     public void addExpectedLogMessage(String loggerName, String partialMessage) {
-        SpyingLogbackFilter.addExpectedMessage(loggerName, partialMessage);
+        SpyingLogbackFilter.addExpectedLogMessage(loggerName, partialMessage);
     }
 
     @Override
-    public void executeAppUnderTest(Class<? extends AppUnderTest> appClass) throws Exception {
-        IsolatedWeavingClassLoader isolatedWeavingClassLoader = this.isolatedWeavingClassLoader;
-        if (isolatedWeavingClassLoader == null) {
-            throw new AssertionError("LocalContainer has already been stopped");
-        }
-        ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
-        executingAppThreads.add(Thread.currentThread());
-        try {
-            AppUnderTest app = isolatedWeavingClassLoader.newInstance(appClass, AppUnderTest.class);
-            app.executeApp();
-        } finally {
-            executingAppThreads.remove(Thread.currentThread());
-            Thread.currentThread().setContextClassLoader(previousContextClassLoader);
-        }
-        // wait for all traces to be stored
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        while (adminService.getNumPendingCompleteTransactions() > 0
-                && stopwatch.elapsed(SECONDS) < 15) {
-            Thread.sleep(10);
-        }
-        if (adminService.getNumPendingCompleteTransactions() > 0) {
-            throw new IllegalStateException("There are still pending complete transactions");
+    public Trace execute(Class<? extends AppUnderTest> appClass) throws Exception {
+        executeInternal(appClass);
+        Trace trace = traceCollector.getCompletedTrace(10, SECONDS);
+        traceCollector.clearTrace();
+        return trace;
+    }
+
+    @Override
+    public void executeNoExpectedTrace(Class<? extends AppUnderTest> appClass) throws Exception {
+        executeInternal(appClass);
+        Thread.sleep(10);
+        if (traceCollector.hasTrace()) {
+            throw new IllegalStateException("Trace was collected when none was expected");
         }
     }
 
     @Override
     public void interruptAppUnderTest() throws Exception {
-        for (Thread thread : executingAppThreads) {
-            thread.interrupt();
+        Thread thread = executingAppThread;
+        if (thread == null) {
+            throw new IllegalStateException("No app currently executing");
         }
+        thread.interrupt();
     }
 
     @Override
-    public TraceService getTraceService() {
-        return traceService;
-    }
-
-    @Override
-    public AggregateService getAggregateService() {
-        return aggregateService;
-    }
-
-    @Override
-    public AdminService getAdminService() {
-        return adminService;
-    }
-
-    @Override
-    public int getUiPort() throws InterruptedException {
-        return glowrootModule.getUiModule().getPort();
+    public Trace getCollectedPartialTrace() throws InterruptedException {
+        return traceCollector.getPartialTrace(10, SECONDS);
     }
 
     @Override
     public void checkAndReset() throws Exception {
-        traceService.assertNoActiveOrPendingCompleteTransactions();
-        adminService.deleteAllData();
-        checkAndResetConfigOnly();
-    }
-
-    @Override
-    public void checkAndResetConfigOnly() throws Exception {
-        configService.resetAllConfig();
+        glowrootAgentInit.getAgentModule().getConfigService().resetAllConfig();
         // setTransactionSlowThresholdMillis=0 is the default for testing
-        configService.setTransactionSlowThresholdMillis(0);
+        configService.updateTransactionConfig(
+                TransactionConfigUpdate.newBuilder()
+                        .setSlowThresholdMillis(OptionalInt.newBuilder().setValue(0))
+                        .build());
         // check and reset log messages
-        MessageCount logMessageCount = SpyingLogbackFilter.clearMessages();
-        if (logMessageCount.expectedCount() > 0) {
+        LogCount logMessageCount = SpyingLogbackFilter.clearMessages();
+        if (logMessageCount.expectedButNotLoggedCount() > 0) {
             throw new AssertionError("One or more expected messages were not logged");
         }
         if (logMessageCount.unexpectedCount() > 0) {
@@ -246,8 +200,8 @@ public class LocalContainer implements Container {
             // this is the shared container and will be closed at the end of the run
             return;
         }
-        httpClient.close();
-        glowrootModule.close();
+        glowrootAgentInit.close();
+        server.close();
         if (deleteBaseDirOnClose) {
             TempDirs.deleteRecursively(baseDir);
         }
@@ -257,6 +211,30 @@ public class LocalContainer implements Container {
 
     // this is used to re-open a shared container after a non-shared container was used
     public void reopen() throws Exception {
-        glowrootModule.reopen();
+        glowrootAgentInit.reopen();
+    }
+
+    private void executeInternal(Class<? extends AppUnderTest> appClass) throws Exception {
+        IsolatedWeavingClassLoader isolatedWeavingClassLoader = this.isolatedWeavingClassLoader;
+        if (isolatedWeavingClassLoader == null) {
+            throw new AssertionError("LocalContainer has already been stopped");
+        }
+        ClassLoader previousContextClassLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(isolatedWeavingClassLoader);
+        executingAppThread = Thread.currentThread();
+        try {
+            AppUnderTest app = isolatedWeavingClassLoader.newInstance(appClass, AppUnderTest.class);
+            app.executeApp();
+        } finally {
+            executingAppThread = null;
+            Thread.currentThread().setContextClassLoader(previousContextClassLoader);
+        }
+    }
+
+    static int getAvailablePort() throws IOException {
+        ServerSocket serverSocket = new ServerSocket(0);
+        int port = serverSocket.getLocalPort();
+        serverSocket.close();
+        return port;
     }
 }

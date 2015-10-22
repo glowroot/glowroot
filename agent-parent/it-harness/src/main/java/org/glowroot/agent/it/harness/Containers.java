@@ -70,8 +70,7 @@ public class Containers {
         JavaagentContainer container =
                 (JavaagentContainer) SharedContainerRunListener.getSharedJavaagentContainer();
         if (container == null) {
-            container = new JavaagentContainer(null, false, 0, true, false, false,
-                    ImmutableList.<String>of());
+            container = new JavaagentContainer(null, true, false, ImmutableList.<String>of());
             SharedContainerRunListener.setSharedJavaagentContainer(container);
         }
         return container;
@@ -79,12 +78,12 @@ public class Containers {
 
     public static Container getSharedLocalContainer() throws Exception {
         if (!SharedContainerRunListener.useSharedContainer()) {
-            return new LocalContainer(null, false, 0, false, ImmutableMap.<String, String>of());
+            return new LocalContainer(null, false, ImmutableMap.<String, String>of());
         }
         LocalContainer container =
                 (LocalContainer) SharedContainerRunListener.getSharedLocalContainer();
         if (container == null) {
-            container = new LocalContainer(null, false, 0, true, ImmutableMap.<String, String>of());
+            container = new LocalContainer(null, true, ImmutableMap.<String, String>of());
             SharedContainerRunListener.setSharedLocalContainer(container);
         } else {
             container.reopen();
@@ -92,29 +91,22 @@ public class Containers {
         return container;
     }
 
-    public static Container createWithFileDb(File baseDir) throws Exception {
-        return create(baseDir, true);
-    }
-
     // since baseDir is passed to the container, the container will not delete baseDir on close
-    public static Container create(File baseDir, boolean useFileDb) throws Exception {
-        return create(baseDir, useFileDb, false);
+    public static Container create(File baseDir) throws Exception {
+        return create(baseDir, false);
     }
 
-    private static Container create(@Nullable File baseDir, boolean useFileDb, boolean shared)
-            throws Exception {
+    private static Container create(@Nullable File baseDir, boolean shared) throws Exception {
         switch (harness) {
             case JAVAAGENT:
                 // this is the most realistic way to run tests because it launches an external JVM
                 // process using -javaagent:glowroot.jar
                 logger.debug("create(): using javaagent container");
-                return new JavaagentContainer(baseDir, useFileDb, 0, shared, false, false,
-                        ImmutableList.<String>of());
+                return new JavaagentContainer(baseDir, shared, false, ImmutableList.<String>of());
             case LOCAL:
                 // this is the easiest way to run/debug tests inside of Eclipse
                 logger.debug("create(): using local container");
-                return new LocalContainer(baseDir, useFileDb, 0, shared,
-                        ImmutableMap.<String, String>of());
+                return new LocalContainer(baseDir, shared, ImmutableMap.<String, String>of());
             default:
                 throw new IllegalStateException("Unexpected harness enum value: " + harness);
         }

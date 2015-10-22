@@ -18,13 +18,9 @@ package org.glowroot.agent.it.harness.impl;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
@@ -33,7 +29,6 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
@@ -41,26 +36,35 @@ import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.io.Files;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.grpc.ManagedChannel;
+import io.grpc.netty.NegotiationType;
+import io.grpc.netty.NettyChannelBuilder;
+import io.netty.channel.EventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.AgentPremain;
+import org.glowroot.agent.GrpcServerWrapper;
 import org.glowroot.agent.it.harness.AppUnderTest;
+import org.glowroot.agent.it.harness.ConfigService;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TempDirs;
-import org.glowroot.agent.it.harness.admin.AdminService;
-import org.glowroot.agent.it.harness.aggregate.AggregateService;
-import org.glowroot.agent.it.harness.common.HttpClient;
-import org.glowroot.agent.it.harness.config.ConfigService;
-import org.glowroot.agent.it.harness.config.ConfigService.GetUiPortCommand;
-import org.glowroot.agent.it.harness.trace.TraceService;
-import org.glowroot.agent.util.SpyingLogbackFilter.MessageCount;
+import org.glowroot.agent.it.harness.grpc.Common.Void;
+import org.glowroot.agent.it.harness.grpc.ConfigUpdateServiceGrpc;
+import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc;
+import org.glowroot.agent.it.harness.grpc.JavaagentServiceGrpc.JavaagentServiceBlockingClient;
+import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.AppUnderTestClassName;
+import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.ExpectedLogMessage;
+import org.glowroot.agent.it.harness.grpc.JavaagentServiceOuterClass.LogCount;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.OptionalInt;
+import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class JavaagentContainer implements Container, GetUiPortCommand {
+public class JavaagentContainer implements Container {
 
     private static final Logger logger = LoggerFactory.getLogger(JavaagentContainer.class);
 
@@ -68,36 +72,33 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
     private final boolean deleteBaseDirOnClose;
     private final boolean shared;
 
-    private final ServerSocket serverSocket;
-    private final SocketCommander socketCommander;
+    private final GrpcServerWrapper server;
+    private final EventLoopGroup eventLoopGroup;
+    private final ExecutorService executor;
+    private final ManagedChannel channel;
+    private final TraceCollector traceCollector;
+    private final JavaagentServiceBlockingClient javaagentService;
     private final ExecutorService consolePipeExecutorService;
     private final Process process;
     private final ConsoleOutputPipe consoleOutputPipe;
-    private final HttpClient httpClient;
     private final ConfigService configService;
-    private final TraceService traceService;
-    private final AggregateService aggregateService;
-    private final AdminService adminService;
     private final Thread shutdownHook;
 
     public static JavaagentContainer create() throws Exception {
-        return new JavaagentContainer(null, false, 0, false, false, false,
-                ImmutableList.<String>of());
+        return new JavaagentContainer(null, false, false, ImmutableList.<String>of());
     }
 
-    public static JavaagentContainer createWithFileDb(File baseDir) throws Exception {
-        return new JavaagentContainer(baseDir, true, 0, false, false, false,
-                ImmutableList.<String>of());
+    public static JavaagentContainer create(File baseDir) throws Exception {
+        return new JavaagentContainer(baseDir, false, false, ImmutableList.<String>of());
     }
 
     public static JavaagentContainer createWithExtraJvmArgs(List<String> extraJvmArgs)
             throws Exception {
-        return new JavaagentContainer(null, false, 0, false, false, false, extraJvmArgs);
+        return new JavaagentContainer(null, false, false, extraJvmArgs);
     }
 
-    public JavaagentContainer(@Nullable File baseDir, boolean useFileDb, int port, boolean shared,
-            boolean captureConsoleOutput, boolean viewerMode, List<String> extraJvmArgs)
-                    throws Exception {
+    public JavaagentContainer(@Nullable File baseDir, boolean shared, boolean captureConsoleOutput,
+            List<String> extraJvmArgs) throws Exception {
         if (baseDir == null) {
             this.baseDir = TempDirs.createTempDir("glowroot-test-basedir");
             deleteBaseDirOnClose = true;
@@ -106,14 +107,13 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
             deleteBaseDirOnClose = false;
         }
         this.shared = shared;
-        // need to start socket listener before spawning process so process can connect to socket
-        serverSocket = new ServerSocket(0);
-        File configFile = new File(this.baseDir, "config.json");
-        if (!configFile.exists()) {
-            Files.write("{\"ui\":{\"port\":" + port + "}}", configFile, Charsets.UTF_8);
-        }
-        List<String> command = buildCommand(serverSocket.getLocalPort(), this.baseDir, useFileDb,
-                viewerMode, extraJvmArgs);
+
+        traceCollector = new TraceCollector();
+        int collectorPort = LocalContainer.getAvailablePort();
+        server = new GrpcServerWrapper(traceCollector, collectorPort);
+        int javaagentServicePort = LocalContainer.getAvailablePort();
+        List<String> command =
+                buildCommand(collectorPort, javaagentServicePort, this.baseDir, extraJvmArgs);
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
         final Process process = processBuilder.start();
@@ -125,34 +125,43 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
         consoleOutputPipe = new ConsoleOutputPipe(in, System.out, captureConsoleOutput);
         consolePipeExecutorService.submit(consoleOutputPipe);
         this.process = process;
-        Socket socket = serverSocket.accept();
-        ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
-        ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
-        final SocketCommander socketCommander = new SocketCommander(objectOut, objectIn);
-        int uiPort;
-        try {
-            uiPort = getUiPort(socketCommander);
-        } catch (StartupFailedException e) {
-            // clean up and re-throw
-            socketCommander.sendCommand(SocketCommandProcessor.SHUTDOWN);
-            socketCommander.close();
-            process.waitFor();
-            serverSocket.close();
-            consolePipeExecutorService.shutdownNow();
-            throw e;
-        }
-        httpClient = new HttpClient(uiPort);
-        configService = new ConfigService(httpClient, new GetUiPortCommand() {
-            @Override
-            public int getUiPort() throws Exception {
-                return JavaagentContainer.getUiPort(socketCommander);
+
+        eventLoopGroup = EventLoopGroups.create("Glowroot-grpc-worker-ELG");
+        executor = Executors.newCachedThreadPool(
+                new ThreadFactoryBuilder()
+                        .setDaemon(true)
+                        .setNameFormat("Glowroot-grpc-executor-%d")
+                        .build());
+        channel = NettyChannelBuilder.forAddress("localhost", javaagentServicePort)
+                .eventLoopGroup(eventLoopGroup)
+                .executor(executor)
+                .negotiationType(NegotiationType.PLAINTEXT)
+                .build();
+
+        Thread.sleep(100);
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        // this can take a while on slow travis-ci build machines
+        while (stopwatch.elapsed(SECONDS) < 30) {
+            try {
+                JavaagentServiceBlockingClient javaagentService =
+                        JavaagentServiceGrpc.newBlockingStub(channel);
+                javaagentService.ping(Void.getDefaultInstance());
+                break;
+            } catch (Exception e) {
+                logger.debug(e.getMessage(), e);
             }
-        });
-        traceService = new TraceService(httpClient);
-        aggregateService = new AggregateService(httpClient);
-        adminService = new AdminService(httpClient);
-        shutdownHook = new ShutdownHookThread(socketCommander);
-        this.socketCommander = socketCommander;
+            Thread.sleep(100);
+        }
+        // clearing unexpected log messages because the above pinging can cause error messages,
+        // which will cause subsequent LocalContainer tests to fail
+        if (SpyingLogbackFilter.active()) {
+            SpyingLogbackFilter.clearMessages();
+        }
+        javaagentService = JavaagentServiceGrpc.newBlockingStub(channel);
+        javaagentService.ping(Void.getDefaultInstance());
+        configService =
+                new JavaagentConfigService(ConfigUpdateServiceGrpc.newBlockingStub(channel));
+        shutdownHook = new ShutdownHookThread(javaagentService);
         // unfortunately, ctrl-c during maven test will kill the maven process, but won't kill the
         // forked surefire jvm where the tests are being run
         // (http://jira.codehaus.org/browse/SUREFIRE-413), and so this hook won't get triggered by
@@ -167,75 +176,56 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
 
     @Override
     public void addExpectedLogMessage(String loggerName, String partialMessage) throws Exception {
-        socketCommander.sendCommand(SocketCommandProcessor.ADD_EXPECTED_LOG_MESSAGE, loggerName,
-                partialMessage);
+        javaagentService.addExpectedLogMessage(ExpectedLogMessage.newBuilder()
+                .setLoggerName(loggerName)
+                .setPartialMessage(partialMessage)
+                .build());
     }
 
     @Override
-    public void executeAppUnderTest(Class<? extends AppUnderTest> appUnderTestClass)
-            throws Exception {
-        socketCommander.sendCommand(SocketCommandProcessor.EXECUTE_APP,
-                appUnderTestClass.getName());
-        // wait for all traces to be stored
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        while (adminService.getNumPendingCompleteTransactions() > 0
-                && stopwatch.elapsed(SECONDS) < 15) {
-            Thread.sleep(10);
-        }
-        if (adminService.getNumPendingCompleteTransactions() > 0) {
-            throw new IllegalStateException("There are still pending complete transactions");
+    public Trace execute(Class<? extends AppUnderTest> appClass) throws Exception {
+        executeInternal(appClass);
+        Trace trace = traceCollector.getCompletedTrace(10, SECONDS);
+        traceCollector.clearTrace();
+        return trace;
+    }
+
+    @Override
+    public void executeNoExpectedTrace(Class<? extends AppUnderTest> appClass) throws Exception {
+        executeInternal(appClass);
+        // give a short time to see if trace gets collected
+        Thread.sleep(10);
+        if (traceCollector.hasTrace()) {
+            throw new IllegalStateException("Trace was collected when none was expected");
         }
     }
 
     @Override
     public void interruptAppUnderTest() throws Exception {
-        socketCommander.sendCommand(SocketCommandProcessor.INTERRUPT);
+        javaagentService.interruptApp(Void.getDefaultInstance());
     }
 
     @Override
-    public TraceService getTraceService() {
-        return traceService;
-    }
-
-    @Override
-    public AggregateService getAggregateService() {
-        return aggregateService;
-    }
-
-    @Override
-    public AdminService getAdminService() {
-        return adminService;
-    }
-
-    @Override
-    public int getUiPort() throws Exception {
-        return getUiPort(socketCommander);
+    public Trace getCollectedPartialTrace() throws InterruptedException {
+        return traceCollector.getPartialTrace(10, SECONDS);
     }
 
     @Override
     public void checkAndReset() throws Exception {
-        traceService.assertNoActiveOrPendingCompleteTransactions();
-        adminService.deleteAllData();
-        checkAndResetConfigOnly();
-    }
-
-    @Override
-    public void checkAndResetConfigOnly() throws Exception {
-        configService.resetAllConfig();
+        javaagentService.resetAllConfig(Void.getDefaultInstance());
         // transactionSlowThresholdMillis=0 is the default for testing
-        configService.setTransactionSlowThresholdMillis(0);
+        configService.updateTransactionConfig(
+                TransactionConfigUpdate.newBuilder()
+                        .setSlowThresholdMillis(OptionalInt.newBuilder().setValue(0).build())
+                        .build());
         // check and reset log messages
-        MessageCount logMessageCount = (MessageCount) socketCommander
-                .sendCommand(SocketCommandProcessor.CLEAR_LOG_MESSAGES);
-        if (logMessageCount == null) {
-            throw new AssertionError(
-                    "Command returned null: " + SocketCommandProcessor.CLEAR_LOG_MESSAGES);
-        }
-        if (logMessageCount.expectedCount() > 0) {
-            throw new AssertionError("One or more expected messages were not logged");
-        }
-        if (logMessageCount.unexpectedCount() > 0) {
+        LogCount logCount =
+                javaagentService.clearLogMessages(Void.getDefaultInstance());
+        if (logCount.getUnexpectedCount() > 0) {
             throw new AssertionError("One or more unexpected messages were logged");
+        }
+        if (logCount.getExpectedButNotLoggedCount() > 0) {
+            throw new AssertionError("One or more expected messages were not logged");
         }
     }
 
@@ -250,12 +240,20 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
             // this is the shared container and will be closed at the end of the run
             return;
         }
-        socketCommander.sendCommand(SocketCommandProcessor.SHUTDOWN);
-        cleanup();
-    }
-
-    public void kill() throws Exception {
-        socketCommander.sendKillCommand();
+        javaagentService.shutdown(Void.getDefaultInstance());
+        javaagentService.kill(Void.getDefaultInstance());
+        channel.shutdown();
+        if (!channel.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate gRPC channel");
+        }
+        executor.shutdown();
+        if (!executor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate gRPC executor");
+        }
+        if (!eventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate gRPC event loop group");
+        }
+        server.close();
         cleanup();
     }
 
@@ -281,20 +279,26 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
         return unexpectedLines;
     }
 
-    public void cleanup() throws Exception {
-        socketCommander.close();
+    private void cleanup() throws Exception {
         process.waitFor();
-        serverSocket.close();
         consolePipeExecutorService.shutdownNow();
+        if (!consolePipeExecutorService.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate executor");
+        }
         Runtime.getRuntime().removeShutdownHook(shutdownHook);
-        httpClient.close();
         if (deleteBaseDirOnClose) {
             TempDirs.deleteRecursively(baseDir);
         }
     }
 
-    private static List<String> buildCommand(int containerPort, File baseDir, boolean useFileDb,
-            boolean viewerMode, List<String> extraJvmArgs) throws Exception {
+    private void executeInternal(Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
+        javaagentService.executeApp(AppUnderTestClassName.newBuilder()
+                .setValue(appUnderTestClass.getName())
+                .build());
+    }
+
+    private static List<String> buildCommand(int collectorPort, int javaagentServicePort,
+            File baseDir, List<String> extraJvmArgs) throws Exception {
         List<String> command = Lists.newArrayList();
         String javaExecutable = StandardSystemProperty.JAVA_HOME.value() + File.separator + "bin"
                 + File.separator + "java";
@@ -305,45 +309,38 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
         // with the class id at analysis time
         command.addAll(getJacocoArgsFromCurrentJvm());
         String classpath = Strings.nullToEmpty(StandardSystemProperty.JAVA_CLASS_PATH.value());
-        if (viewerMode) {
-            command.add("-classpath");
-            command.add(classpath);
-            command.add("-Dglowroot.testHarness.viewerMode=true");
-        } else {
-            List<String> paths = Lists.newArrayList();
-            File javaagentJarFile = null;
-            for (String path : Splitter.on(File.pathSeparatorChar).split(classpath)) {
-                File file = new File(path);
-                String name = file.getName();
-                if (name.matches("glowroot-agent-it-harness-[0-9.]+(-SNAPSHOT)?.jar")) {
-                    javaagentJarFile = file;
-                } else if (name.matches("glowroot-[a-z-]+-[0-9.]+(-SNAPSHOT)?.jar")
-                        && !name.matches("glowroot-agent-[a-z-]+-plugin-[0-9.]+(-SNAPSHOT)?.jar")) {
-                    // ignoring glowroot artifacts (glowroot-common, glowroot-wire,
-                    // glowroot-agent-api, glowroot-agent-plugin-api, glowroot-agent-core),
-                    // which should not be here since glowroot-agent-it-harness shades them,
-                    // but maven 3.3.1/3.3.3 are not using the dependency reduced pom during
-                    // downstream module builds, which causes the glowroot artifacts to be included
-                    // when running "mvn clean install" from the project root, see MSHADE-206
-                } else {
-                    paths.add(path);
-                }
-            }
-            command.add("-Xbootclasspath/a:" + Joiner.on(File.pathSeparatorChar).join(paths));
-            if (javaagentJarFile == null) {
-                // create jar file in data dir since that gets cleaned up at end of test already
-                javaagentJarFile = DelegatingJavaagent.createDelegatingJavaagentJarFile(baseDir);
-                command.add("-javaagent:" + javaagentJarFile);
-                command.add("-DdelegateJavaagent=" + AgentPremain.class.getName());
+        List<String> paths = Lists.newArrayList();
+        File javaagentJarFile = null;
+        for (String path : Splitter.on(File.pathSeparatorChar).split(classpath)) {
+            File file = new File(path);
+            String name = file.getName();
+            if (name.matches("glowroot(-fat)?-agent-[0-9.]+(-SNAPSHOT)?.jar")) {
+                javaagentJarFile = file;
+            } else if (name.matches("glowroot-common-[0-9.]+(-SNAPSHOT)?.jar")
+                    || name.matches("glowroot-wire-api-[0-9.]+(-SNAPSHOT)?.jar")
+                    || name.matches("glowroot-agent-api-[0-9.]+(-SNAPSHOT)?.jar")
+                    || name.matches("glowroot-agent-plugin-api-[0-9.]+(-SNAPSHOT)?.jar")) {
+                // these artifacts should not be present since glowroot-agent shades them
+                // but maven 3.3.1/3.3.3 are not using the dependency reduced pom during downstream
+                // module builds, which causes the glowroot artifacts to be included
+                // when running "mvn clean install" from the project root, see MSHADE-206
             } else {
-                command.add("-javaagent:" + javaagentJarFile);
+                paths.add(path);
             }
+        }
+        command.add("-Xbootclasspath/a:" + Joiner.on(File.pathSeparatorChar).join(paths));
+        if (javaagentJarFile == null) {
+            // create jar file in data dir since that gets cleaned up at end of test already
+            javaagentJarFile = DelegatingJavaagent.createDelegatingJavaagentJarFile(baseDir);
+            command.add("-javaagent:" + javaagentJarFile);
+            command.add("-DdelegateJavaagent=" + AgentPremain.class.getName());
+        } else {
+            command.add("-javaagent:" + javaagentJarFile);
         }
         command.add("-Dglowroot.base.dir=" + baseDir.getAbsolutePath());
         command.add("-Dglowroot.internal.logging.spy=true");
-        if (!useFileDb) {
-            command.add("-Dglowroot.internal.h2.memdb=true");
-        }
+        command.add("-Dglowroot.collector.host=localhost");
+        command.add("-Dglowroot.collector.port=" + collectorPort);
         // this is used inside low-entropy docker containers
         String sourceOfRandomness = System.getProperty("java.security.egd");
         if (sourceOfRandomness != null) {
@@ -361,7 +358,7 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
             }
         }
         command.add(JavaagentMain.class.getName());
-        command.add(Integer.toString(containerPort));
+        command.add(Integer.toString(javaagentServicePort));
         return command;
     }
 
@@ -378,29 +375,18 @@ public class JavaagentContainer implements Container, GetUiPortCommand {
         return jacocoArgs;
     }
 
-    private static int getUiPort(SocketCommander socketCommander) throws Exception {
-        Object response = socketCommander.sendCommand(SocketCommandProcessor.GET_PORT);
-        if (response == null) {
-            throw new AssertionError("Command returned null: " + SocketCommandProcessor.GET_PORT);
-        }
-        if (response.equals(SocketCommandProcessor.STARTUP_FAILED)) {
-            throw new StartupFailedException();
-        }
-        return (Integer) response;
-    }
-
     private static class ShutdownHookThread extends Thread {
 
-        private final SocketCommander socketCommander;
+        private final JavaagentServiceBlockingClient javaagentService;
 
-        private ShutdownHookThread(SocketCommander socketCommander) {
-            this.socketCommander = socketCommander;
+        private ShutdownHookThread(JavaagentServiceBlockingClient javaagentService) {
+            this.javaagentService = javaagentService;
         }
 
         @Override
         public void run() {
             try {
-                socketCommander.sendKillCommand();
+                javaagentService.kill(Void.getDefaultInstance());
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }

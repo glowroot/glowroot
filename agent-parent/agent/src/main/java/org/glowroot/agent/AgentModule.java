@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.jar.JarFile;
 
 import javax.annotation.Nullable;
@@ -28,6 +30,7 @@ import javax.annotation.Nullable;
 import com.google.common.base.Joiner;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,6 +74,7 @@ import org.glowroot.common.util.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class AgentModule {
 
@@ -95,6 +99,8 @@ public class AgentModule {
 
     private final ImmediateTraceStoreWatcher immedateTraceStoreWatcher;
 
+    private final ScheduledExecutorService scheduledExecutor;
+    private final Collector collector;
     private final GaugeCollector gaugeCollector;
     private final StackTraceCollector stackTraceCollector;
 
@@ -114,7 +120,7 @@ public class AgentModule {
     // accepts @Nullable Ticker to deal with shading issues when called from GlowrootModule
     public AgentModule(Clock clock, @Nullable Ticker nullableTicker, Collector collector,
             @Nullable Instrumentation instrumentation, File baseDir, @Nullable File glowrootJarFile,
-            ScheduledExecutorService scheduledExecutor, boolean jbossModules) throws Exception {
+            boolean jbossModules) throws Exception {
 
         Ticker ticker = nullableTicker == null ? Tickers.getTicker() : nullableTicker;
         pluginCache = PluginCache.create(glowrootJarFile, false);
@@ -132,6 +138,11 @@ public class AgentModule {
         weavingTimerService =
                 new WeavingTimerServiceImpl(transactionRegistry, configService, timerNameCache);
 
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true)
+                .setNameFormat("Glowroot-Background-%d").build();
+        scheduledExecutor = Executors.newScheduledThreadPool(2, threadFactory);
+
+        this.collector = collector;
         aggregator = new Aggregator(scheduledExecutor, collector, configService,
                 ROLLUP_0_INTERVAL_MILLIS, clock);
         transactionCollector = new TransactionCollector(scheduledExecutor, configService, collector,
@@ -220,6 +231,10 @@ public class AgentModule {
         }
     }
 
+    public Collector getCollector() {
+        return collector;
+    }
+
     public ConfigService getConfigService() {
         return configService;
     }
@@ -293,10 +308,20 @@ public class AgentModule {
     }
 
     @OnlyUsedByTests
-    public void close() {
+    public void close() throws InterruptedException {
         immedateTraceStoreWatcher.cancel();
         aggregator.close();
         gaugeCollector.close();
         stackTraceCollector.close();
+        scheduledExecutor.shutdown();
+        if (!scheduledExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate agent scheduled executor");
+        }
+        // shut down collector last since above threads can try to use it
+        if (collector instanceof GrpcCollector) {
+            ((GrpcCollector) collector).close();
+        }
+        // finally, close logger
+        LoggingInit.close();
     }
 }

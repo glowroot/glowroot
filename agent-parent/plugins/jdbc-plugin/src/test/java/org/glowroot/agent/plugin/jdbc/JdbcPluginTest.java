@@ -33,9 +33,7 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.aggregate.Query;
-import org.glowroot.agent.it.harness.config.PluginConfig;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -65,20 +63,12 @@ public class JdbcPluginTest {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
         // when
-        container.executeAppUnderTest(ExecuteCallableStatement.class);
+        Trace trace = container.execute(ExecuteCallableStatement.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Query> queries = container.getAggregateService().getQueries();
-        assertThat(queries).hasSize(1);
-        Query query = queries.get(0);
-        assertThat(query.getQueryText())
-                .isEqualTo("insert into employee (name, misc) values (?, ?)");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.getTotalRows()).isEqualTo(0);
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry jdbcEntry = entries.get(0);
-        assertThat(jdbcEntry.message()).isEqualTo(
+        assertThat(jdbcEntry.getMessage()).isEqualTo(
                 "jdbc execution: insert into employee (name, misc) values (?, ?) ['jane', NULL]");
     }
 
@@ -86,10 +76,9 @@ public class JdbcPluginTest {
     public void testWithoutResultSetValueTimerNormal() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
+        Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
+        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
         assertThat(found).isFalse();
     }
 
@@ -98,10 +87,9 @@ public class JdbcPluginTest {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResultSetGet", true);
         // when
-        container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
+        Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
+        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
         assertThat(found).isFalse();
     }
 
@@ -109,10 +97,9 @@ public class JdbcPluginTest {
     public void testWithoutResultSetValueTimerUnderSeparateTraceEntry() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(GetResultSetValueUnderSeparateTraceEntry.class);
+        Trace trace = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
+        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
         assertThat(found).isFalse();
     }
 
@@ -121,10 +108,9 @@ public class JdbcPluginTest {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResultSetGet", true);
         // when
-        container.executeAppUnderTest(GetResultSetValueUnderSeparateTraceEntry.class);
+        Trace trace = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
+        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
         assertThat(found).isTrue();
     }
 
@@ -133,10 +119,9 @@ public class JdbcPluginTest {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResultSetGet", true);
         // when
-        container.executeAppUnderTest(ExecuteStatementAndIterateOverResultsUsingColumnName.class);
+        Trace trace = container.execute(ExecuteStatementAndIterateOverResultsUsingColumnName.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
+        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
         assertThat(found).isFalse();
     }
 
@@ -145,11 +130,10 @@ public class JdbcPluginTest {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResultSetGet", true);
         // when
-        container.executeAppUnderTest(
+        Trace trace = container.execute(
                 ExecuteStatementAndIterateOverResultsUsingColumnNameUnderSeparateTraceEntry.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
+        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
         assertThat(found).isTrue();
     }
 
@@ -157,10 +141,9 @@ public class JdbcPluginTest {
     public void testWithResultSetNavigateTimerNormal() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
+        Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
+        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
         assertThat(found).isFalse();
     }
 
@@ -168,10 +151,9 @@ public class JdbcPluginTest {
     public void testWithResultSetNavigateTimerUnderSeparateTraceEntry() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(IterateOverResultsUnderSeparateTraceEntry.class);
+        Trace trace = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
+        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
         assertThat(found).isTrue();
     }
 
@@ -181,10 +163,9 @@ public class JdbcPluginTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResultSetNavigate",
                 false);
         // when
-        container.executeAppUnderTest(IterateOverResultsUnderSeparateTraceEntry.class);
+        Trace trace = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        boolean found = findExtendedTimerName(header.rootTimer(), "jdbc execute");
+        boolean found = findExtendedTimerName(trace.getHeader().getRootTimer(), "jdbc execute");
         assertThat(found).isFalse();
     }
 
@@ -192,97 +173,62 @@ public class JdbcPluginTest {
     public void testDefaultStackTraceThreshold() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
+        Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Query> queries = container.getAggregateService().getQueries();
-        assertThat(queries).hasSize(1);
-        Query query = queries.get(0);
-        assertThat(query.getQueryText()).isEqualTo("select * from employee");
-        assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.getTotalRows()).isEqualTo(3);
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry jdbcEntry = entries.get(0);
-        assertThat(jdbcEntry.message())
+        assertThat(jdbcEntry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
-        assertThat(jdbcEntry.locationStackTraceElements()).isEmpty();
+        assertThat(jdbcEntry.getLocationStackTraceElementList()).isEmpty();
     }
 
     @Test
     public void testZeroStackTraceThreshold() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "stackTraceThresholdMillis", 0);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "stackTraceThresholdMillis", 0.0);
         // when
-        container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
+        Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry jdbcEntry = entries.get(0);
-        assertThat(jdbcEntry.message())
+        assertThat(jdbcEntry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
-        assertThat(jdbcEntry.locationStackTraceElements()).isNotEmpty();
+        assertThat(jdbcEntry.getLocationStackTraceElementList()).isNotEmpty();
     }
 
     @Test
     public void testNullStackTraceThreshold() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "stackTraceThresholdMillis",
-                null);
+                (Double) null);
         // when
-        container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
+        Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry jdbcEntry = entries.get(0);
-        assertThat(jdbcEntry.message())
+        assertThat(jdbcEntry.getMessage())
                 .isEqualTo("jdbc execution: select * from employee => 3 rows");
-        assertThat(jdbcEntry.locationStackTraceElements()).isEmpty();
+        assertThat(jdbcEntry.getLocationStackTraceElementList()).isEmpty();
     }
 
     @Test
     public void testPluginDisabled() throws Exception {
         // given
-        PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setEnabled(false);
-        container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.getConfigService().disablePlugin(PLUGIN_ID);
         // when
-        container.executeAppUnderTest(ExecuteStatementAndIterateOverResults.class);
+        Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.entryCount()).isZero();
-    }
-
-    @Test
-    public void testLotsOfStatements() throws Exception {
-        // given
-        // when
-        container.executeAppUnderTest(ExecuteLotsOfStatementAndIterateOverResults.class);
-        // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        Trace.Timer jdbcExecuteTimer = null;
-        for (Trace.Timer nestedTimer : header.rootTimer().childTimers()) {
-            if (nestedTimer.name().equals("jdbc execute")) {
-                jdbcExecuteTimer = nestedTimer;
-                break;
-            }
-        }
-        assertThat(jdbcExecuteTimer).isNotNull();
-        List<Query> queries = container.getAggregateService().getQueries();
-        assertThat(queries).hasSize(1);
-        Query query = queries.get(0);
-        assertThat(query.getQueryText()).isEqualTo("select * from employee");
-        assertThat(query.getExecutionCount()).isEqualTo(4000);
-        assertThat(query.getTotalRows()).isEqualTo(12000);
+        assertThat(trace.getHeader().getEntryCount()).isZero();
     }
 
     private boolean findExtendedTimerName(Trace.Timer timer, String timerName) {
-        if (timer.name().equals(timerName) && timer.extended().or(false)) {
+        if (timer.getName().equals(timerName) && timer.getExtended()) {
             return true;
         }
-        for (Trace.Timer nestedTimer : timer.childTimers()) {
+        for (Trace.Timer nestedTimer : timer.getChildTimerList()) {
             if (findExtendedTimerName(nestedTimer, timerName)) {
                 return true;
             }

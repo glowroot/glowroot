@@ -13,54 +13,64 @@ public final class CollectorServiceOuterClass {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>optional int64 capture_time = 1;</code>
+     * <code>optional string server = 1;</code>
+     */
+    java.lang.String getServer();
+    /**
+     * <code>optional string server = 1;</code>
+     */
+    com.google.protobuf.ByteString
+        getServerBytes();
+
+    /**
+     * <code>optional int64 capture_time = 2;</code>
      */
     long getCaptureTime();
 
     /**
-     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
      */
     java.util.List<org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate> 
         getOverallAggregateList();
     /**
-     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
      */
     org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate getOverallAggregate(int index);
     /**
-     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
      */
     int getOverallAggregateCount();
     /**
-     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
      */
     java.util.List<? extends org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregateOrBuilder> 
         getOverallAggregateOrBuilderList();
     /**
-     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
      */
     org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregateOrBuilder getOverallAggregateOrBuilder(
         int index);
 
     /**
-     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
      */
     java.util.List<org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate> 
         getTransactionAggregateList();
     /**
-     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
      */
     org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate getTransactionAggregate(int index);
     /**
-     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
      */
     int getTransactionAggregateCount();
     /**
-     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
      */
     java.util.List<? extends org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregateOrBuilder> 
         getTransactionAggregateOrBuilderList();
     /**
-     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
      */
     org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregateOrBuilder getTransactionAggregateOrBuilder(
         int index);
@@ -77,6 +87,7 @@ public final class CollectorServiceOuterClass {
       super(builder);
     }
     private AggregateMessage() {
+      server_ = "";
       captureTime_ = 0L;
       overallAggregate_ = java.util.Collections.emptyList();
       transactionAggregate_ = java.util.Collections.emptyList();
@@ -106,23 +117,29 @@ public final class CollectorServiceOuterClass {
               }
               break;
             }
-            case 8: {
+            case 10: {
+              String s = input.readStringRequireUtf8();
+
+              server_ = s;
+              break;
+            }
+            case 16: {
 
               captureTime_ = input.readInt64();
               break;
             }
-            case 18: {
-              if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+            case 26: {
+              if (!((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
                 overallAggregate_ = new java.util.ArrayList<org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate>();
-                mutable_bitField0_ |= 0x00000002;
+                mutable_bitField0_ |= 0x00000004;
               }
               overallAggregate_.add(input.readMessage(org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate.parser(), extensionRegistry));
               break;
             }
-            case 26: {
-              if (!((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
+            case 34: {
+              if (!((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
                 transactionAggregate_ = new java.util.ArrayList<org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate>();
-                mutable_bitField0_ |= 0x00000004;
+                mutable_bitField0_ |= 0x00000008;
               }
               transactionAggregate_.add(input.readMessage(org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate.parser(), extensionRegistry));
               break;
@@ -136,10 +153,10 @@ public final class CollectorServiceOuterClass {
             new com.google.protobuf.InvalidProtocolBufferException(
                 e.getMessage()).setUnfinishedMessage(this));
       } finally {
-        if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+        if (((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
           overallAggregate_ = java.util.Collections.unmodifiableList(overallAggregate_);
         }
-        if (((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
+        if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
           transactionAggregate_ = java.util.Collections.unmodifiableList(transactionAggregate_);
         }
         makeExtensionsImmutable();
@@ -158,79 +175,113 @@ public final class CollectorServiceOuterClass {
     }
 
     private int bitField0_;
-    public static final int CAPTURE_TIME_FIELD_NUMBER = 1;
+    public static final int SERVER_FIELD_NUMBER = 1;
+    private volatile java.lang.Object server_;
+    /**
+     * <code>optional string server = 1;</code>
+     */
+    public java.lang.String getServer() {
+      java.lang.Object ref = server_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        server_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>optional string server = 1;</code>
+     */
+    public com.google.protobuf.ByteString
+        getServerBytes() {
+      java.lang.Object ref = server_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        server_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int CAPTURE_TIME_FIELD_NUMBER = 2;
     private long captureTime_;
     /**
-     * <code>optional int64 capture_time = 1;</code>
+     * <code>optional int64 capture_time = 2;</code>
      */
     public long getCaptureTime() {
       return captureTime_;
     }
 
-    public static final int OVERALL_AGGREGATE_FIELD_NUMBER = 2;
+    public static final int OVERALL_AGGREGATE_FIELD_NUMBER = 3;
     private java.util.List<org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate> overallAggregate_;
     /**
-     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
      */
     public java.util.List<org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate> getOverallAggregateList() {
       return overallAggregate_;
     }
     /**
-     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
      */
     public java.util.List<? extends org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregateOrBuilder> 
         getOverallAggregateOrBuilderList() {
       return overallAggregate_;
     }
     /**
-     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
      */
     public int getOverallAggregateCount() {
       return overallAggregate_.size();
     }
     /**
-     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
      */
     public org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate getOverallAggregate(int index) {
       return overallAggregate_.get(index);
     }
     /**
-     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+     * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
      */
     public org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregateOrBuilder getOverallAggregateOrBuilder(
         int index) {
       return overallAggregate_.get(index);
     }
 
-    public static final int TRANSACTION_AGGREGATE_FIELD_NUMBER = 3;
+    public static final int TRANSACTION_AGGREGATE_FIELD_NUMBER = 4;
     private java.util.List<org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate> transactionAggregate_;
     /**
-     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
      */
     public java.util.List<org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate> getTransactionAggregateList() {
       return transactionAggregate_;
     }
     /**
-     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
      */
     public java.util.List<? extends org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregateOrBuilder> 
         getTransactionAggregateOrBuilderList() {
       return transactionAggregate_;
     }
     /**
-     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
      */
     public int getTransactionAggregateCount() {
       return transactionAggregate_.size();
     }
     /**
-     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
      */
     public org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate getTransactionAggregate(int index) {
       return transactionAggregate_.get(index);
     }
     /**
-     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+     * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
      */
     public org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregateOrBuilder getTransactionAggregateOrBuilder(
         int index) {
@@ -249,14 +300,17 @@ public final class CollectorServiceOuterClass {
 
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
+      if (!getServerBytes().isEmpty()) {
+        com.google.protobuf.GeneratedMessage.writeString(output, 1, server_);
+      }
       if (captureTime_ != 0L) {
-        output.writeInt64(1, captureTime_);
+        output.writeInt64(2, captureTime_);
       }
       for (int i = 0; i < overallAggregate_.size(); i++) {
-        output.writeMessage(2, overallAggregate_.get(i));
+        output.writeMessage(3, overallAggregate_.get(i));
       }
       for (int i = 0; i < transactionAggregate_.size(); i++) {
-        output.writeMessage(3, transactionAggregate_.get(i));
+        output.writeMessage(4, transactionAggregate_.get(i));
       }
     }
 
@@ -265,17 +319,20 @@ public final class CollectorServiceOuterClass {
       if (size != -1) return size;
 
       size = 0;
+      if (!getServerBytes().isEmpty()) {
+        size += com.google.protobuf.GeneratedMessage.computeStringSize(1, server_);
+      }
       if (captureTime_ != 0L) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(1, captureTime_);
+          .computeInt64Size(2, captureTime_);
       }
       for (int i = 0; i < overallAggregate_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(2, overallAggregate_.get(i));
+          .computeMessageSize(3, overallAggregate_.get(i));
       }
       for (int i = 0; i < transactionAggregate_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(3, transactionAggregate_.get(i));
+          .computeMessageSize(4, transactionAggregate_.get(i));
       }
       memoizedSize = size;
       return size;
@@ -390,17 +447,19 @@ public final class CollectorServiceOuterClass {
       }
       public Builder clear() {
         super.clear();
+        server_ = "";
+
         captureTime_ = 0L;
 
         if (overallAggregateBuilder_ == null) {
           overallAggregate_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000002);
+          bitField0_ = (bitField0_ & ~0x00000004);
         } else {
           overallAggregateBuilder_.clear();
         }
         if (transactionAggregateBuilder_ == null) {
           transactionAggregate_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000004);
+          bitField0_ = (bitField0_ & ~0x00000008);
         } else {
           transactionAggregateBuilder_.clear();
         }
@@ -428,20 +487,21 @@ public final class CollectorServiceOuterClass {
         org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage result = new org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
+        result.server_ = server_;
         result.captureTime_ = captureTime_;
         if (overallAggregateBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          if (((bitField0_ & 0x00000004) == 0x00000004)) {
             overallAggregate_ = java.util.Collections.unmodifiableList(overallAggregate_);
-            bitField0_ = (bitField0_ & ~0x00000002);
+            bitField0_ = (bitField0_ & ~0x00000004);
           }
           result.overallAggregate_ = overallAggregate_;
         } else {
           result.overallAggregate_ = overallAggregateBuilder_.build();
         }
         if (transactionAggregateBuilder_ == null) {
-          if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          if (((bitField0_ & 0x00000008) == 0x00000008)) {
             transactionAggregate_ = java.util.Collections.unmodifiableList(transactionAggregate_);
-            bitField0_ = (bitField0_ & ~0x00000004);
+            bitField0_ = (bitField0_ & ~0x00000008);
           }
           result.transactionAggregate_ = transactionAggregate_;
         } else {
@@ -463,6 +523,10 @@ public final class CollectorServiceOuterClass {
 
       public Builder mergeFrom(org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage other) {
         if (other == org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage.getDefaultInstance()) return this;
+        if (!other.getServer().isEmpty()) {
+          server_ = other.server_;
+          onChanged();
+        }
         if (other.getCaptureTime() != 0L) {
           setCaptureTime(other.getCaptureTime());
         }
@@ -470,7 +534,7 @@ public final class CollectorServiceOuterClass {
           if (!other.overallAggregate_.isEmpty()) {
             if (overallAggregate_.isEmpty()) {
               overallAggregate_ = other.overallAggregate_;
-              bitField0_ = (bitField0_ & ~0x00000002);
+              bitField0_ = (bitField0_ & ~0x00000004);
             } else {
               ensureOverallAggregateIsMutable();
               overallAggregate_.addAll(other.overallAggregate_);
@@ -483,7 +547,7 @@ public final class CollectorServiceOuterClass {
               overallAggregateBuilder_.dispose();
               overallAggregateBuilder_ = null;
               overallAggregate_ = other.overallAggregate_;
-              bitField0_ = (bitField0_ & ~0x00000002);
+              bitField0_ = (bitField0_ & ~0x00000004);
               overallAggregateBuilder_ = 
                 com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                    getOverallAggregateFieldBuilder() : null;
@@ -496,7 +560,7 @@ public final class CollectorServiceOuterClass {
           if (!other.transactionAggregate_.isEmpty()) {
             if (transactionAggregate_.isEmpty()) {
               transactionAggregate_ = other.transactionAggregate_;
-              bitField0_ = (bitField0_ & ~0x00000004);
+              bitField0_ = (bitField0_ & ~0x00000008);
             } else {
               ensureTransactionAggregateIsMutable();
               transactionAggregate_.addAll(other.transactionAggregate_);
@@ -509,7 +573,7 @@ public final class CollectorServiceOuterClass {
               transactionAggregateBuilder_.dispose();
               transactionAggregateBuilder_ = null;
               transactionAggregate_ = other.transactionAggregate_;
-              bitField0_ = (bitField0_ & ~0x00000004);
+              bitField0_ = (bitField0_ & ~0x00000008);
               transactionAggregateBuilder_ = 
                 com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                    getTransactionAggregateFieldBuilder() : null;
@@ -545,15 +609,84 @@ public final class CollectorServiceOuterClass {
       }
       private int bitField0_;
 
+      private java.lang.Object server_ = "";
+      /**
+       * <code>optional string server = 1;</code>
+       */
+      public java.lang.String getServer() {
+        java.lang.Object ref = server_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          server_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string server = 1;</code>
+       */
+      public com.google.protobuf.ByteString
+          getServerBytes() {
+        java.lang.Object ref = server_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          server_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string server = 1;</code>
+       */
+      public Builder setServer(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        server_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string server = 1;</code>
+       */
+      public Builder clearServer() {
+        
+        server_ = getDefaultInstance().getServer();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string server = 1;</code>
+       */
+      public Builder setServerBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        server_ = value;
+        onChanged();
+        return this;
+      }
+
       private long captureTime_ ;
       /**
-       * <code>optional int64 capture_time = 1;</code>
+       * <code>optional int64 capture_time = 2;</code>
        */
       public long getCaptureTime() {
         return captureTime_;
       }
       /**
-       * <code>optional int64 capture_time = 1;</code>
+       * <code>optional int64 capture_time = 2;</code>
        */
       public Builder setCaptureTime(long value) {
         
@@ -562,7 +695,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>optional int64 capture_time = 1;</code>
+       * <code>optional int64 capture_time = 2;</code>
        */
       public Builder clearCaptureTime() {
         
@@ -574,9 +707,9 @@ public final class CollectorServiceOuterClass {
       private java.util.List<org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate> overallAggregate_ =
         java.util.Collections.emptyList();
       private void ensureOverallAggregateIsMutable() {
-        if (!((bitField0_ & 0x00000002) == 0x00000002)) {
+        if (!((bitField0_ & 0x00000004) == 0x00000004)) {
           overallAggregate_ = new java.util.ArrayList<org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate>(overallAggregate_);
-          bitField0_ |= 0x00000002;
+          bitField0_ |= 0x00000004;
          }
       }
 
@@ -584,7 +717,7 @@ public final class CollectorServiceOuterClass {
           org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate, org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate.Builder, org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregateOrBuilder> overallAggregateBuilder_;
 
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public java.util.List<org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate> getOverallAggregateList() {
         if (overallAggregateBuilder_ == null) {
@@ -594,7 +727,7 @@ public final class CollectorServiceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public int getOverallAggregateCount() {
         if (overallAggregateBuilder_ == null) {
@@ -604,7 +737,7 @@ public final class CollectorServiceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate getOverallAggregate(int index) {
         if (overallAggregateBuilder_ == null) {
@@ -614,7 +747,7 @@ public final class CollectorServiceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public Builder setOverallAggregate(
           int index, org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate value) {
@@ -631,7 +764,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public Builder setOverallAggregate(
           int index, org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate.Builder builderForValue) {
@@ -645,7 +778,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public Builder addOverallAggregate(org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate value) {
         if (overallAggregateBuilder_ == null) {
@@ -661,7 +794,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public Builder addOverallAggregate(
           int index, org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate value) {
@@ -678,7 +811,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public Builder addOverallAggregate(
           org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate.Builder builderForValue) {
@@ -692,7 +825,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public Builder addOverallAggregate(
           int index, org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate.Builder builderForValue) {
@@ -706,7 +839,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public Builder addAllOverallAggregate(
           java.lang.Iterable<? extends org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate> values) {
@@ -721,12 +854,12 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public Builder clearOverallAggregate() {
         if (overallAggregateBuilder_ == null) {
           overallAggregate_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000002);
+          bitField0_ = (bitField0_ & ~0x00000004);
           onChanged();
         } else {
           overallAggregateBuilder_.clear();
@@ -734,7 +867,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public Builder removeOverallAggregate(int index) {
         if (overallAggregateBuilder_ == null) {
@@ -747,14 +880,14 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate.Builder getOverallAggregateBuilder(
           int index) {
         return getOverallAggregateFieldBuilder().getBuilder(index);
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregateOrBuilder getOverallAggregateOrBuilder(
           int index) {
@@ -764,7 +897,7 @@ public final class CollectorServiceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public java.util.List<? extends org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregateOrBuilder> 
            getOverallAggregateOrBuilderList() {
@@ -775,14 +908,14 @@ public final class CollectorServiceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate.Builder addOverallAggregateBuilder() {
         return getOverallAggregateFieldBuilder().addBuilder(
             org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate.getDefaultInstance());
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate.Builder addOverallAggregateBuilder(
           int index) {
@@ -790,7 +923,7 @@ public final class CollectorServiceOuterClass {
             index, org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate.getDefaultInstance());
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 2;</code>
+       * <code>repeated .org_glowroot_wire_api_model.OverallAggregate overall_aggregate = 3;</code>
        */
       public java.util.List<org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate.Builder> 
            getOverallAggregateBuilderList() {
@@ -803,7 +936,7 @@ public final class CollectorServiceOuterClass {
           overallAggregateBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
               org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate, org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate.Builder, org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregateOrBuilder>(
                   overallAggregate_,
-                  ((bitField0_ & 0x00000002) == 0x00000002),
+                  ((bitField0_ & 0x00000004) == 0x00000004),
                   getParentForChildren(),
                   isClean());
           overallAggregate_ = null;
@@ -814,9 +947,9 @@ public final class CollectorServiceOuterClass {
       private java.util.List<org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate> transactionAggregate_ =
         java.util.Collections.emptyList();
       private void ensureTransactionAggregateIsMutable() {
-        if (!((bitField0_ & 0x00000004) == 0x00000004)) {
+        if (!((bitField0_ & 0x00000008) == 0x00000008)) {
           transactionAggregate_ = new java.util.ArrayList<org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate>(transactionAggregate_);
-          bitField0_ |= 0x00000004;
+          bitField0_ |= 0x00000008;
          }
       }
 
@@ -824,7 +957,7 @@ public final class CollectorServiceOuterClass {
           org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate, org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate.Builder, org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregateOrBuilder> transactionAggregateBuilder_;
 
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public java.util.List<org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate> getTransactionAggregateList() {
         if (transactionAggregateBuilder_ == null) {
@@ -834,7 +967,7 @@ public final class CollectorServiceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public int getTransactionAggregateCount() {
         if (transactionAggregateBuilder_ == null) {
@@ -844,7 +977,7 @@ public final class CollectorServiceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate getTransactionAggregate(int index) {
         if (transactionAggregateBuilder_ == null) {
@@ -854,7 +987,7 @@ public final class CollectorServiceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public Builder setTransactionAggregate(
           int index, org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate value) {
@@ -871,7 +1004,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public Builder setTransactionAggregate(
           int index, org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate.Builder builderForValue) {
@@ -885,7 +1018,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public Builder addTransactionAggregate(org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate value) {
         if (transactionAggregateBuilder_ == null) {
@@ -901,7 +1034,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public Builder addTransactionAggregate(
           int index, org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate value) {
@@ -918,7 +1051,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public Builder addTransactionAggregate(
           org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate.Builder builderForValue) {
@@ -932,7 +1065,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public Builder addTransactionAggregate(
           int index, org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate.Builder builderForValue) {
@@ -946,7 +1079,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public Builder addAllTransactionAggregate(
           java.lang.Iterable<? extends org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate> values) {
@@ -961,12 +1094,12 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public Builder clearTransactionAggregate() {
         if (transactionAggregateBuilder_ == null) {
           transactionAggregate_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000004);
+          bitField0_ = (bitField0_ & ~0x00000008);
           onChanged();
         } else {
           transactionAggregateBuilder_.clear();
@@ -974,7 +1107,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public Builder removeTransactionAggregate(int index) {
         if (transactionAggregateBuilder_ == null) {
@@ -987,14 +1120,14 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate.Builder getTransactionAggregateBuilder(
           int index) {
         return getTransactionAggregateFieldBuilder().getBuilder(index);
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregateOrBuilder getTransactionAggregateOrBuilder(
           int index) {
@@ -1004,7 +1137,7 @@ public final class CollectorServiceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public java.util.List<? extends org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregateOrBuilder> 
            getTransactionAggregateOrBuilderList() {
@@ -1015,14 +1148,14 @@ public final class CollectorServiceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate.Builder addTransactionAggregateBuilder() {
         return getTransactionAggregateFieldBuilder().addBuilder(
             org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate.getDefaultInstance());
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate.Builder addTransactionAggregateBuilder(
           int index) {
@@ -1030,7 +1163,7 @@ public final class CollectorServiceOuterClass {
             index, org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate.getDefaultInstance());
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 3;</code>
+       * <code>repeated .org_glowroot_wire_api_model.TransactionAggregate transaction_aggregate = 4;</code>
        */
       public java.util.List<org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate.Builder> 
            getTransactionAggregateBuilderList() {
@@ -1043,7 +1176,7 @@ public final class CollectorServiceOuterClass {
           transactionAggregateBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
               org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate, org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate.Builder, org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregateOrBuilder>(
                   transactionAggregate_,
-                  ((bitField0_ & 0x00000004) == 0x00000004),
+                  ((bitField0_ & 0x00000008) == 0x00000008),
                   getParentForChildren(),
                   isClean());
           transactionAggregate_ = null;
@@ -1113,25 +1246,35 @@ public final class CollectorServiceOuterClass {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+     * <code>optional string server = 1;</code>
+     */
+    java.lang.String getServer();
+    /**
+     * <code>optional string server = 1;</code>
+     */
+    com.google.protobuf.ByteString
+        getServerBytes();
+
+    /**
+     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
      */
     java.util.List<org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue> 
         getGaugeValuesList();
     /**
-     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
      */
     org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue getGaugeValues(int index);
     /**
-     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
      */
     int getGaugeValuesCount();
     /**
-     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
      */
     java.util.List<? extends org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValueOrBuilder> 
         getGaugeValuesOrBuilderList();
     /**
-     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
      */
     org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValueOrBuilder getGaugeValuesOrBuilder(
         int index);
@@ -1148,6 +1291,7 @@ public final class CollectorServiceOuterClass {
       super(builder);
     }
     private GaugeValueMessage() {
+      server_ = "";
       gaugeValues_ = java.util.Collections.emptyList();
     }
 
@@ -1176,9 +1320,15 @@ public final class CollectorServiceOuterClass {
               break;
             }
             case 10: {
-              if (!((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
+              String s = input.readStringRequireUtf8();
+
+              server_ = s;
+              break;
+            }
+            case 18: {
+              if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
                 gaugeValues_ = new java.util.ArrayList<org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue>();
-                mutable_bitField0_ |= 0x00000001;
+                mutable_bitField0_ |= 0x00000002;
               }
               gaugeValues_.add(input.readMessage(org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue.parser(), extensionRegistry));
               break;
@@ -1192,7 +1342,7 @@ public final class CollectorServiceOuterClass {
             new com.google.protobuf.InvalidProtocolBufferException(
                 e.getMessage()).setUnfinishedMessage(this));
       } finally {
-        if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
+        if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
           gaugeValues_ = java.util.Collections.unmodifiableList(gaugeValues_);
         }
         makeExtensionsImmutable();
@@ -1210,35 +1360,70 @@ public final class CollectorServiceOuterClass {
               org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.class, org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.Builder.class);
     }
 
-    public static final int GAUGE_VALUES_FIELD_NUMBER = 1;
+    private int bitField0_;
+    public static final int SERVER_FIELD_NUMBER = 1;
+    private volatile java.lang.Object server_;
+    /**
+     * <code>optional string server = 1;</code>
+     */
+    public java.lang.String getServer() {
+      java.lang.Object ref = server_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        server_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>optional string server = 1;</code>
+     */
+    public com.google.protobuf.ByteString
+        getServerBytes() {
+      java.lang.Object ref = server_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        server_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int GAUGE_VALUES_FIELD_NUMBER = 2;
     private java.util.List<org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue> gaugeValues_;
     /**
-     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
      */
     public java.util.List<org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue> getGaugeValuesList() {
       return gaugeValues_;
     }
     /**
-     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
      */
     public java.util.List<? extends org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValueOrBuilder> 
         getGaugeValuesOrBuilderList() {
       return gaugeValues_;
     }
     /**
-     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
      */
     public int getGaugeValuesCount() {
       return gaugeValues_.size();
     }
     /**
-     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
      */
     public org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue getGaugeValues(int index) {
       return gaugeValues_.get(index);
     }
     /**
-     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+     * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
      */
     public org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValueOrBuilder getGaugeValuesOrBuilder(
         int index) {
@@ -1257,8 +1442,11 @@ public final class CollectorServiceOuterClass {
 
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
+      if (!getServerBytes().isEmpty()) {
+        com.google.protobuf.GeneratedMessage.writeString(output, 1, server_);
+      }
       for (int i = 0; i < gaugeValues_.size(); i++) {
-        output.writeMessage(1, gaugeValues_.get(i));
+        output.writeMessage(2, gaugeValues_.get(i));
       }
     }
 
@@ -1267,9 +1455,12 @@ public final class CollectorServiceOuterClass {
       if (size != -1) return size;
 
       size = 0;
+      if (!getServerBytes().isEmpty()) {
+        size += com.google.protobuf.GeneratedMessage.computeStringSize(1, server_);
+      }
       for (int i = 0; i < gaugeValues_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(1, gaugeValues_.get(i));
+          .computeMessageSize(2, gaugeValues_.get(i));
       }
       memoizedSize = size;
       return size;
@@ -1383,9 +1574,11 @@ public final class CollectorServiceOuterClass {
       }
       public Builder clear() {
         super.clear();
+        server_ = "";
+
         if (gaugeValuesBuilder_ == null) {
           gaugeValues_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000001);
+          bitField0_ = (bitField0_ & ~0x00000002);
         } else {
           gaugeValuesBuilder_.clear();
         }
@@ -1412,15 +1605,18 @@ public final class CollectorServiceOuterClass {
       public org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage buildPartial() {
         org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage result = new org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage(this);
         int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        result.server_ = server_;
         if (gaugeValuesBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          if (((bitField0_ & 0x00000002) == 0x00000002)) {
             gaugeValues_ = java.util.Collections.unmodifiableList(gaugeValues_);
-            bitField0_ = (bitField0_ & ~0x00000001);
+            bitField0_ = (bitField0_ & ~0x00000002);
           }
           result.gaugeValues_ = gaugeValues_;
         } else {
           result.gaugeValues_ = gaugeValuesBuilder_.build();
         }
+        result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
@@ -1436,11 +1632,15 @@ public final class CollectorServiceOuterClass {
 
       public Builder mergeFrom(org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage other) {
         if (other == org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.getDefaultInstance()) return this;
+        if (!other.getServer().isEmpty()) {
+          server_ = other.server_;
+          onChanged();
+        }
         if (gaugeValuesBuilder_ == null) {
           if (!other.gaugeValues_.isEmpty()) {
             if (gaugeValues_.isEmpty()) {
               gaugeValues_ = other.gaugeValues_;
-              bitField0_ = (bitField0_ & ~0x00000001);
+              bitField0_ = (bitField0_ & ~0x00000002);
             } else {
               ensureGaugeValuesIsMutable();
               gaugeValues_.addAll(other.gaugeValues_);
@@ -1453,7 +1653,7 @@ public final class CollectorServiceOuterClass {
               gaugeValuesBuilder_.dispose();
               gaugeValuesBuilder_ = null;
               gaugeValues_ = other.gaugeValues_;
-              bitField0_ = (bitField0_ & ~0x00000001);
+              bitField0_ = (bitField0_ & ~0x00000002);
               gaugeValuesBuilder_ = 
                 com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                    getGaugeValuesFieldBuilder() : null;
@@ -1489,12 +1689,81 @@ public final class CollectorServiceOuterClass {
       }
       private int bitField0_;
 
+      private java.lang.Object server_ = "";
+      /**
+       * <code>optional string server = 1;</code>
+       */
+      public java.lang.String getServer() {
+        java.lang.Object ref = server_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          server_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string server = 1;</code>
+       */
+      public com.google.protobuf.ByteString
+          getServerBytes() {
+        java.lang.Object ref = server_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          server_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string server = 1;</code>
+       */
+      public Builder setServer(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        server_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string server = 1;</code>
+       */
+      public Builder clearServer() {
+        
+        server_ = getDefaultInstance().getServer();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string server = 1;</code>
+       */
+      public Builder setServerBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        server_ = value;
+        onChanged();
+        return this;
+      }
+
       private java.util.List<org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue> gaugeValues_ =
         java.util.Collections.emptyList();
       private void ensureGaugeValuesIsMutable() {
-        if (!((bitField0_ & 0x00000001) == 0x00000001)) {
+        if (!((bitField0_ & 0x00000002) == 0x00000002)) {
           gaugeValues_ = new java.util.ArrayList<org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue>(gaugeValues_);
-          bitField0_ |= 0x00000001;
+          bitField0_ |= 0x00000002;
          }
       }
 
@@ -1502,7 +1771,7 @@ public final class CollectorServiceOuterClass {
           org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue, org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue.Builder, org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValueOrBuilder> gaugeValuesBuilder_;
 
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public java.util.List<org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue> getGaugeValuesList() {
         if (gaugeValuesBuilder_ == null) {
@@ -1512,7 +1781,7 @@ public final class CollectorServiceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public int getGaugeValuesCount() {
         if (gaugeValuesBuilder_ == null) {
@@ -1522,7 +1791,7 @@ public final class CollectorServiceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue getGaugeValues(int index) {
         if (gaugeValuesBuilder_ == null) {
@@ -1532,7 +1801,7 @@ public final class CollectorServiceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public Builder setGaugeValues(
           int index, org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue value) {
@@ -1549,7 +1818,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public Builder setGaugeValues(
           int index, org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue.Builder builderForValue) {
@@ -1563,7 +1832,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public Builder addGaugeValues(org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue value) {
         if (gaugeValuesBuilder_ == null) {
@@ -1579,7 +1848,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public Builder addGaugeValues(
           int index, org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue value) {
@@ -1596,7 +1865,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public Builder addGaugeValues(
           org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue.Builder builderForValue) {
@@ -1610,7 +1879,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public Builder addGaugeValues(
           int index, org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue.Builder builderForValue) {
@@ -1624,7 +1893,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public Builder addAllGaugeValues(
           java.lang.Iterable<? extends org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue> values) {
@@ -1639,12 +1908,12 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public Builder clearGaugeValues() {
         if (gaugeValuesBuilder_ == null) {
           gaugeValues_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000001);
+          bitField0_ = (bitField0_ & ~0x00000002);
           onChanged();
         } else {
           gaugeValuesBuilder_.clear();
@@ -1652,7 +1921,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public Builder removeGaugeValues(int index) {
         if (gaugeValuesBuilder_ == null) {
@@ -1665,14 +1934,14 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue.Builder getGaugeValuesBuilder(
           int index) {
         return getGaugeValuesFieldBuilder().getBuilder(index);
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValueOrBuilder getGaugeValuesOrBuilder(
           int index) {
@@ -1682,7 +1951,7 @@ public final class CollectorServiceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public java.util.List<? extends org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValueOrBuilder> 
            getGaugeValuesOrBuilderList() {
@@ -1693,14 +1962,14 @@ public final class CollectorServiceOuterClass {
         }
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue.Builder addGaugeValuesBuilder() {
         return getGaugeValuesFieldBuilder().addBuilder(
             org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue.getDefaultInstance());
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue.Builder addGaugeValuesBuilder(
           int index) {
@@ -1708,7 +1977,7 @@ public final class CollectorServiceOuterClass {
             index, org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue.getDefaultInstance());
       }
       /**
-       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 1;</code>
+       * <code>repeated .org_glowroot_wire_api_model.GaugeValue gauge_values = 2;</code>
        */
       public java.util.List<org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue.Builder> 
            getGaugeValuesBuilderList() {
@@ -1721,7 +1990,7 @@ public final class CollectorServiceOuterClass {
           gaugeValuesBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
               org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue, org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue.Builder, org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValueOrBuilder>(
                   gaugeValues_,
-                  ((bitField0_ & 0x00000001) == 0x00000001),
+                  ((bitField0_ & 0x00000002) == 0x00000002),
                   getParentForChildren(),
                   isClean());
           gaugeValues_ = null;
@@ -1791,15 +2060,25 @@ public final class CollectorServiceOuterClass {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>optional .org_glowroot_wire_api_model.Trace trace = 1;</code>
+     * <code>optional string server = 1;</code>
+     */
+    java.lang.String getServer();
+    /**
+     * <code>optional string server = 1;</code>
+     */
+    com.google.protobuf.ByteString
+        getServerBytes();
+
+    /**
+     * <code>optional .org_glowroot_wire_api_model.Trace trace = 2;</code>
      */
     boolean hasTrace();
     /**
-     * <code>optional .org_glowroot_wire_api_model.Trace trace = 1;</code>
+     * <code>optional .org_glowroot_wire_api_model.Trace trace = 2;</code>
      */
     org.glowroot.wire.api.model.TraceOuterClass.Trace getTrace();
     /**
-     * <code>optional .org_glowroot_wire_api_model.Trace trace = 1;</code>
+     * <code>optional .org_glowroot_wire_api_model.Trace trace = 2;</code>
      */
     org.glowroot.wire.api.model.TraceOuterClass.TraceOrBuilder getTraceOrBuilder();
   }
@@ -1815,6 +2094,7 @@ public final class CollectorServiceOuterClass {
       super(builder);
     }
     private TraceMessage() {
+      server_ = "";
     }
 
     @java.lang.Override
@@ -1842,6 +2122,12 @@ public final class CollectorServiceOuterClass {
               break;
             }
             case 10: {
+              String s = input.readStringRequireUtf8();
+
+              server_ = s;
+              break;
+            }
+            case 18: {
               org.glowroot.wire.api.model.TraceOuterClass.Trace.Builder subBuilder = null;
               if (trace_ != null) {
                 subBuilder = trace_.toBuilder();
@@ -1878,22 +2164,56 @@ public final class CollectorServiceOuterClass {
               org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage.class, org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage.Builder.class);
     }
 
-    public static final int TRACE_FIELD_NUMBER = 1;
+    public static final int SERVER_FIELD_NUMBER = 1;
+    private volatile java.lang.Object server_;
+    /**
+     * <code>optional string server = 1;</code>
+     */
+    public java.lang.String getServer() {
+      java.lang.Object ref = server_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        server_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>optional string server = 1;</code>
+     */
+    public com.google.protobuf.ByteString
+        getServerBytes() {
+      java.lang.Object ref = server_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        server_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int TRACE_FIELD_NUMBER = 2;
     private org.glowroot.wire.api.model.TraceOuterClass.Trace trace_;
     /**
-     * <code>optional .org_glowroot_wire_api_model.Trace trace = 1;</code>
+     * <code>optional .org_glowroot_wire_api_model.Trace trace = 2;</code>
      */
     public boolean hasTrace() {
       return trace_ != null;
     }
     /**
-     * <code>optional .org_glowroot_wire_api_model.Trace trace = 1;</code>
+     * <code>optional .org_glowroot_wire_api_model.Trace trace = 2;</code>
      */
     public org.glowroot.wire.api.model.TraceOuterClass.Trace getTrace() {
       return trace_ == null ? org.glowroot.wire.api.model.TraceOuterClass.Trace.getDefaultInstance() : trace_;
     }
     /**
-     * <code>optional .org_glowroot_wire_api_model.Trace trace = 1;</code>
+     * <code>optional .org_glowroot_wire_api_model.Trace trace = 2;</code>
      */
     public org.glowroot.wire.api.model.TraceOuterClass.TraceOrBuilder getTraceOrBuilder() {
       return getTrace();
@@ -1911,8 +2231,11 @@ public final class CollectorServiceOuterClass {
 
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
+      if (!getServerBytes().isEmpty()) {
+        com.google.protobuf.GeneratedMessage.writeString(output, 1, server_);
+      }
       if (trace_ != null) {
-        output.writeMessage(1, getTrace());
+        output.writeMessage(2, getTrace());
       }
     }
 
@@ -1921,9 +2244,12 @@ public final class CollectorServiceOuterClass {
       if (size != -1) return size;
 
       size = 0;
+      if (!getServerBytes().isEmpty()) {
+        size += com.google.protobuf.GeneratedMessage.computeStringSize(1, server_);
+      }
       if (trace_ != null) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(1, getTrace());
+          .computeMessageSize(2, getTrace());
       }
       memoizedSize = size;
       return size;
@@ -2036,6 +2362,8 @@ public final class CollectorServiceOuterClass {
       }
       public Builder clear() {
         super.clear();
+        server_ = "";
+
         if (traceBuilder_ == null) {
           trace_ = null;
         } else {
@@ -2064,6 +2392,7 @@ public final class CollectorServiceOuterClass {
 
       public org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage buildPartial() {
         org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage result = new org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage(this);
+        result.server_ = server_;
         if (traceBuilder_ == null) {
           result.trace_ = trace_;
         } else {
@@ -2084,6 +2413,10 @@ public final class CollectorServiceOuterClass {
 
       public Builder mergeFrom(org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage other) {
         if (other == org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceMessage.getDefaultInstance()) return this;
+        if (!other.getServer().isEmpty()) {
+          server_ = other.server_;
+          onChanged();
+        }
         if (other.hasTrace()) {
           mergeTrace(other.getTrace());
         }
@@ -2113,17 +2446,86 @@ public final class CollectorServiceOuterClass {
         return this;
       }
 
+      private java.lang.Object server_ = "";
+      /**
+       * <code>optional string server = 1;</code>
+       */
+      public java.lang.String getServer() {
+        java.lang.Object ref = server_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          server_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string server = 1;</code>
+       */
+      public com.google.protobuf.ByteString
+          getServerBytes() {
+        java.lang.Object ref = server_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          server_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string server = 1;</code>
+       */
+      public Builder setServer(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        server_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string server = 1;</code>
+       */
+      public Builder clearServer() {
+        
+        server_ = getDefaultInstance().getServer();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string server = 1;</code>
+       */
+      public Builder setServerBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        server_ = value;
+        onChanged();
+        return this;
+      }
+
       private org.glowroot.wire.api.model.TraceOuterClass.Trace trace_ = null;
       private com.google.protobuf.SingleFieldBuilder<
           org.glowroot.wire.api.model.TraceOuterClass.Trace, org.glowroot.wire.api.model.TraceOuterClass.Trace.Builder, org.glowroot.wire.api.model.TraceOuterClass.TraceOrBuilder> traceBuilder_;
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace trace = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace trace = 2;</code>
        */
       public boolean hasTrace() {
         return traceBuilder_ != null || trace_ != null;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace trace = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace trace = 2;</code>
        */
       public org.glowroot.wire.api.model.TraceOuterClass.Trace getTrace() {
         if (traceBuilder_ == null) {
@@ -2133,7 +2535,7 @@ public final class CollectorServiceOuterClass {
         }
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace trace = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace trace = 2;</code>
        */
       public Builder setTrace(org.glowroot.wire.api.model.TraceOuterClass.Trace value) {
         if (traceBuilder_ == null) {
@@ -2149,7 +2551,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace trace = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace trace = 2;</code>
        */
       public Builder setTrace(
           org.glowroot.wire.api.model.TraceOuterClass.Trace.Builder builderForValue) {
@@ -2163,7 +2565,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace trace = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace trace = 2;</code>
        */
       public Builder mergeTrace(org.glowroot.wire.api.model.TraceOuterClass.Trace value) {
         if (traceBuilder_ == null) {
@@ -2181,7 +2583,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace trace = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace trace = 2;</code>
        */
       public Builder clearTrace() {
         if (traceBuilder_ == null) {
@@ -2195,7 +2597,7 @@ public final class CollectorServiceOuterClass {
         return this;
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace trace = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace trace = 2;</code>
        */
       public org.glowroot.wire.api.model.TraceOuterClass.Trace.Builder getTraceBuilder() {
         
@@ -2203,7 +2605,7 @@ public final class CollectorServiceOuterClass {
         return getTraceFieldBuilder().getBuilder();
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace trace = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace trace = 2;</code>
        */
       public org.glowroot.wire.api.model.TraceOuterClass.TraceOrBuilder getTraceOrBuilder() {
         if (traceBuilder_ != null) {
@@ -2214,7 +2616,7 @@ public final class CollectorServiceOuterClass {
         }
       }
       /**
-       * <code>optional .org_glowroot_wire_api_model.Trace trace = 1;</code>
+       * <code>optional .org_glowroot_wire_api_model.Trace trace = 2;</code>
        */
       private com.google.protobuf.SingleFieldBuilder<
           org.glowroot.wire.api.model.TraceOuterClass.Trace, org.glowroot.wire.api.model.TraceOuterClass.Trace.Builder, org.glowroot.wire.api.model.TraceOuterClass.TraceOrBuilder> 
@@ -2602,455 +3004,6 @@ public final class CollectorServiceOuterClass {
 
   }
 
-  public interface ConfigMessageOrBuilder extends
-      // @@protoc_insertion_point(interface_extends:org_glowroot_wire_api_model.ConfigMessage)
-      com.google.protobuf.MessageOrBuilder {
-
-    /**
-     * <code>optional string json = 1;</code>
-     */
-    java.lang.String getJson();
-    /**
-     * <code>optional string json = 1;</code>
-     */
-    com.google.protobuf.ByteString
-        getJsonBytes();
-  }
-  /**
-   * Protobuf type {@code org_glowroot_wire_api_model.ConfigMessage}
-   */
-  public  static final class ConfigMessage extends
-      com.google.protobuf.GeneratedMessage implements
-      // @@protoc_insertion_point(message_implements:org_glowroot_wire_api_model.ConfigMessage)
-      ConfigMessageOrBuilder {
-    // Use ConfigMessage.newBuilder() to construct.
-    private ConfigMessage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
-      super(builder);
-    }
-    private ConfigMessage() {
-      json_ = "";
-    }
-
-    @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
-    getUnknownFields() {
-      return com.google.protobuf.UnknownFieldSet.getDefaultInstance();
-    }
-    private ConfigMessage(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry) {
-      this();
-      int mutable_bitField0_ = 0;
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            default: {
-              if (!input.skipField(tag)) {
-                done = true;
-              }
-              break;
-            }
-            case 10: {
-              String s = input.readStringRequireUtf8();
-
-              json_ = s;
-              break;
-            }
-          }
-        }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw new RuntimeException(e.setUnfinishedMessage(this));
-      } catch (java.io.IOException e) {
-        throw new RuntimeException(
-            new com.google.protobuf.InvalidProtocolBufferException(
-                e.getMessage()).setUnfinishedMessage(this));
-      } finally {
-        makeExtensionsImmutable();
-      }
-    }
-    public static final com.google.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-      return org.glowroot.wire.api.model.CollectorServiceOuterClass.internal_static_org_glowroot_wire_api_model_ConfigMessage_descriptor;
-    }
-
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
-      return org.glowroot.wire.api.model.CollectorServiceOuterClass.internal_static_org_glowroot_wire_api_model_ConfigMessage_fieldAccessorTable
-          .ensureFieldAccessorsInitialized(
-              org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage.class, org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage.Builder.class);
-    }
-
-    public static final int JSON_FIELD_NUMBER = 1;
-    private volatile java.lang.Object json_;
-    /**
-     * <code>optional string json = 1;</code>
-     */
-    public java.lang.String getJson() {
-      java.lang.Object ref = json_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        json_ = s;
-        return s;
-      }
-    }
-    /**
-     * <code>optional string json = 1;</code>
-     */
-    public com.google.protobuf.ByteString
-        getJsonBytes() {
-      java.lang.Object ref = json_;
-      if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        json_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-
-    private byte memoizedIsInitialized = -1;
-    public final boolean isInitialized() {
-      byte isInitialized = memoizedIsInitialized;
-      if (isInitialized == 1) return true;
-      if (isInitialized == 0) return false;
-
-      memoizedIsInitialized = 1;
-      return true;
-    }
-
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
-      if (!getJsonBytes().isEmpty()) {
-        com.google.protobuf.GeneratedMessage.writeString(output, 1, json_);
-      }
-    }
-
-    public int getSerializedSize() {
-      int size = memoizedSize;
-      if (size != -1) return size;
-
-      size = 0;
-      if (!getJsonBytes().isEmpty()) {
-        size += com.google.protobuf.GeneratedMessage.computeStringSize(1, json_);
-      }
-      memoizedSize = size;
-      return size;
-    }
-
-    private static final long serialVersionUID = 0L;
-    public static org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage parseFrom(
-        byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input);
-    }
-    public static org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage parseFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
-    }
-    public static org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input);
-    }
-    public static org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage parseDelimitedFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseDelimitedFrom(input, extensionRegistry);
-    }
-    public static org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage parseFrom(
-        com.google.protobuf.CodedInputStream input)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input);
-    }
-    public static org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return PARSER.parseFrom(input, extensionRegistry);
-    }
-
-    public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder() {
-      return DEFAULT_INSTANCE.toBuilder();
-    }
-    public static Builder newBuilder(org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage prototype) {
-      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
-    }
-    public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE
-          ? new Builder() : new Builder().mergeFrom(this);
-    }
-
-    @java.lang.Override
-    protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
-    }
-    /**
-     * Protobuf type {@code org_glowroot_wire_api_model.ConfigMessage}
-     */
-    public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
-        // @@protoc_insertion_point(builder_implements:org_glowroot_wire_api_model.ConfigMessage)
-        org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessageOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return org.glowroot.wire.api.model.CollectorServiceOuterClass.internal_static_org_glowroot_wire_api_model_ConfigMessage_descriptor;
-      }
-
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return org.glowroot.wire.api.model.CollectorServiceOuterClass.internal_static_org_glowroot_wire_api_model_ConfigMessage_fieldAccessorTable
-            .ensureFieldAccessorsInitialized(
-                org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage.class, org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage.Builder.class);
-      }
-
-      // Construct using org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage.newBuilder()
-      private Builder() {
-        maybeForceBuilderInitialization();
-      }
-
-      private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-        super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
-      }
-      public Builder clear() {
-        super.clear();
-        json_ = "";
-
-        return this;
-      }
-
-      public com.google.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return org.glowroot.wire.api.model.CollectorServiceOuterClass.internal_static_org_glowroot_wire_api_model_ConfigMessage_descriptor;
-      }
-
-      public org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage getDefaultInstanceForType() {
-        return org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage.getDefaultInstance();
-      }
-
-      public org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage build() {
-        org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage result = buildPartial();
-        if (!result.isInitialized()) {
-          throw newUninitializedMessageException(result);
-        }
-        return result;
-      }
-
-      public org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage buildPartial() {
-        org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage result = new org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage(this);
-        result.json_ = json_;
-        onBuilt();
-        return result;
-      }
-
-      public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage) {
-          return mergeFrom((org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage)other);
-        } else {
-          super.mergeFrom(other);
-          return this;
-        }
-      }
-
-      public Builder mergeFrom(org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage other) {
-        if (other == org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage.getDefaultInstance()) return this;
-        if (!other.getJson().isEmpty()) {
-          json_ = other.json_;
-          onChanged();
-        }
-        onChanged();
-        return this;
-      }
-
-      public final boolean isInitialized() {
-        return true;
-      }
-
-      public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage parsedMessage = null;
-        try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage) e.getUnfinishedMessage();
-          throw e;
-        } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
-        return this;
-      }
-
-      private java.lang.Object json_ = "";
-      /**
-       * <code>optional string json = 1;</code>
-       */
-      public java.lang.String getJson() {
-        java.lang.Object ref = json_;
-        if (!(ref instanceof java.lang.String)) {
-          com.google.protobuf.ByteString bs =
-              (com.google.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
-          json_ = s;
-          return s;
-        } else {
-          return (java.lang.String) ref;
-        }
-      }
-      /**
-       * <code>optional string json = 1;</code>
-       */
-      public com.google.protobuf.ByteString
-          getJsonBytes() {
-        java.lang.Object ref = json_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          json_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-      /**
-       * <code>optional string json = 1;</code>
-       */
-      public Builder setJson(
-          java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  
-        json_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional string json = 1;</code>
-       */
-      public Builder clearJson() {
-        
-        json_ = getDefaultInstance().getJson();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional string json = 1;</code>
-       */
-      public Builder setJsonBytes(
-          com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  checkByteStringIsUtf8(value);
-        
-        json_ = value;
-        onChanged();
-        return this;
-      }
-      public final Builder setUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return this;
-      }
-
-      public final Builder mergeUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return this;
-      }
-
-
-      // @@protoc_insertion_point(builder_scope:org_glowroot_wire_api_model.ConfigMessage)
-    }
-
-    // @@protoc_insertion_point(class_scope:org_glowroot_wire_api_model.ConfigMessage)
-    private static final org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage DEFAULT_INSTANCE;
-    static {
-      DEFAULT_INSTANCE = new org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage();
-    }
-
-    public static org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage getDefaultInstance() {
-      return DEFAULT_INSTANCE;
-    }
-
-    private static final com.google.protobuf.Parser<ConfigMessage>
-        PARSER = new com.google.protobuf.AbstractParser<ConfigMessage>() {
-      public ConfigMessage parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        try {
-          return new ConfigMessage(input, extensionRegistry);
-        } catch (RuntimeException e) {
-          if (e.getCause() instanceof
-              com.google.protobuf.InvalidProtocolBufferException) {
-            throw (com.google.protobuf.InvalidProtocolBufferException)
-                e.getCause();
-          }
-          throw e;
-        }
-      }
-    };
-
-    public static com.google.protobuf.Parser<ConfigMessage> parser() {
-      return PARSER;
-    }
-
-    @java.lang.Override
-    public com.google.protobuf.Parser<ConfigMessage> getParserForType() {
-      return PARSER;
-    }
-
-    public org.glowroot.wire.api.model.CollectorServiceOuterClass.ConfigMessage getDefaultInstanceForType() {
-      return DEFAULT_INSTANCE;
-    }
-
-  }
-
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_org_glowroot_wire_api_model_AggregateMessage_descriptor;
   private static
@@ -3071,11 +3024,6 @@ public final class CollectorServiceOuterClass {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_org_glowroot_wire_api_model_EmptyMessage_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_org_glowroot_wire_api_model_ConfigMessage_descriptor;
-  private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_org_glowroot_wire_api_model_ConfigMessage_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -3087,29 +3035,27 @@ public final class CollectorServiceOuterClass {
     java.lang.String[] descriptorData = {
       "\n\026CollectorService.proto\022\033org_glowroot_w" +
       "ire_api_model\032\013Trace.proto\032\017Aggregate.pr" +
-      "oto\032\020GaugeValue.proto\"\304\001\n\020AggregateMessa" +
-      "ge\022\024\n\014capture_time\030\001 \001(\003\022H\n\021overall_aggr" +
-      "egate\030\002 \003(\0132-.org_glowroot_wire_api_mode" +
-      "l.OverallAggregate\022P\n\025transaction_aggreg" +
-      "ate\030\003 \003(\01321.org_glowroot_wire_api_model." +
-      "TransactionAggregate\"R\n\021GaugeValueMessag" +
-      "e\022=\n\014gauge_values\030\001 \003(\0132\'.org_glowroot_w" +
-      "ire_api_model.GaugeValue\"A\n\014TraceMessage",
-      "\0221\n\005trace\030\001 \001(\0132\".org_glowroot_wire_api_" +
-      "model.Trace\"\016\n\014EmptyMessage\"\035\n\rConfigMes" +
-      "sage\022\014\n\004json\030\001 \001(\t2\274\003\n\020CollectorService\022" +
-      "m\n\021collectAggregates\022-.org_glowroot_wire" +
-      "_api_model.AggregateMessage\032).org_glowro" +
-      "ot_wire_api_model.EmptyMessage\022o\n\022collec" +
-      "tGaugeValues\022..org_glowroot_wire_api_mod" +
-      "el.GaugeValueMessage\032).org_glowroot_wire" +
-      "_api_model.EmptyMessage\022d\n\014collectTrace\022" +
-      ").org_glowroot_wire_api_model.TraceMessa",
-      "ge\032).org_glowroot_wire_api_model.EmptyMe" +
-      "ssage\022b\n\tgetConfig\022).org_glowroot_wire_a" +
-      "pi_model.EmptyMessage\032*.org_glowroot_wir" +
-      "e_api_model.ConfigMessageB\035\n\033org.glowroo" +
-      "t.wire.api.modelb\006proto3"
+      "oto\032\020GaugeValue.proto\"\324\001\n\020AggregateMessa" +
+      "ge\022\016\n\006server\030\001 \001(\t\022\024\n\014capture_time\030\002 \001(\003" +
+      "\022H\n\021overall_aggregate\030\003 \003(\0132-.org_glowro" +
+      "ot_wire_api_model.OverallAggregate\022P\n\025tr" +
+      "ansaction_aggregate\030\004 \003(\01321.org_glowroot" +
+      "_wire_api_model.TransactionAggregate\"b\n\021" +
+      "GaugeValueMessage\022\016\n\006server\030\001 \001(\t\022=\n\014gau" +
+      "ge_values\030\002 \003(\0132\'.org_glowroot_wire_api_",
+      "model.GaugeValue\"Q\n\014TraceMessage\022\016\n\006serv" +
+      "er\030\001 \001(\t\0221\n\005trace\030\002 \001(\0132\".org_glowroot_w" +
+      "ire_api_model.Trace\"\016\n\014EmptyMessage2\330\002\n\020" +
+      "CollectorService\022m\n\021collectAggregates\022-." +
+      "org_glowroot_wire_api_model.AggregateMes" +
+      "sage\032).org_glowroot_wire_api_model.Empty" +
+      "Message\022o\n\022collectGaugeValues\022..org_glow" +
+      "root_wire_api_model.GaugeValueMessage\032)." +
+      "org_glowroot_wire_api_model.EmptyMessage" +
+      "\022d\n\014collectTrace\022).org_glowroot_wire_api",
+      "_model.TraceMessage\032).org_glowroot_wire_" +
+      "api_model.EmptyMessageB\035\n\033org.glowroot.w" +
+      "ire.api.modelb\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -3131,31 +3077,25 @@ public final class CollectorServiceOuterClass {
     internal_static_org_glowroot_wire_api_model_AggregateMessage_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_AggregateMessage_descriptor,
-        new java.lang.String[] { "CaptureTime", "OverallAggregate", "TransactionAggregate", });
+        new java.lang.String[] { "Server", "CaptureTime", "OverallAggregate", "TransactionAggregate", });
     internal_static_org_glowroot_wire_api_model_GaugeValueMessage_descriptor =
       getDescriptor().getMessageTypes().get(1);
     internal_static_org_glowroot_wire_api_model_GaugeValueMessage_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_GaugeValueMessage_descriptor,
-        new java.lang.String[] { "GaugeValues", });
+        new java.lang.String[] { "Server", "GaugeValues", });
     internal_static_org_glowroot_wire_api_model_TraceMessage_descriptor =
       getDescriptor().getMessageTypes().get(2);
     internal_static_org_glowroot_wire_api_model_TraceMessage_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_TraceMessage_descriptor,
-        new java.lang.String[] { "Trace", });
+        new java.lang.String[] { "Server", "Trace", });
     internal_static_org_glowroot_wire_api_model_EmptyMessage_descriptor =
       getDescriptor().getMessageTypes().get(3);
     internal_static_org_glowroot_wire_api_model_EmptyMessage_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_glowroot_wire_api_model_EmptyMessage_descriptor,
         new java.lang.String[] { });
-    internal_static_org_glowroot_wire_api_model_ConfigMessage_descriptor =
-      getDescriptor().getMessageTypes().get(4);
-    internal_static_org_glowroot_wire_api_model_ConfigMessage_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-        internal_static_org_glowroot_wire_api_model_ConfigMessage_descriptor,
-        new java.lang.String[] { "Json", });
     org.glowroot.wire.api.model.TraceOuterClass.getDescriptor();
     org.glowroot.wire.api.model.AggregateOuterClass.getDescriptor();
     org.glowroot.wire.api.model.GaugeValueOuterClass.getDescriptor();

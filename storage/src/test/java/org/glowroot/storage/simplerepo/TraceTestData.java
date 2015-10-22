@@ -15,7 +15,7 @@
  */
 package org.glowroot.storage.simplerepo;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.UUID;
 
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -24,8 +24,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @Styles.Private
 class TraceTestData {
-
-    private static final AtomicInteger counter = new AtomicInteger();
 
     static Trace createTrace() {
         Trace.Header header = Trace.Header.newBuilder()
@@ -56,15 +54,11 @@ class TraceTestData {
                         .setTotalNanos(123)
                         .setCount(1)
                         .setActive(false))
-                .setThreadCpuNanos(-1)
-                .setThreadBlockedNanos(-1)
-                .setThreadWaitedNanos(-1)
-                .setThreadAllocatedBytes(-1)
                 .setEntryLimitExceeded(false)
                 .setProfileSampleLimitExceeded(false)
                 .build();
         return Trace.newBuilder()
-                .setId("abc" + counter.getAndIncrement())
+                .setId(UUID.randomUUID().toString())
                 .setHeader(header)
                 .build();
     }

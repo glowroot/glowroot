@@ -21,9 +21,11 @@ import java.lang.management.ThreadMXBean;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.Transaction;
+import org.glowroot.agent.model.Transaction.OverrideSource;
 import org.glowroot.common.config.UserRecordingConfig;
 import org.glowroot.common.util.ScheduledRunnable;
 
@@ -43,18 +45,22 @@ public class UserProfileScheduler {
 
     void maybeScheduleUserProfiling(Transaction transaction, String user) {
         UserRecordingConfig userRecordingConfig = configService.getUserRecordingConfig();
-        if (!userRecordingConfig.enabled()) {
+        ImmutableList<String> users = userRecordingConfig.users();
+        if (users.isEmpty()) {
             return;
         }
-        if (!user.equalsIgnoreCase(userRecordingConfig.user())) {
+        if (!TransactionCollector.containsIgnoreCase(users, user)) {
             return;
         }
+        // for now lumping user recording into slow traces tab
+        transaction.setSlowThresholdMillis(0, OverrideSource.USER_RECORDING);
+
         // schedule the first stack collection for configured interval after transaction start (or
         // immediately, if the transaction's total time already exceeds configured collection
         // interval)
-        int intervalMillis = userRecordingConfig.profileIntervalMillis();
-        if (intervalMillis <= 0) {
-            intervalMillis = 10;
+        Integer intervalMillis = userRecordingConfig.profilingIntervalMillis();
+        if (intervalMillis == null || intervalMillis <= 0) {
+            return;
         }
         ScheduledRunnable userProfileRunnable = new UserProfileRunnable(transaction, configService);
         long initialDelay =

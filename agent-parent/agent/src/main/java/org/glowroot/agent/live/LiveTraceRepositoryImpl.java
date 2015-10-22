@@ -175,13 +175,13 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
 
     @Override
     @OnlyUsedByTests
-    public int getTransactionCount(String server) {
+    public int getActiveTransactionCount(String server) {
         return transactionRegistry.getTransactions().size();
     }
 
     @Override
     @OnlyUsedByTests
-    public int getPendingTransactionCount(String server) {
+    public int getPendingCompleteTransactionCount(String server) {
         return transactionCollector.getPendingTransactions().size();
     }
 

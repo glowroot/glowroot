@@ -52,7 +52,7 @@ public class PropertyValue {
         }
     }
 
-    PropertyValue(@Nullable Object value) {
+    public PropertyValue(@Nullable Object value) {
         this.value = value;
     }
 

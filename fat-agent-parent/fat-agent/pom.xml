@@ -121,6 +121,13 @@
       <version>${asm.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.glowroot</groupId>
+      <artifactId>glowroot-agent</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -230,7 +237,7 @@
           <relocations>
             <relocation>
               <pattern>org.h2</pattern>
-              <shadedPattern>org.glowroot.agent.shaded.h2</shadedPattern>
+              <shadedPattern>org.glowroot.fat.shaded.h2</shadedPattern>
               <excludes>
                 <!-- these resource files are actually read from org/h2/util/data.zip whose
                   internals do not get shaded -->
@@ -258,7 +265,7 @@
             </relocation>
             <relocation>
               <pattern>com.ning.compress</pattern>
-              <shadedPattern>org.glowroot.agent.shaded.ning.compress</shadedPattern>
+              <shadedPattern>org.glowroot.fat.shaded.ning.compress</shadedPattern>
             </relocation>
             <relocation>
               <pattern>com.google.common</pattern>
@@ -287,15 +294,15 @@
             </relocation>
             <relocation>
               <pattern>com.jcraft.jzlib</pattern>
-              <shadedPattern>org.glowroot.agent.shaded.jcraft.jzlib</shadedPattern>
+              <shadedPattern>org.glowroot.fat.shaded.jcraft.jzlib</shadedPattern>
             </relocation>
             <relocation>
               <pattern>javax.mail</pattern>
-              <shadedPattern>org.glowroot.agent.shaded.javax.mail</shadedPattern>
+              <shadedPattern>org.glowroot.fat.shaded.javax.mail</shadedPattern>
             </relocation>
             <relocation>
               <pattern>com.sun.mail</pattern>
-              <shadedPattern>org.glowroot.agent.shaded.sun.mail</shadedPattern>
+              <shadedPattern>org.glowroot.fat.shaded.sun.mail</shadedPattern>
             </relocation>
             <relocation>
               <rawString>true</rawString>
@@ -351,7 +358,7 @@
             <archive>
               <manifestEntries>
                 <Build-Time>${maven.build.timestamp}</Build-Time>
-                <Main-Class>org.glowroot.agent.fat.Viewer</Main-Class>
+                <Main-Class>org.glowroot.fat.Viewer</Main-Class>
                 <Premain-Class>org.glowroot.agent.AgentPremain</Premain-Class>
                 <Can-Redefine-Classes>true</Can-Redefine-Classes>
                 <Can-Retransform-Classes>true</Can-Retransform-Classes>

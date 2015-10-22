@@ -25,7 +25,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,31 +53,28 @@ public class GlowrootApiTest {
     public void shouldSetTransactionType() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(SetTransactionType.class);
+        Trace trace = container.execute(SetTransactionType.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.transactionType()).isEqualTo("a type");
+        assertThat(trace.getHeader().getTransactionType()).isEqualTo("a type");
     }
 
     @Test
     public void shouldSetTransactionName() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(SetTransactionName.class);
+        Trace trace = container.execute(SetTransactionName.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.transactionName()).isEqualTo("a name");
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("a name");
     }
 
     @Test
     public void shouldSetTransactionErrorWithThrowable() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(SetTransactionErrorWithThrowable.class);
+        Trace trace = container.execute(SetTransactionErrorWithThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.error().get().message()).isEqualTo("abc");
-        assertThat(header.error().get().exception().get().display())
+        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("abc");
+        assertThat(trace.getHeader().getError().getException().getDisplay())
                 .isEqualTo("java.lang.IllegalStateException: abc");
     }
 
@@ -85,22 +82,20 @@ public class GlowrootApiTest {
     public void shouldSetTransactionErrorWithMessage() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(SetTransactionErrorWithMessage.class);
+        Trace trace = container.execute(SetTransactionErrorWithMessage.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.error().get().message()).isEqualTo("xyz");
-        assertThat(header.error().get().exception().isPresent()).isFalse();
+        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("xyz");
+        assertThat(trace.getHeader().getError().hasException()).isFalse();
     }
 
     @Test
     public void shouldSetTransactionErrorWithMessageAndThrowable() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(SetTransactionErrorWithMessageAndThrowable.class);
+        Trace trace = container.execute(SetTransactionErrorWithMessageAndThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.error().get().message()).isEqualTo("efg");
-        assertThat(header.error().get().exception().get().display())
+        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg");
+        assertThat(trace.getHeader().getError().getException().getDisplay())
                 .isEqualTo("java.lang.IllegalStateException: tuv");
     }
 
@@ -108,31 +103,29 @@ public class GlowrootApiTest {
     public void shouldSetTransactionUser() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(SetTransactionUser.class);
+        Trace trace = container.execute(SetTransactionUser.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.user()).isEqualTo("a user");
+        assertThat(trace.getHeader().getUser()).isEqualTo("a user");
     }
 
     @Test
     public void shouldAddTransactionAttribute() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(AddTransactionAttribute.class);
+        Trace trace = container.execute(AddTransactionAttribute.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.attributes().size()).isEqualTo(1);
-        assertThat(header.attributes().get("an attr")).containsExactly("a val");
+        assertThat(trace.getHeader().getAttributeList().size()).isEqualTo(1);
+        Trace.Attribute attribute = trace.getHeader().getAttributeList().get(0);
+        assertThat(attribute.getName()).isEqualTo("an attr");
+        assertThat(attribute.getValueList()).containsExactly("a val");
     }
 
     @Test
     public void shouldSetTransactionSlowThreshold() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(SetTransactionSlowThreshold.class);
+        container.executeNoExpectedTrace(SetTransactionSlowThreshold.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header).isNull();
     }
 
     public static class SetTransactionType implements AppUnderTest, TransactionMarker {

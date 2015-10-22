@@ -35,6 +35,8 @@ import org.rauschig.jarchivelib.Archiver;
 import org.rauschig.jarchivelib.ArchiverFactory;
 import org.rauschig.jarchivelib.CompressionType;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 class CassandraWrapper {
 
     private static final String CASSANDRA_VERSION = "2.0.14";
@@ -61,8 +63,11 @@ class CassandraWrapper {
     }
 
     static void stop() throws Exception {
-        consolePipeExecutorService.shutdownNow();
         process.destroy();
+        consolePipeExecutorService.shutdown();
+        if (!consolePipeExecutorService.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate executor");
+        }
     }
 
     private static void downloadAndExtract(File baseDir) throws MalformedURLException, IOException {

@@ -16,12 +16,12 @@
 package org.glowroot.agent.impl;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import javax.annotation.concurrent.GuardedBy;
 
-import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.RateLimiter;
@@ -43,7 +43,7 @@ public class TransactionCollector {
 
     private static final int PENDING_LIMIT = 100;
 
-    private final ExecutorService executorService;
+    private final ExecutorService executor;
     private final ConfigService configService;
     private final Collector collector;
     private final Aggregator aggregator;
@@ -55,9 +55,9 @@ public class TransactionCollector {
     @GuardedBy("warningRateLimiter")
     private int countSinceLastWarning;
 
-    public TransactionCollector(ExecutorService executorService, ConfigService configService,
+    public TransactionCollector(ExecutorService executor, ConfigService configService,
             Collector collector, Aggregator aggregator, Clock clock, Ticker ticker) {
-        this.executorService = executorService;
+        this.executor = executor;
         this.configService = configService;
         this.collector = collector;
         this.aggregator = aggregator;
@@ -78,17 +78,6 @@ public class TransactionCollector {
         slowThresholdMillis = configService.getTransactionConfig().slowThresholdMillis();
         if (transaction.getDurationNanos() >= MILLISECONDS.toNanos(slowThresholdMillis)) {
             return true;
-        }
-
-        // for now lumping user recording into slow traces tab
-        //
-        // check if should store for user recording
-        if (configService.getUserRecordingConfig().enabled()) {
-            String user = transaction.getUser();
-            if (!Strings.isNullOrEmpty(user)
-                    && user.equalsIgnoreCase(configService.getUserRecordingConfig().user())) {
-                return true;
-            }
         }
         return false;
     }
@@ -137,7 +126,7 @@ public class TransactionCollector {
                 }
             }
         };
-        executorService.execute(command);
+        executor.execute(command);
     }
 
     // no need to throttle partial trace storage since throttling is handled upstream by using a
@@ -168,5 +157,14 @@ public class TransactionCollector {
                 countSinceLastWarning++;
             }
         }
+    }
+
+    static boolean containsIgnoreCase(List<String> list, String test) {
+        for (String item : list) {
+            if (test.equalsIgnoreCase(item)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

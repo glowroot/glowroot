@@ -63,7 +63,7 @@ public class ClassLoaderLeakTest {
     public void shouldNotRunOutOfPermGenSpace() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ShouldGenerateLotsOfClassLoaders.class);
+        container.executeNoExpectedTrace(ShouldGenerateLotsOfClassLoaders.class);
         // then
     }
 

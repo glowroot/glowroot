@@ -28,8 +28,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.config.PluginConfig;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,15 +59,14 @@ public class CommonsLoggingTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
         // when
-        container.executeAppUnderTest(ShouldLog.class);
+        Trace trace = container.execute(ShouldLog.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
-        assertThat(header.error().get().message()).isEqualTo("efg");
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg");
         assertThat(entries).hasSize(3);
-        assertThat(entries.get(0).message()).isEqualTo("log warn: def");
-        assertThat(entries.get(1).message()).isEqualTo("log error: efg");
-        assertThat(entries.get(2).message()).isEqualTo("log fatal: fgh");
+        assertThat(entries.get(0).getMessage()).isEqualTo("log warn: def");
+        assertThat(entries.get(1).getMessage()).isEqualTo("log error: efg");
+        assertThat(entries.get(2).getMessage()).isEqualTo("log fatal: fgh");
     }
 
     @Test
@@ -77,30 +75,29 @@ public class CommonsLoggingTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
         // when
-        container.executeAppUnderTest(ShouldLogWithThrowable.class);
+        Trace trace = container.execute(ShouldLogWithThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
-        assertThat(header.error().get().message()).isEqualTo("efg_");
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg_");
         assertThat(entries).hasSize(3);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.message()).isEqualTo("log warn: def_");
-        assertThat(warnEntry.error().get().message()).isEqualTo("456");
-        assertThat(warnEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("transactionMarker");
+        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def_");
+        assertThat(warnEntry.getError().getMessage()).isEqualTo("456");
+        assertThat(warnEntry.getError().getException().getStackTraceElementList().get(0)
+                .getMethodName()).isEqualTo("transactionMarker");
 
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.message()).isEqualTo("log error: efg_");
-        assertThat(errorEntry.error().get().message()).isEqualTo("567");
-        assertThat(errorEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("transactionMarker");
+        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg_");
+        assertThat(errorEntry.getError().getMessage()).isEqualTo("567");
+        assertThat(errorEntry.getError().getException().getStackTraceElementList().get(0)
+                .getMethodName()).isEqualTo("transactionMarker");
 
         Trace.Entry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.message()).isEqualTo("log fatal: fgh_");
-        assertThat(fatalEntry.error().get().message()).isEqualTo("678");
-        assertThat(fatalEntry.error().get().exception().get().stackTraceElements().get(0))
-                .contains("transactionMarker");
+        assertThat(fatalEntry.getMessage()).isEqualTo("log fatal: fgh_");
+        assertThat(fatalEntry.getError().getMessage()).isEqualTo("678");
+        assertThat(fatalEntry.getError().getException().getStackTraceElementList().get(0)
+                .getMethodName()).isEqualTo("transactionMarker");
     }
 
     @Test
@@ -109,35 +106,31 @@ public class CommonsLoggingTest {
         container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "traceErrorOnErrorWithoutThrowable", true);
         // when
-        container.executeAppUnderTest(ShouldLogWithNullThrowable.class);
+        Trace trace = container.execute(ShouldLogWithNullThrowable.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
-        assertThat(header.error().get().message()).isEqualTo("efg_");
+        List<Trace.Entry> entries = trace.getEntryList();
+        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg_");
         assertThat(entries).hasSize(3);
 
         Trace.Entry warnEntry = entries.get(0);
-        assertThat(warnEntry.message()).isEqualTo("log warn: def_");
-        assertThat(warnEntry.error().get().message()).isEqualTo("def_");
+        assertThat(warnEntry.getMessage()).isEqualTo("log warn: def_");
+        assertThat(warnEntry.getError().getMessage()).isEqualTo("def_");
         Trace.Entry errorEntry = entries.get(1);
-        assertThat(errorEntry.message()).isEqualTo("log error: efg_");
-        assertThat(errorEntry.error().get().message()).isEqualTo("efg_");
+        assertThat(errorEntry.getMessage()).isEqualTo("log error: efg_");
+        assertThat(errorEntry.getError().getMessage()).isEqualTo("efg_");
         Trace.Entry fatalEntry = entries.get(2);
-        assertThat(fatalEntry.message()).isEqualTo("log fatal: fgh_");
-        assertThat(fatalEntry.error().get().message()).isEqualTo("fgh_");
+        assertThat(fatalEntry.getMessage()).isEqualTo("log fatal: fgh_");
+        assertThat(fatalEntry.getError().getMessage()).isEqualTo("fgh_");
     }
 
     @Test
     public void testPluginDisabled() throws Exception {
         // given
-        PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setEnabled(false);
-        container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.getConfigService().disablePlugin(PLUGIN_ID);
         // when
-        container.executeAppUnderTest(ShouldLog.class);
+        Trace trace = container.execute(ShouldLog.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.entryCount()).isZero();
+        assertThat(trace.getHeader().getEntryCount()).isZero();
     }
 
     public static class ShouldLog implements AppUnderTest, TransactionMarker {

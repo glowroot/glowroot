@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+import "ConfigUpdate.proto";
+import "Common.proto";
+
+package org_glowroot_agent_it_harness;
+
+option java_package = "org.glowroot.agent.it.harness.grpc";
+
+service ConfigUpdateService {
+  rpc updateTransactionConfig(TransactionConfigUpdate) returns (Void);
+  rpc updateUserRecordingConfig(UserRecordingConfigUpdate) returns (Void);
+  rpc updateAdvancedConfig(AdvancedConfigUpdate) returns (Void);
+  rpc updatePluginConfig(PluginConfigUpdate) returns (Void);
+  // this is a full replacement update of existing instrumentation configs
+  rpc updateInstrumentationConfigs(InstrumentationConfigList) returns (ClassUpdateCount);
+}
+
+message InstrumentationConfigList {
+  repeated InstrumentationConfig instrumentation_config = 1;
+}
+
+message ClassUpdateCount {
+  int32 value = 1;
+}

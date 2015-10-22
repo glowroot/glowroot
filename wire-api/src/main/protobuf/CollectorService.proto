@@ -12,25 +12,23 @@ service CollectorService {
   rpc collectAggregates(AggregateMessage) returns (EmptyMessage);
   rpc collectGaugeValues(GaugeValueMessage) returns (EmptyMessage);
   rpc collectTrace(TraceMessage) returns (EmptyMessage);
-  rpc getConfig(EmptyMessage) returns (ConfigMessage);
 }
 
 message AggregateMessage {
-  int64 capture_time = 1;
-  repeated OverallAggregate overall_aggregate = 2;
-  repeated TransactionAggregate transaction_aggregate = 3;
+  string server = 1;
+  int64 capture_time = 2;
+  repeated OverallAggregate overall_aggregate = 3;
+  repeated TransactionAggregate transaction_aggregate = 4;
 }
 
 message GaugeValueMessage {
-  repeated GaugeValue gauge_values = 1;
+  string server = 1;
+  repeated GaugeValue gauge_values = 2;
 }
 
 message TraceMessage {
-  Trace trace = 1;
+  string server = 1;
+  Trace trace = 2;
 }
 
 message EmptyMessage {}
-
-message ConfigMessage {
-  string json = 1;
-}

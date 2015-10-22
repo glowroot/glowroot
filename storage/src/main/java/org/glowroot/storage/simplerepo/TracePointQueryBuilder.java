@@ -43,15 +43,15 @@ class TracePointQueryBuilder {
     // inclusive on upper bound)
     ParameterizedSql getParameterizedSql() {
         ParameterizedSqlBuilder builder = new ParameterizedSqlBuilder();
-        builder.appendText("select trace.server, trace.trace_id, trace.capture_time,"
+        builder.appendText("select trace.server, trace.id, trace.capture_time,"
                 + " trace.duration_nanos, trace.error from trace");
         ParameterizedSql criteria = getAttributeCriteria();
         if (criteria == null) {
             builder.appendText(" where");
         } else {
             builder.appendText(", trace_attribute attr where attr.server = trace.server"
-                    + " and attr.trace_id = trace.trace_id and attr.capture_time > ?"
-                    + " and attr.capture_time <= ? and" + criteria.sql());
+                    + " and attr.id = trace.id and attr.capture_time > ? and attr.capture_time <= ?"
+                    + " and" + criteria.sql());
             builder.addArg(query.from());
             builder.addArg(query.to());
             builder.addArgs(criteria.args());

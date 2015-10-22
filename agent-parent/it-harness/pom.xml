@@ -18,12 +18,12 @@
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-fat-agent</artifactId>
+      <artifactId>glowroot-agent</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <!-- do not include glowroot-wire-api, glowroot-agent-api or glowroot-agent-plugin-api since
-      want to either get them transitively from glowroot-fat-agent (during mvn test) or get them
-      from shaded glowroot-fat-agent (during mvn package) -->
+    <!-- do not include glowroot-agent-api or glowroot-agent-plugin-api since want to either get
+      them transitively from glowroot-fat-agent (during mvn test) or get them from shaded
+      glowroot-fat-agent (during mvn package) -->
     <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>value</artifactId>
@@ -33,6 +33,26 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-stub</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-protobuf</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-netty</artifactId>
     </dependency>
     <dependency>
       <groupId>com.ning</groupId>
@@ -95,33 +115,6 @@
   </dependencies>
 
   <build>
-    <plugins>
-      <plugin>
-        <!-- shading of core inside it-harness is primarily done so core doesn't need to be
-          deployed to maven central for plugin authors to use it-harness, this hopefully makes
-          it more clear that only test code should depend on core (through it-harness),
-          while plugin code should only depend on plugin-api -->
-        <artifactId>maven-shade-plugin</artifactId>
-        <configuration>
-          <dependencyReducedPomLocation>
-            ${project.build.directory}/dependency-reduced-pom.xml
-          </dependencyReducedPomLocation>
-          <createSourcesJar>true</createSourcesJar>
-          <artifactSet>
-            <includes>
-              <include>org.glowroot:glowroot-fat-agent</include>
-            </includes>
-          </artifactSet>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
     <pluginManagement>
       <plugins>
         <plugin>

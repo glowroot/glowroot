@@ -11,7 +11,7 @@ service DownstreamService {
 message ServerRequest {
   int64 request_id = 1;
   oneof message {
-    MBeanTreeRequest mbean_tree_request = 16;
+    MBeanTreeRequest mbean_tree_request = 100;
   }
 }
 
@@ -19,7 +19,7 @@ message ClientResponse {
   int64 request_id = 1;
   oneof message {
     Hello hello = 2;
-    MBeanTreeResponse mbean_tree_response = 16;
+    MBeanTreeResponse mbean_tree_response = 100;
   }
 }
 

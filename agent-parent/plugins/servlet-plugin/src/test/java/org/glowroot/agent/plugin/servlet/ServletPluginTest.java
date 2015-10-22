@@ -18,6 +18,7 @@ package org.glowroot.agent.plugin.servlet;
 import java.io.IOException;
 import java.util.List;
 
+import javax.annotation.Nullable;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -44,8 +45,7 @@ import org.springframework.mock.web.MockServletConfig;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.config.PluginConfig;
-import org.glowroot.agent.it.harness.trace.Trace;
+import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -74,164 +74,164 @@ public class ServletPluginTest {
     public void testServlet() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteServlet.class);
+        Trace trace = container.execute(ExecuteServlet.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.headline()).isEqualTo("/testservlet");
-        assertThat(header.transactionName()).isEqualTo("/testservlet");
-        assertThat(header.detail().get("Request http method")).isEqualTo("GET");
-        assertThat(header.entryCount()).isZero();
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getHeadline()).isEqualTo("/testservlet");
+        assertThat(header.getTransactionName()).isEqualTo("/testservlet");
+        assertThat(getDetailValue(header, "Request http method")).isEqualTo("GET");
+        assertThat(header.getEntryCount()).isZero();
     }
 
     @Test
     public void testFilter() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteFilter.class);
+        Trace trace = container.execute(ExecuteFilter.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.headline()).isEqualTo("/testfilter");
-        assertThat(header.transactionName()).isEqualTo("/testfilter");
-        assertThat(header.detail().get("Request http method")).isEqualTo("GET");
-        assertThat(header.entryCount()).isZero();
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getHeadline()).isEqualTo("/testfilter");
+        assertThat(header.getTransactionName()).isEqualTo("/testfilter");
+        assertThat(getDetailValue(header, "Request http method")).isEqualTo("GET");
+        assertThat(header.getEntryCount()).isZero();
     }
 
     @Test
     public void testCombination() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ExecuteFilterWithNestedServlet.class);
+        Trace trace = container.execute(ExecuteFilterWithNestedServlet.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.headline()).isEqualTo("/testfilter");
-        assertThat(header.transactionName()).isEqualTo("/testfilter");
-        assertThat(header.detail().get("Request http method")).isEqualTo("GET");
-        assertThat(header.entryCount()).isZero();
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getHeadline()).isEqualTo("/testfilter");
+        assertThat(header.getTransactionName()).isEqualTo("/testfilter");
+        assertThat(getDetailValue(header, "Request http method")).isEqualTo("GET");
+        assertThat(header.getEntryCount()).isZero();
     }
 
     @Test
     public void testNoQueryString() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(TestNoQueryString.class);
+        Trace trace = container.execute(TestNoQueryString.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.detail()).doesNotContainKey("Request query string");
-        assertThat(header.entryCount()).isZero();
+        assertThat(getDetailValue(trace.getHeader(), "Request query string")).isNull();
+        assertThat(trace.getHeader().getEntryCount()).isZero();
     }
 
     @Test
     public void testEmptyQueryString() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(TestEmptyQueryString.class);
+        Trace trace = container.execute(TestEmptyQueryString.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.detail().get("Request query string")).isEqualTo("");
-        assertThat(header.entryCount()).isZero();
+        assertThat(getDetailValue(trace.getHeader(), "Request query string")).isEqualTo("");
+        assertThat(trace.getHeader().getEntryCount()).isZero();
     }
 
     @Test
     public void testNonEmptyQueryString() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(TestNonEmptyQueryString.class);
+        Trace trace = container.execute(TestNonEmptyQueryString.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.detail().get("Request query string")).isEqualTo("a=b&c=d");
-        assertThat(header.entryCount()).isZero();
+        assertThat(getDetailValue(trace.getHeader(), "Request query string")).isEqualTo("a=b&c=d");
+        assertThat(trace.getHeader().getEntryCount()).isZero();
     }
 
     @Test
     public void testServletThrowsException() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(ServletThrowsException.class);
+        Trace trace = container.execute(ServletThrowsException.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.error().get().message()).isNotEmpty();
-        assertThat(header.error().get().exception().isPresent()).isTrue();
-        assertThat(header.entryCount()).isZero();
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getError().getMessage()).isNotEmpty();
+        assertThat(header.getError().hasException()).isTrue();
+        assertThat(header.getEntryCount()).isZero();
     }
 
     @Test
     public void testFilterThrowsException() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(FilterThrowsException.class);
+        Trace trace = container.execute(FilterThrowsException.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.error().get().message()).isNotEmpty();
-        assertThat(header.error().get().exception().isPresent()).isTrue();
-        assertThat(header.entryCount()).isZero();
+        Trace.Header header = trace.getHeader();
+        assertThat(header.getError().getMessage()).isNotEmpty();
+        assertThat(header.getError().hasException()).isTrue();
+        assertThat(header.getEntryCount()).isZero();
     }
 
     @Test
     public void testSend500Error() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(Send500Error.class);
+        Trace trace = container.execute(Send500Error.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.error().get().message()).isEqualTo("sendError, HTTP status code 500");
-        assertThat(header.error().get().exception().isPresent()).isFalse();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        assertThat(trace.getHeader().getError().getMessage())
+                .isEqualTo("sendError, HTTP status code 500");
+        assertThat(trace.getHeader().getError().hasException()).isFalse();
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.error().get().message()).isEqualTo("sendError, HTTP status code 500");
-        assertThat(entry.error().get().exception().isPresent()).isFalse();
-        assertThat(entry.locationStackTraceElements()).isNotEmpty();
-        assertThat(entry.locationStackTraceElements().get(0)).contains("sendError");
+        assertThat(entry.getError().getMessage()).isEqualTo("sendError, HTTP status code 500");
+        assertThat(entry.getError().hasException()).isFalse();
+        assertThat(entry.getLocationStackTraceElementList()).isNotEmpty();
+        assertThat(entry.getLocationStackTraceElementList().get(0).getMethodName())
+                .isEqualTo("sendError");
     }
 
     @Test
     public void testSetStatus500Error() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(SetStatus500Error.class);
+        Trace trace = container.execute(SetStatus500Error.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header.error().get().message()).isEqualTo("setStatus, HTTP status code 500");
-        assertThat(header.error().get().exception().isPresent()).isFalse();
-        List<Trace.Entry> entries = container.getTraceService().getEntries(header.id());
+        assertThat(trace.getHeader().getError().getMessage())
+                .isEqualTo("setStatus, HTTP status code 500");
+        assertThat(trace.getHeader().getError().hasException()).isFalse();
+        List<Trace.Entry> entries = trace.getEntryList();
         assertThat(entries).hasSize(1);
         Trace.Entry entry = entries.get(0);
-        assertThat(entry.error().get().message()).isEqualTo("setStatus, HTTP status code 500");
-        assertThat(entry.error().get().exception().isPresent()).isFalse();
-        assertThat(entry.locationStackTraceElements().get(0)).contains("setStatus");
+        assertThat(entry.getError().getMessage()).isEqualTo("setStatus, HTTP status code 500");
+        assertThat(entry.getError().hasException()).isFalse();
+        assertThat(entry.getLocationStackTraceElementList().get(0).getMethodName())
+                .isEqualTo("setStatus");
     }
 
     @Test
     public void testPluginDisabled() throws Exception {
         // given
-        PluginConfig pluginConfig = container.getConfigService().getPluginConfig(PLUGIN_ID);
-        pluginConfig.setEnabled(false);
-        container.getConfigService().updatePluginConfig(PLUGIN_ID, pluginConfig);
+        container.getConfigService().disablePlugin(PLUGIN_ID);
         // when
-        container.executeAppUnderTest(ExecuteServlet.class);
+        container.executeNoExpectedTrace(ExecuteServlet.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header).isNull();
     }
 
     @Test
     public void testBizzareServletContainer() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(BizzareServletContainer.class);
+        container.executeNoExpectedTrace(BizzareServletContainer.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header).isNull();
     }
 
     @Test
     public void testBizzareThrowingServletContainer() throws Exception {
         // given
         // when
-        container.executeAppUnderTest(BizzareThrowingServletContainer.class);
+        container.executeNoExpectedTrace(BizzareThrowingServletContainer.class);
         // then
-        Trace.Header header = container.getTraceService().getLastHeader();
-        assertThat(header).isNull();
+    }
+
+    private static @Nullable String getDetailValue(Trace.Header header, String name) {
+        for (Trace.DetailEntry detail : header.getDetailEntryList()) {
+            if (detail.getName().equals(name)) {
+                return detail.getValueList().get(0).getSval();
+            }
+        }
+        return null;
     }
 
     @SuppressWarnings("serial")
