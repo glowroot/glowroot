@@ -153,8 +153,7 @@ case "$1" in
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@\([A-Za-z]*\)\*/|/*@org.checkerframework.checker.nullness.qual.\1*/|g'
 
                # TODO find way to not omit these (especially it-harness)
-               # omitting wire-api from checker framework validation as it contains (mostly) generated code which does not pass
-               # omitting agent-parent/it-harness from checker framework validation as it contains generated code which does not pass
+               # omitting wire-api and agent-parent/it-harness from checker framework validation since they contain protobuf generated code which does not pass
                mvn clean install -am -pl wire-api,agent-parent/it-harness
                mvn clean compile -pl .,misc/license-resource-bundle,common,agent-parent/api,agent-parent/plugin-api,agent-parent/agent,agent-parent/plugins/cassandra-plugin,agent-parent/plugins/jdbc-plugin,agent-parent/plugins/logger-plugin,agent-parent/plugins/servlet-plugin,storage,ui,fat-agent-parent/fat-agent \
                                  -Pchecker \
