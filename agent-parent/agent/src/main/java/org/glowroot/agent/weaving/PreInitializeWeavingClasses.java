@@ -379,6 +379,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ExtraBootResourceFinder");
         types.add("org.glowroot.agent.weaving.GeneratedBytecodeUtil");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice");
+        types.add("org.glowroot.agent.weaving.ImmutableAdvice$InitShim");
         types.add("org.glowroot.agent.weaving.ImmutableAdviceMatcher");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedClass");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedClass$Builder");
