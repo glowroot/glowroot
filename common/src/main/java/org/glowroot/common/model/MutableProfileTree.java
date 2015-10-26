@@ -243,16 +243,18 @@ public class MutableProfileTree {
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         jg.writeStartObject();
-        jg.writeObjectFieldStart("");
-        jg.writeNumberField("svUnique", 0);
-        jg.writeNumberField("svTotal", getSampleCount());
-        jg.writeObjectFieldStart("svChildren");
+        jg.writeNumberField("totalSampleCount", getSampleCount());
+        jg.writeArrayFieldStart("rootNodes");
+        int height = 0;
         for (ProfileNode rootNode : rootNodes) {
             if (rootNode.sampleCount > rootNode.ellipsedSampleCount) {
-                new FlameGraphWriter(rootNode, jg).traverse();
+                FlameGraphWriter flameGraphWriter = new FlameGraphWriter(rootNode, jg);
+                flameGraphWriter.traverse();
+                height = Math.max(height, flameGraphWriter.height);
             }
         }
-        jg.writeEndObject();
+        jg.writeEndArray();
+        jg.writeNumberField("height", height);
         jg.writeEndObject();
         jg.close();
         return sb.toString();
@@ -700,6 +702,7 @@ public class MutableProfileTree {
     private class FlameGraphWriter extends Traverser<ProfileNode, IOException> {
 
         private final JsonGenerator jg;
+        private int height;
 
         private FlameGraphWriter(ProfileNode rootNode, JsonGenerator jg) throws IOException {
             super(rootNode);
@@ -708,20 +711,21 @@ public class MutableProfileTree {
 
         @Override
         public List<ProfileNode> visit(ProfileNode node, int depth) throws IOException {
-            jg.writeObjectFieldStart(node.getText());
-            long svUnique = node.sampleCount;
-            for (ProfileNode childNode : node.childNodes) {
-                svUnique -= childNode.sampleCount;
+            height = Math.max(height, depth + 1);
+            jg.writeStartObject();
+            jg.writeStringField("name", node.getText());
+            jg.writeNumberField("value", node.sampleCount);
+            if (!node.childNodes.isEmpty()) {
+                jg.writeArrayFieldStart("children");
             }
-            jg.writeNumberField("svUnique", svUnique);
-            jg.writeNumberField("svTotal", node.sampleCount);
-            jg.writeObjectFieldStart("svChildren");
             return node.childNodes;
         }
 
         @Override
         public void revisitAfterChildren(ProfileNode node) throws IOException {
-            jg.writeEndObject();
+            if (!node.childNodes.isEmpty()) {
+                jg.writeEndArray();
+            }
             jg.writeEndObject();
         }
     }

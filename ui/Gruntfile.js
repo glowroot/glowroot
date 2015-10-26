@@ -330,6 +330,16 @@ module.exports = function (grunt) {
           js: [
             [/(ZeroClipboard\.swf)/, 'Replacing reference to ZeroClipboard.swf']
           ]
+        },
+        blockReplacements: {
+          // this is workaround for grunt-usemin issue #391
+          js: function (block){
+            if (block.dest === 'scripts/vendor-flame-graph.js') {
+              return '<script async src="' + block.dest + '"><\/script>';
+            } else {
+              return '<script src="' + block.dest + '"><\/script>';
+            }
+          }
         }
       }
     },

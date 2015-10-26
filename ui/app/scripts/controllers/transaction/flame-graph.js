@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, gtParseIncludesExcludes, $, moment */
+/* global glowroot, gtParseIncludesExcludes, d3, moment */
 
 glowroot.controller('TransactionFlameGraphCtrl', [
   '$scope',
@@ -39,7 +39,7 @@ glowroot.controller('TransactionFlameGraphCtrl', [
     // plus it's pretty confusing visually (and very tall vertically) with very fine grained leafs
     $scope.truncateBranchPercentage = $location.search()['truncate-branch-percentage'] || 1.0;
 
-    if (!$scope.last && (!$scope.from || !$scope.to)) {
+    if (!$scope.last && (isNaN($scope.from) || isNaN($scope.to))) {
       $scope.last = 4 * 60 * 60 * 1000;
     }
 
@@ -68,26 +68,37 @@ glowroot.controller('TransactionFlameGraphCtrl', [
       $http.get('backend/transaction/flame-graph' + queryStrings.encodeObject(query))
           .success(function (data) {
             $scope.loaded = true;
-            if (data[''].svTotal === 0) {
+            if (data.rootNodes.length === 0) {
               $scope.chartNoData = true;
             } else {
-              window.svRawData = data;
-              window.svInit();
+              var chartData;
+              var height = data.height;
+              if (data.rootNodes.length === 1) {
+                chartData = data.rootNodes[0];
+              } else {
+                chartData = {
+                  name: '<multiple root nodes>',
+                  value: data.totalSampleCount,
+                  children: data.rootNodes
+                };
+                height++;
+              }
+              var flameGraph = d3.flameGraph()
+                  .height(height * 18)
+                  .width(960)
+                  .cellHeight(18)
+                  .tooltip(true)
+                  .tooltipDirection('s')
+                  .tooltipOffset([8, 0])
+                  .transitionDuration(750)
+                  .transitionEase('cubic-in-out')
+                  .title('');
+              d3.select('#chart')
+                  .datum(chartData)
+                  .call(flameGraph);
             }
           })
           .error(httpErrors.handler($scope));
     }
-
-    function escapeKeyHandler(e) {
-      // esc key
-      if (e.keyCode === 27) {
-        window.svDetailClose();
-      }
-    }
-
-    $(document).on('keydown', escapeKeyHandler);
-    $scope.$on('$destroy', function () {
-      $(document).off('keydown', escapeKeyHandler);
-    });
   }
 ]);

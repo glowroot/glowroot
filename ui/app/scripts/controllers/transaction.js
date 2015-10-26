@@ -80,7 +80,7 @@ glowroot.controller('TransactionCtrl', [
       $scope.chartFrom = Number($location.search().from);
       $scope.chartTo = Number($location.search().to);
       // both from and to must be supplied or neither will take effect
-      if ($scope.chartFrom && $scope.chartTo) {
+      if (!isNaN($scope.chartFrom) && !isNaN($scope.chartTo)) {
         $scope.last = 0;
       } else if (!$scope.last) {
         $scope.last = 4 * 60 * 60 * 1000;

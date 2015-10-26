@@ -39,9 +39,19 @@ https://github.com/silviomoreto/bootstrap-select
 MIT License
 
 D3
-Copyright 2012 Michael Bostock
+Copyright 2010-2015 Michael Bostock
 https://github.com/mbostock/d3
 BSD 3-Clause License
+
+d3-flame-graph
+Copyright 2015 Martin Spier
+https://github.com/spiermar/d3-flame-graph
+Apache License, Version 2.0
+
+d3.tip
+Copyright 2013 Justin Palmer
+https://github.com/Caged/d3-tip
+MIT License
 
 Flot
 Copyright 2007-2014 IOLA and Ole Laursen
@@ -135,11 +145,6 @@ Ning Compress
 Copyright 2009-2010 Ning, Inc
 http://github.com/ning/compress
 Apache License, Version 2.0
-
-Node Stackvis
-Copyright 2013 Joyent, Inc
-https://github.com/joyent/node-stackvis
-MIT License
 
 Open Sans Font
 Copyright 2010-2011 Google Corporation

@@ -30,27 +30,21 @@
     {{parsingError}}
   </div>
 </div>
-<div class="icicle">
-  <div id="info" ng-if="!parsingError">
-    Hover over a block for summary information. Click a block for details.
-    <div class="svTooltip" id="svTooltip"></div>
+<div id="info" ng-if="!parsingError">
+  Hover over a block for summary information. Click a block for details.
+  <div class="svTooltip" id="svTooltip"></div>
+</div>
+<!-- margin-left: -22px is to counter default padding-left: 32px -->
+<div gt-spinner
+     gt-show="!loaded && !httpError"
+     class="gt-left-aligned-spinner"
+     style="margin-left: -22px;">
+</div>
+<div ng-show="chartNoData"
+     style="display: table; width: 100%; height: 100%; margin-top: 50px;">
+  <div style="display: table-cell; text-align: center; vertical-align: middle;">
+    <div class="gt-chart-no-data">No data for this time period</div>
   </div>
-  <!-- margin-left: -22px is to counter default padding-left: 32px -->
-  <div gt-spinner
-       gt-show="!loaded && !httpError"
-       class="gt-left-aligned-spinner"
-       style="margin-left: -22px;">
-  </div>
-  <div ng-show="chartNoData"
-       style="display: table; width: 100%; height: 100%; margin-top: 50px;">
-    <div style="display: table-cell; text-align: center; vertical-align: middle;">
-      <div class="gt-chart-no-data">No data for this time period</div>
-    </div>
-  </div>
-  <div id="chart">
-    <div style="position: relative">
-      <div class="svPopout" id="svPopout">
-      </div>
-    </div>
-  </div>
+</div>
+<div id="chart" style="padding-top: 50px;">
 </div>

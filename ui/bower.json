@@ -6,7 +6,7 @@
     "angular-ui-router": "0.2.15",
     "bootstrap": "3.3.5",
     "bootstrap-select": "1.7.5",
-    "d3": "2.10.3",
+    "d3-flame-graph": "c85ed20356cb2ac925d177bf40906742bea1e112",
     "eonasdan-bootstrap-datetimepicker": "4.17.37",
     "flot": "trask/flot#987463441ad3f06b37a481aeaba54790046203bd",
     "flot.tooltip": "0.8.5",
@@ -16,7 +16,6 @@
     "moment": "2.10.6",
     "sequeljs": "trask/sequeljs#glowroot-0.8",
     "spinjs": "2.3.2",
-    "stackvis": "trask/node-stackvis#glowroot-0.8",
     "zeroclipboard": "2.1.6"
   }
 }

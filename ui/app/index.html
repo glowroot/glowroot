@@ -32,7 +32,7 @@
 
   <!-- build:css({.tmp,.}) styles/main.css -->
   <link rel="stylesheet" href="styles/main.css">
-  <link rel="stylesheet" href="bower_components/stackvis/share/icicle.css">
+  <link rel="stylesheet" href="bower_components/d3-flame-graph/src/d3.flameGraph.css">
   <!-- endbuild -->
 
   <script>
@@ -261,10 +261,12 @@
 
 <!-- build:js(.) scripts/vendor-flame-graph.js -->
 <!-- large d3.js is loaded async since only needed on flame graph page
-     and just to be safe, the angular route for the flame graph page waits for window.d3 to be present
-     (see routes.js) -->
-<script async src="bower_components/d3/d3.v2.js"></script>
-<script async src="bower_components/stackvis/share/icicle.js"></script>
+     (but can't mark these all async which then causes failures under grunt serve since d3-tip and d3-flame-graph
+     can be loaded before d3, see grunt-usemin issue #391, and workaround in Grunfile.js)
+     also, the angular route for the flame graph page waits for window.d3 to be present (see routes.js) -->
+<script src="bower_components/d3/d3.js"></script>
+<script src="bower_components/d3-tip/index.js"></script>
+<script src="bower_components/d3-flame-graph/src/d3.flameGraph.js"></script>
 <!-- endbuild -->
 </body>
 </html>
