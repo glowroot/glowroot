@@ -24,7 +24,6 @@ import com.google.common.io.Files;
 import com.saucelabs.common.SauceOnDemandAuthentication;
 import com.saucelabs.common.SauceOnDemandSessionIdProvider;
 import com.saucelabs.junit.SauceOnDemandTestWatcher;
-import org.junit.rules.TestName;
 import org.junit.rules.TestWatcher;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
@@ -40,8 +39,6 @@ import org.glowroot.agent.it.harness.Containers;
 public class WebDriverSetup {
 
     private static final boolean USE_LOCAL_IE = false;
-
-    private static final TestName testNameWatcher = new TestName();
 
     static {
         System.setProperty("glowroot.internal.rollup.0.intervalMillis", "1000");
@@ -109,12 +106,11 @@ public class WebDriverSetup {
         return driver;
     }
 
-    public void beforeEachTest(ScreenshotOnExceptionRule screenshotOnExceptionRule)
+    public void beforeEachTest(String testName, ScreenshotOnExceptionRule screenshotOnExceptionRule)
             throws Exception {
         if (SauceLabs.useSauceLabs()) {
             // need separate webdriver instance per test in order to report each test separately in
             // saucelabs
-            String testName = getClass().getName() + '.' + testNameWatcher.getMethodName();
             driver = SauceLabs.getWebDriver(testName);
             // need to capture sessionId since it is needed in sauceLabsTestWatcher, after
             // driver.quit() is called
@@ -129,10 +125,6 @@ public class WebDriverSetup {
             driver.quit();
         }
         container.checkAndReset();
-    }
-
-    public TestWatcher getTestNameWatcher() {
-        return testNameWatcher;
     }
 
     public TestWatcher getSauceLabsTestWatcher() {
@@ -174,6 +166,7 @@ public class WebDriverSetup {
             } else {
                 driver = new FirefoxDriver(capabilities);
             }
+            // 768 is bootstrap media query breakpoint for screen-sm-min
             // 992 is bootstrap media query breakpoint for screen-md-min
             // 1200 is bootstrap media query breakpoint for screen-lg-min
             driver.manage().window().setSize(new Dimension(1200, 800));

@@ -21,30 +21,28 @@ matrix:
       env: TARGET=sonar
     - jdk: oraclejdk8
       env: TARGET=checker
-      # firefox
-    - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=firefox SAUCELABS_BROWSER_VERSION=
       # chrome
     - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=chrome SAUCELABS_BROWSER_VERSION=
-      # safari
+      # firefox
     - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.10" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=8
-    - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.9" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=7
-    - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.8" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=6
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=firefox SAUCELABS_BROWSER_VERSION=
       # internet explorer
-    - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 8.1" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=11
-    - jdk: oraclejdk8
-      env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 8" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=10
     - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=11
     - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=10
     - jdk: oraclejdk8
       env: TARGET=saucelabs SAUCELABS_PLATFORM="Windows 7" SAUCELABS_BROWSER_NAME=iexplore SAUCELABS_BROWSER_VERSION=9
+      # safari
+    - jdk: oraclejdk8
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.11" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=9
+    - jdk: oraclejdk8
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.10" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=8
+    - jdk: oraclejdk8
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.9" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=7
+    - jdk: oraclejdk8
+      env: TARGET=saucelabs SAUCELABS_PLATFORM="OS X 10.8" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=6
 env:
   matrix:
     - TARGET=test GLOWROOT_UNSHADED=false GLOWROOT_HARNESS=javaagent
@@ -69,4 +67,6 @@ deploy:
     repo: glowroot/glowroot
     condition: "$TARGET = deploy"
 addons:
-  sauce_connect: true
+  sauce_connect:
+    # this is needed on android, see https://support.saucelabs.com/customer/en/portal/questions/13056252
+    no_ssl_bump_domains: all

@@ -59,6 +59,7 @@ public class BasicSmokeTest extends WebDriverTest {
                     while (stopwatch.elapsed(SECONDS) < 5) {
                         container.executeNoExpectedTrace(JdbcServlet.class);
                         container.executeNoExpectedTrace(ErrorServlet.class);
+                        Thread.sleep(10);
                     }
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);

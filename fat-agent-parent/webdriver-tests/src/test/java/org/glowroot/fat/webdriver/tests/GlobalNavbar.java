@@ -15,8 +15,13 @@
  */
 package org.glowroot.fat.webdriver.tests;
 
+import java.util.List;
+
+import com.google.common.base.Function;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import static org.openqa.selenium.By.xpath;
 
@@ -29,23 +34,23 @@ class GlobalNavbar {
     }
 
     WebElement getTransactionsLink() {
-        return Utils.withWait(driver, xpath("//nav//a[@href='transaction/average']"));
+        return getNavbarLink(driver, xpath("//nav//a[@href='transaction/average']"));
     }
 
     WebElement getErrorsLink() {
-        return Utils.withWait(driver, xpath("//nav//a[@href='error/messages']"));
+        return getNavbarLink(driver, xpath("//nav//a[@href='error/messages']"));
     }
 
     WebElement getJvmLink() {
-        return Utils.withWait(driver, xpath("//nav//a[@href='jvm/gauges']"));
+        return getNavbarLink(driver, xpath("//nav//a[@href='jvm/gauges']"));
     }
 
     WebElement getConfigurationLink() {
-        return Utils.withWait(driver, xpath("//nav//a[@href='config/transaction']"));
+        return getNavbarLink(driver, xpath("//nav//a[@href='config/transaction']"));
     }
 
     WebElement getSignOutLink() {
-        return Utils.withWait(driver, xpath("//a[@ng-click='signOut()']"));
+        return getNavbarLink(driver, xpath("//nav//a[@ng-click='signOut()']"));
     }
 
     WebElement getLoginPasswordTextField() {
@@ -54,5 +59,38 @@ class GlobalNavbar {
 
     WebElement getLoginButton() {
         return Utils.withWait(driver, xpath("//div[@gt-label='Login']//button"));
+    }
+
+    public static WebElement getNavbarLink(final WebDriver driver, final By by) {
+        return new WebDriverWait(driver, 30).until(new Function<WebDriver, WebElement>() {
+            @Override
+            public WebElement apply(WebDriver driver) {
+                List<WebElement> elements = driver.findElements(by);
+                if (elements.isEmpty()) {
+                    openNavbar();
+                    return null;
+                }
+                WebElement element = elements.get(0);
+                if (!element.isDisplayed()) {
+                    openNavbar();
+                    return null;
+                }
+                List<WebElement> overlayElements =
+                        driver.findElements(By.className("gt-panel-overlay"));
+                for (WebElement overlayElement : overlayElements) {
+                    if (overlayElement.isDisplayed()) {
+                        return null;
+                    }
+                }
+                return element;
+            }
+            private void openNavbar() {
+                List<WebElement> navbarToggleElements =
+                        driver.findElements(By.cssSelector("button.navbar-toggle"));
+                if (!navbarToggleElements.isEmpty() && navbarToggleElements.get(0).isDisplayed()) {
+                    navbarToggleElements.get(0).click();
+                }
+            }
+        });
     }
 }

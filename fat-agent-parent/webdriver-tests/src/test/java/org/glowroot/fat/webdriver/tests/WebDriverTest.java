@@ -20,6 +20,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
+import org.junit.rules.TestName;
 import org.junit.rules.TestWatcher;
 import org.openqa.selenium.WebDriver;
 
@@ -31,6 +32,9 @@ public abstract class WebDriverTest {
 
     protected static Container container;
     protected static WebDriver driver;
+
+    @Rule
+    public TestName testName = new TestName();
 
     @Rule
     public ScreenshotOnExceptionRule screenshotOnExceptionRule = new ScreenshotOnExceptionRule();
@@ -48,18 +52,14 @@ public abstract class WebDriverTest {
 
     @Before
     public void beforeEachBaseTest() throws Exception {
-        setup.beforeEachTest(screenshotOnExceptionRule);
+        setup.beforeEachTest(getClass().getName() + '.' + testName.getMethodName(),
+                screenshotOnExceptionRule);
         driver = setup.getDriver();
     }
 
     @After
     public void afterEachBaseTest() throws Exception {
         setup.afterEachTest();
-    }
-
-    @Rule
-    public TestWatcher getTestNameWatcher() {
-        return setup.getTestNameWatcher();
     }
 
     @Rule

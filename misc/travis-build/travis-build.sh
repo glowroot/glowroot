@@ -179,14 +179,11 @@ case "$1" in
                                    -B
                  cd fat-agent-parent/webdriver-tests
                  mvn clean test -Dsaucelabs.platform="$SAUCELABS_PLATFORM" \
-                                -Dsaucelabs.browser.name=$SAUCELABS_BROWSER_NAME \
-                                -Dsaucelabs.browser.version=$SAUCELABS_BROWSER_VERSION \
+                                -Dsaucelabs.browser.name="$SAUCELABS_BROWSER_NAME" \
+                                -Dsaucelabs.browser.version="$SAUCELABS_BROWSER_VERSION" \
                                 -Dsaucelabs.device.name="$SAUCELABS_DEVICE_NAME" \
-                                -Dsaucelabs.device.version=$SAUCELABS_DEVICE_VERSION \
-                                -Dsaucelabs.device.type=$SAUCELABS_DEVICE_TYPE \
-                                -Dsaucelabs.device.orientation=$SAUCELABS_DEVICE_ORIENTATION \
-                                -Dsaucelabs.device.app=$SAUCELABS_DEVICE_APP \
-                                -Dsaucelabs.tunnel.identifier=$TRAVIS_JOB_NUMBER \
+                                -Dsaucelabs.device.orientation="$SAUCELABS_DEVICE_ORIENTATION" \
+                                -Dsaucelabs.tunnel.identifier="$TRAVIS_JOB_NUMBER" \
                                 -DargLine="$surefire_jvm_args" \
                                 -B
                else
