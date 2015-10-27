@@ -22,7 +22,7 @@ The usual:
 
     mvn clean install
 
-Binary and source distributions are built under distribution/target.
+Binary and source distributions are built under agent-parent/distribution/target.
 
 Building requires Java 7+ (in order to perform [Immutables](https://immutables.github.io) annotation processing).
 
@@ -38,6 +38,16 @@ If you are modifying web assets, you either need to run grunt to re-build them a
 
 `grunt serve` serves up the Glowroot web assets to the browser without the concat/minify/rev step, which makes testing/debugging much easier. It reverse proxies non- static resource requests to http://localhost:4000 to be handled by Glowroot. It also watches for changes to the files and performs live-reload of web assets inside the browser.
 
+## Integration tests
+
+The agent has an [integration test harness](agent-parent/it-harness) which is used to run tests using either a custom weaving class loader which is convenient for debugging inside your favorite IDE, or as a java agent which matches how it is used when monitoring applications.
+
+The agent's integration test harness is used to test the agent and all of its plugins.
+
+## WebDriver tests
+
+Thanks to [Sauce Labs](https://saucelabs.com), the [webdriver tests](agent-parent/webdriver-tests) run against Chrome (latest), Firefox (latest), IE (9, 10, 11) and Safari (6, 7, 8, 9) as part of every Travis CI build (see the jobs with TARGET=saucelabs).
+
 ## Microbenchmarks
 
 Microbenchmarks are written using the excellent [JMH](http://openjdk.java.net/projects/code-tools/jmh/) benchmark harness. The microbenchmarks can be built and run under [agent-parent/benchmarks](agent-parent/benchmarks):
@@ -45,15 +55,15 @@ Microbenchmarks are written using the excellent [JMH](http://openjdk.java.net/pr
     mvn clean package
     java -jar target/benchmarks.jar -jvmArgs -javaagent:path/to/glowroot.jar
 
-## Overhead
-
-Monitoring overhead depends on many factors, but is generally in the low microseconds per transaction. See [https://glowroot.org/overhead.html](https://glowroot.org/overhead.html) for a concrete benchmark and results.
-
 ## Code quality
 
 [SonarQube](http://www.sonarqube.org) is used to check Java coding conventions, code coverage, duplicate code, package cycles and much more. It is run as part of every Travis CI build (see the job with TARGET=sonar) and the analysis is reported to [https://sonar.glowroot.org](https://sonar.glowroot.org).
 
 [Checker Framework](http://types.cs.washington.edu/checker-framework/) is used to eliminate fear of *null* with its rigorous [Nullness Checker](http://types.cs.washington.edu/checker-framework/current/checker-framework-manual.html#nullness-checker). It is run as part of every Travis CI build (see the job with TARGET=checker) and any violation fails the build.
+
+## Dependency hiding/shading
+
+All third party java libraries used by the agent are shaded under the org.glowroot.agent.shaded package to ensure there are no jar version conflicts with the application being monitored.
 
 ## License
 
