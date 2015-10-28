@@ -17,14 +17,18 @@ package org.glowroot.common.config;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -116,10 +120,48 @@ public abstract class InstrumentationConfig {
         return "";
     }
 
+    // this uses Guava's Hashing instead of json/md5 "cheat" like other configs, because it is used
+    // by weaving, and using json/md5 would require pre-initialization tons of Jackson classes
+    // see PreInitializeWeavingClassesTest.java
     @JsonIgnore
     @Value.Derived
     public String version() {
-        return Versions.getVersion(this);
+        Hasher hasher = Hashing.md5().newHasher()
+                .putString(className(), Charsets.UTF_8)
+                .putString(declaringClassName(), Charsets.UTF_8)
+                .putString(methodName(), Charsets.UTF_8)
+                .putInt(methodParameterTypes().size());
+        for (String methodParameterType : methodParameterTypes()) {
+            hasher.putString(methodParameterType, Charsets.UTF_8);
+        }
+        hasher.putString(methodReturnType(), Charsets.UTF_8);
+        hasher.putInt(methodModifiers().size());
+        for (MethodModifier methodModifier : methodModifiers()) {
+            hasher.putString(methodModifier.name(), Charsets.UTF_8);
+        }
+        hasher.putString(captureKind().name(), Charsets.UTF_8);
+        hasher.putString(transactionType(), Charsets.UTF_8);
+        hasher.putString(transactionNameTemplate(), Charsets.UTF_8);
+        hasher.putString(transactionUserTemplate(), Charsets.UTF_8);
+        hasher.putInt(transactionAttributeTemplates().size());
+        for (Entry<String, String> entry : transactionAttributeTemplates().entrySet()) {
+            hasher.putString(entry.getKey(), Charsets.UTF_8);
+            hasher.putString(entry.getValue(), Charsets.UTF_8);
+        }
+        Integer transactionSlowThresholdMillis = transactionSlowThresholdMillis();
+        if (transactionSlowThresholdMillis != null) {
+            hasher.putInt(transactionSlowThresholdMillis);
+        }
+        hasher.putString(traceEntryMessageTemplate(), Charsets.UTF_8);
+        Integer traceEntryStackThresholdMillis = traceEntryStackThresholdMillis();
+        if (traceEntryStackThresholdMillis != null) {
+            hasher.putInt(traceEntryStackThresholdMillis);
+        }
+        hasher.putBoolean(traceEntryCaptureSelfNested());
+        hasher.putString(timerName(), Charsets.UTF_8);
+        hasher.putString(enabledProperty(), Charsets.UTF_8);
+        hasher.putString(traceEntryEnabledProperty(), Charsets.UTF_8);
+        return hasher.toString();
     }
 
     @JsonIgnore

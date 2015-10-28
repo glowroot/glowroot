@@ -27,21 +27,27 @@ import java.util.concurrent.ConcurrentMap;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Supplier;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
+import com.google.common.primitives.Bytes;
 import org.immutables.value.Value;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.advicegen.AdviceGenerator;
 import org.glowroot.agent.util.Reflections;
 import org.glowroot.agent.weaving.AnalyzingClassVisitor.ShortCircuitException;
+import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
+import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -148,6 +154,36 @@ public class AnalyzedWorld {
     AnalyzedClass getAnalyzedClass(String className, @Nullable ClassLoader loader)
             throws ClassNotFoundException, IOException {
         return getOrCreateAnalyzedClass(className, loader);
+    }
+
+    List<Advice> mergeInstrumentAnnotations(List<Advice> advisors, byte[] classBytes,
+            @Nullable ClassLoader loader, String className) {
+        byte[] marker = "Lorg/glowroot/agent/api/Instrument$".getBytes(Charsets.UTF_8);
+        if (Bytes.indexOf(classBytes, marker) == -1) {
+            return advisors;
+        }
+        InstrumentationSeekerClassVisitor cv = new InstrumentationSeekerClassVisitor();
+        ClassReader cr = new ClassReader(classBytes);
+        cr.accept(cv, ClassReader.SKIP_CODE);
+        List<InstrumentationConfig> instrumentationConfigs = cv.getInstrumentationConfigs();
+        if (instrumentationConfigs.isEmpty()) {
+            return advisors;
+        }
+        if (loader == null) {
+            logger.warn("@Instrument annotations not currently supported in bootstrap class loader:"
+                    + " {}", className);
+            return advisors;
+        }
+        ImmutableMap<Advice, LazyDefinedClass> newAdvisors =
+                AdviceGenerator.createAdvisors(instrumentationConfigs, null);
+        try {
+            ClassLoaders.defineClassesInClassLoader(newAdvisors.values(), loader);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+        List<Advice> mergedAdvisors = Lists.newArrayList(advisors);
+        mergedAdvisors.addAll(newAdvisors.keySet());
+        return mergedAdvisors;
     }
 
     // it's ok if there are duplicates in the returned list (e.g. an interface that appears twice
@@ -291,9 +327,11 @@ public class AnalyzedWorld {
             // org.codehaus.groovy.runtime.callsite.CallSiteClassLoader
             return createAnalyzedClassPlanB(className, loader);
         }
-        AnalyzingClassVisitor cv = new AnalyzingClassVisitor(advisors.get(), shimTypes, mixinTypes,
-                loader, this, null);
         byte[] bytes = Resources.toByteArray(url);
+        List<Advice> advisors =
+                mergeInstrumentAnnotations(this.advisors.get(), bytes, loader, className);
+        AnalyzingClassVisitor cv = new AnalyzingClassVisitor(advisors, shimTypes, mixinTypes,
+                loader, this, null);
         ClassReader cr = new ClassReader(bytes);
         try {
             cr.accept(cv, ClassReader.SKIP_CODE);

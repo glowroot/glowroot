@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.tests;
+package org.glowroot.agent.tests.app;
 
-class LevelOne {
+class NestedParamObject {
 
-    private final RuntimeException exception;
+    private final String name;
 
-    LevelOne() {
-        this(null);
+    NestedParamObject(String name) {
+        this.name = name;
     }
 
-    LevelOne(RuntimeException e) {
-        this.exception = e;
-    }
-
-    // this method corresponds to LevelOneAspect
-    void call(Object arg1, Object arg2) {
-        new LevelTwo(exception).call(arg1 + "x", arg2 + "x");
+    String getName() {
+        return name;
     }
 }

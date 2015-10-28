@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.tests;
+package org.glowroot.agent.tests.app;
 
-class ExceptionalClass {
+public class ExceptionalClass {
 
     // this method corresponds to pointcut defined in glowroot.plugin.json
-    void aMethodThatThrowsAnException() {
+    public void aMethodThatThrowsAnException() {
         throw new RuntimeException("This is exceptional");
     }
 }

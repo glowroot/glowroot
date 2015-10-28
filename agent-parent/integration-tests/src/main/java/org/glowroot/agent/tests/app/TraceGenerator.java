@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.tests;
+package org.glowroot.agent.tests.app;
 
 import java.util.Map;
 

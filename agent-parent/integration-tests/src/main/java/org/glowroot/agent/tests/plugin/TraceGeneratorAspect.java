@@ -29,7 +29,7 @@ import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.tests.TraceGenerator;
+import org.glowroot.agent.tests.app.TraceGenerator;
 
 public class TraceGeneratorAspect {
 
@@ -37,7 +37,7 @@ public class TraceGeneratorAspect {
     private static final ConfigService configService =
             Agent.getConfigService("glowroot-integration-tests");
 
-    @Pointcut(className = "org.glowroot.agent.tests.TraceGenerator", methodName = "call",
+    @Pointcut(className = "org.glowroot.agent.tests.app.TraceGenerator", methodName = "call",
             methodParameterTypes = {"boolean"}, timerName = "trace generator")
     public static class LevelOneAdvice {
 

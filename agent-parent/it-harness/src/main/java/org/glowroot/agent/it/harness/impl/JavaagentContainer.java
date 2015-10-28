@@ -309,6 +309,7 @@ public class JavaagentContainer implements Container {
         // with the class id at analysis time
         command.addAll(getJacocoArgsFromCurrentJvm());
         String classpath = Strings.nullToEmpty(StandardSystemProperty.JAVA_CLASS_PATH.value());
+        List<String> bootPaths = Lists.newArrayList();
         List<String> paths = Lists.newArrayList();
         File javaagentJarFile = null;
         for (String path : Splitter.on(File.pathSeparatorChar).split(classpath)) {
@@ -324,11 +325,20 @@ public class JavaagentContainer implements Container {
                 // but maven 3.3.1/3.3.3 are not using the dependency reduced pom during downstream
                 // module builds, which causes the glowroot artifacts to be included
                 // when running "mvn clean install" from the project root, see MSHADE-206
-            } else {
+            } else if (name.matches("glowroot-agent-it-harness-[0-9.]+(-SNAPSHOT)?.jar")) {
                 paths.add(path);
+            } else if (file.getAbsolutePath().contains(File.separator + "it-harness"
+                    + File.separator + "target" + File.separator + "classes")) {
+                paths.add(path);
+            } else if (file.isDirectory() && file.getName().equals("test-classes")) {
+                paths.add(path);
+            } else {
+                bootPaths.add(path);
             }
         }
-        command.add("-Xbootclasspath/a:" + Joiner.on(File.pathSeparatorChar).join(paths));
+        command.add("-Xbootclasspath/a:" + Joiner.on(File.pathSeparatorChar).join(bootPaths));
+        command.add("-classpath");
+        command.add(Joiner.on(File.pathSeparatorChar).join(paths));
         if (javaagentJarFile == null) {
             // create jar file in data dir since that gets cleaned up at end of test already
             javaagentJarFile = DelegatingJavaagent.createDelegatingJavaagentJarFile(baseDir);

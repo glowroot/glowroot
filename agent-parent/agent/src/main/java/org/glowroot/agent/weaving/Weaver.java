@@ -89,6 +89,8 @@ class Weaver {
 
     private byte/*@Nullable*/[] weaveUnderTimer(byte[] classBytes, String className,
             @Nullable CodeSource codeSource, @Nullable ClassLoader loader) {
+        List<Advice> advisors = analyzedWorld.mergeInstrumentAnnotations(this.advisors.get(),
+                classBytes, loader, className);
         // from http://www.oracle.com/technetwork/java/javase/compatibility-417013.html:
         //
         // "Classfiles with version number 51 are exclusively verified using the type-checking
@@ -103,7 +105,7 @@ class Weaver {
         //
         ClassWriter cw = new ComputeFramesClassWriter(ClassWriter.COMPUTE_FRAMES, analyzedWorld,
                 loader, codeSource, className);
-        WeavingClassVisitor cv = new WeavingClassVisitor(cw, advisors.get(), shimTypes, mixinTypes,
+        WeavingClassVisitor cv = new WeavingClassVisitor(cw, advisors, shimTypes, mixinTypes,
                 loader, analyzedWorld, codeSource, timerWrapperMethods);
         ClassReader cr = new ClassReader(classBytes);
         boolean shortCircuitException = false;

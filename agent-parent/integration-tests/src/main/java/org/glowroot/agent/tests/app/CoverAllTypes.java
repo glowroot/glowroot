@@ -13,64 +13,64 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.tests;
+package org.glowroot.agent.tests.app;
 
 @SuppressWarnings("unused")
-class CoverAllTypes {
+public class CoverAllTypes {
 
     void getVoid() {}
 
-    boolean getBoolean() {
+    public boolean getBoolean() {
         return false;
     }
 
-    byte getByte() {
+    public byte getByte() {
         return 100;
     }
 
-    char getChar() {
+    public char getChar() {
         return 'b';
     }
 
-    short getShort() {
+    public short getShort() {
         return 300;
     }
 
-    int getInt() {
+    public int getInt() {
         return 400;
     }
 
-    long getLong() {
+    public long getLong() {
         return 500;
     }
 
-    float getFloat() {
+    public float getFloat() {
         return 600;
     }
 
-    double getDouble() {
+    public double getDouble() {
         return 700;
     }
 
-    int[] getArray() {
+    public int[] getArray() {
         return new int[] {1, 2, 3};
     }
 
-    void putBoolean(boolean value) {}
+    public void putBoolean(boolean value) {}
 
-    void putByte(byte value) {}
+    public void putByte(byte value) {}
 
-    void putChar(char value) {}
+    public void putChar(char value) {}
 
-    void putShort(short value) {}
+    public void putShort(short value) {}
 
-    void putInt(int value) {}
+    public void putInt(int value) {}
 
-    void putLong(long value) {}
+    public void putLong(long value) {}
 
-    void putFloat(float value) {}
+    public void putFloat(float value) {}
 
-    void putDouble(double value) {}
+    public void putDouble(double value) {}
 
-    void putArray(int[] value) {}
+    public void putArray(int[] value) {}
 }

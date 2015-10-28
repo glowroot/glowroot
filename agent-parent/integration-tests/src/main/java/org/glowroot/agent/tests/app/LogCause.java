@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.tests;
+package org.glowroot.agent.tests.app;
 
-class NestedParamObject {
+public class LogCause {
 
-    private final String name;
-
-    NestedParamObject(String name) {
-        this.name = name;
-    }
-
-    String getName() {
-        return name;
-    }
+    // this method corresponds to LogCauseAspect
+    public void log(@SuppressWarnings("unused") String message) {}
 }

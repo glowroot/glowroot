@@ -50,7 +50,7 @@ public class LevelOneAspect {
     private static final BooleanProperty starredHeadline =
             configService.getBooleanProperty("starredHeadline");
 
-    @Pointcut(className = "org.glowroot.agent.tests.LevelOne", methodName = "call",
+    @Pointcut(className = "org.glowroot.agent.tests.app.LevelOne", methodName = "call",
             methodParameterTypes = {"java.lang.Object", "java.lang.Object"},
             timerName = "level one")
     public static class LevelOneAdvice {

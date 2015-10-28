@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.tests;
+package org.glowroot.agent.tests.app;
 
-class Pause {
+public class LevelOne {
 
-    // this method corresponds to PauseAspect
-    void pauseOneMillisecond() throws InterruptedException {
-        Thread.sleep(1);
+    private final RuntimeException exception;
+
+    public LevelOne() {
+        this(null);
     }
 
-    void pauseMaxMilliseconds() throws InterruptedException {
-        Thread.sleep(Long.MAX_VALUE);
+    public LevelOne(RuntimeException e) {
+        this.exception = e;
+    }
+
+    // this method corresponds to LevelOneAspect
+    public void call(Object arg1, Object arg2) {
+        new LevelTwo(exception).call(arg1 + "x", arg2 + "x");
     }
 }

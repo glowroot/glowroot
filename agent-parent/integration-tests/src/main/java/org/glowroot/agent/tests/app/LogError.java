@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.tests;
+package org.glowroot.agent.tests.app;
 
-class LevelThree {
+public class LogError {
 
-    private final RuntimeException exception;
+    // this method corresponds to LogErrorAspect
+    public void log(@SuppressWarnings("unused") String message) {}
 
-    LevelThree(RuntimeException e) {
-        this.exception = e;
-    }
-
-    // this method corresponds to LevelThreeAspect
-    void call(String arg1, String arg2) {
-        new LevelFour().call(arg1, arg2);
-        if (exception != null) {
-            throw exception;
-        }
-    }
+    // this method corresponds to LogErrorAspect
+    public void addNestedErrorEntry() {}
 }

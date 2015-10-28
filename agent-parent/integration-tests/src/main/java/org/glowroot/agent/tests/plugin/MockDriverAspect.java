@@ -29,7 +29,7 @@ public class MockDriverAspect {
 
     private static final TransactionService transactionService = Agent.getTransactionService();
 
-    @Pointcut(className = "org.glowroot.agent.tests.MockDriver", methodName = "getMajorVersion",
+    @Pointcut(className = "org.glowroot.agent.tests.app.MockDriver", methodName = "getMajorVersion",
             methodParameterTypes = {}, timerName = "get major version")
     public static class GetMajorVersionAdvice {
 

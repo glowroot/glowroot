@@ -27,6 +27,7 @@ import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.it.harness.model.ConfigUpdate.TransactionConfigUpdate;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.transaction.TransactionService;
+import org.glowroot.agent.tests.app.LevelOne;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 

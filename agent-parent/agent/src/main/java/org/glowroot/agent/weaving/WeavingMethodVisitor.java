@@ -125,7 +125,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     @Override
-    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+    public @Nullable AnnotationVisitor visitAnnotation(String desc, boolean visible) {
         if (outerMethodVisitor != null) {
             return outerMethodVisitor.visitAnnotation(desc, visible);
         }

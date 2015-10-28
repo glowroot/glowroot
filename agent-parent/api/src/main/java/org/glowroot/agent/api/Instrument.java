@@ -15,7 +15,9 @@
  */
 package org.glowroot.agent.api;
 
-public @interface Instrument {
+public class Instrument {
+
+    private Instrument() {}
 
     public @interface Timer {
         String value(); // the timer name

@@ -102,6 +102,7 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.base.CharMatcher$RangesMatcher");
         types.add("com.google.common.base.CharMatcher$SingleWidth");
         types.add("com.google.common.base.CharMatcher$Whitespace");
+        types.add("com.google.common.base.Charsets");
         types.add("com.google.common.base.Equivalence");
         types.add("com.google.common.base.Equivalence$Equals");
         types.add("com.google.common.base.Equivalence$Identity");
@@ -117,6 +118,14 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.base.Platform");
         types.add("com.google.common.base.Preconditions");
         types.add("com.google.common.base.Predicate");
+        types.add("com.google.common.base.Predicates");
+        types.add("com.google.common.base.Predicates$1");
+        types.add("com.google.common.base.Predicates$IsEqualToPredicate");
+        types.add("com.google.common.base.Predicates$ObjectPredicate");
+        types.add("com.google.common.base.Predicates$ObjectPredicate$1");
+        types.add("com.google.common.base.Predicates$ObjectPredicate$2");
+        types.add("com.google.common.base.Predicates$ObjectPredicate$3");
+        types.add("com.google.common.base.Predicates$ObjectPredicate$4");
         types.add("com.google.common.base.Stopwatch");
         types.add("com.google.common.base.Stopwatch$1");
         types.add("com.google.common.base.Supplier");
@@ -212,25 +221,50 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.cache.Striped64$Cell");
         types.add("com.google.common.cache.Weigher");
         types.add("com.google.common.collect.AbstractIndexedListIterator");
+        types.add("com.google.common.collect.AbstractMapEntry");
         types.add("com.google.common.collect.AbstractSequentialIterator");
+        types.add("com.google.common.collect.BiMap");
+        types.add("com.google.common.collect.ByFunctionOrdering");
         types.add("com.google.common.collect.CollectPreconditions");
         types.add("com.google.common.collect.Collections2");
         types.add("com.google.common.collect.ComparatorOrdering");
         types.add("com.google.common.collect.DescendingImmutableSortedSet");
         types.add("com.google.common.collect.Hashing");
         types.add("com.google.common.collect.ImmutableAsList");
+        types.add("com.google.common.collect.ImmutableBiMap");
         types.add("com.google.common.collect.ImmutableCollection");
         types.add("com.google.common.collect.ImmutableCollection$ArrayBasedBuilder");
         types.add("com.google.common.collect.ImmutableCollection$Builder");
+        types.add("com.google.common.collect.ImmutableEntry");
+        types.add("com.google.common.collect.ImmutableEnumMap");
         types.add("com.google.common.collect.ImmutableEnumSet");
         types.add("com.google.common.collect.ImmutableList");
         types.add("com.google.common.collect.ImmutableList$1");
         types.add("com.google.common.collect.ImmutableList$Builder");
         types.add("com.google.common.collect.ImmutableList$ReverseImmutableList");
         types.add("com.google.common.collect.ImmutableList$SubList");
+        types.add("com.google.common.collect.ImmutableMap");
+        types.add("com.google.common.collect.ImmutableMap$1");
+        types.add("com.google.common.collect.ImmutableMap$Builder");
+        types.add("com.google.common.collect.ImmutableMap$IteratorBasedImmutableMap");
+        types.add("com.google.common.collect.ImmutableMap$IteratorBasedImmutableMap$1EntrySetImpl");
+        types.add("com.google.common.collect.ImmutableMapEntry");
+        types.add("com.google.common.collect.ImmutableMapEntry$NonTerminalImmutableMapEntry");
+        types.add("com.google.common.collect.ImmutableMapEntrySet");
+        types.add("com.google.common.collect.ImmutableMapEntrySet$RegularEntrySet");
+        types.add("com.google.common.collect.ImmutableMapKeySet");
+        types.add("com.google.common.collect.ImmutableMapValues");
+        types.add("com.google.common.collect.ImmutableMapValues$1");
+        types.add("com.google.common.collect.ImmutableMapValues$2");
         types.add("com.google.common.collect.ImmutableSet");
         types.add("com.google.common.collect.ImmutableSet$Builder");
+        types.add("com.google.common.collect.ImmutableSet$Indexed");
+        types.add("com.google.common.collect.ImmutableSet$Indexed$1");
         types.add("com.google.common.collect.ImmutableSortedAsList");
+        types.add("com.google.common.collect.ImmutableSortedMap");
+        types.add("com.google.common.collect.ImmutableSortedMap$1EntrySet");
+        types.add("com.google.common.collect.ImmutableSortedMap$1EntrySet$1");
+        types.add("com.google.common.collect.ImmutableSortedMapFauxverideShim");
         types.add("com.google.common.collect.ImmutableSortedSet");
         types.add("com.google.common.collect.ImmutableSortedSetFauxverideShim");
         types.add("com.google.common.collect.Iterables");
@@ -246,6 +280,12 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.Lists$ReverseList");
         types.add("com.google.common.collect.Lists$ReverseList$1");
         types.add("com.google.common.collect.Maps");
+        types.add("com.google.common.collect.Maps$1");
+        types.add("com.google.common.collect.Maps$5");
+        types.add("com.google.common.collect.Maps$6");
+        types.add("com.google.common.collect.Maps$EntryFunction");
+        types.add("com.google.common.collect.Maps$EntryFunction$1");
+        types.add("com.google.common.collect.Maps$EntryFunction$2");
         types.add("com.google.common.collect.Multiset");
         types.add("com.google.common.collect.NaturalOrdering");
         types.add("com.google.common.collect.ObjectArrays");
@@ -253,12 +293,19 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.PeekingIterator");
         types.add("com.google.common.collect.Platform");
         types.add("com.google.common.collect.RegularImmutableAsList");
+        types.add("com.google.common.collect.RegularImmutableBiMap");
+        types.add("com.google.common.collect.RegularImmutableBiMap$1");
+        types.add("com.google.common.collect.RegularImmutableBiMap$Inverse");
+        types.add("com.google.common.collect.RegularImmutableBiMap$Inverse$InverseEntrySet");
+        types.add("com.google.common.collect.RegularImmutableBiMap$Inverse$InverseEntrySet$1");
         types.add("com.google.common.collect.RegularImmutableList");
+        types.add("com.google.common.collect.RegularImmutableMap");
         types.add("com.google.common.collect.RegularImmutableSet");
         types.add("com.google.common.collect.RegularImmutableSortedSet");
         types.add("com.google.common.collect.ReverseNaturalOrdering");
         types.add("com.google.common.collect.ReverseOrdering");
         types.add("com.google.common.collect.Sets");
+        types.add("com.google.common.collect.SingletonImmutableBiMap");
         types.add("com.google.common.collect.SingletonImmutableList");
         types.add("com.google.common.collect.SingletonImmutableSet");
         types.add("com.google.common.collect.SortedIterable");
@@ -275,8 +322,20 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.SortedLists$KeyPresentBehavior$3");
         types.add("com.google.common.collect.SortedLists$KeyPresentBehavior$4");
         types.add("com.google.common.collect.SortedLists$KeyPresentBehavior$5");
+        types.add("com.google.common.collect.TransformedIterator");
         types.add("com.google.common.collect.UnmodifiableIterator");
         types.add("com.google.common.collect.UnmodifiableListIterator");
+        types.add("com.google.common.hash.AbstractByteHasher");
+        types.add("com.google.common.hash.AbstractHasher");
+        types.add("com.google.common.hash.AbstractStreamingHashFunction");
+        types.add("com.google.common.hash.Hasher");
+        types.add("com.google.common.hash.HashFunction");
+        types.add("com.google.common.hash.Hashing");
+        types.add("com.google.common.hash.Hashing$Md5Holder");
+        types.add("com.google.common.hash.MessageDigestHashFunction");
+        types.add("com.google.common.hash.MessageDigestHashFunction$1");
+        types.add("com.google.common.hash.MessageDigestHashFunction$MessageDigestHasher");
+        types.add("com.google.common.hash.PrimitiveSink");
         types.add("com.google.common.io.ByteSource");
         types.add("com.google.common.io.ByteStreams");
         types.add("com.google.common.io.ByteStreams$1");
@@ -290,6 +349,7 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.io.Resources$1");
         types.add("com.google.common.io.Resources$UrlByteSource");
         types.add("com.google.common.primitives.Booleans");
+        types.add("com.google.common.primitives.Bytes");
         types.add("com.google.common.primitives.Ints");
         types.add("com.google.common.util.concurrent.AbstractFuture");
         types.add("com.google.common.util.concurrent.AbstractFuture$1");
@@ -329,6 +389,7 @@ public class PreInitializeWeavingClasses {
 
     private static List<String> getGlowrootUsedTypes() {
         List<String> types = Lists.newArrayList();
+        types.add("org.glowroot.agent.advicegen.AdviceGenerator");
         types.add("org.glowroot.agent.impl.TransactionRegistry");
         types.add("org.glowroot.agent.impl.WeavingTimerServiceImpl");
         types.add("org.glowroot.agent.impl.WeavingTimerServiceImpl$2");
@@ -343,7 +404,15 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.plugin.api.util.FastThreadLocal");
         types.add("org.glowroot.agent.plugin.api.util.FastThreadLocal$1");
         types.add("org.glowroot.agent.plugin.api.util.Holder");
+        types.add("org.glowroot.agent.plugin.api.weaving.BindClassMeta");
+        types.add("org.glowroot.agent.plugin.api.weaving.BindMethodMeta");
+        types.add("org.glowroot.agent.plugin.api.weaving.BindMethodName");
+        types.add("org.glowroot.agent.plugin.api.weaving.BindOptionalReturn");
         types.add("org.glowroot.agent.plugin.api.weaving.BindParameter");
+        types.add("org.glowroot.agent.plugin.api.weaving.BindParameterArray");
+        types.add("org.glowroot.agent.plugin.api.weaving.BindReceiver");
+        types.add("org.glowroot.agent.plugin.api.weaving.BindReturn");
+        types.add("org.glowroot.agent.plugin.api.weaving.BindThrowable");
         types.add("org.glowroot.agent.plugin.api.weaving.BindTraveler");
         types.add("org.glowroot.agent.plugin.api.weaving.IsEnabled");
         types.add("org.glowroot.agent.plugin.api.weaving.MethodModifier");
@@ -359,6 +428,9 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.Advice");
         types.add("org.glowroot.agent.weaving.Advice$AdviceOrdering");
         types.add("org.glowroot.agent.weaving.Advice$AdviceParameter");
+        types.add("org.glowroot.agent.weaving.AdviceBuilder");
+        types.add("org.glowroot.agent.weaving.AdviceBuilder$1");
+        types.add("org.glowroot.agent.weaving.AdviceBuilder$AdviceConstructionException");
         types.add("org.glowroot.agent.weaving.AdviceFlowOuterHolder");
         types.add("org.glowroot.agent.weaving.AdviceFlowOuterHolder$1");
         types.add("org.glowroot.agent.weaving.AdviceFlowOuterHolder$2");
@@ -375,12 +447,16 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$ClassMetaHolder");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$MethodMetaHolder");
         types.add("org.glowroot.agent.weaving.ClassLoaders");
+        types.add("org.glowroot.agent.weaving.ClassLoaders$LazyDefinedClass");
         types.add("org.glowroot.agent.weaving.ClassNames");
         types.add("org.glowroot.agent.weaving.ExtraBootResourceFinder");
         types.add("org.glowroot.agent.weaving.GeneratedBytecodeUtil");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice");
+        types.add("org.glowroot.agent.weaving.ImmutableAdvice$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice$InitShim");
         types.add("org.glowroot.agent.weaving.ImmutableAdviceMatcher");
+        types.add("org.glowroot.agent.weaving.ImmutableAdviceParameter");
+        types.add("org.glowroot.agent.weaving.ImmutableAdviceParameter$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedClass");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedClass$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedMethod");
@@ -388,9 +464,20 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedMethodKey");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedMethodKey$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableCatchHandler");
+        types.add("org.glowroot.agent.weaving.ImmutableLazyDefinedClass");
+        types.add("org.glowroot.agent.weaving.ImmutableLazyDefinedClass$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableMethodMetaGroup");
         types.add("org.glowroot.agent.weaving.ImmutableMethodMetaGroup$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableParseContext");
+        types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor");
+        types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor"
+                + "$InstrumentAnnotationMethodVisitor");
+        types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor"
+                + "$TimerAnnotationVisitor");
+        types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor"
+                + "$TraceEntryAnnotationVisitor");
+        types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor"
+                + "$TransactionAnnotationVisitor");
         types.add("org.glowroot.agent.weaving.MixinType");
         types.add("org.glowroot.agent.weaving.ParameterKind");
         types.add("org.glowroot.agent.weaving.PointcutClassVisitor");
@@ -409,6 +496,13 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.WeavingMethodVisitor$CatchHandler");
         types.add("org.glowroot.agent.weaving.WeavingTimerService");
         types.add("org.glowroot.agent.weaving.WeavingTimerService$WeavingTimer");
+        types.add("org.glowroot.common.config.ImmutableInstrumentationConfig");
+        types.add("org.glowroot.common.config.ImmutableInstrumentationConfig$Builder");
+        types.add("org.glowroot.common.config.ImmutableInstrumentationConfig$InitShim");
+        types.add("org.glowroot.common.config.InstrumentationConfig");
+        types.add("org.glowroot.common.config.InstrumentationConfig$CaptureKind");
+        types.add("org.glowroot.common.config.InstrumentationConfig$MethodModifier");
+        types.add("org.glowroot.common.util.Patterns");
         return types;
     }
 
@@ -498,9 +592,14 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedMethod$1");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedMethodKey$1");
         types.add("org.glowroot.agent.weaving.ImmutableMethodMetaGroup$1");
+        types.add("org.glowroot.agent.weaving.ImmutableAdvice$1");
+        types.add("org.glowroot.agent.weaving.ImmutableAdviceParameter$1");
+        types.add("org.glowroot.agent.weaving.ImmutableLazyDefinedClass$1");
+        types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor$1");
         types.add("org.glowroot.agent.weaving.MethodMetaGroup$1");
         types.add("org.glowroot.agent.weaving.Weaver$1");
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor$1");
+        types.add("org.glowroot.common.config.ImmutableInstrumentationConfig$1");
         // this is a special class generated by javac (but not by the eclipse compiler) to handle
         // enum switch statements
         // (see http://stackoverflow.com/questions/1834632/java-enum-and-additional-class-files)

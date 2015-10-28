@@ -37,7 +37,7 @@ public class LevelThreeAspect {
     private static final ConfigService configService =
             Agent.getConfigService("glowroot-integration-tests");
 
-    @Pointcut(className = "org.glowroot.agent.tests.LevelThree", methodName = "call",
+    @Pointcut(className = "org.glowroot.agent.tests.app.LevelThree", methodName = "call",
             methodParameterTypes = {"java.lang.String", "java.lang.String"},
             timerName = "level three")
     public static class LevelThreeAdvice {

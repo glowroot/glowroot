@@ -34,7 +34,7 @@ public class LogCauseAspect {
     private static final ConfigService configService =
             Agent.getConfigService("glowroot-integration-tests");
 
-    @Pointcut(className = "org.glowroot.agent.tests.LogCause", methodName = "log",
+    @Pointcut(className = "org.glowroot.agent.tests.app.LogCause", methodName = "log",
             methodParameterTypes = {"java.lang.String"}, timerName = "log error")
     public static class LogCauseAdvice {
 

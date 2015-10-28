@@ -68,7 +68,7 @@
   ],
   "instrumentation": [
     {
-      "className": "org.glowroot.agent.tests.LevelFour",
+      "className": "org.glowroot.agent.tests.app.LevelFour",
       "methodName": "call",
       "methodParameterTypes": [
         "java.lang.String",
@@ -79,7 +79,7 @@
       "traceEntryMessageTemplate": "Level Four: {{0}}, {{1}}"
     },
     {
-      "className": "org.glowroot.agent.tests.LevelFive",
+      "className": "org.glowroot.agent.tests.app.LevelFive",
       "methodName": "call",
       "methodParameterTypes": [
         "java.lang.String",
@@ -92,7 +92,7 @@
       "traceEntryEnabledProperty": "levelFiveEntryEnabled"
     },
     {
-      "className": "org.glowroot.agent.tests.ExceptionalClass",
+      "className": "org.glowroot.agent.tests.app.ExceptionalClass",
       "methodName": "aMethodThatThrowsAnException",
       "methodParameterTypes": [
       ],
@@ -101,7 +101,7 @@
       "traceEntryMessageTemplate": "Exceptional entry"
     },
     {
-      "className": "org.glowroot.agent.tests.AAA",
+      "className": "org.glowroot.agent.tests.app.AAA",
       "methodName": "execute",
       "methodParameterTypes": [
         "java.lang.String",
@@ -116,7 +116,7 @@
       }
     },
     {
-      "className": "org.glowroot.agent.tests.CoverAllTypes",
+      "className": "org.glowroot.agent.tests.app.CoverAllTypes",
       "methodName": "get*",
       "methodParameterTypes": [],
       "captureKind": "trace-entry",
@@ -124,7 +124,7 @@
       "traceEntryMessageTemplate": "Coverage get: {{_}}"
     },
     {
-      "className": "org.glowroot.agent.tests.CoverAllTypes",
+      "className": "org.glowroot.agent.tests.app.CoverAllTypes",
       "methodName": "put*",
       "methodParameterTypes": [
         "*"

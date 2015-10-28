@@ -25,6 +25,8 @@ import org.junit.Test;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
+import org.glowroot.agent.tests.app.LevelOne;
+import org.glowroot.agent.tests.app.LevelTwo;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,7 +37,7 @@ public class WeavingTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.getSharedContainer();
+        container = Containers.getSharedJavaagentContainer();
     }
 
     @AfterClass
