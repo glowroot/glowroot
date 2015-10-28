@@ -28,11 +28,11 @@ import com.google.common.util.concurrent.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.Collector;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.TraceCreator;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.common.util.Clock;
+import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

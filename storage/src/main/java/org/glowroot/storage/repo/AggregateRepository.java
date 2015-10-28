@@ -15,7 +15,6 @@
  */
 package org.glowroot.storage.repo;
 
-import java.sql.SQLException;
 import java.util.List;
 
 import org.immutables.value.Value;
@@ -130,7 +129,7 @@ public interface AggregateRepository {
 
     int getRollupLevelForView(String serverGroup, long captureTimeFrom, long captureTimeTo);
 
-    void deleteAll(String serverGroup) throws SQLException;
+    void deleteAll(String serverGroup) throws Exception;
 
     @Value.Immutable
     public interface TransactionSummaryQuery {

@@ -159,7 +159,6 @@ public class PartialTraceTest {
             try {
                 new Pause().pauseMaxMilliseconds();
             } catch (InterruptedException e) {
-                return;
             }
         }
     }

@@ -58,14 +58,14 @@ class GaugeMetaDao {
 
     private final Object lock = new Object();
 
-    GaugeMetaDao(DataSource dataSource) throws SQLException {
+    GaugeMetaDao(DataSource dataSource) throws Exception {
         this.dataSource = dataSource;
         Schema schema = dataSource.getSchema();
         schema.syncTable("gauge_meta", gaugeColumns);
         schema.syncIndexes("gauge_meta", gaugeIndexes);
     }
 
-    long getOrCreateGaugeId(String serverGroup, String gaugeName) throws SQLException {
+    long getOrCreateGaugeId(String serverGroup, String gaugeName) throws Exception {
         GaugeKey gaugeKey = ImmutableGaugeKey.of(serverGroup, gaugeName);
         synchronized (lock) {
             Long gaugeId = gaugeIds.getIfPresent(gaugeKey);
@@ -104,7 +104,7 @@ class GaugeMetaDao {
         return gaugeId;
     }
 
-    List<String> readAllGaugeNames() throws SQLException {
+    List<String> readAllGaugeNames() throws Exception {
         return dataSource.query("select gauge_name from gauge_meta", new RowMapper<String>() {
             @Override
             public String mapRow(ResultSet resultSet) throws Exception {
@@ -114,14 +114,14 @@ class GaugeMetaDao {
         });
     }
 
-    void deleteAll(String serverGroup) throws SQLException {
+    void deleteAll(String serverGroup) throws Exception {
         synchronized (lock) {
             dataSource.deleteAll("gauge_meta", "server_group", serverGroup);
             gaugeIds.invalidateAll();
         }
     }
 
-    private @Nullable Long readGaugeId(GaugeKey gaugeKey) throws SQLException {
+    private @Nullable Long readGaugeId(GaugeKey gaugeKey) throws Exception {
         List<Long> gaugeIds = dataSource.query(
                 "select gauge_id from gauge_meta where server_group = ? and gauge_name = ?",
                 new GaugeIdRowMapper(), gaugeKey.serverGroup(), gaugeKey.gaugeName());

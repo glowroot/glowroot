@@ -155,7 +155,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         dataSource.batchUpdate("insert into gauge_value_rollup_0 (gauge_id, capture_time,"
                 + " value, weight) values (?, ?, ?, ?)", new PreparedStatementBinder() {
                     @Override
-                    public void bind(PreparedStatement preparedStatement) throws SQLException {
+                    public void bind(PreparedStatement preparedStatement) throws Exception {
                         for (GaugeValue gaugeValue : gaugeValues) {
                             long gaugeId = gaugeMetaDao.getOrCreateGaugeId(serverGroup,
                                     gaugeValue.getGaugeName());
@@ -276,7 +276,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public void deleteAll(String serverGroup) throws SQLException {
+    public void deleteAll(String serverGroup) throws Exception {
         String whereClause = "gauge_id in (select gauge_id from gauge_meta where server_group = ?)";
         dataSource.batchDelete("gauge_value_rollup_0", whereClause, serverGroup);
         for (int i = 1; i <= configRepository.getRollupConfigs().size(); i++) {
@@ -286,7 +286,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         gaugeMetaDao.deleteAll(serverGroup);
     }
 
-    void deleteBefore(String serverGroup, long captureTime, int rollupLevel) throws SQLException {
+    void deleteBefore(String serverGroup, long captureTime, int rollupLevel) throws Exception {
         String whereClause = "gauge_id in (select gauge_id from gauge_meta where server_group = ?)"
                 + " and capture_time < ?";
         dataSource.batchDelete("gauge_value_rollup_" + castUntainted(rollupLevel), whereClause,
@@ -309,7 +309,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     private void rollup(long lastRollupTime, long safeRollupTime, long fixedIntervalMillis,
-            int toRollupLevel, int fromRollupLevel) throws SQLException {
+            int toRollupLevel, int fromRollupLevel) throws Exception {
         // TODO handle when offset is different for lastRollupTime and safeRollupTime?
         int offsetMillis = TimeZone.getDefault().getOffset(safeRollupTime);
         // need ".0" to force double result
@@ -319,7 +319,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     private void rollup(long lastRollupTime, long safeRollupTime, @Untainted String captureTimeSql,
-            int toRollupLevel, int fromRollupLevel) throws SQLException {
+            int toRollupLevel, int fromRollupLevel) throws Exception {
         dataSource.update("insert into gauge_value_rollup_" + castUntainted(toRollupLevel)
                 + " (gauge_id, capture_time, value, weight) select gauge_id, " + captureTimeSql
                 + " ceil_capture_time, sum(value * weight) / sum(weight), sum(weight)"

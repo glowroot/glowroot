@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
 
-import org.glowroot.agent.model.ThreadInfoComponent.ThreadInfoData;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;

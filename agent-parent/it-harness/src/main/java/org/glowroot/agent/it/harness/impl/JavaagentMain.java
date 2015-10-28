@@ -15,10 +15,11 @@
  */
 package org.glowroot.agent.it.harness.impl;
 
-import java.io.Closeable;
-import java.io.IOException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -68,30 +69,27 @@ public class JavaagentMain {
                 .build()
                 .start();
         Executors.newSingleThreadExecutor().execute(new Heartbeat());
-        javaagentService.setServerCloseable(new Closeable() {
+        javaagentService.setServerCloseable(new Callable</*@Nullable*/Void>() {
             @Override
-            public void close() throws IOException {
-                try {
-                    server.shutdown();
-                    if (!server.awaitTermination(10, SECONDS)) {
-                        throw new IllegalStateException("Could not terminate gRPC channel");
-                    }
-                    executor.shutdown();
-                    if (!executor.awaitTermination(10, SECONDS)) {
-                        throw new IllegalStateException("Could not terminate gRPC executor");
-                    }
-                    if (!bossEventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
-                        throw new IllegalStateException(
-                                "Could not terminate gRPC boss event loop group");
-                    }
-                    if (!workerEventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10,
-                            SECONDS)) {
-                        throw new IllegalStateException(
-                                "Could not terminate gRPC worker event loop group");
-                    }
-                } catch (InterruptedException e) {
-                    throw new IOException(e);
+            public @Nullable Void call() throws Exception {
+                server.shutdown();
+                if (!server.awaitTermination(10, SECONDS)) {
+                    throw new IllegalStateException("Could not terminate gRPC channel");
                 }
+                executor.shutdown();
+                if (!executor.awaitTermination(10, SECONDS)) {
+                    throw new IllegalStateException("Could not terminate gRPC executor");
+                }
+                if (!bossEventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
+                    throw new IllegalStateException(
+                            "Could not terminate gRPC boss event loop group");
+                }
+                if (!workerEventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10,
+                        SECONDS)) {
+                    throw new IllegalStateException(
+                            "Could not terminate gRPC worker event loop group");
+                }
+                return null;
             }
         });
 

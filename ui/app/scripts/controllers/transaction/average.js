@@ -56,7 +56,7 @@ glowroot.controller('TransactionAverageCtrl', [
       }
     };
 
-    function onRefreshData(data, query) {
+    function onRefreshData(data) {
       var rootTimers = data.mergedAggregate.rootTimers;
       if (rootTimers.length === 1) {
         data.mergedAggregate.rootTimer = rootTimers[0];

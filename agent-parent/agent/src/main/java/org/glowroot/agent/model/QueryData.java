@@ -63,11 +63,11 @@ public class QueryData implements Timer {
         this.nextQueryData = nextQueryData;
     }
 
-    String getQueryType() {
+    public String getQueryType() {
         return queryType;
     }
 
-    String getQueryText() {
+    public String getQueryText() {
         return queryText;
     }
 
@@ -100,17 +100,17 @@ public class QueryData implements Timer {
         totalRows += inc;
     }
 
-    long getTotalNanos() {
+    public long getTotalNanos() {
         return totalNanos;
     }
 
     // only called after transaction completion
-    long getExecutionCount() {
+    public long getExecutionCount() {
         return executionCount;
     }
 
     // only called after transaction completion
-    long getTotalRows() {
+    public long getTotalRows() {
         return totalRows;
     }
 

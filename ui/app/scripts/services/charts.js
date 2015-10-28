@@ -255,7 +255,7 @@ glowroot.factory('charts', [
             }
             $scope.chartNoData = !data.dataSeries.length;
             // allow callback to modify data if desired
-            onRefreshData(data, query);
+            onRefreshData(data);
             // reset axis in case user changed the date and then zoomed in/out to trigger this refresh
             chartState.plot.getAxes().xaxis.options.min = chartFrom;
             chartState.plot.getAxes().xaxis.options.max = chartTo;

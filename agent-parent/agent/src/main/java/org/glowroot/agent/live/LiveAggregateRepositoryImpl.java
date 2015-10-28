@@ -21,8 +21,8 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.Lists;
 
+import org.glowroot.agent.impl.AggregateIntervalCollector;
 import org.glowroot.agent.impl.Aggregator;
-import org.glowroot.agent.model.AggregateIntervalCollector;
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;

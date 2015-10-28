@@ -15,13 +15,11 @@
  */
 package org.glowroot.storage.repo;
 
-import java.sql.SQLException;
-
 public interface TriggeredAlertRepository {
 
     boolean exists(String version) throws Exception;
 
-    void delete(String version) throws SQLException;
+    void delete(String version) throws Exception;
 
-    void insert(String version, long endTime) throws SQLException;
+    void insert(String version, long endTime) throws Exception;
 }

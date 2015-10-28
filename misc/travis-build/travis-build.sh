@@ -5,6 +5,8 @@
 # (see https://docs.oracle.com/javase/8/docs/technotes/guides/security/enhancements-8.html)
 surefire_jvm_args="-Xmx512m -Djava.security.egd=file:/dev/./urandom"
 
+plugin_projects="agent-parent/plugins/cassandra-plugin,agent-parent/plugins/http-client-plugin,agent-parent/plugins/jdbc-plugin,agent-parent/plugins/jms-plugin,agent-parent/plugins/logger-plugin,agent-parent/plugins/quartz-plugin,agent-parent/plugins/servlet-plugin"
+
 case "$1" in
 
        "test") # shading is done during the package phase, so 'mvn test' is used to run tests
@@ -88,31 +90,11 @@ case "$1" in
                                  -Djacoco.propertyName=jacocoArgLine \
                                  -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                  -B
-                 # basic mvn install so the additional runs can use the installed artifacts
-                 mvn clean install -DskipTests=true
-                 # also running integration-tests with (default) local integration test harness to capture a
-                 # couple methods exercised only by the local integration test harness
-                 mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent test \
-                                 -pl agent-parent/integration-tests \
-                                 -Djacoco.destFile=$PWD/jacoco-combined.exec \
-                                 -Djacoco.propertyName=jacocoArgLine \
-                                 -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                 -B
-                 # also running logger-plugin tests with shading and javaagent in order to get
-                 # code coverage for Slf4jTest and Slf4jMarkerTest
-                 # (see comments in those classes for more detail)
-                 mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent package \
-                                 -pl agent-parent/plugins/logger-plugin \
-                                 -Dglowroot.it.harness=javaagent \
-                                 -Djacoco.destFile=$PWD/jacoco-combined.exec \
-                                 -Djacoco.propertyName=jacocoArgLine \
-                                 -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                 -B
 
                  # the sonar.jdbc.password system property is set in the pom.xml using the
                  # environment variable SONAR_DB_PASSWORD (instead of setting the system
                  # property on the command line which which would make it visible to ps)
-                 mvn sonar:sonar -pl .,common,agent-parent/api,agent-parent/plugin-api,agent-parent/agent,agent-parent/plugins/cassandra-plugin,agent-parent/plugins/jdbc-plugin,agent-parent/plugins/logger-plugin,agent-parent/plugins/servlet-plugin,storage,ui,fat-agent-parent/fat-agent \
+                 mvn sonar:sonar -pl !misc/checker-qual-jdk6,!misc/license-resource-bundle,!agent-parent/benchmarks,!agent-parent/it-harness,!agent-parent/distribution,!fat-agent-parent/ui-sandbox,!fat-agent-parent/distribution \
                                  -Dsonar.jdbc.url=$SONAR_JDBC_URL \
                                  -Dsonar.jdbc.username=$SONAR_JDBC_USERNAME \
                                  -Dsonar.host.url=$SONAR_HOST_URL \
@@ -155,7 +137,7 @@ case "$1" in
                # TODO find way to not omit these (especially it-harness)
                # omitting wire-api and agent-parent/it-harness from checker framework validation since they contain protobuf generated code which does not pass
                mvn clean install -am -pl wire-api,agent-parent/it-harness
-               mvn clean compile -pl .,misc/license-resource-bundle,common,agent-parent/api,agent-parent/plugin-api,agent-parent/agent,agent-parent/plugins/cassandra-plugin,agent-parent/plugins/jdbc-plugin,agent-parent/plugins/logger-plugin,agent-parent/plugins/servlet-plugin,storage,ui,fat-agent-parent/fat-agent \
+               mvn clean compile -pl .,misc/license-resource-bundle,common,agent-parent/api,agent-parent/plugin-api,agent-parent/agent,$plugin_projects,storage,ui,fat-agent-parent/fat-agent \
                                  -Pchecker \
                                  -Dchecker.install.dir=$HOME/checker-framework \
                                  -Dchecker.stubs.dir=$PWD/misc/checker-stubs \

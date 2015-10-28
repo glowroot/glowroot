@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.model;
+package org.glowroot.agent.impl;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -23,7 +23,11 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.Lists;
 
-import org.glowroot.agent.model.ThreadInfoComponent.ThreadInfoData;
+import org.glowroot.agent.model.Profile;
+import org.glowroot.agent.model.QueryData;
+import org.glowroot.agent.model.ThreadInfoData;
+import org.glowroot.agent.model.TimerImpl;
+import org.glowroot.agent.model.Transaction;
 import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.live.ImmutableErrorPoint;
 import org.glowroot.common.live.ImmutableOverallErrorSummary;

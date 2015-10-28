@@ -22,7 +22,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Stopwatch;
 
-import org.glowroot.agent.Collector;
+import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;

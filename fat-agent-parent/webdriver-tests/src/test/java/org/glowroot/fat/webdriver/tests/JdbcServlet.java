@@ -67,7 +67,7 @@ public class JdbcServlet extends HttpServlet implements AppUnderTest {
         } catch (SQLException e) {
             throw new ServletException(e);
         } catch (InterruptedException e) {
-            throw new ServletException(e);
+            Thread.currentThread().interrupt();
         }
     }
 

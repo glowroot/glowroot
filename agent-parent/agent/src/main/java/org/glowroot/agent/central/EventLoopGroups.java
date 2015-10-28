@@ -29,6 +29,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class EventLoopGroups {
 
+    private EventLoopGroups() {}
+
     // copy of io.grpc.netty.Utils.DefaultEventLoopGroupResource with some modification
     public static EventLoopGroup create(String name) {
         ThreadFactory threadFactory = new ThreadFactoryBuilder()

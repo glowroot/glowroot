@@ -16,7 +16,6 @@
 package org.glowroot.ui;
 
 import java.io.IOException;
-import java.sql.SQLException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.immutables.value.Value;
@@ -84,7 +83,7 @@ class AdminJsonService {
     }
 
     @POST("/backend/admin/defrag-data")
-    void defragData() throws SQLException {
+    void defragData() throws Exception {
         repoAdmin.defrag();
     }
 

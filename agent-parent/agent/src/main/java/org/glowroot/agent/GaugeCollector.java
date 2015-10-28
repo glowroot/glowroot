@@ -55,6 +55,7 @@ import org.glowroot.common.config.GaugeConfig.MBeanAttribute;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ScheduledRunnable;
 import org.glowroot.common.util.Styles;
+import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;
 
 import static java.util.concurrent.TimeUnit.SECONDS;

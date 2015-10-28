@@ -118,7 +118,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
       query.percentile = appliedPercentiles;
     }
 
-    function onRefreshData(data, query) {
+    function onRefreshData(data) {
       $scope.transactionCounts = data.transactionCounts;
       $scope.mergedAggregate = data.mergedAggregate;
     }

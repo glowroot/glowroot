@@ -15,9 +15,8 @@
  */
 package org.glowroot.agent.it.harness.impl;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
 import javax.annotation.Nullable;
@@ -46,7 +45,7 @@ public class JavaagentServiceImpl implements JavaagentService {
 
     private volatile @Nullable Set<Thread> preExistingThreads;
 
-    private volatile @Nullable Closeable serverCloseable;
+    private volatile @Nullable Callable<java.lang.Void> serverCloseable;
 
     @Override
     public void ping(Void request, StreamObserver<Void> responseObserver) {
@@ -171,10 +170,11 @@ public class JavaagentServiceImpl implements JavaagentService {
                     // wait a few millis for response to be returned
                     Thread.sleep(10);
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
                 try {
-                    serverCloseable.close();
-                } catch (IOException e) {
+                    serverCloseable.call();
+                } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                 }
                 System.exit(0);
@@ -182,7 +182,7 @@ public class JavaagentServiceImpl implements JavaagentService {
         });
     }
 
-    public void setServerCloseable(Closeable serverCloseable) {
+    public void setServerCloseable(Callable<java.lang.Void> serverCloseable) {
         this.serverCloseable = serverCloseable;
     }
 }

@@ -28,6 +28,7 @@ import io.netty.channel.EventLoopGroup;
 import org.glowroot.agent.central.EventLoopGroups;
 import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
+import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorServiceBlockingClient;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;

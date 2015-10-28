@@ -15,7 +15,6 @@
  */
 package org.glowroot.storage.repo;
 
-import java.sql.SQLException;
 import java.util.List;
 
 import org.immutables.value.Value;
@@ -37,7 +36,7 @@ public interface GaugeValueRepository {
 
     int getRollupLevelForView(String serverGroup, long from, long to);
 
-    void deleteAll(String serverGroup) throws SQLException;
+    void deleteAll(String serverGroup) throws Exception;
 
     @Value.Immutable
     @Styles.AllParameters

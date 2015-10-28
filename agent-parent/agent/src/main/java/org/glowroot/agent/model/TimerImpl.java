@@ -158,17 +158,17 @@ public class TimerImpl implements Timer {
         return timerName.name();
     }
 
-    boolean isExtended() {
+    public boolean isExtended() {
         return timerName.extended();
     }
 
     // only called after transaction completion
-    long getTotalNanos() {
+    public long getTotalNanos() {
         return totalNanos;
     }
 
     // only called after transaction completion
-    long getCount() {
+    public long getCount() {
         return count;
     }
 

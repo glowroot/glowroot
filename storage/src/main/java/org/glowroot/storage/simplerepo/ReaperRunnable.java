@@ -15,8 +15,6 @@
  */
 package org.glowroot.storage.simplerepo;
 
-import java.sql.SQLException;
-
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ScheduledRunnable;
 import org.glowroot.storage.repo.ConfigRepository;
@@ -42,7 +40,7 @@ class ReaperRunnable extends ScheduledRunnable {
     }
 
     @Override
-    protected void runInternal() throws SQLException {
+    protected void runInternal() throws Exception {
 
         // FIXME for each serverGroup
         final String serverGroup = "";

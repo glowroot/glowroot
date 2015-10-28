@@ -61,21 +61,21 @@ class ConnectionPool {
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
     }
 
-    <T> T execute(ConnectionCallback<T> callback, T valueOnClosing) throws SQLException {
+    <T> T execute(ConnectionCallback<T> callback, T valueOnClosing) throws Exception {
         return executeInternal(callback, valueOnClosing, false);
     }
 
-    void execute(StatementCallback callback) throws SQLException {
+    void execute(StatementCallback callback) throws Exception {
         execute(callback, false);
     }
 
-    void executeAndReleaseAll(StatementCallback callback) throws SQLException {
+    void executeAndReleaseAll(StatementCallback callback) throws Exception {
         execute(callback, true);
     }
 
     // convenience method
     <T> T execute(final String sql, final PreparedStatementCallback<T> callback, T valueOnClosing)
-            throws SQLException {
+            throws Exception {
         return execute(new ConnectionCallback<T>() {
             @Override
             public T doWithConnection(Connection connection) throws SQLException {
@@ -94,7 +94,7 @@ class ConnectionPool {
     }
 
     private void execute(final StatementCallback callback, boolean releaseAllAfterwards)
-            throws SQLException {
+            throws Exception {
         executeInternal(new ConnectionCallback</*@Nullable*/Void>() {
             @Override
             public @Nullable Void doWithConnection(Connection connection) throws SQLException {
@@ -113,7 +113,7 @@ class ConnectionPool {
     }
 
     private <T> T executeInternal(ConnectionCallback<T> callback, T valueOnClosing,
-            boolean releaseAllAfterwards) throws SQLException {
+            boolean releaseAllAfterwards) throws Exception {
         if (closing) {
             // this can get called a lot inserting traces, and these can get backlogged
             // on the lock below during jvm shutdown without pre-checking here (and backlogging
@@ -141,22 +141,18 @@ class ConnectionPool {
         }
     }
 
-    private <T> T executeInternal(ConnectionCallback<T> callback) throws SQLException {
+    private <T> T executeInternal(ConnectionCallback<T> callback) throws Exception {
         Connection connection = boundConnection.get();
         boolean releasePermit = false;
         boolean unbindConnection = false;
         if (connection == null) {
-            try {
-                limiter.acquire();
-            } catch (InterruptedException e) {
-                throw new SQLException(e);
-            }
+            limiter.acquire();
             releasePermit = true;
 
             connection = pool.poll();
             if (connection == null) {
-                throw new SQLException();
-                // connection = connectionFactory.createConnection();
+                // create a new connection which will be returned to pool at the end
+                connection = connectionFactory.createConnection();
             }
             boundConnection.set(connection);
             unbindConnection = true;
@@ -214,7 +210,7 @@ class ConnectionPool {
     }
 
     interface PreparedStatementCallback<T> {
-        T doWithPreparedStatement(PreparedStatement preparedStatement) throws SQLException;
+        T doWithPreparedStatement(PreparedStatement preparedStatement) throws Exception;
     }
 
     interface StatementCallback {

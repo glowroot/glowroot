@@ -16,11 +16,10 @@
 package org.glowroot.storage.repo;
 
 import java.io.IOException;
-import java.sql.SQLException;
 
 public interface RepoAdmin {
 
-    void defrag() throws SQLException;
+    void defrag() throws Exception;
 
     void resizeIfNecessary() throws IOException;
 }

@@ -18,10 +18,13 @@ package org.glowroot.ui;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.regex.Pattern;
+
+import javax.annotation.Nullable;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.ServerBootstrap;
@@ -151,7 +154,7 @@ class HttpServer {
         logger.debug("close(): http server stopped");
     }
 
-    private class ChangePort implements Runnable {
+    private class ChangePort implements Callable</*@Nullable*/Void> {
 
         private final int newPort;
 
@@ -160,14 +163,11 @@ class HttpServer {
         }
 
         @Override
-        public void run() {
-            try {
-                InetSocketAddress localAddress = new InetSocketAddress(bindAddress, newPort);
-                HttpServer.this.serverChannel = bootstrap.bind(localAddress).sync().channel();
-                HttpServer.this.port = newPort;
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+        public @Nullable Void call() throws InterruptedException {
+            InetSocketAddress localAddress = new InetSocketAddress(bindAddress, newPort);
+            HttpServer.this.serverChannel = bootstrap.bind(localAddress).sync().channel();
+            HttpServer.this.port = newPort;
+            return null;
         }
     }
 

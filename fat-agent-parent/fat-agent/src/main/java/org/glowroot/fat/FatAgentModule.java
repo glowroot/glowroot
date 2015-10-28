@@ -37,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.AgentModule;
-import org.glowroot.agent.Collector;
 import org.glowroot.agent.DataDirLocking;
 import org.glowroot.agent.LoggingInit;
 import org.glowroot.agent.ViewerAgentModule;
@@ -53,6 +52,7 @@ import org.glowroot.storage.simplerepo.PlatformMBeanServerLifecycle;
 import org.glowroot.storage.simplerepo.SimpleRepoModule;
 import org.glowroot.ui.CreateUiModuleBuilder;
 import org.glowroot.ui.UiModule;
+import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;
 import org.glowroot.wire.api.model.GaugeValueOuterClass.GaugeValue;

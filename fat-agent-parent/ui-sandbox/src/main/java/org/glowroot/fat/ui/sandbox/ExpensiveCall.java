@@ -16,6 +16,7 @@
 package org.glowroot.fat.ui.sandbox;
 
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
@@ -34,7 +35,7 @@ public class ExpensiveCall {
         this.maxTraceEntryMessageLength = maxTraceEntryMessageLength;
     }
 
-    void execute() {
+    void execute() throws InterruptedException {
         int route = random.nextInt(10);
         switch (route) {
             case 0:
@@ -70,48 +71,48 @@ public class ExpensiveCall {
         }
     }
 
-    private void execute0() {
+    private void execute0() throws InterruptedException {
         expensive();
         execute1();
     }
 
-    private void execute1() {
+    private void execute1() throws InterruptedException {
         expensive();
     }
 
-    private void execute2() {
+    private void execute2() throws InterruptedException {
         expensive();
         execute3();
     }
 
-    private void execute3() {
+    private void execute3() throws InterruptedException {
         expensive();
     }
 
-    private void execute4() {
+    private void execute4() throws InterruptedException {
         expensive();
         execute5();
     }
 
-    private void execute5() {
+    private void execute5() throws InterruptedException {
         expensive();
     }
 
-    private void execute6() {
+    private void execute6() throws InterruptedException {
         expensive();
         execute7();
     }
 
-    private void execute7() {
+    private void execute7() throws InterruptedException {
         expensive();
     }
 
-    private void execute8() {
+    private void execute8() throws InterruptedException {
         expensive();
         execute9();
     }
 
-    private void execute9() {
+    private void execute9() throws InterruptedException {
         expensive();
     }
 
@@ -127,24 +128,21 @@ public class ExpensiveCall {
 
     static {
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true).build();
-        Executors.newSingleThreadExecutor(threadFactory).execute(new Runnable() {
+        Executors.newSingleThreadExecutor(threadFactory).submit(new Callable<Void>() {
             @Override
-            public void run() {
-                try {
-                    // this loop is used to block threads executing expensive() below
-                    while (true) {
-                        synchronized (lock) {
-                            Thread.sleep(random.nextInt(10));
-                        }
-                        Thread.sleep(1);
+            public Void call() throws InterruptedException {
+                // this loop is used to block threads executing expensive() below
+                while (true) {
+                    synchronized (lock) {
+                        Thread.sleep(random.nextInt(10));
                     }
-                } catch (InterruptedException e) {
+                    Thread.sleep(1);
                 }
             }
         });
     }
 
-    private void expensive() {
+    private void expensive() throws InterruptedException {
         int millis = random.nextInt(maxTimeMillis) / 4;
         // spend a quarter of the time taxing the cpu and doing memory allocation
         long start = System.currentTimeMillis();
@@ -158,15 +156,12 @@ public class ExpensiveCall {
         }
         // spend the rest of the time in both blocking and waiting states
         start = System.currentTimeMillis();
-        try {
-            while (System.currentTimeMillis() - start < 3 * millis) {
-                synchronized (lock) {
-                    Thread.sleep(random.nextInt(10));
-                    dummy.incrementAndGet();
-                }
-                Thread.sleep(1);
+        while (System.currentTimeMillis() - start < 3 * millis) {
+            synchronized (lock) {
+                Thread.sleep(random.nextInt(10));
+                dummy.incrementAndGet();
             }
-        } catch (InterruptedException e) {
+            Thread.sleep(1);
         }
     }
 

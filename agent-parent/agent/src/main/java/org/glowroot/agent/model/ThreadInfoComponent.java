@@ -27,7 +27,6 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
 
 import org.glowroot.agent.util.ThreadAllocatedBytes;
-import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -163,28 +162,6 @@ class ThreadInfoComponent {
         @Value.Default
         long threadAllocatedBytes() {
             return -1;
-        }
-    }
-
-    @Styles.Private
-    @Value.Immutable
-    abstract static class ThreadInfoData {
-
-        @Value.Default
-        public long threadCpuNanos() {
-            return NotAvailableAware.NA;
-        }
-        @Value.Default
-        public long threadBlockedNanos() {
-            return NotAvailableAware.NA;
-        }
-        @Value.Default
-        public long threadWaitedNanos() {
-            return NotAvailableAware.NA;
-        }
-        @Value.Default
-        public long threadAllocatedBytes() {
-            return NotAvailableAware.NA;
         }
     }
 }

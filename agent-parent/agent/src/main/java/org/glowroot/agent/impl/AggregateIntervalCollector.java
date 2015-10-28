@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.model;
+package org.glowroot.agent.impl;
 
 import java.io.IOException;
 import java.util.List;
@@ -29,7 +29,8 @@ import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.Collector;
+import org.glowroot.agent.model.Profile;
+import org.glowroot.agent.model.Transaction;
 import org.glowroot.common.live.LiveAggregateRepository.ErrorPoint;
 import org.glowroot.common.live.LiveAggregateRepository.OverallErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.OverallSummary;
@@ -39,6 +40,7 @@ import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionErrorSummary;
 import org.glowroot.common.live.LiveAggregateRepository.TransactionSummary;
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
+import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.OverallAggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.TransactionAggregate;

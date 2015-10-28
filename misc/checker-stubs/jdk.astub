@@ -82,8 +82,12 @@ public class Arrays {
 /* ========================================================================== */
 package java.util.concurrent;
 
-public class ConcurrentMap<K, V> {
+public interface ConcurrentMap<K, V> {
     @Nullable V putIfAbsent(K key, V value);
+}
+
+public interface ExecutorService {
+    <T extends @Nullable Object> Future<T> submit(Callable<T> task);
 }
 
 /* ========================================================================== */

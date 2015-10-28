@@ -26,6 +26,7 @@ import io.grpc.stub.StreamObserver;
 import io.netty.channel.EventLoopGroup;
 
 import org.glowroot.agent.central.EventLoopGroups;
+import org.glowroot.wire.api.Collector;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
 import org.glowroot.wire.api.model.CollectorServiceGrpc.CollectorService;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.AggregateMessage;

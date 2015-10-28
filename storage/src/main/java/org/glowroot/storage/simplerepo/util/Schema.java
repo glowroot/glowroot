@@ -81,7 +81,7 @@ public class Schema {
     }
 
     public void syncTable(final @Untainted String tableName, final List<Column> columns)
-            throws SQLException {
+            throws Exception {
         connectionPool.execute(new ConnectionCallback</*@Nullable*/Void>() {
             @Override
             public @Nullable Void doWithConnection(Connection connection) throws SQLException {
@@ -101,7 +101,7 @@ public class Schema {
     }
 
     public void syncIndexes(final @Untainted String tableName, final List<Index> indexes)
-            throws SQLException {
+            throws Exception {
         connectionPool.execute(new ConnectionCallback</*@Nullable*/Void>() {
             @Override
             public @Nullable Void doWithConnection(Connection connection) throws SQLException {
@@ -124,7 +124,7 @@ public class Schema {
     }
 
     // useful for upgrades
-    public boolean tableExists(final String tableName) throws SQLException {
+    public boolean tableExists(final String tableName) throws Exception {
         return connectionPool.execute(new ConnectionCallback<Boolean>() {
             @Override
             public Boolean doWithConnection(Connection connection) throws SQLException {
@@ -135,7 +135,7 @@ public class Schema {
 
     // useful for upgrades
     public boolean columnExists(final String tableName, final String columnName)
-            throws SQLException {
+            throws Exception {
         return connectionPool.execute(new ConnectionCallback<Boolean>() {
             @Override
             public Boolean doWithConnection(Connection connection) throws SQLException {

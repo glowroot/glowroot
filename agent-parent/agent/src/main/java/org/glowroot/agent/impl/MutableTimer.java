@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.model;
+package org.glowroot.agent.impl;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -21,6 +21,7 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 
+import org.glowroot.agent.model.TimerImpl;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 class MutableTimer {

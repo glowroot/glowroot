@@ -40,7 +40,6 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.model.ThreadInfoComponent.ThreadInfoData;
 import org.glowroot.agent.plugin.api.transaction.MessageSupplier;
 import org.glowroot.agent.plugin.api.transaction.TimerName;
 import org.glowroot.agent.plugin.api.transaction.internal.ReadableMessage;
@@ -250,8 +249,7 @@ public class Transaction {
     }
 
     // can be called from a non-transaction thread
-    @Nullable
-    ThreadInfoData getThreadInfo() {
+    public @Nullable ThreadInfoData getThreadInfo() {
         return threadInfoComponent == null ? null : threadInfoComponent.getThreadInfo();
     }
 
@@ -310,8 +308,7 @@ public class Transaction {
         }
     }
 
-    @Nullable
-    Profile getProfile() {
+    public @Nullable Profile getProfile() {
         return profile;
     }
 

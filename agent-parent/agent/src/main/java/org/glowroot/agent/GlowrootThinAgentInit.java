@@ -35,6 +35,7 @@ import org.glowroot.agent.util.Tickers;
 import org.glowroot.agent.weaving.PreInitializeWeavingClasses;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.wire.api.Collector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

@@ -15,8 +15,6 @@
  */
 package org.glowroot.storage.simplerepo;
 
-import java.sql.SQLException;
-
 import com.google.common.collect.ImmutableList;
 
 import org.glowroot.storage.repo.TriggeredAlertRepository;
@@ -39,7 +37,7 @@ class TriggeredAlertDao implements TriggeredAlertRepository {
 
     private final DataSource dataSource;
 
-    TriggeredAlertDao(DataSource dataSource) throws SQLException {
+    TriggeredAlertDao(DataSource dataSource) throws Exception {
         this.dataSource = dataSource;
         Schema schema = dataSource.getSchema();
         schema.syncTable("triggered_alert", triggeredAlertColumns);
@@ -47,7 +45,7 @@ class TriggeredAlertDao implements TriggeredAlertRepository {
     }
 
     @Override
-    public void insert(String version, long endTime) throws SQLException {
+    public void insert(String version, long endTime) throws Exception {
         dataSource.update(
                 "insert into triggered_alert (alert_config_version, end_time) values (?, ?)",
                 version, endTime);
@@ -60,7 +58,7 @@ class TriggeredAlertDao implements TriggeredAlertRepository {
     }
 
     @Override
-    public void delete(String version) throws SQLException {
+    public void delete(String version) throws Exception {
         dataSource.update("delete from triggered_alert where alert_config_version = ?", version);
     }
 

@@ -534,7 +534,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     @Override
-    public void deleteAll(String serverGroup) throws SQLException {
+    public void deleteAll(String serverGroup) throws Exception {
         for (int i = 0; i < configRepository.getRollupConfigs().size(); i++) {
             dataSource.deleteAll("overall_aggregate_rollup_" + castUntainted(i), "server_group",
                     serverGroup);
@@ -543,7 +543,7 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    void deleteBefore(String serverGroup, long captureTime, int rollupLevel) throws SQLException {
+    void deleteBefore(String serverGroup, long captureTime, int rollupLevel) throws Exception {
         dataSource.deleteBefore("overall_aggregate_rollup_" + castUntainted(rollupLevel),
                 "server_group", serverGroup, captureTime);
         dataSource.deleteBefore("transaction_aggregate_rollup_" + castUntainted(rollupLevel),
@@ -680,7 +680,7 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private List<TransactionErrorSummary> readTransactionErrorSummariesInternal(
-            ErrorSummaryQuery query, int rollupLevel) throws SQLException {
+            ErrorSummaryQuery query, int rollupLevel) throws Exception {
         return dataSource.query("select transaction_name, sum(error_count), sum(transaction_count)"
                 + " from transaction_aggregate_rollup_" + castUntainted(rollupLevel)
                 + " where server_group = ? and transaction_type = ? and capture_time > ?"

@@ -41,7 +41,7 @@ class NestableCall {
         this.maxTraceEntryMessageLength = maxTraceEntryMessageLength;
     }
 
-    void execute() {
+    void execute() throws InterruptedException {
         if (child != null) {
             child.execute();
         }

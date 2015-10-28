@@ -41,6 +41,9 @@ public class RequestInvoker {
         return Invokers.invoke(getMethodMethod, request, "");
     }
 
+    // TODO report checker framework issue that occurs without this warning suppression
+    @SuppressWarnings("return.type.incompatible")
+    @Nullable
     URI getOriginalURI(Object request) {
         return Invokers.invoke(getOriginalURIMethod, request, null);
     }

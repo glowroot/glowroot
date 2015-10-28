@@ -121,7 +121,7 @@ public class TraceDao implements TraceRepository {
     private final DataSource dataSource;
     private final CappedDatabase traceCappedDatabase;
 
-    TraceDao(DataSource dataSource, CappedDatabase traceCappedDatabase) throws SQLException {
+    TraceDao(DataSource dataSource, CappedDatabase traceCappedDatabase) throws Exception {
         this.dataSource = dataSource;
         this.traceCappedDatabase = traceCappedDatabase;
         Schema schema = dataSource.getSchema();
@@ -285,12 +285,12 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public void deleteAll(String server) throws SQLException {
+    public void deleteAll(String server) throws Exception {
         dataSource.deleteAll("trace", "server", server);
         dataSource.deleteAll("trace_attribute", "server", server);
     }
 
-    void deleteBefore(String server, long captureTime) throws SQLException {
+    void deleteBefore(String server, long captureTime) throws Exception {
         dataSource.deleteBefore("trace", "server", server, captureTime);
         dataSource.deleteBefore("trace_attribute", "server", server, captureTime);
     }

@@ -75,7 +75,7 @@ public class DataSource {
         return new Schema(connectionPool, POSTGRES);
     }
 
-    public void defrag() throws SQLException {
+    public void defrag() throws Exception {
         if (dbFile == null || POSTGRES) {
             return;
         }
@@ -88,7 +88,7 @@ public class DataSource {
         });
     }
 
-    public void execute(final @Untainted String sql) throws SQLException {
+    public void execute(final @Untainted String sql) throws Exception {
         debug(sql);
         connectionPool.execute(new StatementCallback() {
             @Override
@@ -98,7 +98,7 @@ public class DataSource {
         });
     }
 
-    public long queryForLong(final @Untainted String sql, Object... args) throws SQLException {
+    public long queryForLong(final @Untainted String sql, Object... args) throws Exception {
         Long value = query(sql, new ResultSetExtractor<Long>() {
             @Override
             public Long extractData(ResultSet resultSet) throws SQLException {
@@ -113,7 +113,7 @@ public class DataSource {
         return MoreObjects.firstNonNull(value, 0L);
     }
 
-    public boolean queryForExists(final @Untainted String sql, Object... args) throws SQLException {
+    public boolean queryForExists(final @Untainted String sql, Object... args) throws Exception {
         Boolean exists = query(sql, new ResultSetExtractor<Boolean>() {
             @Override
             public Boolean extractData(ResultSet resultSet) throws SQLException {
@@ -124,7 +124,7 @@ public class DataSource {
     }
 
     public <T extends /*@NonNull*/Object> List<T> query(final @Untainted String sql,
-            final RowMapper<T> rowMapper, final Object... args) throws SQLException {
+            final RowMapper<T> rowMapper, final Object... args) throws Exception {
         List<T> list = query(sql, new ResultSetExtractor<List<T>>() {
             @Override
             public List<T> extractData(ResultSet resultSet) throws SQLException {
@@ -135,7 +135,7 @@ public class DataSource {
     }
 
     public <T> /*@Nullable*/T query(final @Untainted String sql, final ResultSetExtractor<T> rse,
-            final Object... args) throws SQLException {
+            final Object... args) throws Exception {
         debug(sql, args);
         return connectionPool.execute(sql, new PreparedStatementCallback</*@Nullable*/T>() {
             @Override
@@ -160,7 +160,7 @@ public class DataSource {
     }
 
     public int update(final @Untainted String sql, final @Nullable Object... args)
-            throws SQLException {
+            throws Exception {
         debug(sql, args);
         return connectionPool.execute(sql, new PreparedStatementCallback<Integer>() {
             @Override
@@ -176,12 +176,12 @@ public class DataSource {
     }
 
     public int update(final @Untainted String sql, final PreparedStatementBinder binder)
-            throws SQLException {
+            throws Exception {
         debug(sql);
         return connectionPool.execute(sql, new PreparedStatementCallback<Integer>() {
             @Override
             public Integer doWithPreparedStatement(PreparedStatement preparedStatement)
-                    throws SQLException {
+                    throws Exception {
                 preparedStatement.setQueryTimeout(0);
                 binder.bind(preparedStatement);
                 return preparedStatement.executeUpdate();
@@ -190,12 +190,12 @@ public class DataSource {
     }
 
     public void batchUpdate(final @Untainted String sql, final PreparedStatementBinder binder)
-            throws SQLException {
+            throws Exception {
         debug(sql);
         connectionPool.execute(sql, new PreparedStatementCallback</*@Nullable*/Void>() {
             @Override
             public @Nullable Void doWithPreparedStatement(PreparedStatement preparedStatement)
-                    throws SQLException {
+                    throws Exception {
                 preparedStatement.setQueryTimeout(0);
                 binder.bind(preparedStatement);
                 preparedStatement.executeBatch();
@@ -205,7 +205,7 @@ public class DataSource {
     }
 
     public void deleteAll(@Untainted String tableName, @Untainted String columnName,
-            String serverGroup) throws SQLException {
+            String serverGroup) throws Exception {
         if (SINGLE_SERVER) {
             execute("truncate table " + tableName);
         } else {
@@ -214,12 +214,12 @@ public class DataSource {
     }
 
     public void deleteBefore(@Untainted String tableName, @Untainted String columnName,
-            String columnValue, long captureTime) throws SQLException {
+            String columnValue, long captureTime) throws Exception {
         batchDelete(tableName, columnName + " = ? and capture_time < ?", columnValue, captureTime);
     }
 
     public void batchDelete(@Untainted String tableName, @Untainted String whereClause,
-            Object... args) throws SQLException {
+            Object... args) throws Exception {
         // delete 100 at a time, which is both faster than deleting all at once, and doesn't
         // lock the single jdbc connection for one large chunk of time
         int deleted;
@@ -341,7 +341,7 @@ public class DataSource {
     }
 
     public interface PreparedStatementBinder {
-        void bind(PreparedStatement preparedStatement) throws SQLException;
+        void bind(PreparedStatement preparedStatement) throws Exception;
     }
 
     public interface RowMapper<T> {

@@ -22,8 +22,7 @@ glowroot.controller('TransactionThroughputCtrl', [
   '$filter',
   '$timeout',
   'charts',
-  'modals',
-  function ($scope, $location, $filter, $timeout, charts, modals) {
+  function ($scope, $location, $filter, $timeout, charts) {
 
     $scope.$parent.activeTabItem = 'time';
 
@@ -59,7 +58,7 @@ glowroot.controller('TransactionThroughputCtrl', [
       }
     };
 
-    function onRefreshData(data, query) {
+    function onRefreshData(data) {
       $scope.transactionCount = data.transactionCount;
       $scope.transactionsPerMin = data.transactionsPerMin;
     }
@@ -73,7 +72,7 @@ glowroot.controller('TransactionThroughputCtrl', [
         label: 'transactions per min'
       },
       tooltipOpts: {
-        content: function (label, xval, yval, flotItem) {
+        content: function (label, xval, yval) {
           var transactionsPerMin = yval;
           if (transactionsPerMin === 0) {
             return 'No data';

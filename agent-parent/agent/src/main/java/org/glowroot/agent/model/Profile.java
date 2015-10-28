@@ -28,7 +28,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.glowroot.common.model.MutableProfileTree;
 import org.glowroot.wire.api.model.ProfileTreeOuterClass.ProfileTree;
 
-class Profile {
+public class Profile {
 
     private final Object lock = new Object();
     @GuardedBy("lock")
@@ -47,7 +47,7 @@ class Profile {
         this.mayHaveSyntheticTimerMethods = mayHaveSyntheticTimerMethods;
     }
 
-    void mergeIntoProfileTree(MutableProfileTree profileTree) {
+    public void mergeIntoProfileTree(MutableProfileTree profileTree) {
         synchronized (lock) {
             if (this.profileTree == null) {
                 mergeTheUnmergedIntoProfileTree(profileTree);

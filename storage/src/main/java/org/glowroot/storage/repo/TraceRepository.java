@@ -15,7 +15,6 @@
  */
 package org.glowroot.storage.repo;
 
-import java.sql.SQLException;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -61,7 +60,7 @@ public interface TraceRepository {
     @Nullable
     ProfileTree readProfileTree(String server, String traceId) throws Exception;
 
-    void deleteAll(String serverGroup) throws SQLException;
+    void deleteAll(String serverGroup) throws Exception;
 
     long count(String serverGroup) throws Exception;
 

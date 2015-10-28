@@ -16,7 +16,6 @@
 package org.glowroot.storage.simplerepo;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
 
 import org.glowroot.storage.repo.ConfigRepository;
@@ -40,7 +39,7 @@ class RepoAdminImpl implements RepoAdmin {
     }
 
     @Override
-    public void defrag() throws SQLException {
+    public void defrag() throws Exception {
         dataSource.defrag();
     }
 

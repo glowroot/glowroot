@@ -19,6 +19,8 @@ public class DuplicateStackFramesMisc implements Misc {
 
     @Override
     public void execute1() {
+        // this code is never executed, it only exists to trigger a specific issue related to
+        // bytecode weaving
         while (true) {
             try {
                 Thread.sleep(5);

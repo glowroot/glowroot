@@ -113,7 +113,7 @@ public class AsyncHttpClientAspect {
             methodParameterTypes = {".."})
     public static class FutureGetAdvice {
         @OnBefore
-        public static Timer onBefore(@BindReceiver ListenableFuture future) {
+        public static @Nullable Timer onBefore(@BindReceiver ListenableFuture future) {
             TraceEntry traceEntry = future.glowroot$getTraceEntry();
             if (traceEntry != null) {
                 return traceEntry.extend();

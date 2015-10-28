@@ -26,13 +26,12 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.Collector;
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.model.AggregateIntervalCollector;
 import org.glowroot.agent.model.Transaction;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Styles;
+import org.glowroot.wire.api.Collector;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -135,7 +134,7 @@ public class Aggregator {
                 try {
                     processOne();
                 } catch (InterruptedException e) {
-                    // terminate successfully
+                    Thread.currentThread().interrupt();
                     return;
                 } catch (Throwable e) {
                     // log and continue processing

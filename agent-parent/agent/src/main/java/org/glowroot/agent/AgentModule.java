@@ -71,6 +71,7 @@ import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.wire.api.Collector;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
