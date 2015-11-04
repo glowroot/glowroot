@@ -80,6 +80,12 @@
       <version>3.2.15.RELEASE</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <version>9.3.0.v20150612</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

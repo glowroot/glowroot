@@ -194,13 +194,41 @@ public class ServletAspect {
             methodName = "doFilter", methodParameterTypes = {"javax.servlet.ServletRequest",
                     "javax.servlet.ServletResponse", "javax.servlet.FilterChain"},
             timerName = "http request")
-    public static class DoFilterAdvice extends ServiceAdvice {
+    public static class DoFilterAdvice {
         @IsEnabled
         public static boolean isEnabled() {
             return ServiceAdvice.isEnabled();
         }
         @OnBefore
         public static @Nullable TraceEntry onBefore(@BindParameter @Nullable Object request) {
+            return ServiceAdvice.onBefore(request);
+        }
+        @OnReturn
+        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
+            ServiceAdvice.onReturn(traceEntry);
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            ServiceAdvice.onThrow(t, traceEntry);
+        }
+    }
+
+    @Pointcut(className = "org.eclipse.jetty.server.Handler", methodName = "handle",
+            methodParameterTypes = {"java.lang.String", "org.eclipse.jetty.server.Request",
+                    "javax.servlet.http.HttpServletRequest",
+                    "javax.servlet.http.HttpServletResponse"},
+            timerName = "http request")
+    public static class JettyHandlerAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return ServiceAdvice.isEnabled();
+        }
+        @OnBefore
+        public static @Nullable TraceEntry onBefore(
+                @SuppressWarnings("unused") @BindParameter @Nullable String target,
+                @SuppressWarnings("unused") @BindParameter @Nullable Object baseRequest,
+                @BindParameter @Nullable Object request) {
             return ServiceAdvice.onBefore(request);
         }
         @OnReturn

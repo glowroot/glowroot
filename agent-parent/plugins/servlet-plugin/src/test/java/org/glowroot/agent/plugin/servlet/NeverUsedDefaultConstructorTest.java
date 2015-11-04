@@ -58,14 +58,24 @@ public class NeverUsedDefaultConstructorTest {
             if (!classInfo.getName().startsWith(getClass().getPackage().getName())) {
                 continue;
             }
-            Class<?> pluginClass = classInfo.load();
+            Class<?> pluginClass;
+            try {
+                pluginClass = classInfo.load();
+            } catch (Error e) {
+                // e.g. UnsupportedClassVersionError for Jetty's Java 8 bytecode
+                continue;
+            }
             try {
                 testDefaultConstructorIfPointcutAdviceClass(pluginClass);
             } catch (Exception e) {
+            } catch (Error e) {
+                // e.g. UnsupportedClassVersionError for Jetty's Java 8 bytecode
             }
             try {
                 testPrivateDefaultConstructorIfUtilityClass(pluginClass);
             } catch (Exception e) {
+            } catch (Error e) {
+                // e.g. UnsupportedClassVersionError for Jetty's Java 8 bytecode
             }
         }
     }
