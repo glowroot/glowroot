@@ -20,6 +20,8 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -181,7 +183,7 @@ public class RequestHeaderTest {
         public void executeApp() throws Exception {
             MockHttpServletRequest request = new BadMockHttpServletRequest("GET", "/testservlet");
             MockHttpServletResponse response = new PatchedMockHttpServletResponse();
-            service(request, response);
+            service((ServletRequest) request, (ServletResponse) response);
         }
     }
 
@@ -191,7 +193,7 @@ public class RequestHeaderTest {
         public void executeApp() throws Exception {
             MockHttpServletRequest request = new BadMockHttpServletRequest2("GET", "/testservlet");
             MockHttpServletResponse response = new PatchedMockHttpServletResponse();
-            service(request, response);
+            service((ServletRequest) request, (ServletResponse) response);
         }
     }
 

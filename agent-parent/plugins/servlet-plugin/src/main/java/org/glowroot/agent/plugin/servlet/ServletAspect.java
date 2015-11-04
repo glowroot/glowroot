@@ -190,30 +190,6 @@ public class ServletAspect {
         }
     }
 
-    @Pointcut(className = "javax.servlet.http.HttpServlet", methodName = "do*",
-            methodParameterTypes = {"javax.servlet.http.HttpServletRequest",
-                    "javax.servlet.http.HttpServletResponse"},
-            timerName = "http request")
-    public static class DoMethodsAdvice extends ServiceAdvice {
-        @IsEnabled
-        public static boolean isEnabled() {
-            return ServiceAdvice.isEnabled();
-        }
-        @OnBefore
-        public static @Nullable TraceEntry onBefore(@BindParameter @Nullable Object request) {
-            return ServiceAdvice.onBefore(request);
-        }
-        @OnReturn
-        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
-            ServiceAdvice.onReturn(traceEntry);
-        }
-        @OnThrow
-        public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler @Nullable TraceEntry traceEntry) {
-            ServiceAdvice.onThrow(t, traceEntry);
-        }
-    }
-
     @Pointcut(className = "javax.servlet.Filter",
             methodName = "doFilter", methodParameterTypes = {"javax.servlet.ServletRequest",
                     "javax.servlet.ServletResponse", "javax.servlet.FilterChain"},

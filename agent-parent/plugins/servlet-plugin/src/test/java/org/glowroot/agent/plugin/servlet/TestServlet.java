@@ -18,6 +18,8 @@ package org.glowroot.agent.plugin.servlet;
 import java.io.IOException;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -35,7 +37,7 @@ class TestServlet extends HttpServlet implements AppUnderTest {
         MockHttpServletRequest request = new MockCatalinaHttpServletRequest("GET", "/testservlet");
         MockHttpServletResponse response = new PatchedMockHttpServletResponse();
         before(request, response);
-        service(request, response);
+        service((ServletRequest) request, (ServletResponse) response);
     }
 
     // hook for subclasses

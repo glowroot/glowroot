@@ -15,6 +15,8 @@
  */
 package org.glowroot.fat.webdriver.tests;
 
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -32,7 +34,7 @@ public class ErrorServlet extends HttpServlet implements AppUnderTest {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/errorservlet");
         MockHttpServletResponse response = new MockHttpServletResponse();
         try {
-            service(request, response);
+            service((ServletRequest) request, (ServletResponse) response);
         } catch (IllegalStateException e) {
             if (!e.getMessage().equals("xyz")) {
                 throw e;
